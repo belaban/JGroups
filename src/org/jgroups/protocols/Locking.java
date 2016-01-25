@@ -1064,23 +1064,15 @@ abstract public class Locking extends Protocol {
         protected void unlockAll() {
             List<ClientLock> lock_list=new ArrayList<>();
             synchronized(this) {
-                Collection<Map<Owner,ClientLock>> maps=table.values();
-                for(Map<Owner,ClientLock> map: maps)
-                    lock_list.addAll(map.values());
+                table.values().forEach(map -> lock_list.addAll(map.values()));
             }
-            for(ClientLock lock: lock_list)
-                lock.unlock();
+            lock_list.forEach(ClientLock::unlock);
         }
 
         protected void resendPendingLockRequests() {
-            if(!table.isEmpty()) {
-                for(Map<Owner,ClientLock> map: table.values()) {
-                    for(ClientLock lock: map.values()) {
-                        if(!lock.acquired && !lock.denied)
-                            sendGrantLockRequest(lock.name, lock.lock_id, lock.owner, lock.timeout, lock.is_trylock);
-                    }
-                }
-            }
+            if(!table.isEmpty())
+                table.values().forEach(map -> map.values().stream().filter(lock -> !lock.acquired && !lock.denied)
+                  .forEach(lock -> sendGrantLockRequest(lock.name, lock.lock_id, lock.owner, lock.timeout, lock.is_trylock)));
         }
 
         protected synchronized Collection<Map<Owner,ClientLock>> values() {
@@ -1196,16 +1188,11 @@ abstract public class Locking extends Protocol {
 
         @Override
         public boolean awaitUntil(Date deadline) throws InterruptedException {
-            long waitUntilTime = deadline.getTime();
-            long currentTime = System.currentTimeMillis();
-            
-            long waitTime = waitUntilTime - currentTime;
-            if (waitTime > 0) {
-                return await(waitTime, TimeUnit.MILLISECONDS);
-            }
-            else {
-                return false;
-            }
+            long waitUntilTime=deadline.getTime();
+            long currentTime=System.currentTimeMillis();
+
+            long waitTime=waitUntilTime - currentTime;
+            return waitTime > 0 && await(waitTime, TimeUnit.MILLISECONDS);
         }
         
         protected void await(boolean throwInterrupt) throws InterruptedException {

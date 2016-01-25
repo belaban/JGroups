@@ -5,7 +5,6 @@ import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
-import org.jgroups.util.Filter;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
@@ -16,6 +15,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Tests {@link org.jgroups.util.MessageBatch}
@@ -31,9 +32,7 @@ public class MessageBatchTest {
       UDP_ID=ClassConfigurator.getProtocolId(UDP.class);
     protected final Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B");
 
-    protected static final MessageBatch.Visitor<Integer> print_numbers=new MessageBatch.Visitor<Integer>() {
-        public Integer visit(Message msg, MessageBatch batch) {return msg != null? (Integer)msg.getObject() : null;}
-    };
+    protected static final MessageBatch.Visitor<Integer> print_numbers=(msg, batch) -> msg != null? (Integer)msg.getObject() : null;
 
 
 
@@ -56,11 +55,8 @@ public class MessageBatchTest {
         List<Message> msgs=new ArrayList<>(10);
         for(int i=1; i <= 10; i++)
             msgs.add(new Message(null, i));
-        MessageBatch batch=new MessageBatch(null, null, null, true, msgs, new Filter<Message>() {
-            public boolean accept(Message msg) {
-                return msg != null && ((Integer)msg.getObject()) % 2 == 0; // only even numbers are accepted
-            }
-        });
+        MessageBatch batch=new MessageBatch(null, null, null, true, msgs,
+                                            msg -> msg != null && ((Integer)msg.getObject()) % 2 == 0);
         System.out.println(batch.map(print_numbers));
         assert batch.size() == 5;
         for(Message msg: batch)
@@ -80,13 +76,8 @@ public class MessageBatchTest {
             msgs.add(msg);
         }
 
-        MessageBatch batch=new MessageBatch(null, null, null, true, msgs, new Filter<Message>() {
-            public boolean accept(Message msg) {
-                return msg != null && (!msg.isFlagSet(Message.Flag.OOB) || msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED));
-                // return msg != null && !(msg.isFlagSet(Message.Flag.OOB) && !msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED));
-            }
-        });
-
+        Predicate<Message> filter=msg -> msg != null && (!msg.isFlagSet(Message.Flag.OOB) || msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED));
+        MessageBatch batch=new MessageBatch(null, null, null, true, msgs, filter);
         System.out.println("batch = " + batch.map(print_numbers));
         assert batch.size() == 15;
         for(Message msg: batch) {
@@ -116,8 +107,7 @@ public class MessageBatchTest {
         assert !batch.isEmpty();
         batch.clear();
         assert batch.isEmpty();
-        for(Message msg: msgs)
-            batch.add(msg);
+        msgs.forEach(batch::add);
         System.out.println("batch = " + batch);
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
             it.next();
@@ -191,12 +181,10 @@ public class MessageBatchTest {
 
 
     public void testReplaceDuplicates() {
-        Filter<Message> filter=new Filter<Message>() {
-            protected final Set<Integer> dupes=new HashSet<>(5);
-            public boolean accept(Message msg) {
-                Integer num=(Integer)msg.getObject();
-                return dupes.add(num) == false;
-            }
+        final Set<Integer> dupes=new HashSet<>(5);
+        Predicate<Message> filter=(msg) -> {
+            Integer num=(Integer)msg.getObject();
+            return dupes.add(num) == false;
         };
 
         MessageBatch batch=new MessageBatch(10);
@@ -223,17 +211,14 @@ public class MessageBatchTest {
         System.out.println("batch = " + batch);
         assert batch.isEmpty();
 
-        for(Message msg: msgs)
-            batch.add(msg);
+        msgs.forEach(batch::add);
         System.out.println("batch = " + batch);
         assert batch.size() == prev_size;
         assert batch.capacity() == prev_size;
     }
 
     public void testRemoveWithFilter() {
-        Filter<Message> filter=new Filter<Message>() {
-            public boolean accept(Message msg) {return msg != null && msg.isTransientFlagSet(Message.TransientFlag.OOB_DELIVERED);}
-        };
+        Predicate<Message> filter=msg -> msg != null && msg.isTransientFlagSet(Message.TransientFlag.OOB_DELIVERED);
         MessageBatch batch=new MessageBatch(10);
         for(int i=1; i <= 10; i++) {
             Message msg=new Message(null, i);
@@ -258,8 +243,7 @@ public class MessageBatchTest {
     public void testAdd() {
         MessageBatch batch=new MessageBatch(3);
         List<Message> msgs=createMessages();
-        for(Message msg: msgs)
-            batch.add(msg);
+        msgs.forEach(batch::add);
         System.out.println("batch = " + batch);
         assert batch.size() == msgs.size() : "batch: " + batch;
     }
@@ -332,17 +316,39 @@ public class MessageBatchTest {
     }
 
 
+    public void testStream() {
+        List<Message> msgs=createMessages();
+        MessageBatch batch=new MessageBatch(msgs);
+        long num_msgs=batch.stream()
+          .filter(msg -> msg.getHeader((short)64) != null)
+          .peek(msg -> System.out.printf("msg = %s, hdrs=%s\n", msg, msg.printHeaders()))
+          .count();
+        System.out.println("num_msgs = " + num_msgs);
+        assert num_msgs == 10;
+
+        List<Message> list=batch.stream().collect(Collectors.toList());
+        assert list.size() == batch.size();
+
+        int total_size=batch.stream().map(Message::getLength).reduce(0, (l, r) -> l+r);
+        assert total_size == 0;
+
+        List<Long> msg_sizes=batch.stream().map(Message::size).collect(Collectors.toList());
+        System.out.println("msg_sizes = " + msg_sizes);
+        assert msg_sizes.size() == batch.stream().count();
+    }
+
+
     public void testIterator2() {
         List<Message> msgs=createMessages();
         MessageBatch batch=new MessageBatch(msgs);
         int count=0;
-        for(Message msg: batch)
+        for(Message ignored : batch)
             count++;
         assert count == msgs.size();
 
         remove(batch, 3, 5, 10);
         count=0;
-        for(Message msg: batch)
+        for(Message ignored : batch)
             count++;
         assert count == msgs.size() - 3;
     }
@@ -393,13 +399,13 @@ public class MessageBatchTest {
         remove(batch, 1, 2, 3, 10, msgs.size()-1);
         System.out.println("batch = " + batch);
         int count=0;
-        for(Message msg: batch)
+        for(Message ignored : batch)
             count++;
         assert count == msgs.size() - 5;
         count=0;
         batch.add(new Message()).add(new Message());
         System.out.println("batch = " + batch);
-        for(Message msg: batch)
+        for(Message ignored : batch)
             count++;
         assert count == msgs.size() - 5+2;
     }
@@ -407,7 +413,7 @@ public class MessageBatchTest {
     public void testIteratorOnEmptyBatch() {
         MessageBatch batch=new MessageBatch(3);
         int count=0;
-        for(Message msg: batch)
+        for(Message ignored : batch)
             count++;
         assert count == 0;
     }
@@ -444,7 +450,7 @@ public class MessageBatchTest {
         }
         System.out.println("batch = " + batch);
         int count=0;
-        for(Message msg: batch)
+        for(Message ignored : batch)
             count++;
         assert count == msgs.size() - 5;
     }
@@ -455,7 +461,7 @@ public class MessageBatchTest {
         MessageBatch batch=new MessageBatch(msgs);
 
         int count=0;
-        for(Message msg: batch) {
+        for(Message ignored : batch) {
             count++;
             if(count % 2 == 0)
                 batch.add(new Message());

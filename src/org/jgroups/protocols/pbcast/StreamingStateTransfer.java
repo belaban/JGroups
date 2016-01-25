@@ -11,10 +11,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -29,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * The major advantage of this approach is that transferring application state to a
  * joining member of a group does not entail loading of the complete application
  * state into memory. The application state, for example, might be located entirely
- * on some form of disk based storage. The default <code>STATE_TRANSFER</code> protocol
+ * on some form of disk based storage. The default {@code STATE_TRANSFER} protocol
  * requires this state to be loaded entirely into memory before being
  * transferred to a group member while the streaming state transfer protocols do not.
  * Thus the streaming state transfer protocols are able to
@@ -152,7 +149,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
                 StateTransferInfo info=(StateTransferInfo)evt.getArg();
                 Address target=info.target;
 
-                if(target != null && target.equals(local_addr)) {
+                if(Objects.equals(target, local_addr)) {
                     log.error("%s: cannot fetch state from myself", local_addr);
                     target=null;
                 }
@@ -350,7 +347,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
     protected ThreadPoolExecutor createThreadPool() {
         ThreadPoolExecutor threadPool=new ThreadPoolExecutor(0, max_pool, pool_thread_keep_alive,
-                                                             TimeUnit.MILLISECONDS, new SynchronousQueue<Runnable>());
+                                                             TimeUnit.MILLISECONDS, new SynchronousQueue<>());
 
         ThreadFactory factory=new ThreadFactory() {
             private final AtomicInteger thread_id=new AtomicInteger(1);
@@ -484,11 +481,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
             final InputStream input=in;
             final Object res=resource;
             // use another thread to read state because the state requester has to receive state chunks from the state provider
-            Thread t=getThreadFactory().newThread(new Runnable() {
-                public void run() {
-                    setStateInApplication(input, res, provider);
-                }
-            }, "STATE state reader");
+            Thread t=getThreadFactory().newThread(() -> setStateInApplication(input, res, provider), "STATE state reader");
             t.start();
         }
         else

@@ -141,7 +141,7 @@ public class SASLTest {
         JChannel leader = findChannelByAddress(leaderAddress, channels);
         GMS gms = (GMS) leader.getProtocolStack().findProtocol(GMS.class);
         gms.setLevel("trace");
-        Map<Address, View> views = new HashMap<Address, View>();
+        Map<Address, View> views =new HashMap<>();
         for (JChannel ch : channels) {
             views.put(ch.getAddress(), ch.getView());
         }

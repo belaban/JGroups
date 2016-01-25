@@ -206,7 +206,7 @@ public class Relay2Test {
         long time2=System.currentTimeMillis() - start2;
         System.out.println("B took " + time2 + " ms");
 
-        waitForBridgeView(1, 20000, 100, x);
+        waitForBridgeView(1, 40000, 500, x);
 
         Util.close(x,y);
     }

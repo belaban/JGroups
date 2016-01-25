@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of a {@link java.util.concurrent.ConcurrentMap} with replication of the contents across a cluster.
@@ -19,7 +20,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * <p>
  * Keys and values added to the hashmap <em>must be serializable</em>, the reason being that they will be sent
  * across the network to all replicas of the group.<p/>
- * A <code>ReplicatedHashMap</code> allows one to implement a distributed naming service in just a couple of lines.
+ * A {@code ReplicatedHashMap} allows one to implement a distributed naming service in just a couple of lines.
  * <p>
  * An instance of this class will contact an existing member of the group to fetch its initial state.
  *
@@ -79,7 +80,7 @@ public class ReplicatedHashMap<K, V> extends
         }
     }
 
-    private Channel channel;
+    private final Channel channel;
     protected RpcDispatcher disp=null;
     private String cluster_name=null;
     // to be notified when mbrship changes
@@ -123,11 +124,7 @@ public class ReplicatedHashMap<K, V> extends
 
     protected final void init() {
         disp=new RpcDispatcher(channel, this, this, this);
-        disp.setMethodLookup(new MethodLookup() {
-            public Method findMethod(short id) {
-                return methods.get(id);
-            }
-        });
+        disp.setMethodLookup(id -> methods.get(id));
     }
 
     public boolean isBlockingUpdates() {
@@ -231,12 +228,8 @@ public class ReplicatedHashMap<K, V> extends
     }
 
     /**
-     * {@inheritDoc}
-     * 
-     * @return the previous value associated with the specified key, or
-     *         <tt>null</tt> if there was no mapping for the key
-     * @throws NullPointerException
-     *                 if the specified key or value is null
+     * @return the previous value associated with the specified key, or <tt>null</tt> if there was no mapping for the key
+     * @throws NullPointerException if the specified key or value is null
      */
     public V putIfAbsent(K key, V value) {
         V prev_val=get(key);
@@ -305,12 +298,7 @@ public class ReplicatedHashMap<K, V> extends
         return retval;
     }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @throws NullPointerException
-     *                 if the specified key is null
-     */
+    /** @throws NullPointerException if the specified key is null */
     public boolean remove(Object key, Object value) {
         Object val=get(key);
         boolean removed=val != null && value != null && val.equals(value);
@@ -325,12 +313,7 @@ public class ReplicatedHashMap<K, V> extends
         return removed;
     }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @throws NullPointerException
-     *                 if any of the arguments are null
-     */
+    /** @throws NullPointerException if any of the arguments are null */
     public boolean replace(K key, V oldValue, V newValue) {
         Object val=get(key);
         boolean replaced=val != null && oldValue != null && val.equals(oldValue);
@@ -351,7 +334,7 @@ public class ReplicatedHashMap<K, V> extends
     }
 
     /**
-     * {@inheritDoc}
+     *
      * 
      * @return the previous value associated with the specified key, or
      *         <tt>null</tt> if there was no mapping for the key
@@ -413,25 +396,24 @@ public class ReplicatedHashMap<K, V> extends
 
     public void _clear() {
         map.clear();
-        for(Notification notif:notifs)
-            notif.contentsCleared();
+        notifs.forEach(Notification::contentsCleared);
     }
 
-    public V _remove(Object key) {
+    public V _remove(K key) {
         V retval=map.remove(key);
         if(retval != null) {
             for(Notification notif:notifs)
-                notif.entryRemoved((K)key);
+                notif.entryRemoved(key);
         }
 
         return retval;
     }
 
-    public boolean _remove(Object key, Object value) {
+    public boolean _remove(K key, V value) {
         boolean removed=map.remove(key, value);
         if(removed) {
             for(Notification notif:notifs)
-                notif.entryRemoved((K)key);
+                notif.entryRemoved(key);
         }
         return removed;
     }
@@ -507,29 +489,16 @@ public class ReplicatedHashMap<K, V> extends
     public void block() {}
 
     void sendViewChangeNotifications(View view, List<Address> new_mbrs, List<Address> old_mbrs) {
-        List<Address> joined, left;
-
         if((notifs.isEmpty()) || (old_mbrs == null) || (new_mbrs == null))
             return;
 
         // 1. Compute set of members that joined: all that are in new_mbrs, but not in old_mbrs
-        joined=new ArrayList<>();
-        for(Address mbr: new_mbrs) {
-            if(!old_mbrs.contains(mbr))
-                joined.add(mbr);
-        }
+        List<Address> joined=new_mbrs.stream().filter(mbr -> !old_mbrs.contains(mbr)).collect(Collectors.toList());
 
         // 2. Compute set of members that left: all that were in old_mbrs, but not in new_mbrs
-        left=new ArrayList<>();
-        for(Address mbr: old_mbrs) {
-            if(!new_mbrs.contains(mbr)) {
-                left.add(mbr);
-            }
-        }
+        List<Address> left=old_mbrs.stream().filter(mbr -> !new_mbrs.contains(mbr)).collect(Collectors.toList());
 
-        for(Notification notif: notifs) {
-            notif.viewChange(view, joined, left);
-        }
+        notifs.forEach((notif) -> notif.viewChange(view, joined, left));
     }
 
 
@@ -682,7 +651,7 @@ public class ReplicatedHashMap<K, V> extends
             }
         }
 
-        public V _remove(Object key) {
+        public V _remove(K key) {
             synchronized(mutex) {
                 return map._remove(key);
             }
@@ -694,7 +663,7 @@ public class ReplicatedHashMap<K, V> extends
             }
         }
 
-        public boolean _remove(Object key, Object value) {
+        public boolean _remove(K key, V value) {
             synchronized(mutex) {
                 return map._remove(key, value);
             }

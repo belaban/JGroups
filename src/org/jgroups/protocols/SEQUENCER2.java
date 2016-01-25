@@ -16,6 +16,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -67,7 +68,7 @@ public class SEQUENCER2 extends Protocol {
     protected long received_responses=0;
 
     protected Table<Message>  received_msgs = new Table<>();
-    private int max_msg_batch_size = 100;
+    protected int max_msg_batch_size = 100;
 
     @ManagedAttribute
     public boolean isCoordinator() {return is_coord;}
@@ -227,7 +228,7 @@ public class SEQUENCER2 extends Protocol {
 	                    break;
                     
                     case SequencerHeader.BCAST:
-                        deliver(msg, evt, hdr);
+                        deliver(msg, hdr);
                         received_bcasts++;
                         break;
                 }
@@ -329,7 +330,7 @@ public class SEQUENCER2 extends Protocol {
             return;
 
         Address existing_coord=coord, new_coord=mbrs.get(0);
-        boolean coord_changed=existing_coord == null || !existing_coord.equals(new_coord);
+        boolean coord_changed=!Objects.equals(existing_coord, new_coord);
         if(coord_changed && new_coord != null) {
             coord=new_coord;
 
@@ -386,7 +387,7 @@ public class SEQUENCER2 extends Protocol {
 
 
 
-    protected void deliver(Message msg, Event evt, SequencerHeader hdr) {
+    protected void deliver(Message msg, SequencerHeader hdr) {
         Address sender=msg.getSrc();
         if(sender == null) {
             if(log.isErrorEnabled())

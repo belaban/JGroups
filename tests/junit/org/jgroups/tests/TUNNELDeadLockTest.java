@@ -108,19 +108,17 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
         });
       
         // stress send messages - the sender thread
-        new Thread(new Runnable() {
-            public void run() {
-                try {
-                    for(int i=0; i < msgCount; i++) {
-                        channel.send(null, new byte[payloadSize]);
-                        if(i % 2000 == 0)
-                            System.out.println("-- sent " + i);
-                    }
+        new Thread(() -> {
+            try {
+                for(int i=0; i < msgCount; i++) {
+                    channel.send(null, new byte[payloadSize]);
+                    if(i % 2000 == 0)
+                        System.out.println("-- sent " + i);
                 }
-                catch(Exception e) {
-                    System.err.println("Error sending data over ...");
-                    e.printStackTrace();
-                }
+            }
+            catch(Exception e) {
+                System.err.println("Error sending data over ...");
+                e.printStackTrace();
             }
         }).start();
 

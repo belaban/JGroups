@@ -139,23 +139,17 @@ public class RpcDispatcherTest {
 
     public void testException() throws Exception {
         RspList<Object> rsps=disp1.callRemoteMethods(null, "throwException", null, null, new RequestOptions(ResponseMode.GET_ALL, 5000));
-        for(Rsp<Object> rsp: rsps.values()) {
-            System.out.println(rsp);
-        }
-        for(Rsp<Object> rsp: rsps.values()) {
+        rsps.values().forEach(System.out::println);
+        for(Rsp<Object> rsp: rsps.values())
             assert rsp.getException() != null && rsp.getValue() == null;
-        }
     }
 
 
     public void testExceptionAsReturnValue() throws Exception {
         RspList<Object> rsps=disp1.callRemoteMethods(null, "returnException", null, null, new RequestOptions(ResponseMode.GET_ALL, 5000));
-        for(Rsp<Object> rsp: rsps.values()) {
-            System.out.println(rsp);
-        }
-        for(Rsp<Object> rsp: rsps.values()) {
+        rsps.values().forEach(System.out::println);
+        for(Rsp<Object> rsp: rsps.values())
             assert rsp.getException() == null && rsp.getValue() != null && rsp.getValue() instanceof Throwable;
-        }
     }
 
 
@@ -366,9 +360,7 @@ public class RpcDispatcherTest {
             Util.sleep(200);
         }
         System.out.println("\n" + rsps.size() + " responses:\n");
-        for(Future<RspList<Long>> tmp: rsps) {
-            System.out.println(tmp);
-        }
+        rsps.forEach(System.out::println);
     }
 
     public void testMultipleNotifyingFutures() throws Exception {

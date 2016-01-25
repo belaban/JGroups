@@ -138,12 +138,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         queue.clear();
 
         List<Runnable> remaining_tasks=pool.shutdownNow();
-        for(Runnable task: remaining_tasks) {
-            if(task instanceof Future) {
-                Future future=(Future)task;
-                future.cancel(true);
-            }
-        }
+        remaining_tasks.stream().filter(task -> task instanceof Future).forEach(task -> ((Future)task).cancel(true));
         pool.getQueue().clear();
         try {
             pool.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);

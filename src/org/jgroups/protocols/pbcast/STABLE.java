@@ -605,7 +605,7 @@ public class STABLE extends Protocol {
         }
 
         // received my own STABILITY message - no need to handle it as I already reset my digest before I sent the msg
-        if(local_addr != null && local_addr.equals(sender)) {
+        if(Objects.equals(local_addr, sender)) {
             num_stability_msgs_received++;
             return;
         }

@@ -174,7 +174,7 @@ public class RpcDispatcher extends MessageDispatcher {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
             if(log.isTraceEnabled())
                 log.trace("destination list of %s() is empty: no need to send message", method_call.getName());
-            return new NullFuture<RspList<T>>(new RspList());
+            return new NullFuture<>(new RspList());
         }
 
         if(log.isTraceEnabled())

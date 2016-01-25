@@ -314,6 +314,7 @@ public class ServerUnitTest {
         protected boolean          send_response=false;
         protected final long       modulo;
         protected final BaseServer server;
+        protected final Condition  cond;
 
         MyReceiver(BaseServer server, long num_expected, boolean send_response) {
             this.server=server;
@@ -321,6 +322,7 @@ public class ServerUnitTest {
             this.send_response=send_response;
             start_time=System.currentTimeMillis();
             modulo=num_expected / 10;
+            cond=() -> num_received.get() >= num_expected;
         }
 
 
@@ -351,11 +353,7 @@ public class ServerUnitTest {
         }
 
         public void waitForCompletion(long timeout) throws Exception {
-            done.waitFor(new Condition() {
-                public boolean isMet() {
-                    return num_received.get() >= num_expected;
-                }
-            }, timeout, TimeUnit.MILLISECONDS);
+            done.waitFor(cond, timeout, TimeUnit.MILLISECONDS);
         }
 
         public String toString() {

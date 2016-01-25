@@ -2,21 +2,20 @@
 package org.jgroups.demos;
 
 
-import org.jgroups.*;
+import org.jgroups.Channel;
+import org.jgroups.JChannel;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.View;
 import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.util.Util;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.Hashtable;
-
-
+import java.util.*;
 
 
 /**
@@ -29,23 +28,17 @@ import java.util.Hashtable;
  */
 
 public class QuoteServer extends ReceiverAdapter {
-    final Hashtable stocks=new Hashtable();
-    Channel channel;
-    RpcDispatcher disp;
-    static final String channel_name="Quotes";
-    final int num_members=1;
-    Log            log=LogFactory.getLog(getClass());
+    final Map<String,Float> stocks=new HashMap<>();
+    Channel                channel;
+    RpcDispatcher          disp;
+    static final String    channel_name="Quotes";
+    protected Log           log=LogFactory.getLog(getClass());
 
-    final String props=null; // default stack from JChannel
+    static final String props=null; // default stack from JChannel
 
-    private void integrate(Hashtable state) {
-        String key;
-        if(state == null)
-            return;
-        for(Enumeration e=state.keys(); e.hasMoreElements();) {
-            key=(String)e.nextElement();
-            stocks.put(key, state.get(key)); // just overwrite
-        }
+    private void integrate(HashMap<String,Float> state) {
+        if(state != null)
+            state.keySet().forEach(key -> stocks.put(key, state.get(key)));
     }
 
     public void viewAccepted(View new_view) {
@@ -74,13 +67,13 @@ public class QuoteServer extends ReceiverAdapter {
 
     public float getQuote(String stock_name) throws Exception {
         System.out.print("Getting quote for " + stock_name + ": ");
-        Float retval=(Float)stocks.get(stock_name);
+        Float retval=stocks.get(stock_name);
         if(retval == null) {
             System.out.println("not found");
             throw new Exception("Stock " + stock_name + " not found");
         }
         System.out.println(retval.floatValue());
-        return retval.floatValue();
+        return retval;
     }
 
     public void setQuote(String stock_name, Float value) {
@@ -88,7 +81,7 @@ public class QuoteServer extends ReceiverAdapter {
         stocks.put(stock_name, value);
     }
 
-    public Hashtable getAllStocks() {
+    public Map<String,Float> getAllStocks() {
         System.out.print("getAllStocks: ");
         printAllStocks();
         return stocks;
@@ -103,7 +96,7 @@ public class QuoteServer extends ReceiverAdapter {
     }
 
     public void setState(InputStream istream) throws Exception {
-        integrate((Hashtable)Util.objectFromStream(new DataInputStream(istream)));
+        integrate((HashMap<String, Float>)Util.objectFromStream(new DataInputStream(istream)));
     }
 
 

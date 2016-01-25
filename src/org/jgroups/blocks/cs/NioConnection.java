@@ -387,7 +387,7 @@ public class NioConnection extends Connection {
 
     protected enum State {reading, waiting_to_terminate, done}
 
-    protected class Reader implements Runnable, Closeable, Condition {
+    protected class Reader implements Runnable, Closeable {
         protected final Lock       lock=new ReentrantLock(); // to synchronize receive() and state transitions
         protected State            state=State.done;
         protected volatile boolean data_available=true;
@@ -410,7 +410,6 @@ public class NioConnection extends Connection {
         }
 
         public void    close() throws IOException {stop();}
-        public boolean isMet()                    {return data_available;}
         public boolean isRunning()                {Thread tmp=thread; return tmp != null && tmp.isAlive();}
 
         /** Called by the selector when data is ready to be read from the SocketChannel */
@@ -448,6 +447,7 @@ public class NioConnection extends Connection {
         }
 
         protected void _run() {
+            final Condition is_data_available=() -> data_available;
             while(running) {
                 for(;;) { // try to receive as many msgs as possible, until no more msgs are ready or the conn is closed
                     try {
@@ -466,7 +466,7 @@ public class NioConnection extends Connection {
                 state(State.waiting_to_terminate);
                 data_available=false;
                 register(SelectionKey.OP_READ); // now we might get receive() calls again
-                if(data_available_cond.waitFor(this, server.readerIdleTime(), TimeUnit.MILLISECONDS))
+                if(data_available_cond.waitFor(is_data_available, server.readerIdleTime(), TimeUnit.MILLISECONDS))
                     state(State.reading);
                 else {
                     state(State.done);

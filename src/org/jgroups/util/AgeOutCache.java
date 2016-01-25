@@ -80,10 +80,8 @@ public class AgeOutCache<K> {
     }
 
     public void removeAll(Collection<K> keys) {
-        if(keys != null) {
-            for(K key: keys)
-                remove(key);
-        }
+        if(keys != null)
+            keys.forEach(this::remove);
     }
 
     public void clear() {

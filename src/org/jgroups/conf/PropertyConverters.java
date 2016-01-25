@@ -91,7 +91,7 @@ public final class PropertyConverters {
 
         private static int getPortRange(Protocol protocol) throws Exception {
             Field f = protocol.getClass().getDeclaredField("port_range") ;
-            return ((Integer) Util.getField(f,protocol)).intValue();
+            return (Integer)Util.getField(f, protocol);
 		}
     }
 
@@ -155,7 +155,7 @@ public final class PropertyConverters {
         }
     }
 
-    public static class IntegerArray implements PropertyConverter {
+    /*public static class IntegerArray implements PropertyConverter {
 
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
             int[] tmp=Util.parseCommaDelimitedInts(propertyValue);
@@ -181,7 +181,7 @@ public final class PropertyConverters {
             }
             return sb.toString();
         }
-    }
+    }*/
 
     public static class LongArray implements PropertyConverter {
 

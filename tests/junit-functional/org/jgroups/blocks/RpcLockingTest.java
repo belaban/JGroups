@@ -39,32 +39,26 @@ public class RpcLockingTest {
 		Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a, b);
 		System.out.println("");
 
-        disp_a.setRequestHandler(new RequestHandler() {
-            @Override
-            public Object handle(Message arg0) throws Exception {
-                System.out.println("A received a message, will now try to lock the lock");
-                if(lock_a.tryLock()) {
-                    Assert.fail("Should not be able to lock the lock here");
-                    System.out.println("A aquired the lock, this shouldn't be possible");
-                }
-                else
-                    System.out.println("The lock was already locked, as it should be");
-                return "Hello";
+        disp_a.setRequestHandler(arg0 -> {
+            System.out.println("A received a message, will now try to lock the lock");
+            if(lock_a.tryLock()) {
+                Assert.fail("Should not be able to lock the lock here");
+                System.out.println("A aquired the lock, this shouldn't be possible");
             }
+            else
+                System.out.println("The lock was already locked, as it should be");
+            return "Hello";
         });
 
-        disp_b.setRequestHandler(new RequestHandler() {
-            @Override
-            public Object handle(Message arg0) throws Exception {
-                System.out.println("B received a message, will now try to lock the lock");
-                if(lock_b.tryLock()) {
-                    Assert.fail("Should not be able to lock the lock here");
-                    System.out.println("B aquired the lock, this shouldn't be possible");
-                }
-                else
-                    System.out.println("The lock already was locked, as it should be");
-                return "Hello";
+        disp_b.setRequestHandler(arg0 -> {
+            System.out.println("B received a message, will now try to lock the lock");
+            if(lock_b.tryLock()) {
+                Assert.fail("Should not be able to lock the lock here");
+                System.out.println("B aquired the lock, this shouldn't be possible");
             }
+            else
+                System.out.println("The lock already was locked, as it should be");
+            return "Hello";
         });
 
         // Print who is the coordinator

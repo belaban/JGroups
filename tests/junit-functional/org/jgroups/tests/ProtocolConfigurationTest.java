@@ -2,21 +2,21 @@ package org.jgroups.tests;
 
 import org.jgroups.Event;
 import org.jgroups.Global;
-import org.jgroups.conf.ProtocolConfiguration;
-import org.jgroups.util.StackType;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
+import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.StackType;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Vector;
 
 /**
  * Tests the use of @Property dependency processing and default assignment.
@@ -85,9 +85,9 @@ public class ProtocolConfigurationTest {
 	 */
 	public void testDefaultAssignment() throws Exception {
 
-		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
-		Vector<Protocol> protocols = new Vector<>() ;
-		
+		List<ProtocolConfiguration> protocol_configs = new ArrayList<>() ;
+		List<Protocol> protocols = new ArrayList<>() ;
+
 		// create the layer described by DEFAULTS
 		protocol = Configurator.createProtocol(defaultProps, stack) ;
 		// process the defaults
@@ -117,10 +117,6 @@ public class ProtocolConfigurationTest {
 	 * Checks InetAddress and IpAddress processing 
 	 */
 	public void testAssignmentInetAddresses() throws Exception {
-
-		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
-		Vector<Protocol> protocols = new Vector<>() ;
-		
 		// create the layer described by INETADDRESSES
 		protocol = Configurator.createProtocol(addressProps, stack) ;
 				
@@ -147,8 +143,8 @@ public class ProtocolConfigurationTest {
 	 */
 	public void testConfigurableObject() throws Exception {
 
-		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
-		Vector<Protocol> protocols = new Vector<>() ;
+		List<ProtocolConfiguration> protocol_configs = new ArrayList<>() ;
+		List<Protocol> protocols = new ArrayList<>() ;
 		
 		// create the layer described by INETADDRESSES
 		protocol = Configurator.createProtocol(configurableObjectsProps, stack) ;

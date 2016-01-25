@@ -118,9 +118,7 @@ public class AckCollector {
     protected synchronized void addAll(Collection<Address> members) {
         if(members == null)
             return;
-        for(Address member: members)
-            if(member != null && !missing_acks.contains(member))
-                missing_acks.add(member);
+        members.stream().filter(member -> member != null && !missing_acks.contains(member)).forEach(missing_acks::add);
         expected_acks=missing_acks.size();
     }
 }

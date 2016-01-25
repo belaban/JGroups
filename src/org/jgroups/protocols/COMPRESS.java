@@ -63,15 +63,13 @@ public class COMPRESS extends Protocol {
     }
 
     public void destroy() {
-        for(Deflater deflater: deflater_pool)
-            deflater.end();
-        for(Inflater inflater: inflater_pool)
-            inflater.end();
+        deflater_pool.forEach(Deflater::end);
+        inflater_pool.forEach(Inflater::end);
     }   
 
 
     /**
-     * We compress the payload if it is larger than <code>min_size</code>. In this case we add a header containing
+     * We compress the payload if it is larger than {@code min_size}. In this case we add a header containing
      * the original size before compression. Otherwise we add no header.<br/>
      * Note that we compress either the entire buffer (if offset/length are not used), or a subset (if offset/length
      * are used)

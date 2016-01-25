@@ -136,11 +136,11 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
                 }
                 else if(obj instanceof Boolean) {
                     oos.writeByte(BOOL);
-                    oos.writeBoolean(((Boolean)obj).booleanValue());
+                    oos.writeBoolean((Boolean)obj);
                 }
                 else if(obj instanceof Long) {
                     oos.writeByte(LONG);
-                    oos.writeLong(((Long)obj).longValue());
+                    oos.writeLong((Long)obj);
                 }
                 else {
                     oos.writeByte(OBJ);
@@ -164,9 +164,9 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
                     case NULL:
                         return null;
                     case BOOL:
-                        return Boolean.valueOf(in.readBoolean());
+                        return in.readBoolean();
                     case LONG:
-                        return new Long(in.readLong());
+                        return in.readLong();
                     case OBJ:
                         return in.readObject();
                     default:

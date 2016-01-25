@@ -302,8 +302,7 @@ public class FlushTest {
             Util.sleep(1000); //let all events propagate...
             for (FlushTestReceiver app : channels)
                 app.getChannel().setReceiver(null);
-            for (FlushTestReceiver app : channels)
-                app.cleanup();
+            channels.forEach(FlushTestReceiver::cleanup);
 
             // verify block/unblock/view/get|set state sequences for all members
             for (FlushTestReceiver receiver : channels) {
@@ -312,8 +311,7 @@ public class FlushTest {
             }
         }
         finally {
-            for (FlushTestReceiver app : channels)
-                app.cleanup();
+            channels.forEach(FlushTestReceiver::cleanup);
         }
     }
 

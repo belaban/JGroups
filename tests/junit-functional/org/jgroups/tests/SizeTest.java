@@ -395,7 +395,7 @@ public class SizeTest {
         all.add(a); all.add(b); all.add(c); all.add(d); all.add(e); all.add(f);
 
         v1=new View(a, 1, m1);
-        v2=new MergeView(d, 2, m2, new ArrayList<View>());
+        v2=new MergeView(d, 2, m2, new ArrayList<>());
         v3=new View(e, 3, m3);
         v4=new MergeView(e, 4, m3, null);
         subgroups.add(v1);

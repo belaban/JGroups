@@ -1,35 +1,20 @@
 package org.jgroups.blocks.executor;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.AbstractExecutorService;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.AbstractQueuedSynchronizer;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
 import org.jgroups.Channel;
 import org.jgroups.protocols.Executing;
 import org.jgroups.util.FutureListener;
 import org.jgroups.util.NotifyingFuture;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
+
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This is a jgroups implementation of an ExecutorService, where the consumers
@@ -781,16 +766,14 @@ public class ExecutionService extends AbstractExecutorService {
     // @see java.util.concurrent.AbstractExecutorService#newTaskFor(java.lang.Runnable, java.lang.Object)
     @Override
     protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
-        DistributedFuture<T> future = new DistributedFuture<>(ch, _unfinishedLock,
-                _unfinishedCondition, _unfinishedFutures, runnable, value);
-        return future;
+        return new DistributedFuture<>(ch, _unfinishedLock,
+                                       _unfinishedCondition, _unfinishedFutures, runnable, value);
     }
 
     // @see java.util.concurrent.AbstractExecutorService#newTaskFor(java.util.concurrent.Callable)
     @Override
     protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
-        DistributedFuture<T> future = new DistributedFuture<>(ch, _unfinishedLock,
-                _unfinishedCondition, _unfinishedFutures, callable);
-        return future;
+        return new DistributedFuture<>(ch, _unfinishedLock,
+                                       _unfinishedCondition, _unfinishedFutures, callable);
     }
 }

@@ -1,5 +1,10 @@
 package org.jgroups.blocks.executor;
 
+import org.jgroups.JChannel;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
+import org.jgroups.protocols.Executing;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -7,11 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import org.jgroups.JChannel;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.Executing;
 
 /**
  * This class is to be used to pick up execution requests and actually run
@@ -69,16 +69,13 @@ public class ExecutionRunner implements Runnable {
                 // This task exits by being interrupted when the task isn't running
                 // or by updating shutdown to true when it can't be interrupted
                 while (!shutdown.get()) {
-                    _runnables.put(currentThread, new Holder<Runnable>(
-                            null));
-                    runnable = (Runnable)ch.down(new ExecutorEvent(
-                        ExecutorEvent.CONSUMER_READY, null));
+                    _runnables.put(currentThread, new Holder<>(null));
+                    runnable = (Runnable)ch.down(new ExecutorEvent(ExecutorEvent.CONSUMER_READY, null));
                     
                     // This means we were interrupted while waiting
-                    if (runnable == null) {
+                    if (runnable == null)
                         break;
-                    }
-                    
+
                     // First retrieve the lock to make sure we can tell them
                     // to not interrupt us
                     shutdownLock.lock();

@@ -60,8 +60,7 @@ public class ReplicatedHashMapStartupTest {
 
         }
         finally {
-            for(ReplicatedHashMap<Address,Integer> map:maps)
-                map.stop();
+            maps.forEach(ReplicatedHashMap::stop);
         }
     }
 

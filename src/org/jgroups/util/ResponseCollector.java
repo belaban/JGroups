@@ -7,11 +7,12 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 /** Similar to AckCollector, but collects responses from cluster members, not just acks. Null is not a valid key.
  * @author Bela Ban
  */
-public class ResponseCollector<T> implements org.jgroups.util.Condition {
+public class ResponseCollector<T> {
     @GuardedBy("lock")
     private final Map<Address,T> responses;
     private final Lock           lock=new ReentrantLock(false);
@@ -23,12 +24,12 @@ public class ResponseCollector<T> implements org.jgroups.util.Condition {
      * @param members List of members from which we expect responses
      */
     public ResponseCollector(Collection<Address> members) {
-        responses=members != null? new HashMap<Address,T>(members.size()) : new HashMap<Address,T>();
+        responses=members != null? new HashMap<>(members.size()) : new HashMap<>();
         reset(members);
     }
 
     public ResponseCollector(Address ... members) {
-        responses=members != null? new HashMap<Address,T>(members.length) : new HashMap<Address,T>();
+        responses=members != null? new HashMap<>(members.length) : new HashMap<>();
         reset(members);
     }
 
@@ -69,8 +70,7 @@ public class ResponseCollector<T> implements org.jgroups.util.Condition {
             return;
         lock.lock();
         try {
-            for(Address member: members)
-                responses.remove(member);
+            members.forEach(responses::remove);
             cond.signal(true);
         }
         finally {
@@ -95,20 +95,11 @@ public class ResponseCollector<T> implements org.jgroups.util.Condition {
         remove(member);
     }
 
-    public boolean isMet() {
-        return hasAllResponses();
-    }
 
     public boolean hasAllResponses() {
         lock.lock();
         try {
-            if(responses.isEmpty())
-                return true;
-            for(Map.Entry<Address,T> entry: responses.entrySet()) {
-                if(entry.getValue() == null)
-                    return false;
-            }
-            return true;
+            return responses.isEmpty() || responses.entrySet().stream().allMatch(entry -> entry.getValue() != null);
         }
         finally {
             lock.unlock();
@@ -132,21 +123,11 @@ public class ResponseCollector<T> implements org.jgroups.util.Condition {
 
     /** Returns a list of members which didn't send a valid response */
     public List<Address> getMissing() {
-        List<Address> retval=new ArrayList<>();
-        for(Map.Entry<Address,T> entry: responses.entrySet()) {
-            if(entry.getValue() == null)
-                retval.add(entry.getKey());
-        }
-        return retval;
+        return responses.entrySet().stream().filter(entry -> entry.getValue() == null).map(Map.Entry::getKey).collect(Collectors.toList());
     }
 
     public List<Address> getValidResults() {
-        List<Address> retval=new ArrayList<>();
-        for(Map.Entry<Address,T> entry: responses.entrySet()) {
-            if(entry.getValue() != null)
-                retval.add(entry.getKey());
-        }
-        return retval;
+        return responses.entrySet().stream().filter(entry -> entry.getValue() != null).map(Map.Entry::getKey).collect(Collectors.toList());
     }
 
 
@@ -174,8 +155,7 @@ public class ResponseCollector<T> implements org.jgroups.util.Condition {
     public boolean waitForAllResponses(long timeout) {
         if(timeout <= 0)
             timeout=2000L;
-
-        return cond.waitFor(this, timeout, TimeUnit.MILLISECONDS);
+        return cond.waitFor(this::hasAllResponses, timeout, TimeUnit.MILLISECONDS);
     }
 
     public void reset() {

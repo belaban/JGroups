@@ -216,10 +216,8 @@ public class FixedSizeBitSetTest {
         for(int i=0; i < 500; i++) {
             int num=(int)Util.random(1499);
             sorted_set.add(num);
-        }
-
-        for(int num: sorted_set)
             set.set(num);
+        }
 
         int num_set=sorted_set.size();
         System.out.println("set " + num_set + " bits");

@@ -14,6 +14,7 @@ import java.io.DataOutput;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -281,7 +282,7 @@ public class SEQUENCER extends Protocol {
         delivery_table.keySet().retainAll(mbrs);
 
         Address existing_coord=coord, new_coord=mbrs.get(0);
-        boolean coord_changed=existing_coord == null || !existing_coord.equals(new_coord);
+        boolean coord_changed=!Objects.equals(existing_coord, new_coord);
         if(coord_changed && new_coord != null) {
             stopFlusher();
             startFlusher(new_coord); // needs to be done in the background, to prevent blocking if down() would block
@@ -302,7 +303,7 @@ public class SEQUENCER extends Protocol {
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": coord changed from " + coord + " to " + new_coord);
             coord=new_coord;
-            is_coord=local_addr != null && local_addr.equals(coord);
+            is_coord=Objects.equals(local_addr, coord);
             flushMessagesInForwardTable();
         }
         finally {
@@ -394,7 +395,7 @@ public class SEQUENCER extends Protocol {
                 ack_promise.reset();
                 down_prot.down(new Event(Event.MSG, forward_msg));
                 Long ack=ack_promise.getResult(500);
-                if((ack != null && ack.equals(key)) || !forward_table.containsKey(key))
+                if((Objects.equals(ack, key)) || !forward_table.containsKey(key))
                     break;
             }
         }
@@ -427,7 +428,7 @@ public class SEQUENCER extends Protocol {
                 if(!ack_mode || !running || flushing)
                     break;
                 Long ack=ack_promise.getResult(500);
-                if((ack != null && ack.equals(seqno)) || !forward_table.containsKey(seqno))
+                if((Objects.equals(ack, seqno)) || !forward_table.containsKey(seqno))
                     break;
             }
         }

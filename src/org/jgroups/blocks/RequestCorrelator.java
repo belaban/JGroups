@@ -253,8 +253,7 @@ public class RequestCorrelator {
 
     public void stop() {
         started=false;
-        for(Request req: requests.values())
-            req.transportClosed();
+        requests.values().forEach(Request::transportClosed);
         requests.clear();
     }
 
@@ -281,22 +280,13 @@ public class RequestCorrelator {
     public void receiveSuspect(Address mbr) {
         if(mbr == null) return;
         log.debug("suspect=" + mbr);
-
-        // copy so we don't run into bug #761804 - Bela June 27 2003
-        // copy=new ArrayList(requests.values()); // removed because ConcurrentReaderHashMap can tolerate concurrent mods (bela May 8 2006)
-        for(Request req: requests.values()) {
-            if(req != null)
-                req.suspect(mbr);
-        }
+        requests.values().stream().filter(req -> req != null).forEach(req -> req.suspect(mbr));
     }
 
 
     /** An entire site is down; mark all requests that point to that site as unreachable (used by RELAY2) */
     public void setSiteUnreachable(String site) {
-        for(Request req: requests.values()) {
-            if(req != null)
-                req.siteUnreachable(site);
-        }
+        requests.values().stream().filter(req -> req != null).forEach(req -> req.siteUnreachable(site));
     }
 
 
@@ -308,13 +298,8 @@ public class RequestCorrelator {
      *
      */
     public void receiveView(View new_view) {
-        // copy so we don't run into bug #761804 - Bela June 27 2003
-        // copy=new ArrayList(requests.values());  // removed because ConcurrentHashMap can tolerate concurrent mods (bela May 8 2006)
         view=new_view; // move this before the iteration (JGRP-1428)
-        for(Request req: requests.values()) {
-            if(req != null)
-                req.viewChange(new_view);
-        }
+        requests.values().stream().filter(req -> req != null).forEach(req -> req.viewChange(new_view));
     }
 
 

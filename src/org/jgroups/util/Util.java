@@ -2162,7 +2162,7 @@ public class Util {
         Object[] array=list.toArray();
         for(int i=0; i < array.length; i++) {
             T tmp=(T)array[i];
-            if(tmp != null && tmp.equals(obj))
+            if(Objects.equals(tmp, obj))
                 return (T)array[(i + 1) % array.length];
         }
         return null;
@@ -2361,7 +2361,8 @@ public class Util {
         return getAllDeclaredFieldsWithAnnotations(clazz);
     }
 
-    public static Field[] getAllDeclaredFieldsWithAnnotations(final Class clazz,Class<? extends Annotation>... annotations) {
+    @SafeVarargs
+    public static Field[] getAllDeclaredFieldsWithAnnotations(final Class clazz, Class<? extends Annotation>... annotations) {
         List<Field> list=new ArrayList<>(30);
         for(Class curr=clazz; curr != null; curr=curr.getSuperclass()) {
             Field[] fields=curr.getDeclaredFields();
@@ -2385,7 +2386,8 @@ public class Util {
         return retval;
     }
 
-    public static Method[] getAllDeclaredMethodsWithAnnotations(final Class clazz,Class<? extends Annotation>... annotations) {
+    @SafeVarargs
+    public static Method[] getAllDeclaredMethodsWithAnnotations(final Class clazz, Class<? extends Annotation>... annotations) {
         List<Method> list=new ArrayList<>(30);
         for(Class curr=clazz; curr != null; curr=curr.getSuperclass()) {
             Method[] methods=curr.getDeclaredMethods();

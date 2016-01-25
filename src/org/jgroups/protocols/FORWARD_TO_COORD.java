@@ -12,6 +12,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -154,7 +155,7 @@ public class FORWARD_TO_COORD extends Protocol {
 
     protected void handleViewChange(View view) {
         Address new_coord=Util.getCoordinator(view);
-        boolean coord_changed=coord == null || !coord.equals(new_coord);
+        boolean coord_changed=!Objects.equals(coord, new_coord);
 
         if(coord_changed || received_not_coord) {
             if(received_not_coord)

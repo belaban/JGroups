@@ -13,7 +13,6 @@ import org.jgroups.util.Average;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -521,26 +520,18 @@ public abstract class FlowControl extends Protocol {
         if(log.isTraceEnabled()) log.trace("new membership: %s", mbrs);
 
         // add members not in membership to received and sent hashmap (with full credits)
-        for(Address addr: mbrs) {
-            if(!received.containsKey(addr))
-                received.put(addr, new Credit(max_credits, null));
-        }
+        mbrs.stream().filter(addr -> !received.containsKey(addr)).forEach(addr -> received.put(addr, new Credit(max_credits, null)));
+
         // remove members that left
-        for(Iterator<Address> it=received.keySet().iterator(); it.hasNext();) {
-            Address addr=it.next();
-            if(!mbrs.contains(addr))
-                it.remove();
-        }
+        received.keySet().retainAll(mbrs);
     }
 
 
 
     protected static String printMap(Map<Address,Credit> m) {
-        StringBuilder sb=new StringBuilder();
-        for(Map.Entry<Address,Credit> entry: m.entrySet()) {
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
-        }
-        return sb.toString();
+        return m.entrySet().stream().collect(StringBuilder::new,
+                                             (sb,entry) -> sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n"),
+                                             (l,r) -> {}).toString();
     }
 
 

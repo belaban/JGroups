@@ -93,7 +93,7 @@ public class STATE extends StreamingStateTransfer {
     protected Tuple<InputStream,Object> createStreamToProvider(final Address provider, final StateHeader hdr) {
         Util.close(input_stream);
         input_stream=new BlockingInputStream(buffer_size);
-        return new Tuple<InputStream,Object>(input_stream, null);
+        return new Tuple<>(input_stream, null);
     }
 
     @Override

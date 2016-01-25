@@ -6,8 +6,6 @@ import org.jgroups.*;
 import org.jgroups.util.Util;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.DataInputStream;
@@ -54,12 +52,12 @@ public class TotalOrder extends Frame {
     private int num_additions=0, num_subtractions=0, num_divisions=0, num_multiplications=0;
 
 
-    void error(String s) {
+    static void error(String s) {
         System.err.println(s);
     }
 
 
-    class EventHandler extends WindowAdapter {
+    static class EventHandler extends WindowAdapter {
         final Frame gui;
 
         public EventHandler(Frame g) {
@@ -158,51 +156,32 @@ public class TotalOrder extends Frame {
 
 
 
-        start.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                startSender();
+        start.addActionListener(e -> startSender());
+
+        stop.addActionListener(e -> {
+            try {
+                TotOrderRequest req=new TotOrderRequest(TotOrderRequest.STOP, 0, 0, 0);
+                byte[] buf=req.toBuffer();
+                channel.send(new Message(null,null,buf));
+            }
+            catch(Exception ex) {
             }
         });
 
-        stop.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    TotOrderRequest req=new TotOrderRequest(TotOrderRequest.STOP, 0, 0, 0);
-                    byte[] buf=req.toBuffer();
-                    channel.send(
-                            new Message(
-                                    null,
-                                    null,
-                                    buf));
-                }
-                catch(Exception ex) {
-                }
+        clear.addActionListener(e -> canvas.clear());
+
+        get_state.addActionListener(e -> {
+            try {
+                channel.getState(null, 3000);
+            }
+            catch(Throwable t) {
+                error("exception fetching state: " + t);
             }
         });
 
-        clear.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                canvas.clear();
-            }
-        });
-
-        get_state.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    channel.getState(null, 3000);
-                }
-                catch(Throwable t) {
-                    error("exception fetching state: " + t);
-                }
-            }
-        });
-
-        quit.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                channel.disconnect();
-                channel.close();
-                System.exit(0);
-            }
+        quit.addActionListener(e -> {
+            channel.close();
+            System.exit(0);
         });
 
         setTitle(title);
@@ -293,13 +272,7 @@ public class TotalOrder extends Frame {
         file.addSeparator();
         file.add(quitm);
 
-
-        quitm.addActionListener(
-                new ActionListener() {
-                    public void actionPerformed(ActionEvent e) {
-                        System.exit(1);
-                    }
-                });
+        quitm.addActionListener(e -> System.exit(1));
         return ret;
     }
 

@@ -255,7 +255,7 @@ public class StateTransferTest extends ChannelTestBase {
 
         protected void init() {
             for(String s: names)
-                map.put(s, new ArrayList<Long>(MSG_SEND_COUNT * APP_COUNT));
+                map.put(s, new ArrayList<>(MSG_SEND_COUNT * APP_COUNT));
         }
 
         public JChannel getChannel() {

@@ -255,12 +255,10 @@ public class UDP extends TP {
             destroySockets();
             throw ex;
         }
-        ucast_receiver=new PacketReceiver(sock, "unicast receiver",
-                                          new Runnable() {public void run() {closeUnicastSocket();}});
+        ucast_receiver=new PacketReceiver(sock, "unicast receiver", this::closeUnicastSocket);
 
         if(ip_mcast)
-            mcast_receiver=new PacketReceiver(mcast_sock, "multicast receiver",
-                                              new Runnable() {public void run() {closeMulticastSocket();}});
+            mcast_receiver=new PacketReceiver(mcast_sock, "multicast receiver", this::closeMulticastSocket);
     }
 
 

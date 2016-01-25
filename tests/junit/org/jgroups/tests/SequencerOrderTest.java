@@ -116,6 +116,7 @@ public class SequencerOrderTest {
         }
     }
 
+    @SafeVarargs
     private static void verifyNumberOfMessages(int num_msgs, List<String> ... lists) throws Exception {
         long end_time=System.currentTimeMillis() + 10000;
         while(System.currentTimeMillis() < end_time) {
@@ -142,6 +143,7 @@ public class SequencerOrderTest {
 
 
 
+    @SafeVarargs
     private static void verifySameOrder(int expected_msgs, List<String> ... lists) throws Exception {
         for(int index=0; index < expected_msgs; index++) {
             String val=null;
@@ -171,7 +173,7 @@ public class SequencerOrderTest {
         public void run() {
             for(int i=1; i <= num_msgs; i++) {
                 try {
-                    JChannel ch=(JChannel)Util.pickRandomElement(channels);
+                    JChannel ch=Util.pickRandomElement(channels);
                     String channel_name=ch.getName();
                     int number=num.incrementAndGet();
                     ch.send(null, channel_name + number);

@@ -17,10 +17,10 @@ import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 
 /**
@@ -149,29 +149,24 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
         }
 
         log.trace("fetching members from GossipRouter(s)");
-        stubManager.forEach(new RouterStubManager.Consumer() { // replace with lambda in Java 8
-            @Override
-            public void accept(RouterStub stub) {
-                 try {
-                     stub.getMembers(TCPGOSSIP.this.cluster_name, TCPGOSSIP.this);
-                 }
-                 catch(Throwable t) {
-                     log.warn("failed fetching members from %s: %s, cause: %s", stub.gossipRouterAddress(), t, t.getCause());
-                 }
+        stubManager.forEach((stub) -> {
+            try {
+                stub.getMembers(TCPGOSSIP.this.cluster_name, TCPGOSSIP.this);
+            }
+            catch(Throwable t) {
+                log.warn("failed fetching members from %s: %s, cause: %s", stub.gossipRouterAddress(), t, t.getCause());
             }
         });
     }
 
     @Override
     public void members(List<PingData> mbrs) {
-        Set<PhysicalAddress> physical_addrs=new HashSet<>();
         PhysicalAddress      own_physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
         PingData             data=new PingData(local_addr, false, org.jgroups.util.UUID.get(local_addr), own_physical_addr);
         PingHeader           hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name);
 
-        for(PingData ping_data: mbrs)
-            if(ping_data != null && ping_data.getPhysicalAddr() != null)
-                physical_addrs.add(ping_data.getPhysicalAddr());
+        Set<PhysicalAddress> physical_addrs=mbrs.stream().filter(ping_data -> ping_data != null && ping_data.getPhysicalAddr() != null)
+          .map(PingData::getPhysicalAddr).collect(Collectors.toSet());
 
         for(PhysicalAddress physical_addr: physical_addrs) {
             if(physical_addr != null && own_physical_addr.equals(physical_addr)) // no need to send the request to myself

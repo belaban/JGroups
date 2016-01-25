@@ -125,7 +125,7 @@ public abstract class Protocol {
             return this;
         Field field=Util.getField(getClass(), name);
         if(field == null)
-            throw new IllegalArgumentException("field \"" + name + "\n not found");
+            throw new IllegalArgumentException("field " + name + " not found");
         Property prop=field.getAnnotation(Property.class);
         if(prop != null) {
             String deprecated_msg=prop.deprecatedMessage();

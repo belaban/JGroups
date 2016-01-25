@@ -238,13 +238,9 @@ public class Merger {
         // membership list consists only of themselves
         Collection<Address> merge_participants=Util.determineMergeParticipants(views);
         merge_participants.removeAll(coordinators);
-        for(Address merge_participant: merge_participants) {
-            if(!retval.containsKey(merge_participant)) {
-                Collection<Address> tmp=new ArrayList<>();
-                tmp.add(merge_participant);
-                retval.put(merge_participant, tmp);
-            }
-        }
+
+        merge_participants.stream().filter(merge_participant -> !retval.containsKey(merge_participant))
+          .forEach(merge_participant -> retval.put(merge_participant, Collections.singletonList(merge_participant)));
         return retval;
     }
 
@@ -264,9 +260,7 @@ public class Merger {
         // merge the membership of the current view with mbrs
         List<Address> members=new ArrayList<>(mbrs != null? mbrs.size() : 32);
         if(mbrs != null) // didn't use a set because we didn't want to change the membership order at this time (although not incorrect)
-            for(Address mbr: mbrs)
-                if(!members.contains(mbr))
-                    members.add(mbr);
+            mbrs.stream().filter(mbr -> !members.contains(mbr)).forEach(members::add);
 
         // Now remove members that are not in our current view:
         members.retainAll(gms.view().getMembers());
@@ -400,8 +394,7 @@ public class Merger {
         valid_rsps.toArray(tmp);
         MutableDigest retval=new MutableDigest(tmp);
         Map<Address,Digest> responses=new HashMap<>(digest_collector.getResults());
-        for(Digest dig: responses.values())
-            retval.set(dig);
+        responses.values().forEach(retval::set);
         return retval;
     }
 
@@ -683,8 +676,7 @@ public class Merger {
             // Usually not needed, but a second line of defense in case the membership change policy above
             // computed the new view incorrectly, e.g. not removing dupes
             Set<Address> all_members=new HashSet<>();
-            for(Collection<Address> coll: sub_mbrships)
-                all_members.addAll(coll);
+            sub_mbrships.forEach(all_members::addAll);
             merged_mbrs.retainAll(all_members);
 
             // the new coordinator is the first member of the consolidated & sorted membership list

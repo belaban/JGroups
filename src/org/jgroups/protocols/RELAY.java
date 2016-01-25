@@ -1,8 +1,10 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.*;
-import org.jgroups.stack.AddressGenerator;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -13,6 +15,7 @@ import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Simple relaying protocol: RELAY is added to the top of the stack, creates a channel to a bridge cluster,
@@ -124,11 +127,7 @@ public class RELAY extends Protocol {
         JChannel channel=getProtocolStack().getChannel();
         if(channel == null)
             throw new IllegalStateException("channel must be set");
-        channel.addAddressGenerator(new AddressGenerator() {
-            public Address generateAddress() {
-                return ExtendedUUID.randomUUID().put(SITE_ID, Util.stringToBytes(site));
-            }
-        });
+        channel.addAddressGenerator(() -> ExtendedUUID.randomUUID().put(SITE_ID, Util.stringToBytes(site)));
     }
 
     public void stop() {
@@ -367,14 +366,12 @@ public class RELAY extends Protocol {
                 byte[] buf=Util.streamableToByteBuffer(view_data);
                 final Message msg=new Message(null, buf).putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
                 if(use_seperate_thread) {
-                    timer.execute(new Runnable() {
-                        public void run() {
-                            try {
-                                bridge.send(msg);
-                            }
-                            catch(Exception e) {
-                                log.error(Util.getMessage("FailedSendingViewToRemote"), e);
-                            }
+                    timer.execute(() -> {
+                        try {
+                            bridge.send(msg);
+                        }
+                        catch(Exception e) {
+                            log.error(Util.getMessage("FailedSendingViewToRemote"), e);
                         }
                     });
                 }
@@ -397,16 +394,14 @@ public class RELAY extends Protocol {
         List<View> views=new ArrayList<>(2);
         if(local_view != null) views.add(local_view);
         if(remote_view != null) views.add(remote_view);
-        Collections.sort(views, new Comparator<View>() {
-            public int compare(View v1, View v2) {
-                ViewId vid1=v1.getViewId(), vid2=v2.getViewId();
-                Address creator1=vid1.getCreator(), creator2=vid2.getCreator();
-                int rc=creator1.compareTo(creator2);
-                if(rc != 0)
-                    return rc;
-                long id1=vid1.getId(), id2=vid2.getId();
-                return id1 > id2 ? 1 : id1 < id2? -1 : 0;
-            }
+        Collections.sort(views, (v1, v2) -> {
+            ViewId vid1=v1.getViewId(), vid2=v2.getViewId();
+            Address creator1=vid1.getCreator(), creator2=vid2.getCreator();
+            int rc=creator1.compareTo(creator2);
+            if(rc != 0)
+                return rc;
+            long id1=vid1.getId(), id2=vid2.getId();
+            return id1 > id2 ? 1 : id1 < id2? -1 : 0;
         });
 
         List<Address> combined_members=new ArrayList<>();
@@ -484,11 +479,7 @@ public class RELAY extends Protocol {
                 destinations.addAll(new_mbrs);
 
             if(use_seperate_thread) {
-                timer.execute(new Runnable() {
-                    public void run() {
-                        sendViewOnLocalCluster(destinations, buffer);
-                    }
-                });
+                timer.execute(() -> sendViewOnLocalCluster(destinations, buffer));
             }
             else
                 sendViewOnLocalCluster(destinations, buffer);
@@ -511,7 +502,7 @@ public class RELAY extends Protocol {
         if(dest instanceof ExtendedUUID) {
             byte[] tmp=((ExtendedUUID)dest).get(SITE_ID);
             String str=Util.bytesToString(tmp);
-            return str != null && str.equals(this.site);
+            return Objects.equals(str, site);
         }
         return true;
     }
@@ -552,10 +543,7 @@ public class RELAY extends Protocol {
                                                                               msg.getOffset(), msg.getLength());
                         // replace addrs with proxies
                         if(data.remote_view != null) {
-                            List<Address> mbrs=new LinkedList<>();
-                            for(Address mbr: data.remote_view.getMembers()) {
-                                mbrs.add(mbr);
-                            }
+                            List<Address> mbrs=data.remote_view.getMembers().stream().collect(Collectors.toCollection(LinkedList::new));
                             data.remote_view=new View(data.remote_view.getViewId(), mbrs);
                         }
                         boolean merge=remote_view == null;
@@ -735,8 +723,8 @@ public class RELAY extends Protocol {
             uuids=new HashMap<>();
             for(int i=0; i < size; i++) {
                 Address addr=Util.readAddress(in);
-                String name=in.readUTF();
-                uuids.put(addr, name);
+                String n=in.readUTF();
+                uuids.put(addr, n);
             }
         }
 

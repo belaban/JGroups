@@ -295,8 +295,7 @@ public class BARRIER extends Protocol {
 
     protected void scheduleBarrierOpener() {
         if(barrier_opener_future == null || barrier_opener_future.isDone()) {
-            barrier_opener_future=timer.schedule(new Runnable() {public void run() {openBarrier();}},
-                                                 max_close_time, TimeUnit.MILLISECONDS);
+            barrier_opener_future=timer.schedule(this::openBarrier, max_close_time, TimeUnit.MILLISECONDS);
         }
     }
 

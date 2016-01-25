@@ -123,8 +123,7 @@ public class STOMP extends Protocol implements Runnable {
             }
         }
         synchronized(connections) {
-            for(Connection conn: connections)
-                conn.stop();
+            connections.forEach(Connection::stop);
             connections.clear();
         }
         acceptor=null;
@@ -195,7 +194,7 @@ public class STOMP extends Protocol implements Runnable {
                             synchronized(endpoints) {
                                 endpoints.put(msg.getSrc(), tmp_endpoint);
                             }
-                            update_clients=old_endpoint == null || !old_endpoint.equals(tmp_endpoint);
+                            update_clients=!Objects.equals(old_endpoint, tmp_endpoint);
                             if(update_clients && this.send_info) {
                                 synchronized(connections) {
                                     for(Connection conn: connections) {
@@ -309,8 +308,7 @@ public class STOMP extends Protocol implements Runnable {
         }
 
         synchronized(connections) {
-            for(Connection conn: connections)
-                conn.sendInfo();
+            connections.forEach(Connection::sendInfo);
         }
     }
 
@@ -386,10 +384,8 @@ public class STOMP extends Protocol implements Runnable {
         }
         else {
             if(!exact_destination_match) {
-                for(Map.Entry<String,Set<Connection>> entry: subscriptions.entrySet()) {
-                    if(entry.getKey().startsWith(destination))
-                        target_connections.addAll(entry.getValue());
-                }
+                subscriptions.entrySet().stream().filter(entry -> entry.getKey().startsWith(destination))
+                  .forEach(entry -> target_connections.addAll(entry.getValue()));
             }
             else {
                 Set<Connection> conns=subscriptions.get(destination);

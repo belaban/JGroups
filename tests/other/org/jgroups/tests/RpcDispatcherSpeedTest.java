@@ -62,12 +62,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
         channel=new JChannel(props);
         channel.setDiscardOwnMessages(true);
         disp=new RpcDispatcher(channel, null, this, this); // no concurrent processing on incoming method calls
-        disp.setMethodLookup(new MethodLookup() {
-            public Method findMethod(short id) {
-                return METHODS[0];
-            }
-        });
-
+        disp.setMethodLookup(id -> METHODS[0]);
 
         if(jmx) {
             MBeanServer srv=Util.getMBeanServer();

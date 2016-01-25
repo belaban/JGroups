@@ -75,7 +75,7 @@ public class NAKACK_Delivery_Test {
 
         nak.down(new Event(Event.BECOME_SERVER));
 
-        pool=new ThreadPoolExecutor(1, 100, 1000, TimeUnit.MILLISECONDS, new SynchronousQueue<Runnable>());
+        pool=new ThreadPoolExecutor(1, 100, 1000, TimeUnit.MILLISECONDS, new SynchronousQueue<>());
         // pool=new DirectExecutor();
         // if(pool instanceof ThreadPoolExecutor)
         ((ThreadPoolExecutor)pool).setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
@@ -171,7 +171,7 @@ public class NAKACK_Delivery_Test {
         }
         public void init(Address ... mbrs) {
             for(Address mbr: mbrs) {
-                msgs.putIfAbsent(mbr, new ConcurrentLinkedQueue<Message>());
+                msgs.putIfAbsent(mbr, new ConcurrentLinkedQueue<>());
             }
         }
 

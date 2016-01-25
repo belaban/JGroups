@@ -14,10 +14,7 @@ import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
+import java.awt.event.*;
 import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -30,72 +27,73 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
     private ReplCache<String,String> cache;
     private static final String BASENAME="replcache";
 
-    private JFrame       frame;
-    private JTabbedPane  root_pane=new JTabbedPane();
-    private JTable       table;
-    private JTextField   key_field=createTextField(null, 10);
-    private JTextField   value_field=createTextField(null, 10);
-    private JTextField   repl_count_field=createTextField("1", 3);
-    private JTextField   timeout_field=createTextField("0", 5);
-    private JTextField   perf_key_prefix=createTextField("key", 5);
-    private JTextField   perf_num_keys=createTextField("1000", 5);
-    private JTextField   perf_size=createTextField("1000", 5);
-    private JTextField   perf_repl_count_field=createTextField("1", 3);
-    private JTextField   perf_timeout_field=createTextField("0", 5);
-    private JTextArea    status=new JTextArea("Status area", 10, 5);
-    private JLabel       num_elements=new JLabel("0 elements");
-    private MyTableModel model=null;
+    private JFrame             frame;
+    private final JTabbedPane  root_pane=new JTabbedPane();
+    private JTable             table;
+    private final JTextField   key_field=createTextField(null, 10);
+    private final JTextField   value_field=createTextField(null, 10);
+    private final JTextField   repl_count_field=createTextField("1", 3);
+    private final JTextField   timeout_field=createTextField("0", 5);
+    private final JTextField   perf_key_prefix=createTextField("key", 5);
+    private final JTextField   perf_num_keys=createTextField("1000", 5);
+    private final JTextField   perf_size=createTextField("1000", 5);
+    private final JTextField   perf_repl_count_field=createTextField("1", 3);
+    private final JTextField   perf_timeout_field=createTextField("0", 5);
+    private final JTextArea    status=new JTextArea("Status area", 10, 5);
+    private final JLabel       num_elements=new JLabel("0 elements");
+    private MyTableModel       model;
 
 
     public void actionPerformed(ActionEvent event) {
         String command = event.getActionCommand();
 
-        if(command.equals("Put")) {
-            String key=key_field.getText();
-            String value=value_field.getText();
-            String repl_count=repl_count_field.getText();
-            String timeout=timeout_field.getText();
+        switch(command) {
+            case "Put":
+                String key=key_field.getText();
+                String value=value_field.getText();
+                String repl_count=repl_count_field.getText();
+                String timeout=timeout_field.getText();
 
-            if(key == null || value == null)
-                return;
+                if(key == null || value == null)
+                    return;
 
-            if(repl_count == null)
-                repl_count="1";
-            if(timeout == null)
-                timeout="0";
+                if(repl_count == null)
+                    repl_count="1";
+                if(timeout == null)
+                    timeout="0";
 
-            cache.put(key, value, Short.valueOf(repl_count), Long.valueOf(timeout));
-        }
-        else if(command.equals("Remove")) {
-            int[] rows=table.getSelectedRows();
-            if(rows != null) {
-                for(int row: rows) {
-                    String key=(String)model.getValueAt(row, 0);
-                    if(key != null)
-                        cache.remove(key);
+                cache.put(key, value, Short.valueOf(repl_count), Long.valueOf(timeout));
+                break;
+            case "Remove":
+                int[] rows=table.getSelectedRows();
+                if(rows != null) {
+                    for(int row : rows) {
+                        key=(String)model.getValueAt(row, 0);
+                        if(key != null)
+                            cache.remove(key);
+                    }
                 }
-            }
-        }
-        else if(command.equals("Clear")) {
-            clear();
-        }
-        else if(command.equals("Rebalance")) {
-            cache.mcastEntries();
-        }
-        else if(command.equals("Reset")) {
-            status.setText("");
-        }
-        else if(command.equals("Start")) {
-            startPerfTest();
-        }
-        else if(command.equals("Stop")) {
+                break;
+            case "Clear":
+                clear();
+                break;
+            case "Rebalance":
+                cache.mcastEntries();
+                break;
+            case "Reset":
+                status.setText("");
+                break;
+            case "Start":
+                startPerfTest();
+                break;
+            case "Stop":
+                break;
+            case "Exit":
+                if(cache != null)
+                    cache.stop();
+                frame.dispose();
+                System.exit(1); // or can we break out of mainLoop() somehow else ?
 
-        }
-        else if(command.equals("Exit")) {
-            if(cache != null)
-                cache.stop();
-            frame.dispose();
-            System.exit(1); // or can we break out of mainLoop() somehow else ?
         }
     }
 
@@ -105,7 +103,6 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
     private void startPerfTest() {
         int   num_puts=1000;
-        int   size=1000;
         short repl_count=1;
         long  timeout=0;
         String key_prefix="key";
@@ -117,6 +114,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         if(tmp != null)
             num_puts=Integer.valueOf(tmp);
         tmp=perf_size.getText();
+        Integer size;
         if(tmp != null)
             size=Integer.valueOf(tmp);
         tmp=perf_repl_count_field.getText();
@@ -381,7 +379,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
 
 
-    private static class MyFocusListener implements FocusListener {
+    private static class MyFocusListener extends FocusAdapter {
         private final JTextField field;
 
         public MyFocusListener(JTextField field) {
@@ -390,13 +388,11 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
         public void focusGained(FocusEvent e) {
             String value=field.getText();
-            if(value != null && value.length() > 0) {
+            if(value != null && !value.isEmpty()) {
                 field.selectAll();
             }
         }
 
-        public void focusLost(FocusEvent e) {
-        }
     }
 
     private static class MyTable extends JTable {

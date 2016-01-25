@@ -323,8 +323,7 @@ public class BuffersTest {
     public void testNullData() throws Exception {
         MockSocketChannel ch=new MockSocketChannel().bytesToWrite(1000);
         Buffers buf=new Buffers(3);
-        for(ByteBuffer b: Arrays.asList(buf1,buf2,buf3))
-            buf.add(b);
+        Arrays.asList(buf1, buf2, buf3).forEach(buf::add);
         check(buf, 0, 3, 3, remaining(buf1, buf2, buf3));
         boolean rc=buf.write(ch);
         assert rc;

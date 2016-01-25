@@ -3,10 +3,10 @@ package org.jgroups.util;
 import org.jgroups.Address;
 import org.jgroups.Message;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Represents a message batch; multiple messages from the same sender to the same receiver(s). This class is unsynchronized.
@@ -37,6 +37,8 @@ public class MessageBatch implements Iterable<Message> {
     protected Mode             mode=Mode.REG;
 
     protected static final int INCR=5; // number of elements to add when resizing
+    protected static final     Visitor<Integer> length_visitor=(msg, batch) -> msg != null? msg.getLength() : 0;
+    protected static final     Visitor<Long>    total_size_visitor=(msg, batch) -> msg != null? msg.size() : 0;
 
 
     public MessageBatch(int capacity) {
@@ -55,10 +57,10 @@ public class MessageBatch implements Iterable<Message> {
     }
 
     public MessageBatch(Address dest, Address sender, AsciiString cluster_name, boolean multicast,
-                        Collection<Message> msgs, Filter<Message> filter) {
+                        Collection<Message> msgs, Predicate<Message> filter) {
         messages=new Message[msgs.size()];
         for(Message msg: msgs) {
-            if(filter != null && !filter.accept(msg))
+            if(filter != null && !filter.test(msg))
                 continue;
             messages[index++]=msg;
         }
@@ -143,11 +145,11 @@ public class MessageBatch implements Iterable<Message> {
      * @param match_all whether to replace the first or all matches
      * @return the MessageBatch
      */
-    public MessageBatch replace(Filter<Message> filter, Message replacement, boolean match_all) {
+    public MessageBatch replace(Predicate<Message> filter, Message replacement, boolean match_all) {
         if(filter == null)
             return this;
         for(int i=0; i < index; i++) {
-            if(filter.accept(messages[i])) {
+            if(filter.test(messages[i])) {
                 messages[i]=replacement;
                 if(!match_all)
                     break;
@@ -170,7 +172,7 @@ public class MessageBatch implements Iterable<Message> {
      * @param filter the filter. If null, no removal takes place
      * @return the MessageBatch
      */
-    public MessageBatch remove(Filter<Message> filter) {
+    public MessageBatch remove(Predicate<Message> filter) {
         return replace(filter, null, true);
     }
 
@@ -182,16 +184,14 @@ public class MessageBatch implements Iterable<Message> {
     }
 
     /** Removes and returns all messages which have a header with ID == id */
-    public Collection<Message> getMatchingMessages(final short id, final boolean remove) {
-        return map(new Visitor<Message>() {
-            public Message visit(Message msg, MessageBatch batch) {
-                if(msg != null && msg.getHeader(id) != null) {
-                    if(remove)
-                        batch.remove(msg);
-                    return msg;
-                }
-                return null;
+    public Collection<Message> getMatchingMessages(final short id, boolean remove) {
+        return map((msg, batch) -> {
+            if(msg != null && msg.getHeader(id) != null) {
+                if(remove)
+                    batch.remove(msg);
+                return msg;
             }
+            return null;
         });
     }
 
@@ -256,26 +256,16 @@ public class MessageBatch implements Iterable<Message> {
     /** Returns the size of the message batch (by calling {@link org.jgroups.Message#size()} on all messages) */
     public long totalSize() {
         long retval=0;
-        Visitor<Long> visitor=new Visitor<Long>() {
-            public Long visit(Message msg, MessageBatch batch) {
-                return msg != null? msg.size() : 0;
-            }
-        };
         for(int i=0; i < index; i++)
-            retval+=visitor.visit(messages[i], this);
+            retval+=total_size_visitor.visit(messages[i], this);
         return retval;
     }
 
     /** Returns the total number of bytes of the message batch (by calling {@link org.jgroups.Message#getLength()} on all messages) */
     public int length() {
         int retval=0;
-        Visitor<Integer> visitor=new Visitor<Integer>() {
-            public Integer visit(Message msg, MessageBatch batch) {
-                return msg != null? msg.getLength() : 0;
-            }
-        };
         for(int i=0; i < index; i++)
-            retval+=visitor.visit(messages[i], this);
+            retval+=length_visitor.visit(messages[i], this);
         return retval;
     }
 
@@ -284,6 +274,12 @@ public class MessageBatch implements Iterable<Message> {
     public Iterator<Message> iterator() {
         return new BatchIterator(index);
     }
+
+    public Stream<Message> stream() {
+        Spliterator<Message> sp=Spliterators.spliterator(iterator(), size(), 0);
+        return StreamSupport.stream(sp, false);
+    }
+
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
@@ -319,6 +315,7 @@ public class MessageBatch implements Iterable<Message> {
 
 
     /** Used for iteration over the messages */
+    @FunctionalInterface
     public interface Visitor<T> {
         /**
          * Called when iterating over the message batch

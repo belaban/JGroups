@@ -200,11 +200,8 @@ public final class JmxConfigurator {
             if(server.isRegistered(obj_name))
                 server.unregisterMBean(obj_name);
         }
-        catch (InstanceNotFoundException infe) {
+        catch (InstanceNotFoundException | MalformedObjectNameException infe) {
             throw new MBeanRegistrationException(infe);
-        }
-        catch (MalformedObjectNameException e) {
-            throw new MBeanRegistrationException(e);
         }
     }
 

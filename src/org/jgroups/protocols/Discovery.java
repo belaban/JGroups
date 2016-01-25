@@ -340,7 +340,7 @@ public abstract class Discovery extends Protocol {
         // add physical address (if available) to transport's cache
         Address logical_addr=data.getAddress() != null? data.getAddress() : sender;
         addDiscoveryResponseToCaches(logical_addr, data.getLogicalName(), data.getPhysicalAddr());
-        boolean overwrite=logical_addr != null && logical_addr.equals(sender);
+        boolean overwrite=Objects.equals(logical_addr, sender);
         addResponse(data, overwrite);
     }
 
@@ -568,11 +568,9 @@ public abstract class Discovery extends Protocol {
             int rank=Util.getRank(view, local_addr); // returns 0 if view or local_addr are null
             long sleep_time=rank == 0? Util.random(stagger_timeout)
               : stagger_timeout * rank / view_size - (stagger_timeout / view_size);
-            timer.schedule(new Runnable() {
-                public void run() {
-                    log.trace("%s: received GET_MBRS_REQ from %s, sending staggered response %s", local_addr, sender, data);
-                    down_prot.down(new Event(Event.MSG, rsp_msg));
-                }
+            timer.schedule((Runnable)() -> {
+                log.trace("%s: received GET_MBRS_REQ from %s, sending staggered response %s", local_addr, sender, data);
+                down_prot.down(new Event(Event.MSG, rsp_msg));
             }, sleep_time, TimeUnit.MILLISECONDS);
             return;
         }

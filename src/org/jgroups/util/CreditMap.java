@@ -93,10 +93,8 @@ public class CreditMap {
         try {
             if(credit_needed > min_credits) {
                 flushAccumulatedCredits();
-                for(Map.Entry<Address,Long> entry: credits.entrySet()) {
-                    if(entry.getValue() < credit_needed)
-                        retval.add(entry.getKey());
-                }
+                credits.entrySet().stream().filter(entry -> entry.getValue() < credit_needed)
+                  .forEach(entry -> retval.add(entry.getKey()));
             }
             return retval;
         }
@@ -112,10 +110,9 @@ public class CreditMap {
         lock.lock();
         try {
             flushAccumulatedCredits();
-            for(Map.Entry<Address,Long> entry: credits.entrySet()) {
-                if(entry.getValue() <= min_credits )
-                    retval.add(new Tuple<>(entry.getKey(), entry.getValue()));
-            }
+            credits.entrySet().stream().filter(entry -> entry.getValue() <= min_credits)
+              .forEach(entry -> retval.add(new Tuple<>(entry.getKey(), entry.getValue())));
+
             return retval;
         }
         finally {

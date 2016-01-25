@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * Replacement for UDP. Instead of sending packets via UDP, a TCP connection is opened to a Router
  * (using the RouterStub client-side stub), the IP address/port of which was given using channel
- * properties {@code router_host} and <code>router_port</code>. All outgoing traffic is sent
+ * properties {@code router_host} and {@code router_port}. All outgoing traffic is sent
  * via this TCP socket to the Router which distributes it to all connected TUNNELs in this group.
  * Incoming traffic received from Router will simply be passed up the stack.
  * 
@@ -236,31 +236,27 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     private class DefaultTUNNELPolicy implements TUNNELPolicy {
 
         public void sendToAllMembers(final String group, final byte[] data, final int offset, final int length) throws Exception {
-            stubManager.forAny(new RouterStubManager.Consumer() {
-                @Override public void accept(RouterStub stub) {
-                    try {
-                        if(log.isTraceEnabled())
-                            log.trace("sent a message to all members, GR used %s", stub.gossipRouterAddress());
-                        stub.sendToAllMembers(group, data, offset, length);
-                    }
-                    catch (Exception ex) {
-                        log.warn("failed sending a message to all members, router used %s", stub.gossipRouterAddress());
-                    }
+            stubManager.forAny((stub) -> {
+                try {
+                    if(log.isTraceEnabled())
+                        log.trace("sent a message to all members, GR used %s", stub.gossipRouterAddress());
+                    stub.sendToAllMembers(group, data, offset, length);
+                }
+                catch (Exception ex) {
+                    log.warn("failed sending a message to all members, router used %s", stub.gossipRouterAddress());
                 }
             });
         }
 
         public void sendToSingleMember(final String group, final Address dest, final byte[] data, final int offset, final int length) throws Exception {
-            stubManager.forAny(new RouterStubManager.Consumer() {
-                @Override public void accept(RouterStub stub) {
-                    try {
-                        if(log.isTraceEnabled())
-                            log.trace("sent a message to all members, GR used %s", stub.gossipRouterAddress());
-                        stub.sendToMember(group, dest, data, offset, length);
-                    }
-                    catch (Exception ex) {
-                        log.warn("failed sending a message to all members, router used %s", stub.gossipRouterAddress());
-                    }
+            stubManager.forAny((stub) -> {
+                try {
+                    if(log.isTraceEnabled())
+                        log.trace("sent a message to all members, GR used %s", stub.gossipRouterAddress());
+                    stub.sendToMember(group, dest, data, offset, length);
+                }
+                catch (Exception ex) {
+                    log.warn("failed sending a message to all members, router used %s", stub.gossipRouterAddress());
                 }
             });
         }

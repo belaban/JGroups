@@ -128,7 +128,7 @@ public class MemcachedConnector implements Runnable {
         srv_sock=new ServerSocket(port, 50, bind_addr);
         if(thread_pool == null) {
             thread_pool=new ThreadPoolExecutor(core_threads, max_threads, idle_time, TimeUnit.MILLISECONDS,
-                                               new SynchronousQueue<Runnable>(), new ThreadPoolExecutor.CallerRunsPolicy());
+                                               new SynchronousQueue<>(), new ThreadPoolExecutor.CallerRunsPolicy());
             // thread_pool=new DirectExecutor();
         }
         if(thread == null || !thread.isAlive()) {
@@ -273,34 +273,48 @@ public class MemcachedConnector implements Runnable {
             String tmp=args[0];
             if(tmp == null)
                 throw new EOFException();
-            if(tmp.equals("set"))
-                req.type=Request.Type.SET;
-            else if(tmp.equals("add"))
-                req.type=Request.Type.ADD;
-            else if(tmp.equals("replace"))
-                req.type=Request.Type.REPLACE;
-            else if(tmp.equals("prepend"))
-                req.type=Request.Type.PREPEND;
-            else if(tmp.equals("append"))
-                req.type=Request.Type.APPEND;
-            else if(tmp.equals("cas"))
-                req.type=Request.Type.CAS;
-            else if(tmp.equals("incr"))
-                req.type=Request.Type.INCR;
-            else if(tmp.equals("decr"))
-                req.type=Request.Type.DECR;
-            else if(tmp.equals("get"))
-                req.type=Request.Type.GET;
-            else if(tmp.equals("gets"))
-                req.type=Request.Type.GETS;
-            else if(tmp.equals("delete"))
-                req.type=Request.Type.DELETE;
-            else if(tmp.equals("stat"))
-                req.type=Request.Type.STAT;
-            else if(tmp.equals("stats"))
-                req.type=Request.Type.STATS;
-            else {
-                throw new StreamCorruptedException("request \"" + line + "\" not known");
+            switch(tmp) {
+                case "set":
+                    req.type=Request.Type.SET;
+                    break;
+                case "add":
+                    req.type=Request.Type.ADD;
+                    break;
+                case "replace":
+                    req.type=Request.Type.REPLACE;
+                    break;
+                case "prepend":
+                    req.type=Request.Type.PREPEND;
+                    break;
+                case "append":
+                    req.type=Request.Type.APPEND;
+                    break;
+                case "cas":
+                    req.type=Request.Type.CAS;
+                    break;
+                case "incr":
+                    req.type=Request.Type.INCR;
+                    break;
+                case "decr":
+                    req.type=Request.Type.DECR;
+                    break;
+                case "get":
+                    req.type=Request.Type.GET;
+                    break;
+                case "gets":
+                    req.type=Request.Type.GETS;
+                    break;
+                case "delete":
+                    req.type=Request.Type.DELETE;
+                    break;
+                case "stat":
+                    req.type=Request.Type.STAT;
+                    break;
+                case "stats":
+                    req.type=Request.Type.STATS;
+                    break;
+                default:
+                    throw new StreamCorruptedException("request \"" + line + "\" not known");
             }
 
             switch(req.type) {

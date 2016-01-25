@@ -179,11 +179,11 @@ public class S3_PING extends FILE_PING {
 
             if (usingPreSignedUrls()) {
                 Map headers = new TreeMap();
-                headers.put("x-amz-acl", Arrays.asList("public-read"));
+                headers.put("x-amz-acl", Collections.singletonList("public-read"));
                 httpConn = conn.put(pre_signed_put_url, val, headers).connection;
             } else {
                 Map headers=new TreeMap();
-                headers.put("Content-Type", Arrays.asList("text/plain"));
+                headers.put("Content-Type", Collections.singletonList("text/plain"));
                 httpConn = conn.put(location, key, val, headers).connection;
             }
             if(!httpConn.getResponseMessage().equals("OK")) {
@@ -202,7 +202,7 @@ public class S3_PING extends FILE_PING {
         String key=sanitize(clustername) + "/" + sanitize(filename);
         try {
             Map headers=new TreeMap();
-            headers.put("Content-Type", Arrays.asList("text/plain"));
+            headers.put("Content-Type", Collections.singletonList("text/plain"));
             if (usingPreSignedUrls()) {
                 conn.delete(pre_signed_delete_url).connection.getResponseMessage();
             } else {
@@ -223,7 +223,7 @@ public class S3_PING extends FILE_PING {
 
         try {
             Map headers=new TreeMap();
-            headers.put("Content-Type", Arrays.asList("text/plain"));
+            headers.put("Content-Type", Collections.singletonList("text/plain"));
             clustername=sanitize(clustername);
             ListBucketResponse rsp=conn.listBucket(location, clustername, null, null, null);
             if(rsp.entries != null) {
@@ -314,7 +314,7 @@ public class S3_PING extends FILE_PING {
                                        String bucket, String key, long expirationDate) {
         Map headers = new HashMap();
         if (method.equalsIgnoreCase("PUT")) {
-            headers.put("x-amz-acl", Arrays.asList("public-read"));
+            headers.put("x-amz-acl", Collections.singletonList("public-read"));
         }
         return Utils.generateQueryStringAuthentication(awsAccessKey, awsSecretAccessKey, method,
                                                        bucket, key, new HashMap(), headers,
@@ -577,8 +577,8 @@ public class S3_PING extends FILE_PING {
                 throws IOException {
             S3Object object=new S3Object(new byte[]{}, new HashMap());
             headers=headers == null? new HashMap() : new HashMap(headers);
-            headers.put("x-amz-copy-source", Arrays.asList(sourceBucket + "/" + sourceKey));
-            headers.put("x-amz-metadata-directive", Arrays.asList("COPY"));
+            headers.put("x-amz-copy-source", Collections.singletonList(sourceBucket + "/" + sourceKey));
+            headers.put("x-amz-metadata-directive", Collections.singletonList("COPY"));
             return verifyCopy(put(destinationBucket, destinationKey, object, headers));
         }
 
@@ -599,8 +599,8 @@ public class S3_PING extends FILE_PING {
                 throws IOException {
             S3Object object=new S3Object(new byte[]{}, metadata);
             headers=headers == null? new HashMap() : new HashMap(headers);
-            headers.put("x-amz-copy-source", Arrays.asList(sourceBucket + "/" + sourceKey));
-            headers.put("x-amz-metadata-directive", Arrays.asList("REPLACE"));
+            headers.put("x-amz-copy-source", Collections.singletonList(sourceBucket + "/" + sourceKey));
+            headers.put("x-amz-metadata-directive", Collections.singletonList("REPLACE"));
             return verifyCopy(put(destinationBucket, destinationKey, object, headers));
         }
 
@@ -1249,14 +1249,16 @@ public class S3_PING extends FILE_PING {
             }
 
             public void startElement(String uri, String name, String qName, Attributes attrs) {
-                if(name.equals("Contents")) {
-                    this.keyEntry=new ListEntry();
-                }
-                else if(name.equals("Owner")) {
-                    this.keyEntry.owner=new Owner();
-                }
-                else if(name.equals("CommonPrefixes")) {
-                    this.commonPrefixEntry=new CommonPrefixEntry();
+                switch(name) {
+                    case "Contents":
+                        this.keyEntry=new ListEntry();
+                        break;
+                    case "Owner":
+                        this.keyEntry.owner=new Owner();
+                        break;
+                    case "CommonPrefixes":
+                        this.commonPrefixEntry=new CommonPrefixEntry();
+                        break;
                 }
             }
 
@@ -1431,19 +1433,21 @@ public class S3_PING extends FILE_PING {
             }
 
             public void endElement(String uri, String name, String qName) {
-                if(name.equals("Bucket")) {
-                    this.entries.add(this.currBucket);
-                }
-                else if(name.equals("Name")) {
-                    this.currBucket.name=this.currText.toString();
-                }
-                else if(name.equals("CreationDate")) {
-                    try {
-                        this.currBucket.creationDate=this.iso8601Parser.parse(this.currText.toString());
-                    }
-                    catch(ParseException e) {
-                        throw new RuntimeException("Unexpected date format in list bucket output", e);
-                    }
+                switch(name) {
+                    case "Bucket":
+                        this.entries.add(this.currBucket);
+                        break;
+                    case "Name":
+                        this.currBucket.name=this.currText.toString();
+                        break;
+                    case "CreationDate":
+                        try {
+                            this.currBucket.creationDate=this.iso8601Parser.parse(this.currText.toString());
+                        }
+                        catch(ParseException e) {
+                            throw new RuntimeException("Unexpected date format in list bucket output", e);
+                        }
+                        break;
                 }
                 this.currText=new StringBuffer();
             }
@@ -1881,7 +1885,7 @@ public class S3_PING extends FILE_PING {
                                                                Map pathArgs, Map headers, long expirationDate) {
             method = method.toUpperCase(); // Method should always be uppercase
             String canonicalString =
-                makeCanonicalString(method, bucket, key, pathArgs, headers, "" + expirationDate);
+                makeCanonicalString(method, bucket, key, pathArgs, headers, String.valueOf(expirationDate));
             String encodedCanonical = encode(awsSecretAccessKey, canonicalString, true);
             return "http://" + bucket + "." + DEFAULT_HOST + "/" + key + "?" +
                 "AWSAccessKeyId=" + awsAccessKey + "&Expires=" + expirationDate +

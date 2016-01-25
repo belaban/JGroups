@@ -281,8 +281,7 @@ public class SeqnoTest {
             sorted_set.add(num);
         }
 
-        for(int num: sorted_set)
-            range.set(num);
+        sorted_set.forEach(range::set);
 
         int num_set=sorted_set.size();
         System.out.println("set " + num_set + " bits");
@@ -295,8 +294,8 @@ public class SeqnoTest {
     public static void testRemovalFromTreeMap() {
         Map<Seqno,Seqno> map=new TreeMap<>(new SeqnoComparator());
 
-        Seqno[] ranges=new Seqno[]{new SeqnoRange(900,905), new Seqno(222), new Seqno(500),
-                new SeqnoRange(700,800), new Seqno(801), new SeqnoRange(23,200)};
+        Seqno[] ranges={new SeqnoRange(900, 905), new Seqno(222), new Seqno(500),
+          new SeqnoRange(700,800), new Seqno(801), new SeqnoRange(23,200)};
 
         for(Seqno range: ranges)
             map.put(range, range);
@@ -323,8 +322,8 @@ public class SeqnoTest {
     public static void testRemovalFromHashMap() {
         Map<Seqno,Seqno> map=new ConcurrentHashMap<>();
 
-        Seqno[] ranges=new Seqno[]{new SeqnoRange(900,905), new Seqno(222), new SeqnoRange(700,800),
-                new SeqnoRange(23,200), new Seqno(201), new Seqno(205)};
+        Seqno[] ranges={new SeqnoRange(900, 905), new Seqno(222), new SeqnoRange(700, 800),
+          new SeqnoRange(23,200), new Seqno(201), new Seqno(205)};
 
         for(Seqno range: ranges)
             map.put(range, range);

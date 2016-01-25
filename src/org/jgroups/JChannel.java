@@ -94,8 +94,8 @@ public class JChannel extends Channel {
     }
 
     /**
-     * Constructs a <code>JChannel</code> instance with the protocol stack
-     * specified by the <code>DEFAULT_PROTOCOL_STACK</code> member.
+     * Constructs a {@code JChannel} instance with the protocol stack
+     * specified by the {@code DEFAULT_PROTOCOL_STACK} member.
      * @throws Exception If problems occur during the initialization of the protocol stack.
      */
     public JChannel() throws Exception {
@@ -304,9 +304,9 @@ public class JChannel extends Channel {
     
     /**
      * Connects this channel to a group and gets a state from a specified state provider.<p/>
-     * This method invokes <code>connect()</code> and then <code>getState</code>.<p/>
+     * This method invokes {@code connect()} and then {@code getState}.<p/>
      * If the FLUSH protocol is in the channel's stack definition, only one flush round is executed for both connecting and
-     * fetching the state rather than two flushes if we invoke <code>connect</code> and <code>getState</code> in succession.
+     * fetching the state rather than two flushes if we invoke {@code connect} and {@code getState} in succession.
      * <p/>
      * If the channel is already connected, an error message will be printed to the error log.
      * If the channel is closed a ChannelClosed exception will be thrown.
@@ -514,11 +514,7 @@ public class JChannel extends Channel {
      * Retrieves state from the target member. See {@link #getState(Address,long)} for details.
      */
     public void getState(Address target, long timeout, boolean useFlushIfPresent) throws Exception {
-    	Callable<Boolean> flusher = new Callable<Boolean>() {
-			public Boolean call() throws Exception {
-				return Util.startFlush(JChannel.this);
-			}
-		};
+    	Callable<Boolean> flusher =() -> Util.startFlush(JChannel.this);
 		getState(target, timeout, useFlushIfPresent?flusher:null);
 	}
 
@@ -827,8 +823,8 @@ public class JChannel extends Channel {
 
     protected final void init(ProtocolStackConfigurator configurator) throws Exception {
         List<ProtocolConfiguration> configs=configurator.getProtocolStack();
-        for(ProtocolConfiguration config: configs)
-            config.substituteVariables();  // replace vars with system props
+        // replace vars with system props
+        configs.forEach(ProtocolConfiguration::substituteVariables);
 
         prot_stack=new ProtocolStack(this);
         prot_stack.setup(configs); // Setup protocol stack (creates protocol, calls init() on them)
@@ -954,9 +950,9 @@ public class JChannel extends Channel {
     /**
      * Disconnects and closes the channel. This method does the following things
      * <ol>
-     * <li>Calls <code>this.disconnect</code> if the disconnect parameter is true
-     * <li>Calls <code>ProtocolStack.stop</code> on the protocol stack
-     * <li>Calls <code>ProtocolStack.destroy</code> on the protocol stack
+     * <li>Calls {@code this.disconnect} if the disconnect parameter is true
+     * <li>Calls {@code ProtocolStack.stop} on the protocol stack
+     * <li>Calls {@code ProtocolStack.destroy} on the protocol stack
      * <li>Sets the channel closed and channel connected flags to true and false
      * <li>Notifies any channel listener of the channel close operation
      * </ol>
@@ -1100,8 +1096,7 @@ public class JChannel extends Channel {
 
         protected void resetAllStats() {
             List<Protocol> prots=getProtocolStack().getProtocols();
-            for(Protocol prot: prots)
-                prot.resetStatistics();
+            prots.forEach(Protocol::resetStatistics);
             resetStats();
         }
 

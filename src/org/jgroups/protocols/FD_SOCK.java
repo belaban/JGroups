@@ -237,8 +237,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     case FdHeader.UNSUSPECT:
                         if(hdr.mbrs != null) {
                             log.trace("%s: received UNSUSPECT message from %s: mbrs=%s", local_addr, msg.getSrc(), hdr.mbrs);
-                            for(Address tmp: hdr.mbrs)
-                                unsuspect(tmp);
+                            hdr.mbrs.forEach(this::unsuspect);
                         }
                         break;
 
@@ -471,8 +470,8 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         suspects.remove(local_addr);
         final List<Address> eligible_mbrs=new ArrayList<>();
-        for(Address suspect: suspects)
-            suspect_history.add(String.format("%s: %s", new Date(), suspect));
+        suspects.forEach(suspect -> suspect_history.add(String.format("%s: %s", new Date(), suspect)));
+
         suspected_mbrs.addAll(suspects);
         eligible_mbrs.addAll(this.members);
         eligible_mbrs.removeAll(suspected_mbrs);
@@ -604,7 +603,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     /**
-     * Creates a socket to <code>dest</code>, and assigns it to ping_sock. Also assigns ping_input
+     * Creates a socket to {@code dest}, and assigns it to ping_sock. Also assigns ping_input
      */
     protected boolean setupPingSocket(IpAddress dest) {
         synchronized(sock_mutex) {
@@ -759,7 +758,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     /**
-     Attempts to obtain the ping_addr first from the cache, then by unicasting q request to <code>mbr</code>,
+     Attempts to obtain the ping_addr first from the cache, then by unicasting q request to {@code mbr},
      then by multicasting a request to all members.
      */
     protected IpAddress fetchPingAddress(Address mbr) {

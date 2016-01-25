@@ -184,13 +184,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected int internal_thread_pool_min_threads=2;
 
     @Property(name="internal_thread_pool.max_threads",description="Maximum thread pool size for the internal thread pool")
-    protected int internal_thread_pool_max_threads=4;
+    protected int internal_thread_pool_max_threads=100;
 
     @Property(name="internal_thread_pool.keep_alive_time", description="Timeout in ms to remove idle threads from the internal pool")
     protected long internal_thread_pool_keep_alive_time=30000;
 
     @Property(name="internal_thread_pool.queue_enabled", description="Queue to enqueue incoming internal messages")
-    protected boolean internal_thread_pool_queue_enabled=true;
+    protected boolean internal_thread_pool_queue_enabled=false;
 
     @Property(name="internal_thread_pool.queue_max_size",description="Maximum queue size for incoming internal messages")
     protected int internal_thread_pool_queue_max_size=500;
@@ -1393,7 +1393,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(data == null) return;
 
         // drop message from self; it has already been looped back up (https://issues.jboss.org/browse/JGRP-1765)
-        if(local_physical_addr != null && local_physical_addr.equals(sender))
+        if(Objects.equals(local_physical_addr, sender))
             return;
 
         byte flags=data[Global.SHORT_SIZE];
@@ -1682,7 +1682,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
 
             try {
-                if(local_physical_addr == null || !local_physical_addr.equals(target))
+                if(!Objects.equals(local_physical_addr, target))
                     sendUnicast(target, buf, offset, length);
             }
             catch(SocketException sock_ex) {

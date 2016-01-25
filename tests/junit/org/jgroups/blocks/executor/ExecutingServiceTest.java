@@ -118,12 +118,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
                     // channel is now down
                     barrier.await();
                 }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                    assert false : Thread.currentThread().getId() + 
-                        "Exception while waiting: " + e.toString();
-                }
-                catch (BrokenBarrierException e) {
+                catch (InterruptedException | BrokenBarrierException e) {
                     e.printStackTrace();
                     assert false : Thread.currentThread().getId() + 
                         "Exception while waiting: " + e.toString();
@@ -165,7 +160,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         final V _object;
         
         // This constructor shouldn't be used
-        public SimpleCallable(String noUse) {
+        public SimpleCallable(@SuppressWarnings("UnusedParameters") String noUse) {
             throw new UnsupportedOperationException();
         }
         
@@ -546,13 +541,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         int value = 23;
         final Callable<Integer> callable = new SimpleStreamableCallable<>(value);
         ExecutorService service = Executors.newCachedThreadPool();
-        Future<Integer> future = service.submit(new Callable<Integer>() {
-
-            @Override
-            public Integer call() throws InterruptedException, ExecutionException {
-                return e2.submit(callable).get();
-            }
-        });
+        Future<Integer> future = service.submit(() -> e2.submit(callable).get());
         
         // Wait for the message to be almost sent to coordinator
         barrier.await(2, TimeUnit.SECONDS);
@@ -640,12 +629,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
     @Test
     public void testSubmittingNonSerializeCallable() {
         try {
-            e1.submit(new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
-                    return null;
-                }
-            });
+            e1.submit((Callable<Void>)() -> null);
             assert false : "Task was submitted, where as it should have thrown an exception";
         }
         catch (IllegalArgumentException e) {

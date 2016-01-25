@@ -31,10 +31,7 @@ public class PING extends Discovery {
         try {
             sendDiscoveryRequest(cluster_name, members);
         }
-        catch(InterruptedIOException ie) {
-            ;
-        }
-        catch(InterruptedException ex) {
+        catch(InterruptedIOException | InterruptedException ie) {
             ;
         }
         catch(Throwable ex) {

@@ -55,8 +55,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
     /** Invoked after all test classes in this test have been run */
     public void onFinish(ITestContext context) {
         try {
-            for(DataOutputStream out: tests.values())
-                Util.close(out);
+            tests.values().forEach(Util::close);
             tests.clear();
             generateReports();
         }
@@ -219,7 +218,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
         File root_dir=new File(output_dir);
         if(!root_dir.exists())
             throw new IOException(root_dir + " not found");
-        File[] subdirs=root_dir.listFiles(new FileFilter() {public boolean accept(File f) {return f.isDirectory();}});
+        File[] subdirs=root_dir.listFiles(File::isDirectory);
         if(subdirs != null) {
             for(File dir: subdirs) {
                 try {

@@ -4,7 +4,10 @@ import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.blocks.*;
-import org.jgroups.protocols.*;
+import org.jgroups.protocols.SHARED_LOOPBACK;
+import org.jgroups.protocols.SHARED_LOOPBACK_PING;
+import org.jgroups.protocols.TP;
+import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.Protocol;
@@ -17,7 +20,6 @@ import org.testng.annotations.Test;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -88,20 +90,18 @@ public class RpcDispatcherAsyncInvocationTest {
 
         final List<Integer> results=new ArrayList<>(num_invocations);
 
-        FutureListener<Integer> listener=new FutureListener<Integer>() {
-            public void futureDone(Future<Integer> future) {
-                try {
-                    int result=future.get();
-                    results.add(result);
-                    System.out.println("<-- " + result);
-                    if(results.size() == num_invocations) {
-                        synchronized(results) {
-                            results.notifyAll();
-                        }
+        FutureListener<Integer> listener=future -> {
+            try {
+                int result=future.get();
+                results.add(result);
+                System.out.println("<-- " + result);
+                if(results.size() == num_invocations) {
+                    synchronized(results) {
+                        results.notifyAll();
                     }
                 }
-                catch(Exception e) {
-                }
+            }
+            catch(Exception e) {
             }
         };
 

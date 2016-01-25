@@ -138,8 +138,8 @@ abstract public class Executing extends Protocol {
     }
     
     public Executing() {
-        _awaitingReturn = Collections.synchronizedMap(new HashMap<Owner, Runnable>());
-        _running = Collections.synchronizedMap(new HashMap<Runnable, Owner>());
+        _awaitingReturn = Collections.synchronizedMap(new HashMap<>());
+        _running = Collections.synchronizedMap(new HashMap<>());
     }
 
 
@@ -325,14 +325,13 @@ abstract public class Executing extends Protocol {
                                     + (owner.requestId != -1 ? " request id: " + 
                                             owner.requestId : "")
                                     + "]");
-                        final Owner finalOwner = owner;
                         if (type == Type.RESULT_SUCCESS) {
-                            handleValueResponse(local_addr, 
-                                finalOwner.requestId, valueToSend);
+                            handleValueResponse(local_addr,
+                                                owner.requestId, valueToSend);
                         }
                         else if (type == Type.RESULT_EXCEPTION){
-                            handleExceptionResponse(local_addr, 
-                                finalOwner.requestId, (Throwable)valueToSend);
+                            handleExceptionResponse(local_addr,
+                                                    owner.requestId, (Throwable)valueToSend);
                         }
                     }
                     else {
@@ -1088,8 +1087,7 @@ abstract public class Executing extends Protocol {
                 if (other.address != null) return false;
             }
             else if (!address.equals(other.address)) return false;
-            if (requestId != other.requestId) return false;
-            return true;
+            return requestId == other.requestId;
         }
 
         public String toString() {

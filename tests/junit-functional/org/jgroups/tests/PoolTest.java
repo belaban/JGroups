@@ -18,9 +18,7 @@ public class PoolTest {
 
 
     public void testSimpleGet() throws Exception {
-        Pool<Integer> pool=new Pool<>(4, new Pool.Creator<Integer>() {
-            public Integer create() {return (int)Util.random(10);}
-        });
+        Pool<Integer> pool=new Pool<>(4, () -> (int)Util.random(10));
         List<Lock> locks=grab(pool, 3);
         System.out.println("pool = " + pool);
         assert pool.getNumLocked() == 3;
@@ -29,9 +27,7 @@ public class PoolTest {
 
 
     public void testGet() throws Exception {
-        Pool<Integer> pool=new Pool<>(4, new Pool.Creator<Integer>() {
-            public Integer create() {return (int)Util.random(10);}
-        });
+        Pool<Integer> pool=new Pool<>(4, () -> (int)Util.random(10));
 
         List<Lock> locks=grab(pool, 3);
         System.out.println("pool: " + pool);
@@ -46,9 +42,7 @@ public class PoolTest {
     }
 
     public void testGetAndUnlock() {
-        Pool<Integer> pool=new Pool<>(4, new Pool.Creator<Integer>() {
-            public Integer create() {return (int)Util.random(10);}
-        });
+        Pool<Integer> pool=new Pool<>(4, () -> (int)Util.random(10));
         List<Lock> locks=new ArrayList<>(4);
         for(int i=0; i < 4; i++)
             locks.add(pool.get().getLock());
@@ -56,8 +50,7 @@ public class PoolTest {
 
         // the same thread can lock the same lock multiple times
         assert pool.getNumLocked() > 0 && pool.getNumLocked() <= 4;
-        for(Lock lock: locks)
-            lock.unlock();
+        locks.forEach(Lock::unlock);
         System.out.println("pool = " + pool);
         assert pool.getNumLocked() == 0;
     }

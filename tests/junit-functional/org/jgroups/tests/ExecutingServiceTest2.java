@@ -17,7 +17,6 @@ import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -30,10 +29,8 @@ public class ExecutingServiceTest2 {
 
     @AfterMethod
     public void tearDown() {
-        for(Thread thread : threads)
-            thread.interrupt();
-        for(Channel channel : channels)
-            channel.close();
+        threads.forEach(Thread::interrupt);
+        channels.forEach(Channel::close);
     }
 
     @Test
@@ -62,13 +59,10 @@ public class ExecutingServiceTest2 {
 
         final AtomicInteger submittedTasks=new AtomicInteger();
         final AtomicInteger finishedTasks=new AtomicInteger();
-        final FutureListener<Void> listener=new FutureListener<Void>() {
-            @Override
-            public void futureDone(Future<Void> future) {
-                finishedTasks.incrementAndGet();
-                synchronized(ExecutingServiceTest2.this) {
-                    ExecutingServiceTest2.this.notify();
-                }
+        final FutureListener<Void> listener=future -> {
+            finishedTasks.incrementAndGet();
+            synchronized(ExecutingServiceTest2.this) {
+                ExecutingServiceTest2.this.notify();
             }
         };
 

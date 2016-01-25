@@ -27,8 +27,7 @@ public class ReconciliationTest {
 
     @AfterMethod void tearDown() throws Exception {
         if(channels != null)
-            for(Closeable closeable: channels)
-                Util.close(closeable);
+            channels.forEach(Util::close);
     }
 
     /**
@@ -45,19 +44,17 @@ public class ReconciliationTest {
      * </ul>
      */
     public void testReconciliationFlushTriggeredByNewMemberJoin() throws Exception {
-        FlushTrigger t=new FlushTrigger() {
-            public void triggerFlush() {
-                System.out.println("Joining D, this will trigger FLUSH and a subsequent view change to {A,B,C,D}");
-                JChannel newChannel;
-                try {
-                    newChannel=createChannel("X");
-                    newChannel.connect("ReconciliationTest");
-                    channels.add(newChannel);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            };
+        FlushTrigger t=() -> {
+            System.out.println("Joining D, this will trigger FLUSH and a subsequent view change to {A,B,C,D}");
+            JChannel newChannel;
+            try {
+                newChannel=createChannel("X");
+                newChannel.connect("ReconciliationTest");
+                channels.add(newChannel);
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
         };
         reconciliationHelper(new String[]{"A", "B", "C"}, t);
     }
@@ -76,14 +73,11 @@ public class ReconciliationTest {
      * </ul>
      */
     public void testReconciliationFlushTriggeredByManualFlush() throws Exception {
-
-        FlushTrigger t=new FlushTrigger() {
-            public void triggerFlush() {
-                JChannel channel=channels.get(0);
-                boolean rc=Util.startFlush(channel);
-                System.out.println("manual flush success=" + rc);
-                channel.stopFlush();
-            };
+        FlushTrigger t=() -> {
+            JChannel channel=channels.get(0);
+            boolean rc=Util.startFlush(channel);
+            System.out.println("manual flush success=" + rc);
+            channel.stopFlush();
         };
         String apps[]={"A", "B", "C"};
         reconciliationHelper(apps, t);
@@ -103,17 +97,14 @@ public class ReconciliationTest {
      * </ul>
      */
     public void testReconciliationFlushTriggeredByMemberCrashing() throws Exception {
-
-        FlushTrigger t=new FlushTrigger() {
-            public void triggerFlush() {
-                JChannel channel=channels.remove(channels.size() - 1);
-                try {
-                    Util.shutdown(channel);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            };
+        FlushTrigger t=() -> {
+            JChannel channel=channels.remove(channels.size() - 1);
+            try {
+                Util.shutdown(channel);
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
         };
         String apps[]={"A", "B", "C"};
         reconciliationHelper(apps, t);
@@ -161,7 +152,7 @@ public class ReconciliationTest {
         // now last sends 5 messages:
         System.out.println("\n" + lastsName + " sending 5 messages; " + nextToLastName + " will ignore them, but others will receive them");
         for(int i=1;i <= 5;i++)
-            last.send(null, new Integer(i));
+            last.send(null, i);
 
         Util.sleep(1000); // until al messages have been received, this is asynchronous so we need to wait a bit
 

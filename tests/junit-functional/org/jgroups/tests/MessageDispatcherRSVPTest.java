@@ -55,11 +55,11 @@ public class MessageDispatcherRSVPTest {
                                                3000, 5000, "abort");
 
         oob_thread_pool=new ThreadPoolExecutor(5, Math.max(5, NUM/4), 3000, TimeUnit.MILLISECONDS,
-                                                                  new ArrayBlockingQueue<Runnable>(NUM * NUM));
+                                               new ArrayBlockingQueue<>(NUM * NUM));
         oob_thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
 
         thread_pool=new ThreadPoolExecutor(5, Math.max(5, NUM/4), 3000, TimeUnit.MILLISECONDS,
-                                                              new ArrayBlockingQueue<Runnable>(NUM * NUM));
+                                           new ArrayBlockingQueue<>(NUM * NUM));
         thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
 

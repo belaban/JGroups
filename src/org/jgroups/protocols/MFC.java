@@ -147,13 +147,8 @@ public class MFC extends FlowControl {
         super.handleViewChange(mbrs);
 
         Set<Address> keys=new HashSet<>(credits.keys());
-        for(Address key: keys) {
-            if(!mbrs.contains(key))
-                credits.remove(key);
-        }
-
-        for(Address key: mbrs)
-            credits.putIfAbsent(key);
+        keys.stream().filter(key -> !mbrs.contains(key)).forEach(key -> credits.remove(key));
+        mbrs.forEach(key -> credits.putIfAbsent(key));
     }
 
 

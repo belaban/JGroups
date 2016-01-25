@@ -1,25 +1,11 @@
 package org.jgroups.protocols;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.security.auth.Subject;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.login.LoginContext;
-import javax.security.sasl.SaslClientFactory;
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServerFactory;
-
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
-import org.jgroups.auth.sasl.SaslClientCallbackHandler;
-import org.jgroups.auth.sasl.SaslClientContext;
-import org.jgroups.auth.sasl.SaslContext;
-import org.jgroups.auth.sasl.SaslServerContext;
-import org.jgroups.auth.sasl.SaslUtils;
+import org.jgroups.auth.sasl.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.protocols.pbcast.GMS;
@@ -27,6 +13,15 @@ import org.jgroups.protocols.pbcast.GMS.GmsHeader;
 import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
+
+import javax.security.auth.Subject;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.login.LoginContext;
+import javax.security.sasl.SaslClientFactory;
+import javax.security.sasl.SaslException;
+import javax.security.sasl.SaslServerFactory;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * The SASL protocol implements authentication and, if requested by the mech, encryption
@@ -206,9 +201,7 @@ public class SASL extends Protocol {
     }
 
     private void cleanup() {
-        for(SaslContext context : sasl_context.values()) {
-            context.dispose();
-        }
+        sasl_context.values().forEach(SaslContext::dispose);
         sasl_context.clear();
     }
 

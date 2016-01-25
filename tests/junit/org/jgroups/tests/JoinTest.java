@@ -164,7 +164,7 @@ public class JoinTest extends ChannelTestBase {
 
         public MyReceiver(String name) {
             this.name=name;
-            msgs = Collections.synchronizedList(new ArrayList<String>());
+            msgs = Collections.synchronizedList(new ArrayList<>());
         }
 
         public List<String> getMsgs() {
@@ -185,7 +185,7 @@ public class JoinTest extends ChannelTestBase {
     }
 
 
-    protected class DELAY_JOIN_REQ extends Protocol {
+    protected static class DELAY_JOIN_REQ extends Protocol {
         private long        delay=4000;
         private final short gms_id=ClassConfigurator.getProtocolId(GMS.class);
 

@@ -68,7 +68,7 @@ public class PDC extends Protocol {
         switch(evt.getType()) {
             case Event.GET_PHYSICAL_ADDRESS:
                 Object addr=down_prot.down(evt);
-                return addr != null? addr : cache.get((Address)evt.getArg());
+                return addr != null? addr : cache.get(evt.getArg());
 
             case Event.GET_PHYSICAL_ADDRESSES:
                 Collection<PhysicalAddress> addrs=(Collection<PhysicalAddress>)down_prot.down(evt);
@@ -99,12 +99,10 @@ public class PDC extends Protocol {
                 break;
             case Event.VIEW_CHANGE:
                 List<Address> members=((View)evt.getArg()).getMembers();
-                for(Address mbr: cache.keySet()) {
-                    if(!members.contains(mbr)) {
-                        cache.remove(mbr);
-                        removeNodeFromDisk(mbr);
-                    }
-                }
+                cache.keySet().stream().filter(mbr -> !members.contains(mbr)).forEach(mbr -> {
+                    cache.remove(mbr);
+                    removeNodeFromDisk(mbr);
+                });
                 break;
         }
         return down_prot.down(evt);
@@ -124,11 +122,7 @@ public class PDC extends Protocol {
         if(!root_dir.exists())
             throw new IllegalArgumentException("location " + root_dir.getPath() + " could not be accessed");
 
-        filter=new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return name.endsWith(SUFFIX);
-            }
-        };
+        filter=(dir, name1) -> name1.endsWith(SUFFIX);
     }
 
     /** Reads all mappings from disk */

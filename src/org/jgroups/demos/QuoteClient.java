@@ -14,8 +14,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.util.Enumeration;
-import java.util.Hashtable;
+import java.util.Map;
 
 
 /**
@@ -135,41 +134,42 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
         String command=e.getActionCommand();
 
         try {
-            if(command.equals("Get")) {
-                String stock_name=stock_field.getText();
-                if(stock_name == null || stock_name.length() == 0) {
-                    showMsg("Stock name is empty !");
-                    return;
-                }
-                showMsg("Looking up value for " + stock_name + ':');
-                RspList<Object> quotes=disp.callRemoteMethods(null, "getQuote", new Object[]{stock_name},
-                                                               new Class[]{String.class},
-                                                               new RequestOptions(ResponseMode.GET_ALL, 10000));
+            switch(command) {
+                case "Get": {
+                    String stock_name=stock_field.getText();
+                    if(stock_name == null || stock_name.isEmpty()) {
+                        showMsg("Stock name is empty !");
+                        return;
+                    }
+                    showMsg("Looking up value for " + stock_name + ':');
+                    RspList<Object> quotes=disp.callRemoteMethods(null, "getQuote", new Object[]{stock_name},
+                                                                  new Class[]{String.class},
+                                                                  new RequestOptions(ResponseMode.GET_ALL, 10000));
 
-                Float val=null;
-                for(Rsp<Object> rsp: quotes.values()) {
-                    Object quote=rsp.getValue();
-                    if(quote == null || quote instanceof Throwable)
-                        continue;
-                    val=(Float)quote;
+                    Float val=null;
+                    for(Rsp<Object> rsp : quotes.values()) {
+                        Object quote=rsp.getValue();
+                        if(quote == null || quote instanceof Throwable)
+                            continue;
+                        val=(Float)quote;
+                        break;
+                    }
+
+                    if(val != null) {
+                        value_field.setText(val.toString());
+                        clearMsg();
+                    }
+                    else {
+                        value_field.setText("");
+                        showMsg("Value for " + stock_name + " not found");
+                    }
                     break;
                 }
-
-                if(val != null) {
-                    value_field.setText(val.toString());
-                    clearMsg();
-                }
-                else {
-                    value_field.setText("");
-                    showMsg("Value for " + stock_name + " not found");
-                }
-            }
-            else
-                if(command.equals("Set")) {
+                case "Set":
                     String stock_name=stock_field.getText();
                     String stock_val=value_field.getText();
-                    if(stock_name == null || stock_val == null || stock_name.length() == 0 ||
-                            stock_val.length() == 0) {
+                    if(stock_name == null || stock_val == null || stock_name.isEmpty() ||
+                      stock_val.isEmpty()) {
                         showMsg("Stock name and value have to be present to enter a new value");
                         return;
                     }
@@ -179,50 +179,42 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                                            new RequestOptions(ResponseMode.GET_FIRST, 0));
 
                     showMsg("Stock " + stock_name + " set to " + val);
-                }
-                else
-                    if(command.equals("All")) {
-                        listbox.removeAll();
-                        showMsg("Getting all stocks:");
-                        RspList<Object> rsp_list=disp.callRemoteMethods(null, "getAllStocks",
-                                                                        null, null,
-                                                                        new RequestOptions(ResponseMode.GET_ALL, 5000));
+                    break;
+                case "All":
+                    listbox.removeAll();
+                    showMsg("Getting all stocks:");
+                    RspList<Object> rsp_list=disp.callRemoteMethods(null, "getAllStocks",
+                                                                    null, null,
+                                                                    new RequestOptions(ResponseMode.GET_ALL, 5000));
 
-                        System.out.println("rsp_list is " + rsp_list);
+                    System.out.println("rsp_list is " + rsp_list);
 
-                        Hashtable all_stocks=null;
-                        for(Rsp rsp: rsp_list.values()) {
-                            Object obj=rsp.getValue();
-                            if(obj == null || obj instanceof Throwable)
-                                continue;
-                            all_stocks=(Hashtable)obj;
-                            break;
-                        }
-
-                        if(all_stocks == null) {
-                            showMsg("No stocks found");
-                            return;
-                        }
-                        clearMsg();
-                        listbox.removeAll();
-                        String key;
-                        Float val;
-                        for(Enumeration en=all_stocks.keys(); en.hasMoreElements();) {
-                            key=(String)en.nextElement();
-                            val=(Float)all_stocks.get(key);
-                            if(val == null)
-                                continue;
-                            listbox.add(key + ": " + val.toString());
-                        }
+                    Map<String,Float> all_stocks=null;
+                    for(Rsp rsp : rsp_list.values()) {
+                        Object obj=rsp.getValue();
+                        if(obj == null || obj instanceof Throwable)
+                            continue;
+                        all_stocks=(Map<String,Float>)obj;
+                        break;
                     }
-                    else
-                        if(command.equals("Quit")) {
-                            setVisible(false);
-                            channel.close();
-                            System.exit(0);
-                        }
-                        else
-                            System.out.println("Unknown action");
+
+                    if(all_stocks == null) {
+                        showMsg("No stocks found");
+                        return;
+                    }
+                    clearMsg();
+                    listbox.removeAll();
+                    all_stocks.entrySet().stream().filter(entry -> entry.getValue() != null)
+                      .forEach(entry -> listbox.add(entry.getKey() + ": " + entry.getValue().toString()));
+                    break;
+                case "Quit":
+                    setVisible(false);
+                    channel.close();
+                    System.exit(0);
+                default:
+                    System.out.println("Unknown action");
+                    break;
+            }
         }
         catch(Exception ex) {
             value_field.setText("");
@@ -233,7 +225,8 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
 
 
 
-    public void setQuote(String stock_name, Float value) {
+    @SuppressWarnings("UnusedParameters")
+    public static void setQuote(String stock_name, Float value) {
         ;
     }
 

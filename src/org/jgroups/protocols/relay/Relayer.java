@@ -73,12 +73,7 @@ public class Relayer {
         try {
             for(RelayConfig.BridgeConfig bridge_config: bridge_configs) {
                 Bridge bridge=new Bridge(bridge_config.createChannel(), bridge_config.getClusterName(), bridge_name,
-                                         new AddressGenerator() {
-                                             public Address generateAddress() {
-                                                 UUID uuid=UUID.randomUUID();
-                                                 return new SiteUUID(uuid, null, my_site_id);
-                                             }
-                                         });
+                                         () -> new SiteUUID(UUID.randomUUID(), null, my_site_id));
                 bridges.add(bridge);
             }
             for(Bridge bridge: bridges)
@@ -103,8 +98,7 @@ public class Relayer {
      */
     public void stop() {
         done=true;
-        for(Bridge bridge: bridges)
-            bridge.stop();
+        bridges.forEach(Bridge::stop);
         bridges.clear();
     }
 
@@ -154,7 +148,7 @@ public class Relayer {
         if(cluster_name == null || bridges == null)
             return null;
         for(Bridge bridge: bridges) {
-            if(bridge.cluster_name != null && bridge.cluster_name.equals(cluster_name))
+            if(Objects.equals(bridge.cluster_name, cluster_name))
                 return bridge.view;
         }
         return null;
@@ -272,7 +266,7 @@ public class Relayer {
             RouteStatusListener       listener=relay.getRouteStatusListener();
             Map<String,List<Address>> tmp=extract(new_view);
             Set<String>               down=listener != null? new HashSet<>(routes.keySet()) : null;
-            Set<String>               up=listener != null? new HashSet<String>() : null;
+            Set<String>               up=listener != null? new HashSet<>() : null;
 
             if(listener != null)
                 down.removeAll(tmp.keySet());
@@ -283,7 +277,7 @@ public class Relayer {
                 String key=entry.getKey();
                 List<Address> val=entry.getValue();
                 if(!routes.containsKey(key)) {
-                    routes.put(key, new ArrayList<Route>());
+                    routes.put(key, new ArrayList<>());
                     if(up != null)
                         up.add(key);
                 }
@@ -298,10 +292,7 @@ public class Relayer {
                 }
 
                 // Add routes that aren't yet in the routing table:
-                for(Address addr: val) {
-                    if(!contains(list, addr))
-                        list.add(new Route(addr, channel));
-                }
+                val.stream().filter(addr -> !contains(list, addr)).forEach(addr -> list.add(new Route(addr, channel)));
 
                 if(list.isEmpty()) {
                     routes.remove(key);
@@ -321,11 +312,7 @@ public class Relayer {
         }
 
         protected boolean contains(List<Route> routes, Address addr) {
-            for(Route route: routes) {
-                if(route.siteMaster().equals(addr))
-                    return true;
-            }
-            return false;
+            return routes.stream().anyMatch(route -> route.siteMaster().equals(addr));
         }
 
         /** Returns a map containing the site keys and addresses as values */

@@ -1,16 +1,10 @@
 package org.jgroups.auth.sasl;
 
-import java.security.Provider;
-import java.security.Security;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.Set;
-
 import javax.security.sasl.SaslClientFactory;
 import javax.security.sasl.SaslServerFactory;
+import java.security.Provider;
+import java.security.Security;
+import java.util.*;
 
 /**
  * Utility methods for handling SASL authentication
@@ -90,21 +84,17 @@ public final class SaslUtils {
             Provider[] providers = Security.getProviders();
             for (Provider currentProvider : providers) {
                 final ClassLoader cl = Thread.currentThread().getContextClassLoader();
-                for (Object currentKey : currentProvider.keySet()) {
-                    if (currentKey instanceof String && ((String) currentKey).startsWith(filter)
-                            && ((String) currentKey).indexOf(' ') < 0) {
-                        String className = currentProvider.getProperty((String) currentKey);
-                        if (className != null && loadedClasses.add(className)) {
-                            try {
-                                factories.add(Class.forName(className, true, cl).asSubclass(type).newInstance());
-                            } catch (ClassNotFoundException e) {
-                            } catch (ClassCastException e) {
-                            } catch (InstantiationException e) {
-                            } catch (IllegalAccessException e) {
-                            }
+                currentProvider.keySet().stream().filter(currentKey -> currentKey instanceof String && ((String)currentKey).startsWith(filter)
+                  && ((String)currentKey).indexOf(' ') < 0).forEach(currentKey -> {
+                    String className=currentProvider.getProperty((String)currentKey);
+                    if(className != null && loadedClasses.add(className)) {
+                        try {
+                            factories.add(Class.forName(className, true, cl).asSubclass(type).newInstance());
+                        }
+                        catch(ClassNotFoundException | ClassCastException | InstantiationException | IllegalAccessException e) {
                         }
                     }
-                }
+                });
             }
         }
         return factories.iterator();

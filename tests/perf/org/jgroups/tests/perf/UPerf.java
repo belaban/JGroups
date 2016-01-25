@@ -40,7 +40,7 @@ public class UPerf extends ReceiverAdapter {
 
 
     // ============ configurable properties ==================
-    @Property protected boolean sync=true, oob=false;
+    @Property protected boolean sync=true, oob=true;
     @Property protected int     num_threads=25;
     @Property protected int     num_msgs=20000, msg_size=1000;
     @Property protected int     anycast_count=2;
@@ -97,11 +97,7 @@ public class UPerf extends ReceiverAdapter {
         }
 
         disp=new RpcDispatcher(channel, null, this, this);
-        disp.setMethodLookup(new MethodLookup() {
-            public Method findMethod(short id) {
-                return METHODS[id];
-            }
-        });
+        disp.setMethodLookup(id -> METHODS[id]);
         channel.connect(groupname);
         local_addr=channel.getAddress();
 
@@ -177,11 +173,8 @@ public class UPerf extends ReceiverAdapter {
     }
 
     protected void addSiteMastersToMembers() {
-        if(!site_masters.isEmpty()) {
-            for(Address sm: site_masters)
-                if(!members.contains(sm))
-                    members.add(sm);
-        }
+        if(!site_masters.isEmpty())
+            site_masters.stream().filter(sm -> !members.contains(sm)).forEach(members::add);
     }
 
     // =================================== callbacks ======================================
@@ -231,11 +224,12 @@ public class UPerf extends ReceiverAdapter {
         }
     }
 
-    public byte[] get(long key) {
+    public byte[] get(@SuppressWarnings("UnusedParameters") long key) {
         return BUFFER;
     }
 
 
+    @SuppressWarnings("UnusedParameters")
     public void put(long key, byte[] val) {
     }
 
@@ -416,7 +410,7 @@ public class UPerf extends ReceiverAdapter {
 
     protected static List<String> getSites(JChannel channel) {
         RELAY2 relay=(RELAY2)channel.getProtocolStack().findProtocol(RELAY2.class);
-        return relay != null? relay.siteNames() : new ArrayList<String>(0);
+        return relay != null? relay.siteNames() : new ArrayList<>(0);
     }
 
     /** Picks the next member in the view */
@@ -487,7 +481,7 @@ public class UPerf extends ReceiverAdapter {
                 try {
                     if(get) { // sync GET
                         Address target=pickTarget();
-                        if(target != null && target.equals(local_addr)) {
+                        if(Objects.equals(target, local_addr)) {
                             get(1);
                         }
                         else {

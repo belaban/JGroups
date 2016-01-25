@@ -31,17 +31,7 @@ public class StompChat implements StompConnection.Listener {
     private final Set<String>      clients=new HashSet<>();
     protected StompConnection      stomp_client;
 
-    enum Destination {
-        messages("/messages"),
-        client_joined("/client-joined");
 
-        final String name;
-
-        Destination(String name) {
-            this.name=name;
-        }
-    }
-    
     // ======================== reserved topic ==========================
     public static final String    MESSAGES      = "/messages";      // headers + body
     public static final String    CLIENT_JOINED = "/client-joined"; // client: 1234-2532-2665
@@ -226,13 +216,11 @@ public class StompChat implements StompConnection.Listener {
         txtField.setFocusable(true);
         txtField.requestFocusInWindow();
         txtField.setToolTipText("type and then press enter to send");
-        txtField.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                String cmd=e.getActionCommand();
-                if(cmd != null && cmd.length() > 0) {
-                    send(txtField.getText());
-                    txtField.selectAll();
-                }
+        txtField.addActionListener(e -> {
+            String cmd=e.getActionCommand();
+            if(cmd != null && !cmd.isEmpty()) {
+                send(txtField.getText());
+                txtField.selectAll();
             }
         });
 
@@ -296,7 +284,7 @@ public class StompChat implements StompConnection.Listener {
                  newView(view);
              }
              else {
-                 String targets=information.get("endpoints");
+                 String targets=information.get(ENDPOINTS);
                  if(targets != null) {
                      list=Util.parseCommaDelimitedStrings(targets);
                      if(list != null) {
@@ -314,7 +302,7 @@ public class StompChat implements StompConnection.Listener {
      }
 
      public void onMessage(Map<String, String> headers, byte[] buf, int offset, int length) {
-         String destination=headers.get("destination");
+         String destination=headers.get(DESTINATION);
          if(destination == null)
              return;
 

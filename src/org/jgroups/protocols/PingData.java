@@ -12,6 +12,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  * Encapsulates information about a cluster node, e.g. local address, coordinator's address, logical name and
@@ -88,7 +89,7 @@ public class PingData implements SizeStreamable {
         if(!(obj instanceof PingData))
             return false;
         PingData other=(PingData)obj;
-        return sender != null && sender.equals(other.sender);
+        return Objects.equals(sender, other.sender);
     }
 
     public int hashCode() {

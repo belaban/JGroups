@@ -11,7 +11,9 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Test(groups=Global.FUNCTIONAL)
 public class AckCollectorTest {
@@ -174,11 +176,9 @@ public class AckCollectorTest {
 
     public void testSuspect() {
         final AckCollector ac=new AckCollector(list);
-        for(Address member: Arrays.asList(one,four,five))
-            ac.ack(member);
+        Stream.of(one, four,five).forEach(ac::ack);
         System.out.println("ac = " + ac);
-        for(Address suspected: Arrays.asList(two,three))
-            ac.suspect(suspected);
+        Arrays.asList(two, three).forEach(ac::suspect);
         System.out.println("ac = " + ac);
         assert ac.size() == 0;
         assert ac.waitForAllAcks();
@@ -216,7 +216,7 @@ public class AckCollectorTest {
         new Thread() {
             public void run() {
                 Util.sleep(1000);
-                ac.retainAll(Arrays.asList(five));
+                ac.retainAll(Collections.singletonList(five));
                 System.out.println("ac=" + ac);
             }
         }.start();

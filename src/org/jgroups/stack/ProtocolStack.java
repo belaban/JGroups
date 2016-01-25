@@ -526,10 +526,8 @@ public class ProtocolStack extends Protocol {
      * @since 2.1
      */
     public ProtocolStack addProtocols(List<Protocol> prots) {
-        if(prots != null) {
-            for(Protocol prot: prots)
-                addProtocol(prot);
-        }
+        if(prots != null)
+            prots.forEach(this::addProtocol);
         return this;
     }
 
@@ -606,7 +604,8 @@ public class ProtocolStack extends Protocol {
     }
 
 
-    public void insertProtocol(Protocol prot, int position, Class<? extends Protocol> ... neighbor_prots) throws Exception {
+    @SafeVarargs
+    public final void insertProtocol(Protocol prot, int position, Class<? extends Protocol>... neighbor_prots) throws Exception {
         if(neighbor_prots == null) throw new IllegalArgumentException("neighbor_prots is null");
         if(position != ProtocolStack.ABOVE && position != ProtocolStack.BELOW)
             throw new IllegalArgumentException("position has to be ABOVE or BELOW");
@@ -705,7 +704,7 @@ public class ProtocolStack extends Protocol {
         String   prot_name;
         while(tmp != null) {
             prot_name=tmp.getName();
-            if(prot_name != null && prot_name.equals(name))
+            if(Objects.equals(prot_name, name))
                 return tmp;
             tmp=tmp.getDownProtocol();
         }
@@ -832,10 +831,8 @@ public class ProtocolStack extends Protocol {
 
 
     public void destroy() {
-        if(top_prot != null) {
-            for(Protocol prot: getProtocols())
-                prot.destroy();
-        }
+        if(top_prot != null)
+            getProtocols().forEach(Protocol::destroy);
     }
 
 
@@ -866,8 +863,7 @@ public class ProtocolStack extends Protocol {
      */
     public void stopStack(String cluster) {
         if(stopped) return;
-        for(final Protocol prot: getProtocols())
-            prot.stop();
+        getProtocols().forEach(Protocol::stop);
         TP transport=getTransport();
         transport.unregisterProbeHandler(props_handler);
         stopped=true;

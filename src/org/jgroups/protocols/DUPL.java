@@ -115,8 +115,7 @@ public class DUPL extends Protocol {
                         copies.add(msg.copy(true));
                 }
             }
-            for(Message copied_msg: copies)
-                batch.add(copied_msg);
+            copies.forEach(batch::add);
         }
 
         if(!batch.isEmpty())

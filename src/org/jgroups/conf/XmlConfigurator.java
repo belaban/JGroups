@@ -9,14 +9,13 @@ package org.jgroups.conf;
 import org.jgroups.Global;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.stack.Configurator;
+import org.jgroups.util.Util;
 import org.w3c.dom.*;
-import org.xml.sax.EntityResolver;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
-import org.jgroups.stack.Configurator;
-import org.jgroups.util.Util;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -125,22 +124,19 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             }
             
             DocumentBuilder builder = factory.newDocumentBuilder();
-            builder.setEntityResolver(new EntityResolver() {
-
-                public InputSource resolveEntity(String publicId, String systemId) throws IOException {
-                    if (systemId != null && systemId.startsWith("http://www.jgroups.org/schema/JGroups-")) {
-                        String schemaName = systemId.substring("http://www.jgroups.org/".length());                        
-                        InputStream schemaIs = getAsInputStreamFromClassLoader(schemaName);
-                        if (schemaIs == null) {
-                            throw new IOException("Schema not found from classloader: " + schemaName);
-                        }
-                        InputSource source = new InputSource(schemaIs);
-                        source.setPublicId(publicId);
-                        source.setSystemId(systemId);
-                        return source;
+            builder.setEntityResolver((publicId, systemId) -> {
+                if (systemId != null && systemId.startsWith("http://www.jgroups.org/schema/JGroups-")) {
+                    String schemaName = systemId.substring("http://www.jgroups.org/".length());
+                    InputStream schemaIs = getAsInputStreamFromClassLoader(schemaName);
+                    if (schemaIs == null) {
+                        throw new IOException("Schema not found from classloader: " + schemaName);
                     }
-                    return null;
+                    InputSource source = new InputSource(schemaIs);
+                    source.setPublicId(publicId);
+                    source.setSystemId(systemId);
+                    return source;
                 }
+                return null;
             });
             // Use AtomicReference to allow make variable final, not for atomicity
             // We store only last exception

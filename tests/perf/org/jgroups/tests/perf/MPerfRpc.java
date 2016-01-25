@@ -109,11 +109,7 @@ public class MPerfRpc extends ReceiverAdapter {
         channel=new JChannel(props);
         channel.setName(name);
         disp=new RpcDispatcher(channel, null, this, this);
-        disp.setMethodLookup(new MethodLookup() {
-            public Method findMethod(short id) {
-                return METHODS[id];
-            }
-        });
+        disp.setMethodLookup(id -> METHODS[id]);
         disp.setRequestMarshaller(new MperfMarshaller());
         disp.setResponseMarshaller(new MperfMarshaller());
 
@@ -201,10 +197,10 @@ public class MPerfRpc extends ReceiverAdapter {
         }
 
         long total_msgs=0, total_time=0, num=0;
-        for(Result result: tmp_results.values()) {
-            if(result != null) {
-                total_time+=result.time;
-                total_msgs+=result.msgs;
+        for(Result res: tmp_results.values()) {
+            if(res != null) {
+                total_time+=res.time;
+                total_msgs+=res.msgs;
                 num++;
             }
         }
@@ -320,12 +316,12 @@ public class MPerfRpc extends ReceiverAdapter {
         // as the time the first message was received and the time the last message was received
         if(all_done && result_collector != null) {
             long start=0, stop=0, msgs=0;
-            for(Stats result: received_msgs.values()) {
-                if(result.start > 0)
-                    start=start == 0? result.start : Math.min(start, result.start);
-                if(result.stop > 0)
-                    stop=stop == 0? result.stop : Math.max(stop, result.stop);
-                msgs+=result.num_msgs_received;
+            for(Stats res: received_msgs.values()) {
+                if(res.start > 0)
+                    start=start == 0? res.start : Math.min(start, res.start);
+                if(res.stop > 0)
+                    stop=stop == 0? res.stop : Math.max(stop, res.stop);
+                msgs+=res.num_msgs_received;
             }
             Result tmp_result=new Result(stop-start, msgs);
             try {
@@ -350,8 +346,7 @@ public class MPerfRpc extends ReceiverAdapter {
     }
 
     public void clearResults() { // 4
-        for(Stats result: received_msgs.values())
-            result.reset();
+        received_msgs.values().forEach(Stats::reset);
         total_received_msgs.set(0);
         last_interval=0;
     }
@@ -386,8 +381,7 @@ public class MPerfRpc extends ReceiverAdapter {
     }
 
     public void configRsp(Configuration cfg) { // 7
-        for(ConfigChange change: cfg.changes)
-            configChange(change);
+        cfg.changes.forEach(this::configChange);
     }
 
     public void exit() { // 8

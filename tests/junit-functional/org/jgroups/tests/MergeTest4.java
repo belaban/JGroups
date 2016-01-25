@@ -618,8 +618,7 @@ public class MergeTest4 {
     protected void injectMergeEvents(List<Event> events, JChannel ... channels) {
         for(JChannel ch: channels) {
             MERGE3 merge=(MERGE3)ch.getProtocolStack().findProtocol(MERGE3.class);
-            for(Event evt: events)
-                merge.up(evt);
+            events.forEach(merge::up);
         }
     }
 

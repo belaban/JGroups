@@ -45,11 +45,7 @@ public class MethodCallTest {
         }
     }
 
-    public static final MethodLookup lookup=new MethodLookup() {
-        public Method findMethod(short id) {
-            return methods.get(id);
-        }
-    };
+    public static final MethodLookup lookup=methods::get;
 
     public static class TargetClass {
         public static boolean foo(int a, String b) {
@@ -88,7 +84,7 @@ public class MethodCallTest {
 
 
     public void testMethod() throws Exception {
-        Method m=TargetClass.class.getMethod("foo", new Class[]{int.class, String.class});
+        Method m=TargetClass.class.getMethod("foo", int.class, String.class);
         MethodCall mc=new MethodCall(m,22, "Bela");
         Assert.assertEquals(mc.invoke(target),Boolean.TRUE);
     }
@@ -198,7 +194,7 @@ public class MethodCallTest {
 
 
     public static void testMETHOD() throws Exception {
-        Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
+        Method method = Target.class.getMethod("someMethod", String.class);
         MethodCall methodCall = new MethodCall(method, "abc");
         Target target = new Target();
         Object result = methodCall.invoke(target);
@@ -207,7 +203,7 @@ public class MethodCallTest {
 
 
     public static void testInheritanceMETHOD() throws Exception {
-        Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
+        Method method = Target.class.getMethod("someMethod", String.class);
         MethodCall methodCall = new MethodCall(method, "abc");
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
@@ -284,7 +280,7 @@ public class MethodCallTest {
     }
 
     public static void testMarshallingMETHOD() throws Exception {
-        Method m=TargetClass.class.getMethod("foo", new Class[]{int.class, String.class});
+        Method m=TargetClass.class.getMethod("foo", int.class, String.class);
         MethodCall mc=new MethodCall(m,22, "Bela");
         MethodCall call2=marshalAndUnmarshal(mc);
         System.out.println("call2 = " + call2);

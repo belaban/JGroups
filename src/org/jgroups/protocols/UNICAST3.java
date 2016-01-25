@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 
 
 /**
@@ -127,19 +128,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected static final Message         DUMMY_OOB_MSG=new Message().setFlag(Message.Flag.OOB);
 
-    protected final Filter<Message> drop_oob_and_dont_loopback_msgs_filter=new Filter<Message>() {
-        public boolean accept(Message msg) {
-            return msg != null && msg != DUMMY_OOB_MSG
-              && (!msg.isFlagSet(Message.Flag.OOB) || msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
-              && !(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK) && local_addr != null && local_addr.equals(msg.src()));
-        }
-    };
+    protected final Predicate<Message>     drop_oob_and_dont_loopback_msgs_filter=(msg) ->
+      msg != null && msg != DUMMY_OOB_MSG
+        && (!msg.isFlagSet(Message.Flag.OOB) || msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
+        && !(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK) && local_addr != null && local_addr.equals(msg.src()));
 
-    protected static final Filter<Message> dont_loopback_filter=new Filter<Message>() {
-        public boolean accept(Message msg) {
-            return msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
-        }
-    };
+    protected static final Predicate<Message> dont_loopback_filter=
+      msg -> msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
 
 
     public void setMaxMessageBatchSize(int size) {
@@ -415,7 +410,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                     case Header.DATA:      // received regular message
                         if(log.isTraceEnabled())
                             log.trace("%s <-- DATA(%s: #%d, conn_id=%d%s)", local_addr, sender, hdr.seqno, hdr.conn_id, hdr.first? ", first" : "");
-                        if(local_addr != null && local_addr.equals(sender))
+                        if(Objects.equals(local_addr, sender))
                             handleDataReceivedFromSelf(sender, hdr.seqno, msg);
                         else
                             handleDataReceived(sender, hdr.seqno, hdr.conn_id, hdr.first, msg, evt);
@@ -639,8 +634,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
                 if(!non_members.isEmpty()) {
                     log.trace("%s: closing connections of non members %s", local_addr, non_members);
-                    for(Address non_mbr: non_members)
-                        closeConnection(non_mbr);
+                    non_members.forEach(this::closeConnection);
                 }
                 if(!new_members.isEmpty()) {
                     for(Address mbr: new_members) {

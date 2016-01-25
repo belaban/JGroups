@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
- * <code>STATE_SOCK</code> has the state provider create a server socket to which the state
+ * {@code STATE_SOCK} has the state provider create a server socket to which the state
  * requester connects and from which the latter reads the state.
  * <p/>
  * When implementing {@link org.jgroups.MessageListener#getState(java.io.OutputStream)}, the state should be written in
@@ -202,11 +202,7 @@ public class STATE_SOCK extends StreamingStateTransfer {
                 try {
                     final Socket socket=serverSocket.accept();
                     try {
-                        pool.execute(new Runnable() {
-                            public void run() {
-                                process(socket);
-                            }
-                        });
+                        pool.execute(() -> process(socket));
                     }
                     catch(RejectedExecutionException rejected) {
                         Util.close(socket);

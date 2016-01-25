@@ -85,8 +85,7 @@ public class RSVP extends Protocol {
 
     public void stop() {
         stopResendTask();
-        for(Entry entry: ids.values())
-            entry.destroy();
+        ids.values().forEach(Entry::destroy);
         ids.clear();
         super.stop();
     }

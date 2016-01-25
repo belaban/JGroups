@@ -50,15 +50,11 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
 
     private HashFunction<K> hash_function=null;
 
-    private HashFunctionFactory<K> hash_function_factory=new HashFunctionFactory<K>() {
-        public HashFunction<K> create() {
-            return new ConsistentHashFunction<>();
-        }
-    };
+    private HashFunctionFactory<K> hash_function_factory=ConsistentHashFunction::new;
 
-    private Set<MembershipListener> membership_listeners=new HashSet<>();
+    private final Set<MembershipListener> membership_listeners=new HashSet<>();
 
-    private Set<ChangeListener> change_listeners=new HashSet<>();
+    private final Set<ChangeListener> change_listeners=new HashSet<>();
 
     /** On a view change, if a member P1 detects that for any given key K, P1 is not the owner of K, then
      * it will compute the new owner P2 and transfer ownership for all Ks for which P2 is the new owner. P1
@@ -269,12 +265,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
         RpcDispatcher.Marshaller marshaller=new CustomMarshaller();
         disp.setRequestMarshaller(marshaller);
         disp.setResponseMarshaller(marshaller);
-        disp.setMethodLookup(new MethodLookup() {
-            public Method findMethod(short id) {
-                return methods.get(id);
-            }
-        });
-
+        disp.setMethodLookup(methods::get);
         ch.connect(cluster_name);
         local_addr=ch.getAddress();
         view=ch.getView();
@@ -561,8 +552,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
     public void _removeMany(Set<K> keys) {
         if(log.isTraceEnabled())
             log.trace("_removeMany(): " + keys.size() + " entries");
-        for(K key: keys)
-            _remove(key);
+        keys.forEach(this::_remove);
     }
 
 
@@ -583,11 +573,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
             l.viewAccepted(new_view);
 
         if(old_nodes != null) {
-            timer.schedule(new Runnable() {
-                public void run() {
-                    rebalance(old_nodes, new ArrayList<>(new_view.getMembers()));
-                }
-            }, 100, TimeUnit.MILLISECONDS);
+            timer.schedule((Runnable)() -> rebalance(old_nodes, new ArrayList<>(new_view.getMembers())), 100, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -768,12 +754,12 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
     }
 
 
-    public static interface ChangeListener {
+    public interface ChangeListener {
         void changed();
     }
     
     public static class ConsistentHashFunction<K> implements HashFunction<K> {
-        private SortedMap<Short,Address> nodes=new TreeMap<>();
+        private final SortedMap<Short,Address> nodes=new TreeMap<>();
         private final static int HASH_SPACE=2048; // must be > max number of nodes in a cluster and a power of 2
         private final static int FACTOR=3737; // to better spread the node out across the space
 

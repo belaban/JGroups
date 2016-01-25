@@ -335,8 +335,7 @@ public class MPerf extends ReceiverAdapter {
                 break;
 
             case MPerfHeader.CLEAR_RESULTS:
-                for(Stats result: received_msgs.values())
-                    result.reset();
+                received_msgs.values().forEach(Stats::reset);
                 total_received_msgs.set(0);
                 last_interval=0;
 
@@ -481,8 +480,7 @@ public class MPerf extends ReceiverAdapter {
     }
 
     protected void handleConfigResponse(Configuration cfg) {
-        for(ConfigChange change: cfg.changes)
-            handleConfigChange(change);
+        cfg.changes.forEach(this::handleConfigChange);
     }
 
 

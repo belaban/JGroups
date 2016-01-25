@@ -64,11 +64,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
         if(name != null)
             channel.setName(name);
         disp=new RpcDispatcher(channel, null, this, this);
-        disp.setMethodLookup(new MethodLookup() {
-            public Method findMethod(short id) {
-                return METHODS[id];
-            }
-        });
+        disp.setMethodLookup(id -> METHODS[id]);
         disp.setRequestMarshaller(new CustomMarshaller());
         channel.connect(groupname);
         local_addr=channel.getAddress();
@@ -93,7 +89,8 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
 
-    public void receiveData(byte[] buffer) {
+    // called via reflection (RpcDispatcher)
+    public void receiveData(@SuppressWarnings("UnusedParameters") byte[] buffer) {
     }
 
 

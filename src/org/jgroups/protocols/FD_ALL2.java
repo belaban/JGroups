@@ -298,8 +298,7 @@ public class FD_ALL2 extends Protocol {
             timestamps.keySet().retainAll(mbrs);
         }
 
-        for(Address member: mbrs)
-            update(member);
+        mbrs.forEach(this::update);
 
         if(mbrs.size() > 1) {
             startHeartbeatSender();

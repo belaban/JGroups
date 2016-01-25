@@ -23,7 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author Bela Ban
  */
-public abstract class Request implements NotifyingFuture, org.jgroups.util.Condition {
+public abstract class Request implements NotifyingFuture {
     protected static final Log        log=LogFactory.getLog(Request.class);
 
     protected final Lock              lock=new ReentrantLock();
@@ -96,10 +96,6 @@ public abstract class Request implements NotifyingFuture, org.jgroups.util.Condi
     public abstract void siteUnreachable(String site);
 
     public abstract void transportClosed();
-
-    public boolean isMet() {
-        return responsesComplete();
-    }
 
     protected abstract boolean responsesComplete();
 
@@ -175,10 +171,10 @@ public abstract class Request implements NotifyingFuture, org.jgroups.util.Condi
     @GuardedBy("lock")
     protected boolean waitForResults(final long timeout)  {
         if(timeout <= 0) {
-            cond.waitFor(this);
+            cond.waitFor(this::responsesComplete);
             return true;
         }
-        return cond.waitFor(this, timeout, TimeUnit.MILLISECONDS);
+        return cond.waitFor(this::responsesComplete, timeout, TimeUnit.MILLISECONDS);
     }
 
 

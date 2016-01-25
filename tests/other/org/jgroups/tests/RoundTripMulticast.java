@@ -22,7 +22,7 @@ public class RoundTripMulticast extends ReceiverAdapter {
     int num=1000;
     int msg_size=10;
     boolean server=false;
-    final byte[] RSP_BUF=new byte[]{1}; // 1=response
+    final byte[] RSP_BUF={1}; // 1=response
     int   num_responses=0;
     final Object mutex=new Object();
     IpAddress local_addr;
@@ -60,22 +60,18 @@ public class RoundTripMulticast extends ReceiverAdapter {
 
 
         if(server) {
-            Receiver r=new Receiver() {
-                public void receive(byte[] buf, int offset, int length, InetAddress sender, int sender_port) {
-                    ByteBuffer buffer=ByteBuffer.wrap(buf, offset, length);
-                    byte r=buffer.get();
-                    // System.out.println("received " + (r == 0? "request" : "response"));
-                    short len=buffer.getShort();
-                    byte[] tmp=new byte[len];
-                    buffer.get(tmp, 0, len);
-                    try {
-                        IpAddress real_sender=(IpAddress)Util.streamableFromByteBuffer(IpAddress.class, tmp);
-                        DatagramPacket packet=new DatagramPacket(RSP_BUF, 0, RSP_BUF.length, real_sender.getIpAddress(), real_sender.getPort());
-                        ucast_sock.send(packet); // send the response via DatagramSocket
-                    }
-                    catch(Exception e) {
-                        e.printStackTrace();
-                    }
+            Receiver r=(buf, offset, length, sender, sender_port) -> {
+                ByteBuffer buffer=ByteBuffer.wrap(buf, offset, length);
+                short len=buffer.getShort();
+                byte[] tmp=new byte[len];
+                buffer.get(tmp, 0, len);
+                try {
+                    IpAddress real_sender=(IpAddress)Util.streamableFromByteBuffer(IpAddress.class, tmp);
+                    DatagramPacket packet=new DatagramPacket(RSP_BUF, 0, RSP_BUF.length, real_sender.getIpAddress(), real_sender.getPort());
+                    ucast_sock.send(packet); // send the response via DatagramSocket
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
                 }
             };
             ReceiverThread rt=new ReceiverThread(r, mcast_recv_sock);
@@ -121,25 +117,20 @@ public class RoundTripMulticast extends ReceiverAdapter {
         byte[] array=buffer.array();
 
         ReceiverThread mcast_receiver=new ReceiverThread(
-                new Receiver() {
-                    public void receive(byte[] buffer, int offset, int length, InetAddress sender, int sender_port) {
-                        // System.out.println("mcast from " + sender + ":" + sender_port + " was discarded");
-                    }
-                },
+          (buffer1, offset, length1, sender, sender_port) -> {
+              // System.out.println("mcast from " + sender + ":" + sender_port + " was discarded");
+          },
                 mcast_recv_sock
         );
         mcast_receiver.start();
 
         ReceiverThread ucast_receiver=new ReceiverThread(
-                new Receiver() {
-                    public void receive(byte[] buffer, int offset, int length, InetAddress sender, int sender_port) {
-                        synchronized(mutex) {
-                            num_responses++;
-                            mutex.notify();
-                        }
-                    }
-                },
-                ucast_sock);
+          (buffer1, offset, length1, sender, sender_port) -> {
+              synchronized(mutex) {
+                  num_responses++;
+                  mutex.notify();
+              }
+          }, ucast_sock);
         ucast_receiver.start();
 
         start=System.currentTimeMillis();

@@ -266,9 +266,7 @@ public class StompConnection implements Runnable {
                         continue;
                     }
 
-                    for (ConnectionCallback cb : callbacks) {
-                        cb.onConnect();
-                    }
+                    callbacks.forEach(ConnectionCallback::onConnect);
                 }
 
                 STOMP.Frame frame=STOMP.readFrame(in);
@@ -355,9 +353,7 @@ public class StompConnection implements Runnable {
                     connectToDestination(dest);
                     sendConnect();
                 }
-                for(String subscription: subscriptions) {
-                    sendSubscribe(subscription);
-                }
+                subscriptions.forEach(this::sendSubscribe);
 
                 log.info("Connected to " + dest);
                 break;
@@ -406,12 +402,12 @@ public class StompConnection implements Runnable {
         return sock != null && sock.isConnected() && !sock.isClosed();
     }
 
-    public static interface Listener {
+    public interface Listener {
         void onMessage(Map<String,String> headers, byte[] buf, int offset, int length);
         void onInfo(Map<String,String> information);
     }
 
-    public static interface ConnectionCallback {
+    public interface ConnectionCallback {
         void onConnect();
     }
 

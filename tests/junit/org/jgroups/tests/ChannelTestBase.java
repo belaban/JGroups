@@ -1,9 +1,15 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
+import org.jgroups.Channel;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.*;
+import org.jgroups.protocols.BasicTCP;
+import org.jgroups.protocols.TCPPING;
+import org.jgroups.protocols.TP;
+import org.jgroups.protocols.UDP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ResourceManager;
@@ -11,13 +17,11 @@ import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 import org.testng.annotations.*;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.InetAddress;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Bela Ban
@@ -205,10 +209,13 @@ public class ChannelTestBase {
                 if (ping == null)
                     throw new IllegalStateException("TCP stack must consist of TCP:TCPPING - other config are not supported");
 
-                List<String> initial_hosts = new LinkedList<>();
-                for (short port : ports) {
-                    initial_hosts.add(bind_addr + "[" + port + "]");
-                }
+                List<String> initial_hosts=ports.stream().map(port -> String.format("%s[%d]", bind_addr, port))
+                  .collect(Collectors.toList());
+
+                //initial_hosts=ports.stream().collect(ArrayList::new,
+                //                                   (list, port) -> list.add(String.format("%s[%d]", bind_addr, port)),
+                //                                 (l,r) -> {}
+
                 String tmp = Util.printListWithDelimiter(initial_hosts, ",", 2000, false);
                 List<PhysicalAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 0);
                 ((TCPPING)ping).setInitialHosts(init_hosts);
@@ -220,17 +227,17 @@ public class ChannelTestBase {
 
   
 
-    interface EventSequence {
-        /** Return an event string. Events are translated as follows: get state='g', set state='s',
-         *  block='b', unlock='u', view='v' */
+    /*interface EventSequence {
+        *//** Return an event string. Events are translated as follows: get state='g', set state='s',
+         *  block='b', unlock='u', view='v' *//*
         String getEventSequence();
         String getName();
-    }
+    }*/
 
     /**
      * Base class for all aplications using channel
      */
-    protected abstract class ChannelApplication extends ReceiverAdapter implements EventSequence, Runnable {
+/*    protected abstract class ChannelApplication extends ReceiverAdapter implements EventSequence, Runnable {
         protected Channel channel;
         protected Thread thread;
         protected Throwable exception;
@@ -252,11 +259,11 @@ public class ChannelTestBase {
             channel.setReceiver(this);
         }
 
-        /**
+        *//**
          * Method allowing implementation of specific test application level logic
          * 
          * @throws Exception
-         */
+         *//*
         protected abstract void useChannel() throws Exception;
 
         public void run() {
@@ -306,6 +313,6 @@ public class ChannelTestBase {
         public void   setState(InputStream istream) throws Exception  {events.append('s');}
         public void   unblock()                                       {events.append('u');}
         public void   viewAccepted(View new_view)                     {events.append('v');}
-    }
+    }*/
 
 }

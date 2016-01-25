@@ -113,38 +113,36 @@ public class Cache<K,V> {
             if(rc) {
                 if(log.isTraceEnabled())
                     log.trace("reaping: max_num_entries=" + max_num_entries + ", size=" + map.size());
-                timer.execute(new Runnable() {
-                    public void run() {
-                        if(max_num_entries > 0) {
-                            try {
-                                if(map.size() > max_num_entries) {
-                                    evict(); // see if we can gracefully evict expired items
+                timer.execute(() -> {
+                    if(max_num_entries > 0) {
+                        try {
+                            if(map.size() > max_num_entries) {
+                                evict(); // see if we can gracefully evict expired items
+                            }
+                            if(map.size() > max_num_entries) {
+                                // still too many entries: now evict entries based on insertion time: oldest first
+                                int diff=map.size() - max_num_entries; // we have to evict diff entries
+                                SortedMap<Long,K> tmp=new TreeMap<>();
+                                for(Map.Entry<K,Value<V>> entry: map.entrySet()) {
+                                    tmp.put(entry.getValue().insertion_time, entry.getKey());
                                 }
-                                if(map.size() > max_num_entries) {
-                                    // still too many entries: now evict entries based on insertion time: oldest first
-                                    int diff=map.size() - max_num_entries; // we have to evict diff entries
-                                    SortedMap<Long,K> tmp=new TreeMap<>();
-                                    for(Map.Entry<K,Value<V>> entry: map.entrySet()) {
-                                        tmp.put(entry.getValue().insertion_time, entry.getKey());
-                                    }
 
-                                    Collection<K> vals=tmp.values();
-                                    for(K k: vals) {
-                                        if(diff-- > 0) {
-                                            Value<V> v=map.remove(k);
-                                            if(log.isTraceEnabled())
-                                                log.trace("evicting " + k + ": " + v.value);
-                                        }
-                                        else
-                                            break;
+                                Collection<K> vals=tmp.values();
+                                for(K k: vals) {
+                                    if(diff-- > 0) {
+                                        Value<V> v=map.remove(k);
+                                        if(log.isTraceEnabled())
+                                            log.trace("evicting " + k + ": " + v.value);
                                     }
+                                    else
+                                        break;
                                 }
-                                if(log.isTraceEnabled())
-                                    log.trace("done reaping (size=" + map.size() + ")");
                             }
-                            finally {
-                                is_reaping.set(false);
-                            }
+                            if(log.isTraceEnabled())
+                                log.trace("done reaping (size=" + map.size() + ")");
+                        }
+                        finally {
+                            is_reaping.set(false);
                         }
                     }
                 });

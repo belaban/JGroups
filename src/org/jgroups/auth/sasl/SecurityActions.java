@@ -28,20 +28,10 @@ final class SecurityActions {
    }
 
    static String getSystemProperty(final String name) {
-      return doPrivileged(new PrivilegedAction<String>() {
-         @Override
-         public String run() {
-            return System.getProperty(name);
-         }
-      });
+      return doPrivileged(() -> System.getProperty(name));
    }
 
    public static Properties getSystemProperties() {
-      return doPrivileged(new PrivilegedAction<Properties>() {
-         @Override
-         public Properties run() {
-            return System.getProperties();
-         }
-      });
+      return doPrivileged(System::getProperties);
    }
 }

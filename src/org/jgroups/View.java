@@ -132,7 +132,7 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
         if(mbr == null || members == null)
             return false;
         for(Address member: members)
-            if(member != null && member.equals(mbr))
+            if(Objects.equals(member, mbr))
                 return true;
         return false;
     }

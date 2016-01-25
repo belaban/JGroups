@@ -5,6 +5,7 @@ package org.jgroups.util;
 import org.jgroups.Address;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -105,7 +106,7 @@ public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<
     public void addNotReceived(Address sender) {
         Rsp<T> rsp=get(sender);
         if(rsp == null)
-            rsps.put(sender, new Rsp<T>(sender));
+            rsps.put(sender, new Rsp<>(sender));
     }
 
 
@@ -161,12 +162,7 @@ public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<
 
 
     public List<Address> getSuspectedMembers() {
-        List<Address> retval=new ArrayList<>();
-        for(Rsp<T> rsp: values()) {
-            if(rsp.wasSuspected())
-                retval.add(rsp.getSender());
-        }
-        return retval;
+        return values().stream().filter(Rsp::wasSuspected).map(Rsp::getSender).collect(Collectors.toList());
     }
 
 
