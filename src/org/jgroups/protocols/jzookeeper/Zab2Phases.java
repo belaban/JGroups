@@ -186,10 +186,10 @@ public class Zab2Phases extends Protocol {
 				reset(msg.getSrc());
 				break;
 			case Zab2PhasesHeader.FORWARD:
-				if (!stats.isWarmup()) {
-					stats.addLatencyProposalST(hdr.getMessageId(),
-							System.nanoTime());
-				}
+//				if (!stats.isWarmup()) {
+//					stats.addLatencyProposalST(hdr.getMessageId(),
+//							System.nanoTime());
+//				}
 				queuedMessages.add(hdr);
 				break;
 			case Zab2PhasesHeader.PROPOSAL:
@@ -407,8 +407,8 @@ public class Zab2Phases extends Protocol {
 				long stp = System.nanoTime();
 				hdrReq.getMessageId().setStartLToFP(stp);
 				hdrReq.getMessageId().setStartTime(stp);
-				stats.addLatencyProposalForwardST(hdrReq.getMessageId(),
-						System.nanoTime());
+//				stats.addLatencyProposalForwardST(hdrReq.getMessageId(),
+//						System.nanoTime());
 			}
 			queuedMessages.add(hdrReq);
 		} else {
@@ -677,22 +677,22 @@ public class Zab2Phases extends Protocol {
 				outstandingProposals.put(new_zxid, p);
 				queuedProposalMessage.put(new_zxid, hdrProposal);
 				// log.error("Yes I am Zab2Phases");
-				if (!stats.isWarmup()) {
-					Long st = stats.getLatencyProposalST(hdrReq.getMessageId());
-					if (st != null) {
-						stats.removeLatencyProposalST(hdrReq.getMessageId());
-						stats.addLatencyProp((int) (System.nanoTime() - st));
-					} else {
-						Long stL = stats.getLatencyProposalForwardST(hdrReq
-								.getMessageId());
-						if (stL != null) {
-							stats.removeLatencyProposalForwardST(hdrReq
-									.getMessageId());
-							stats.addLatencyPropForward((int) (System
-									.nanoTime() - stL));
-						}
-					}
-				}
+//				if (!stats.isWarmup()) {
+//					Long st = stats.getLatencyProposalST(hdrReq.getMessageId());
+//					if (st != null) {
+//						stats.removeLatencyProposalST(hdrReq.getMessageId());
+//						stats.addLatencyProp((int) (System.nanoTime() - st));
+//					} else {
+//						Long stL = stats.getLatencyProposalForwardST(hdrReq
+//								.getMessageId());
+//						if (stL != null) {
+//							stats.removeLatencyProposalForwardST(hdrReq
+//									.getMessageId());
+//							stats.addLatencyPropForward((int) (System
+//									.nanoTime() - stL));
+//						}
+//					}
+//				}
 
 				try {
 

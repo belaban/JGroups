@@ -34,6 +34,8 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.protocols.jzookeeper.Zab.FollowerMessageHandler;
+import org.jgroups.protocols.jzookeeper.Zab.MessageHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
@@ -49,8 +51,9 @@ import org.jgroups.util.MessageBatch;
 		private final static String ProtocolName = "ZabCoinTossing";
 		private final static int numberOfSenderInEachClient = 20;
 		protected final AtomicLong        zxid=new AtomicLong(0);
-	    private ExecutorService executor;
-	    protected Address                           local_addr;
+		private ExecutorService executor1;
+		private ExecutorService executor2;
+		protected Address                           local_addr;
 	    protected volatile Address                  leader;
 	    protected volatile View                     view;
 	    protected volatile boolean                  is_leader=false;
@@ -60,6 +63,7 @@ import org.jgroups.util.MessageBatch;
 		private Map<Long, ZabCoinTossingHeader> queuedCommitMessage = new HashMap<Long, ZabCoinTossingHeader>();
 	    private final LinkedBlockingQueue<ZabCoinTossingHeader> queuedMessages =
 		        new LinkedBlockingQueue<ZabCoinTossingHeader>();
+		private final LinkedBlockingQueue<ZabCoinTossingHeader> delivery = new LinkedBlockingQueue<ZabCoinTossingHeader>();
 		private ConcurrentMap<Long, Proposal> outstandingProposals = new ConcurrentHashMap<Long, Proposal>();
 	    private final Map<Long, ZabCoinTossingHeader> queuedProposalMessage = Collections.synchronizedMap(new HashMap<Long, ZabCoinTossingHeader>());
 	    private final Map<MessageId, Message> messageStore = Collections.synchronizedMap(new HashMap<MessageId, Message>());
@@ -102,7 +106,7 @@ import org.jgroups.util.MessageBatch;
 		private int longWait = Integer.MIN_VALUE;
 		private volatile boolean makeAllFollowersAck=false;
 		private List<Address>  clients = Collections.synchronizedList(new ArrayList<Address>());
-		private ProtocolStats stats;
+		private ProtocolStats stats = new ProtocolStats();
 		public ZabCoinTossing(){
 	    	
 	    }
@@ -118,8 +122,8 @@ import org.jgroups.util.MessageBatch;
 		    log.setLevel("trace");
 	        //if (zabMembers.contains(local_addr)){
 		        running=true;        
-			    executor = Executors.newSingleThreadExecutor();
-			    executor.execute(new FollowerMessageHandler(this.id));	   
+		        executor1 = Executors.newSingleThreadExecutor();
+				executor1.execute(new FollowerMessageHandler(this.id));   
 	    }
 	    
 	    
@@ -197,7 +201,9 @@ import org.jgroups.util.MessageBatch;
 	    @Override
 	    public void stop() {
 	        running=false;
-	        executor.shutdown();
+			running = false;
+			executor1.shutdown();
+			executor2.shutdown();
 	        super.stop();
 	    }
 
@@ -410,7 +416,10 @@ import org.jgroups.util.MessageBatch;
 	        }
 	        if (mbrs.size() == 3){
 	        	zabMembers.addAll(v.getMembers());        	
-	        	
+	        	if (zabMembers.contains(local_addr)) {
+					executor2 = Executors.newSingleThreadExecutor();
+			        executor2.execute(new MessageHandler());
+				}
 	        }
 	        if (mbrs.size() > 3 && zabMembers.isEmpty()){
 	        	for (int i = 0; i < 3; i++) {
@@ -601,6 +610,8 @@ import org.jgroups.util.MessageBatch;
 							//+ " to "+ ackZxid);
 					for (long z = zxidCommiting; z < ackZxid+1; z++){
 						commit(z);
+						delivery.add(new ZabCoinTossingHeader(ZabCoinTossingHeader.DELIVER, hdr.getZxid()));
+
 						outstandingProposals.remove(z);
 					}
 				}
@@ -644,7 +655,7 @@ import org.jgroups.util.MessageBatch;
 		    	//log.info("Commiting all  "+wantCommit);
 		    	for (long zx:wantCommit){
 					//log.info("Commiting "+outstandingProposals.keySet());
-						commit(zx);
+						delivery.add(new ZabCoinTossingHeader(ZabCoinTossingHeader.DELIVER, zx));
 						outstandingProposals.remove(zx);
 					}
 				
@@ -691,12 +702,12 @@ import org.jgroups.util.MessageBatch;
 		    	//log.info("[" + local_addr + "] "+ " delivering message (deliver) for zxid=" + hdr.getZxid()+" "+getCurrentTimeStamp());
 
 		    	ZabCoinTossingHeader hdrOrginal = queuedProposalMessage.remove(committedZxid);
-		    	if (hdrOrginal == null) {
-					 if (log.isInfoEnabled())
-						 log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
-							+ hdrOrginal + " for zxid " + committedZxid);
-					return;
-				}
+//		    	if (hdrOrginal == null) {
+//					 if (log.isInfoEnabled())
+//						 log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
+//							+ hdrOrginal + " for zxid " + committedZxid);
+//					return;
+//				}
 		    	queuedCommitMessage.put(committedZxid, hdrOrginal);
 		    	if (!stats.isWarmup()) {
 					stats.incnumReqDelivered();
@@ -962,4 +973,28 @@ import org.jgroups.util.MessageBatch;
 		}
 		 
 	 }
+		final class MessageHandler implements Runnable {
+	        @Override
+	        public void run() {
+	        	deliverMessages();
+
+	        }
+
+	        private void deliverMessages() {
+				ZabCoinTossingHeader hdrDelivery= null;
+	            while (true) {
+	    				try {
+	    					hdrDelivery = delivery.take();
+	    					//log.info("(deliverMessages) deliver zxid = "+ hdrDelivery.getZxid());
+	    				} catch (InterruptedException e) {
+	    					// TODO Auto-generated catch block
+	    					e.printStackTrace();
+	    				}          
+						//log.info("(going to call deliver zxid =  "+ hdrDelivery.getZxid());
+	                    commit(hdrDelivery.getZxid());
+	                        
+	            }
+	        }
+	  
+	    } 
 	}
