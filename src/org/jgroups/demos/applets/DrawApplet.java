@@ -182,7 +182,9 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
     }
 
     public void mouseDragged(MouseEvent e) {
-        int tmp[]=new int[1], x, y;
+        int[] tmp = new int[1];
+        int x;
+        int y;
 
         tmp[0]=0;
         x=e.getX();
@@ -220,7 +222,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
 
 
     public void sendClearPanelMsg() {
-        int tmp[]=new int[1];
+        int[] tmp = new int[1];
         tmp[0]=0;
 
         clearPanel();

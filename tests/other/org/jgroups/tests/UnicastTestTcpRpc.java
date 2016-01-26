@@ -118,7 +118,7 @@ public class UnicastTestTcpRpc {
                    case RECEIVE_SYNC:
                        long val=in.readLong();
                        int len=in.readInt();
-                       byte data[]=new byte[len];
+                       byte[] data = new byte[len];
                        in.readFully(data, 0, data.length);
                        receiveData(val, data);
                        if(type == RECEIVE_SYNC) {

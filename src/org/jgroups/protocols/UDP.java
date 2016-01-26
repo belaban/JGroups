@@ -681,7 +681,7 @@ public class UDP extends TP {
 
 
         public void run() {
-            final byte           receive_buf[]=new byte[66000]; // to be on the safe side (IPv6 == 65575 bytes, IPv4 = 65535)
+            final byte[] receive_buf = new byte[66000]; // to be on the safe side (IPv6 == 65575 bytes, IPv4 = 65535)
             final DatagramPacket packet=new DatagramPacket(receive_buf, receive_buf.length);
 
             while(thread != null && Thread.currentThread().equals(thread)) {

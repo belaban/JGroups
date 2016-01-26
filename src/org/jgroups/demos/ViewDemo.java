@@ -40,7 +40,7 @@ public class ViewDemo extends ReceiverAdapter {
     }
 
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         ViewDemo t=new ViewDemo();
         String props="udp.xml";
 

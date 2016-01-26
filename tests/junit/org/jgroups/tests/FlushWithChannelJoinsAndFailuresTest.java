@@ -27,7 +27,7 @@ public class FlushWithChannelJoinsAndFailuresTest {
    
     public void testAndLoop() throws Exception {
         int numChannels = 10;
-        Channel channels[] = new Channel[numChannels];
+        Channel[] channels = new Channel[numChannels];
         for (int j = 0; j < numChannels; j++) {
             channels[j] = createChannel(String.valueOf((char)('A' + j)));
             channels[j].connect(cName);
@@ -37,7 +37,7 @@ public class FlushWithChannelJoinsAndFailuresTest {
         Util.waitUntilAllChannelsHaveSameSize(10000, 500, channels);
 
         for (int i = 1; i <= 2; i++) {
-            int killPositions[] = { 0, 3, 5, 8 };
+            int[] killPositions = {0, 3, 5, 8};
             for (int index : killPositions)
                 Util.shutdown(channels[index]);
             int ch='M';

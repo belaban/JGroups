@@ -79,7 +79,7 @@ public class mcast {
         }
     }
 
-    public static void main(String args[]) throws Exception {
+    public static void main(String[] args) throws Exception {
         InetAddress mcast_addr=null, bind_addr=null;
         int mcast_port=5555;
         int local_port=0;

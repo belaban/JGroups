@@ -1141,7 +1141,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
       private void processWrite(Selector selector)
       {
          Set keys = selector.selectedKeys();
-         Object arr[] = keys.toArray();
+          Object[] arr = keys.toArray();
           for (Object anArr : arr) {
               SelectionKey key = (SelectionKey) anArr;
               SelectorWriteHandler entry = (SelectorWriteHandler) key.attachment();

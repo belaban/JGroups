@@ -49,7 +49,7 @@ public class ByteArrayDataInputOutputStreamTest {
         assert in.position() == 0;
         assert in.limit() == 4;
         assert in.capacity() == buf.length;
-        byte tmp[]=new byte[4];
+        byte[] tmp = new byte[4];
         in.read(tmp, 0, tmp.length);
         assert "Bela".equals(new String(tmp));
     }
@@ -61,7 +61,7 @@ public class ByteArrayDataInputOutputStreamTest {
         assert in.position() == 10;
         assert in.limit() == 14;
         assert in.capacity() == buf.length;
-        byte tmp[]=new byte[4];
+        byte[] tmp = new byte[4];
         in.read(tmp, 0, tmp.length);
         assert "Bela".equals(new String(tmp));
     }
@@ -73,7 +73,7 @@ public class ByteArrayDataInputOutputStreamTest {
         assert in.position() == 10;
         assert in.limit() == 14;
         assert in.capacity() == buf.length;
-        byte tmp[]=new byte[5];
+        byte[] tmp = new byte[5];
         try {
             in.readFully(tmp, 0, tmp.length);
             assert false : " should have gotten an exception";

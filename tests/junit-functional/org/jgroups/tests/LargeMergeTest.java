@@ -161,7 +161,7 @@ public class LargeMergeTest {
 
 
     @Test(enabled=false)
-    public static void main(String args[]) throws Exception {
+    public static void main(String[] args) throws Exception {
         LargeMergeTest test=new LargeMergeTest();
         test.setUp();
         test.testClusterFormationAfterMerge();

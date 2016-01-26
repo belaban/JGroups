@@ -27,7 +27,7 @@ public class FlushTest {
 
     public void testSingleChannel() throws Exception {
         Semaphore s = new Semaphore(1);
-        FlushTestReceiver receivers[] ={ new FlushTestReceiver("c1", s, 0, FlushTestReceiver.CONNECT_ONLY) };
+        FlushTestReceiver[] receivers = {new FlushTestReceiver("c1", s, 0, FlushTestReceiver.CONNECT_ONLY)};
         receivers[0].start();
         s.release(1);
 
@@ -264,7 +264,7 @@ public class FlushTest {
         _testChannels(names, FlushTestReceiver.CONNECT_AND_GET_STATE);
     }
 
-    private void _testChannels(String names[], int connectType) throws Exception {
+    private void _testChannels(String[] names, int connectType) throws Exception {
         int count = names.length;
 
         List<FlushTestReceiver> channels = new ArrayList<>(count);

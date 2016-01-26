@@ -13,11 +13,11 @@ import java.util.Enumeration;
  */
 public class ModClusterAdvertizeListener {
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         MulticastSocket sock;
         InetAddress bind_addr=null, mcast_addr=null;
         DatagramPacket packet;
-        byte buf[]=null;
+        byte[] buf = null;
         byte[] recv_buf;
         String tmp;
         int port=23364;

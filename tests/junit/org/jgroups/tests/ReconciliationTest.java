@@ -85,7 +85,7 @@ public class ReconciliationTest {
                 channel.stopFlush();
             };
         };
-        String apps[]={"A", "B", "C"};
+        String[] apps = {"A", "B", "C"};
         reconciliationHelper(apps, t);
     }
 
@@ -115,7 +115,7 @@ public class ReconciliationTest {
                 }
             };
         };
-        String apps[]={"A", "B", "C"};
+        String[] apps = {"A", "B", "C"};
         reconciliationHelper(apps, t);
     }
 

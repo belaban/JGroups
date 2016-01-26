@@ -1297,7 +1297,8 @@ public class Util {
     }
 
     public static byte[] readFileContents(InputStream input) throws IOException {
-        byte contents[]=new byte[10000], buf[]=new byte[1024];
+        byte[] contents = new byte[10000];
+        byte[] buf = new byte[1024];
         InputStream in=new BufferedInputStream(input);
         int bytes_read=0;
 
@@ -1796,7 +1797,7 @@ public class Util {
      * @return An array of byte buffers (<code>byte[]</code>).
      */
     public static byte[][] fragmentBuffer(byte[] buf,int frag_size,final int length) {
-        byte[] retval[];
+        byte[][] retval;
         int accumulated_size=0;
         byte[] fragment;
         int tmp_size=0;
@@ -1858,7 +1859,7 @@ public class Util {
      * @param fragments An array of byte buffers (<code>byte[]</code>)
      * @return A byte buffer
      */
-    public static byte[] defragmentBuffer(byte[] fragments[]) {
+    public static byte[] defragmentBuffer(byte[][] fragments) {
         int total_length=0;
         byte[] ret;
         int index=0;

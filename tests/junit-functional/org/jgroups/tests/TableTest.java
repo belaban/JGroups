@@ -146,7 +146,7 @@ public class TableTest {
 
     public static void testAdditionListWithOffset() {
         Table<Integer> table=new Table<>(3, 10, 100);
-        long seqnos[]={101,105,109,110,111,119,120,129};
+        long[] seqnos = {101, 105, 109, 110, 111, 119, 120, 129};
         List<Tuple<Long,Integer>> msgs=createList(seqnos);
         System.out.println("table: " + table.dump());
         assert table.add(msgs);
