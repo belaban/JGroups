@@ -406,7 +406,7 @@ public class FRAG extends Protocol {
             //the total number of fragment in this message
             int tot_frags=0;
             // each fragment is a byte buffer
-            byte[] fragments[]=null;
+            byte[][] fragments = null;
             //the number of fragments we have received
             int number_of_frags_recvd=0;
             // the message ID

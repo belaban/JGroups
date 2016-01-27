@@ -186,7 +186,7 @@ public final class PropertyConverters {
     public static class LongArray implements PropertyConverter {
 
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
-            long tmp [] = Util.parseCommaDelimitedLongs(propertyValue);
+            long[] tmp = Util.parseCommaDelimitedLongs(propertyValue);
             if(tmp != null && tmp.length > 0){
                 return tmp;
             }else{

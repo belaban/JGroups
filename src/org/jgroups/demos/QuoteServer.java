@@ -107,7 +107,7 @@ public class QuoteServer extends ReceiverAdapter {
     }
 
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         try {
             QuoteServer server=new QuoteServer();
             server.start();

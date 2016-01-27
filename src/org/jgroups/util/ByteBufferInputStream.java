@@ -111,7 +111,7 @@ public class ByteBufferInputStream implements DataInput {
 
     public String readLine() throws IOException {
         char[] lineBuffer=new char[128];
-        char buffer[] = lineBuffer;
+        char[] buffer = lineBuffer;
 
         if (buffer == null) {
             buffer = lineBuffer = new char[128];

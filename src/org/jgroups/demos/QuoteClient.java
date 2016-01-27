@@ -254,7 +254,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
     public void unblock() {
     }
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         QuoteClient client=new QuoteClient();
         client.start();
     }

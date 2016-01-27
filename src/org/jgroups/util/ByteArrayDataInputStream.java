@@ -65,7 +65,7 @@ public class ByteArrayDataInputStream implements DataInput {
         return (pos < limit) ? (buf[pos++] & 0xff) : -1;
     }
 
-    public int read(byte b[], int off, int len) {
+    public int read(byte[] b, int off, int len) {
         if (b == null)
             throw new NullPointerException();
 

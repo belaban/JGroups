@@ -21,11 +21,11 @@ public class InputStreamAdapter extends InputStream {
     }
 
 
-    public int read(byte b[]) throws IOException {
+    public int read(byte[] b) throws IOException {
         return read(b, 0, b.length);
     }
 
-    public int read(byte b[], int off, int len) throws IOException {
+    public int read(byte[] b, int off, int len) throws IOException {
         return input.read(b, off, len);
     }
 
