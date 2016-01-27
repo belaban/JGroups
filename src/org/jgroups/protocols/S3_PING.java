@@ -1099,7 +1099,7 @@ public class S3_PING extends FILE_PING {
                 }
             }
 
-            public void characters(char ch[], int start, int length) {
+            public void characters(char[] ch, int start, int length) {
                 if(currText != null)
                     this.currText.append(ch, start, length);
             }
@@ -1324,7 +1324,7 @@ public class S3_PING extends FILE_PING {
                     this.currText=new StringBuffer();
             }
 
-            public void characters(char ch[], int start, int length) {
+            public void characters(char[] ch, int start, int length) {
                 this.currText.append(ch, start, length);
             }
 
@@ -1448,7 +1448,7 @@ public class S3_PING extends FILE_PING {
                 this.currText=new StringBuffer();
             }
 
-            public void characters(char ch[], int start, int length) {
+            public void characters(char[] ch, int start, int length) {
                 this.currText.append(ch, start, length);
             }
 

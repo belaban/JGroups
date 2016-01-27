@@ -306,7 +306,7 @@ public class FRAG2 extends Protocol {
      */
     protected static class FragEntry {
         // each fragment is a byte buffer
-        final Message fragments[];
+        final Message[] fragments;
         //the number of fragments we have received
         int number_of_frags_recvd=0;
 
