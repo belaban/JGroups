@@ -266,7 +266,7 @@ public class AUTH extends Protocol {
     protected boolean callUpHandlers(Event evt) {
         boolean pass_up=true;
         for(UpHandler handler: up_handlers) {
-            if(handler.handleUpEvent(evt) == false)
+            if(!handler.handleUpEvent(evt))
                 pass_up=false;
         }
         return pass_up;

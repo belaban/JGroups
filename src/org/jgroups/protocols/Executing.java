@@ -731,7 +731,7 @@ abstract public class Executing extends Protocol {
             _tasks.put(threadId, runnable);
             
             CyclicBarrier barrier = _taskBarriers.remove(threadId);
-            if ((received = barrier != null) == true) {
+            if (received = barrier != null) {
                 // Only wait 10 milliseconds, in case if the consumer was
                 // stopped between when we were told it was available and now
                 barrier.await(10, TimeUnit.MILLISECONDS);
