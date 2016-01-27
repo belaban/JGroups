@@ -162,8 +162,8 @@ public class DeliveryManagerImpl implements DeliveryManager {
      */
     private static class MessageInfo implements Comparable<MessageInfo> {
 
-        private MessageID messageID;
-        private Message message;
+        private final MessageID messageID;
+        private final Message message;
         private volatile long sequenceNumber;
         private volatile boolean readyToDeliver;
 

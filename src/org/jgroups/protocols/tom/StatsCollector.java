@@ -32,8 +32,8 @@ public class StatsCollector {
 
     //from javadoc: Enum maps are represented internally as arrays. This representation is extremely compact and efficient. 
     //this way is simple to add new stats and avoids create N field with atomic long or atomic integer. 
-    private EnumMap<Counter, AtomicInteger> counters;
-    private EnumMap<Duration, AtomicLong> durations;
+    private final EnumMap<Counter, AtomicInteger> counters;
+    private final EnumMap<Duration, AtomicLong> durations;
 
     public StatsCollector() {
         counters = new EnumMap<>(Counter.class);

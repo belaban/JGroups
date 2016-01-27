@@ -1224,12 +1224,12 @@ public class S3_PING extends FILE_PING {
             private boolean isTruncated=false;
             private String nextMarker=null;
             private boolean isEchoedPrefix=false;
-            private List keyEntries=null;
+            private final List keyEntries;
             private ListEntry keyEntry=null;
-            private List commonPrefixEntries=null;
+            private final List commonPrefixEntries;
             private CommonPrefixEntry commonPrefixEntry=null;
             private StringBuffer currText=null;
-            private SimpleDateFormat iso8601Parser=null;
+            private final SimpleDateFormat iso8601Parser;
 
             public ListBucketHandler() {
                 super();
@@ -1403,10 +1403,10 @@ public class S3_PING extends FILE_PING {
 
         static class ListAllMyBucketsHandler extends DefaultHandler {
 
-            private List entries=null;
+            private final List entries;
             private Bucket currBucket=null;
             private StringBuffer currText=null;
-            private SimpleDateFormat iso8601Parser=null;
+            private final SimpleDateFormat iso8601Parser;
 
             public ListAllMyBucketsHandler() {
                 super();

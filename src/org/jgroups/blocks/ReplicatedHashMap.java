@@ -79,7 +79,7 @@ public class ReplicatedHashMap<K, V> extends
         }
     }
 
-    private Channel channel;
+    private final Channel channel;
     protected RpcDispatcher disp=null;
     private String cluster_name=null;
     // to be notified when mbrship changes

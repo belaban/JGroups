@@ -59,7 +59,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     @ManagedAttribute(writable=true)
     private long caching_time=30000L; // in milliseconds. -1 means don't cache, 0 means cache forever (or until changed)
     private HashFunction<K> hash_function=null;
-    private Set<MembershipListener> membership_listeners=new HashSet<>();
+    private final Set<MembershipListener> membership_listeners=new HashSet<>();
 
     /** On a view change, if a member P1 detects that for any given key K, P1 is not the owner of K, then
      * it will compute the new owner P2 and transfer ownership for all Ks for which P2 is the new owner. P1
@@ -431,7 +431,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
 
     public static class ConsistentHashFunction<K> implements MembershipListener, HashFunction<K> {
-        private SortedMap<Short,Address> nodes=new TreeMap<>();
+        private final SortedMap<Short,Address> nodes=new TreeMap<>();
         private final static int HASH_SPACE=2048; // must be > max number of nodes in a cluster, and a power of 2
 
         public Address hash(K key, List<Address> members) {

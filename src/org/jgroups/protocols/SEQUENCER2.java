@@ -67,7 +67,7 @@ public class SEQUENCER2 extends Protocol {
     protected long received_responses=0;
 
     protected Table<Message>  received_msgs = new Table<>();
-    private int max_msg_batch_size = 100;
+    private static final int max_msg_batch_size = 100;
 
     @ManagedAttribute
     public boolean isCoordinator() {return is_coord;}

@@ -186,10 +186,10 @@ public class ENCRYPT extends Protocol {
     private boolean queue_down=false;
 
     // queue to hold upcoming messages while key negotiation is happening
-    private BlockingQueue<Message> upMessageQueue=new LinkedBlockingQueue<>();
+    private final BlockingQueue<Message> upMessageQueue=new LinkedBlockingQueue<>();
 
     //	 queue to hold downcoming messages while key negotiation is happening
-    private BlockingQueue<Message> downMessageQueue=new LinkedBlockingQueue<>();
+    private final BlockingQueue<Message> downMessageQueue=new LinkedBlockingQueue<>();
     // decrypting cypher for secret key requests
     private Cipher asymCipher;
 

@@ -56,9 +56,9 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
         }
     };
 
-    private Set<MembershipListener> membership_listeners=new HashSet<>();
+    private final Set<MembershipListener> membership_listeners=new HashSet<>();
 
-    private Set<ChangeListener> change_listeners=new HashSet<>();
+    private final Set<ChangeListener> change_listeners=new HashSet<>();
 
     /** On a view change, if a member P1 detects that for any given key K, P1 is not the owner of K, then
      * it will compute the new owner P2 and transfer ownership for all Ks for which P2 is the new owner. P1
@@ -773,7 +773,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
     }
     
     public static class ConsistentHashFunction<K> implements HashFunction<K> {
-        private SortedMap<Short,Address> nodes=new TreeMap<>();
+        private final SortedMap<Short,Address> nodes=new TreeMap<>();
         private final static int HASH_SPACE=2048; // must be > max number of nodes in a cluster and a power of 2
         private final static int FACTOR=3737; // to better spread the node out across the space
 
