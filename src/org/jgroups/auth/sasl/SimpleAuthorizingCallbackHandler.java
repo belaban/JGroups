@@ -115,7 +115,7 @@ public class SimpleAuthorizingCallbackHandler implements CallbackHandler {
             } else if (current instanceof RealmCallback) {
                 String realm = ((RealmCallback) current).getDefaultText();
                 if (realm != null) {
-                    if (this.realm.equals(realm) == false) {
+                    if (!this.realm.equals(realm)) {
                         throw new IOException("Invalid realm " + realm);
                     }
                 }

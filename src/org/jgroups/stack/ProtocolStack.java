@@ -843,7 +843,7 @@ public class ProtocolStack extends Protocol {
      * Each layer can perform some initialization, e.g. create a multicast socket
      */
     public void startStack(String cluster, Address local_addr) throws Exception {
-        if(stopped == false) return;
+        if(!stopped) return;
         for(Protocol prot: getProtocols())
             prot.start();
         TP transport=getTransport();
