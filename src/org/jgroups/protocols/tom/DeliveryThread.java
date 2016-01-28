@@ -15,7 +15,7 @@ import java.util.List;
 public class DeliveryThread extends Thread {
     private DeliveryManager  deliveryManager;
     private volatile boolean running = false;
-    private DeliveryProtocol deliveryProtocol;
+    private final DeliveryProtocol deliveryProtocol;
 
     private final Log log = LogFactory.getLog(this.getClass());
 

@@ -53,8 +53,7 @@ public class FRAG extends Protocol {
     
     /** Contains a frag table per sender, this way it becomes easier to clean up if a sender leaves or crashes */
     private final FragmentationList  fragment_list=new FragmentationList();
-
-    private AtomicInteger            curr_id=new AtomicInteger(1);
+    private final AtomicInteger      curr_id=new AtomicInteger(1);
     private final List<Address>      members=new ArrayList<>(11);
     
     

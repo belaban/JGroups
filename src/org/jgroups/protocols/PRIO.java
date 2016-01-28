@@ -221,8 +221,8 @@ public class PRIO extends Protocol {
      */
     private abstract class MessageThread extends Thread
     {
-		private PRIO prio;
-		private PriorityBlockingQueue<PriorityMessage> messageQueue;
+		private final PRIO prio;
+		private final PriorityBlockingQueue<PriorityMessage> messageQueue;
         private volatile boolean running=true;
 
         private MessageThread( PRIO prio, PriorityBlockingQueue<PriorityMessage> messageQueue  ) {

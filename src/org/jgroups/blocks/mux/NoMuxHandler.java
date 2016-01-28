@@ -9,7 +9,7 @@ import java.io.Serializable;
 public class NoMuxHandler implements Serializable {
     private static final long serialVersionUID = -694135384125080323L;
     
-    private short id;
+    private final short id;
     
     public NoMuxHandler(short id) {
         this.id = id;

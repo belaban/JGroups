@@ -141,7 +141,7 @@ public class DELAY extends Protocol {
 
     private class DelayedMessageHandler extends Thread {
 
-        private List<DelayedMessage> buffer = new ArrayList<>();
+        private final List<DelayedMessage> buffer = new ArrayList<>();
 
         @Override
         public void run() {
