@@ -682,14 +682,11 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
          */
         @Override
         public Object up(Event evt) {
-            if(corr != null) {
-                if(!corr.receive(evt)) {
-                    try {
-                        return handleUpEvent(evt);
-                    }
-                    catch(Throwable t) {
-                        throw new RuntimeException(t);
-                    }
+            if(corr != null && !corr.receive(evt)) {
+                try {
+                    return handleUpEvent(evt);
+                } catch (Throwable t) {
+                    throw new RuntimeException(t);
                 }
             }
             return null;

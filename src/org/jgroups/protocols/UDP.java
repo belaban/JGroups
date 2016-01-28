@@ -662,9 +662,8 @@ public class UDP extends TP {
 
                     receiver_socket.receive(packet);
                     int len=packet.getLength();
-                    if(len > receive_buf.length) {
-                        if(log.isErrorEnabled())
-                            log.error(Util.getMessage("SizeOfTheReceivedPacket"),len, receive_buf.length, receive_buf.length);
+                    if(len > receive_buf.length && log.isErrorEnabled()) {
+                        log.error(Util.getMessage("SizeOfTheReceivedPacket"), len, receive_buf.length, receive_buf.length);
                     }
 
                     receive(new IpAddress(packet.getAddress(), packet.getPort()),

@@ -221,9 +221,8 @@ public class SEQUENCER2 extends Protocol {
                             broadcast(bcast_msg, send_seqno++);
                         }
                         int num_reqs=0;
-                        if((num_reqs=seqno_reqs.addAndGet(-hdr.num_seqnos)) > 0) {
-                            if(num_reqs > 0)
-                                sendSeqnoRequest(num_reqs);
+                        if((num_reqs=seqno_reqs.addAndGet(-hdr.num_seqnos)) > 0 && num_reqs > 0) {
+                            sendSeqnoRequest(num_reqs);
                         }
 	                    break;
                     

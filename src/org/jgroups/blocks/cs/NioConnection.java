@@ -138,9 +138,8 @@ public class NioConnection extends Connection {
                 throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
 
             this.key=server.register(channel, SelectionKey.OP_CONNECT | SelectionKey.OP_READ, this);
-            if(Util.connect(channel, destAddr)) {
-                if(channel.finishConnect())
-                    clearSelectionKey(SelectionKey.OP_CONNECT);
+            if(Util.connect(channel, destAddr) && channel.finishConnect()) {
+                clearSelectionKey(SelectionKey.OP_CONNECT);
             }
             if(send_local_addr)
                 sendLocalAddress(server.localAddress());
@@ -225,12 +224,10 @@ public class NioConnection extends Connection {
         ByteBuffer msg;
         Receiver   receiver=server.receiver();
 
-        if(peer_addr == null && server.usePeerConnections()) {
-            if((peer_addr=readPeerAddress()) != null) {
-                recv_buf=new Buffers(2).add(ByteBuffer.allocate(Global.INT_SIZE), null);
-                server.addConnection(peer_addr, this);
-                return true;
-            }
+        if(peer_addr == null && server.usePeerConnections() && (peer_addr=readPeerAddress()) != null) {
+            recv_buf = new Buffers(2).add(ByteBuffer.allocate(Global.INT_SIZE), null);
+            server.addConnection(peer_addr, this);
+            return true;
         }
 
         if((msg=recv_buf.readLengthAndData(channel)) == null)

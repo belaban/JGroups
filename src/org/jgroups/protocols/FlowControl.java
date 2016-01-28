@@ -164,15 +164,13 @@ public abstract class FlowControl extends Protocol {
             if(key < 0 || val < 0)
                 throw new IllegalArgumentException("keys and values must be >= 0");
 
-            if(prev_key != null) {
-                if(key <= prev_key)
-                    throw new IllegalArgumentException("keys are not sorted: " + vals);
+            if(prev_key != null && key <= prev_key) {
+                throw new IllegalArgumentException("keys are not sorted: " + vals);
             }
             prev_key=key;
 
-            if(prev_val != null) {
-                if(val <= prev_val)
-                    throw new IllegalArgumentException("values are not sorted: " + vals);
+            if(prev_val != null && val <= prev_val) {
+                throw new IllegalArgumentException("values are not sorted: " + vals);
             }
             prev_val=val;
             max_block_times.put(key, val);

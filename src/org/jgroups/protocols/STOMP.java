@@ -497,9 +497,8 @@ public class STOMP extends Protocol implements Runnable {
                     destination=headers.get("destination");
                     if(destination != null) {
                         Set<Connection> conns=subscriptions.get(destination);
-                        if(conns != null) {
-                            if(conns.remove(this) && conns.isEmpty())
-                                subscriptions.remove(destination);
+                        if(conns != null && conns.remove(this) && conns.isEmpty()) {
+                            subscriptions.remove(destination);
                         }
                     }
                     break;
