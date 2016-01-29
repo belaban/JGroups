@@ -206,11 +206,6 @@ public class ChannelTestBase {
 
                 List<String> initial_hosts=ports.stream().map(port -> String.format("%s[%d]", bind_addr, port))
                   .collect(Collectors.toList());
-
-                //initial_hosts=ports.stream().collect(ArrayList::new,
-                //                                   (list, port) -> list.add(String.format("%s[%d]", bind_addr, port)),
-                //                                 (l,r) -> {}
-
                 String tmp = Util.printListWithDelimiter(initial_hosts, ",", 2000, false);
                 List<PhysicalAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 0);
                 ((TCPPING)ping).setInitialHosts(init_hosts);
@@ -220,94 +215,6 @@ public class ChannelTestBase {
         }
     }
 
-  
 
-    /*interface EventSequence {
-        *//** Return an event string. Events are translated as follows: get state='g', set state='s',
-         *  block='b', unlock='u', view='v' *//*
-        String getEventSequence();
-        String getName();
-    }*/
-
-    /**
-     * Base class for all aplications using channel
-     */
-/*    protected abstract class ChannelApplication extends ReceiverAdapter implements EventSequence, Runnable {
-        protected Channel channel;
-        protected Thread thread;
-        protected Throwable exception;
-        protected StringBuilder events;
-
-        public ChannelApplication(String name) throws Exception {
-            channel = createChannel(true, 4);
-            init(name);
-        }
-
-        public ChannelApplication(JChannel copySource, String name) throws Exception {
-            channel = createChannel(copySource);
-            init(name);
-        }
-
-        protected void init(String name) {
-            events = new StringBuilder();
-            channel.setName(name);
-            channel.setReceiver(this);
-        }
-
-        *//**
-         * Method allowing implementation of specific test application level logic
-         * 
-         * @throws Exception
-         *//*
-        protected abstract void useChannel() throws Exception;
-
-        public void run() {
-            try {
-                useChannel();
-            } catch (Exception e) {
-                log.error(channel.getName() + ": " + e.getLocalizedMessage(), e);
-                exception = e; // Save it for the test to check
-            }
-        }
-
-        public List<Address> getMembers() {
-            List<Address> result = null;
-            View v = channel.getView();
-            if (v != null) {
-                result = v.getMembers();
-            }
-            return result;
-        }
-
-        public Address getLocalAddress() {
-            return channel.getAddress();
-        }
-
-        public void start() {
-            thread = new Thread(this, getName());
-            thread.start();
-        }
-
-        public Channel getChannel() {
-            return channel;
-        }
-
-        public String getName() {
-            return channel != null ? channel.getName() : "n/a";
-        }
-
-        public void cleanup() {
-            if (thread != null && thread.isAlive())
-                thread.interrupt();
-            Util.close(channel);
-        }
-
-        public String getEventSequence()                              {return events.toString();}
-        public void   block()                                         {events.append('b');}
-        public void   getState(OutputStream ostream) throws Exception {events.append('g');}
-        public void   setState(InputStream istream) throws Exception  {events.append('s');}
-        public void   unblock()                                       {events.append('u');}
-        public void   viewAccepted(View new_view)                     {events.append('v');}
-    }*/
 
 }
