@@ -204,7 +204,7 @@ public class ChannelTestBase {
             } else if (transport instanceof BasicTCP) {
                 List<Short> ports = ResourceManager.getNextTcpPorts(InetAddress.getByName(bind_addr), num);
                 ((TP) transport).setBindPort(ports.get(0));
-                ((TP) transport).setPortRange(num);
+                // ((TP) transport).setPortRange(num);
 
                 Protocol ping = stack.findProtocol(TCPPING.class);
                 if (ping == null)
