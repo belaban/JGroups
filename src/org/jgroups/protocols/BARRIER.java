@@ -169,7 +169,9 @@ public class BARRIER extends Protocol {
 
     public void up(MessageBatch batch) {
         // let unicast message batches pass
-        if (batch.dest() != null && (batch.mode() == MessageBatch.Mode.OOB && batch.mode() == MessageBatch.Mode.INTERNAL) || holes.contains(batch.sender())) {
+        if(batch.dest() != null
+          && (batch.mode() == MessageBatch.Mode.OOB && batch.mode() == MessageBatch.Mode.INTERNAL)
+          || holes.contains(batch.sender())) {
             up_prot.up(batch);
             return;
         }

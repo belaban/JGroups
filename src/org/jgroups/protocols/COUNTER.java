@@ -287,9 +287,8 @@ public class COUNTER extends Protocol {
                         counter_name=reconcile_req.names[i];
                         long version=reconcile_req.versions[i];
                         VersionedValue my_value=map.get(counter_name);
-                        if(my_value != null && my_value.version <= version) {
+                        if(my_value != null && my_value.version <= version)
                             map.remove(counter_name);
-                        }
                     }
                 }
 

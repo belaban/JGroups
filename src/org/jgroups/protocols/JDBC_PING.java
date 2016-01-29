@@ -447,15 +447,19 @@ public class JDBC_PING extends Discovery {
     }
     
     protected void verifyconfigurationParameters() {
-        if ((stringIsEmpty(this.connection_url) ||
-                stringIsEmpty(this.connection_driver) ||
-                stringIsEmpty(this.connection_username)) && stringIsEmpty(this.datasource_jndi_name)) {
-            throw new IllegalArgumentException("Either the 4 configuration properties starting with 'connection_' or the datasource_jndi_name must be set");
+        if (stringIsEmpty(this.connection_url) ||
+          stringIsEmpty(this.connection_driver) ||
+          stringIsEmpty(this.connection_username) ) {
+            if (stringIsEmpty(this.datasource_jndi_name)) {
+                throw new IllegalArgumentException("Either the 4 configuration properties starting with 'connection_' or the datasource_jndi_name must be set");
+            }
         }
-        if ((stringNotEmpty(this.connection_url) ||
-                stringNotEmpty(this.connection_driver) ||
-                stringNotEmpty(this.connection_username)) && stringNotEmpty(this.datasource_jndi_name)) {
-            throw new IllegalArgumentException("When using the 'datasource_jndi_name' configuration property, all properties starting with 'connection_' must not be set");
+        if (stringNotEmpty(this.connection_url) ||
+          stringNotEmpty(this.connection_driver) ||
+          stringNotEmpty(this.connection_username) ) {
+            if (stringNotEmpty(this.datasource_jndi_name)) {
+                throw new IllegalArgumentException("When using the 'datasource_jndi_name' configuration property, all properties starting with 'connection_' must not be set");
+            }
         }
         if (stringIsEmpty(this.insert_single_sql)) {
             throw new IllegalArgumentException("The insert_single_sql configuration property is mandatory");

@@ -166,9 +166,8 @@ public class Whiteboard extends Applet implements MessageListener, MembershipLis
 
 
     public void viewAccepted(View v) {
-        if (v != null && mbr_label != null) {
+        if(v != null && mbr_label != null)
             mbr_label.setText(v.size() + " mbr(s)");
-        }
         if(panel != null)
             panel.adjustNodes(v.getMembers());
     }

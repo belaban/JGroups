@@ -672,14 +672,16 @@ public class Configurator {
             for(Class<?> clazz=protocol.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
                 Field[] fields=clazz.getDeclaredFields();
                 for(int j=0; j < fields.length; j++) {
-                    if (fields[j].isAnnotationPresent(Property.class) && InetAddressInfo.isInetAddressRelated(protocol, fields[j])) {
-                        Object value = getValueFromProtocol(protocol, fields[j]);
-                        if (value instanceof InetAddress)
-                            retval.add((InetAddress) value);
-                        else if (value instanceof IpAddress)
-                            retval.add(((IpAddress) value).getIpAddress());
-                        else if (value instanceof InetSocketAddress)
-                            retval.add(((InetSocketAddress) value).getAddress());
+                    if(fields[j].isAnnotationPresent(Property.class)) {
+                        if(InetAddressInfo.isInetAddressRelated(protocol, fields[j])) {
+                            Object value=getValueFromProtocol(protocol, fields[j]);
+                            if(value instanceof InetAddress)
+                                retval.add((InetAddress)value);
+                            else if(value instanceof IpAddress)
+                                retval.add(((IpAddress)value).getIpAddress());
+                            else if(value instanceof InetSocketAddress)
+                                retval.add(((InetSocketAddress)value).getAddress());
+                        }
                     }
                 }
             }
@@ -757,22 +759,25 @@ public class Configurator {
                     String defaultValue=null;
                     if(InetAddressInfo.isInetAddressRelated(protocol, fields[j])) {
                         defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
-                        if (defaultValue != null && !defaultValue.isEmpty() && defaultValue != null || !PropertyHelper.usesDefaultConverter(fields[j])) {
+                        if(defaultValue != null && !defaultValue.isEmpty()) {
                             // condition for invoking converter
-                            Object converted = null;
-                            try {
-                                if (defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
-                                    converted = default_ip_address;
-                                else
-                                    converted = PropertyHelper.getConvertedValue(protocol, fields[j], properties, defaultValue, true);
-                                if (converted != null)
-                                    Util.setField(fields[j], protocol, converted);
-                            } catch (Exception e) {
-                                throw new Exception("default could not be assigned for field " + propertyName + " in "
-                                        + protocolName + " with default value " + defaultValue, e);
-                            }
+                            if(defaultValue != null || !PropertyHelper.usesDefaultConverter(fields[j])) {
+                                Object converted=null;
+                                try {
+                                    if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
+                                        converted=default_ip_address;
+                                    else
+                                        converted=PropertyHelper.getConvertedValue(protocol, fields[j], properties, defaultValue, true);
+                                    if(converted != null)
+                                        Util.setField(fields[j], protocol, converted);
+                                }
+                                catch(Exception e) {
+                                    throw new Exception("default could not be assigned for field " + propertyName + " in "
+                                            + protocolName + " with default value " + defaultValue, e);
+                                }
 
-                            log.debug("set property " + protocolName + "." + propertyName + " to default value " + converted);
+                                log.debug("set property " + protocolName + "." + propertyName + " to default value " + converted);
+                            }
                         }
                     }
                 }

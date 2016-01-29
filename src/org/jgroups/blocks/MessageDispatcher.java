@@ -665,7 +665,8 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
             if(corr != null && !corr.receive(evt)) {
                 try {
                     return handleUpEvent(evt);
-                } catch (Throwable t) {
+                }
+                catch(Throwable t) {
                     throw new RuntimeException(t);
                 }
             }

@@ -388,7 +388,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             sendIHaveSockMessage(null, // send to all members
                     local_addr,
                     srv_sock_addr);
-            srv_sock_sent = true;
+            srv_sock_sent=true;
         }
 
         // 2. Get the addr:pid cache from the coordinator (only if not already fetched)

@@ -133,7 +133,7 @@ public class Relayer {
         List<Route> retval=new ArrayList<>(routes.size());
         for(List<Route> list: routes.values()) {
             for(Route route: list) {
-                if (route != null && !isExcluded(route, excluded_sites)) {
+                if(route != null && !isExcluded(route, excluded_sites)) {
                     retval.add(route);
                     break;
                 }

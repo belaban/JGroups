@@ -150,13 +150,14 @@ public class GroupRequest<T> extends Request {
         boolean changed=false;
         Rsp<T> rsp=requests.get(suspected_member);
         if(rsp !=  null && rsp.setSuspected()) {
-            changed = true;
+            changed=true;
             lock.lock();
             try {
-                if (!(rsp.wasReceived() || rsp.wasUnreachable()))
+                if(!(rsp.wasReceived() || rsp.wasUnreachable()))
                     num_received++;
                 cond.signal(true);
-            } finally {
+            }
+            finally {
                 lock.unlock();
             }
         }
@@ -176,13 +177,14 @@ public class GroupRequest<T> extends Request {
             if(addr.getSite().equals(site)) {
                 Rsp<T> rsp=entry.getValue();
                 if(rsp !=  null && rsp.setUnreachable()) {
-                    changed = true;
+                    changed=true;
                     lock.lock();
                     try {
-                        if (!(rsp.wasReceived() || rsp.wasSuspected()))
+                        if(!(rsp.wasReceived() || rsp.wasSuspected()))
                             num_received++;
                         cond.signal(true);
-                    } finally {
+                    }
+                    finally {
                         lock.unlock();
                     }
                 }

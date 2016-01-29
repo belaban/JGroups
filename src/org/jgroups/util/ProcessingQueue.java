@@ -52,7 +52,8 @@ public class ProcessingQueue<T> {
                     if(element != null && handler != null) {
                         try {
                             handler.handle(element);
-                        } catch (Throwable t) {
+                        }
+                        catch(Throwable t) {
                             t.printStackTrace(System.err);
                         }
                     }

@@ -3421,9 +3421,10 @@ public class Util {
                 }
             }
 
-            if (((addr instanceof Inet4Address && ip_version == StackType.IPv4) ||
-                    (addr instanceof Inet6Address && ip_version == StackType.IPv6)) && match) {
-                return addr;
+            if(match) {
+                if((addr instanceof Inet4Address && ip_version == StackType.IPv4) ||
+                  (addr instanceof Inet6Address && ip_version == StackType.IPv6))
+                    return addr;
             }
         }
         return null;

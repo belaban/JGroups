@@ -122,9 +122,8 @@ public class TCPPING extends Discovery {
 
     public void discoveryRequestReceived(Address sender, String logical_name, PhysicalAddress physical_addr) {
         super.discoveryRequestReceived(sender, logical_name, physical_addr);
-        if(physical_addr != null && !initial_hosts.contains(physical_addr)) {
+        if(physical_addr != null && !initial_hosts.contains(physical_addr))
             dynamic_hosts.addIfAbsent(physical_addr);
-        }
     }
 
     @Override
