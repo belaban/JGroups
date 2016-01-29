@@ -94,18 +94,17 @@ public class TCP_NIO2 extends BasicTCP {
     }
 
     public void start() throws Exception {
-        server=(NioServer)((NioServer)new NioServer(getThreadFactory(), bind_addr, bind_port, bind_port+port_range, external_addr, external_port)
-          .receiver(this)
+        server=new NioServer(getThreadFactory(), getSocketFactory(), bind_addr, bind_port, bind_port+port_range, external_addr, external_port, reuse_addr);
+        server.receiver(this)
           .timeService(time_service)
           .receiveBufferSize(recv_buf_size)
           .sendBufferSize(send_buf_size)
           .socketConnectionTimeout(sock_conn_timeout)
           .tcpNodelay(tcp_nodelay).linger(linger)
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
-          .log(this.log))
-          .maxSendBuffers(max_send_buffers).usePeerConnections(true);
-        server.copyOnPartialWrite(this.copy_on_partial_write)
-          .readerIdleTime(this.reader_idle_time);
+          .log(this.log);
+        server.maxSendBuffers(max_send_buffers).usePeerConnections(true);
+        server.copyOnPartialWrite(this.copy_on_partial_write).readerIdleTime(this.reader_idle_time);
 
         if(reaper_interval > 0 || conn_expire_time > 0) {
             if(reaper_interval == 0) {

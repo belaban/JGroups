@@ -37,8 +37,6 @@ public class ExecutingServiceTest2 {
     public void testDisconnect() throws Exception {
         JChannel channel1=new JChannel(Util.getTestStack(new CENTRAL_EXECUTOR()));
         JChannel channel2=new JChannel(Util.getTestStack(new CENTRAL_EXECUTOR()));
-        // channel1.getProtocolStack().addProtocol(new CENTRAL_EXECUTOR());
-        // channel2.getProtocolStack().addProtocol(new CENTRAL_EXECUTOR());
         channels.add(channel1);
         channels.add(channel2);
 

@@ -2983,20 +2983,14 @@ public class Util {
 
     public static ServerSocket createServerSocket(SocketFactory factory, String service_name, InetAddress bind_addr, int start_port) {
         ServerSocket ret=null;
-
-        while(true) {
-            try {
-                ret=factory.createServerSocket(service_name,start_port,50,bind_addr);
-            }
-            catch(BindException bind_ex) {
-                start_port++;
-                continue;
-            }
-            catch(IOException io_ex) {
-            }
-            break;
+        try {
+            ret=factory.createServerSocket(service_name);
+            Util.bind(ret, bind_addr, start_port, start_port+1000, 50);
+            return ret;
         }
-        return ret;
+        catch(Exception e) {
+            return null;
+        }
     }
 
 
@@ -3006,46 +3000,25 @@ public class Util {
      */
     public static ServerSocket createServerSocket(SocketFactory factory,String service_name,InetAddress bind_addr,
                                                   int start_port,int end_port) throws Exception {
-        ServerSocket ret=null;
-        int original_start_port=start_port;
-
-        while(true) {
-            try {
-                if(bind_addr == null)
-                    ret=factory.createServerSocket(service_name,start_port);
-                else {
-                    // changed (bela Sept 7 2007): we accept connections on all NICs
-                    ret=factory.createServerSocket(service_name,start_port,50,bind_addr);
-                }
-            }
-            catch(SocketException bind_ex) {
-                if(start_port == end_port)
-                    throw new BindException("No available port to bind to in range [" + original_start_port + " .. " + end_port + "]");
-                if(bind_addr != null && !bind_addr.isLoopbackAddress()) {
-                    NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
-                    if(nic == null)
-                        throw new BindException("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
-                }
-                start_port++;
-                continue;
-            }
-            break;
-        }
+        ServerSocket ret=factory.createServerSocket(service_name);
+        bind(ret, bind_addr, start_port, end_port);
         return ret;
     }
 
-    public static ServerSocketChannel createServerSocketChannel(InetAddress bind_addr,
-                                                         int start_port, int end_port) throws Exception {
-        ServerSocketChannel channel=ServerSocketChannel.open();
+
+    public static void bind(ServerSocket srv_sock, InetAddress bind_addr,
+                            int start_port, int end_port) throws Exception {
+        bind(srv_sock, bind_addr, start_port, end_port, 50);
+    }
+
+    public static void bind(ServerSocket srv_sock, InetAddress bind_addr,
+                            int start_port, int end_port, int backlog) throws Exception {
         int original_start_port=start_port;
 
         while(true) {
             try {
-                if(bind_addr == null)
-                    channel.bind(new InetSocketAddress(start_port));
-                else {
-                    channel.bind(new InetSocketAddress(bind_addr, start_port));
-                }
+                InetSocketAddress sock_addr=new InetSocketAddress(bind_addr, start_port);
+                srv_sock.bind(sock_addr, backlog);
             }
             catch(SocketException bind_ex) {
                 if(start_port == end_port)
@@ -3060,8 +3033,40 @@ public class Util {
             }
             break;
         }
+    }
 
+
+    public static ServerSocketChannel createServerSocketChannel(InetAddress bind_addr,
+                                                                int start_port, int end_port) throws Exception {
+        ServerSocketChannel channel=ServerSocketChannel.open();
+        bind(channel, bind_addr, start_port, end_port);
         return channel;
+    }
+
+    public static void bind(final ServerSocketChannel ch, InetAddress bind_addr, int start_port, int end_port) throws Exception {
+        bind(ch, bind_addr, start_port, end_port, 50);
+    }
+
+
+    public static void bind(final ServerSocketChannel ch, InetAddress bind_addr, int start_port, int end_port, int backlog) throws Exception {
+        int original_start_port=start_port;
+        while(true) {
+            try {
+                ch.bind(new InetSocketAddress(bind_addr, start_port), backlog);
+            }
+            catch(SocketException bind_ex) {
+                if(start_port == end_port)
+                    throw new BindException("No available port to bind to in range [" + original_start_port + " .. " + end_port + "]");
+                if(bind_addr != null && !bind_addr.isLoopbackAddress()) {
+                    NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
+                    if(nic == null)
+                        throw new BindException("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
+                }
+                start_port++;
+                continue;
+            }
+            break;
+        }
     }
 
 

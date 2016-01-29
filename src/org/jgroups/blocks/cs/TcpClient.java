@@ -52,7 +52,7 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
 
 
     protected TcpClient(ThreadFactory thread_factory, SocketFactory socket_factory) {
-        super(thread_factory);
+        super(thread_factory, socket_factory);
         this.socket_factory=socket_factory;
     }
 

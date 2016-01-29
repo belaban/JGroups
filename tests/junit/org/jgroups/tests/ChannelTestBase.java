@@ -196,7 +196,7 @@ public class ChannelTestBase {
                     ((UDP) transport).setMulticastAddress(InetAddress.getByName(mcast_addr));
                 }
             } else if (transport instanceof BasicTCP) {
-                List<Short> ports = ResourceManager.getNextTcpPorts(InetAddress.getByName(bind_addr), num);
+                List<Integer> ports = ResourceManager.getNextTcpPorts(InetAddress.getByName(bind_addr), num);
                 ((TP) transport).setBindPort(ports.get(0));
                 ((TP) transport).setPortRange(num);
 

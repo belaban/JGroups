@@ -1,7 +1,8 @@
 package org.jgroups.util;
 
-import java.net.*;
 import java.io.IOException;
+import java.net.*;
+import java.nio.channels.ServerSocketChannel;
 import java.util.Map;
 
 /**
@@ -25,6 +26,23 @@ public interface SocketFactory {
     ServerSocket createServerSocket(String service_name, int port) throws IOException;
     ServerSocket createServerSocket(String service_name, int port, int backlog) throws IOException;
     ServerSocket createServerSocket(String service_name, int port, int backlog, InetAddress bindAddr) throws IOException;
+
+    @SuppressWarnings("UnusedParameters")
+    default ServerSocketChannel createServerSocketChannel(String service_name) throws IOException {
+        return ServerSocketChannel.open();
+    }
+
+    default ServerSocketChannel createServerSocketChannel(String service_name, int port) throws IOException {
+        return createServerSocketChannel(service_name).bind(new InetSocketAddress(port));
+    }
+
+    default ServerSocketChannel createServerSocketChannel(String service_name, int port, int backlog) throws IOException {
+        return createServerSocketChannel(service_name).bind(new InetSocketAddress(port), backlog);
+    }
+
+    default ServerSocketChannel createServerSocketChannel(String service_name, int port, int backlog, InetAddress bindAddr) throws IOException {
+        return createServerSocketChannel(service_name).bind(new InetSocketAddress(bindAddr, port), backlog);
+    }
 
     DatagramSocket createDatagramSocket(String service_name) throws SocketException;
     DatagramSocket createDatagramSocket(String service_name, SocketAddress bindaddr) throws SocketException;

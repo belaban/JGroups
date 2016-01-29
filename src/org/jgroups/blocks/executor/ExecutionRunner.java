@@ -89,8 +89,7 @@ public class ExecutionRunner implements Runnable {
                     finally {
                         shutdownLock.unlock();
                     }
-                    _runnables.put(currentThread, new Holder<>(
-                            runnable));
+                    _runnables.put(currentThread, new Holder<>(runnable));
                     
                     Throwable throwable = null;
                     try {

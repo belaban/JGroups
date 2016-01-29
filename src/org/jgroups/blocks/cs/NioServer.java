@@ -3,11 +3,10 @@ package org.jgroups.blocks.cs;
 import org.jgroups.Address;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.DefaultThreadFactory;
-import org.jgroups.util.ThreadFactory;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.net.InetAddress;
+import java.net.StandardSocketOptions;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -46,7 +45,7 @@ public class NioServer extends NioBaseServer {
      * @throws Exception Thrown if the creation failed
      */
     public NioServer(InetAddress bind_addr, int port) throws Exception {
-        this(new DefaultThreadFactory("nio", false), bind_addr, port, port+50, null, 0);
+        this(new DefaultThreadFactory("nio", false), new DefaultSocketFactory(), bind_addr, port, port+50, null, 0, true);
     }
 
 
@@ -55,35 +54,22 @@ public class NioServer extends NioBaseServer {
      * Creates an instance of {@link NioServer} that opens a server channel and listens for connections.
      * Needs to be started next.
      * @param thread_factory The thread factory used to create new threads
-     * @param bind_addr The local address to bind to. If null, the address will be picked by the OS
-     * @param end_port If srv_port is taken, the next port is tried, until end_port has been reached, in which case an
-     *                 exception will be thrown. If srv_port == end_port, only 1 port will be tried.
-     * @param external_addr The external address in case of NAT. Ignored if null.
-     * @throws Exception Thrown if the creation failed
-     */
-    public NioServer(ThreadFactory thread_factory, IpAddress bind_addr, int end_port, IpAddress external_addr) throws Exception {
-        this(thread_factory, bind_addr != null? bind_addr.getIpAddress() : null,
-             bind_addr != null? bind_addr.getPort() : 0, end_port,
-             external_addr != null? external_addr.getIpAddress() : null, external_addr != null? external_addr.getPort() : 0);
-    }
-
-
-    /**
-     * Creates an instance of {@link NioServer} that opens a server channel and listens for connections.
-     * Needs to be started next.
-     * @param thread_factory The thread factory used to create new threads
+     * @param socket_factory The socket factory used to create socket channels
      * @param bind_addr The local address to bind to. If null, the address will be picked by the OS
      * @param srv_port The local port to bind to If 0, the port will be picked by the OS.
      * @param end_port If srv_port is taken, the next port is tried, until end_port has been reached, in which case an
      *                 exception will be thrown. If srv_port == end_port, only 1 port will be tried.
      * @param external_addr The external address in case of NAT. Ignored if null.
      * @param external_port The external port on the NA. If 0, srv_port is used.
+     * @param reuse_addr sets server socket channel option SO_REUSEADDR
      * @throws Exception Thrown if the creation failed
      */
-    public NioServer(ThreadFactory thread_factory, InetAddress bind_addr, int srv_port, int end_port,
-                     InetAddress external_addr, int external_port) throws Exception {
-        super(thread_factory);
-        channel=Util.createServerSocketChannel(bind_addr, srv_port, end_port);
+    public NioServer(ThreadFactory thread_factory, SocketFactory socket_factory, InetAddress bind_addr, int srv_port, int end_port,
+                     InetAddress external_addr, int external_port, boolean reuse_addr) throws Exception {
+        super(thread_factory, socket_factory);
+        channel=this.socket_factory.createServerSocketChannel("jgroups.nio.server");
+        channel.setOption(StandardSocketOptions.SO_REUSEADDR, reuse_addr);
+        Util.bind(channel, bind_addr, srv_port, end_port);
         channel.configureBlocking(false);
         selector=Selector.open();
         acceptor=factory.newThread(new Acceptor(), "NioServer.Selector [" + channel.getLocalAddress() + "]");
@@ -92,8 +78,8 @@ public class NioServer extends NioBaseServer {
     }
 
 
-    protected NioServer(ThreadFactory f) {
-        super(f);
+    protected NioServer(ThreadFactory f, SocketFactory sf) {
+        super(f, sf);
     }
 
 

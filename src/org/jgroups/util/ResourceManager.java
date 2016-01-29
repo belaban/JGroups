@@ -17,8 +17,8 @@ import java.util.StringTokenizer;
 public class ResourceManager {
 	private static final IpAddressRep rep;
 	private static short mcast_port;
-	private static short tcp_port;
-    private static SocketFactory socket_factory=new DefaultSocketFactory();
+	private static int   tcp_port;
+    private static final SocketFactory socket_factory=new DefaultSocketFactory();
 
 	static {
 
@@ -68,33 +68,35 @@ public class ResourceManager {
 		}
 	}
 
-	public static synchronized List<Short> getNextTcpPorts(InetAddress bind_addr, int num_requested_ports) throws Exception {
-		short port = tcp_port++;
-		List<Short> retval = new ArrayList<>(num_requested_ports);
+	public static synchronized List<Integer> getNextTcpPorts(InetAddress bind_addr, int num_requested_ports) throws Exception {
+		int port= tcp_port++;
+		List<Integer> retval = new ArrayList<>(num_requested_ports);
 
 		for (int i = 0; i < num_requested_ports; i++) {
-			ServerSocket sock = Util.createServerSocket(socket_factory, "jgroups.temp.resourcemgr.srv_sock", bind_addr, port);
-			port = (short) sock.getLocalPort();
-			retval.add(port);
-			tcp_port = ++port;
-			socket_factory.close(sock);
-		}
-		return retval;
+            port=getNextTCPPort(bind_addr, port);
+            retval.add(port);
+            tcp_port=++port;
+        }
+        return retval;
 	}
 
-    public static synchronized short getNextTcpPort(InetAddress bind_addr) throws Exception {
-        short port=tcp_port++;
-        ServerSocket sock=null;
+    public static synchronized int getNextTcpPort(InetAddress bind_addr) throws Exception {
+        int port=tcp_port++;
         try {
-            sock=Util.createServerSocket(socket_factory, "jgroups.temp.resourcemgr.srv_sock", bind_addr, port);
-            return (short) sock.getLocalPort();
-
+            return getNextTCPPort(bind_addr, port);
         }
         finally {
             tcp_port = ++port;
-            socket_factory.close(sock);
         }
 	}
+
+    protected static int getNextTCPPort(InetAddress bind_addr, int start_port) throws Exception {
+        try(ServerSocket sock=new ServerSocket()) {
+            sock.setReuseAddress(false);
+            Util.bind(sock, bind_addr, start_port, start_port+100);
+            return sock.getLocalPort();
+        }
+    }
 
     public static String getUniqueClusterName(String base_name) {
         return base_name != null ? base_name + "-" + UUID.randomUUID().toString()
@@ -106,10 +108,10 @@ public class ResourceManager {
 	}
 
 	public static void main(String[] args) throws Exception {
-		List<Short> ports = getNextTcpPorts(InetAddress.getByName("192.168.1.5"), 15);
+		List<Integer> ports = getNextTcpPorts(InetAddress.getByName("192.168.1.3"), 15);
 		System.out.println("ports = " + ports);
 
-		ports = getNextTcpPorts(InetAddress.getByName("192.168.1.5"), 5);
+		ports = getNextTcpPorts(InetAddress.getByName("192.168.1.3"), 5);
 		System.out.println("ports = " + ports);
 
 	}
@@ -118,7 +120,7 @@ public class ResourceManager {
 	 * Interface for IpAddress representations
 	 */
 	public interface IpAddressRep {
-		public String nextAddress();
+		String nextAddress();
 	}
 
 	/** Representation of an IPv4 address */

@@ -64,6 +64,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
 
     protected ThreadFactory                                     thread_factory=new DefaultThreadFactory("gossip", false, true);
 
+    protected SocketFactory                                     socket_factory=new DefaultSocketFactory();
+
     @Property(description="The max queue size of backlogged connections")
     protected int                                               backlog=1000;
 
@@ -106,6 +108,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     public GossipRouter  socketReadTimeout(long t)          {this.sock_read_timeout=t; return this;}
     public ThreadFactory threadPoolFactory()                {return thread_factory;}
     public GossipRouter  threadPoolFactory(ThreadFactory f) {this.thread_factory=f; return this;}
+    public SocketFactory socketFactory()                    {return socket_factory;}
+    public GossipRouter  socketFactory(SocketFactory sf)    {this.socket_factory=sf; return this;}
     public int           backlog()                          {return backlog;}
     public GossipRouter  backlog(int backlog)               {this.backlog=backlog; return this;}
     public boolean       jmx()                              {return jmx;}
@@ -135,8 +139,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
             JmxConfigurator.register(this, Util.getMBeanServer(), "jgroups:name=GossipRouter");
 
         InetAddress tmp=bind_addr != null? InetAddress.getByName(bind_addr) : null;
-        server=use_nio? new NioServer(thread_factory, tmp, port, port+50, null, 0)
-          : new TcpServer(thread_factory, new DefaultSocketFactory(), tmp, port, port+50, null, 0);
+        server=use_nio? new NioServer(thread_factory, socket_factory, tmp, port, port, null, 0, true)
+          : new TcpServer(thread_factory, socket_factory, tmp, port, port, null, 0, true);
         server.receiver(this);
         server.start();
         server.addConnectionListener(this);

@@ -2,9 +2,7 @@ package org.jgroups.blocks.cs;
 
 import org.jgroups.Address;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.DefaultThreadFactory;
-import org.jgroups.util.ThreadFactory;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
@@ -48,13 +46,13 @@ public class NioClient extends NioBaseServer implements Client {
      * @throws Exception If the creation failed
     */
     public NioClient(InetAddress bind_addr, int bind_port, InetAddress server_addr, int server_port) {
-        this(new DefaultThreadFactory("nio", false));
+        this(new DefaultThreadFactory("nio", false), new DefaultSocketFactory());
         clientBindAddress(bind_addr).clientBindPort(bind_port);
         this.remote_addr=new IpAddress(server_addr, server_port);
     }
 
-    protected NioClient(ThreadFactory thread_factory) {
-        super(thread_factory);
+    protected NioClient(ThreadFactory thread_factory, SocketFactory sf) {
+        super(thread_factory, sf);
     }
 
 

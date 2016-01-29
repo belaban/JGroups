@@ -65,18 +65,18 @@ public class TCP extends BasicTCP {
     }
 
     public void start() throws Exception {
-        server=(TcpServer)((TcpServer)new TcpServer(getThreadFactory(), getSocketFactory(), bind_addr, bind_port, bind_port+port_range, external_addr, external_port)
-          .receiver(this)
+        server=new TcpServer(getThreadFactory(), getSocketFactory(), bind_addr, bind_port, bind_port+port_range, external_addr, external_port, reuse_addr);
+        server.receiver(this)
           .timeService(time_service)
           .receiveBufferSize(recv_buf_size)
           .sendBufferSize(send_buf_size)
           .socketConnectionTimeout(sock_conn_timeout)
           .tcpNodelay(tcp_nodelay).linger(linger)
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
-          .log(this.log))
-          .socketFactory(getSocketFactory())
-          .peerAddressReadTimeout(peer_addr_read_timeout)
-          .usePeerConnections(true);
+          .log(this.log);
+        server.peerAddressReadTimeout(peer_addr_read_timeout)
+          .usePeerConnections(true)
+          .socketFactory(getSocketFactory());
 
         if(reaper_interval > 0 || conn_expire_time > 0) {
             if(reaper_interval == 0) {
