@@ -149,18 +149,15 @@ public class GroupRequest<T> extends Request {
 
         boolean changed=false;
         Rsp<T> rsp=requests.get(suspected_member);
-        if(rsp !=  null) {
-            if(rsp.setSuspected()) {
-                changed=true;
-                lock.lock();
-                try {
-                    if(!(rsp.wasReceived() || rsp.wasUnreachable()))
-                        num_received++;
-                    cond.signal(true);
-                }
-                finally {
-                    lock.unlock();
-                }
+        if(rsp !=  null && rsp.setSuspected()) {
+            changed = true;
+            lock.lock();
+            try {
+                if (!(rsp.wasReceived() || rsp.wasUnreachable()))
+                    num_received++;
+                cond.signal(true);
+            } finally {
+                lock.unlock();
             }
         }
 
@@ -178,18 +175,15 @@ public class GroupRequest<T> extends Request {
             SiteAddress addr=(SiteAddress)member;
             if(addr.getSite().equals(site)) {
                 Rsp<T> rsp=entry.getValue();
-                if(rsp !=  null) {
-                    if(rsp.setUnreachable()) {
-                        changed=true;
-                        lock.lock();
-                        try {
-                            if(!(rsp.wasReceived() || rsp.wasSuspected()))
-                                num_received++;
-                            cond.signal(true);
-                        }
-                        finally {
-                            lock.unlock();
-                        }
+                if(rsp !=  null && rsp.setUnreachable()) {
+                    changed = true;
+                    lock.lock();
+                    try {
+                        if (!(rsp.wasReceived() || rsp.wasSuspected()))
+                            num_received++;
+                        cond.signal(true);
+                    } finally {
+                        lock.unlock();
                     }
                 }
 

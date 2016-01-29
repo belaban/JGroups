@@ -110,9 +110,8 @@ public class STATE extends StreamingStateTransfer {
         }
 
         public void close() throws IOException {
-            if(closed.compareAndSet(false, true)) {
-                if(stats)
-                    avg_state_size=num_bytes_sent.addAndGet(bytesWrittenCounter) / num_state_reqs.doubleValue();
+            if(closed.compareAndSet(false, true) && stats) {
+                avg_state_size = num_bytes_sent.addAndGet(bytesWrittenCounter) / num_state_reqs.doubleValue();
             }
         }
 

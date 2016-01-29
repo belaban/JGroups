@@ -1054,9 +1054,8 @@ abstract public class Locking extends Protocol {
             Map<Owner,ClientLock> owners=table.get(lock_name);
             if(owners != null) {
                 ClientLock lock=owners.remove(owner);
-                if(lock != null) {
-                    if(owners.isEmpty())
-                        table.remove(lock_name);
+                if (lock != null && owners.isEmpty()) {
+                    table.remove(lock_name);
                 }
             }
         }

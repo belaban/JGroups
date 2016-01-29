@@ -344,9 +344,9 @@ public class JChannel extends Channel {
                 getState(target, timeout, false); // fetch state from target
         }
         finally {
-            if(flushSupported() && useFlushIfPresent) {
-                if(canFetchState || state != State.CONNECTED) // stopFlush if we fetched the state or failed to connect...
-                    stopFlush();
+            // stopFlush if we fetched the state or failed to connect...
+            if( (flushSupported() && useFlushIfPresent) && (canFetchState || state != State.CONNECTED) ) {
+                stopFlush();
             }
         }
     }

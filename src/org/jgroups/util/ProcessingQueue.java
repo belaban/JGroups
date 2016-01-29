@@ -49,14 +49,11 @@ public class ProcessingQueue<T> {
             try {
                 while(true) {
                     T element=queue.poll();
-                    if(element != null) {
-                        if(handler != null) {
-                            try {
-                                handler.handle(element);
-                            }
-                            catch(Throwable t) {
-                                t.printStackTrace(System.err);
-                            }
+                    if(element != null && handler != null) {
+                        try {
+                            handler.handle(element);
+                        } catch (Throwable t) {
+                            t.printStackTrace(System.err);
                         }
                     }
 

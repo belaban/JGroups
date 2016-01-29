@@ -1253,11 +1253,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         boolean multicast=dest == null, do_send=multicast || !dest.equals(sender),
           loop_back=(multicast || dest.equals(sender)) && !msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
 
-        if(dest instanceof PhysicalAddress) {
-            if(dest.equals(local_physical_addr)) {
-                loop_back=true;
-                do_send=false;
-            }
+        if (dest instanceof PhysicalAddress && dest.equals(local_physical_addr)) {
+            loop_back = true;
+            do_send = false;
         }
 
         if(loopback_separate_thread) {
@@ -1521,15 +1519,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected boolean versionMatch(short version, Address sender) {
         boolean match=Version.isBinaryCompatible(version);
-        if(!match) {
-            if(log_discard_msgs_version && log.isWarnEnabled()) {
-                if(suppress_log_different_version != null)
-                    suppress_log_different_version.log(SuppressLog.Level.warn, sender,
-                                                       suppress_time_different_version_warnings,
-                                                       sender, Version.print(version), Version.printVersion());
-                else
-                    log.warn(Util.getMessage("VersionMismatch"), sender, Version.print(version), Version.printVersion());
-            }
+        if (!match && log_discard_msgs_version && log.isWarnEnabled()) {
+            if (suppress_log_different_version != null)
+                suppress_log_different_version.log(SuppressLog.Level.warn, sender,
+                        suppress_time_different_version_warnings,
+                        sender, Version.print(version), Version.printVersion());
+            else
+                log.warn(Util.getMessage("VersionMismatch"), sender, Version.print(version), Version.printVersion());
         }
         return match;
     }
@@ -1647,11 +1643,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             Responses responses=fetchResponsesFromDiscoveryProtocol(Collections.singletonList(dest));
             try {
                 for(PingData data : responses) {
-                    if(data.getAddress() != null && data.getAddress().equals(dest)) {
-                        if((physical_dest=data.getPhysicalAddr()) != null) {
-                            sendUnicast(physical_dest, buf, offset, length);
-                            return;
-                        }
+                    if (data.getAddress() != null && data.getAddress().equals(dest) && (physical_dest = data.getPhysicalAddr()) != null) {
+                        sendUnicast(physical_dest, buf, offset, length);
+                        return;
                     }
                 }
                 log.warn(Util.getMessage("PhysicalAddrMissing"), local_addr, dest);

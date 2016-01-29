@@ -384,13 +384,11 @@ public class FD_SOCK extends Protocol implements Runnable {
     public void run() {
 
         // 1. Broadcast my own addr:sock to all members so they can update their cache
-        if(!srv_sock_sent) {
-            if(srv_sock_addr != null) {
-                sendIHaveSockMessage(null, // send to all members
-                                     local_addr,
-                                     srv_sock_addr);
-                srv_sock_sent=true;
-            }
+        if(!srv_sock_sent && srv_sock_addr != null) {
+            sendIHaveSockMessage(null, // send to all members
+                    local_addr,
+                    srv_sock_addr);
+            srv_sock_sent = true;
         }
 
         // 2. Get the addr:pid cache from the coordinator (only if not already fetched)

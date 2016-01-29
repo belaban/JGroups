@@ -389,11 +389,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
     public void init() throws Exception {
-        if(xmit_from_random_member) {
-            if(discard_delivered_msgs) {
-                discard_delivered_msgs=false;
-                log.debug("%s: xmit_from_random_member set to true: changed discard_delivered_msgs to false", local_addr);
-            }
+        if(xmit_from_random_member && discard_delivered_msgs) {
+            discard_delivered_msgs = false;
+            log.debug("%s: xmit_from_random_member set to true: changed discard_delivered_msgs to false", local_addr);
         }
 
         TP transport=getTransport();
