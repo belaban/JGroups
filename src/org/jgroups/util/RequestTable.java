@@ -7,7 +7,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Table for storing requests associated with monotonically increasing sequence numbers (seqnos).<p/>
- * Used for example in {@link org.jgroups.blocks.RequestCorrelator}. Grows and shrinks when needed.
+ * Could be used for example in {@link org.jgroups.blocks.RequestCorrelator}. Grows and shrinks when needed.
  * Addition is always at the end, yielding monotonically increasing seqnos. Removal is done by nulling the element(s)
  * between low and high and advancing the low pointer whenever possible.<p/>
  * See <a href="https://issues.jboss.org/browse/JGRP-1982">JGRP-1982</a> for details.

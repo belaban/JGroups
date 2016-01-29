@@ -32,7 +32,6 @@
     <class id="68"  name="org.jgroups.util.UUID"/>
     <class id="71"  name="org.jgroups.blocks.RequestCorrelator$Header"/>
     <class id="72"  name="org.jgroups.blocks.RequestCorrelator$MultiDestinationHeader"/>
-    <class id="75"  name="org.jgroups.blocks.mux.MuxHeader"/>
     <class id="76"  name="org.jgroups.protocols.DAISYCHAIN$DaisyHeader"/>
     <class id="77"  name="org.jgroups.protocols.RELAY$RelayHeader"/>
     <class id="78"  name="org.jgroups.protocols.STOMP$StompHeader"/>

@@ -2,7 +2,6 @@
 package org.jgroups.blocks;
 
 import org.jgroups.*;
-import org.jgroups.blocks.mux.Muxer;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
@@ -152,7 +151,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         }
     }
 
-    protected RequestCorrelator createRequestCorrelator(Protocol transport, RequestHandler handler, Address local_addr) {
+    protected static RequestCorrelator createRequestCorrelator(Protocol transport, RequestHandler handler, Address local_addr) {
         return new RequestCorrelator(transport, handler, local_addr);
     }
 
@@ -201,45 +200,26 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         local_addr=channel.getAddress();
         if(prot_adapter == null)
             prot_adapter=new ProtocolAdapter();
-        // Don't force installing the UpHandler so subclasses can use this
-        // method and still integrate with a MuxUpHandler
+        // Don't force installing the UpHandler so subclasses can use this method
         installUpHandler(prot_adapter, false);
     }
 
     /**
-     * Sets the given UpHandler as the UpHandler for the channel, or, if the
-     * channel already has a Muxer installed as it's UpHandler, sets the given
-     * handler as the Muxer's {@link Muxer#setDefaultHandler(Object) default handler}.
-     * If the relevant handler is already installed, the {@code canReplace}
-     * controls whether this method replaces it (after logging a WARN) or simply
-     * leaves {@code handler} uninstalled.
-     * <p>
-     * Passing {@code false} as the {@code canReplace} value allows
-     * callers to use this method to install defaults without concern about
-     * inadvertently overriding
+     * Sets the given UpHandler as the UpHandler for the channel. If the relevant handler is already installed,
+     * the {@code canReplace} controls whether this method replaces it (after logging a WARN) or simply
+     * leaves {@code handler} uninstalled.<p>
+     * Passing {@code false} as the {@code canReplace} value allows callers to use this method to install defaults
+     * without concern about inadvertently overriding
      *
      * @param handler the UpHandler to install
-     * @param canReplace {@code true} if an existing Channel upHandler or
-     *              Muxer default upHandler can be replaced; {@code false}
+     * @param canReplace {@code true} if an existing Channel upHandler can be replaced; {@code false}
      *              if this method shouldn't install
      */
     protected void installUpHandler(UpHandler handler, boolean canReplace)
     {
        UpHandler existing = channel.getUpHandler();
-       if (existing == null) {
+       if (existing == null)
            channel.setUpHandler(handler);
-       }
-       else if (existing instanceof Muxer<?>) {
-           @SuppressWarnings("unchecked")
-           Muxer<UpHandler> mux = (Muxer<UpHandler>) existing;
-           if (mux.getDefaultHandler() == null) {
-               mux.setDefaultHandler(handler);
-           }
-           else if (canReplace) {
-               log.warn("Channel Muxer already has a default up handler installed (%s) but now it is being overridden",  mux.getDefaultHandler());
-               mux.setDefaultHandler(handler);
-           }
-       }
        else if (canReplace) {
            log.warn("Channel already has an up handler installed (%s) but now it is being overridden", existing);
            channel.setUpHandler(handler);

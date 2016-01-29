@@ -64,7 +64,6 @@
 
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->
-    <class id="201" name="org.jgroups.blocks.mux.MuxRequestCorrelator"/>
     <class id="202" name="org.jgroups.tests.perf.MPerf"/>
 
     <!-- FORK needs to have an ID > 200 in order for RELAY2 to copy it -->

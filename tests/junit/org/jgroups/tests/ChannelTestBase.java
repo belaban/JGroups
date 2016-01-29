@@ -116,14 +116,9 @@ public class ChannelTestBase {
      * Creates a channel and modifies the configuration such that no other channel will able to join
      * this one even if they have the same cluster name (if unique = true). This is done by
      * modifying mcast_addr and mcast_port with UDP, and by changing TCP.start_port, TCP.port_range
-     * and TCPPING.initial_hosts with TCP. Mainly used to run TestNG tests concurrently. Note that
-     * MuxChannels are not currently supported.
+     * and TCPPING.initial_hosts with TCP. Mainly used to run TestNG tests concurrently.
      * 
-     * @param num
-     *            The number of channels we will create. Only important (for port_range) with TCP,
-     *            ignored by UDP
-     * @return
-     * @throws Exception
+     * @param num The number of channels we will create. Only important (for port_range) with TCP, ignored by UDP
      */
     protected JChannel createChannel(boolean unique, int num) throws Exception {
         return (JChannel) new DefaultChannelTestFactory().createChannel(unique, num);
