@@ -149,7 +149,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
      */
     boolean wouldIBeCoordinator() {
         List<Address> mbrs=gms.computeNewMembership(gms.members.getMembers(), null, null, suspected_mbrs);
-        if(mbrs.size() < 1) return false;
+        if(mbrs.isEmpty()) return false;
         Address new_coord=mbrs.get(0);
         return gms.local_addr.equals(new_coord);
     }

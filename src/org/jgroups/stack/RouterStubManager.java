@@ -9,6 +9,7 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -284,7 +285,9 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
 
 
 
-    protected static class Target implements Comparator<Target> {
+    protected static class Target implements Comparator<Target>, Serializable {
+        private static final long serialVersionUID = 1L;
+
         protected final IpAddress               bind_addr, router_addr;
         protected final RouterStub.StubReceiver receiver;
 

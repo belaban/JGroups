@@ -8,6 +8,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.concurrent.PriorityBlockingQueue;
 
@@ -270,7 +271,8 @@ public class PRIO extends Protocol {
     /**
      * Comparator for PriorityMessage's
      */
-    private static class PriorityCompare implements Comparator<PriorityMessage> {
+    private static class PriorityCompare implements Comparator<PriorityMessage>, Serializable {
+        private static final long serialVersionUID = 1L;
         /**
          * Compare two messages based on priority and time stamp in that order
          * @param msg1 - first message
