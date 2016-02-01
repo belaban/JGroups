@@ -36,9 +36,9 @@ public abstract class Request implements NotifyingFuture, org.jgroups.util.Condi
     protected volatile boolean        done;
     protected boolean                 block_for_results=true;
     protected volatile FutureListener listener;
+    private long req_id;
 
 
-    
     public Request(Message request, RequestCorrelator corr, RequestOptions options) {
         this.request_msg=request;
         this.corr=corr;
@@ -181,5 +181,11 @@ public abstract class Request implements NotifyingFuture, org.jgroups.util.Condi
         return cond.waitFor(this, timeout, TimeUnit.MILLISECONDS);
     }
 
+    public void setRequestId(final long req_id) {
+        this.req_id = req_id;
+    }
 
+    public long getRequestId() {
+        return req_id;
+    }
 }
