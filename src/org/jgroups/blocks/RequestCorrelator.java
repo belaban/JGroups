@@ -146,15 +146,13 @@ public class RequestCorrelator {
 
         if(options.getAnycasting()) {
             if(options.useAnycastAddresses()) {
-                Message copy=msg.copy(true);
-                AnycastAddress dest=new AnycastAddress(dest_mbrs);
-                copy.setDest(dest);
-                transport.down(new Event(Event.MSG, copy));
+                transport.down(new Event(Event.MSG, msg.dest(new AnycastAddress(dest_mbrs))));
             }
             else {
+                boolean first=true;
                 for(Address mbr: dest_mbrs) {
-                    Message copy=msg.copy(true);
-                    copy.setDest(mbr);
+                    Message copy=(first? msg : msg.copy(true)).dest(mbr);
+                    first=false;
                     if(!mbr.equals(local_addr) && copy.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK))
                         copy.clearTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
                     transport.down(new Event(Event.MSG, copy));
