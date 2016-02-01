@@ -403,6 +403,9 @@ public class RingBuffer<T> implements Iterable<T> {
         }
 
         public T next() {
+            if(!hasNext()){
+                throw new NoSuchElementException();
+            }
             if(current <= hd)
                 current=hd+1;
             return buffer[index(current++)];
