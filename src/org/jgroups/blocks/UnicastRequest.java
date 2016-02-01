@@ -43,8 +43,7 @@ public class UnicastRequest<T> extends Request {
             corr.sendUnicastRequest(target, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this);
         }
         catch(Exception ex) {
-            if(corr != null)
-                corr.done(this);
+            corr.done(this);
             throw ex;
         }
     }

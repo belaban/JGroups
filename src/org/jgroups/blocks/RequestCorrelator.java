@@ -146,15 +146,13 @@ public class RequestCorrelator {
 
         if(options.getAnycasting()) {
             if(options.useAnycastAddresses()) {
-                Message copy=msg.copy(true);
-                AnycastAddress dest=new AnycastAddress(dest_mbrs);
-                copy.setDest(dest);
-                transport.down(new Event(Event.MSG, copy));
+                transport.down(new Event(Event.MSG, msg.dest(new AnycastAddress(dest_mbrs))));
             }
             else {
+                boolean first=true;
                 for(Address mbr: dest_mbrs) {
-                    Message copy=msg.copy(true);
-                    copy.setDest(mbr);
+                    Message copy=(first? msg : msg.copy(true)).dest(mbr);
+                    first=false;
                     if(!mbr.equals(local_addr) && copy.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK))
                         copy.clearTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
                     transport.down(new Event(Event.MSG, copy));
@@ -434,7 +432,6 @@ public class RequestCorrelator {
     }
 
     protected void sendResponse(Message rsp, long req_id, boolean is_exception) {
-        prepareResponse(rsp);
         Header rsp_hdr=new Header(is_exception? Header.EXC_RSP : Header.RSP, req_id, corr_id);
         rsp.putHeader(corr_id, rsp_hdr);
         if(log.isTraceEnabled())
@@ -442,10 +439,6 @@ public class RequestCorrelator {
         transport.down(new Event(Event.MSG, rsp));
     }
 
-
-    protected void prepareResponse(Message rsp) {
-        ;
-    }
 
     // .......................................................................
 

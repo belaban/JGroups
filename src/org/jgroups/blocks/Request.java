@@ -67,7 +67,7 @@ public abstract class Request implements NotifyingFuture {
 
     public boolean execute() throws Exception {
         if(corr == null) {
-            if(log.isErrorEnabled()) log.error(Util.getMessage("CorrIsNullCannotSendRequest"));
+            log.error(Util.getMessage("CorrIsNullCannotSendRequest"));
             return false;
         }
 

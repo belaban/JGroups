@@ -345,8 +345,7 @@ public class GroupRequest<T> extends Request {
             corr.sendRequest(targetMembers, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this, options);
         }
         catch(Exception ex) {
-            if(corr != null)
-                corr.done(this);
+            corr.done(this);
             throw ex;
         }
     }
