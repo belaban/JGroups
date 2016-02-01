@@ -53,7 +53,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
         Node n;
 
         synchronized(nodes) {
-            if(nodes.size() < 1)
+            if(nodes.isEmpty())
                 return null;
             for(int i=nodes.size() - 1; i >= 0; i--) {
                 n=nodes.get(i);
