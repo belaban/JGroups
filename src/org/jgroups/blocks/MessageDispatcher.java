@@ -239,7 +239,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
      */
     public <T> RspList<T> castMessage(final Collection<Address> dests,
                                       Message msg, RequestOptions options) throws Exception {
-        GroupRequest<T> req=cast(dests, msg, options, true);
+        GroupRequest<T> req=cast(dests, msg, options, true, null);
         return req != null? req.getResults() : new RspList();
     }
 
@@ -332,9 +332,8 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
             req.setListener(listener);
         req.setResponseFilter(options.getRspFilter());
         req.setAnycasting(options.getAnycasting());
-        req.setBlockForResults(block_for_results);
         long start=non_blocking || !rpc_stats.extendedStats()? 0 : System.nanoTime();
-        req.execute(msg);
+        req.execute(msg, block_for_results);
         long time=non_blocking || !rpc_stats.extendedStats()? 0 : System.nanoTime() - start;
         if(!non_blocking) {
             if(anycast)
@@ -381,7 +380,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
             rpc_stats.add(RpcStats.Type.UNICAST, dest, false, 0);
         UnicastRequest<T> req=new UnicastRequest<>(corr, dest, opts);
         long start=async_rpc || !rpc_stats.extendedStats()? 0 : System.nanoTime();
-        req.execute(msg);
+        req.execute(msg, true);
         if(async_rpc)
             return null;
         long time=!rpc_stats.extendedStats()? 0 : System.nanoTime() - start;
@@ -432,8 +431,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         UnicastRequest<T> req=new UnicastRequest<>(corr, dest, options);
         if(listener != null)
             req.setListener(listener);
-        req.setBlockForResults(false);
-        req.execute(msg);
+        req.execute(msg, false);
         if(options.getMode() == ResponseMode.GET_NONE)
             return new NullFuture<>(null);
         return req;

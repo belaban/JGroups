@@ -33,7 +33,6 @@ public abstract class Request implements NotifyingFuture {
     protected final RequestCorrelator corr;         // either use RequestCorrelator or ...
     protected final RequestOptions    options;
     protected volatile boolean        done;
-    protected boolean                 block_for_results=true;
     protected volatile FutureListener listener;
 
 
@@ -49,14 +48,6 @@ public abstract class Request implements NotifyingFuture {
         return this;
     }
 
-    public boolean getBlockForResults() {
-        return block_for_results;
-    }
-
-    public Request setBlockForResults(boolean block_for_results) {
-        this.block_for_results=block_for_results;
-        return this;
-    }
 
     public Request setListener(FutureListener listener) {
         this.listener=listener;
@@ -65,7 +56,7 @@ public abstract class Request implements NotifyingFuture {
         return this;
     }
 
-    public boolean execute(final Message req) throws Exception {
+    public boolean execute(final Message req, boolean block_for_results) throws Exception {
         if(corr == null) {
             log.error(Util.getMessage("CorrIsNullCannotSendRequest"));
             return false;

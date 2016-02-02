@@ -91,7 +91,7 @@ public class GroupRequestTest {
             }
         });
         corr.setGroupRequest(req);
-        boolean rc=req.execute(new Message());
+        boolean rc=req.execute(new Message(), true);
         System.out.println("group request is " + req);
         assert rc;
         assert req.isDone();
@@ -125,7 +125,7 @@ public class GroupRequestTest {
             }
         });
         corr.setGroupRequest(req);
-        boolean rc=req.execute(new Message());
+        boolean rc=req.execute(new Message(), true);
         System.out.println("group request is " + req);
         assert rc;
         assert req.isDone();
@@ -301,7 +301,7 @@ public class GroupRequestTest {
         // instantiate request with dummy correlator
         GroupRequest<Long> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, timeout));
         corr.setGroupRequest(req);
-        boolean rc = req.execute(new Message());
+        boolean rc = req.execute(new Message(), true);
         System.out.println("group request is " + req);
         assert rc;
         assert req.isDone();
@@ -316,7 +316,7 @@ public class GroupRequestTest {
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
         GroupRequest<Object> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         corr.setGroupRequest(req);
-        boolean rc=req.execute(new Message());
+        boolean rc=req.execute(new Message(), true);
         System.out.println("group request is " + req);
         assert rc;
         assert req.isDone();
@@ -337,7 +337,7 @@ public class GroupRequestTest {
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
         GroupRequest<Long> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         corr.setGroupRequest(req);
-        boolean rc=req.execute(new Message());
+        boolean rc=req.execute(new Message(), true);
         System.out.println("group request is " + req);
         assert rc;
         assert req.isDone();
@@ -356,7 +356,7 @@ public class GroupRequestTest {
 
         corr.setGroupRequest(req);
         System.out.println("group request before execution: " + req);
-        boolean rc=req.execute(new Message());
+        boolean rc=req.execute(new Message(), true);
         System.out.println("group request after execution: " + req);
         assert rc;
         assert req.isDone();
