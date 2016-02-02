@@ -24,20 +24,14 @@ public class UnicastRequest<T> extends Request {
 
 
 
-    public UnicastRequest(Message msg, RequestCorrelator corr, Address target, RequestOptions options) {
-        super(msg, corr, options);
-        this.target=target;
-        result=new Rsp<>(target);
-    }
-
-    public UnicastRequest(Message msg, Address target, RequestOptions options) {
-        super(msg, null, options);
+    public UnicastRequest(RequestCorrelator corr, Address target, RequestOptions options) {
+        super(corr, options);
         this.target=target;
         result=new Rsp<>(target);
     }
 
 
-    protected void sendRequest() throws Exception {
+    protected void sendRequest(final Message request_msg) throws Exception {
         try {
             corr.sendUnicastRequest(target, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this);
         }

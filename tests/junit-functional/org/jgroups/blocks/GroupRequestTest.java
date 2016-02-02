@@ -74,7 +74,7 @@ public class GroupRequestTest {
           new Message(null,c, (long)3)};
         MyCorrelator corr=new MyCorrelator(true, responses, 500);
         dests.add(c);
-        GroupRequest<Long> req=new GroupRequest<>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_FIRST, 0));
+        GroupRequest<Long> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_FIRST, 0));
         req.setResponseFilter(new RspFilter() {
             int num_rsps=0;
 
@@ -91,7 +91,7 @@ public class GroupRequestTest {
             }
         });
         corr.setGroupRequest(req);
-        boolean rc=req.execute();
+        boolean rc=req.execute(new Message(), true);
         System.out.println("group request is " + req);
         assert rc;
         assert req.isDone();
@@ -107,7 +107,7 @@ public class GroupRequestTest {
           new Message(null,c, (long)3)};
         MyCorrelator corr=new MyCorrelator(true, responses, 500);
         dests.add(c);
-        GroupRequest<Long> req=new GroupRequest<>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
+        GroupRequest<Long> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         req.setResponseFilter(new RspFilter() {
             int num_rsps=0;
 
@@ -125,7 +125,7 @@ public class GroupRequestTest {
             }
         });
         corr.setGroupRequest(req);
-        boolean rc=req.execute();
+        boolean rc=req.execute(new Message(), true);
         System.out.println("group request is " + req);
         assert rc;
         assert req.isDone();
@@ -141,8 +141,7 @@ public class GroupRequestTest {
      */
     public void testAllNullResponsesWithFilter() {
         dests.add(c);
-        GroupRequest<Boolean> req=new GroupRequest<>(new Message(), null, dests,
-                                                            new RequestOptions(ResponseMode.GET_ALL, 10000));
+        GroupRequest<Boolean> req=new GroupRequest<>(null, dests, RequestOptions.SYNC());
         assert !req.isDone();
 
         req.setResponseFilter(new NonNullFilter());
@@ -156,8 +155,7 @@ public class GroupRequestTest {
 
     public void testAllNullResponsesWithFilterGetFirst() {
         dests.add(c);
-        GroupRequest<Boolean> req=new GroupRequest<>(new Message(), null, dests,
-                                                            new RequestOptions(ResponseMode.GET_FIRST, 10000));
+        GroupRequest<Boolean> req=new GroupRequest<>(null, dests, new RequestOptions(ResponseMode.GET_FIRST, 10000));
         assert !req.isDone();
 
         req.setResponseFilter(new NonNullFilter());
@@ -174,7 +172,7 @@ public class GroupRequestTest {
      * a blocking RPC. https://issues.jboss.org/browse/JGRP-1505
      */
     public void testResponsesComplete() {
-        GroupRequest<Integer> req=new GroupRequest<>(null, null, Arrays.asList(a,b,c), RequestOptions.SYNC());
+        GroupRequest<Integer> req=new GroupRequest<>(null, Arrays.asList(a,b,c), RequestOptions.SYNC());
         checkComplete(req, false);
 
         req.receiveResponse(1, a, false);
@@ -188,7 +186,7 @@ public class GroupRequestTest {
         checkComplete(req, true);
 
 
-        req=new GroupRequest<>(null, null, Arrays.asList(a,b,c), RequestOptions.SYNC());
+        req=new GroupRequest<>(null, Arrays.asList(a,b,c), RequestOptions.SYNC());
         req.receiveResponse(1, a, false);
         checkComplete(req, false);
 
@@ -207,7 +205,7 @@ public class GroupRequestTest {
      * a blocking RPC. https://issues.jboss.org/browse/JGRP-1505
      */
     public void testResponsesComplete2() {
-        GroupRequest<Integer> req=new GroupRequest<>(null, null, Arrays.asList(a,b,c), RequestOptions.SYNC());
+        GroupRequest<Integer> req=new GroupRequest<>(null, Arrays.asList(a,b,c), RequestOptions.SYNC());
         req.suspect(a);
         checkComplete(req, false);
         
@@ -230,7 +228,7 @@ public class GroupRequestTest {
         Address two=new SiteUUID((UUID)Util.createRandomAddress("sfo1"), "sfo1", "SFO");
         Address three=new SiteUUID((UUID)Util.createRandomAddress("nyc1"), "nyc1", "NYC");
 
-        GroupRequest<Integer> req=new GroupRequest<>(null, null, Arrays.asList(one, two, three), RequestOptions.SYNC());
+        GroupRequest<Integer> req=new GroupRequest<>(null, Arrays.asList(one, two, three), RequestOptions.SYNC());
         req.suspect(one);
         req.receiveResponse(1, one, false);
         req.siteUnreachable("LON");
@@ -302,9 +300,9 @@ public class GroupRequestTest {
         MyCorrelator corr = new MyCorrelator(async, responses, delay);
         
         // instantiate request with dummy correlator
-        GroupRequest<Long> req=new GroupRequest<>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, timeout));
+        GroupRequest<Long> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, timeout));
         corr.setGroupRequest(req);
-        boolean rc = req.execute();
+        boolean rc = req.execute(new Message(), true);
         System.out.println("group request is " + req);
         assert rc;
         assert req.isDone();
@@ -317,9 +315,9 @@ public class GroupRequestTest {
     private void _testMessageReception(boolean async) throws Exception {
         Object[] responses={new Message(null,a, (long)1),new Message(null,b, (long)2)};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
-        GroupRequest<Object> req=new GroupRequest<>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
+        GroupRequest<Object> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         corr.setGroupRequest(req);
-        boolean rc=req.execute();
+        boolean rc=req.execute(new Message(), true);
         System.out.println("group request is " + req);
         assert rc;
         assert req.isDone();
@@ -338,9 +336,9 @@ public class GroupRequestTest {
           new View(Util.createRandomAddress(), 322649, new_dests),
           new Message(null,b, (long)2)};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
-        GroupRequest<Long> req=new GroupRequest<>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
+        GroupRequest<Long> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         corr.setGroupRequest(req);
-        boolean rc=req.execute();
+        boolean rc=req.execute(new Message(), true);
         System.out.println("group request is " + req);
         assert rc;
         assert req.isDone();
@@ -355,11 +353,11 @@ public class GroupRequestTest {
         Object[] responses={new Message(null,b, (long)1),
           new View(Util.createRandomAddress(), 322649, new_dests)};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
-        GroupRequest<Object> req=new GroupRequest<>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
+        GroupRequest<Object> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
 
         corr.setGroupRequest(req);
         System.out.println("group request before execution: " + req);
-        boolean rc=req.execute();
+        boolean rc=req.execute(new Message(), true);
         System.out.println("group request after execution: " + req);
         assert rc;
         assert req.isDone();

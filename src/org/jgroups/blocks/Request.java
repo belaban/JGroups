@@ -30,48 +30,39 @@ public abstract class Request implements NotifyingFuture, org.jgroups.util.Condi
 
     /** Is set as soon as the request has received all required responses */
     protected final CondVar           cond=new CondVar(lock);
-    protected final Message           request_msg;
     protected final RequestCorrelator corr;         // either use RequestCorrelator or ...
     protected final RequestOptions    options;
     protected volatile boolean        done;
-    protected boolean                 block_for_results=true;
     protected volatile FutureListener listener;
 
 
     
-    public Request(Message request, RequestCorrelator corr, RequestOptions options) {
-        this.request_msg=request;
+    public Request(RequestCorrelator corr, RequestOptions options) {
         this.corr=corr;
         this.options=options;
     }
 
 
-    public void setResponseFilter(RspFilter filter) {
+    public Request setResponseFilter(RspFilter filter) {
         options.setRspFilter(filter);
+        return this;
     }
 
-    public boolean getBlockForResults() {
-        return block_for_results;
-    }
 
-    public void setBlockForResults(boolean block_for_results) {
-        this.block_for_results=block_for_results;
-    }
-
-    public NotifyingFuture setListener(FutureListener listener) {
+    public Request setListener(FutureListener listener) {
         this.listener=listener;
         if(done)
             listener.futureDone(this);
         return this;
     }
 
-    public boolean execute() throws Exception {
+    public boolean execute(final Message req, boolean block_for_results) throws Exception {
         if(corr == null) {
-            if(log.isErrorEnabled()) log.error(Util.getMessage("CorrIsNullCannotSendRequest"));
+            log.error(Util.getMessage("CorrIsNullCannotSendRequest"));
             return false;
         }
 
-        sendRequest();
+        sendRequest(req);
         if(!block_for_results || options.getMode() == ResponseMode.GET_NONE)
             return true;
 
@@ -85,7 +76,7 @@ public abstract class Request implements NotifyingFuture, org.jgroups.util.Condi
         }
     }
 
-    protected abstract void sendRequest() throws Exception;
+    protected abstract void sendRequest(final Message request_msg) throws Exception;
 
     public abstract void receiveResponse(Object response_value, Address sender, boolean is_exception);
 
