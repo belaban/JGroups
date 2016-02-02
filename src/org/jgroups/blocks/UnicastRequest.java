@@ -36,8 +36,8 @@ public class UnicastRequest<T> extends Request {
             corr.sendUnicastRequest(target, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this);
         }
         catch(Exception ex) {
-            if(corr != null)
-                corr.done(this);
+            if(corr != null && this.req_id > 0)
+                corr.done(this.req_id);
             throw ex;
         }
     }
@@ -65,8 +65,8 @@ public class UnicastRequest<T> extends Request {
                 }
             }
             done=responsesComplete() || (rsp_filter != null && !rsp_filter.needMoreResponses());
-            if(done && corr != null)
-                corr.done(this);
+            if(done && corr != null && this.req_id > 0)
+                corr.done(this.req_id);
         }
         finally {
             cond.signal(true); // wakes up execute()
@@ -95,8 +95,8 @@ public class UnicastRequest<T> extends Request {
             if(result != null && !result.wasReceived())
                 result.setSuspected();
             done=true;
-            if(corr != null)
-                corr.done(this);
+            if(corr != null && this.req_id > 0)
+                corr.done(this.req_id);
             cond.signal(true);
         }
         finally {
@@ -119,8 +119,8 @@ public class UnicastRequest<T> extends Request {
             if(result != null && !result.wasUnreachable())
                 result.setUnreachable();
             done=true;
-            if(corr != null)
-                corr.done(this);
+            if(corr != null && this.req_id > 0)
+                corr.done(this.req_id);
             cond.signal(true);
         }
         finally {
@@ -144,8 +144,8 @@ public class UnicastRequest<T> extends Request {
             if(!(target instanceof SiteAddress) && !mbrs.contains(target)) {
                 result.setSuspected();
                 done=true;
-                if(corr != null)
-                    corr.done(this);
+                if(corr != null && this.req_id > 0)
+                    corr.done(this.req_id);
                 cond.signal(true);
             }
         }
@@ -164,8 +164,8 @@ public class UnicastRequest<T> extends Request {
             if(result != null && !result.wasReceived())
                 result.setException(new IllegalStateException("transport was closed"));
             done=true;
-            if(corr != null)
-                corr.done(this);
+            if(corr != null && this.req_id > 0)
+                corr.done(this.req_id);
             cond.signal(true);
         }
         finally {
