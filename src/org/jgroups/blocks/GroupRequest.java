@@ -118,8 +118,8 @@ public class GroupRequest<T> extends Request {
             done=responsesComplete() || (rsp_filter != null && !rsp_filter.needMoreResponses());
             if(responseReceived || done)
                 cond.signal(true); // wakes up execute()
-            if(done && corr != null)
-                corr.done(this);
+            if(done && corr != null && this.req_id > 0)
+                corr.done(this.req_id);
         }
         finally {
             lock.unlock();
@@ -332,7 +332,8 @@ public class GroupRequest<T> extends Request {
             corr.sendRequest(targetMembers, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this, options);
         }
         catch(Exception ex) {
-            corr.done(this);
+            if(this.req_id > 0)
+                corr.done(this.req_id);
             throw ex;
         }
     }

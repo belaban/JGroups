@@ -25,9 +25,8 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public abstract class Request implements NotifyingFuture {
     protected static final Log        log=LogFactory.getLog(Request.class);
-
+    protected long                    req_id;
     protected final Lock              lock=new ReentrantLock();
-
     /** Is set as soon as the request has received all required responses */
     protected final CondVar           cond=new CondVar(lock);
     protected final RequestCorrelator corr;         // either use RequestCorrelator or ...
@@ -42,6 +41,8 @@ public abstract class Request implements NotifyingFuture {
         this.options=options;
     }
 
+    public Request requestId(long req_id) {this.req_id=req_id; return this;}
+    public long    requestId()            {return req_id;}
 
     public Request setResponseFilter(RspFilter filter) {
         options.setRspFilter(filter);
@@ -107,8 +108,8 @@ public abstract class Request implements NotifyingFuture {
         try {
             boolean retval=!done;
             done=true;
-            if(corr != null)
-                corr.done(this);
+            if(corr != null && this.req_id > 0)
+                corr.done(this.req_id);
             cond.signal(true);
             return retval;
         }
@@ -134,7 +135,7 @@ public abstract class Request implements NotifyingFuture {
 
 
     public String toString() {
-        return String.format("%s, mode=%s", super.toString(), options.getMode());
+        return String.format("%s, mode=%s", getClass().getSimpleName(), options.getMode());
     }
 
 
@@ -154,8 +155,8 @@ public abstract class Request implements NotifyingFuture {
             return waitForResults(timeout);
         }
         finally {
-            if(corr != null)
-                corr.done(this);
+            if(corr != null && this.req_id > 0)
+                corr.done(this.req_id);
         }
     }
 

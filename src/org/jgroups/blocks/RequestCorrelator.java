@@ -136,6 +136,7 @@ public class RequestCorrelator {
 
         if(req != null) {
             long req_id=REQUEST_ID.getAndIncrement();
+            req.requestId(req_id);
             hdr.requestId(req_id); // set the request-id only for *synchronous RPCs*
             if(log.isTraceEnabled())
                 log.trace("%s: invoking multicast RPC [req-id=%d]", local_addr, req_id);
@@ -179,6 +180,7 @@ public class RequestCorrelator {
 
         if(req != null) {
             long req_id=REQUEST_ID.getAndIncrement();
+            req.requestId(req_id);
             hdr.requestId(req_id); // set the request-id only for *synchronous RPCs*
             if(log.isTraceEnabled())
                 log.trace("%s: invoking unicast RPC [req-id=%d] on %s", local_addr, req_id, target);
@@ -198,10 +200,6 @@ public class RequestCorrelator {
         removeEntry(id);
     }
 
-    public void done(Request req) {
-        if(req != null)
-            requests.values().remove(req);
-    }
 
 
     /**
