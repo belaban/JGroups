@@ -139,6 +139,7 @@ public class RequestCorrelator {
             hdr.requestId(req_id); // set the request-id only for *synchronous RPCs*
             if(log.isTraceEnabled())
                 log.trace("%s: invoking multicast RPC [req-id=%d]", local_addr, req_id);
+            req.setRequestId(req_id);
             requests.putIfAbsent(req_id, req);
             // make sure no view is received before we add ourself as a view handler (https://issues.jboss.org/browse/JGRP-1428)
             req.viewChange(view);
@@ -182,6 +183,7 @@ public class RequestCorrelator {
             hdr.requestId(req_id); // set the request-id only for *synchronous RPCs*
             if(log.isTraceEnabled())
                 log.trace("%s: invoking unicast RPC [req-id=%d] on %s", local_addr, req_id, target);
+            req.setRequestId(req_id);
             requests.putIfAbsent(req_id, req);
             // make sure no view is received before we add ourself as a view handler (https://issues.jboss.org/browse/JGRP-1428)
             req.viewChange(view);
@@ -199,8 +201,16 @@ public class RequestCorrelator {
     }
 
     public void done(Request req) {
-        if(req != null)
-            requests.values().remove(req);
+        if (req != null) {
+            long requestId = req.getRequestId();
+            if (requestId != 0L) {
+                //try tro remove by id
+                this.requests.remove(requestId);
+                return;
+            }
+            //remove by value if no id is present
+            this.requests.values().remove(req);
+        }
     }
 
 
