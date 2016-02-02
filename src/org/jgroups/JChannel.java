@@ -1076,7 +1076,7 @@ public class JChannel extends Channel {
                     continue;
                 }
                 if(key.startsWith("invoke") || key.startsWith("op")) {
-                    int index=key.indexOf("=");
+                    int index=key.indexOf('=');
                     if(index != -1) {
                         try {
                             handleOperation(map, key.substring(index+1));
@@ -1102,11 +1102,11 @@ public class JChannel extends Channel {
 
         protected void handleJmx(Map<String, String> map, String input) {
             Map<String, Object> tmp_stats;
-            int index=input.indexOf("=");
+            int index=input.indexOf('=');
             if(index > -1) {
                 List<String> list=null;
                 String protocol_name=input.substring(index +1);
-                index=protocol_name.indexOf(".");
+                index=protocol_name.indexOf('.');
                 if(index > -1) {
                     String rest=protocol_name;
                     protocol_name=protocol_name.substring(0, index);
@@ -1116,7 +1116,7 @@ public class JChannel extends Channel {
                     // check if there are any attribute-sets in the list
                     for(Iterator<String> it=list.iterator(); it.hasNext();) {
                         String tmp=it.next();
-                        index=tmp.indexOf("=");
+                        index=tmp.indexOf('=');
                         if(index != -1) {
                             String attrname=tmp.substring(0, index);
                             String attrvalue=tmp.substring(index+1);
@@ -1178,7 +1178,7 @@ public class JChannel extends Channel {
          * @param operation Protocol.OperationName[args], e.g. STABLE.foo[arg1 arg2 arg3]
          */
         protected void handleOperation(Map<String, String> map, String operation) throws Exception {
-            int index=operation.indexOf(".");
+            int index=operation.indexOf('.');
             if(index == -1)
                 throw new IllegalArgumentException("operation " + operation + " is missing the protocol name");
             String prot_name=operation.substring(0, index);
@@ -1187,7 +1187,7 @@ public class JChannel extends Channel {
                 return; // less drastic than throwing an exception...
 
 
-            int args_index=operation.indexOf("[");
+            int args_index=operation.indexOf('[');
             String method_name;
             if(args_index != -1)
                 method_name=operation.substring(index +1, args_index).trim();
@@ -1196,7 +1196,7 @@ public class JChannel extends Channel {
 
             String[] args=null;
             if(args_index != -1) {
-                int end_index=operation.indexOf("]");
+                int end_index=operation.indexOf(']');
                 if(end_index == -1)
                     throw new IllegalArgumentException("] not found");
                 List<String> str_args=Util.parseCommaDelimitedStrings(operation.substring(args_index + 1, end_index));

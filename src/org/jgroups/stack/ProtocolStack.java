@@ -55,7 +55,7 @@ public class ProtocolStack extends Protocol {
                     return map;
                 }
                 if(key.startsWith(max_list_print_size)) {
-                    int index=key.indexOf("=");
+                    int index=key.indexOf('=');
                     if(index >= 0) {
                         Util.MAX_LIST_PRINT_SIZE=Integer.valueOf(key.substring(index+1));
                     }
@@ -75,7 +75,7 @@ public class ProtocolStack extends Protocol {
                 }
                 if(key.startsWith("remove-protocol")) {
                     key=key.substring("remove-protocol".length());
-                    int index=key.indexOf("=");
+                    int index=key.indexOf('=');
                     if(index != -1) {
                         String prot_name=key.substring(index +1);
                         if(prot_name != null && !prot_name.isEmpty()) {
@@ -92,7 +92,7 @@ public class ProtocolStack extends Protocol {
                 }
                 if(key.startsWith("insert-protocol")) {
                     key=key.substring("insert-protocol".length()+1);
-                    int index=key.indexOf("=");
+                    int index=key.indexOf('=');
                     if(index == -1) break;
 
                     // 1. name of the protocol to be inserted
