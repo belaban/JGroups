@@ -18,6 +18,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
+import java.util.Map;
 
 /**
  * Tests blocking in UFC / MFC (https://issues.jboss.org/browse/JGRP-1665)
@@ -73,8 +74,9 @@ public class FlowControlUnitTest {
               .setTimeout(5000).setFlags(Message.Flag.OOB));
             System.out.println("rsps:\n" + rsps);
             assert rsps.size() == 2;
-            for(Rsp rsp: rsps) {
-                assert rsp.wasReceived() : " rsp from " + rsp.getSender() + " was not received";
+            for(Map.Entry<Address,Rsp<Object>> entry: rsps.entrySet()) {
+                Rsp<Object> rsp=entry.getValue();
+                assert rsp.wasReceived() : " rsp from " + entry.getKey() + " was not received";
                 int actual_bytes=(Integer)rsp.getValue();
                 assert actual_bytes == num_bytes : "expected " + Util.printBytes(num_bytes) + ", but call returned " + Util.printBytes(actual_bytes);
             }

@@ -1,8 +1,7 @@
 
 package org.jgroups.util;
 
-import org.jgroups.Address;
-
+import java.util.Objects;
 
 /**
  * Class that represents a response from a communication
@@ -22,43 +21,21 @@ public class Rsp<T> {
 
     protected byte          flags;
 
-    /** The sender of this response */
-    protected final Address sender;
-
     /** The value from the response (or the exception) */
     protected Object        value; // untyped, to be able to hold both T and Throwable
 
+    public Rsp() {}
 
-    public Rsp(Address sender) {
-        this.sender=sender;
-    }
-
-
-    public Rsp(Address sender, T retval) {
-        this.sender=sender;
+    public Rsp(T retval) {
         setValue(retval);
     }
 
-    public Rsp(Address sender, Throwable t) {
-        this.sender=sender;
+    public Rsp(Throwable t) {
         setException(t);
     }
 
-    public boolean equals(Object obj) {
-        if(!(obj instanceof Rsp))
-            return false;
-        Rsp<T> other=(Rsp<T>)obj;
-        if(sender != null)
-            return sender.equals(other.sender);
-        return other.sender == null;
-    }
-
-    public int hashCode() {
-        return sender != null? sender.hashCode() : 0;
-    }
-
     public T getValue() {
-        return (T)value;
+        return hasException()? null : (T)value;
     }
 
     public Rsp<T> setValue(T val) {
@@ -85,9 +62,6 @@ public class Rsp<T> {
         return this;
     }
 
-    public Address getSender() {
-        return sender;
-    }
 
     public boolean wasReceived() {
         return Util.isFlagSet(flags, RECEIVED);
@@ -118,15 +92,22 @@ public class Rsp<T> {
         return changed;
     }
 
+    public int hashCode() {
+        return value != null? value.hashCode() : 0;
+    }
+
+    public boolean equals(Object obj) {
+        Rsp other=(Rsp)obj;
+        return Objects.equals(value, other.value);
+    }
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append("sender=").append(sender);
         if(value != null) {
             if(!hasException())
-                sb.append(", value=").append(value);
+                sb.append("value=").append(value);
             else
-                sb.append(", exception=").append(getException());
+                sb.append("exception=").append(getException());
         }
         sb.append(", received=").append(wasReceived()).append(", suspected=").append(wasSuspected());
         if(wasUnreachable())

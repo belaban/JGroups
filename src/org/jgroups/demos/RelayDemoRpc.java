@@ -13,10 +13,7 @@ import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 
 /** Demos RELAY. Create 2 *separate* clusters with RELAY as top protocol. Each RELAY has bridge_props="tcp.xml" (tcp.xml
@@ -123,19 +120,23 @@ public class RelayDemoRpc extends ReceiverAdapter {
                 System.out.println("invoking method in " + dests + ": ");
                 RspList<Object> rsps=disp.callRemoteMethods(dests, call,
                                                             new RequestOptions(ResponseMode.GET_ALL, RPC_TIMEOUT).setAnycasting(true));
-                for(Rsp rsp: rsps.values()) {
+                for(Map.Entry<Address,Rsp<Object>> entry: rsps.entrySet()) {
+                    Address sender=entry.getKey();
+                    Rsp<Object> rsp=entry.getValue();
                     if(rsp.wasUnreachable())
-                        System.out.println("<< unreachable: " + rsp.getSender());
+                        System.out.println("<< unreachable: " + sender);
                     else
-                        System.out.println("<< " + rsp.getValue() + " from " + rsp.getSender());
+                        System.out.println("<< " + rsp.getValue() + " from " + sender);
                 }
             }
             else {
                 // mcasting the call to all local cluster members
                 RspList<Object> rsps=disp.callRemoteMethods(null, call,
                                                             new RequestOptions(ResponseMode.GET_ALL, RPC_TIMEOUT).setAnycasting(false));
-                for(Rsp rsp: rsps.values())
-                    System.out.println("<< " + rsp.getValue() + " from " + rsp.getSender());
+                rsps.entrySet().stream().forEach((entry) -> {
+                    Rsp<Object> val=entry.getValue();
+                    System.out.println("<< " + val.getValue() + " from " + entry.getKey());
+                });
             }
         }
     }
@@ -145,7 +146,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
         String[] tmp=line.split("\\s");
         for(String s: tmp) {
             String result=s.trim();
-            if(result.length() > 0)
+            if(!result.isEmpty())
                 retval.add(result);
         }
         return retval;

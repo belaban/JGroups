@@ -269,8 +269,7 @@ public class GroupRequest<T> extends Request {
 
     /** Returns the results as a RspList */
     public RspList<T> getResults() {
-        Collection<Rsp<T>> rsps=requests.values();
-        return new RspList<>(rsps);
+        return new RspList<>(requests);
     }
 
 
@@ -318,13 +317,9 @@ public class GroupRequest<T> extends Request {
 
     /* --------------------------------- Private Methods -------------------------------------*/
 
-    private void setTarget(Address mbr) {
-        requests.put(mbr, new Rsp<>(mbr));
-    }
-
     private void setTargets(Collection<Address> mbrs) {
         for(Address mbr: mbrs)
-            requests.put(mbr, new Rsp<>(mbr));
+            requests.put(mbr, new Rsp<>());
     }
 
     private static int determineMajority(int i) {

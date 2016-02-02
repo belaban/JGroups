@@ -39,11 +39,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
 
     @AfterClass
     protected void tearDown() throws Exception {
-        channel2.close();
-        disp2.stop();
-
-        disp.stop();
-        channel.close();
+        Util.close(disp2, channel2, disp, channel);
     }
 
     public void testNonSerializableArgument() throws Exception {

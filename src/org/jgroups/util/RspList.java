@@ -13,22 +13,21 @@ import java.util.stream.Collectors;
  * A RspList is a response list used in peer-to-peer protocols. This class is unsynchronized
  */
 public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<Rsp<T>> {
-    final Map<Address,Rsp<T>> rsps=new HashMap<>();
+    final Map<Address,Rsp<T>> rsps;
 
 
     public RspList() {
-
+        rsps=new HashMap<>();
     }
 
-    /** Adds a list of responses
-     * @param responses Collection<Rsp>
-     */
-    public RspList(Collection<Rsp<T>> responses) {
-        if(responses != null) {
-            for(Rsp<T> rsp: responses) {
-                rsps.put(rsp.getSender(), rsp);
-            }
-        }
+    public RspList(int size) {
+        rsps=new HashMap<>(size);
+    }
+
+    public RspList(Map<Address,Rsp<T>> map) {
+        rsps=new HashMap<>(map != null? map.size() : 16);
+        if(map != null)
+            rsps.putAll(map);
     }
 
 
@@ -93,20 +92,14 @@ public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<
 
 
 
-    public void addRsp(Address sender, T retval) {
+    public RspList<T> addRsp(Address sender, T retval) {
         Rsp<T> rsp=get(sender);
         if(rsp != null) {
             rsp.setValue(retval);
-            return;
+            return this;
         }
-        rsps.put(sender, new Rsp<>(sender, retval));
-    }
-
-
-    public void addNotReceived(Address sender) {
-        Rsp<T> rsp=get(sender);
-        if(rsp == null)
-            rsps.put(sender, new Rsp<>(sender));
+        rsps.put(sender, new Rsp<>(retval));
+        return this;
     }
 
 
@@ -116,33 +109,17 @@ public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<
     }
 
     public int numSuspectedMembers() {
-        int num=0;
-        Collection<Rsp<T>> values=values();
-        for(Rsp<T> rsp: values) {
-            if(rsp.wasSuspected())
-                num++;
-        }
-        return num;
+        return (int)values().stream().filter(Rsp::wasSuspected).count();
     }
 
     public int numReceived() {
-        int num=0;
-        Collection<Rsp<T>> values=values();
-        for(Rsp<T> rsp: values) {
-            if(rsp.wasReceived())
-                num++;
-        }
-        return num;
+        return (int)values().stream().filter(Rsp::wasReceived).count();
     }
 
     /** Returns the first value in the response set. This is random, but we try to return a non-null value first */
     public T getFirst() {
-        Collection<Rsp<T>> values=values();
-        for(Rsp<T> rsp: values) {
-            if(rsp.getValue() != null)
-                return rsp.getValue();
-        }
-        return null;
+        Optional<Rsp<T>> retval=values().stream().filter(rsp -> rsp.getValue() != null).findFirst();
+        return retval.isPresent()? retval.get().getValue() : null;
     }
 
 
@@ -150,19 +127,14 @@ public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<
      * Returns the results from non-suspected members that are not null.
      */
     public List<T> getResults() {
-        List<T> ret=new ArrayList<>(size());
-
-        T val;
-        for(Rsp<T> rsp: values()) {
-            if(rsp.wasReceived() && (val=rsp.getValue()) != null)
-                ret.add(val);
-        }
-        return ret;
+        return values().stream().filter(rsp -> rsp.wasReceived() && rsp.getValue() != null)
+          .collect(() -> new ArrayList<>(size()), (list,rsp) -> list.add(rsp.getValue()), (l,r) -> {});
     }
 
 
     public List<Address> getSuspectedMembers() {
-        return values().stream().filter(Rsp::wasSuspected).map(Rsp::getSender).collect(Collectors.toList());
+        return entrySet().stream().filter(entry -> entry.getValue() != null && entry.getValue().wasSuspected())
+          .map(Entry::getKey).collect(Collectors.toList());
     }
 
 
@@ -179,11 +151,10 @@ public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<
 
 
     public String toString() {
-        StringBuilder ret=new StringBuilder();
-        for(Rsp<T> rsp: values()) {
-            ret.append("[" + rsp + "]\n");
-        }
-        return ret.toString();
+        return entrySet().stream()
+          .collect(StringBuilder::new,
+                   (sb,entry) -> sb.append("[").append(entry.getKey()).append(": ").append(entry.getValue()).append("]\n"),
+                   (l,r)->{}).toString();
     }
 
 

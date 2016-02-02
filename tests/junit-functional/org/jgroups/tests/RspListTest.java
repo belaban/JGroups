@@ -15,30 +15,30 @@ import java.util.*;
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class RspListTest {
     RspList rl;
-    Address a1, a2, a3, a4, a5;
+    Address a, b, c, d, e;
     Rsp rsp1, rsp2, rsp3, rsp4, rsp5;
 
 
     @BeforeMethod
     void setUp() throws Exception {
         rl=new RspList();
-        a1=Util.createRandomAddress();
-        a2=Util.createRandomAddress();
-        a3=Util.createRandomAddress();
-        a4=Util.createRandomAddress();
-        a5=Util.createRandomAddress();
-        rsp1=new Rsp(a1);
-        rsp2=new Rsp(a2);
+        a=Util.createRandomAddress("A");
+        b=Util.createRandomAddress("B");
+        c=Util.createRandomAddress("C");
+        d=Util.createRandomAddress("D");
+        e=Util.createRandomAddress("E");
+        rsp1=new Rsp(a);
+        rsp2=new Rsp(b);
         rsp2.setSuspected();
-        rsp3=new Rsp(a3, "hello world");
-        rsp4=new Rsp(a4, Boolean.TRUE);
-        rsp5=new Rsp(a5);
+        rsp3=new Rsp("hello world");
+        rsp4=new Rsp(Boolean.TRUE);
+        rsp5=new Rsp(e);
         rsp5.setSuspected();
-        rl.put(a1, rsp1);
-        rl.put(a2, rsp2);
-        rl.put(a3, rsp3);
-        rl.put(a4, rsp4);
-        rl.put(a5, rsp5);
+        rl.put(a, rsp1);
+        rl.put(b, rsp2);
+        rl.put(c, rsp3);
+        rl.put(d, rsp4);
+        rl.put(e, rsp5);
     }
 
     @AfterMethod
@@ -48,13 +48,13 @@ public class RspListTest {
 
 
     public void testConstructor() {
-        Collection<Rsp> c=new LinkedList<>();
-        c.add(rsp1); c.add(rsp2); c.add(rsp3);
-        RspList tmp=new RspList(c);
-        Assert.assertEquals(c.size(), tmp.size());
-        assert tmp.containsKey(a1);
-        assert tmp.containsKey(a2);
-        assert tmp.containsKey(a3);
+        RspList tmp=new RspList()
+          .addRsp(a, a).addRsp(b, b).addRsp(c, "hello world");
+        System.out.println("tmp = " + tmp);
+        Assert.assertEquals(3, tmp.size());
+        assert tmp.containsKey(a);
+        assert tmp.containsKey(b);
+        assert tmp.containsKey(c);
         assert tmp.containsValue(rsp1);
         assert tmp.containsValue(rsp2);
         assert tmp.containsValue(rsp3);
@@ -64,14 +64,14 @@ public class RspListTest {
     public void testIsEmpty() {
         RspList tmp=new RspList();
         assert tmp.isEmpty();
-        tmp.addRsp(a1, rsp1);
+        tmp.addRsp(a, rsp1);
         assert !(tmp.isEmpty());
     }
 
 
     public void testContainsKey() {
-        assert rl.containsKey(a1);
-        assert rl.containsKey(a3);
+        assert rl.containsKey(a);
+        assert rl.containsKey(c);
     }
 
 
@@ -82,9 +82,9 @@ public class RspListTest {
 
 
     public void testGet() {
-        Rsp rsp=rl.get(a1);
+        Rsp rsp=rl.get(a);
         Assert.assertEquals(rsp, rsp1);
-        rsp=rl.get(a3);
+        rsp=rl.get(c);
         Assert.assertEquals(rsp, rsp3);
     }
 
@@ -95,7 +95,7 @@ public class RspListTest {
         tmp.setSuspected();
         rsp=rl.put(Util.createRandomAddress(), tmp);
         assert rsp == null;
-        rsp=rl.put(a2, rsp2);
+        rsp=rl.put(b, rsp2);
         Assert.assertEquals(rsp, rsp2);
         Assert.assertEquals(6, rl.size());
     }
@@ -105,7 +105,7 @@ public class RspListTest {
         Rsp rsp;
         rsp=rl.remove(Util.createRandomAddress());
         assert rsp == null;
-        rsp=rl.remove(a2);
+        rsp=rl.remove(b);
         Assert.assertEquals(rsp, rsp2);
         Assert.assertEquals(4, rl.size());
     }
@@ -134,24 +134,24 @@ public class RspListTest {
 
     public void testAddRsp() {
         Address tmp=Util.createRandomAddress();
-        rl.addRsp(tmp, new Integer(322649));
+        rl.addRsp(tmp, 322649);
         Assert.assertEquals(6, rl.size());
         Rsp rsp=rl.get(tmp);
         assert rsp != null;
         assert rsp.wasReceived();
         assert !(rsp.wasSuspected());
-        Assert.assertEquals(new Integer(322649), rsp.getValue());
+        Assert.assertEquals(322649, rsp.getValue());
     }
 
 
     public void testAddRsp2() {
-        rl.addRsp(a1, new Integer(322649));
+        rl.addRsp(a, 322649);
         Assert.assertEquals(5, rl.size());
-        Rsp rsp=rl.get(a1);
+        Rsp rsp=rl.get(a);
         assert rsp != null;
         assert rsp.wasReceived();
         assert !(rsp.wasSuspected());
-        Assert.assertEquals(new Integer(322649), rsp.getValue());
+        Assert.assertEquals(322649, rsp.getValue());
     }
 
 
@@ -170,7 +170,7 @@ public class RspListTest {
     public void testGetResults() {
         List v=rl.getResults();
         assert v != null;
-        Assert.assertEquals(2, v.size());
+        Assert.assertEquals(5, v.size());
     }
 
 

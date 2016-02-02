@@ -624,7 +624,7 @@ public class RpcDispatcherTest {
 
             byte[] val=(byte[]) obj;
             assert val != null;
-            System.out.println(val.length + " bytes from " + entry.getValue().getSender());
+            System.out.println(val.length + " bytes from " + entry.getKey());
             assert val.length == size : "return value does not match required size";
         }
     }
@@ -662,20 +662,20 @@ public class RpcDispatcherTest {
                 Throwable t = (Throwable) obj ;
 
                 System.out.println(t.toString() + " exception was raised processing argument from " +
-                                     entry.getValue().getSender() + " -this is expected") ;
+                                     entry.getKey() + " -this is expected") ;
                 continue ;
             }
 
             // its possible that the request timed out before the serve could reply
             if (obj == null) {
                 System.out.println("request timed out processing argument from " +
-                                     entry.getValue().getSender() + " - this is expected") ;
+                                     entry.getKey() + " - this is expected") ;
                 continue ;
             }
 
-            // if we reach here, we sould have a reasobable value
+            // if we reach here, we sould have a reasonable value
             byte[] val=(byte[]) obj;
-            System.out.println(val.length + " bytes from " + entry.getValue().getSender());
+            System.out.println(val.length + " bytes from " + entry.getKey());
             assert val.length == size : "return value does not match required size";
         }
     }
