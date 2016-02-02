@@ -45,19 +45,18 @@ public class GroupRequest<T> extends Request {
 
     /** Correlates requests and responses */
     @GuardedBy("lock")
-    private final Map<Address,Rsp<T>> requests;
+    protected final Map<Address,Rsp<T>> requests;
 
     @GuardedBy("lock")
-    int num_valid;       // the number of valid responses (values or exceptions that passed the response filter)
+    protected int num_valid;       // the number of valid responses (values or exceptions that passed the response filter)
 
     @GuardedBy("lock")
-    int num_received;    // number of responses (values, exceptions or suspicions)
+    protected int num_received;    // number of responses (values, exceptions or suspicions)
 
 
 
     
      /**
-     * @param msg The message to be sent
      * @param corr The request correlator to be used. A request correlator sends requests tagged with a unique ID and
      *             notifies the sender when matching responses are received. The reason {@code GroupRequest} uses
      *             it instead of a {@code Transport} is that multiple requests/responses might be sent/received concurrently
@@ -65,19 +64,12 @@ public class GroupRequest<T> extends Request {
      *                discard the message. Targets are always a subset of the current membership
      * @param options The request options to be used for this call
      */
-    public GroupRequest(Message msg, RequestCorrelator corr, Collection<Address> targets, RequestOptions options) {
-        super(msg, corr, options);
+    public GroupRequest(RequestCorrelator corr, Collection<Address> targets, RequestOptions options) {
+        super(corr, options);
         int size=targets.size();
         requests=new HashMap<>(size);
         setTargets(targets);
     }
-
-    public GroupRequest(Message msg, RequestCorrelator corr, Address target, RequestOptions options) {
-        super(msg, corr, options);
-        requests=new HashMap<>(1);
-        setTarget(target);
-    }
-
 
 
     public boolean getAnycasting() {
@@ -89,8 +81,8 @@ public class GroupRequest<T> extends Request {
     }
 
 
-    public void sendRequest() throws Exception {
-        sendRequest(requests.keySet());
+    public void sendRequest(final Message req) throws Exception {
+        sendRequest(req, requests.keySet());
     }
 
     /* ---------------------- Interface RspCollector -------------------------- */
@@ -340,7 +332,7 @@ public class GroupRequest<T> extends Request {
     }
 
 
-    private void sendRequest(final Collection<Address> targetMembers) throws Exception {
+    private void sendRequest(final Message request_msg, final Collection<Address> targetMembers) throws Exception {
         try {
             corr.sendRequest(targetMembers, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this, options);
         }

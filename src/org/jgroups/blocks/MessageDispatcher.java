@@ -327,14 +327,14 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
                 rpc_stats.add(RpcStats.Type.MULTICAST, null, sync, 0);
         }
 
-        GroupRequest<T> req=new GroupRequest<>(msg, corr, real_dests, options);
+        GroupRequest<T> req=new GroupRequest<>(corr, real_dests, options);
         if(listener != null)
             req.setListener(listener);
         req.setResponseFilter(options.getRspFilter());
         req.setAnycasting(options.getAnycasting());
         req.setBlockForResults(block_for_results);
         long start=non_blocking || !rpc_stats.extendedStats()? 0 : System.nanoTime();
-        req.execute();
+        req.execute(msg);
         long time=non_blocking || !rpc_stats.extendedStats()? 0 : System.nanoTime() - start;
         if(!non_blocking) {
             if(anycast)
@@ -379,9 +379,9 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         boolean async_rpc=opts.getMode() == ResponseMode.GET_NONE;
         if(async_rpc)
             rpc_stats.add(RpcStats.Type.UNICAST, dest, false, 0);
-        UnicastRequest<T> req=new UnicastRequest<>(msg, corr, dest, opts);
+        UnicastRequest<T> req=new UnicastRequest<>(corr, dest, opts);
         long start=async_rpc || !rpc_stats.extendedStats()? 0 : System.nanoTime();
-        req.execute();
+        req.execute(msg);
         if(async_rpc)
             return null;
         long time=!rpc_stats.extendedStats()? 0 : System.nanoTime() - start;
@@ -429,11 +429,11 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
 
         msg.setFlag(options.getFlags()).setTransientFlag(options.getTransientFlags());
         rpc_stats.add(RpcStats.Type.UNICAST, dest, options.getMode() != ResponseMode.GET_NONE, 0);
-        UnicastRequest<T> req=new UnicastRequest<>(msg, corr, dest, options);
+        UnicastRequest<T> req=new UnicastRequest<>(corr, dest, options);
         if(listener != null)
             req.setListener(listener);
         req.setBlockForResults(false);
-        req.execute();
+        req.execute(msg);
         if(options.getMode() == ResponseMode.GET_NONE)
             return new NullFuture<>(null);
         return req;
