@@ -111,7 +111,7 @@ public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<
 
     public boolean isReceived(Address sender) {
         Rsp<T> rsp=get(sender);
-        return rsp != null && rsp.received;
+        return rsp != null && rsp.wasReceived();
     }
 
     public int numSuspectedMembers() {
@@ -172,7 +172,7 @@ public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<
 
     public boolean isSuspected(Address sender) {
         Rsp<T> rsp=get(sender);
-        return rsp != null && rsp.suspected;
+        return rsp != null && rsp.wasSuspected();
     }
 
 
