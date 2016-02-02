@@ -9,24 +9,24 @@ import org.jgroups.Address;
  */
 public class Rsp<T> {
     /** Flag that represents whether the response was received */
-    protected static final byte RECEIVED    = 1;
+    protected static final byte RECEIVED     = 1;
 
     /** Flag that represents whether the sender of the response was suspected */
-    protected static final byte SUSPECTED   = 1 << 1;
+    protected static final byte SUSPECTED    = 1 << 1;
 
     /** If true, the sender (below) could not be reached, e.g. if a site was down (only used by RELAY2) */
-    protected static final byte UNREACHABLE = 1 << 2;
+    protected static final byte UNREACHABLE  = 1 << 2;
+
+    /** Set when the value is an exception */
+    protected static final byte IS_EXCEPTION = 1 << 3;
 
     protected byte          flags;
 
     /** The sender of this response */
     protected final Address sender;
 
-    /** The value from the response */
-    protected T             retval;
-
-    /** If there was an exception, this field will contain it */
-    protected Throwable     exception;
+    /** The value from the response (or the exception) */
+    protected Object        value; // untyped, to be able to hold both T and Throwable
 
 
     public Rsp(Address sender) {
@@ -58,30 +58,31 @@ public class Rsp<T> {
     }
 
     public T getValue() {
-        return retval;
+        return (T)value;
     }
 
     public Rsp<T> setValue(T val) {
-        this.retval=val;
+        this.value=val;
         setReceived();
-        exception=null;
+        this.flags=Util.clearFlags(flags, IS_EXCEPTION); // clear the exception flag just in case it is set
         return this;
     }
 
     public boolean hasException() {
-        return exception != null;
+        return Util.isFlagSet(flags, IS_EXCEPTION);
     }
 
     public Throwable getException() {
-        return exception;
+        return hasException()? (Throwable)value : null;
     }
 
-    public void setException(Throwable t) {
+    public Rsp<T> setException(Throwable t) {
         if(t != null) {
-            this.exception=t;
+            this.value=t;
             setReceived();
-            retval=null;
+            this.flags=Util.setFlag(flags, IS_EXCEPTION);
         }
+        return this;
     }
 
     public Address getSender() {
@@ -121,10 +122,12 @@ public class Rsp<T> {
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append("sender=").append(sender);
-        if(retval != null)
-            sb.append(", retval=").append(retval);
-        if(exception != null)
-            sb.append(", exception=").append(exception);
+        if(value != null) {
+            if(!hasException())
+                sb.append(", value=").append(value);
+            else
+                sb.append(", exception=").append(getException());
+        }
         sb.append(", received=").append(wasReceived()).append(", suspected=").append(wasSuspected());
         if(wasUnreachable())
             sb.append(" (unreachable)");
