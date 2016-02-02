@@ -400,7 +400,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
 
         if(rsp.wasUnreachable())
             throw new UnreachableException(dest);
-        if(!rsp.wasReceived() && !req.responseReceived())
+        if(!rsp.wasReceived())
             throw new TimeoutException("timeout waiting for response from " + dest + ", request: " + req.toString());
         return rsp.getValue();
     }
