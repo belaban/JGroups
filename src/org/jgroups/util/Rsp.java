@@ -9,13 +9,15 @@ import org.jgroups.Address;
  */
 public class Rsp<T> {
     /** Flag that represents whether the response was received */
-    protected boolean       received;
+    protected static final byte RECEIVED    = 1;
 
     /** Flag that represents whether the sender of the response was suspected */
-    protected boolean       suspected;
+    protected static final byte SUSPECTED   = 1 << 1;
 
     /** If true, the sender (below) could not be reached, e.g. if a site was down (only used by RELAY2) */
-    protected boolean       unreachable;
+    protected static final byte UNREACHABLE = 1 << 2;
+
+    protected byte          flags;
 
     /** The sender of this response */
     protected final Address sender;
@@ -59,10 +61,11 @@ public class Rsp<T> {
         return retval;
     }
 
-    public void setValue(T val) {
+    public Rsp<T> setValue(T val) {
         this.retval=val;
         setReceived();
         exception=null;
+        return this;
     }
 
     public boolean hasException() {
@@ -86,30 +89,31 @@ public class Rsp<T> {
     }
 
     public boolean wasReceived() {
-        return received;
+        return Util.isFlagSet(flags, RECEIVED);
     }
 
-    public void setReceived() {
-        received=true;
+    public Rsp<T> setReceived() {
+        this.flags=Util.setFlag(flags, RECEIVED);
+        return this;
     }
 
     public boolean wasSuspected() {
-        return suspected;
+        return Util.isFlagSet(flags, SUSPECTED);
     }
 
     public boolean setSuspected() {
-        boolean changed=!suspected;
-        suspected=true;
+        boolean changed=!wasSuspected();
+        this.flags=Util.setFlag(flags, SUSPECTED);
         return changed;
     }
 
     public boolean wasUnreachable() {
-        return unreachable;
+        return Util.isFlagSet(flags, UNREACHABLE);
     }
 
     public boolean setUnreachable() {
-        boolean changed=!unreachable;
-        unreachable=true;
+        boolean changed=!wasUnreachable();
+        this.flags=Util.setFlag(flags, UNREACHABLE);
         return changed;
     }
 
@@ -121,8 +125,8 @@ public class Rsp<T> {
             sb.append(", retval=").append(retval);
         if(exception != null)
             sb.append(", exception=").append(exception);
-        sb.append(", received=").append(received).append(", suspected=").append(suspected);
-        if(unreachable)
+        sb.append(", received=").append(wasReceived()).append(", suspected=").append(wasSuspected());
+        if(wasUnreachable())
             sb.append(" (unreachable)");
         return sb.toString();
     }

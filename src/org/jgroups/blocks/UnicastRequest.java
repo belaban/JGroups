@@ -21,7 +21,7 @@ import java.util.concurrent.TimeoutException;
 public class UnicastRequest<T> extends Request {
     protected final Rsp<T>     result;
     protected final Address    target;
-    protected int              num_received=0;
+    protected int              num_received;
 
 
 
