@@ -1711,15 +1711,15 @@ public class Util {
         int index=-1;
         long factor=1;
 
-        if((index=input.indexOf("k")) != -1)
+        if((index=input.indexOf('k')) != -1)
             factor=1000;
         else if((index=input.indexOf("kb")) != -1)
             factor=1000;
-        else if((index=input.indexOf("m")) != -1)
+        else if((index=input.indexOf('m')) != -1)
             factor=1000000;
         else if((index=input.indexOf("mb")) != -1)
             factor=1000000;
-        else if((index=input.indexOf("g")) != -1)
+        else if((index=input.indexOf('g')) != -1)
             factor=1000000000;
         else if((index=input.indexOf("gb")) != -1)
             factor=1000000000;
@@ -3886,7 +3886,7 @@ public class Util {
 
     public static String getProperty(String s) {
         String var, default_val, retval=null;
-        int index=s.indexOf(":");
+        int index=s.indexOf(':');
         if(index >= 0) {
             var=s.substring(0,index);
             default_val=s.substring(index + 1);

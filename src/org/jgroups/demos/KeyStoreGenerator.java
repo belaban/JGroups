@@ -131,7 +131,7 @@ public final class KeyStoreGenerator {
     }
 
     private static String getAlgorithm(String s) {
-        int index=s.indexOf("/");
+        int index=s.indexOf('/');
         if(index == -1)
             return s;
 

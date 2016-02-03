@@ -252,7 +252,7 @@ public class STOMP extends Protocol implements Runnable {
                 throw new EOFException("reading header");
             if(header.isEmpty())
                 break;
-            int index=header.indexOf(":");
+            int index=header.indexOf(':');
             if(index != -1)
                 headers.put(header.substring(0, index).trim(), header.substring(index+1).trim());
         }

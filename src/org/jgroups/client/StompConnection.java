@@ -377,7 +377,7 @@ public class StompConnection implements Runnable {
 
     protected void connectToDestination(String dest) throws IOException {
         // parse destination
-        int index=dest.lastIndexOf(":");
+        int index=dest.lastIndexOf(':');
         String host=dest.substring(0, index);
         int port=Integer.parseInt(dest.substring(index+1));
 
