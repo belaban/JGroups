@@ -2,7 +2,7 @@
 <testng-results skipped="0" failed="0" total="32" passed="32">
   <reporter-output>
   </reporter-output>
-  <suite name="Default suite" duration-ms="7772" started-at="2016-01-12T19:33:59Z" finished-at="2016-01-12T19:34:07Z">
+  <suite name="Default suite" duration-ms="8113" started-at="2016-02-03T17:50:45Z" finished-at="2016-02-03T17:50:53Z">
     <groups>
       <group name="stack-independent">
         <method signature="S3_PING2Test.testCreateBucket()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testCreateBucket" class="org.jgroups.protocols.S3_PING2Test"/>
@@ -39,295 +39,104 @@
         <method signature="S3_PING2Test.testUsingPreSignedUrlWhenNotSet()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testUsingPreSignedUrlWhenNotSet" class="org.jgroups.protocols.S3_PING2Test"/>
       </group> <!-- stack-independent -->
     </groups>
-    <test name="Default test" duration-ms="7772" started-at="2016-01-12T19:33:59Z" finished-at="2016-01-12T19:34:07Z">
+    <test name="Default test" duration-ms="8113" started-at="2016-02-03T17:50:45Z" finished-at="2016-02-03T17:50:53Z">
       <class name="org.jgroups.protocols.S3_PING2Test">
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="1000" started-at="2016-01-12T13:33:59Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="531" started-at="2016-02-03T11:50:45Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testGeneratePreSignedUrlForDelete()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGeneratePreSignedUrlForDelete" duration-ms="140" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testGeneratePreSignedUrlForDelete -->
-        <test-method status="PASS" signature="testCreateBucket()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testCreateBucket" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="testCreateBucket()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testCreateBucket" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testCreateBucket -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="testGeneratePreSignedUrlForDelete()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGeneratePreSignedUrlForDelete" duration-ms="141" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testGeneratePreSignedUrlForDelete -->
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testGeneratePreSignedUrlForPut()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGeneratePreSignedUrlForPut" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="testGeneratePreSignedUrlForPut()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGeneratePreSignedUrlForPut" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testGeneratePreSignedUrlForPut -->
-        <test-method status="PASS" signature="testGenerateQueryStringAuthenticationWithBasicGet()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGenerateQueryStringAuthenticationWithBasicGet" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="testGenerateQueryStringAuthenticationWithBasicGet()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGenerateQueryStringAuthenticationWithBasicGet" duration-ms="16" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testGenerateQueryStringAuthenticationWithBasicGet -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testGenerateQueryStringAuthenticationWithBasicPost()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGenerateQueryStringAuthenticationWithBasicPost" duration-ms="16" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="testGenerateQueryStringAuthenticationWithBasicPost()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGenerateQueryStringAuthenticationWithBasicPost" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testGenerateQueryStringAuthenticationWithBasicPost -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testPreSignedUrlParserWithPrefix()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testPreSignedUrlParserWithPrefix" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testPreSignedUrlParserWithPrefix -->
-        <test-method status="PASS" signature="testPreSignedUrlParserWithComplexBucketName()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testPreSignedUrlParserWithComplexBucketName" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testPreSignedUrlParserWithComplexBucketName -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <exception class="java.lang.IllegalArgumentException">
-            <message>
-              <![CDATA[pre-signed url http://test-bucket.s3.amazonaws.com/subdir/DemoCluster/node1 may only have only subdirectory under a bucket]]>
-            </message>
-            <full-stacktrace>
-              <![CDATA[java.lang.IllegalArgumentException: pre-signed url http://test-bucket.s3.amazonaws.com/subdir/DemoCluster/node1 may only have only subdirectory under a bucket
-	at org.jgroups.protocols.S3_PING2$PreSignedUrlParser.<init>(S3_PING2.java:406)
-	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:305)
-	at org.jgroups.protocols.S3_PING2Test.testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories(S3_PING2Test.java:497)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:601)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:85)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:639)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:821)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1131)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:124)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:108)
-	at org.testng.TestRunner.privateRun(TestRunner.java:773)
-	at org.testng.TestRunner.run(TestRunner.java:623)
-	at org.testng.SuiteRunner.runTest(SuiteRunner.java:357)
-	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:352)
-	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:310)
-	at org.testng.SuiteRunner.run(SuiteRunner.java:259)
-	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
-	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
-	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1185)
-	at org.testng.TestNG.runSuitesLocally(TestNG.java:1110)
-	at org.testng.TestNG.run(TestNG.java:1018)
-	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
-	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
-	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
-]]>
-            </full-stacktrace>
-          </exception> <!-- java.lang.IllegalArgumentException -->
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testGenerateQueryStringAuthenticationWithBasicPutAndHeaders()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGenerateQueryStringAuthenticationWithBasicPutAndHeaders" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testGenerateQueryStringAuthenticationWithBasicPutAndHeaders -->
-        <test-method status="PASS" signature="testPreSignedUrlParserNoPrefix()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testPreSignedUrlParserNoPrefix" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="testPreSignedUrlParserNoPrefix()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testPreSignedUrlParserNoPrefix" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testPreSignedUrlParserNoPrefix -->
-        <test-method status="PASS" signature="testUsingPreSignedUrlWhenSet()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testUsingPreSignedUrlWhenSet" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testUsingPreSignedUrlWhenSet -->
-        <test-method status="PASS" signature="testValidatePropertiesWithBothPreSignedSetButNoFile()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testValidatePropertiesWithBothPreSignedSetButNoFile" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <exception class="java.lang.IllegalArgumentException">
-            <message>
-              <![CDATA[pre-signed url http://test-bucket.s3.amazonaws.com/ must point to a file within a bucket]]>
-            </message>
-            <full-stacktrace>
-              <![CDATA[java.lang.IllegalArgumentException: pre-signed url http://test-bucket.s3.amazonaws.com/ must point to a file within a bucket
-	at org.jgroups.protocols.S3_PING2$PreSignedUrlParser.<init>(S3_PING2.java:403)
-	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:305)
-	at org.jgroups.protocols.S3_PING2Test.testValidatePropertiesWithBothPreSignedSetButNoFile(S3_PING2Test.java:490)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:601)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:85)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:639)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:821)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1131)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:124)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:108)
-	at org.testng.TestRunner.privateRun(TestRunner.java:773)
-	at org.testng.TestRunner.run(TestRunner.java:623)
-	at org.testng.SuiteRunner.runTest(SuiteRunner.java:357)
-	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:352)
-	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:310)
-	at org.testng.SuiteRunner.run(SuiteRunner.java:259)
-	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
-	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
-	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1185)
-	at org.testng.TestNG.runSuitesLocally(TestNG.java:1110)
-	at org.testng.TestNG.run(TestNG.java:1018)
-	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
-	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
-	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
-]]>
-            </full-stacktrace>
-          </exception> <!-- java.lang.IllegalArgumentException -->
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testValidatePropertiesWithBothPreSignedSetButNoFile -->
-        <test-method status="PASS" signature="testValidatePropertiesWithBothPreSignedSetButNoBucket()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testValidatePropertiesWithBothPreSignedSetButNoBucket" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <exception class="java.lang.IllegalArgumentException">
-            <message>
-              <![CDATA[pre-signed url http://s3.amazonaws.com/ must point to a file within a bucket]]>
-            </message>
-            <full-stacktrace>
-              <![CDATA[java.lang.IllegalArgumentException: pre-signed url http://s3.amazonaws.com/ must point to a file within a bucket
-	at org.jgroups.protocols.S3_PING2$PreSignedUrlParser.<init>(S3_PING2.java:403)
-	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:305)
-	at org.jgroups.protocols.S3_PING2Test.testValidatePropertiesWithBothPreSignedSetButNoBucket(S3_PING2Test.java:483)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:601)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:85)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:639)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:821)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1131)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:124)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:108)
-	at org.testng.TestRunner.privateRun(TestRunner.java:773)
-	at org.testng.TestRunner.run(TestRunner.java:623)
-	at org.testng.SuiteRunner.runTest(SuiteRunner.java:357)
-	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:352)
-	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:310)
-	at org.testng.SuiteRunner.run(SuiteRunner.java:259)
-	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
-	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
-	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1185)
-	at org.testng.TestNG.runSuitesLocally(TestNG.java:1110)
-	at org.testng.TestNG.run(TestNG.java:1018)
-	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
-	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
-	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
-]]>
-            </full-stacktrace>
-          </exception> <!-- java.lang.IllegalArgumentException -->
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testValidatePropertiesWithBothPreSignedSetButNoBucket -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testValidatePropertiesWithPreSignedPutSet()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testValidatePropertiesWithPreSignedPutSet" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <exception class="java.lang.IllegalArgumentException">
-            <message>
-              <![CDATA[pre_signed_put_url and pre_signed_delete_url must both be set or both unset]]>
-            </message>
-            <full-stacktrace>
-              <![CDATA[java.lang.IllegalArgumentException: pre_signed_put_url and pre_signed_delete_url must both be set or both unset
-	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:312)
-	at org.jgroups.protocols.S3_PING2Test.testValidatePropertiesWithPreSignedPutSet(S3_PING2Test.java:469)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:601)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:85)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:639)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:821)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1131)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:124)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:108)
-	at org.testng.TestRunner.privateRun(TestRunner.java:773)
-	at org.testng.TestRunner.run(TestRunner.java:623)
-	at org.testng.SuiteRunner.runTest(SuiteRunner.java:357)
-	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:352)
-	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:310)
-	at org.testng.SuiteRunner.run(SuiteRunner.java:259)
-	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
-	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
-	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1185)
-	at org.testng.TestNG.runSuitesLocally(TestNG.java:1110)
-	at org.testng.TestNG.run(TestNG.java:1018)
-	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
-	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
-	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
-]]>
-            </full-stacktrace>
-          </exception> <!-- java.lang.IllegalArgumentException -->
+        <test-method status="PASS" signature="testPreSignedUrlParserWithComplexBucketName()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testPreSignedUrlParserWithComplexBucketName" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
-        </test-method> <!-- testValidatePropertiesWithPreSignedPutSet -->
-        <test-method status="PASS" signature="testValidatePropertiesWithBothPreSignedSetToValidSubdirectory()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testValidatePropertiesWithBothPreSignedSetToValidSubdirectory" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        </test-method> <!-- testPreSignedUrlParserWithComplexBucketName -->
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="testPreSignedUrlParserWithPrefix()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testPreSignedUrlParserWithPrefix" duration-ms="15" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testPreSignedUrlParserWithPrefix -->
+        <test-method status="PASS" signature="testGenerateQueryStringAuthenticationWithBasicPutAndHeaders()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGenerateQueryStringAuthenticationWithBasicPutAndHeaders" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testGenerateQueryStringAuthenticationWithBasicPutAndHeaders -->
+        <test-method status="PASS" signature="testValidatePropertiesWithBothPreSignedSetToValidSubdirectory()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testValidatePropertiesWithBothPreSignedSetToValidSubdirectory" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testValidatePropertiesWithBothPreSignedSetToValidSubdirectory -->
-        <test-method status="PASS" signature="testCheckBucketExists()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testCheckBucketExists" duration-ms="977" started-at="2016-01-12T13:34:00Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testCreateBucket" finished-at="2016-01-12T13:34:01Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testCheckBucketExists -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testUsingPreSignedUrlWhenNotSet()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testUsingPreSignedUrlWhenNotSet" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testUsingPreSignedUrlWhenNotSet -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testValidatePropertiesWithPreSignedDeleteSet()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testValidatePropertiesWithPreSignedDeleteSet" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="testValidatePropertiesWithPreSignedDeleteSet()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testValidatePropertiesWithPreSignedDeleteSet" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <exception class="java.lang.IllegalArgumentException">
             <message>
               <![CDATA[pre_signed_put_url and pre_signed_delete_url must both be set or both unset]]>
             </message>
             <full-stacktrace>
               <![CDATA[java.lang.IllegalArgumentException: pre_signed_put_url and pre_signed_delete_url must both be set or both unset
-	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:312)
+	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:286)
 	at org.jgroups.protocols.S3_PING2Test.testValidatePropertiesWithPreSignedDeleteSet(S3_PING2Test.java:476)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
@@ -359,122 +168,313 @@
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testValidatePropertiesWithPreSignedDeleteSet -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testValidatePropertiesWithBothPreSignedSetToValid()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testValidatePropertiesWithBothPreSignedSetToValid" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="testValidatePropertiesWithBothPreSignedSetToValid()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testValidatePropertiesWithBothPreSignedSetToValid" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testValidatePropertiesWithBothPreSignedSetToValid -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:00Z" finished-at="2016-01-12T13:34:00Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testListAllMyBuckets()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testListAllMyBuckets" duration-ms="503" started-at="2016-01-12T13:34:01Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testCheckBucketExists" finished-at="2016-01-12T13:34:02Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="testUsingPreSignedUrlWhenNotSet()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testUsingPreSignedUrlWhenNotSet" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testUsingPreSignedUrlWhenNotSet -->
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="testUsingPreSignedUrlWhenSet()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testUsingPreSignedUrlWhenSet" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testUsingPreSignedUrlWhenSet -->
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <exception class="java.lang.IllegalArgumentException">
+            <message>
+              <![CDATA[pre-signed url http://test-bucket.s3.amazonaws.com/subdir/DemoCluster/node1 may only have only subdirectory under a bucket]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.IllegalArgumentException: pre-signed url http://test-bucket.s3.amazonaws.com/subdir/DemoCluster/node1 may only have only subdirectory under a bucket
+	at org.jgroups.protocols.S3_PING2$PreSignedUrlParser.<init>(S3_PING2.java:374)
+	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:279)
+	at org.jgroups.protocols.S3_PING2Test.testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories(S3_PING2Test.java:497)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:601)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:85)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:639)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:821)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1131)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:124)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:108)
+	at org.testng.TestRunner.privateRun(TestRunner.java:773)
+	at org.testng.TestRunner.run(TestRunner.java:623)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:357)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:352)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:310)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:259)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1185)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1110)
+	at org.testng.TestNG.run(TestNG.java:1018)
+	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.IllegalArgumentException -->
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories -->
+        <test-method status="PASS" signature="testValidatePropertiesWithBothPreSignedSetButNoFile()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testValidatePropertiesWithBothPreSignedSetButNoFile" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <exception class="java.lang.IllegalArgumentException">
+            <message>
+              <![CDATA[pre-signed url http://test-bucket.s3.amazonaws.com/ must point to a file within a bucket]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.IllegalArgumentException: pre-signed url http://test-bucket.s3.amazonaws.com/ must point to a file within a bucket
+	at org.jgroups.protocols.S3_PING2$PreSignedUrlParser.<init>(S3_PING2.java:371)
+	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:279)
+	at org.jgroups.protocols.S3_PING2Test.testValidatePropertiesWithBothPreSignedSetButNoFile(S3_PING2Test.java:490)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:601)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:85)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:639)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:821)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1131)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:124)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:108)
+	at org.testng.TestRunner.privateRun(TestRunner.java:773)
+	at org.testng.TestRunner.run(TestRunner.java:623)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:357)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:352)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:310)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:259)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1185)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1110)
+	at org.testng.TestNG.run(TestNG.java:1018)
+	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.IllegalArgumentException -->
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testValidatePropertiesWithBothPreSignedSetButNoFile -->
+        <test-method status="PASS" signature="testValidatePropertiesWithPreSignedPutSet()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testValidatePropertiesWithPreSignedPutSet" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <exception class="java.lang.IllegalArgumentException">
+            <message>
+              <![CDATA[pre_signed_put_url and pre_signed_delete_url must both be set or both unset]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.IllegalArgumentException: pre_signed_put_url and pre_signed_delete_url must both be set or both unset
+	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:286)
+	at org.jgroups.protocols.S3_PING2Test.testValidatePropertiesWithPreSignedPutSet(S3_PING2Test.java:469)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:601)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:85)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:639)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:821)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1131)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:124)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:108)
+	at org.testng.TestRunner.privateRun(TestRunner.java:773)
+	at org.testng.TestRunner.run(TestRunner.java:623)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:357)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:352)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:310)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:259)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1185)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1110)
+	at org.testng.TestNG.run(TestNG.java:1018)
+	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.IllegalArgumentException -->
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testValidatePropertiesWithPreSignedPutSet -->
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="testValidatePropertiesWithBothPreSignedSetButNoBucket()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testValidatePropertiesWithBothPreSignedSetButNoBucket" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <exception class="java.lang.IllegalArgumentException">
+            <message>
+              <![CDATA[pre-signed url http://s3.amazonaws.com/ must point to a file within a bucket]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.IllegalArgumentException: pre-signed url http://s3.amazonaws.com/ must point to a file within a bucket
+	at org.jgroups.protocols.S3_PING2$PreSignedUrlParser.<init>(S3_PING2.java:371)
+	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:279)
+	at org.jgroups.protocols.S3_PING2Test.testValidatePropertiesWithBothPreSignedSetButNoBucket(S3_PING2Test.java:483)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:601)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:85)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:639)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:821)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1131)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:124)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:108)
+	at org.testng.TestRunner.privateRun(TestRunner.java:773)
+	at org.testng.TestRunner.run(TestRunner.java:623)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:357)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:352)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:310)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:259)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1185)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1110)
+	at org.testng.TestNG.run(TestNG.java:1018)
+	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.IllegalArgumentException -->
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testValidatePropertiesWithBothPreSignedSetButNoBucket -->
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:46Z" finished-at="2016-02-03T11:50:46Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="testCheckBucketExists()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testCheckBucketExists" duration-ms="984" started-at="2016-02-03T11:50:46Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testCreateBucket" finished-at="2016-02-03T11:50:47Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testCheckBucketExists -->
+        <test-method status="PASS" signature="testListAllMyBuckets()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testListAllMyBuckets" duration-ms="515" started-at="2016-02-03T11:50:47Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testCheckBucketExists" finished-at="2016-02-03T11:50:47Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testListAllMyBuckets -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:01Z" finished-at="2016-01-12T13:34:01Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:47Z" finished-at="2016-02-03T11:50:47Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:02Z" finished-at="2016-01-12T13:34:02Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:47Z" finished-at="2016-02-03T11:50:47Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testPutAcl()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testPutAcl" duration-ms="1407" started-at="2016-01-12T13:34:02Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testCheckBucketExists" finished-at="2016-01-12T13:34:03Z">
+        <test-method status="PASS" signature="testPutAcl()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testPutAcl" duration-ms="1094" started-at="2016-02-03T11:50:47Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testCheckBucketExists" finished-at="2016-02-03T11:50:48Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testPutAcl -->
-        <test-method status="PASS" signature="testPutBucketLogging()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testPutBucketLogging" duration-ms="344" started-at="2016-01-12T13:34:03Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testCheckBucketExists" finished-at="2016-01-12T13:34:03Z">
+        <test-method status="PASS" signature="testPutBucketLogging()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testPutBucketLogging" duration-ms="375" started-at="2016-02-03T11:50:48Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testCheckBucketExists" finished-at="2016-02-03T11:50:49Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testPutBucketLogging -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:03Z" finished-at="2016-01-12T13:34:03Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:48Z" finished-at="2016-02-03T11:50:48Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testPutBucketRequestPayment()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testPutBucketRequestPayment" duration-ms="391" started-at="2016-01-12T13:34:03Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testCheckBucketExists" finished-at="2016-01-12T13:34:04Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:49Z" finished-at="2016-02-03T11:50:49Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="testPutBucketRequestPayment()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testPutBucketRequestPayment" duration-ms="531" started-at="2016-02-03T11:50:49Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testCheckBucketExists" finished-at="2016-02-03T11:50:49Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testPutBucketRequestPayment -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:03Z" finished-at="2016-01-12T13:34:03Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:49Z" finished-at="2016-02-03T11:50:49Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:04Z" finished-at="2016-01-12T13:34:04Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testPutObject()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testPutObject" duration-ms="172" started-at="2016-01-12T13:34:04Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testCheckBucketExists" finished-at="2016-01-12T13:34:04Z">
+        <test-method status="PASS" signature="testPutObject()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testPutObject" duration-ms="204" started-at="2016-02-03T11:50:49Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testCheckBucketExists" finished-at="2016-02-03T11:50:50Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testPutObject -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:04Z" finished-at="2016-01-12T13:34:04Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:50Z" finished-at="2016-02-03T11:50:50Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testGetObject()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGetObject" duration-ms="187" started-at="2016-01-12T13:34:04Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testPutObject" finished-at="2016-01-12T13:34:04Z">
+        <test-method status="PASS" signature="testGetObject()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGetObject" duration-ms="204" started-at="2016-02-03T11:50:50Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testPutObject" finished-at="2016-02-03T11:50:50Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testGetObject -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="1" started-at="2016-01-12T13:34:04Z" finished-at="2016-01-12T13:34:04Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:50Z" finished-at="2016-02-03T11:50:50Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testListBucket()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testListBucket" duration-ms="187" started-at="2016-01-12T13:34:04Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testPutObject" finished-at="2016-01-12T13:34:04Z">
+        <test-method status="PASS" signature="testListBucket()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testListBucket" duration-ms="187" started-at="2016-02-03T11:50:50Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testPutObject" finished-at="2016-02-03T11:50:50Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testListBucket -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:04Z" finished-at="2016-01-12T13:34:04Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:50Z" finished-at="2016-02-03T11:50:50Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testDeleteObject()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testDeleteObject" duration-ms="360" started-at="2016-01-12T13:34:04Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testGetObject" finished-at="2016-01-12T13:34:05Z">
+        <test-method status="PASS" signature="testDeleteObject()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testDeleteObject" duration-ms="375" started-at="2016-02-03T11:50:50Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testGetObject" finished-at="2016-02-03T11:50:50Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testDeleteObject -->
-        <test-method status="PASS" signature="testGetAcl()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGetAcl" duration-ms="203" started-at="2016-01-12T13:34:05Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testListBucket" finished-at="2016-01-12T13:34:05Z">
+        <test-method status="PASS" signature="testGetAcl()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGetAcl" duration-ms="172" started-at="2016-02-03T11:50:50Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testListBucket" finished-at="2016-02-03T11:50:50Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testGetAcl -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:05Z" finished-at="2016-01-12T13:34:05Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:50Z" finished-at="2016-02-03T11:50:50Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testGetBucketLocation()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGetBucketLocation" duration-ms="1471" started-at="2016-01-12T13:34:05Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testListBucket" finished-at="2016-01-12T13:34:06Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:50Z" finished-at="2016-02-03T11:50:50Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="testGetBucketLocation()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGetBucketLocation" duration-ms="2274" started-at="2016-02-03T11:50:50Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testListBucket" finished-at="2016-02-03T11:50:53Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testGetBucketLocation -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:05Z" finished-at="2016-01-12T13:34:05Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:06Z" finished-at="2016-01-12T13:34:06Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testGetBucketLogging()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGetBucketLogging" duration-ms="172" started-at="2016-01-12T13:34:06Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testListBucket" finished-at="2016-01-12T13:34:07Z">
+        <test-method status="PASS" signature="testGetBucketLogging()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGetBucketLogging" duration-ms="172" started-at="2016-02-03T11:50:53Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testListBucket" finished-at="2016-02-03T11:50:53Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testGetBucketLogging -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:07Z" finished-at="2016-01-12T13:34:07Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:53Z" finished-at="2016-02-03T11:50:53Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
-        <test-method status="PASS" signature="testGetBucketRequestPayment()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGetBucketRequestPayment" duration-ms="172" started-at="2016-01-12T13:34:07Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testListBucket" finished-at="2016-01-12T13:34:07Z">
+        <test-method status="PASS" signature="testGetBucketRequestPayment()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testGetBucketRequestPayment" duration-ms="203" started-at="2016-02-03T11:50:53Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testListBucket" finished-at="2016-02-03T11:50:53Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testGetBucketRequestPayment -->
-        <test-method status="PASS" signature="testDeleteBucket()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testDeleteBucket" duration-ms="0" started-at="2016-01-12T13:34:07Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testDeleteObject" finished-at="2016-01-12T13:34:07Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testDeleteBucket -->
-        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-01-12T13:34:07Z" finished-at="2016-01-12T13:34:07Z">
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:53Z" finished-at="2016-02-03T11:50:53Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="setUp()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="setUp" is-config="true" duration-ms="0" started-at="2016-02-03T11:50:53Z" finished-at="2016-02-03T11:50:53Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUp -->
+        <test-method status="PASS" signature="testDeleteBucket()[pri:0, instance:org.jgroups.protocols.S3_PING2Test@7dbc70cc]" name="testDeleteBucket" duration-ms="16" started-at="2016-02-03T11:50:53Z" depends-on-methods="org.jgroups.protocols.S3_PING2Test.testDeleteObject" finished-at="2016-02-03T11:50:53Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testDeleteBucket -->
       </class> <!-- org.jgroups.protocols.S3_PING2Test -->
     </test> <!-- Default test -->
   </suite> <!-- Default suite -->

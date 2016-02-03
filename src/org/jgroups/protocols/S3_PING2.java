@@ -64,49 +64,32 @@ public class S3_PING2 extends FILE_PING {
 
     protected AWSAuthConnection conn=null;
 
-    // -mm- //////////////////////////////////////////////////////////////////
-    
-    @Property(description="Mark's Debug flag")
-    protected boolean mdebug=false;
-    
     @Property(description="AWS region")
     protected String region="us-east-1";
     protected String getRegion(){return region;}
     
-    protected static void mlog(String s){
-    	System.out.println("\n********************************************");
-    	System.out.println(s);
-    	System.out.println("********************************************");
+    @Property(description="s3_ping2_debug")
+    protected boolean s3_ping2_debug=false;
+    
+    protected static void s3_ping2_log(String s){
+    		System.out.println(s);
     }
     
-    ////////////////////////////////////////////////////////////////// -mm- //
-
     public boolean isInitilized = false;
     @Override
     public void init() throws Exception {
         super.init();
 
-        // -mm- //////////////////////////////////////////////////////////////////
-
-        // Use the environment to pass the AWS info
-        // during development so your keys are not 
-        // commited to the repo by accident.
-        
-        //access_key
-        if(access_key == null || access_key.length() > 0)
-        {
-        	// check environment if null
+        /* Use the environment to pass the AWS info
+         during development so your keys are not 
+         commited to the repo by accident. */
+        if(access_key == null || access_key.length() > 0){
         	access_key = System.getenv("access_key");
         }
-        //secret_access_key
-        if(secret_access_key == null || secret_access_key.length() > 0)
-        {
-        	// check environment if null
+        if(secret_access_key == null || secret_access_key.length() > 0){
         	secret_access_key = System.getenv("secret_access_key");
         }        
 
-        ////////////////////////////////////////////////////////////////// -mm- //
-        
         if(host == null)
             host=Utils.DEFAULT_HOST;
         validateProperties();
@@ -141,8 +124,6 @@ public class S3_PING2 extends FILE_PING {
             //conn.createBucket(location, AWSAuthConnection.LOCATION_DEFAULT, null).connection.getResponseMessage();
             conn.createBucket(location, region, null).connection.getResponseMessage();
         }
-        
-        mlog("init done.");
         
         isInitilized = true;
     }
@@ -232,10 +213,7 @@ public class S3_PING2 extends FILE_PING {
                 headers.put("x-amz-acl", Arrays.asList("public-read"));
                 httpConn = conn.put(pre_signed_put_url, val, headers).connection;
             } else {
-                //Map headers=new TreeMap();
                 Map headers=null;
-                //headers.put("Content-Type", Arrays.asList("text/plain"));
-                //headers.put("Content-Type", "text/plain");
                 httpConn = conn.put(location, key, val, headers).connection;
             }
             if(!httpConn.getResponseMessage().equals("OK")) {
@@ -253,13 +231,9 @@ public class S3_PING2 extends FILE_PING {
         String filename=addressToFilename(addr);//  addr instanceof org.jgroups.util.UUID? ((org.jgroups.util.UUID)addr).toStringLong() : addr.toString();
         String key=sanitize(clustername) + "/" + sanitize(filename);
         try {
-            //Map headers=new TreeMap();
-            //headers.put("Content-Type", Arrays.asList("text/plain"));
             if (usingPreSignedUrls()) {
                 conn.delete(pre_signed_delete_url).connection.getResponseMessage();
-            } else {
-                //conn.delete(location, key, headers).connection.getResponseMessage();
-                conn.delete(location, key, null).connection.getResponseMessage();
+            } else {                conn.delete(location, key, null).connection.getResponseMessage();
             }
             if(log.isTraceEnabled())
                 log.trace("removing " + location + "/" + key);
@@ -561,7 +535,7 @@ public class S3_PING2 extends FILE_PING {
 
             if(httpCode >= 200 && httpCode < 300){
             	
-            	mlog(
+            	s3_ping2_log(
             			"CheckBucketExists httpCode = " 
             	+ httpCode 
             	+ " " 
@@ -570,7 +544,7 @@ public class S3_PING2 extends FILE_PING {
             	
                 return true;
             }else{
-            	mlog(
+            	s3_ping2_log(
             			"CheckBucketExists httpCode = " 
             	+ httpCode 
             	+ " " 
@@ -1039,7 +1013,7 @@ public class S3_PING2 extends FILE_PING {
     		
     		int rspCode = connection.getResponseCode();
     		String rspMsg = connection.getResponseMessage();
-    		mlog("GetBucketRequestPayment rspCode " + rspCode + " " + rspMsg);
+    		s3_ping2_log("GetBucketRequestPayment rspCode " + rspCode + " " + rspMsg);
  
             return connection;
         }
@@ -1079,7 +1053,7 @@ public class S3_PING2 extends FILE_PING {
     		
     		int rspCode = connection.getResponseCode();
     		String rspMsg = connection.getResponseMessage();
-    		mlog("GetBucketLogging rspCode " + rspCode + " " + rspMsg);
+    		s3_ping2_log("GetBucketLogging rspCode " + rspCode + " " + rspMsg);
  
             return connection;
         }
@@ -1120,7 +1094,7 @@ public class S3_PING2 extends FILE_PING {
     		
     		int rspCode = connection.getResponseCode();
     		String rspMsg = connection.getResponseMessage();
-    		mlog("GetAcl rspCode " + rspCode + " " + rspMsg);
+    		s3_ping2_log("GetAcl rspCode " + rspCode + " " + rspMsg);
  
             return connection;
         }
@@ -1346,7 +1320,7 @@ public class S3_PING2 extends FILE_PING {
     		
     		int rspCode = connection.getResponseCode();
     		String rspMsg = connection.getResponseMessage();
-    		mlog("GetBucketLocation rspCode " + rspCode + " " + rspMsg);
+    		s3_ping2_log("GetBucketLocation rspCode " + rspCode + " " + rspMsg);
  
             return connection;
         }
@@ -1430,7 +1404,7 @@ public class S3_PING2 extends FILE_PING {
     		
     		int rspCode = connection.getResponseCode();
     		String rspMsg = connection.getResponseMessage();
-    		mlog("ListAllMyBuckets rspCode " + rspCode + " " + rspMsg);
+    		s3_ping2_log("ListAllMyBuckets rspCode " + rspCode + " " + rspMsg);
     		 
             return connection;
         }
@@ -1580,7 +1554,7 @@ public class S3_PING2 extends FILE_PING {
     		
     		int rspCode = connection.getResponseCode();
     		String rspMsg = connection.getResponseMessage();
-    		mlog("ListBucket rspCode " + rspCode + " " + rspMsg);
+    		s3_ping2_log("ListBucket rspCode " + rspCode + " " + rspMsg);
     		
             // subdomain-style urls may encounter http redirects.
             // Ensure that redirects are supported.
@@ -1631,109 +1605,15 @@ public class S3_PING2 extends FILE_PING {
             return connection;
         }
         
-        //////////////////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////////////////
-
-        private HttpURLConnection makeRequestBackup(
-        		String cmdName
-        		, String method
-        		, String bucket
-        		, String key
-        		, Map pathArgs
-        		, Map headers
-        		, S3Object object) throws IOException 
-        {
-        	        	
-            CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
-            
-            if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
-                System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
-            }
-            
-            //-mm-///////////////////////////////////////////////////
-            // adjust the server for region if not us-east-1
-            // if us-east-1 we use the default server
-            //if(region!=null 
-            //		&& !region.equalsIgnoreCase("us-east-1") 
-            //		&& !cmdName.equalsIgnoreCase("ListAllMyBuckets")
-            //		&& !cmdName.equalsIgnoreCase("CheckBucketExists")
-            //		)
-            //{
-            	//server = "s3-" + region + ".amazonaws.com";
-            //}
-            //S3_PING2.mlog("server: " + server);
-            /////////////////////////////////////////////////////-mm-
-            
-            // build the domain based on the calling format
-            //URL url=format.getURL(isSecure, server, this.port, bucket, key, pathArgs);
-            //HttpURLConnection connection=(HttpURLConnection)url.openConnection();
-            //connection.setRequestMethod(method);
-            //addHeaders(connection, headers);
-            
-            
-            String bodyHash = null;
-            //if(key == null)key = "";
-            Map<String, String> queryParameters = pathArgs;
-            if(headers == null) headers = new HashMap<String, String>();
-            if(object != null)
-            {
-            	String objectContent = new String(object.data);
-                String content_length = "" + objectContent.length();
-                byte[] contentHash = AWS4Signer.hash(objectContent);
-                bodyHash = AWS4Signer.toHex(contentHash);
-                headers.put("content-length", content_length);
-                headers.put("x-amz-content-sha256", bodyHash);
-                headers.put("x-amz-storage-class", "REDUCED_REDUNDANCY");
-            }else{
-            	bodyHash = AWS4Signer.EMPTY_BODY_SHA256;
-                headers.put("x-amz-content-sha256", bodyHash);
-            }
-            
-            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
-            		isSecure
-     				, method
-     				, bucket
-     				, region
-     				, headers
-     				, queryParameters
-     				, bodyHash
-     				, awsAccessKeyId
-     				, awsSecretAccessKey
-     				);
-             headers.put( "Authorization", authorization );
-
-            URL endpointUrl = null;
-    		try {
-    			endpointUrl = new URL("https://" + bucket + ".s3.amazonaws.com");
-    		} catch (MalformedURLException e) {
-    			e.printStackTrace();
-    		}
-    		
-    		HttpURLConnection connection = null;
-    		if(object == null){
-    			connection = AWS4Signer.getHttpRequest( 
-            		endpointUrl, method, headers, null );
-    		}else{
-    			String requestBody = new String(object.data);
-    			connection = AWS4Signer.getHttpRequest( 
-                		endpointUrl, method, headers, requestBody );    			
-    		}
-
-            // subdomain-style urls may encounter http redirects.
-            // Ensure that redirects are supported.
-            if(!connection.getInstanceFollowRedirects() && format.supportsLocatedBuckets())
-                throw new RuntimeException("HTTP redirect support required.");
- 
-            //addHeaders(connection, headers);
-            //addMetadataHeaders(connection, object.metadata);
-
-     		//connection.setRequestProperty("Authorization", authorization);
-          
-            //addAuthHeader(connection, method, bucket, key, pathArgs);
-
-            return connection;
-        }
       
+        /**
+         * Make signed path type request type
+         * @param method
+         * @param preSignedUrl
+         * @param headers
+         * @return
+         * @throws IOException
+         */
         private HttpURLConnection makePreSignedRequest(String method, String preSignedUrl, Map headers) throws IOException {
             URL url = new URL(preSignedUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -1743,10 +1623,6 @@ public class S3_PING2 extends FILE_PING {
 
             return connection;
         }
-        
-        //////////////////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////////////////
-        
         
         /**
          * Add the given headers to the HttpURLConnection.

@@ -86,13 +86,13 @@ public class S3_PING2Test {
         	// PutBucketRequestPayment
         	///////////////////////////////////////////////
         	// owner pays
-        	s3_ping2.mlog("PutBucketRequestPayment");
+        	s3_ping2.s3_ping2_log("PutBucketRequestPayment");
         	String msg = "<RequestPaymentConfiguration xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"><Payer>BucketOwner</Payer></RequestPaymentConfiguration>";
         	HttpURLConnection httpConn = awsConn.putBucketRequestPayment(bucketName, msg, null).connection;
         	String rspmsg = httpConn.getResponseMessage();
         	int code = httpConn.getResponseCode();
         	String response = "" + code + " " + rspmsg;
-        	s3_ping2.mlog("PutBucketRequestPayment: " + response);
+        	s3_ping2.s3_ping2_log("PutBucketRequestPayment: " + response);
 
         } catch (Exception e) {
 			e.printStackTrace();
@@ -109,13 +109,13 @@ public class S3_PING2Test {
         	// PutBucketLogging
         	///////////////////////////////////////////////
         	// disable logging
-        	s3_ping2.mlog("PutBucketLogging");
+        	s3_ping2.s3_ping2_log("PutBucketLogging");
         	String msg = "<BucketLoggingStatus xmlns=\"http://doc.s3.amazonaws.com/2006-03-01\" />";
         	HttpURLConnection httpConn = awsConn.putBucketLogging(bucketName, msg, null).connection;
         	String rspmsg = httpConn.getResponseMessage();
         	int code = httpConn.getResponseCode();
         	String response = "" + code + " " + rspmsg;
-        	s3_ping2.mlog("PutBucketLogging: " + response);
+        	s3_ping2.s3_ping2_log("PutBucketLogging: " + response);
 
         } catch (Exception e) {
 			e.printStackTrace();
@@ -131,13 +131,13 @@ public class S3_PING2Test {
         	///////////////////////////////////////////////
         	// PutAcl
         	///////////////////////////////////////////////
-        	s3_ping2.mlog("PutAcl");
+        	s3_ping2.s3_ping2_log("PutAcl");
         	String msg = "<AccessControlPolicy xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"><Owner><ID>" + System.getenv("ID") + "</ID></Owner><AccessControlList><Grant><Grantee xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:type=\"CanonicalUser\"><ID>d36e59ad2a2e2f1e1cfdd2efd83e5a50bd1cf90c76e9bc09045d8f19405a495a</ID></Grantee><Permission>FULL_CONTROL</Permission></Grant></AccessControlList></AccessControlPolicy>";
         	HttpURLConnection httpConn = awsConn.putACL(bucketName, key, msg, null).connection;
         	String rspmsg = httpConn.getResponseMessage();
         	int code = httpConn.getResponseCode();
         	String response = "" + code + " " + rspmsg;
-        	s3_ping2.mlog("PutAcl: " + response);
+        	s3_ping2.s3_ping2_log("PutAcl: " + response);
 
         } catch (Exception e) {
 			e.printStackTrace();
@@ -153,7 +153,7 @@ public class S3_PING2Test {
         	///////////////////////////////////////////////
         	// PutObject
         	///////////////////////////////////////////////
-        	s3_ping2.mlog("PutObject");
+        	s3_ping2.s3_ping2_log("PutObject");
         	String msg = "Timestamp: " + new Date() + " Msg: Hello World!";
         	byte[] data = msg.getBytes(); 
         	S3Object val = new S3Object(data, null);
@@ -161,7 +161,7 @@ public class S3_PING2Test {
         	String rspmsg = httpConn.getResponseMessage();
         	int code = httpConn.getResponseCode();
         	String response = "" + code + " " + rspmsg;
-        	s3_ping2.mlog("PutObject: " + response);
+        	s3_ping2.s3_ping2_log("PutObject: " + response);
         	
         		
 		} catch (Exception e) {
@@ -178,7 +178,7 @@ public class S3_PING2Test {
         	///////////////////////////////////////////////
         	// getBucketLocation
         	///////////////////////////////////////////////
-        	s3_ping2.mlog("getBucketLocation --> listAllMyBuckets");
+        	s3_ping2.s3_ping2_log("getBucketLocation --> listAllMyBuckets");
         	ListAllMyBucketsResponse bucket_list = awsConn.listAllMyBuckets(null);
         	String listAllMyBucketsResult;
         	List bucketList = null;
@@ -187,14 +187,14 @@ public class S3_PING2Test {
 				LocationResponse locationResponse = null;
 				String sLocRsp = null;
 				for (int i = 0; i < bucketList.size(); i++) {
-		        	s3_ping2.mlog("getBucketLocation --> listAllMyBuckets --> getBucketLocation");
+		        	s3_ping2.s3_ping2_log("getBucketLocation --> listAllMyBuckets --> getBucketLocation");
 					Bucket bucket = (Bucket)bucketList.get(i);
-					s3_ping2.mlog("GetBucketLocation[" + i + "] Name: " + bucket.name);
-					s3_ping2.mlog("GetBucketLocation[" + i + "] Creation Date: " + bucket.creationDate);
+					s3_ping2.s3_ping2_log("GetBucketLocation[" + i + "] Name: " + bucket.name);
+					s3_ping2.s3_ping2_log("GetBucketLocation[" + i + "] Creation Date: " + bucket.creationDate);
 					locationResponse = awsConn.getBucketLocation(bucket.name);
 					int contentLength = locationResponse.connection.getContentLength();
 					sLocRsp = locationResponse.getLocation();
-					s3_ping2.mlog("GetBucketLocation: " + sLocRsp + " Bucket Name: " + bucket.name);
+					s3_ping2.s3_ping2_log("GetBucketLocation: " + sLocRsp + " Bucket Name: " + bucket.name);
 					
 				}
         	}else{
@@ -214,7 +214,7 @@ public class S3_PING2Test {
         	///////////////////////////////////////////////
         	// GetBucketLogging
         	///////////////////////////////////////////////
-        	s3_ping2.mlog("GetBucketLogging");
+        	s3_ping2.s3_ping2_log("GetBucketLogging");
         	GetResponse rsp = awsConn.getBucketLogging(bucketName, null);
         	String response;
         	if(rsp.object == null)
@@ -223,7 +223,7 @@ public class S3_PING2Test {
                 byte[] buf=rsp.object.data;
                 response = new String(buf);
         	}
-            s3_ping2.mlog("GetBucketLogging: " + response);
+            s3_ping2.s3_ping2_log("GetBucketLogging: " + response);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -237,7 +237,7 @@ public class S3_PING2Test {
         	///////////////////////////////////////////////
         	// GetBucketRequestPayment
         	///////////////////////////////////////////////
-        	s3_ping2.mlog("GetBucketRequestPayment");
+        	s3_ping2.s3_ping2_log("GetBucketRequestPayment");
         	GetResponse rsp = awsConn.getBucketRequestPayment(bucketName, null);
         	String response;
         	if(rsp.object == null)
@@ -246,7 +246,7 @@ public class S3_PING2Test {
                 byte[] buf=rsp.object.data;
                 response = new String(buf);
         	}
-            s3_ping2.mlog("GetBucketRequestPayment: " + response);
+            s3_ping2.s3_ping2_log("GetBucketRequestPayment: " + response);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -262,7 +262,7 @@ public class S3_PING2Test {
         	///////////////////////////////////////////////
         	// GetAcl
         	///////////////////////////////////////////////
-        	s3_ping2.mlog("GetAcl");
+        	s3_ping2.s3_ping2_log("GetAcl");
         	GetResponse rsp = awsConn.getACL(bucketName, key, null);
         	String response;
         	if(rsp.object == null)
@@ -271,7 +271,7 @@ public class S3_PING2Test {
                 byte[] buf=rsp.object.data;
                 response = new String(buf);
         	}
-            s3_ping2.mlog("GetAcl: " + response);
+            s3_ping2.s3_ping2_log("GetAcl: " + response);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -286,7 +286,7 @@ public class S3_PING2Test {
         	///////////////////////////////////////////////
         	// GetObject
         	///////////////////////////////////////////////
-        	s3_ping2.mlog("GetObject");
+        	s3_ping2.s3_ping2_log("GetObject");
         	GetResponse rsp = awsConn.get(bucketName, key, null);
         	String response;
         	if(rsp.object == null)
@@ -295,7 +295,7 @@ public class S3_PING2Test {
                 byte[] buf=rsp.object.data;
                 response = new String(buf);
         	}
-            s3_ping2.mlog("GetObject: " + response);
+            s3_ping2.s3_ping2_log("GetObject: " + response);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -312,19 +312,19 @@ public class S3_PING2Test {
         	///////////////////////////////////////////////
         	// DeleteObject
         	///////////////////////////////////////////////
-        	s3_ping2.mlog("DeleteObject");
+        	s3_ping2.s3_ping2_log("DeleteObject");
         	HttpURLConnection httpConn = awsConn.delete(bucketName, key, null).connection;
         	String rspmsg = httpConn.getResponseMessage();
         	int code = httpConn.getResponseCode();
         	String response = "" + code + " " + rspmsg;
-        	s3_ping2.mlog("DeleteObject: " + response);
+        	s3_ping2.s3_ping2_log("DeleteObject: " + response);
         	
-        	s3_ping2.mlog("DeleteObject (prefix)");
+        	s3_ping2.s3_ping2_log("DeleteObject (prefix)");
         	httpConn = awsConn.delete(bucketName, folder, null).connection;
         	rspmsg = httpConn.getResponseMessage();
         	code = httpConn.getResponseCode();
         	response = "" + code + " " + rspmsg;
-        	s3_ping2.mlog("DeleteObject: " + response);
+        	s3_ping2.s3_ping2_log("DeleteObject: " + response);
 
         	
   		} catch (Exception e) {
@@ -348,12 +348,12 @@ public class S3_PING2Test {
 	        	///////////////////////////////////////////////
 	        	// CreateBucket
 	        	///////////////////////////////////////////////
-	        	s3_ping2.mlog("CreateBucket");
+	        	s3_ping2.s3_ping2_log("CreateBucket");
 	        	bucketName = "eu-central-1-" + System.currentTimeMillis();
 	        	Response createBucketResponse = awsConn.createBucket(bucketName, null, null);
 	        	HttpURLConnection httpConn = createBucketResponse.connection;
 	        	int http_code = httpConn.getResponseCode();
-	        	s3_ping2.mlog("CreateBucket Response: " + httpConn.getResponseCode() + " " + httpConn.getResponseMessage());
+	        	s3_ping2.s3_ping2_log("CreateBucket Response: " + httpConn.getResponseCode() + " " + httpConn.getResponseMessage());
 	        	Assert.assertTrue(http_code == 200);
 	        	bBucketCreated = true;
 			} catch (Exception e) {
@@ -372,12 +372,12 @@ public class S3_PING2Test {
     			///////////////////////////////////////////////
     			// deleteBucket
     			///////////////////////////////////////////////
-	        	s3_ping2.mlog("deleteBucket");
+	        	s3_ping2.s3_ping2_log("deleteBucket");
     			HttpURLConnection httpConn = awsConn.deleteBucket(bucketName, null).connection;
     			String rspmsg = httpConn.getResponseMessage();
     			int code = httpConn.getResponseCode();
     			String response = "" + code + " " + rspmsg;
-    			s3_ping2.mlog("DeleteBucket: " + response);
+    			s3_ping2.s3_ping2_log("DeleteBucket: " + response);
     		} catch (Exception e) {
     			e.printStackTrace();
     		}
@@ -393,7 +393,7 @@ public class S3_PING2Test {
         	///////////////////////////////////////////////
         	// CheckBucketExists
         	///////////////////////////////////////////////
-        	s3_ping2.mlog("CheckBucketExists");
+        	s3_ping2.s3_ping2_log("CheckBucketExists");
         	boolean bDoesExist = false;
         	boolean CheckBucketExists_rsp = awsConn.checkBucketExists(bucketName);
         	String CheckBucketExistsResult;
@@ -404,7 +404,7 @@ public class S3_PING2Test {
         		CheckBucketExistsResult = bucketName + " does not exists";
         		bDoesExist = false;
         	}
-        	s3_ping2.mlog("CheckBucketExists: " + CheckBucketExistsResult);
+        	s3_ping2.s3_ping2_log("CheckBucketExists: " + CheckBucketExistsResult);
         	Assert.assertTrue(bDoesExist);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -420,7 +420,7 @@ public class S3_PING2Test {
         	///////////////////////////////////////////////
         	// listBucket
         	///////////////////////////////////////////////
-        	s3_ping2.mlog("listBucket");
+        	s3_ping2.s3_ping2_log("listBucket");
         	ListBucketResponse bucket_rsp = awsConn.listBucket(bucketName, prefix, null, null, null);
         	String listBucketResult;
 			if(!bucket_rsp.entries.isEmpty()){
@@ -428,7 +428,7 @@ public class S3_PING2Test {
         	}else{
         		listBucketResult = "0 entries";
         	}
-        	s3_ping2.mlog("listBucket: " + listBucketResult);
+        	s3_ping2.s3_ping2_log("listBucket: " + listBucketResult);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -443,7 +443,7 @@ public class S3_PING2Test {
         	///////////////////////////////////////////////
         	// listAllMyBuckets
         	///////////////////////////////////////////////
-        	s3_ping2.mlog("listAllMyBuckets");
+        	s3_ping2.s3_ping2_log("listAllMyBuckets");
         	ListAllMyBucketsResponse bucket_list = awsConn.listAllMyBuckets(null);
         	String listAllMyBucketsResult;
 			if(!bucket_list.entries.isEmpty()){
@@ -451,7 +451,7 @@ public class S3_PING2Test {
         	}else{
         		listAllMyBucketsResult = "not found";
         	}
-        	s3_ping2.mlog("listAllMyBuckets: " + listAllMyBucketsResult);
+        	s3_ping2.s3_ping2_log("listAllMyBuckets: " + listAllMyBucketsResult);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
