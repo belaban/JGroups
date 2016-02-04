@@ -80,7 +80,7 @@ public class DeliveryManagerImpl implements DeliveryManager {
             }
 
             if (deliverySet.first().isReadyToDeliver()) {
-                deliverySet.notify();
+                deliverySet.notifyAll();
             }
         }
     }
@@ -97,7 +97,7 @@ public class DeliveryManagerImpl implements DeliveryManager {
 
             deliverySet.removeAll(toRemove);
             if (!deliverySet.isEmpty() && deliverySet.first().isReadyToDeliver()) {
-                deliverySet.notify();
+                deliverySet.notifyAll();
             }
         }
         for (MessageInfo removed : toRemove) {
@@ -151,7 +151,7 @@ public class DeliveryManagerImpl implements DeliveryManager {
             messageInfo.updateAndmarkReadyToDeliver(sequenceNumber);
             deliverySet.add(messageInfo);
             if (deliverySet.first().isReadyToDeliver()) {
-                deliverySet.notify();
+                deliverySet.notifyAll();
             }
         }
     }
