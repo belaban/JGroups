@@ -83,7 +83,7 @@ public class SimpleAuthorizingCallbackHandler implements CallbackHandler {
         realm = properties.getProperty("sasl.realm");
     }
 
-    private String requireProperty(Properties properties, String propertyName) {
+    private static String requireProperty(Properties properties, String propertyName) {
         String value = properties.getProperty(propertyName);
         if (value == null) {
             throw new IllegalStateException("The required system property " + propertyName + " has not been set");

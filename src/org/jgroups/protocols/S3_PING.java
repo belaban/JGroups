@@ -351,7 +351,7 @@ public class S3_PING extends FILE_PING {
             }
         }
 
-        private String parseBucketFromHost(String host) {
+        private static String parseBucketFromHost(String host) {
             int s3Index = host.lastIndexOf(".s3.");
             if (s3Index > 0) {
                 host = host.substring(0, s3Index);
@@ -853,7 +853,7 @@ public class S3_PING extends FILE_PING {
             return connection;
         }
 
-        private HttpURLConnection makePreSignedRequest(String method, String preSignedUrl, Map headers) throws IOException {
+        private static HttpURLConnection makePreSignedRequest(String method, String preSignedUrl, Map headers) throws IOException {
             URL url = new URL(preSignedUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod(method);

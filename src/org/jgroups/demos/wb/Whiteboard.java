@@ -46,7 +46,7 @@ public class Whiteboard extends Applet implements MessageListener, MembershipLis
         panel.setState(istream);
     }
 
-    private String getInfo() {
+    private static String getInfo() {
         StringBuilder ret = new StringBuilder();
         ret.append(" (" + System.getProperty("os.name") + ' ' + System.getProperty("os.version") +
                    ' ' + System.getProperty("os.arch") + ')');
