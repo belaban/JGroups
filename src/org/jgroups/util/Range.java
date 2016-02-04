@@ -37,6 +37,14 @@ public class Range implements Streamable, Comparable<Range> {
     }
 
     public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+
+        if (this.getClass() != obj.getClass()) {
+            return false;
+        }
+
         Range other=(Range)obj;
         return compareTo(other) == 0;
     }

@@ -104,6 +104,14 @@ public class Digest implements Streamable, Iterable<Digest.Entry> {
 
     /** 2 digests are equal if their memberships match and all highest-delivered and highest-received seqnos match */
     public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+
+        if (this.getClass() != obj.getClass()) {
+            return false;
+        }
+
         if(this == obj)
             return true;
         Digest other=(Digest)obj;
@@ -288,6 +296,14 @@ public class Digest implements Streamable, Iterable<Digest.Entry> {
         public long    getHighest()               {return max(hd,hr);}
 
         public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            }
+
+            if (this.getClass() != obj.getClass()) {
+                return false;
+            }
+
             Entry other=(Entry)obj;
             return member.equals(other.member) && hd == other.hd && hr == other.hr;
         }

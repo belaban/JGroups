@@ -205,7 +205,15 @@ public class Relayer {
         }
 
         public boolean equals(Object obj) {
-            return compareTo((Route)obj) == 0;
+            if (obj == null) {
+                return false;
+            }
+
+            if (this.getClass() != obj.getClass()) {
+                return false;
+            }
+
+            return compareTo((Route) obj) == 0;
         }
 
         public int hashCode() {
