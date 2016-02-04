@@ -153,7 +153,7 @@ public class Util {
 
         try {
             String tmp=System.getProperty(Global.DEFAULT_HEADERS);
-            DEFAULT_HEADERS=tmp != null? new Integer(tmp) : 4;
+            DEFAULT_HEADERS=tmp != null? Integer.valueOf(tmp) : 4;
         }
         catch(Throwable t) {
             throw new IllegalArgumentException(String.format("property %s has an incorrect value", Global.DEFAULT_HEADERS), t);
@@ -2644,7 +2644,7 @@ public class Util {
         if(s == null) return null;
         tok=new StringTokenizer(s,",");
         while(tok.hasMoreTokens()) {
-            l=new Integer(tok.nextToken());
+            l= Integer.valueOf(tok.nextToken());
             v.add(l);
         }
         if(v.isEmpty()) return null;
@@ -2667,7 +2667,7 @@ public class Util {
         if(s == null) return null;
         tok=new StringTokenizer(s,",");
         while(tok.hasMoreTokens()) {
-            l=new Long(tok.nextToken());
+            l=Long.valueOf(tok.nextToken());
             v.add(l);
         }
         if(v.isEmpty()) return null;

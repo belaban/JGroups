@@ -266,7 +266,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 
         try {
             MethodCall call=new MethodCall("addNode",
-                                           new Object[]{name,my_addr,new Integer(xloc),new Integer(yloc)},
+                                           new Object[]{name,my_addr,Integer.valueOf(xloc),Integer.valueOf(yloc)},
                                            new Class[]{String.class,Address.class,int.class,int.class});
             wb.disp.callRemoteMethods(null, call, new RequestOptions(ResponseMode.GET_ALL, 0));
         }
