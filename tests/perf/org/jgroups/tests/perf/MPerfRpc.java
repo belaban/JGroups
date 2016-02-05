@@ -109,7 +109,7 @@ public class MPerfRpc extends ReceiverAdapter {
         channel=new JChannel(props);
         channel.setName(name);
         disp=new RpcDispatcher(channel, this).setMembershipListener(this).setMethodLookup(id -> METHODS[id])
-          .setRequestMarshaller(new MperfMarshaller()).setResponseMarshaller(new MperfMarshaller());
+          .setMarshaller(new MperfMarshaller());
 
         send_options.setMode(sync? ResponseMode.GET_ALL : ResponseMode.GET_NONE);
         if(oob)

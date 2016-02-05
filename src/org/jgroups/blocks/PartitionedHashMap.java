@@ -213,8 +213,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         ch=new JChannel(props);
         RpcDispatcher.Marshaller marshaller=new CustomMarshaller();
         disp=new RpcDispatcher(ch, this).setMembershipListener(this)
-          .setRequestMarshaller(marshaller).setResponseMarshaller(marshaller)
-          .setMethodLookup(methods::get);
+          .setMarshaller(marshaller).setMethodLookup(methods::get);
 
         ch.connect(cluster_name);
         local_addr=ch.getAddress();

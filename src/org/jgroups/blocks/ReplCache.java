@@ -261,10 +261,9 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
             hash_function=new ConsistentHashFunction<>();
 
         ch=new JChannel(props);
-        disp=(RpcDispatcher)new RpcDispatcher(ch, this).setMethodLookup(methods::get)
-          .setMembershipListener(this);
+        disp=new RpcDispatcher(ch, this).setMethodLookup(methods::get).setMembershipListener(this);
         RpcDispatcher.Marshaller marshaller=new CustomMarshaller();
-        disp.setRequestMarshaller(marshaller).setResponseMarshaller(marshaller);
+        disp.setMarshaller(marshaller);
 
         ch.connect(cluster_name);
         local_addr=ch.getAddress();

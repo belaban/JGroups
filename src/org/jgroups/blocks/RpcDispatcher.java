@@ -22,11 +22,9 @@ import java.util.Collection;
  */
 public class RpcDispatcher extends MessageDispatcher {
     protected Object        server_obj;
-    /** Marshaller to marshall requests at the caller and unmarshal requests at the receiver(s) */
-    protected Marshaller    req_marshaller;
-
-    /** Marshaller to marshal responses at the receiver(s) and unmarshal responses at the caller */
-    protected Marshaller    rsp_marshaller;
+    /** Marshaller to marshall requests at the caller, unmarshal requests at the receiver(s), marshall responses at the
+     * receivers and unmarshall responses at the caller */
+    protected Marshaller    marshaller;
 
     protected MethodLookup  method_lookup;
 
@@ -55,7 +53,7 @@ public class RpcDispatcher extends MessageDispatcher {
          * potentially can get retransmitted, and such a retransmission would then carry a ref to a changed byte[] buffer !
          * </em>
          * @param obj
-         * @return
+         * @return a Buffer
          * @throws Exception
          */
         Buffer objectToBuffer(Object obj) throws Exception;
@@ -66,44 +64,14 @@ public class RpcDispatcher extends MessageDispatcher {
 
 
 
-    public static String getName() {return "RpcDispatcher";}
-
-    public Marshaller getRequestMarshaller()             {return req_marshaller;}
-
-    public RpcDispatcher setRequestMarshaller(Marshaller m) {
-        this.req_marshaller=m; return this;
-    }
-
-    public Marshaller getResponseMarshaller()             {return rsp_marshaller;}
-
-    public RpcDispatcher setResponseMarshaller(Marshaller m) {
-        this.rsp_marshaller=m;
-        if(corr != null)
-            corr.setMarshaller(this.rsp_marshaller);
-        return this;
-    }
-
-    public Marshaller getMarshaller() {return req_marshaller;}
-    
-    public RpcDispatcher setMarshaller(Marshaller m) {setRequestMarshaller(m); return this;}
-
-    public Object getServerObject() {return server_obj;}
-
-    public RpcDispatcher setServerObject(Object server_obj) {
-        this.server_obj=server_obj; return this;
-    }
-
-    public RpcDispatcher setMembershipListener(MembershipListener l) {
-        return (RpcDispatcher)super.setMembershipListener(l);
-    }
-
-    public MethodLookup getMethodLookup() {
-        return method_lookup;
-    }
-
-    public RpcDispatcher setMethodLookup(MethodLookup method_lookup) {
-        this.method_lookup=method_lookup; return this;
-    }
+    public static String getName()                                   {return RpcDispatcher.class.getSimpleName();}
+    public Marshaller    getMarshaller()                             {return marshaller;}
+    public RpcDispatcher setMarshaller(Marshaller m)                 {marshaller=m; return this;}
+    public Object        getServerObject()                           {return server_obj;}
+    public RpcDispatcher setServerObject(Object server_obj)          {this.server_obj=server_obj; return this;}
+    public RpcDispatcher setMembershipListener(MembershipListener l) {return (RpcDispatcher)super.setMembershipListener(l);}
+    public MethodLookup  getMethodLookup()                           {return method_lookup;}
+    public RpcDispatcher setMethodLookup(MethodLookup method_lookup) {this.method_lookup=method_lookup; return this;}
 
 
     /**
@@ -149,7 +117,7 @@ public class RpcDispatcher extends MessageDispatcher {
         if(log.isTraceEnabled())
             log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, options);
 
-        Buffer buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToBuffer(method_call);
+        Buffer buf=marshaller != null? marshaller.objectToBuffer(method_call) : Util.objectToBuffer(method_call);
         Message msg=new Message().setBuffer(buf);
 
         RspList<T> retval=super.castMessage(dests, msg, options);
@@ -182,7 +150,7 @@ public class RpcDispatcher extends MessageDispatcher {
         if(log.isTraceEnabled())
             log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, options);
 
-        Buffer buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToBuffer(method_call);
+        Buffer buf=marshaller != null? marshaller.objectToBuffer(method_call) : Util.objectToBuffer(method_call);
         Message msg=new Message().setBuffer(buf);
 
         NotifyingFuture<RspList<T>>  retval=super.castMessageWithFuture(dests, msg, options, listener);
@@ -237,7 +205,7 @@ public class RpcDispatcher extends MessageDispatcher {
         if(log.isTraceEnabled())
             log.trace("dest=%s, method_call=%s, options=%s", dest, call, options);
 
-        Buffer buf=req_marshaller != null? req_marshaller.objectToBuffer(call) : Util.objectToBuffer(call);
+        Buffer buf=marshaller != null? marshaller.objectToBuffer(call) : Util.objectToBuffer(call);
         Message msg=new Message(dest, null, null).setBuffer(buf);
 
         T retval=super.sendMessage(msg, options);
@@ -260,7 +228,7 @@ public class RpcDispatcher extends MessageDispatcher {
                                                              FutureListener<T> listener) throws Exception {
         if(log.isTraceEnabled())
             log.trace("dest=%s, method_call=%s, options=%s", dest, call, options);
-        Buffer buf=req_marshaller != null? req_marshaller.objectToBuffer(call) : Util.objectToBuffer(call);
+        Buffer buf=marshaller != null? marshaller.objectToBuffer(call) : Util.objectToBuffer(call);
         Message msg=new Message(dest, null, null).setBuffer(buf);
         return super.sendMessageWithFuture(msg, options, listener);
     }
@@ -281,7 +249,7 @@ public class RpcDispatcher extends MessageDispatcher {
 
     protected void correlatorStarted() {
         if(corr != null)
-            corr.setMarshaller(rsp_marshaller);
+            corr.setMarshaller(marshaller);
     }
 
 
@@ -300,8 +268,8 @@ public class RpcDispatcher extends MessageDispatcher {
             return null;
         }
 
-        Object body=req_marshaller != null?
-          req_marshaller.objectFromBuffer(req.getRawBuffer(), req.getOffset(), req.getLength()) : req.getObject();
+        Object body=marshaller != null?
+          marshaller.objectFromBuffer(req.getRawBuffer(), req.getOffset(), req.getLength()) : req.getObject();
 
         if(!(body instanceof MethodCall))
             throw new IllegalArgumentException("message does not contain a MethodCall object") ;
