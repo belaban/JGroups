@@ -248,14 +248,12 @@ public class ProtocolStack extends Protocol {
      * @return Map<String,Map<key,val>>
      */
     public Map<String,Object> dumpStats() {
-        Protocol p;
-        Map<String,Object> retval=new HashMap<>(), tmp;
-        String prot_name;
+        Map<String,Object> retval=new HashMap<>();
 
-        p=top_prot;
+        Protocol p=top_prot;
         while(p != null) {
-            prot_name=p.getName();
-            tmp=p.dumpStats();
+            String prot_name=p.getName();
+            Map<String,Object> tmp=p.dumpStats();
             if(prot_name != null && tmp != null)
                 retval.put(prot_name, tmp);
             p=p.getDownProtocol();
@@ -314,12 +312,10 @@ public class ProtocolStack extends Protocol {
             int index=prot_name.indexOf(Global.PREFIX);
             if(index >= 0)
                 prot_name=prot_name.substring(Global.PREFIX.length());
-            if(first_colon_printed) {
+            if(first_colon_printed)
                 sb.append(":");
-            }
-            else {
+            else
                 first_colon_printed=true;
-            }
 
             sb.append(prot_name);
             if(include_properties) {
@@ -328,12 +324,10 @@ public class ProtocolStack extends Protocol {
                     boolean printed=false;
                     sb.append("(");
                     for(Map.Entry<String,String> entry: tmp.entrySet()) {
-                        if(printed) {
+                        if(printed)
                             sb.append(";");
-                        }
-                        else {
+                        else
                             printed=true;
-                        }
                         sb.append(entry.getKey()).append("=").append(entry.getValue());
                     }
                     sb.append(")\n");
@@ -636,8 +630,7 @@ public class ProtocolStack extends Protocol {
 
 
     /**
-     * Removes a protocol from the stack. Stops the protocol and readjusts the linked lists of
-     * protocols.
+     * Removes a protocol from the stack. Stops the protocol and readjusts the linked lists of protocols.
      * @param prot_name The name of the protocol. Since all protocol names in a stack have to be unique
      *                  (otherwise the stack won't be created), the name refers to just 1 protocol.
      * @exception Exception Thrown if the protocol cannot be stopped correctly.
@@ -727,9 +720,8 @@ public class ProtocolStack extends Protocol {
         Protocol tmp=top_prot;
         while(tmp != null) {
             Class<?> protClass=tmp.getClass();
-            if(clazz.isAssignableFrom(protClass)){
+            if(clazz.isAssignableFrom(protClass))
                 return (T)tmp;
-            }
             tmp=tmp.getDownProtocol();
         }
         return null;
