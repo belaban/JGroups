@@ -635,27 +635,26 @@ public class ProtocolStack extends Protocol {
      *                  (otherwise the stack won't be created), the name refers to just 1 protocol.
      * @exception Exception Thrown if the protocol cannot be stopped correctly.
      */
-    public Protocol removeProtocol(String prot_name) {
+    public <T extends Protocol> T removeProtocol(String prot_name) {
         if(prot_name == null) return null;
-        return removeProtocol(findProtocol(prot_name));
+        return removeProtocol((T)findProtocol(prot_name));
     }
 
-    public void removeProtocols(String ... protocols) {
+    public ProtocolStack removeProtocols(String ... protocols) {
         for(String protocol: protocols)
             removeProtocol(protocol);
+        return this;
     }
 
 
-    public Protocol removeProtocol(Class ... protocols) {
-        Protocol retval=null;
-        if(protocols != null)
-            for(Class cl: protocols) {
-                Protocol tmp=removeProtocol(cl);
-                if(tmp != null)
-                    retval=tmp;
-            }
-
-        return retval;
+    @SafeVarargs
+    public final <T extends Protocol> T removeProtocol(Class<? extends Protocol>... protocols) {
+        for(Class<? extends Protocol> cl: protocols) {
+            T tmp=removeProtocol(cl);
+            if(tmp != null)
+                return tmp;
+        }
+        return null;
     }
 
 
@@ -692,23 +691,22 @@ public class ProtocolStack extends Protocol {
 
 
     /** Returns a given protocol or null if not found */
-    public Protocol findProtocol(String name) {
-        Protocol tmp=top_prot;
+    public <T extends Protocol> T findProtocol(String name) {
+        T tmp=(T)top_prot;
         String   prot_name;
         while(tmp != null) {
             prot_name=tmp.getName();
             if(Objects.equals(prot_name, name))
                 return tmp;
-            tmp=tmp.getDownProtocol();
+            tmp=(T)tmp.getDownProtocol();
         }
         return null;
     }
 
-    public Protocol getBottomProtocol() {
-        Protocol curr_prot=this;
-        while(curr_prot != null && curr_prot.getDownProtocol() !=null) {
-            curr_prot=curr_prot.getDownProtocol();
-        }
+    public <T extends Protocol> T getBottomProtocol() {
+        T curr_prot=(T)this;
+        while(curr_prot != null && curr_prot.getDownProtocol() !=null)
+            curr_prot=(T)curr_prot.getDownProtocol();
         return curr_prot;
     }
 
