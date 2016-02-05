@@ -21,5 +21,5 @@ public interface NotifyingFuture<T> extends Future<T> {
      * @param listener listener to attach
      * @return the same future instance
      */
-    NotifyingFuture setListener(FutureListener<T> listener);
+    NotifyingFuture<T> setListener(FutureListener<T> listener);
 }

@@ -23,16 +23,16 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author Bela Ban
  */
-public abstract class Request implements NotifyingFuture {
-    protected static final Log        log=LogFactory.getLog(Request.class);
-    protected long                    req_id;
-    protected final Lock              lock=new ReentrantLock();
+public abstract class Request<T> implements NotifyingFuture<T> {
+    protected static final Log           log=LogFactory.getLog(Request.class);
+    protected long                       req_id;
+    protected final Lock                 lock=new ReentrantLock();
     /** Is set as soon as the request has received all required responses */
-    protected final CondVar           cond=new CondVar(lock);
-    protected final RequestCorrelator corr;         // either use RequestCorrelator or ...
-    protected final RequestOptions    options;
-    protected volatile boolean        done;
-    protected volatile FutureListener listener;
+    protected final CondVar              cond=new CondVar(lock);
+    protected final RequestCorrelator    corr;         // either use RequestCorrelator or ...
+    protected final RequestOptions       options;
+    protected volatile boolean           done;
+    protected volatile FutureListener<T> listener;
 
 
     
@@ -41,16 +41,12 @@ public abstract class Request implements NotifyingFuture {
         this.options=options;
     }
 
-    public Request requestId(long req_id) {this.req_id=req_id; return this;}
-    public long    requestId()            {return req_id;}
-
-    public Request setResponseFilter(RspFilter filter) {
-        options.setRspFilter(filter);
-        return this;
-    }
+    public Request<T> requestId(long req_id)              {this.req_id=req_id; return this;}
+    public long       requestId()                         {return req_id;}
+    public Request    setResponseFilter(RspFilter filter) {options.setRspFilter(filter); return this;}
 
 
-    public Request setListener(FutureListener listener) {
+    public Request<T> setListener(FutureListener<T> listener) {
         this.listener=listener;
         if(done)
             listener.futureDone(this);
@@ -142,7 +138,7 @@ public abstract class Request implements NotifyingFuture {
     /* --------------------------------- Private Methods -------------------------------------*/
 
 
-    protected void checkCompletion(Future future) {
+    protected void checkCompletion(Future<T> future) {
         if(listener != null && responsesComplete())
             listener.futureDone(future);
     }

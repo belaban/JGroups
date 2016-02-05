@@ -18,7 +18,7 @@ import java.util.concurrent.TimeoutException;
  *
  * @author Bela Ban
  */
-public class UnicastRequest<T> extends Request {
+public class UnicastRequest<T> extends Request<T> {
     protected final Rsp<T>     result;
     protected final Address    target;
 

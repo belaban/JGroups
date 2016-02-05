@@ -41,7 +41,7 @@ import java.util.concurrent.TimeoutException;
  *
  * @author Bela Ban
  */
-public class GroupRequest<T> extends Request {
+public class GroupRequest<T> extends Request<RspList<T>> {
 
     /** Correlates requests and responses */
     @GuardedBy("lock")
@@ -76,8 +76,9 @@ public class GroupRequest<T> extends Request {
         return options.getAnycasting();
     }
 
-    public void setAnycasting(boolean anycasting) {
+    public GroupRequest setAnycasting(boolean anycasting) {
         options.setAnycasting(anycasting);
+        return this;
     }
 
 

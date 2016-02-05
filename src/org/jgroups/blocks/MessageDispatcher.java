@@ -327,11 +327,10 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
                 rpc_stats.add(RpcStats.Type.MULTICAST, null, sync, 0);
         }
 
-        GroupRequest<T> req=new GroupRequest<>(corr, real_dests, options);
+        GroupRequest<T> req=new GroupRequest<>(corr, real_dests, options).setAnycasting(options.getAnycasting());
         if(listener != null)
             req.setListener(listener);
         req.setResponseFilter(options.getRspFilter());
-        req.setAnycasting(options.getAnycasting());
         long start=non_blocking || !rpc_stats.extendedStats()? 0 : System.nanoTime();
         req.execute(msg, block_for_results);
         long time=non_blocking || !rpc_stats.extendedStats()? 0 : System.nanoTime() - start;

@@ -42,10 +42,7 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
 
     @AfterMethod
     void tearDown() throws Exception {
-        ch2.close();
-        disp2.stop();
-        ch.close();
-        disp.stop();
+        Util.close(disp2, ch2, disp, ch);
     }
 
 
