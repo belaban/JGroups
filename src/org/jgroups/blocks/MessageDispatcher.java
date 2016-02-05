@@ -35,7 +35,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  *
  * @author Bela Ban
  */
-public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, Closeable {
+public class MessageDispatcher implements RequestHandler, ChannelListener, Closeable {
     protected Channel                               channel;
     protected RequestCorrelator                     corr;
     protected MembershipListener                    membership_listener;
@@ -455,16 +455,12 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
             return req_handler.handle(msg);
         return null;
     }
-    /* -------------------- End of RequestHandler Interface ------------------- */
 
-
-
-    /* -------------------- AsyncRequestHandler Interface --------------------- */
     @Override
     public void handle(Message request, Response response) throws Exception {
         if(req_handler != null) {
-            if(req_handler instanceof AsyncRequestHandler)
-                ((AsyncRequestHandler)req_handler).handle(request, response);
+            if(async_dispatching)
+                req_handler.handle(request, response);
             else {
                 Object retval=req_handler.handle(request);
                 if(response != null)
@@ -477,7 +473,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         if(response != null)
             response.send(retval, false);
     }
-    /* ------------------ End of AsyncRequestHandler Interface----------------- */
+    /* ------------------ End of RequestHandler Interface----------------- */
 
 
 

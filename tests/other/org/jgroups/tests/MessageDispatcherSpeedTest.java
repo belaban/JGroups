@@ -61,6 +61,8 @@ public class MessageDispatcherSpeedTest extends ReceiverAdapter implements Reque
     }
 
 
+
+
     void sendMessages(int num) throws Exception {
         long    start, stop;
         int     show=num/10;

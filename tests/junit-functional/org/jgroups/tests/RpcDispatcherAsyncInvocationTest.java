@@ -136,7 +136,7 @@ public class RpcDispatcherAsyncInvocationTest {
     }
 
 
-    protected class MyRequestHandler implements AsyncRequestHandler {
+    protected class MyRequestHandler implements RequestHandler {
         public void handle(final Message request, final Response response) throws Exception {
             if(request.isFlagSet(Message.Flag.OOB)) {
                 new Thread() {

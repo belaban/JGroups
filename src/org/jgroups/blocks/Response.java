@@ -3,7 +3,7 @@ package org.jgroups.blocks;
 import org.jgroups.Message;
 
 /**
- * A handback object shipped as a parameter to {@link AsyncRequestHandler#handle(org.jgroups.Message,Response)}.
+ * A handback object shipped as a parameter to {@link RequestHandler#handle(org.jgroups.Message,Response)}.
  * Encapsulates information needed to send a response, e.g. the request ID, the sender etc.
  * @author Bela Ban
  * @since  3.3

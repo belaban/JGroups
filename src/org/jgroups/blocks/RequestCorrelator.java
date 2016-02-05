@@ -377,10 +377,10 @@ public class RequestCorrelator {
         if(log.isTraceEnabled())
             log.trace("calling (%s) with request %d",
                       request_handler != null? request_handler.getClass().getName() : "null", hdr.req_id);
-        if(async_dispatching && request_handler instanceof AsyncRequestHandler) {
+        if(async_dispatching && request_handler != null) {
             Response rsp=hdr.rspExpected()? new ResponseImpl(req, hdr.req_id) : null;
             try {
-                ((AsyncRequestHandler)request_handler).handle(req, rsp);
+                request_handler.handle(req, rsp);
             }
             catch(Throwable t) {
                 if(rsp != null)
