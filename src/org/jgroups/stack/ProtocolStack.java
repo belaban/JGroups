@@ -666,13 +666,13 @@ public class ProtocolStack extends Protocol {
     }
 
 
-    public Protocol removeProtocol(Class prot) {
+    public <T extends Protocol> T removeProtocol(Class<? extends Protocol> prot) {
         if(prot == null)
             return null;
-        return removeProtocol(findProtocol(prot));
+        return removeProtocol((T)findProtocol(prot));
     }
 
-    public Protocol removeProtocol(Protocol prot) {
+    public <T extends Protocol> T removeProtocol(T prot) {
         if(prot == null) return null;
         Protocol above=prot.getUpProtocol(), below=prot.getDownProtocol();
         checkAndSwitchTop(prot, below);
@@ -723,12 +723,12 @@ public class ProtocolStack extends Protocol {
         return top_prot;
     }
 
-    public Protocol findProtocol(Class<?> clazz) {
+    public <T extends Protocol> T findProtocol(Class<? extends Protocol> clazz) {
         Protocol tmp=top_prot;
         while(tmp != null) {
             Class<?> protClass=tmp.getClass();
             if(clazz.isAssignableFrom(protClass)){
-                return tmp;
+                return (T)tmp;
             }
             tmp=tmp.getDownProtocol();
         }
@@ -740,9 +740,10 @@ public class ProtocolStack extends Protocol {
      * @param classes A list of protocol classes to find
      * @return Protocol The protocol found
      */
-    public Protocol findProtocol(Class<?> ... classes) {
-        for(Class<?> clazz: classes) {
-            Protocol prot=findProtocol(clazz);
+    @SafeVarargs
+    public final <T extends Protocol> T findProtocol(Class<? extends Protocol>... classes) {
+        for(Class<? extends Protocol> clazz: classes) {
+            T prot=findProtocol(clazz);
             if(prot != null)
                 return prot;
         }

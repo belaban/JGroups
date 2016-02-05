@@ -40,8 +40,8 @@ public class StateTransferTest extends ChannelTestBase {
     }
 
     @DataProvider(name="createChannels")
-    protected Iterator<Class<?>[]> createChannels() {
-        return new ArrayIterator<>(new Class<?>[][]{{STATE_TRANSFER.class}, {STATE.class}, {STATE_SOCK.class}});
+    protected Iterator<Object[]> createChannels() {
+        return new ArrayIterator<>(new Class[][]{{STATE_TRANSFER.class}, {STATE.class}, {STATE_SOCK.class}});
     }
 
 
@@ -54,7 +54,7 @@ public class StateTransferTest extends ChannelTestBase {
     }
 
     @Test(dataProvider="createChannels")
-    public void testStateTransferFromSelfWithRegularChannel(final Class<?> state_transfer_class) throws Exception {
+    public void testStateTransferFromSelfWithRegularChannel(final Class<? extends Protocol> state_transfer_class) throws Exception {
         JChannel ch=createChannel(true);
         replaceStateTransferProtocolWith(ch, state_transfer_class);
         ch.connect("StateTransferTest");
@@ -71,7 +71,7 @@ public class StateTransferTest extends ChannelTestBase {
 
     // @Test(dataProvider="createChannels",invocationCount=10)
     @Test(dataProvider="createChannels")
-    public void testStateTransferWhileSending(final Class<?> state_transfer_class) throws Exception {
+    public void testStateTransferWhileSending(final Class<? extends Protocol> state_transfer_class) throws Exception {
         Semaphore semaphore=new Semaphore(APP_COUNT, true); // fifo order
         semaphore.acquire(APP_COUNT);
         Thread[] threads=new Thread[APP_COUNT];
@@ -168,7 +168,7 @@ public class StateTransferTest extends ChannelTestBase {
 
     protected void resumeStableAndGC() {
         for(StateTransferApplication app: apps) {
-            STABLE stable=(STABLE)app.getChannel().getProtocolStack().findProtocol(STABLE.class);
+            STABLE stable=app.getChannel().getProtocolStack().findProtocol(STABLE.class);
             stable.down(new Event(Event.RESUME_STABLE));
             stable.gc();
         }
@@ -206,12 +206,12 @@ public class StateTransferTest extends ChannelTestBase {
     }
 
 
-    protected void replaceStateTransferProtocolWith(JChannel ch, Class<?> state_transfer_class) throws Exception {
+    protected void replaceStateTransferProtocolWith(JChannel ch, Class<? extends Protocol> state_transfer_class) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         if(stack.findProtocol(state_transfer_class) != null)
             return; // protocol of the right class is already in stack
         Protocol prot=stack.findProtocol(STATE_TRANSFER.class, StreamingStateTransfer.class);
-        Protocol new_state_transfer_protcol=(Protocol)state_transfer_class.newInstance();
+        Protocol new_state_transfer_protcol=state_transfer_class.newInstance();
         if(prot != null) {
             stack.replaceProtocol(prot, new_state_transfer_protcol);
         }

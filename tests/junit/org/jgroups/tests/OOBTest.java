@@ -371,7 +371,7 @@ public class OOBTest extends ChannelTestBase {
 
     private static void sendStableMessages(JChannel ... channels) {
         for(JChannel ch: channels) {
-            STABLE stable=(STABLE)ch.getProtocolStack().findProtocol(STABLE.class);
+            STABLE stable=ch.getProtocolStack().findProtocol(STABLE.class);
             if(stable != null)
                 stable.gc();
         }

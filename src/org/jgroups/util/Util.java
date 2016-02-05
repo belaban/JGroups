@@ -85,7 +85,7 @@ public class Util {
     private static final byte[] TYPE_BOOLEAN_TRUE={TYPE_BOOLEAN, 1};
     private static final byte[] TYPE_BOOLEAN_FALSE={TYPE_BOOLEAN, 0};
 
-    public static final Class<?>[] getUnicastProtocols() {return new Class<?>[]{UNICAST3.class};}
+    public static final Class<? extends Protocol>[] getUnicastProtocols() {return new Class[]{UNICAST3.class};}
 
     public enum AddressScope {GLOBAL,SITE_LOCAL,LINK_LOCAL,LOOPBACK,NON_LOOPBACK}
 
@@ -409,7 +409,7 @@ public class Util {
         stack.insertProtocol(discard,ProtocolStack.ABOVE,transport.getClass());
 
         //abruptly shutdown FD_SOCK just as in real life when member gets killed non gracefully
-        FD_SOCK fd=(FD_SOCK)ch.getProtocolStack().findProtocol(FD_SOCK.class);
+        FD_SOCK fd=ch.getProtocolStack().findProtocol(FD_SOCK.class);
         if(fd != null)
             fd.stopServerSocket(false);
 
@@ -422,7 +422,7 @@ public class Util {
             View new_view=new View(new_vid,members);
 
             // inject view in which the shut down member is the only element
-            GMS gms=(GMS)stack.findProtocol(GMS.class);
+            GMS gms=stack.findProtocol(GMS.class);
             gms.installView(new_view);
         }
         Util.close(ch);

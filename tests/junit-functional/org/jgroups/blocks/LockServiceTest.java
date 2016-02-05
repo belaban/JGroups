@@ -314,7 +314,7 @@ public class LockServiceTest {
         return new JChannel(stack).name(name);
     }
 
-    protected void setProp(Class<?> clazz, String prop_name, Object value, JChannel ... channels) {
+    protected void setProp(Class<? extends Protocol> clazz, String prop_name, Object value, JChannel ... channels) {
         for(JChannel ch: channels) {
             Protocol prot=ch.getProtocolStack().findProtocol(clazz);
             prot.setValue(prop_name, value);
