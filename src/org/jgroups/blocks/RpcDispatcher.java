@@ -2,22 +2,22 @@
 package org.jgroups.blocks;
 
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Channel;
+import org.jgroups.MembershipListener;
+import org.jgroups.Message;
 import org.jgroups.util.*;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Collection;
 
 
 /**
- * This class allows a programmer to invoke remote methods in all (or single) 
- * group members and optionally wait for the return value(s). 
- * An application will typically create a channel and layer the
- * RpcDispatcher building block on top of it, which allows it to 
- * dispatch remote methods (client role) and at the same time be 
- * called by other members (server role).
+ * This class allows a programmer to invoke remote methods in all (or single) group members and optionally wait for
+ * the return value(s).<p/>
+ * An application will typically create a channel and layer the RpcDispatcher building block on top of it, which
+ * allows it to dispatch remote methods (client role) and at the same time be called by other members (server role).<p/>
  * This class is derived from MessageDispatcher. 
-*  Is the equivalent of RpcProtocol on the application rather than protocol level.
  * @author Bela Ban
  */
 public class RpcDispatcher extends MessageDispatcher {
@@ -35,14 +35,12 @@ public class RpcDispatcher extends MessageDispatcher {
     }
 
 
-    public RpcDispatcher(Channel channel, MessageListener l, MembershipListener l2, Object server_obj) {
-        super(channel, l, l2);
+    public RpcDispatcher(Channel channel, Object server_obj) {
+        super(channel);
+        setRequestHandler(this);
         this.server_obj=server_obj;
     }
 
-    public RpcDispatcher(Channel channel, Object server_obj) {
-        this(channel, null, null, server_obj);
-    }
 
 
 
@@ -72,35 +70,39 @@ public class RpcDispatcher extends MessageDispatcher {
 
     public Marshaller getRequestMarshaller()             {return req_marshaller;}
 
-    public void setRequestMarshaller(Marshaller m) {
-        this.req_marshaller=m;
+    public RpcDispatcher setRequestMarshaller(Marshaller m) {
+        this.req_marshaller=m; return this;
     }
 
     public Marshaller getResponseMarshaller()             {return rsp_marshaller;}
 
-    public void setResponseMarshaller(Marshaller m) {
+    public RpcDispatcher setResponseMarshaller(Marshaller m) {
         this.rsp_marshaller=m;
-
         if(corr != null)
             corr.setMarshaller(this.rsp_marshaller);
+        return this;
     }
 
     public Marshaller getMarshaller() {return req_marshaller;}
     
-    public void setMarshaller(Marshaller m) {setRequestMarshaller(m);}
+    public RpcDispatcher setMarshaller(Marshaller m) {setRequestMarshaller(m); return this;}
 
     public Object getServerObject() {return server_obj;}
 
-    public void setServerObject(Object server_obj) {
-        this.server_obj=server_obj;
+    public RpcDispatcher setServerObject(Object server_obj) {
+        this.server_obj=server_obj; return this;
+    }
+
+    public RpcDispatcher setMembershipListener(MembershipListener l) {
+        return (RpcDispatcher)super.setMembershipListener(l);
     }
 
     public MethodLookup getMethodLookup() {
         return method_lookup;
     }
 
-    public void setMethodLookup(MethodLookup method_lookup) {
-        this.method_lookup=method_lookup;
+    public RpcDispatcher setMethodLookup(MethodLookup method_lookup) {
+        this.method_lookup=method_lookup; return this;
     }
 
 

@@ -86,7 +86,7 @@ public class MessageDispatcherRSVPTest {
                                              .setValue("view_ack_collection_timeout",2000)
                                              .setValue("log_collect_msgs",false));
             channels[i].setName(String.valueOf((i + 1)));
-            dispatchers[i]=new MessageDispatcher(channels[i], null, null);
+            dispatchers[i]=new MessageDispatcher(channels[i]);
             channels[i].connect("MessageDispatcherRSVPTest");
             System.out.print(i + 1 + " ");
             if(i == 0)

@@ -46,7 +46,7 @@ public class DynamicDiscardTest {
                                         .setValue("throw_exception_on_timeout", false));
             channels[i].setName(Character.toString((char) ('A' + i)));
             channels[i].setDiscardOwnMessages(true);
-            dispatchers[i]=new MessageDispatcher(channels[i], null, null, new MyRequestHandler());
+            dispatchers[i]=new MessageDispatcher(channels[i], new MyRequestHandler());
             channels[i].connect("DynamicDiscardTest");
             System.out.print(i + 1 + " ");
         }

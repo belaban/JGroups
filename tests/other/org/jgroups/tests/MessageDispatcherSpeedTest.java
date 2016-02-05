@@ -37,7 +37,7 @@ public class MessageDispatcherSpeedTest extends ReceiverAdapter implements Reque
 
     public void start() throws Exception {
         channel=new JChannel(props);
-        disp=new MessageDispatcher(channel, null, this, this);
+        disp=new MessageDispatcher(channel, this).setMembershipListener(this);
         channel.connect("MessageDispatcherSpeedTestGroup");
 
         try {

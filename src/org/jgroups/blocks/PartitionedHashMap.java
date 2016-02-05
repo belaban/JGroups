@@ -211,11 +211,10 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         hash_function=new ConsistentHashFunction<>();
         addMembershipListener((MembershipListener)hash_function);
         ch=new JChannel(props);
-        disp=new RpcDispatcher(ch, null, this, this);
         RpcDispatcher.Marshaller marshaller=new CustomMarshaller();
-        disp.setRequestMarshaller(marshaller);
-        disp.setResponseMarshaller(marshaller);
-        disp.setMethodLookup(methods::get);
+        disp=new RpcDispatcher(ch, this).setMembershipListener(this)
+          .setRequestMarshaller(marshaller).setResponseMarshaller(marshaller)
+          .setMethodLookup(methods::get);
 
         ch.connect(cluster_name);
         local_addr=ch.getAddress();

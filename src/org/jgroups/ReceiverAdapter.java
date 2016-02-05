@@ -13,45 +13,24 @@ import java.io.OutputStream;
  */
 public class ReceiverAdapter implements Receiver {
 
-   /**
-    * {@inheritDoc}
-    */
    public void receive(Message msg) {
     }
 
-   /**
-    * {@inheritDoc}
-    */
-    public void getState(OutputStream output) throws Exception {
+   public void getState(OutputStream output) throws Exception {
     }
 
-   /**
-    * {@inheritDoc}
-    */
-    public void setState(InputStream input) throws Exception {
+   public void setState(InputStream input) throws Exception {
     }
 
-   /**
-    * {@inheritDoc}
-    */
-    public void viewAccepted(View view) {
+   public void viewAccepted(View view) {
     }
 
-   /**
-    * {@inheritDoc}
-    */
-    public void suspect(Address mbr) {
+   public void suspect(Address mbr) {
     }
 
-   /**
-    * {@inheritDoc}
-    */
-    public void block() {
+   public void block() {
     }
 
-   /**
-    * {@inheritDoc}
-    */
-    public void unblock() {
+   public void unblock() {
     }
 }

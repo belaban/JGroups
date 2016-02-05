@@ -49,7 +49,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
         try {
             channel=new JChannel(props);
             channel.setDiscardOwnMessages(true);
-            disp=new RpcDispatcher(channel, null, this, this);
+            disp=(RpcDispatcher)new RpcDispatcher(channel, this).setMembershipListener(this);
             channel.connect(channel_name);
         }
         catch(Exception e) {

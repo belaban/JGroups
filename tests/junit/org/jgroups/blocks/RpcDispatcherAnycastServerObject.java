@@ -15,7 +15,7 @@ public class RpcDispatcherAnycastServerObject extends ReceiverAdapter {
 
     public RpcDispatcherAnycastServerObject(Channel channel) throws Exception {
         c=channel;
-        d=new RpcDispatcher(c, this, this, this);
+        d=new RpcDispatcher(c, this).setMembershipListener(this);
     }
 
     public void doSomething() {

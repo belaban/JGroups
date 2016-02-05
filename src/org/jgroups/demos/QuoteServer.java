@@ -50,7 +50,8 @@ public class QuoteServer extends ReceiverAdapter {
     public void start() {
         try {
             channel=new JChannel(props);
-            disp=new RpcDispatcher(channel, this, this, this);
+            disp=(RpcDispatcher)new RpcDispatcher(channel, this)
+              .setMembershipListener(this).setStateListener(this);
             channel.connect(channel_name);
             System.out.println("\nQuote Server started at " + new Date());
             System.out.println("Joined channel '" + channel_name + "' (" + channel.getView().size() + " members)");

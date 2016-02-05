@@ -56,7 +56,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
         ch=new JChannel(props);
         if(name != null)
             ch.setName(name);
-        disp=new RpcDispatcher(ch, null, this, this);
+        disp=new RpcDispatcher(ch, this).setMembershipListener(this);
         ch.connect("RelayDemo");
         local_addr=ch.getAddress().toString();
 

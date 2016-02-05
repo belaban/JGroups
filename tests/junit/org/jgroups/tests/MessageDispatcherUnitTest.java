@@ -33,7 +33,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         GMS gms=(GMS)a.getProtocolStack().findProtocol(GMS.class);
         if(gms != null)
             gms.setPrintLocalAddress(false);
-        d1=new MessageDispatcher(a, null, null, null);
+        d1=new MessageDispatcher(a);
         a.connect("MessageDispatcherUnitTest");
     }
 
@@ -80,7 +80,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         d1.setRequestHandler(new MyHandler(null));
         b=createChannel(a, "B");
         long stop, start=System.currentTimeMillis();
-        d2=new MessageDispatcher(b, null, null, new MyHandler(null));
+        d2=new MessageDispatcher(b, new MyHandler(null));
         stop=System.currentTimeMillis();
         b.connect("MessageDispatcherUnitTest");
         Assert.assertEquals(2,b.getView().size());
@@ -113,7 +113,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
      */
     public void testCastMessageWithNonNullDest() throws Exception {
         b=createChannel(a, "B");
-        d2=new MessageDispatcher(b, null, null, null);
+        d2=new MessageDispatcher(b);
         b.connect("MessageDispatcherUnitTest");
         Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
 
@@ -164,7 +164,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
 
         b=createChannel(a);
         b.setName("B");
-        d2=new MessageDispatcher(b, null, null, new MyHandler(new byte[size]));
+        d2=new MessageDispatcher(b, new MyHandler(new byte[size]));
         b.connect("MessageDispatcherUnitTest");
         Assert.assertEquals(2,b.getView().size());
 

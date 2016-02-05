@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * @author Bela Ban
  */
 public class ReplicatedHashMap<K, V> extends
-        AbstractMap<K,V> implements ConcurrentMap<K,V>, Receiver, ReplicatedMap<K,V>, Closeable {
+        AbstractMap<K,V> implements ConcurrentMap<K,V>, MembershipListener, StateListener, ReplicatedMap<K,V>, Closeable {
 
     public interface Notification<K, V> {
         void entrySet(K key, V value);
@@ -123,8 +123,8 @@ public class ReplicatedHashMap<K, V> extends
     }
 
     protected final void init() {
-        disp=new RpcDispatcher(channel, this, this, this);
-        disp.setMethodLookup(id -> methods.get(id));
+        disp=new RpcDispatcher(channel, this).setMethodLookup(id -> methods.get(id));
+        disp.setMembershipListener(this).setStateListener(this);
     }
 
     public boolean isBlockingUpdates() {
@@ -437,11 +437,6 @@ public class ReplicatedHashMap<K, V> extends
     /*----------------------------------------------------------*/
 
     /*-------------------- State Exchange ----------------------*/
-
-    public void receive(Message msg) {}
-
-    
-
     public void getState(OutputStream ostream) throws Exception {
         HashMap<K,V> copy=new HashMap<>();
         for(Map.Entry<K,V> entry:entrySet()) {

@@ -27,12 +27,12 @@ public class RpcLockingTest {
 	void setUp() throws Exception {
 		System.out.print("Connecting channels: ");
         a=createChannel("A");
-        disp_a=new MessageDispatcher(a, null, null);
+        disp_a=new MessageDispatcher(a);
         a.connect(RpcLockingTest.class.getSimpleName());
         lock_a=new LockService(a).getLock("lock");
 
         b=createChannel("B");
-        disp_b=new MessageDispatcher(b, null, null);
+        disp_b=new MessageDispatcher(b);
         b.connect(RpcLockingTest.class.getSimpleName());
         lock_b=new LockService(b).getLock("lock");
 

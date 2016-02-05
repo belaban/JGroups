@@ -96,8 +96,7 @@ public class UPerf extends ReceiverAdapter {
             transport.setBindPort(bind_port);
         }
 
-        disp=new RpcDispatcher(channel, null, this, this);
-        disp.setMethodLookup(id -> METHODS[id]);
+        disp=new RpcDispatcher(channel, this).setMembershipListener(this).setMethodLookup(id -> METHODS[id]);
         channel.connect(groupname);
         local_addr=channel.getAddress();
 

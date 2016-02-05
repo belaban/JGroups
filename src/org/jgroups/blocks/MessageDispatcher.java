@@ -38,8 +38,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, Closeable {
     protected Channel                               channel;
     protected RequestCorrelator                     corr;
-    protected MessageListener                       msg_listener;
     protected MembershipListener                    membership_listener;
+    protected StateListener                         state_listener;
     protected RequestHandler                        req_handler;
     protected boolean                               async_dispatching;
     protected boolean                               wrap_exceptions=true;
@@ -56,15 +56,13 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
     public MessageDispatcher() {
     }
 
-    public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2) {
+    public MessageDispatcher(Channel channel) {
         this.channel=channel;
         prot_adapter=new ProtocolAdapter();
         if(channel != null) {
             local_addr=channel.getAddress();
             channel.addChannelListener(this);
         }
-        setMessageListener(l);
-        setMembershipListener(l2);
         if(channel != null)
             installUpHandler(prot_adapter, true);
         start();
@@ -72,13 +70,11 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
 
 
     public MessageDispatcher(Channel channel, RequestHandler req_handler) {
-        this(channel, null, null, req_handler);
-    }
-
-    public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, RequestHandler req_handler) {
-        this(channel, l, l2);
+        this(channel);
         setRequestHandler(req_handler);
     }
+
+
 
     public RpcStats          rpcStats()                {return rpc_stats;}
     public MessageDispatcher extendedStats(boolean fl) {rpc_stats.extendedStats(fl); return this;}
@@ -173,20 +169,20 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         }
     }
 
-    public final void setMessageListener(MessageListener l) {
-        msg_listener=l;
-    }
 
-    public MessageListener getMessageListener() {
-        return msg_listener;
-    }
-
-    public final void setMembershipListener(MembershipListener l) {
+    public MessageDispatcher setMembershipListener(MembershipListener l) {
         membership_listener=l;
+        return this;
     }
 
-    public final void setRequestHandler(RequestHandler rh) {
+    public MessageDispatcher setStateListener(StateListener sl) {
+        this.state_listener=sl;
+        return this;
+    }
+
+    public MessageDispatcher setRequestHandler(RequestHandler rh) {
         req_handler=rh;
+        return this;
     }
 
     public Channel getChannel() {
@@ -531,41 +527,35 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
 
     protected Object handleUpEvent(Event evt) throws Exception {
         switch(evt.getType()) {
-            case Event.MSG:
-                if(msg_listener != null)
-                    msg_listener.receive((Message) evt.getArg());
-                break;
-
             case Event.GET_APPLSTATE: // reply with GET_APPLSTATE_OK
                 byte[] tmp_state=null;
-                if(msg_listener != null) {
+                if(state_listener != null) {
                     ByteArrayOutputStream output=new ByteArrayOutputStream(1024);
-                    msg_listener.getState(output);
+                    state_listener.getState(output);
                     tmp_state=output.toByteArray();
                 }
                 return new StateTransferInfo(null, 0L, tmp_state);
 
             case Event.GET_STATE_OK:
-                if(msg_listener != null) {
+                if(state_listener != null) {
                     StateTransferResult result=(StateTransferResult)evt.getArg();
                     if(result.hasBuffer()) {
                         ByteArrayInputStream input=new ByteArrayInputStream(result.getBuffer());
-                        msg_listener.setState(input);
+                        state_listener.setState(input);
                     }
                 }
                 break;
 
             case Event.STATE_TRANSFER_OUTPUTSTREAM:
                 OutputStream os=(OutputStream)evt.getArg();
-                if(msg_listener != null && os != null) {
-                    msg_listener.getState(os);
-                }
+                if(state_listener != null && os != null)
+                    state_listener.getState(os);
                 break;
 
             case Event.STATE_TRANSFER_INPUTSTREAM:
                 InputStream is=(InputStream)evt.getArg();
-                if(msg_listener != null && is!=null)
-                    msg_listener.setState(is);
+                if(state_listener != null && is!=null)
+                    state_listener.setState(is);
                 break;
 
             case Event.VIEW_CHANGE:
