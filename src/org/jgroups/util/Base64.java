@@ -147,7 +147,7 @@ package org.jgroups.util;
  * @author rob@iharder.net
  * @version 2.3.7
  */
-public class Base64
+public final class Base64
 {
     
 /* ********  P U B L I C   F I E L D S  ******** */   

@@ -14,7 +14,7 @@ import java.util.StringTokenizer;
  * 
  * @author Bela Ban
  */
-public class ResourceManager {
+public final class ResourceManager {
 	private static final IpAddressRep rep;
 	private static short mcast_port;
 	private static short tcp_port;

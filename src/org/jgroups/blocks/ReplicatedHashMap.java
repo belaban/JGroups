@@ -517,7 +517,7 @@ public class ReplicatedHashMap<K, V> extends
         return new SynchronizedReplicatedMap<>(map);
     }
 
-    private static class SynchronizedReplicatedMap<K, V>
+    private static final class SynchronizedReplicatedMap<K, V>
             implements ReplicatedMap<K,V> {
         private final ReplicatedMap<K,V> map;
         private final Object mutex;
