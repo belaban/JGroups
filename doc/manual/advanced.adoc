@@ -879,7 +879,7 @@ Scoped messages apply only to _regular_ (non-OOB) messages, and are delivered
 
 This means that all updates to X are delivered in parallel to updates to Y and updates to Z. However, within
 a given scope, updates are delivered in the order in which they were performed, so X1 is delivered before
-X2, which is deliverd before X3 and so on.
+X2, which is delivered before X3 and so on.
             
 
 Taking the above example, using scoped messages, update Y1 does _not_ have to wait for
