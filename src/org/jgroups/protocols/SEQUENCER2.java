@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * 
  * Todo 1: on a sequencer change, the new coordinator needs to determine the highest seqno from all members
  * Todo 2: on a sequencer change, if a member has pendindg messages in the forward-queue, they need to be resent
+ * Todo 3: this protocol is currently broken, as a new member doesn't get the highest seqno and thus creates its table
+ *         at offset=0, which means it will queue all messages higher than 0, and eventually run out of memory!!!
  * 
  * @author Bela Ban
  * @edited Andrei Palade
