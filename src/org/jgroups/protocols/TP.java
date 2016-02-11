@@ -1499,13 +1499,17 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     msg.putHeader(id, new TpHeader(oob_batch.clusterName()));
                     Executor pool=pickThreadPool(oob, internal);
                     try {
-                        pool.execute(new SingleMessageHandler(msg));
                         oob_batch.remove(msg);
+                        pool.execute(new SingleMessageHandler(msg));
                         num_oob_msgs_received++;
-                    }
-                    catch(Throwable t) {
-                        log.error("%s: failed submitting DONT_BUNDLE message to thread pool: %s. Msg: %s",
-                                  local_addr, t, msg.printHeaders());
+                    } catch (RejectedExecutionException ex) {
+                        num_rejected_msgs++;
+                        if (log.isDebugEnabled()) {
+                            log.debug("%s: failed submitting DONT_BUNDLE message to thread pool: %s. Msg: %s",
+                                    local_addr, ex, msg.printHeaders());
+                        }
+                    } catch (Throwable t) {
+                        log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
                     }
                 }
             }
