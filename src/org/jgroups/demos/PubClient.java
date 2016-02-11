@@ -29,13 +29,13 @@ public class PubClient extends ReceiverAdapter implements ConnectionListener {
     @Override
     public void receive(Address sender, ByteBuffer buf) {
         String msg=new String(buf.array(), buf.arrayOffset(), buf.limit());
-        System.out.printf("-- %s\n", msg);
+        System.out.printf("-- %s%n", msg);
     }
 
     @Override
     public void receive(Address sender, byte[] buf, int offset, int length) {
         String msg=new String(buf, offset, length);
-        System.out.printf("-- %s\n", msg);
+        System.out.printf("-- %s%n", msg);
     }
 
 
@@ -58,7 +58,7 @@ public class PubClient extends ReceiverAdapter implements ConnectionListener {
         client.receiver(this);
         client.addConnectionListener(this);
         client.start();
-        byte[] buf=String.format("%s joined\n", name).getBytes();
+        byte[] buf=String.format("%s joined%n", name).getBytes();
         ((Client)client).send(buf, 0, buf.length);
         eventLoop();
         client.stop();
@@ -75,7 +75,7 @@ public class PubClient extends ReceiverAdapter implements ConnectionListener {
                 if(line.startsWith("quit") || line.startsWith("exit")) {
                     break;
                 }
-                byte[] buf=String.format("%s: %s\n", name, line).getBytes();
+                byte[] buf=String.format("%s: %s%n", name, line).getBytes();
                 ((Client)client).send(buf, 0, buf.length);
             }
             catch(Exception e) {
