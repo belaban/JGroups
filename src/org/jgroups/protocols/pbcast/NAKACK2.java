@@ -370,7 +370,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     public String dumpXmitTablesNumCurrentRows() {
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<Address,Table<Message>> entry: xmit_table.entrySet())
-            sb.append(String.format("%s: %d\n", entry.getKey(), entry.getValue().getNumRows()));
+            sb.append(String.format("%s: %d%n", entry.getKey(), entry.getValue().getNumRows()));
         return sb.toString();
     }
 
@@ -435,7 +435,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
     public String printStats() {
-        return String.format("\nStability messages received\n%s\n", printStabilityMessages());
+        return String.format("%nStability messages received%n%s%n", printStabilityMessages());
     }
 
 

@@ -24,7 +24,7 @@ public class HDRS extends Protocol {
     public Object up(Event evt) {
         if(print_up && evt.getType() == Event.MSG) {
             Message msg=(Message)evt.getArg();
-            System.out.printf("-- [s] from %s (%d bytes): %s\n", msg.src(), msg.getLength(), msg.printHeaders());
+            System.out.printf("-- [s] from %s (%d bytes): %s%n", msg.src(), msg.getLength(), msg.printHeaders());
         }
         return up_prot.up(evt); // Pass up to the layer above us
     }
@@ -32,7 +32,7 @@ public class HDRS extends Protocol {
     public void up(MessageBatch batch) {
         if(print_up) {
             for(Message msg : batch)
-                System.out.printf("-- [b] from %s (%d bytes): %s\n", msg.src(), msg.getLength(), msg.printHeaders());
+                System.out.printf("-- [b] from %s (%d bytes): %s%n", msg.src(), msg.getLength(), msg.printHeaders());
         }
         if(!batch.isEmpty())
             up_prot.up(batch);
@@ -41,7 +41,7 @@ public class HDRS extends Protocol {
     public Object down(Event evt) {
         if(print_down && evt.getType() == Event.MSG) {
             Message msg=(Message)evt.getArg();
-            System.out.printf("-- to %s (%d bytes): %s\n", msg.dest(), msg.getLength(), msg.printHeaders());
+            System.out.printf("-- to %s (%d bytes): %s%n", msg.dest(), msg.getLength(), msg.printHeaders());
         }
 
         return down_prot.down(evt);  // Pass on to the layer below us

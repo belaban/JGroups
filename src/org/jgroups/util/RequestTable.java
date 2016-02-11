@@ -262,7 +262,7 @@ public class RequestTable<T> {
                 if(el != null) {
                     long hash=el.hashCode();
                     int small_idx=index(i, new_cap);
-                    sb.append(String.format("seqno %d: index: %d val: %d, index in %d-buffer: %d\n", i, index, hash, new_cap, small_idx));
+                    sb.append(String.format("seqno %d: index: %d val: %d, index in %d-buffer: %d%n", i, index, hash, new_cap, small_idx));
                 }
             }
         }

@@ -147,7 +147,7 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     }
 
     public String print() {
-        return String.format("Stubs: %s\nReconnect list: %s", printStubs(), printReconnectList());
+        return String.format("Stubs: %s%nReconnect list: %s", printStubs(), printReconnectList());
     }
 
     public void run() {

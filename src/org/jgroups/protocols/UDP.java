@@ -489,12 +489,12 @@ public class UDP extends TP {
         formatter.format("mcast_addr=%s, bind_addr=%s, ttl=%d", mcast_addr, bind_addr, ip_ttl);
 
         if(sock != null)
-            formatter.format("\nsock: bound to %s:%d, receive buffer size=%d, send buffer size=%d",
+            formatter.format("%nsock: bound to %s:%d, receive buffer size=%d, send buffer size=%d",
                              sock.getLocalAddress().getHostAddress(), sock.getLocalPort(),
                              sock.getReceiveBufferSize(), sock.getSendBufferSize());
 
         if(mcast_sock != null)
-            formatter.format("\nmcast_sock: bound to %s:%d, send buffer size=%d, receive buffer size=%d",
+            formatter.format("%nmcast_sock: bound to %s:%d, send buffer size=%d, receive buffer size=%d",
                              mcast_sock.getInterface().getHostAddress(), mcast_sock.getLocalPort(),
                              mcast_sock.getSendBufferSize(), mcast_sock.getReceiveBufferSize());
         return sb.toString();

@@ -191,7 +191,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                 Entry val2=entry2.getValue();
                 if(val2 == null)
                     continue;
-                sb.append(String.format("  %s: %s (client_addr: %s, uuid:%s)\n", val2.logical_name, val2.phys_addr, val2.client_addr, logical_addr));
+                sb.append(String.format("  %s: %s (client_addr: %s, uuid:%s)%n", val2.logical_name, val2.phys_addr, val2.client_addr, logical_addr));
             }
         }
         return sb.toString();
@@ -550,9 +550,9 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         System.out.println("    -expiry <msecs>       - Time for closing idle connections. 0");
         System.out.println("                            means don't expire.");
         System.out.println();
-        System.out.printf("     -nio <true|false>     - Whether or not to use non-blocking connections (NIO)");
+        System.out.println("     -nio <true|false>     - Whether or not to use non-blocking connections (NIO)");
         System.out.println();
-        System.out.printf("     -suspect <true|false> - Whether or not to use send SUSPECT events when a conn is closed");
+        System.out.println("     -suspect <true|false> - Whether or not to use send SUSPECT events when a conn is closed");
         System.out.println();
     }
 }
