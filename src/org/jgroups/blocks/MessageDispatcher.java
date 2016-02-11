@@ -359,7 +359,6 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         if(listener != null)
             req.setListener(listener);
         req.setResponseFilter(options.getRspFilter());
-        req.setAnycasting(options.getAnycasting());
         long start=non_blocking || !rpc_stats.extendedStats()? 0 : System.nanoTime();
         req.execute(msg, block_for_results);
         long time=non_blocking || !rpc_stats.extendedStats()? 0 : System.nanoTime() - start;

@@ -72,15 +72,6 @@ public class GroupRequest<T> extends Request {
     }
 
 
-    public boolean getAnycasting() {
-        return options.getAnycasting();
-    }
-
-    public void setAnycasting(boolean anycasting) {
-        options.setAnycasting(anycasting);
-    }
-
-
     public void sendRequest(final Message req) throws Exception {
         sendRequest(req, requests.keySet());
     }
