@@ -108,8 +108,9 @@ public class Rsp<T> {
                 sb.append("value=").append(value);
             else
                 sb.append("exception=").append(getException());
+            sb.append(", ");
         }
-        sb.append(", received=").append(wasReceived()).append(", suspected=").append(wasSuspected());
+        sb.append("received=").append(wasReceived()).append(", suspected=").append(wasSuspected());
         if(wasUnreachable())
             sb.append(" (unreachable)");
         return sb.toString();

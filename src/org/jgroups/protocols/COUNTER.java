@@ -8,10 +8,7 @@ import org.jgroups.util.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 
 /**
@@ -137,11 +134,17 @@ public class COUNTER extends Protocol {
         Promise<long[]> promise=new Promise<>();
         pending_requests.put(owner, new Tuple<>(req, promise));
         sendRequest(coord, req);
-        long[] result=promise.getResultWithTimeout(timeout);
-        long value=result[0], version=result[1];
-        if(!coord.equals(local_addr))
-            counters.put(name, new VersionedValue(value, version));
-        return new CounterImpl(name);
+        long[] result=new long[0];
+        try {
+            result=promise.getResultWithTimeout(timeout);
+            long value=result[0], version=result[1];
+            if(!coord.equals(local_addr))
+                counters.put(name, new VersionedValue(value, version));
+            return new CounterImpl(name);
+        }
+        catch(TimeoutException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** Sent asynchronously - we don't wait for an ack */
@@ -648,13 +651,19 @@ public class COUNTER extends Protocol {
             Promise<long[]> promise=new Promise<>();
             pending_requests.put(owner, new Tuple<>(req, promise));
             sendRequest(coord, req);
-            Object obj=promise.getResultWithTimeout(timeout);
-            if(obj instanceof Throwable)
-                throw new IllegalStateException((Throwable)obj);
-            long[] result=(long[])obj;
-            long value=result[0], version=result[1];
-            if(!coord.equals(local_addr))
-                counters.put(name, new VersionedValue(value, version));
+            Object obj=null;
+            try {
+                obj=promise.getResultWithTimeout(timeout);
+                if(obj instanceof Throwable)
+                    throw new IllegalStateException((Throwable)obj);
+                long[] result=(long[])obj;
+                long value=result[0], version=result[1];
+                if(!coord.equals(local_addr))
+                    counters.put(name, new VersionedValue(value, version));
+            }
+            catch(TimeoutException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
@@ -671,16 +680,22 @@ public class COUNTER extends Protocol {
             Promise<long[]> promise=new Promise<>();
             pending_requests.put(owner, new Tuple<>(req, promise));
             sendRequest(coord, req);
-            Object obj=promise.getResultWithTimeout(timeout);
-            if(obj instanceof Throwable)
-                throw new IllegalStateException((Throwable)obj);
-            if(obj == null)
-                return false;
-            long[] result=(long[])obj;
-            long value=result[0], version=result[1];
-            if(!coord.equals(local_addr))
-                counters.put(name, new VersionedValue(value, version));
-            return true;
+            Object obj=null;
+            try {
+                obj=promise.getResultWithTimeout(timeout);
+                if(obj instanceof Throwable)
+                    throw new IllegalStateException((Throwable)obj);
+                if(obj == null)
+                    return false;
+                long[] result=(long[])obj;
+                long value=result[0], version=result[1];
+                if(!coord.equals(local_addr))
+                    counters.put(name, new VersionedValue(value, version));
+                return true;
+            }
+            catch(TimeoutException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
@@ -707,14 +722,20 @@ public class COUNTER extends Protocol {
             Promise<long[]> promise=new Promise<>();
             pending_requests.put(owner, new Tuple<>(req, promise));
             sendRequest(coord, req);
-            Object obj=promise.getResultWithTimeout(timeout);
-            if(obj instanceof Throwable)
-                throw new IllegalStateException((Throwable)obj);
-            long[] result=(long[])obj;
-            long value=result[0], version=result[1];
-            if(!coord.equals(local_addr))
-                counters.put(name, new VersionedValue(value, version));
-            return value;
+            Object obj=null;
+            try {
+                obj=promise.getResultWithTimeout(timeout);
+                if(obj instanceof Throwable)
+                    throw new IllegalStateException((Throwable)obj);
+                long[] result=(long[])obj;
+                long value=result[0], version=result[1];
+                if(!coord.equals(local_addr))
+                    counters.put(name, new VersionedValue(value, version));
+                return value;
+            }
+            catch(TimeoutException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override

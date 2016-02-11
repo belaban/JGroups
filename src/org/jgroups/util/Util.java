@@ -1,7 +1,6 @@
 package org.jgroups.util;
 
 import org.jgroups.*;
-import org.jgroups.TimeoutException;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;

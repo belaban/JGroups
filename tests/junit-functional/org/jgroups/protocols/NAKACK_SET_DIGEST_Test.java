@@ -2,10 +2,15 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.util.*;
+import org.jgroups.util.Digest;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.TimeScheduler3;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.concurrent.TimeoutException;
 
 /**
  * Tests setting of digest NAKACK.down(SET_DIGEST), JIRA issue is https://jira.jboss.org/jira/browse/JGRP-1060

@@ -14,14 +14,14 @@ import java.util.*;
 
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class RspListTest {
-    RspList rl;
+    RspList<Object> rl;
     Address a, b, c, d, e;
     Rsp rsp1, rsp2, rsp3, rsp4, rsp5;
 
 
     @BeforeMethod
     void setUp() throws Exception {
-        rl=new RspList();
+        rl=new RspList<>();
         a=Util.createRandomAddress("A");
         b=Util.createRandomAddress("B");
         c=Util.createRandomAddress("C");

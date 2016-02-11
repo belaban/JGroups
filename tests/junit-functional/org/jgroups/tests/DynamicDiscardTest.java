@@ -11,6 +11,7 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.Buffer;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
@@ -58,11 +59,11 @@ public class DynamicDiscardTest {
         discard.setDiscardAll(true);
 
         // send a RSVP message
-        Message msg = new Message(null, "message2");
-        msg.setFlag(Message.Flag.RSVP, Message.Flag.OOB);
-        RspList<Object> rsps = dispatchers[0].castMessage(null, msg, RequestOptions.SYNC().setTimeout(5000));
-
-        Rsp<Object> objectRsp = rsps.get(channels[1].getAddress());
+        byte[] data="message2".getBytes();
+        Buffer buf=new Buffer(data, 0, data.length);
+        RspList<Object> rsps=dispatchers[0].castMessage(null, buf, RequestOptions.SYNC().timeout(5000)
+          .flags(Message.Flag.RSVP, Message.Flag.OOB));
+        Rsp<Object> objectRsp=rsps.get(channels[1].getAddress());
         assertFalse(objectRsp.wasReceived());
         assertTrue(objectRsp.wasSuspected());
     }

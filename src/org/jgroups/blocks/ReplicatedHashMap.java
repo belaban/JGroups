@@ -128,7 +128,7 @@ public class ReplicatedHashMap<K, V> extends
     }
 
     public boolean isBlockingUpdates() {
-        return call_options.getMode() == ResponseMode.GET_ALL;
+        return call_options.mode() == ResponseMode.GET_ALL;
     }
 
     /**
@@ -137,14 +137,14 @@ public class ReplicatedHashMap<K, V> extends
      * @param blocking_updates
      */
     public void setBlockingUpdates(boolean blocking_updates) {
-        call_options.setMode(blocking_updates? ResponseMode.GET_ALL : ResponseMode.GET_NONE);
+        call_options.mode(blocking_updates? ResponseMode.GET_ALL : ResponseMode.GET_NONE);
     }
 
     /**
      * The timeout (in milliseconds) for blocking updates
      */
     public long getTimeout() {
-        return call_options.getTimeout();
+        return call_options.timeout();
     }
 
     /**
@@ -154,7 +154,7 @@ public class ReplicatedHashMap<K, V> extends
      *                The timeout (in milliseconds) for blocking updates
      */
     public void setTimeout(long timeout) {
-        call_options.setTimeout(timeout);
+        call_options.timeout(timeout);
     }
 
     /**

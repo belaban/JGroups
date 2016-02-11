@@ -41,7 +41,7 @@ public class RequestOptions {
 
     public RequestOptions(ResponseMode mode, long timeout, boolean use_anycasting, RspFilter rsp_filter, Message.Flag ... flags) {
         this(mode, timeout, use_anycasting, rsp_filter,(short)0);
-        setFlags(flags);
+        flags(flags);
     }
 
     public RequestOptions(ResponseMode mode, long timeout, boolean use_anycasting, RspFilter rsp_filter, short flags) {
@@ -79,29 +79,29 @@ public class RequestOptions {
     public static RequestOptions ASYNC() {return new RequestOptions(ResponseMode.GET_NONE, 10000);}
 
 
-    public ResponseMode getMode() {
+    public ResponseMode mode() {
         return mode;
     }
 
-    public RequestOptions setMode(ResponseMode mode) {
+    public RequestOptions mode(ResponseMode mode) {
         this.mode=mode;
         return this;
     }
 
-    public long getTimeout() {
+    public long timeout() {
         return timeout;
     }
 
-    public RequestOptions setTimeout(long timeout) {
+    public RequestOptions timeout(long timeout) {
         this.timeout=timeout;
         return this;
     }
 
-    public boolean getAnycasting() {
+    public boolean anycasting() {
         return use_anycasting;
     }
 
-    public RequestOptions setAnycasting(boolean use_anycasting) {
+    public RequestOptions anycasting(boolean use_anycasting) {
         this.use_anycasting=use_anycasting;
         return this;
     }
@@ -114,28 +114,28 @@ public class RequestOptions {
         return this;
     }
 
-    public RspFilter getRspFilter() {
+    public RspFilter rspFilter() {
         return rsp_filter;
     }
 
-    public RequestOptions setRspFilter(RspFilter rsp_filter) {
+    public RequestOptions rspFilter(RspFilter rsp_filter) {
         this.rsp_filter=rsp_filter;
         return this;
     }
 
-    public short getFlags() {
+    public short flags() {
         return flags;
     }
 
-    public short getTransientFlags() {return transient_flags;}
+    public short transientFlags() {return transient_flags;}
 
-    public boolean isFlagSet(Message.Flag flag) {
+    public boolean flagSet(Message.Flag flag) {
         return flag != null && ((flags & flag.value()) == flag.value());
     }
 
-    public boolean isTransientFlagSet(Message.TransientFlag flag) {return flag != null && ((transient_flags & flag.value()) == flag.value());}
+    public boolean transientFlagSet(Message.TransientFlag flag) {return flag != null && ((transient_flags & flag.value()) == flag.value());}
 
-    public RequestOptions setFlags(Message.Flag ... flags) {
+    public RequestOptions flags(Message.Flag ... flags) {
         if(flags != null)
             for(Message.Flag flag: flags)
                 if(flag != null)
@@ -143,7 +143,7 @@ public class RequestOptions {
         return this;
     }
 
-    public RequestOptions setTransientFlags(Message.TransientFlag ... flags) {
+    public RequestOptions transientFlags(Message.TransientFlag ... flags) {
         if(flags != null)
             for(Message.TransientFlag flag: flags)
                 if(flag != null)
@@ -176,7 +176,7 @@ public class RequestOptions {
         return exclusion_list;
     }
 
-    public RequestOptions setExclusionList(Address ... mbrs) {
+    public RequestOptions exclusionList(Address ... mbrs) {
         if(mbrs == null || mbrs.length == 0)
             return this;
         exclusion_list=mbrs;

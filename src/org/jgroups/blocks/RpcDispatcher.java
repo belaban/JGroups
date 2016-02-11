@@ -10,6 +10,7 @@ import org.jgroups.util.*;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
 
 
 /**
@@ -57,7 +58,6 @@ public class RpcDispatcher extends MessageDispatcher {
          * @throws Exception
          */
         Buffer objectToBuffer(Object obj) throws Exception;
-
         Object objectFromBuffer(byte[] buf, int offset, int length) throws Exception;
     }
 
@@ -81,7 +81,7 @@ public class RpcDispatcher extends MessageDispatcher {
      * @param args The arguments to be passed
      * @param types The types of the arguments
      * @param options A collection of call options, e.g. sync versus async, timeout etc
-     * @return RspList<T> A response list with results, one for each member in dests
+     * @return RspList<T> A response list with results, one for each member in dests, or null if the RPC is asynchronous
      * @throws Exception If the sending of the message threw an exception. Note that <em>no</em> exception will be
      *                   thrown if any of the target members threw an exception, but this exception will be in the Rsp
      *                   object for the particular member in the RspList
@@ -98,29 +98,26 @@ public class RpcDispatcher extends MessageDispatcher {
      * Invokes a method in all members and expects responses from members contained in dests (or all members if dests is null).
      * @param dests A list of addresses. If null, we'll wait for responses from all cluster members
      * @param method_call The method (plus args) to be invoked
-     * @param options A collection of call options, e.g. sync versus async, timeout etc
-     * @return RspList A list of return values and flags (suspected, not received) per member
+     * @param opts A collection of call options, e.g. sync versus async, timeout etc
+     * @return RspList A list of return values and flags (suspected, not received) per member, or null if the RPC is
+     *                 asynchronous
      * @throws Exception If the sending of the message threw an exception. Note that <em>no</em> exception will be
      *                   thrown if any of the target members threw an exception, but this exception will be in the Rsp
      *                   object for the particular member in the RspList
      * @since 2.9
      */
-    public <T> RspList<T> callRemoteMethods(Collection<Address> dests,
-                                            MethodCall method_call,
-                                            RequestOptions options) throws Exception {
+    public <T> RspList<T> callRemoteMethods(Collection<Address> dests, MethodCall method_call,
+                                            RequestOptions opts) throws Exception {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
-            if(log.isTraceEnabled())
-                log.trace("destination list of %s() is empty: no need to send message", method_call.getName());
-            return new RspList();
+            log.trace("destination list of %s() is empty: no need to send message", method_call.getName());
+            return empty_rsplist;
         }
 
         if(log.isTraceEnabled())
-            log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, options);
+            log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, opts);
 
         Buffer buf=marshaller != null? marshaller.objectToBuffer(method_call) : Util.objectToBuffer(method_call);
-        Message msg=new Message().setBuffer(buf);
-
-        RspList<T> retval=super.castMessage(dests, msg, options);
+        RspList<T> retval=super.castMessage(dests, buf, opts);
         if(log.isTraceEnabled()) log.trace("responses: %s", retval);
         return retval;
     }
@@ -131,65 +128,40 @@ public class RpcDispatcher extends MessageDispatcher {
      * @param dests A list of addresses. If null, we'll wait for responses from all cluster members
      * @param method_call The method (plus args) to be invoked
      * @param options A collection of call options, e.g. sync versus async, timeout etc
-     * @param listener A FutureListener which will be registered (if non null) with the future <em>before</em> the call is invoked
-     * @return NotifyingFuture A future from which the results can be fetched
+     * @return CompletableFuture A future from which the results can be fetched, or null if the RPC is asynchronous
      * @throws Exception If the sending of the message threw an exception. Note that <em>no</em> exception will be
      *                   thrown if any of the target members threw an exception; such an exception will be in the Rsp
      *                   element for the particular member in the RspList
      */
-    public <T> NotifyingFuture<RspList<T>> callRemoteMethodsWithFuture(Collection<Address> dests,
-                                                                       MethodCall method_call,
-                                                                       RequestOptions options,
-                                                                       FutureListener<RspList<T>> listener) throws Exception {
+    public <T> CompletableFuture<RspList<T>> callRemoteMethodsWithFuture(Collection<Address> dests, MethodCall method_call,
+                                                                         RequestOptions options) throws Exception {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
-            if(log.isTraceEnabled())
-                log.trace("destination list of %s() is empty: no need to send message", method_call.getName());
-            return new NullFuture<>(new RspList());
+            log.trace("destination list of %s() is empty: no need to send message", method_call.getName());
+            return CompletableFuture.completedFuture(empty_rsplist);
         }
 
         if(log.isTraceEnabled())
             log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, options);
 
         Buffer buf=marshaller != null? marshaller.objectToBuffer(method_call) : Util.objectToBuffer(method_call);
-        Message msg=new Message().setBuffer(buf);
-
-        NotifyingFuture<RspList<T>>  retval=super.castMessageWithFuture(dests, msg, options, listener);
-        if(log.isTraceEnabled()) log.trace("responses: %s", retval);
-        return retval;
+        return super.castMessageWithFuture(dests, buf, options);
     }
 
-
-    /**
-     * Invokes a method in all members and expects responses from members contained in dests (or all members if dests is null).
-     * @param dests A list of addresses. If null, we'll wait for responses from all cluster members
-     * @param method_call The method (plus args) to be invoked
-     * @param options A collection of call options, e.g. sync versus async, timeout etc
-     * @return NotifyingFuture A future from which the results can be fetched
-     * @throws Exception If the sending of the message threw an exception. Note that <em>no</em> exception will be
-     *                   thrown if any of the target members threw an exception; such an exception will be in the Rsp
-     *                   element for the particular member in the RspList
-     */
-    public <T> NotifyingFuture<RspList<T>> callRemoteMethodsWithFuture(Collection<Address> dests,
-                                                                       MethodCall method_call,
-                                                                       RequestOptions options) throws Exception {
-        return callRemoteMethodsWithFuture(dests, method_call, options, null);
-    }
 
 
     /**
      * Invokes a method in a cluster member and - if blocking - returns the result
      * @param dest The target member on which to invoke the method
-     * @param method_name The name of the method
+     * @param meth The name of the method
      * @param args The arguments
      * @param types The types of the arguments
-     * @param options The options (e.g. blocking, timeout etc)
-     * @return The result
+     * @param opts The options (e.g. blocking, timeout etc)
+     * @return The result. Null if the call is asynchronous (non-blocking) or if the method returns void
      * @throws Exception Thrown if the method invocation threw an exception, either at the caller or the callee
      */
-    public <T> T callRemoteMethod(Address dest, String method_name, Object[] args,
-                                   Class[] types, RequestOptions options) throws Exception {
-        MethodCall method_call=new MethodCall(method_name, args, types);
-        return (T)callRemoteMethod(dest, method_call, options);
+    public <T> T callRemoteMethod(Address dest, String meth, Object[] args, Class[] types, RequestOptions opts) throws Exception {
+        MethodCall method_call=new MethodCall(meth, args, types);
+        return (T)callRemoteMethod(dest, method_call, opts);
     }
 
 
@@ -198,7 +170,7 @@ public class RpcDispatcher extends MessageDispatcher {
      * @param dest The target member on which to invoke the method
      * @param call The call to be invoked, including method are arguments
      * @param options The options (e.g. blocking, timeout etc)
-     * @return The result
+     * @return The result. Null if the call is asynchronous (non-blocking) or if the method returns void
      * @throws Exception Thrown if the method invocation threw an exception, either at the caller or the callee
      */
     public <T> T callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Exception {
@@ -206,9 +178,7 @@ public class RpcDispatcher extends MessageDispatcher {
             log.trace("dest=%s, method_call=%s, options=%s", dest, call, options);
 
         Buffer buf=marshaller != null? marshaller.objectToBuffer(call) : Util.objectToBuffer(call);
-        Message msg=new Message(dest, null, null).setBuffer(buf);
-
-        T retval=super.sendMessage(msg, options);
+        T retval=super.sendMessage(dest, buf, options);
         if(log.isTraceEnabled()) log.trace("retval: %s", retval);
         return retval;
     }
@@ -218,32 +188,16 @@ public class RpcDispatcher extends MessageDispatcher {
      * Invokes a method in a cluster member and - if blocking - returns the result
      * @param dest The target member on which to invoke the method
      * @param call The call to be invoked, including method are arguments
-     * @param options The options (e.g. blocking, timeout etc)
-     * @param listener A FutureListener which will be registered (if non null) with the future <em>before</em> the call is invoked
+     * @param opts The options (e.g. blocking, timeout etc)
      * @return A future from which the result can be fetched. If the callee threw an invocation, an ExecutionException
-     *         will be thrown on calling Future.get().
+     *         will be thrown on calling Future.get(). If the invocation was asynchronous, null will be returned.
      * @throws Exception Thrown if the method invocation threw an exception
      */
-    public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions options,
-                                                             FutureListener<T> listener) throws Exception {
+    public <T> CompletableFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions opts) throws Exception {
         if(log.isTraceEnabled())
-            log.trace("dest=%s, method_call=%s, options=%s", dest, call, options);
+            log.trace("dest=%s, method_call=%s, options=%s", dest, call, opts);
         Buffer buf=marshaller != null? marshaller.objectToBuffer(call) : Util.objectToBuffer(call);
-        Message msg=new Message(dest, null, null).setBuffer(buf);
-        return super.sendMessageWithFuture(msg, options, listener);
-    }
-
-    /**
-     * Invokes a method in a cluster member and - if blocking - returns the result
-     * @param dest The target member on which to invoke the method
-     * @param call The call to be invoked, including method are arguments
-     * @param options The options (e.g. blocking, timeout etc)
-     * @return A future from which the result can be fetched. If the callee threw an invocation, an ExecutionException
-     *         will be thrown on calling Future.get().
-     * @throws Exception Thrown if the method invocation threw an exception
-     */
-    public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions options) throws Exception {
-        return callRemoteMethodWithFuture(dest, call, options, null);
+        return super.sendMessageWithFuture(dest, buf, opts);
     }
 
 

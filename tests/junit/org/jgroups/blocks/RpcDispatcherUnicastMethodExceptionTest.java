@@ -2,13 +2,13 @@ package org.jgroups.blocks;
 
 import org.jgroups.Channel;
 import org.jgroups.Global;
-import org.jgroups.TimeoutException;
 import org.jgroups.tests.ChannelTestBase;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author Bela Ban
@@ -22,7 +22,7 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
     protected void setUp() throws Exception {
         channel=createChannel(true);
         disp=new RpcDispatcher(channel, this);
-        channel.connect(getUniqueClusterName("RpcDispatcherUnicastMethodExceptionTest"));
+        channel.connect("RpcDispatcherUnicastMethodExceptionTest");
     }
 
     @AfterClass
@@ -124,8 +124,7 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
         }
         catch(Throwable t) {
             System.out.println("t = " + t);
-            assert t instanceof InvocationTargetException;
-            assert t.getCause() instanceof AssertionError;
+            assert t instanceof AssertionError;
         }
     }
 

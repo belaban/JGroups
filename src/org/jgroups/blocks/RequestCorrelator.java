@@ -59,7 +59,7 @@ public class RequestCorrelator {
     protected boolean                                async_dispatching;
 
     // send exceptions back wrapped in an {@link InvocationTargetException}, or not
-    protected boolean                                wrap_exceptions=true;
+    protected boolean                                wrap_exceptions=false;
 
     private final MyProbeHandler                     probe_handler=new MyProbeHandler();
 
@@ -108,20 +108,17 @@ public class RequestCorrelator {
     public boolean                  wrapExceptions()               {return wrap_exceptions;}
     public RequestCorrelator        wrapExceptions(boolean flag)   {wrap_exceptions=flag; return this;}
 
-    public void sendRequest(List<Address> dest_mbrs, Message msg, Request req) throws Exception {
-        sendRequest(dest_mbrs, msg, req, new RequestOptions().setAnycasting(false));
-    }
 
     /**
      * Sends a request to a group. If no response collector is given, no responses are expected (making the call asynchronous)
      * @param dest_mbrs The list of members who should receive the call. Usually a group RPC
      *                  is sent via multicast, but a receiver drops the request if its own address
      *                  is not in this list. Will not be used if it is null.
-     * @param msg The request to be sent. The body of the message carries the request data
+     * @param data the data to be sent.
      * @param req A request (usually the object that invokes this method). Its methods {@code receiveResponse()} and
      *            {@code suspect()} will be invoked when a message has been received or a member is suspected.
      */
-    public void sendRequest(Collection<Address> dest_mbrs, Message msg, Request req, RequestOptions options) throws Exception {
+    public void sendRequest(Collection<Address> dest_mbrs, Buffer data, Request req, RequestOptions opts) throws Exception {
         if(transport == null) {
             log.warn("transport is not available !");
             return;
@@ -129,10 +126,11 @@ public class RequestCorrelator {
 
         // i.   Create the request correlator header and add it to the msg
         // ii.  If a reply is expected (coll != null), add a coresponding entry in the pending requests table
-        Header hdr=options.hasExclusionList()?
-          new MultiDestinationHeader(Header.REQ, 0, this.corr_id, options.exclusionList())
+        Header hdr=opts.hasExclusionList()? new MultiDestinationHeader(Header.REQ, 0, this.corr_id, opts.exclusionList())
           : new Header(Header.REQ, 0, this.corr_id);
-        msg.putHeader(this.corr_id, hdr);
+
+        Message msg=new Message(null, data).putHeader(this.corr_id, hdr)
+          .setFlag(opts.flags()).setTransientFlag(opts.transientFlags());
 
         if(req != null) {
             long req_id=REQUEST_ID.getAndIncrement();
@@ -145,8 +143,8 @@ public class RequestCorrelator {
             req.viewChange(view);
         }
 
-        if(options.getAnycasting()) {
-            if(options.useAnycastAddresses()) {
+        if(opts.anycasting()) {
+            if(opts.useAnycastAddresses()) {
                 transport.down(new Event(Event.MSG, msg.dest(new AnycastAddress(dest_mbrs))));
             }
             else {
@@ -165,25 +163,22 @@ public class RequestCorrelator {
     }
 
     /** Sends a request to a single destination */
-    public void sendUnicastRequest(Address target, Message msg, Request req) throws Exception {
+    public void sendUnicastRequest(Address dest, Buffer data, Request req, RequestOptions opts) throws Exception {
         if(transport == null) {
             if(log.isWarnEnabled()) log.warn("transport is not available !");
             return;
         }
 
-        // i.   Create the request correlator header and add it to the msg
-        // ii.  If a reply is expected (coll != null), add a coresponding entry in the pending requests table
-        // iii. If deadlock detection is enabled, set/update the call stack
-        // iv.  Pass the msg down to the protocol layer below
         Header hdr=new Header(Header.REQ, 0, this.corr_id);
-        msg.putHeader(this.corr_id, hdr);
+        Message msg=new Message(dest, data).putHeader(this.corr_id, hdr)
+          .setFlag(opts.flags()).setTransientFlag(opts.transientFlags());
 
         if(req != null) {
             long req_id=REQUEST_ID.getAndIncrement();
             req.requestId(req_id);
             hdr.requestId(req_id); // set the request-id only for *synchronous RPCs*
             if(log.isTraceEnabled())
-                log.trace("%s: invoking unicast RPC [req-id=%d] on %s", local_addr, req_id, target);
+                log.trace("%s: invoking unicast RPC [req-id=%d] on %s", local_addr, req_id, msg.dest());
             requests.putIfAbsent(req_id, req);
             // make sure no view is received before we add ourself as a view handler (https://issues.jboss.org/browse/JGRP-1428)
             req.viewChange(view);
@@ -216,11 +211,6 @@ public class RequestCorrelator {
      */
     public boolean receive(Event evt) {
         switch(evt.getType()) {
-
-            case Event.SUSPECT:     // don't wait for responses from faulty members
-                receiveSuspect((Address)evt.getArg());
-                break;
-
             case Event.VIEW_CHANGE: // adjust number of responses to wait for
                 receiveView((View)evt.getArg());
                 break;
@@ -267,18 +257,6 @@ public class RequestCorrelator {
 
 
 
-    /**
-     * <tt>Event.SUSPECT</tt> event received from a layer below.
-     * <p>
-     * All response collectors currently registered will be notified that {@code mbr} may have crashed, so they won't
-     * wait for its response.
-     */
-    public void receiveSuspect(Address mbr) {
-        if(mbr == null) return;
-        log.debug("suspect=" + mbr);
-        requests.values().stream().filter(req -> req != null).forEach(req -> req.suspect(mbr));
-    }
-
 
     /** An entire site is down; mark all requests that point to that site as unreachable (used by RELAY2) */
     public void setSiteUnreachable(String site) {
@@ -287,11 +265,7 @@ public class RequestCorrelator {
 
 
     /**
-     * <tt>Event.VIEW_CHANGE</tt> event received from a layer below.
-     * <p>
-     * Mark all responses from members that are not in new_view as
-     * NOT_RECEIVED.
-     *
+     * View received: mark all responses from members that are not in new_view as suspected
      */
     public void receiveView(View new_view) {
         view=new_view; // move this before the iteration (JGRP-1428)
@@ -311,9 +285,8 @@ public class RequestCorrelator {
         // Check if the message was sent by a request correlator with the same name;
         // there may be multiple request correlators in the same protocol stack
         if(hdr.corrId != this.corr_id) {
-            if(log.isTraceEnabled())
-                log.trace(new StringBuilder("id of request correlator header (").append(hdr.corrId).
-                          append(") is different from ours (").append(this.corr_id).append("). Msg not accepted, passed up"));
+            log.trace("ID of request correlator header (%d) is different from ours (%d). Msg not accepted, passed up",
+                      hdr.corrId, this.corr_id);
             return false;
         }
 
@@ -321,9 +294,7 @@ public class RequestCorrelator {
             // if we are part of the exclusion list, then we discard the request (addressed to different members)
             Address[] exclusion_list=((MultiDestinationHeader)hdr).exclusion_list;
             if(exclusion_list != null && local_addr != null && Util.contains(local_addr, exclusion_list)) {
-                if(log.isTraceEnabled())
-                    log.trace("%s: discarded request from %s as we are in the exclusion list, hdr=",
-                              local_addr, msg.getSrc(), hdr);
+                log.trace("%s: dropped req from %s as we are in the exclusion list, hdr=%s", local_addr, msg.src(), hdr);
                 return true; // don't pass this message further up
             }
         }

@@ -2,7 +2,11 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.blocks.*;
+import org.jgroups.blocks.MessageDispatcher;
+import org.jgroups.blocks.RequestHandler;
+import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.ResponseMode;
+import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
 
 
@@ -69,11 +73,13 @@ public class MessageDispatcherSpeedTest extends ReceiverAdapter implements Reque
 
         if(show <=0) show=1;
         start=System.currentTimeMillis();
-        RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, TIMEOUT).setFlags(Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
+        RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, TIMEOUT).flags(Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
+        byte[] data="bla".getBytes();
+        Buffer buf=new Buffer(data, 0, data.length);
 
         System.out.println("-- sending " + num + " messages");
         for(int i=1; i <= num; i++) {
-            disp.castMessage(null, new Message(), opts);
+            disp.castMessage(null, buf, opts);
             if(i % show == 0)
                 System.out.println("-- sent " + i);
         }

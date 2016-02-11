@@ -1,11 +1,11 @@
 package org.jgroups.util;
 
 import org.jgroups.Address;
-import org.jgroups.TimeoutException;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Collects acks from a number of nodes, waits for all acks. Can also be time bounded

@@ -111,9 +111,9 @@ public class MPerfRpc extends ReceiverAdapter {
         disp=new RpcDispatcher(channel, this).setMembershipListener(this).setMethodLookup(id -> METHODS[id])
           .setMarshaller(new MperfMarshaller());
 
-        send_options.setMode(sync? ResponseMode.GET_ALL : ResponseMode.GET_NONE);
+        send_options.mode(sync? ResponseMode.GET_ALL : ResponseMode.GET_NONE);
         if(oob)
-            send_options.setFlags(Message.Flag.OOB);
+            send_options.flags(Message.Flag.OOB);
 
         channel.connect("mperf");
         local_addr=channel.getAddress();
@@ -122,7 +122,7 @@ public class MPerfRpc extends ReceiverAdapter {
         // send a CONFIG_REQ to the current coordinator, so we can get the current config
         Address coord=channel.getView().getMembers().get(0);
         if(coord != null && !local_addr.equals(coord))
-            invokeRpc(configReq, coord, RequestOptions.ASYNC().setFlags(Message.Flag.RSVP), local_addr);
+            invokeRpc(configReq, coord, RequestOptions.ASYNC().flags(Message.Flag.RSVP), local_addr);
     }
 
 
@@ -143,7 +143,7 @@ public class MPerfRpc extends ReceiverAdapter {
                     case '1':
                         initiator=true;
                         results.reset(getSenders());
-                        invokeRpc(clearResults,RequestOptions.SYNC().setFlags(Message.Flag.RSVP));
+                        invokeRpc(clearResults,RequestOptions.SYNC().flags(Message.Flag.RSVP));
                         invokeRpc(startSending, RequestOptions.ASYNC(), local_addr);
                         break;
                     case '2':
@@ -163,11 +163,11 @@ public class MPerfRpc extends ReceiverAdapter {
                         break;
                     case 's':
                         ConfigChange change=new ConfigChange("sync", !sync);
-                        invokeRpc(configChange,RequestOptions.SYNC().setFlags(Message.Flag.RSVP), change);
+                        invokeRpc(configChange, RequestOptions.SYNC().flags(Message.Flag.RSVP), change);
                         break;
                     case 'o':
                         change=new ConfigChange("oob", !oob);
-                        invokeRpc(configChange,RequestOptions.SYNC().setFlags(Message.Flag.RSVP), change);
+                        invokeRpc(configChange, RequestOptions.SYNC().flags(Message.Flag.RSVP), change);
                         break;
                     case 'x':
                         looping=false;
@@ -219,7 +219,7 @@ public class MPerfRpc extends ReceiverAdapter {
     protected void configChange(String name) throws Exception {
         int tmp=Util.readIntFromStdin(name + ": ");
         ConfigChange change=new ConfigChange(name, tmp);
-        invokeRpc(configChange,RequestOptions.SYNC().setFlags(Message.Flag.RSVP),change);
+        invokeRpc(configChange, RequestOptions.SYNC().flags(Message.Flag.RSVP), change);
     }
 
 
@@ -324,7 +324,7 @@ public class MPerfRpc extends ReceiverAdapter {
             Result tmp_result=new Result(stop-start, msgs);
             try {
                 if(result_collector != null)
-                    invokeRpc(result, result_collector, RequestOptions.SYNC().setFlags(Message.Flag.RSVP),
+                    invokeRpc(result, result_collector, RequestOptions.SYNC().flags(Message.Flag.RSVP),
                               local_addr, tmp_result);
             }
             catch(Exception e) {
@@ -358,9 +358,9 @@ public class MPerfRpc extends ReceiverAdapter {
             System.out.println(config_change.attr_name + "=" + attr_value);
             log_interval=num_msgs / 10;
             receive_log_interval=num_msgs * Math.max(1, members.size()) / 10;
-            send_options.setMode(sync? ResponseMode.GET_ALL : ResponseMode.GET_NONE);
+            send_options.mode(sync? ResponseMode.GET_ALL : ResponseMode.GET_NONE);
             if(oob)
-                send_options.setFlags(Message.Flag.OOB);
+                send_options.flags(Message.Flag.OOB);
         }
         catch(Exception e) {
             System.err.println("failed applying config change for attr " + attr_name + ": " + e);
@@ -498,7 +498,7 @@ public class MPerfRpc extends ReceiverAdapter {
                     if(tmp % log_interval == 0)
                         System.out.println("++ sent " + tmp);
                     if(tmp == num_msgs) { // last message, send SENDING_DONE message
-                        RequestOptions opts=RequestOptions.ASYNC().setFlags(Message.Flag.RSVP);
+                        RequestOptions opts=RequestOptions.ASYNC().flags(Message.Flag.RSVP);
                         invokeRpc(sendingDone, opts, local_addr);
                     }
                 }

@@ -13,7 +13,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -60,12 +59,8 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
                                             new RequestOptions(ResponseMode.GET_ALL, 8000));
         System.out.println("responses:\n" + rsps + ", channel.view: " + channel.getView() + ", channel2.view: " + channel2.getView());
         assert members.size() == rsps.size() : "expected " + members.size() + " responses, but got " + rsps + " (" + rsps.size() + ")";
-
-        for(Rsp rsp: rsps.values()) {
-            assert rsp.getException() instanceof InvocationTargetException;
-            Throwable cause=rsp.getException().getCause();
-            assert cause instanceof NoSuchMethodException;
-        }
+        for(Rsp rsp: rsps.values())
+            assert rsp.getException() instanceof NoSuchMethodException;
     }
 
     public void testMarshaller() throws Exception {

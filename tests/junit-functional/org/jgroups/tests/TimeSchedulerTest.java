@@ -2,10 +2,12 @@ package org.jgroups.tests;
 
 
 import org.jgroups.Global;
-import org.jgroups.TimeoutException;
 import org.jgroups.stack.Interval;
 import org.jgroups.stack.StaticInterval;
-import org.jgroups.util.*;
+import org.jgroups.util.Promise;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.TimeScheduler3;
+import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -14,6 +16,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 

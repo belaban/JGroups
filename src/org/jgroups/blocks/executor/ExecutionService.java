@@ -55,7 +55,7 @@ public class ExecutionService extends AbstractExecutorService {
 
     public void setChannel(Channel ch) {
         this.ch=ch;
-        _execProt=(Executing)ch.getProtocolStack().findProtocol(Executing.class);
+        _execProt=ch.getProtocolStack().findProtocol(Executing.class);
         if(_execProt == null)
             throw new IllegalStateException("Channel configuration must include a executing protocol " +
                                               "(subclass of " + Executing.class.getName() + ")");

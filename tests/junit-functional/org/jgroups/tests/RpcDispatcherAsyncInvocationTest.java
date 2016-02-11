@@ -11,7 +11,6 @@ import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.FutureListener;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -20,6 +19,7 @@ import org.testng.annotations.Test;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -86,28 +86,25 @@ public class RpcDispatcherAsyncInvocationTest {
     protected List<Integer> invokeRpc(final int num_invocations, boolean use_oob) throws Exception {
         RequestOptions opts=RequestOptions.SYNC();
         if(use_oob)
-            opts.setFlags(Message.Flag.OOB);
+            opts.flags(Message.Flag.OOB);
 
         final List<Integer> results=new ArrayList<>(num_invocations);
 
-        FutureListener<Integer> listener=future -> {
-            try {
-                int result=future.get();
-                results.add(result);
-                System.out.println("<-- " + result);
-                if(results.size() == num_invocations) {
-                    synchronized(results) {
-                        results.notifyAll();
-                    }
-                }
-            }
-            catch(Exception e) {
-            }
-        };
-
         MethodCall call=new MethodCall(incr_method);
         for(int i=0; i < num_invocations; i++) {
-            disp1.callRemoteMethodWithFuture(b.getAddress(),call,opts, listener);
+            CompletableFuture<Object> future=disp1.callRemoteMethodWithFuture(b.getAddress(), call, opts);
+            future.whenComplete((result,ex) -> {
+                try {
+                    results.add((Integer)result);
+                    System.out.println("<-- " + result);
+                    if(results.size() == num_invocations) {
+                        synchronized(results) {
+                            results.notifyAll();
+                        }
+                    }
+                }
+                catch(Exception ignored) {}
+            });
         }
 
         for(int i=0; i < 20; i++) {

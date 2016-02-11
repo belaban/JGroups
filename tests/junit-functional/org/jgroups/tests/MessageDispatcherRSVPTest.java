@@ -128,41 +128,39 @@ public class MessageDispatcherRSVPTest {
      */
     public void testSendingMessageOnClosedChannel() throws Exception {
         // unicast
-        sendMessageOnClosedChannel(new Message(channels[1].getAddress(), "bla"));
+        sendMessageOnClosedChannel(channels[1].getAddress());
 
         // multicast
-        sendMessageOnClosedChannel(new Message(null,"bla"));
+        sendMessageOnClosedChannel(null);
     }
 
     public void testSendingMessageOnClosedChannelRSVP() throws Exception {
         // unicast
-        Message msg=new Message(channels[1].getAddress(), null, "bla");
-        msg.setFlag(Message.Flag.RSVP);
-        sendMessageOnClosedChannel(msg);
+        sendMessageOnClosedChannel(channels[1].getAddress(), Message.Flag.RSVP);
 
         // multicast
-        msg=new Message(null, "bla");
-        msg.setFlag(Message.Flag.RSVP);
-        sendMessageOnClosedChannel(msg);
+        sendMessageOnClosedChannel(null, Message.Flag.RSVP);
     }
 
     protected void testCancellationByClosing(boolean unicast, Thread closer) throws Exception {
-        DISCARD discard=(DISCARD)channels[0].getProtocolStack().findProtocol(DISCARD.class);
+        DISCARD discard=channels[0].getProtocolStack().findProtocol(DISCARD.class);
         discard.setDiscardAll(true);
 
         try {
             Address target=unicast? channels[1].getAddress() : null;
+            byte[] data="bla".getBytes();
+            Buffer buf=new Buffer(data, 0, data.length);
             Message msg=new Message(target, "bla");
             msg.setFlag(Message.Flag.RSVP);
             closer.start();
             if(unicast) {
                 System.out.println("sending unicast message to " + target);
-                dispatchers[0].sendMessage(msg, RequestOptions.SYNC());
+                dispatchers[0].sendMessage(target, buf, RequestOptions.SYNC().flags(Message.Flag.RSVP));
                 assert false: "sending the message on a closed channel should have thrown an exception";
             }
             else {
                 System.out.println("sending multicast message");
-                RspList<Object> rsps=dispatchers[0].castMessage(Collections.singleton(channels[1].getAddress()),msg,RequestOptions.SYNC());
+                RspList<Object> rsps=dispatchers[0].castMessage(Collections.singleton(channels[1].getAddress()),buf,RequestOptions.SYNC());
                 System.out.println("rsps = " + rsps);
                 assert rsps.size() == 1;
                 Rsp<Object> rsp=rsps.iterator().next();
@@ -178,16 +176,16 @@ public class MessageDispatcherRSVPTest {
     }
 
 
-    protected void sendMessageOnClosedChannel(Message msg) throws Exception {
+    protected void sendMessageOnClosedChannel(Address dest, Message.Flag... flags) throws Exception {
+        RequestOptions opts=RequestOptions.SYNC().timeout(2000).flags(flags);
+        byte[] data="bla".getBytes();
+        Buffer buf=new Buffer(data, 0, data.length);
         channels[0].close();
-        Address target=msg.getDest();
         try {
-            if(target == null) { // multicast
-                dispatchers[0].castMessage(Collections.singleton(channels[1].getAddress()), msg, RequestOptions.SYNC());
-            }
-            else {
-                dispatchers[0].sendMessage(msg, RequestOptions.SYNC());
-            }
+            if(dest == null) // multicast
+                dispatchers[0].castMessage(Collections.singleton(channels[1].getAddress()), buf, opts);
+            else
+                dispatchers[0].sendMessage(dest, buf, opts);
             assert false: "sending the message on a closed channel should have thrown an exception";
         }
         catch(IllegalStateException t) {

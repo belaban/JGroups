@@ -212,7 +212,7 @@ public class RSVPTest {
 
         DISCARD discard=(DISCARD)channels[0].getProtocolStack().findProtocol(DISCARD.class);
         discard.setDropDownMulticasts(1);
-        RequestOptions opts=RequestOptions.SYNC().setFlags(Message.Flag.RSVP_NB);
+        RequestOptions opts=RequestOptions.SYNC().flags(Message.Flag.RSVP_NB);
 
         long start=System.currentTimeMillis();
         Future<RspList<String>> future=dispatchers[0].callRemoteMethodsWithFuture(null, new MethodCall(method), opts);

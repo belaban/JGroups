@@ -316,7 +316,7 @@ public class UPerf extends ReceiverAdapter {
                 case 'X':
                     try {
                         RequestOptions options=new RequestOptions(ResponseMode.GET_NONE, 0); // .setExclusionList(local_addr);
-                        options.setFlags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
+                        options.flags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
                         disp.callRemoteMethods(null, new MethodCall(QUIT_ALL), options);
                     }
                     catch(Throwable t) {
@@ -338,7 +338,7 @@ public class UPerf extends ReceiverAdapter {
         RspList<Results> responses=null;
         try {
             RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0);
-            options.setFlags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
+            options.flags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
             responses=disp.callRemoteMethods(null, new MethodCall(START), options);
         }
         catch(Throwable t) {
@@ -408,7 +408,7 @@ public class UPerf extends ReceiverAdapter {
     }
 
     protected static List<String> getSites(JChannel channel) {
-        RELAY2 relay=(RELAY2)channel.getProtocolStack().findProtocol(RELAY2.class);
+        RELAY2 relay=channel.getProtocolStack().findProtocol(RELAY2.class);
         return relay != null? relay.siteNames() : new ArrayList<>(0);
     }
 
@@ -458,12 +458,12 @@ public class UPerf extends ReceiverAdapter {
             RequestOptions get_before_put_options=new RequestOptions(ResponseMode.GET_FIRST, 40000, true, null, Message.Flag.DONT_BUNDLE, Message.Flag.OOB);
 
             if(oob) {
-                get_options.setFlags(Message.Flag.OOB);
-                put_options.setFlags(Message.Flag.OOB);
+                get_options.flags(Message.Flag.OOB);
+                put_options.flags(Message.Flag.OOB);
             }
             if(!msg_bundling) {
-                get_options.setFlags(Message.Flag.DONT_BUNDLE);
-                put_options.setFlags(Message.Flag.DONT_BUNDLE);
+                get_options.flags(Message.Flag.DONT_BUNDLE);
+                put_options.flags(Message.Flag.DONT_BUNDLE);
             }
             if(use_anycast_addrs)
                 put_options.useAnycastAddresses(true);

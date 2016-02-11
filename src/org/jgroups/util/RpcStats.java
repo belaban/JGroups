@@ -109,8 +109,6 @@ public class RpcStats {
                 else
                     async_anycasts.incrementAndGet();
                 break;
-            default:
-                throw new IllegalArgumentException(String.format("type %s is invalid", type));
         }
     }
 

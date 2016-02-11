@@ -119,7 +119,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
                 dests.addAll(view.getMembers());
                 System.out.println("invoking method in " + dests + ": ");
                 RspList<Object> rsps=disp.callRemoteMethods(dests, call,
-                                                            new RequestOptions(ResponseMode.GET_ALL, RPC_TIMEOUT).setAnycasting(true));
+                                                            new RequestOptions(ResponseMode.GET_ALL, RPC_TIMEOUT).anycasting(true));
                 for(Map.Entry<Address,Rsp<Object>> entry: rsps.entrySet()) {
                     Address sender=entry.getKey();
                     Rsp<Object> rsp=entry.getValue();
@@ -132,7 +132,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
             else {
                 // mcasting the call to all local cluster members
                 RspList<Object> rsps=disp.callRemoteMethods(null, call,
-                                                            new RequestOptions(ResponseMode.GET_ALL, RPC_TIMEOUT).setAnycasting(false));
+                                                            new RequestOptions(ResponseMode.GET_ALL, RPC_TIMEOUT).anycasting(false));
                 rsps.entrySet().stream().forEach((entry) -> {
                     Rsp<Object> val=entry.getValue();
                     System.out.println("<< " + val.getValue() + " from " + entry.getKey());

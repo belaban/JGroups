@@ -154,6 +154,11 @@ public class Message implements Streamable {
         this(dest, null, buf, offset, length);
     }
 
+    public Message(Address dest, Buffer buf) {
+        this(dest);
+        setBuffer(buf);
+    }
+
 
    /**
     * Constructs a Message given a destination Address, a source Address and the payload Object

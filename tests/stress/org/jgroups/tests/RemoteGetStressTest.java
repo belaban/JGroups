@@ -41,8 +41,8 @@ public class RemoteGetStressTest {
     protected static final MethodCall     GET_METHOD;
     protected static final long           TIMEOUT=3 * 60 * 1000; // ms
     protected static final AtomicInteger  count=new AtomicInteger(1);
-    protected static final RequestOptions OPTIONS=RequestOptions.SYNC().setTimeout(TIMEOUT)
-      .setFlags(Message.Flag.OOB).setAnycasting(true);
+    protected static final RequestOptions OPTIONS=RequestOptions.SYNC().timeout(TIMEOUT)
+      .flags(Message.Flag.OOB).anycasting(true);
     protected static boolean              USE_SLEEPS=true;
 
     static {

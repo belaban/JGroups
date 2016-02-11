@@ -5,9 +5,11 @@ import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;

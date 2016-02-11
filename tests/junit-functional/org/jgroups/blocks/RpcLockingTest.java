@@ -102,7 +102,8 @@ public class RpcLockingTest {
         if (lock_a.tryLock()) {
             try {
                 System.out.println("A aquired the lock, about to send message to B");
-                String rsp=disp_a.sendMessage(new Message(b.getAddress(),"bla"), RequestOptions.SYNC().setTimeout(60000).setFlags(Message.Flag.OOB));
+                byte[] buf="bla".getBytes();
+                String rsp=disp_a.sendMessage(b.getAddress(), buf, 0, buf.length, RequestOptions.SYNC().timeout(60000).flags(Message.Flag.OOB));
                 if (rsp == null) {
                     System.err.println("ERROR: didn't return correctly");
                     Assert.fail("Didn't return correctly");
@@ -131,7 +132,8 @@ public class RpcLockingTest {
 		if(lock_b.tryLock()) {
 			try {
 				System.out.println("B aquired the lock, about to send message to A");
-				String rsp = disp_b.sendMessage(new Message(a.getAddress(), "bla"), RequestOptions.SYNC().setFlags(Message.Flag.OOB));
+                byte[] buf="bla".getBytes();
+				String rsp = disp_b.sendMessage(a.getAddress(), buf, 0, buf.length, RequestOptions.SYNC().flags(Message.Flag.OOB));
 				if (rsp == null) {
                     System.err.println("ERROR: didn't return correctly");
 					Assert.fail("Didn't return correctly");
@@ -150,7 +152,8 @@ public class RpcLockingTest {
 		if(lock_a.tryLock(5000, TimeUnit.MILLISECONDS)) {
 			try {
 				System.out.println("A aquired the lock, about to send message to B");
-                String rsp = disp_a.sendMessage(new Message(b.getAddress(), "bla"), RequestOptions.SYNC().setTimeout(60000).setFlags(Message.Flag.OOB));
+                byte[] buf="bla".getBytes();
+                String rsp = disp_a.sendMessage(b.getAddress(), buf, 0, buf.length, RequestOptions.SYNC().timeout(60000).flags(Message.Flag.OOB));
 				if (rsp == null) {
 					System.err.println("ERROR: didn't return correctly");
 					Assert.fail("Didn't return correctly");
