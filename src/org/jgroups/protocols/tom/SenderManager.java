@@ -97,7 +97,7 @@ public class SenderManager {
     /**
      * The state of a message (destination, proposes missing, the highest sequence number proposed, etc...)
      */
-    private static class MessageInfo {
+    private static final class MessageInfo {
         private final ArrayList<Address> destinations;
         private long highestSequenceNumberReceived;
         private BitSet receivedPropose;

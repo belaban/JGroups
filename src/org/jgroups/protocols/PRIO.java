@@ -189,7 +189,7 @@ public class PRIO extends Protocol {
 	 * <P>
 	 * The messageQueue contains the prioritized messages 
 	 */
-	private class DownMessageThread extends MessageThread {
+	private final class DownMessageThread extends MessageThread {
 		private DownMessageThread( PRIO prio, PriorityBlockingQueue<PriorityMessage> messageQueue  ) {
 			super( prio, messageQueue );
 		}
@@ -205,7 +205,7 @@ public class PRIO extends Protocol {
 	 * <P>
 	 * The messageQueue contains the prioritized messages
 	 */
-	private class UpMessageThread extends MessageThread {
+	private final class UpMessageThread extends MessageThread {
 		private UpMessageThread( PRIO prio, PriorityBlockingQueue<PriorityMessage> messageQueue  ) {
 			super( prio, messageQueue );
 		}

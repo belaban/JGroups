@@ -953,7 +953,7 @@ public class FLUSH extends Protocol {
     }
 
 
-    private static class FlushStartResult {
+    private static final class FlushStartResult {
         private final Boolean result;
         private final Exception failureCause;
       
