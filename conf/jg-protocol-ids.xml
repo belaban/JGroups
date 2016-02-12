@@ -74,7 +74,7 @@
     <class id="521" name="org.jgroups.protocols.raft.RAFT"        external="true"/>
     <class id="522" name="org.jgroups.protocols.raft.REDIRECT"    external="true"/>
     <class id="523" name="org.jgroups.protocols.raft.CLIENT"      external="true"/>
-    <class id="530" name="org.jgroups.azure.protocols.AZURE_PING" external="true"/>
+    <class id="530" name="org.jgroups.protocols.azure.AZURE_PING" external="true"/>
 
     <!-- User-defined protocols should use IDs > 1000 -->
 
