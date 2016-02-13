@@ -23,6 +23,7 @@
     <property name="compile.dir"           value="${root.dir}/classes"/>
     <property name="lib.dir"               value="${root.dir}/lib"/>
     <property name="dist.dir"              value="${root.dir}/dist"/>
+	<property name="dist.dir.extLib"       value="${root.dir}/extLib"/>
     <property name="tmp.dir"               value="${root.dir}/tmp"/>
     <property name="doc.dir"               value="${root.dir}/doc"/>
     <property name="manual.dir"            value="${doc.dir}/manual"/>
@@ -118,7 +119,7 @@
     </target>
 
 
-    <target name="retrieve" depends="check-jars-exist,get-ivy,define-ivy-task" unless="jars.exist"
+    <target name="retrieve" depends="check-jars-exist,get-ivy,define-ivy-task"
             description="Retrieves all dependent libs defined in ivy.xml unless already present">
         <ivy:retrieve type="jar" transitive="false"/>
 
@@ -149,7 +150,28 @@
         <mkdir dir="${compile.dir}"/>
     	<copy file="${build.properties.file}.template" tofile="${build.properties.file}" overwrite="false"/>
     </target>
+	
+	<path id="classpath">
+			<fileset dir="${basedir}/">
+				<include name="${dist.dir.extLib}/*.jar" />
+			</fileset>
+		</path>
 
+	<pathconvert property="classpath.name" pathsep=" ">
+			<path refid="classpath" />
+			<mapper>
+				<chainedmapper>
+					<flattenmapper />
+					<globmapper from="*.jar" to="{dist.dir.extLib}/*.jar" />
+				</chainedmapper>
+			</mapper>
+		</pathconvert>
+
+		<target name="copy-dependencies">
+			<copy todir="${dist.dir}">
+				<fileset dir="${dist.dir.extLib}" includes="**/*.jar" />
+			</copy>
+		</target>
 
     <target name="compile" depends="prepare" description="Compiles all Java files">
         <javac destdir="${compile.dir}"
@@ -171,6 +193,7 @@
             <src path="${stress.dir}"/>
             <src path="${perf.dir}"/>
             <src path="${util.dir}"/>
+        	<src path="${dist.dir.extLib}"/>
         </javac>
     </target>
 
@@ -213,7 +236,7 @@
 
     <target name="jar"
             description="Compiles and creates JARs in ./dist"
-            depends="jgroups.jar,jgroups-sources.jar">
+            depends="jgroups.jar,jgroups-sources.jar,copy-dependencies">
         <copy file="${doc.dir}/README" tofile="${dist.dir}/README" overwrite="true"/>
 
 
@@ -252,6 +275,7 @@
             <fileset dir="${lib.dir}">
                 <include name="licenses/thirdparty*"/>
             </fileset>
+             <zipgroupfileset dir="${lib.dir}" includes="oshi-core-1.3.jar" />
         </jar> 	
     	
     </target>

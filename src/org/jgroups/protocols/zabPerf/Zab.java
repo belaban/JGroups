@@ -24,8 +24,13 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.protocols.jzookeeper.MessageId;
+import org.jgroups.protocols.jzookeeper.Proposal;
+import org.jgroups.protocols.zabPerf.ProtocolStats;
+import org.jgroups.protocols.jzookeeper.ZabHeader;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.Util;
 
 /*
  * It is orignal protocol of Apache Zookeeper. Also it has features of testing throuhput, latency (in Nano), ant etc. 
@@ -58,9 +63,12 @@ public class Zab extends Protocol {
 			.synchronizedMap(new HashMap<MessageId, Message>());
 	private Calendar cal = Calendar.getInstance();
 	private int index = -1;
+	private int clientFinished = 0;
+	private int numABRecieved = 0;
 	private volatile boolean running = true;
 	private volatile boolean startThroughput = false;
 	private final static String outDir = "/home/pg/p13/a6915654/Zab/";
+	private final static String outDirWork = "/home/pg/p13/a6915654/work/Zab/";
 	private AtomicLong countMessageLeader = new AtomicLong(0);
 	private long countMessageFollower = 0;
 	private List<Address> clients = Collections
@@ -120,7 +128,7 @@ public class Zab extends Protocol {
 		countMessageLeader = new AtomicLong(0);// timer.cancel();
 		countMessageFollower = 0;
 		this.stats = new ProtocolStats(ProtocolName, clients.size(),
-				numberOfSenderInEachClient, outDir, false);
+				numberOfSenderInEachClient, outDir, outDirWork, false);
 		log.info("Reset done");
 		MessageId messageId = new MessageId(local_addr, -10,
 				System.currentTimeMillis());
@@ -186,10 +194,14 @@ public class Zab extends Protocol {
 					stats.addTempPPTForward(hdr.getMessageId(),
 							System.nanoTime());
 					long startTime = hdr.getMessageId().getStartTime();
-					long timeTemp = System.nanoTime();
-					stats.addOneRoundFToL((int)(timeTemp-startTime));
-					stats.addLatencyFToLFOneRound((int)(timeTemp-startTime));
-					stats.getListFToLFOneRound().size();
+					//log.info("startTime="+startTime);
+					//long timeTemp = System.currentTimeMillis();
+					//log.info("timeTemp="+timeTemp);
+					//log.info("(int)(timeTemp-startTime)="+(timeTemp-startTime));
+					stats.addOneRoundFToL((int)(System.nanoTime()-startTime));
+					stats.addLatencyFToLFOneRound((int)(System.nanoTime()-startTime));
+					//log.info("(int)(System.nanoTime()-startTime)="+(System.nanoTime()-startTime));
+
 				}
 				queuedMessages.add(hdr);
 				break;
@@ -200,8 +212,8 @@ public class Zab extends Protocol {
 						stats.setStartThroughputTime(System.currentTimeMillis());
 					}
 					if (!stats.isWarmup()){
-						long timeTemp = System.nanoTime();
-						stats.addTempAckProcessTime(hdr.getMessageId(), timeTemp);
+						//long timeTemp = System.nanoTime();
+						//stats.addTempAckProcessTime(hdr.getMessageId(), timeTemp);
 					}
 					sendACK(msg, hdr);
 				}
@@ -213,19 +225,23 @@ public class Zab extends Protocol {
 				processACK(msg, msg.getSrc());
 				break;
 			case ZabHeader.COMMIT:
-				if(!stats.isWarmup()){
-					long st = System.nanoTime();
-					stats.addDeliveryProcessTime(hdr.getMessageId(), st);
-				}
+//				if(!stats.isWarmup()){
+//					long st = System.nanoTime();
+//					stats.addDeliveryProcessTime(hdr.getMessageId(), st);
+//				}
 				delivery.add(hdr);
 				//deliver(hdr.getZxid());
 				break;
+			case ZabHeader.CLIENTFINISHED:
+				clientFinished++;
+				if(clientFinished==clients.size() && !is_leader)
+					sendMyTotalBroadcast();
+				break;
 			case ZabHeader.STATS:
-				// log.info(" " + clients);
 				stats.printProtocolStats(is_leader);
 				break;
 			case ZabHeader.COUNTMESSAGE:
-				sendTotalABMssages(hdr);
+				addTotalABMssages(hdr);
 				log.info("Yes, I recieved count request");
 				break;
 			case ZabHeader.SENDMYADDRESS:
@@ -320,13 +336,11 @@ public class Zab extends Protocol {
 		}
 
 		else if (clientHeader != null
-				&& clientHeader.getType() == ZabHeader.COUNTMESSAGE) {
+				&& clientHeader.getType() == ZabHeader.CLIENTFINISHED) {
 			for (Address server : zabMembers) {
-				if (!server.equals(zabMembers.get(0))) {
 					Message countMessages = new Message(server).putHeader(
 							this.id, clientHeader);
 					down_prot.down(new Event(Event.MSG, countMessages));
-				}
 			}
 
 		}
@@ -422,9 +436,11 @@ public class Zab extends Protocol {
 			queuedMessages.add(hdrReq);
 		} else {
 			if (!stats.isWarmup()) {
-				long stf = System.nanoTime();
-				hdrReq.getMessageId().setStartFToLF(stf);
-				hdrReq.getMessageId().setStartTime(stf);
+				//long stf = System.nanoTime();
+				hdrReq.getMessageId().setStartFToLFOneWay(System.nanoTime());
+				hdrReq.getMessageId().setStartTime(System.nanoTime());
+				//log.info("startTime="+stf);
+
 			}
 			forward(msg);
 		}
@@ -472,12 +488,12 @@ public class Zab extends Protocol {
 		if (!stats.isWarmup()) {
 			countMessageFollower++;
 			stats.incCountMessageFollower();
-			long stAck = stats.getTempAckProcessTime(hdrAck.getMessageId());
-			long currentTime = System.nanoTime();
-			stats.removeTempAckProcessTime(hdrAck.getMessageId());
-			stats.addAckPT((int) (currentTime - stAck));
+			//long stAck = stats.getTempAckProcessTime(hdrAck.getMessageId());
+			//long currentTime = System.nanoTime();
+			//stats.removeTempAckProcessTime(hdrAck.getMessageId());
+			//stats.addAckPT((int) (currentTime - stAck));
 			if (requestQueue.contains(hdrAck.getMessageId())) {
-				long stf = hdrAck.getMessageId().getStartFToLF();
+				long stf = hdrAck.getMessageId().getStartFToLFOneWay();
 				stats.addLatencyFToLF((int) (System.nanoTime() - stf));
 				// log.info("Latency for forward fro zxid=" + dZxid +
 				// " start time=" + stf + " End Time=" + etf +
@@ -577,14 +593,14 @@ public class Zab extends Protocol {
 		if (!stats.isWarmup()) {
 			stats.incnumReqDelivered();
 			stats.setEndThroughputTime(System.currentTimeMillis());
-			long deliveryStartTime = stats.getDeliveryProcessTime(zhdr.getMessageId());
-			stats.removeDeliveryProcessTime(zhdr.getMessageId());
-			stats.addDeliveryPT((int) (System.nanoTime() - deliveryStartTime));	
+			//long deliveryStartTime = stats.getDeliveryProcessTime(zhdr.getMessageId());
+			//stats.removeDeliveryProcessTime(zhdr.getMessageId());
+			//stats.addDeliveryPT((int) (System.nanoTime() - deliveryStartTime));	
 		}
 
-		if (log.isInfoEnabled())
-			log.info("queuedCommitMessage size = " + queuedCommitMessage.size()
-					+ " zxid " + dZxid);
+		//if (log.isInfoEnabled())
+			//log.info("queuedCommitMessage size = " + queuedCommitMessage.size()
+					//+ " zxid " + dZxid);
 		if (requestQueue.contains(hdrOrginal.getMessageId())) {
 			if (!stats.isWarmup()) {
 				long startTime = hdrOrginal.getMessageId().getStartTime();
@@ -626,18 +642,26 @@ public class Zab extends Protocol {
 		return timeString;
 	}
 
-	private void sendTotalABMssages(ZabHeader CarryCountMessageLeader) {
-		if (!is_leader) {
-			ZabHeader followerMsgCount = new ZabHeader(ZabHeader.COUNTMESSAGE,
-					countMessageFollower);
-			Message requestMessage = new Message(leader).putHeader(this.id,
-					followerMsgCount);
-			down_prot.down(new Event(Event.MSG, requestMessage));
-		} else {
-			long followerMsg = CarryCountMessageLeader.getZxid();
-			stats.addCountTotalMessagesFollowers((int) followerMsg);
+	private synchronized void addTotalABMssages(ZabHeader carryCountMessageLeader) {
+		long followerMsg = carryCountMessageLeader.getZxid();
+		stats.addCountTotalMessagesFollowers((int) followerMsg);
+		numABRecieved++;
+		if(numABRecieved==zabMembers.size()-1){
+			ZabHeader headertStats = new ZabHeader(ZabHeader.STATS);
+			for (Address zabServer:zabMembers){
+				Message messageStats = new Message(zabServer).putHeader(this.id,
+					headertStats);
+				down_prot.down(new Event(Event.MSG, messageStats));
+			}
 		}
-
+	}
+	
+	private void sendMyTotalBroadcast(){
+		ZabHeader followerMsgCount = new ZabHeader(
+				ZabHeader.COUNTMESSAGE, countMessageFollower);
+		Message requestMessage = new Message(leader).putHeader(this.id,
+				followerMsgCount);
+		down_prot.down(new Event(Event.MSG, requestMessage));
 	}
 
 	/*

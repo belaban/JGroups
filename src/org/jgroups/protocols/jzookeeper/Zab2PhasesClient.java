@@ -169,6 +169,8 @@ public class Zab2PhasesClient extends ReceiverAdapter {
 					//		+ "msgReceived / numsMsg -----> " + msgReceived + " / "
 					//		+ numsMsg);
 					msgReceived++;
+					//if (msgReceived>=num_msgsPerThreads)
+						//System.out.println("Finished " + msgReceived + "requests");
 					//if (msgReceived >= currentLoad) {
 						//ZABTestThreads.result(msgReceived, sender,
 								//(System.currentTimeMillis() - startTh), latencies);
@@ -215,6 +217,9 @@ public class Zab2PhasesClient extends ReceiverAdapter {
 			numSendMsg =0;
 			for (int i = 0; i < num_msgsPerThreads; i++) {
 				numSendMsg = i;
+				if (i==num_msgsPerThreads)
+					System.out.println(" Last Send ");
+
 				while ((numSendMsg - msgReceived) > load){
 					//System.out.println("Outstanding is ----> "+(numSendMsg - msgReceived));
 					try {

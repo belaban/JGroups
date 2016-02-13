@@ -105,8 +105,8 @@ public class ZabCoinTossingClient extends ReceiverAdapter {
 		channel.setReceiver(this);
 		channel.connect("ZABCluster");
 		local_addr = channel.getAddress();
-		JmxConfigurator.registerChannel(channel, Util.getMBeanServer(),
-				"jgroups", "ZABCluster", true);
+		//JmxConfigurator.registerChannel(channel, Util.getMBeanServer(),
+				//"jgroups", "ZABCluster", true);
 		Address coord = channel.getView().getMembers().get(0);
 
 	}
@@ -134,8 +134,6 @@ public class ZabCoinTossingClient extends ReceiverAdapter {
 			final ZabCoinTossingHeader testHeader = (ZabCoinTossingHeader) msg.getHeader(ID);
 			MessageId message = testHeader.getMessageId();
 			if (testHeader.getType() != ZabCoinTossingHeader.START_SENDING) {
-				// System.out.println("senter " + sender.getName()+
-				// " has finished "+msgReceived+" ops");
 				if (is_warmUp){
 					msgReceived++;
 					if(msgReceived>=warmUpRequests){
@@ -146,34 +144,10 @@ public class ZabCoinTossingClient extends ReceiverAdapter {
 						}
 					}
 				}
-				//System.out.println("Current NumMsg = " + msgReceived);
-				//notify send thread
-				//isSend = false;
 				else if(testHeader.getType()==ZabCoinTossingHeader.RESPONSE){
-					//latencies.add((System.currentTimeMillis() - message.getStartTime()));
-					// if (startReset) {
-					// st = System.currentTimeMillis();
-					// startReset = false;
-					// }
-					//System.out.println(sender.getName() + " "
-					//		+ "Time interval -----> "
-					//		+ (System.currentTimeMillis() - st));
-					//if ((System.currentTimeMillis() - st) > 50) {
-						//System.out.println("senter " + sender.getName()
-						//		+ " has finished " + msgReceived + " ops");
-						//ZABTestThreads.finishedopsSoFar(msgReceived, sender);
-						//st = System.currentTimeMillis();
-						// startReset = true;
-					//}
-					//System.out.println(sender.getName() + " "
-					//		+ "msgReceived / numsMsg -----> " + msgReceived + " / "
-					//		+ numsMsg);
 					msgReceived++;
-					//if (msgReceived >= currentLoad) {
-						//ZABTestThreads.result(msgReceived, sender,
-								//(System.currentTimeMillis() - startTh), latencies);
-	
-					//}
+					if(msgReceived>=num_msgsPerThreads)
+						zabCoinTossingTest.finishedTest();
 				}
 
 			}

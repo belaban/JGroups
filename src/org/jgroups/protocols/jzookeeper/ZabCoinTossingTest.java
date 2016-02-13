@@ -23,6 +23,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.jgroups.protocols.jzookeeper.ZabCoinTossingClient.Sender;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
@@ -126,7 +127,6 @@ public class ZabCoinTossingTest extends ReceiverAdapter {
 	public void setupClientThreads(){
 
 		final CyclicBarrier barrier = new CyclicBarrier(num_threads + 1);
-		System.out.println("Host name for client"+ local_addr.toString().split("-")[0]);
 		clientThreads = new ZabCoinTossingClient[num_threads];
 		System.out.println("after clientThreads = new ZabCoinTossingClient[num_threads];");
 		if (!zabboxInit.contains(local_addr.toString().split("-")[0])) {
@@ -138,7 +138,6 @@ public class ZabCoinTossingTest extends ReceiverAdapter {
 		System.out.println("after for (int i = 0; i < clientThreads.length; i++)");
 		if ((view != null) && zabBox.size() != 0
 				&& view.getMembers().size() > 3 && !zabBox.contains(local_addr)) {
-			System.out.println("Start create Threads Enter int number to start");
 			int noUsed = wait.nextInt();
 			for (int i = 0; i < clientThreads.length; i++) {
 				try {
@@ -306,14 +305,26 @@ public class ZabCoinTossingTest extends ReceiverAdapter {
 		}
     }
 	
-	public synchronized static void finishedopsSoFar(long opNums, Sender sender){
-		//System.out.println("senter " + sender.getName()+ " has finished "+opNums+" ops");
-	}
+		public void sendFinishedNotifcation(){
+			MessageId mid = new MessageId(local_addr,
+					localSequence.incrementAndGet());
+			ZabCoinTossingHeader finishedHeader = new ZabCoinTossingHeader(ZabCoinTossingHeader.CLIENTFINISHED, -11, mid);
+			Message msg = new Message(null).putHeader(ID, finishedHeader);
+			msg.src(channel.getAddress());
+			msg.setObject("CLIENTFINISHED");
+			try {
+				channel.send(msg);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	
 	public synchronized void finishedSend() throws Exception{
 		numsThreadFinished++;
 		if (numsThreadFinished >= num_threads){
-      System.out.println("Finished warm up----------------------------->>>");
+			System.out.println("Finished warm up----------------------------->>>");
+			numsThreadFinished=0;
 			resetProtocol();
 	  }
 	}
@@ -332,44 +343,52 @@ public class ZabCoinTossingTest extends ReceiverAdapter {
 	    }
 	}
 
-	public synchronized static void result(long numOpsRecieved, Sender sender,
-			                              long timeElapsed, List<Long> latencies){
-		
+	//public synchronized static void result(long numOpsRecieved, Sender sender,
+			                            //  long timeElapsed, List<Long> latencies){
+	public synchronized void finishedTest(){
+
 		numsThreadFinished++;
-		avgTimeElpased +=timeElapsed;
-		avgRecievedOps+=numOpsRecieved;
-		if (numsThreadFinished==1){
-			outFile.println();
-			outFile.println();
-			outFile.println("Test "+ProtocotName + " /Load " + load + " /numMsgs For Each Thread " + num_msgsPerThreads+
-					" /numMsgs For Each Client " + num_msgs+ " /numsThreads "+num_threads+" /msg size " + msg_size+
-					" /numOfClients All Cluster " + numOfClients+" /numMsgs For All Cluster "+ num_msgs*numOfClients);
-			outFile.println("------------------------ Result --------------------------");
-		}
-		// print Min, Avg, and Max latency
-		long min = Long.MAX_VALUE, avg =0, max = Long.MIN_VALUE;
-		for (long lat : latencies){
-			if (lat < min){
-				min = lat;
-			}
-			if (lat > max){
-				max = lat;
-			}
-			avg+=lat;			
-		}
-		outFile.println("Sender " + sender.getName()+ " Finished "+
-				numOpsRecieved + " Throughput per sender "+(numOpsRecieved/TimeUnit.MILLISECONDS.toSeconds(timeElapsed))+" ops/sec"
-				+" /Latency-----> Min = " + min + " /Avg = "+ (avg/latencies.size())+
-		        " /Max = " +max);
+		//numsThreadFinished++;
 		if (numsThreadFinished >= num_threads){
-			avgTimeElpased/=numsThreadFinished;
-			outFile.println("Throughput Per Client " +(avgRecievedOps/TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))+" ops/sec");
-			outFile.println("Throughput All Cluster " +((avgRecievedOps*numOfClients)/TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))
-					+" ops/sec");
-		    outFile.println("Test Generated at "+ new Date()+ " Lasted for " + TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased)); 
-			System.out.println("File closed" +"############################################"); 
-			outFile.close();	
+			System.out.println("Finished");
+			sendFinishedNotifcation();
 		}
+		
+//		numsThreadFinished++;
+//		avgTimeElpased +=timeElapsed;
+//		avgRecievedOps+=numOpsRecieved;
+//		if (numsThreadFinished==1){
+//			outFile.println();
+//			outFile.println();
+//			outFile.println("Test "+ProtocotName + " /Load " + load + " /numMsgs For Each Thread " + num_msgsPerThreads+
+//					" /numMsgs For Each Client " + num_msgs+ " /numsThreads "+num_threads+" /msg size " + msg_size+
+//					" /numOfClients All Cluster " + numOfClients+" /numMsgs For All Cluster "+ num_msgs*numOfClients);
+//			outFile.println("------------------------ Result --------------------------");
+//		}
+//		// print Min, Avg, and Max latency
+//		long min = Long.MAX_VALUE, avg =0, max = Long.MIN_VALUE;
+//		for (long lat : latencies){
+//			if (lat < min){
+//				min = lat;
+//			}
+//			if (lat > max){
+//				max = lat;
+//			}
+//			avg+=lat;			
+//		}
+//		outFile.println("Sender " + sender.getName()+ " Finished "+
+//				numOpsRecieved + " Throughput per sender "+(numOpsRecieved/TimeUnit.MILLISECONDS.toSeconds(timeElapsed))+" ops/sec"
+//				+" /Latency-----> Min = " + min + " /Avg = "+ (avg/latencies.size())+
+//		        " /Max = " +max);
+//		if (numsThreadFinished >= num_threads){
+//			avgTimeElpased/=numsThreadFinished;
+//			outFile.println("Throughput Per Client " +(avgRecievedOps/TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))+" ops/sec");
+//			outFile.println("Throughput All Cluster " +((avgRecievedOps*numOfClients)/TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))
+//					+" ops/sec");
+//		    outFile.println("Test Generated at "+ new Date()+ " Lasted for " + TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased)); 
+//			System.out.println("File closed" +"############################################"); 
+//			outFile.close();	
+//		}
 
 }
 

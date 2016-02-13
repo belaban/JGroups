@@ -24,6 +24,7 @@ import org.jgroups.util.Util;
          public static final byte COUNTMESSAGE = 12;
          public static final byte STARTREALTEST = 13;
          public static final byte SENDMYADDRESS = 14;
+         public static final byte CLIENTFINISHED = 15;
 
 
 
@@ -122,6 +123,7 @@ import org.jgroups.util.Util;
             case COUNTMESSAGE:			 return "COUNTMESSAGE";
             case STARTREALTEST:			 return "STARTREALTEST";
             case SENDMYADDRESS:			 return "SENDMYADDRESS";
+            case CLIENTFINISHED:			 return "CLIENTFINISHED";
             default:             return "n/a";
         }
         }

@@ -68,12 +68,13 @@ public class Zab2PTestThreadss extends ReceiverAdapter {
     private long numsOfWarmUpPerThread = 0;
     private int countTempRecieved = 0;
     private int countRecieved = 0;
+    private int sTime=0;
     private Scanner wait = new Scanner(System.in);
 
 
-	public Zab2PTestThreadss(String [] zabHosts, String protocolName, String props,
-						 int totalNum_msgs, int totalPerThreads, int num_threads,
-						 int msg_size, String outputDir, int numOfClients, int load, int numsOfWarmUpPerThread){
+ public Zab2PTestThreadss(String [] zabHosts, String protocolName, String props,
+			 int totalNum_msgs, int totalPerThreads, int num_threads,
+			 int msg_size, String outputDir, int numOfClients, int load, int numsOfWarmUpPerThread, int sendTime){
 		this.zabboxInit =  Arrays.asList(zabHosts);
 		this.ProtocotName = protocolName;
 		this.propsFile = props;
@@ -84,6 +85,7 @@ public class Zab2PTestThreadss extends ReceiverAdapter {
 		this.outputDir = outputDir;
 		this.numOfClients = numOfClients;
 		this.load = load;
+		this.sTime = sendTime;
 		this.numsOfWarmUpPerThread = numsOfWarmUpPerThread;
 		this.ID = ClassConfigurator
 			.getProtocolId(Zab2Phases.class);
@@ -133,7 +135,7 @@ public class Zab2PTestThreadss extends ReceiverAdapter {
 		if (!zabboxInit.contains(local_addr.toString().split("-")[0])) {
 			for (int i = 0; i < clientThreads.length; i++) {
 				clientThreads[i] = new Zab2PClients(zabBox, barrier, num_msgs,
-						localSequence, payload, ProtocotName, num_msgsPerThreads, propsFile, load, numsOfWarmUpPerThread, this);
+						localSequence, payload, ProtocotName, num_msgsPerThreads, propsFile, load, numsOfWarmUpPerThread, sTime, this);
 			}
 		}
 
@@ -307,14 +309,26 @@ public class Zab2PTestThreadss extends ReceiverAdapter {
 		}
     }
 	
-	public synchronized static void finishedopsSoFar(long opNums, Sender sender){
-		//System.out.println("senter " + sender.getName()+ " has finished "+opNums+" ops");
-	}
+		public void sendFinishedNotifcation(){
+			MessageId mid = new MessageId(local_addr,
+					localSequence.incrementAndGet());
+			Zab2PhasesHeader finishedHeader = new Zab2PhasesHeader(Zab2PhasesHeader.CLIENTFINISHED, -11, mid);
+			Message msg = new Message(null).putHeader(ID, finishedHeader);
+			msg.src(channel.getAddress());
+			msg.setObject("CLIENTFINISHED");
+			try {
+				channel.send(msg);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	
 	public synchronized void finishedSend() throws Exception{
 		numsThreadFinished++;
 		if (numsThreadFinished >= num_threads){
-      System.out.println("Finished warm up----------------------------->>>");
+			System.out.println("Finished warm up----------------------------->>>");
+			numsThreadFinished=0;
 			resetProtocol();
 	  }
 	}
@@ -333,44 +347,50 @@ public class Zab2PTestThreadss extends ReceiverAdapter {
 	    }
 	}
 
-	public synchronized static void result(long numOpsRecieved, Sender sender,
-			                              long timeElapsed, List<Long> latencies){
-		
+	//public synchronized static void finishedTest(long numOpsRecieved, Sender sender,
+			                              //long timeElapsed, List<Long> latencies){
+	public synchronized void finishedTest(){
+
 		numsThreadFinished++;
-		avgTimeElpased +=timeElapsed;
-		avgRecievedOps+=numOpsRecieved;
-		if (numsThreadFinished==1){
-			outFile.println();
-			outFile.println();
-			outFile.println("Test "+ProtocotName + " /Load " + load + " /numMsgs For Each Thread " + num_msgsPerThreads+
-					" /numMsgs For Each Client " + num_msgs+ " /numsThreads "+num_threads+" /msg size " + msg_size+
-					" /numOfClients All Cluster " + numOfClients+" /numMsgs For All Cluster "+ num_msgs*numOfClients);
-			outFile.println("------------------------ Result --------------------------");
-		}
-		// print Min, Avg, and Max latency
-		long min = Long.MAX_VALUE, avg =0, max = Long.MIN_VALUE;
-		for (long lat : latencies){
-			if (lat < min){
-				min = lat;
-			}
-			if (lat > max){
-				max = lat;
-			}
-			avg+=lat;			
-		}
-		outFile.println("Sender " + sender.getName()+ " Finished "+
-				numOpsRecieved + " Throughput per sender "+(numOpsRecieved/TimeUnit.MILLISECONDS.toSeconds(timeElapsed))+" ops/sec"
-				+" /Latency-----> Min = " + min + " /Avg = "+ (avg/latencies.size())+
-		        " /Max = " +max);
+		//numsThreadFinished++;
 		if (numsThreadFinished >= num_threads){
-			avgTimeElpased/=numsThreadFinished;
-			outFile.println("Throughput Per Client " +(avgRecievedOps/TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))+" ops/sec");
-			outFile.println("Throughput All Cluster " +((avgRecievedOps*numOfClients)/TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))
-					+" ops/sec");
-		    outFile.println("Test Generated at "+ new Date()+ " Lasted for " + TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased)); 
-			System.out.println("File closed" +"############################################"); 
-			outFile.close();	
+			System.out.println("Finished");
+			sendFinishedNotifcation();
 		}
+//		avgTimeElpased +=timeElapsed;
+//		avgRecievedOps+=numOpsRecieved;
+//		if (numsThreadFinished==1){
+//			outFile.println();
+//			outFile.println();
+//			outFile.println("Test "+ProtocotName + " /Load " + load + " /numMsgs For Each Thread " + num_msgsPerThreads+
+//					" /numMsgs For Each Client " + num_msgs+ " /numsThreads "+num_threads+" /msg size " + msg_size+
+//					" /numOfClients All Cluster " + numOfClients+" /numMsgs For All Cluster "+ num_msgs*numOfClients);
+//			outFile.println("------------------------ Result --------------------------");
+//		}
+//		// print Min, Avg, and Max latency
+//		long min = Long.MAX_VALUE, avg =0, max = Long.MIN_VALUE;
+//		for (long lat : latencies){
+//			if (lat < min){
+//				min = lat;
+//			}
+//			if (lat > max){
+//				max = lat;
+//			}
+//			avg+=lat;			
+//		}
+//		outFile.println("Sender " + sender.getName()+ " Finished "+
+//				numOpsRecieved + " Throughput per sender "+(numOpsRecieved/TimeUnit.MILLISECONDS.toSeconds(timeElapsed))+" ops/sec"
+//				+" /Latency-----> Min = " + min + " /Avg = "+ (avg/latencies.size())+
+//		        " /Max = " +max);
+//		if (numsThreadFinished >= num_threads){
+//			avgTimeElpased/=numsThreadFinished;
+//			outFile.println("Throughput Per Client " +(avgRecievedOps/TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))+" ops/sec");
+//			outFile.println("Throughput All Cluster " +((avgRecievedOps*numOfClients)/TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))
+//					+" ops/sec");
+//		    outFile.println("Test Generated at "+ new Date()+ " Lasted for " + TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased)); 
+//			System.out.println("File closed" +"############################################"); 
+//			outFile.close();	
+//		}
 
 }
 
@@ -386,6 +406,7 @@ public class Zab2PTestThreadss extends ReceiverAdapter {
         int totalMessages= 1000000; // #Msgs to be sent by the whole cluster
         int numOfClients= 10; 
         int numWarmUp= 10000; 
+        int sendTime=100;
 
 
         for (int i = 0; i < args.length; i++) {
@@ -438,17 +459,21 @@ public class Zab2PTestThreadss extends ReceiverAdapter {
         		 numOfClients = Integer.parseInt(args[++i]);
                  continue;
              }
+        	 if("-sTime".equals(args[i])) {
+        		 sendTime = Integer.parseInt(args[++i]);
+                 continue;
+             }
         	 
         }
         System.out.println("propsFile "+propsFile+ "/" + "zabboxInits "+ zabboxInits+ "/"+"name "+name+
 				"/"+"totalMessages "+totalMessages+"/"+"numberOfMessages "+numberOfMessages+"/"+"numsThreads "+
 				numsThreads+"/"+"msgSize" +msgSize+"/"+"outputDir "+outputDir+"/"+"numOfClients "+numOfClients+
-				"/"+"load "+load+"/"+"numWarmUp "+numWarmUp);
+				"/"+"load "+load+"/"+"numWarmUp "+numWarmUp+"/"+"sendTime "+sendTime);
 		try {
 			
 			final Zab2PTestThreadss test = new Zab2PTestThreadss(zabboxInits, name, propsFile, totalMessages,
 															numberOfMessages, numsThreads, msgSize, 
-															outputDir, numOfClients, load, numWarmUp);
+															outputDir, numOfClients, load, numWarmUp, sendTime);
 			
 			test.setup();
 			test.setupClientThreads();

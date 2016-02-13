@@ -47,7 +47,7 @@ import org.jgroups.util.MessageBatch;
 	 * Also it has features of testing throughput, latency (in Nano), ant etc. 
 	 * When using testing, it provides warm up test before starting real test.
 	 */
-	public class ZabCoinTossing extends Protocol {
+	public class ZabCoinTossingQueue extends Protocol {
 		private final static String ProtocolName = "ZabCoinTossing";
 		private final static int numberOfSenderInEachClient = 20;
 		protected final AtomicLong        zxid=new AtomicLong(0);
@@ -111,7 +111,7 @@ import org.jgroups.util.MessageBatch;
 		private ProtocolStats stats = new ProtocolStats();
 		private int clientFinished = 0;
 		private int numABRecieved = 0;
-		public ZabCoinTossing(){
+		public ZabCoinTossingQueue(){
 	    	
 	    }
 	    
@@ -728,7 +728,7 @@ import org.jgroups.util.MessageBatch;
 					stats.setEndThroughputTime(System.currentTimeMillis());
 				
 					
-					if (stats.getnumReqDelivered() > 999000){
+					if (stats.getnumReqDelivered().get() > 999000){
 						makeAllFollowersAck=true;
 						//if (startSending==true){
 							//_timer.cancel();

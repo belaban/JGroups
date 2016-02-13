@@ -24,6 +24,7 @@ import org.jgroups.util.Util;
          public static final byte COUNTMESSAGE = 12;
          public static final byte STARTREALTEST = 13;
          public static final byte SENDMYADDRESS = 14;
+         public static final byte CLIENTFINISHED = 15;
 //         public static final byte TEMPSENT = 14;
 //         public static final byte TEMPREC = 15;
 //         public static final byte RESPONCETEMP = 16;
@@ -89,6 +90,8 @@ import org.jgroups.util.Util;
             case COUNTMESSAGE:			 return "COUNTMESSAGE";
             case STARTREALTEST:			 return "STARTREALTEST";
             case SENDMYADDRESS:			 return "SENDMYADDRESS";
+            case CLIENTFINISHED:			 return "CLIENTFINISHED";
+
 //            case TEMPSENT:			 return "TEMPSENT";
 //            case TEMPREC:			 return "TEMPREC";
 //            case RESPONCETEMP:			 return "RESPONCETEMP";
@@ -126,7 +129,7 @@ import org.jgroups.util.Util;
         @Override
         public int size() {
         	//(messageInfo != null ? messageInfo.size() : 0)
-            return Global.BYTE_SIZE + Bits.size(seqno) + (messageId != null ? messageId.serializedSize(): 0) + Global.BYTE_SIZE; 
+            return Global.BYTE_SIZE + Bits.size(seqno) + (messageId != null ? messageId.size(): 0) + Global.BYTE_SIZE; 
          }
 
     }

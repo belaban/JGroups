@@ -22,7 +22,7 @@ public class MessageId implements Comparable<MessageId>, SizeStreamable {
     private Address originator = null;
     private long id = -1;
     private long startSend = 0;
-    private long startFToLF = 0;
+    private long startFToLFOneWay = 0;
     private long startLToFP = 0;
     private long startFToLA = 0;
     private long zxid = -1;
@@ -69,12 +69,12 @@ public class MessageId implements Comparable<MessageId>, SizeStreamable {
     }
     
 
-	public long getStartFToLF() {
-		return startFToLF;
+	public long getStartFToLFOneWay() {
+		return startFToLFOneWay;
 	}
 
-	public void setStartFToLF(long startFToLF) {
-		this.startFToLF = startFToLF;
+	public void setStartFToLFOneWay(long startFToLF) {
+		this.startFToLFOneWay = startFToLF;
 	}
 
 	public long getStartLToFP() {
@@ -144,7 +144,7 @@ public class MessageId implements Comparable<MessageId>, SizeStreamable {
         Util.writeAddress(originator, out);
         Bits.writeLong(id, out);
         Bits.writeLong(startSend, out);
-        Bits.writeLong(startFToLF, out);
+        Bits.writeLong(startFToLFOneWay, out);
         Bits.writeLong(startLToFP, out);
         Bits.writeLong(startFToLA, out);
         Bits.writeLong(zxid, out);
@@ -156,7 +156,7 @@ public class MessageId implements Comparable<MessageId>, SizeStreamable {
     	originator = Util.readAddress(in);
         id = Bits.readLong(in);
         startSend = Bits.readLong(in);
-        startFToLF = Bits.readLong(in);
+        startFToLFOneWay = Bits.readLong(in);
         startLToFP = Bits.readLong(in);
         startFToLA = Bits.readLong(in);
         zxid = Bits.readLong(in);
@@ -165,7 +165,7 @@ public class MessageId implements Comparable<MessageId>, SizeStreamable {
     
 	@Override
 	public int size() {
-        return Bits.size(id) + Util.size(originator) + Bits.size(startSend) + Bits.size(zxid);
+        return Bits.size(id) + Util.size(originator) + Bits.size(startSend) + Bits.size(zxid) + Bits.size(startFToLFOneWay);
 
 	}
 }
