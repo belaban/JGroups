@@ -150,21 +150,23 @@ public class MERGE3 extends Protocol {
         return min_interval;
     }
 
-    public void setMinInterval(long i) {
+    public MERGE3 setMinInterval(long i) {
         if(min_interval < 0 || min_interval >= max_interval)
             throw new IllegalArgumentException("min_interval (" + min_interval + ") has to be < max_interval (" + max_interval + ")");
         min_interval=i;
+        return this;
     }
 
     public long getMaxInterval() {
         return max_interval;
     }
 
-    public void setMaxInterval(long val) {
+    public MERGE3 setMaxInterval(long val) {
         if(val <= 0)
             throw new IllegalArgumentException("max_interval must be > 0");
         max_interval=val;
         check_interval=computeCheckInterval();
+        return this;
     }
 
 
