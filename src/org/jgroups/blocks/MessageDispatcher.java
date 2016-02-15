@@ -590,7 +590,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
 
         @Override
         public Map<String,String> handleProbe(String... keys) {
-            Map<String,String> retval=new HashMap<>(16);
+            Map<String,String> retval=new LinkedHashMap<>(16);
             for(String key: keys) {
                 switch(key) {
                     case "rpcs":
