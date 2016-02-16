@@ -468,7 +468,7 @@ public abstract class Discovery extends Protocol {
                 out.write(phys_addr.toString().getBytes());
                 out.write(WHITESPACE);
 
-                out.write(data.isCoord()? "T\n".getBytes() : "F\n".getBytes());
+                out.write(data.isCoord()? String.format("T%n").getBytes() : String.format("F%n").getBytes());
             }
         }
         finally {
