@@ -38,6 +38,7 @@ public class ProtocolStats {
 	private Map<MessageId, Long> latencyProposalST;
 	//private List<Integer> throughputInRate;
 	private Map<String, Double> throughputs;
+	//private Map<Long, Long> kvLatencies;
 	// private List<Integer> fromFollowerToLeaderA1;
 	// private List<Integer> fromFollowerToLeaderA2;
 	// private List<Integer> fromFollowerToLeaderF1;
@@ -86,7 +87,10 @@ public class ProtocolStats {
 		this.latencyProposalForwardST = Collections
 				.synchronizedMap(new HashMap<MessageId, Long>());
 		//this.throughputInRate = new ArrayList<Integer>();
-		this.throughputs = new TreeMap<String, Double>();;
+		this.throughputs = new TreeMap<String, Double>();
+		//this.kvLatencies = Collections
+				//.synchronizedMap(new HashMap<Long, Long>());
+
 		// this.fromFollowerToLeaderA1 = new ArrayList<Integer>();
 		// this.fromFollowerToLeaderA2 = new ArrayList<Integer>();
 		// this.fromFollowerToLeaderF1 = new ArrayList<Integer>();;
@@ -111,7 +115,7 @@ public class ProtocolStats {
 					outDir + InetAddress.getLocalHost().getHostName()
 							+ protocolName + ".log", true)));
 			this.outFileToWork = new PrintWriter(new BufferedWriter(
-					new FileWriter(outDirWork + protocolName + ".log", true)));
+					new FileWriter(outDirWork +InetAddress.getLocalHost().getHostName()+ protocolName + ".csv", true)));
 			this.outFileToWorkLatency = new PrintWriter(new BufferedWriter(
 					new FileWriter(outDirWork + "latency.log", true)));
 		} catch (UnknownHostException e) {
@@ -304,6 +308,10 @@ public class ProtocolStats {
 	public void addThroughput(String time, double thr){
 		throughputs.put(time, thr);
 	}
+	
+//	public void addKVLatencies(long time, long lat){
+//		kvLatencies.put(time, lat);
+//	}
 
 	public long getLastThroughputTime() {
 		return lastThroughputTime;
@@ -337,7 +345,7 @@ public class ProtocolStats {
 		long min = Long.MAX_VALUE, avg = 0, max = Long.MIN_VALUE, FToLFAvg = 0, LToFPAvg = 0, avgAll = 0, latProp = 0, latLeader = 0;
 		double latPropD = 0, FToLFAvgD = 0, LToFPAvgD = 0, avgAllD = 0, latLeaderD = 0, throughputRate =0, tempSumThr=0;
 
-		printLatencyToFile(latencies);
+		//printLatencyToFile(latencies);
 		for (long lat : latencies) {
 			if (lat < min) {
 				min = lat;
@@ -406,7 +414,7 @@ public class ProtocolStats {
 			tempSumThr+=th;
 		}
 		throughputRate = tempSumThr/throughputs.size();
-		outFile.println("Throughput Rates = " + throughputs);
+		//outFile.println("Throughput Rates = " + throughputs);
 		outFile.println("Throughput Rate average = " + throughputRate);
 		// outFileToWork.println("Throughput = "
 		// + (numReqDelivered.get() / (TimeUnit.MILLISECONDS
@@ -416,9 +424,22 @@ public class ProtocolStats {
 		// + " numbers avg = " + latAvg.size());
 		// outFileToWork.println("Latency average" + latAvg
 		// + " numbers avg = " + latAvg.size());
+		 outFile.println("Latencies Size " + latencies.size());
+		// outFile.println("KVLatencies Size" + kvLatencies.size());
+		//for (Map.Entry<Long, Long> entry : kvLatencies.entrySet()) {
+			//outFileToWork.println(entry.getKey()+ "," + ((double)entry.getValue())/1000000);
+		//}
+		for (long lat:latencies){
+			outFileToWork.println(lat);
+		}
+		outFileToWork.close();
 		latnecyDistribution(latencies);
+		findDist(latencies);
 		avgAllD = average(latencies);
-		outFile.println("All Latency average " + (avgAllD) / 1000000);
+		outFile.println("Latency /Min= " + ((double) (min)/1000000.0) + " /Avg= " +
+				((avgAllD) / 1000000.0) + " /Max= " +((double) (max)/1000000.0));	
+		//outFile.println("Latency /Min= " + min + " /Avg= "+ (avg/latencies.size())+
+		       // " /Max= " +max);	
 		// outFileToWork.println("All Latency average " + (avgAllD)/1000000);
 		// if(!protocolName.equals("ZabCoinTossing")){
 		// if (isLeader){
@@ -456,23 +477,86 @@ public class ProtocolStats {
 		//outFileToWork.println("End");
 		outFile.println();
 		//outFileToWork.println();
-
+		
 		outFile.close();
 		System.out.println("Finished");
 		//outFileToWork.close();
 		// printLatencyToFile(latencies);
 
 	}
+	
+	public void findDist(List<Long> data){
+		List<Double> latencies = new ArrayList<Double>();
+		int x0T0D5=0, x3D5=0, x4=0, x4D5=0, x5=0, x10=0, x100=0,x300=0, x500=0, x800=0,
+				x1000=0, x600=0, x650=0, x700=0, xLager1000=0, x1=0, x1D5=0,x2=0,x2D5=0,x3=0;
+		for (int i = 0; i < data.size(); i++) {
+			latencies.add((double) (((double) data.get(i))/1000000));
+		}
+		Collections.sort(latencies);
+		
+		
+		for (double l:latencies){
+			if (l<=0.500000)
+				x0T0D5++;
+			else if(l>0.500000 && l<=1.00000)
+				x1++;
+			else if(l>1.00000 && l<=1.500000)
+				x1D5++;
+			else if(l>1.500000 && l<=2.000000)
+				x2++;
+			else if(l>2.000000 && l<=2.500000)
+				x2D5++;
+			else if(l>2.500000 && l<=3.000000)
+				x3++;
+			else if(l>3.000000 && l<=3.500000)
+				x3D5++;
+			else if(l>3.500000 && l<=4.000000)
+				x4++;
+			else if(l>4.000000 && l<=4.500000)
+				x4D5++;
+			else if(l>4.500000 && l<=10.000000)
+				x10++;
+			else if(l>10.000000 && l<=100.000000)
+				x100++;
+			else if(l>100.000000 && l<=300.000000)
+				x300++;
+			else if(l>300.000000 && l<=500.000000)
+				x500++;
+			else if(l>500.000000 && l<=800.000000)
+				x800++;
+			else if(l>800.000000 && l<=1000.0000000)
+				x1000++;
+			else
+				xLager1000++;
+		}
+			outFile.println("Latency Ranged Form (0-0.5) " + x0T0D5);
+			outFile.println("Latency Ranged Form (0.5-1) " + x1);
+			outFile.println("Latency Ranged Form (1-1.5) " + x1D5);
+			outFile.println("Latency Ranged Form (1.5-2) " + x2);
+			outFile.println("Latency Ranged Form (2-2.5) " + x2D5);
+			outFile.println("Latency Ranged Form (2.5-3) " + x3);
+		    outFile.println("Latency Ranged Form (3-3.5) " + x3D5);
+		    outFile.println("Latency Ranged Form (3.5-4) " + x4);
+		    outFile.println("Latency Ranged Form (4-4.5) " + x4D5);
+		    outFile.println("Latency Ranged Form (4.5-10) " + x10);
+		    outFile.println("Latency Ranged Form (10-100) " + x100);
+		    outFile.println("Latency Ranged Form (100-300) " + x300);
+		    outFile.println("Latency Ranged Form (300-500) " + x500);
+		    outFile.println("Latency Ranged Form (500-800) " + x800);
+		    outFile.println("Latency Ranged Form (800-1000) " + x1000);
+		    outFile.println("Latency Ranged Form (>1000) " + xLager1000);    
+	
+	}
 
 	public double average(List<Long> data) {
 		long sum = 0;
 		double avg = 0;
-		for (int i = 0; i < data.size(); i++) {
-			if (data.get(i) <= 0.0) {
-				System.out.println("negative Index is " + data.get(i));
-				data.remove(i);
-			}
-		}
+//		for (int i = 0; i < data.size(); i++) {
+//			if (data.get(i) <= 0.0) {
+//				System.out.println("negative Index is " + data.get(i));
+//				data.remove(i);
+//			}
+//		}
 		for (int i = 0; i < data.size(); i++) {
 			sum += data.get(i);
 		}
@@ -501,7 +585,7 @@ public class ProtocolStats {
 //			System.out.println(data.get(i));
 //			System.out.println((double) (((double) data.get(i))/1000000));
 //		}
-		outFile.println("Latency Size: "+latencies.size());
+		//outFile.println("Latency Size: "+latencies.size());
 
 		final Multiset<Double> multiset = TreeMultiset.create(latencies);
 

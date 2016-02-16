@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -68,7 +69,7 @@ public class Zab2Phases extends Protocol {
 	private int numABRecieved = 0;
 	private volatile boolean running = true;
 	private volatile boolean startThroughput = false;
-	private final static String outDir = "/home/pg/p13/a6915654/Zab2Phases/";
+	private final static String outDir = "/work/Zab2Phases/";
 	private final static String outDirWork = "/home/pg/p13/a6915654/work/Zab2Phases/";
 
 	private AtomicLong countMessageLeader = new AtomicLong(0);
@@ -76,6 +77,7 @@ public class Zab2Phases extends Protocol {
 	private List<Address> clients = Collections
 			.synchronizedList(new ArrayList<Address>());
 	private ProtocolStats stats = new ProtocolStats();
+	private Timer timer = new Timer();
 
 	public Zab2Phases() {
 
@@ -127,6 +129,7 @@ public class Zab2Phases extends Protocol {
 		startThroughput = false;
 		countMessageLeader = new AtomicLong(0);
 		countMessageFollower = 0;
+		timer.schedule(new Throughput(), 1000, 1000);
 		this.stats = new ProtocolStats(ProtocolName, clients.size(),
 				numberOfSenderInEachClient, outDir, outDirWork, false);
 		log.info("Reset done");
@@ -200,6 +203,8 @@ public class Zab2Phases extends Protocol {
 					if (!stats.isWarmup() && !startThroughput) {
 						startThroughput = true;
 						stats.setStartThroughputTime(System.currentTimeMillis());
+						stats.setLastNumReqDeliveredBefore(0);
+						stats.setLastThroughputTime(System.currentTimeMillis());
 					}
 					sendACK(msg, hdr);
 				}
@@ -211,8 +216,11 @@ public class Zab2Phases extends Protocol {
 				break;
 			case Zab2PhasesHeader.CLIENTFINISHED:
 				clientFinished++;
-				if(clientFinished==clients.size() && !is_leader)
-					sendMyTotalBroadcast();
+				if(clientFinished==clients.size() && !is_leader){
+					running = false;	
+					timer.cancel();
+					sendMyTotalBroadcast();			
+				}
 				break;
 			case Zab2PhasesHeader.STATS:
 				stats.printProtocolStats(is_leader);
@@ -398,7 +406,7 @@ public class Zab2Phases extends Protocol {
 	 * If this server is a leader put the request in queue for processing it.
 	 * otherwise forwards request to the leader
 	 */
-	private synchronized void forwardToLeader(Message msg) {
+	private void forwardToLeader(Message msg) {
 		Zab2PhasesHeader hdrReq = (Zab2PhasesHeader) msg.getHeader(this.id);
 		requestQueue.add(hdrReq.getMessageId());
 		if (!stats.isWarmup() && is_leader && !startThroughput) {
@@ -584,15 +592,18 @@ public class Zab2Phases extends Protocol {
 		//if (log.isInfoEnabled())
 					//log.info("queuedCommitMessage size = " + queuedCommitMessage.size()
 							//+ " zxid " + dZxid);
+		if(hdrOrginal==null)
+			log.info("****hdrOrginal is null ****");
 		if (requestQueue.contains(hdrOrginal.getMessageId())) {
 			if (!stats.isWarmup()) {
 				long startTime = hdrOrginal.getMessageId().getStartTime();
+				long endTime = System.nanoTime();
 				//long endTime = System.nanoTime();
 				//log.info(" Deliver Start time" + startTime + " For MI " +hdrOrginal.getMessageId()+
 						//"Latency= "+(endTime - startTime));
 				//log.info(" is = to above (int) (System.nanoTime() - startTime) +"
 						//+ (int) (endTime - startTime));
-				stats.addLatency((long) (System.nanoTime() - startTime));
+				stats.addLatency((long) (endTime - startTime));
 			}
 			Zab2PhasesHeader hdrResponse = new Zab2PhasesHeader(
 					Zab2PhasesHeader.RESPONSE, dZxid, hdrOrginal.getMessageId());
@@ -822,4 +833,46 @@ public class Zab2Phases extends Protocol {
         }
   
     } 
+    
+    class Throughput extends TimerTask {
+
+		public Throughput() {
+
+		}
+
+		private long startTime = 0;
+		private long currentTime = 0;
+		private double currentThroughput = 0;
+		private int finishedThroughput = 0;
+
+		@Override
+		public void run() {
+			//if (running){
+				startTime = stats.getLastThroughputTime();
+				currentTime = System.currentTimeMillis();
+				finishedThroughput=stats.getnumReqDelivered();
+				//log.info("Start Time="+startTime);
+				//log.info("currentTime Time="+currentTime);
+				//elpasedThroughputTimeInSecond = (int) (TimeUnit.MILLISECONDS
+						//.toSeconds(currentThroughput - startTime));
+				//log.info("elpasedThroughputTimeInSecond Time="+elpasedThroughputTimeInSecond);
+				//log.info("finishedThroughput="+finishedThroughput);
+				//log.info("stats.getLastNumReqDeliveredBefore()="+stats
+						//.getLastNumReqDeliveredBefore());
+				currentThroughput = (((double)finishedThroughput - stats
+						.getLastNumReqDeliveredBefore()) / ((double)(currentTime - startTime)/1000.0));
+				stats.setLastNumReqDeliveredBefore(finishedThroughput);
+				stats.setLastThroughputTime(currentTime);
+				stats.addThroughput(convertLongToTimeFormat(currentTime),
+					currentThroughput);
+			//}
+		}
+
+		public String convertLongToTimeFormat(long time) {
+			Date date = new Date(time);
+			SimpleDateFormat longToTime = new SimpleDateFormat("HH:mm:ss.SSSZ");
+			return longToTime.format(date);
+		}
+	}
+
 }

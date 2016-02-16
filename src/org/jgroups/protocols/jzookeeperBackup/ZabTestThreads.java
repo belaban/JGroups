@@ -1,4 +1,4 @@
-package org.jgroups.protocols.jzookeeper;
+package org.jgroups.protocols.jzookeeperBackup;
 
 import org.jgroups.*;
 
@@ -28,8 +28,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.jgroups.protocols.jzookeeper.MessageId;
 import org.jgroups.protocols.jzookeeper.Zab;
 import org.jgroups.protocols.jzookeeper.ZabClient.Sender;
+import org.jgroups.protocols.jzookeeper.ZabHeader;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
@@ -47,6 +49,9 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
 
+/*
+ * Automated Test
+ */
 public class ZabTestThreads extends ReceiverAdapter {
 	private List<String> zabboxInit = new ArrayList<String>();
 	private String propsFile = "conf/Zab.xml";

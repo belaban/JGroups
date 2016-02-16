@@ -67,7 +67,7 @@ public class Zab extends Protocol {
 	private volatile boolean running = true;
 	private volatile boolean startThroughput = false;
 	private final static String outDir = "/work/Zab/";
- 	private final static String outDirWork = "/home/pg/p13/a6915654/work/Zab/";
+ 	private final static String outDirWork = "/work/Zab/";
 	private AtomicLong countMessageLeader = new AtomicLong(0);
 	private long countMessageFollower = 0;
 	private List<Address> clients = Collections
@@ -605,6 +605,7 @@ public class Zab extends Protocol {
 //					log.info("deliver et="+endTime+" For req id="+hdrOrginal.getMessageId());
 //				}
 				stats.addLatency((endTime - startTime));
+				//stats.addKVLatencies(((System.currentTimeMillis()-stats.getStartThroughputTime())), (endTime - startTime));
 				
 			}
 			ZabHeader hdrResponse = new ZabHeader(ZabHeader.RESPONSE, dZxid,
