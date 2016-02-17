@@ -15,6 +15,7 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.regex.Pattern;
 
 
 /**
@@ -26,6 +27,7 @@ import java.util.concurrent.Future;
  */
 public class FILE_PING extends Discovery {
     protected static final String SUFFIX=".list";
+    protected static final Pattern regexp=Pattern.compile("[\0<>:\"/\\|?*]");
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
@@ -140,8 +142,8 @@ public class FILE_PING extends Discovery {
 
     protected static String addressToFilename(Address mbr) {
         String logical_name=UUID.get(mbr);
-        return (addressAsString(mbr) + (logical_name != null? "." + logical_name + SUFFIX : SUFFIX))
-          .replaceAll("[\0<>:\"/\\|?*]", "-");
+        String name=(addressAsString(mbr) + (logical_name != null? "." + logical_name + SUFFIX : SUFFIX));
+        return regexp.matcher(name).replaceAll("-");
     }
 
     protected void createRootDir() {
