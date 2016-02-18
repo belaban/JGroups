@@ -25,9 +25,9 @@ public class FileWatchTask extends TimerTask {
 
    @Override
    public void run() {
-      long modified = file.lastModified();
-      if (this.modified != modified) {
-         this.modified = modified;
+      long modifiedLocal = file.lastModified();
+      if (this.modified != modifiedLocal) {
+         this.modified = modifiedLocal;
          observer.fileChanged(file);
       }
    }
