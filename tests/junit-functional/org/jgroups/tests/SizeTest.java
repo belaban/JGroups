@@ -566,7 +566,7 @@ public class SizeTest {
     }
 
 
-    public static void testFragHeader() throws Exception {
+    public void testFragHeader() throws Exception {
         FragHeader hdr=new FragHeader(322649, 1, 10);
         _testSize(hdr);
     }
