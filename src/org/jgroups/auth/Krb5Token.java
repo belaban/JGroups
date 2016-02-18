@@ -148,9 +148,9 @@ public class Krb5Token extends AuthToken {
     }
     
     private void validateRemoteServiceTicket(Krb5Token remoteToken) throws Exception {
-        byte[] remoteKrbServiceTicket = remoteToken.remoteKrbServiceTicket;
+        byte[] remoteKrbServiceTicketLocal = remoteToken.remoteKrbServiceTicket;
         
-        String clientPrincipalName = kerb5Utils.validateSecurityContext(subject, remoteKrbServiceTicket);
+        String clientPrincipalName = kerb5Utils.validateSecurityContext(subject, remoteKrbServiceTicketLocal);
         
         if (!clientPrincipalName.equals(this.client_principal_name))
             throw new Exception("Client Principal Names did not match");

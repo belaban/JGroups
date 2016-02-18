@@ -94,9 +94,9 @@ public class ExecutionServiceDemo {
 
         @Override
         public void writeTo(DataOutput out) throws Exception {
-            int size = buffer.limit() - buffer.position();
-            out.writeInt(size);
-            out.write(buffer.array(), buffer.position(), size);
+            int sizeLocal = buffer.limit() - buffer.position();
+            out.writeInt(sizeLocal);
+            out.write(buffer.array(), buffer.position(), sizeLocal);
         }
 
         @Override
@@ -307,10 +307,10 @@ public class ExecutionServiceDemo {
             else if(line.startsWith("size")) {
                 String thresholdSize = line.substring("size".length()).trim();
                 if (thresholdSize.length() > 0) {
-                    int size = Integer.parseInt(thresholdSize);
+                    int sizeLocal = Integer.parseInt(thresholdSize);
                     
-                    this.size = size;
-                    System.out.println("Changed sort threshold size to " + size);
+                    this.size = sizeLocal;
+                    System.out.println("Changed sort threshold size to " + sizeLocal);
                 }
                 else {
                     System.out.println("Threshold Size: " + size);
