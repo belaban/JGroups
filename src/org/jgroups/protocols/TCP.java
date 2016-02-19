@@ -84,7 +84,7 @@ public class TCP extends BasicTCP {
                 log.warn("reaper_interval was 0, set it to %d", reaper_interval);
             }
             if(conn_expire_time == 0) {
-                conn_expire_time=1000 * 60 * 5;
+                conn_expire_time=(long) 1000 * 60 * 5;
                 log.warn("conn_expire_time was 0, set it to %d", conn_expire_time);
             }
             server.connExpireTimeout(conn_expire_time).reaperInterval(reaper_interval);

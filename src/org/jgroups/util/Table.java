@@ -607,7 +607,7 @@ public class Table<T> implements Iterable<T> {
         int from=computeRow(low), to=computeRow(hr);
         int range=to - from +1;  // e.g. from=3, to=5, new_size has to be [3 .. 5] (=3)
 
-        int new_size=(int)Math.max(range * resize_factor, range +1);
+        int new_size=(int)Math.max( (double)range * resize_factor, (double) range +1 );
         new_size=Math.max(new_size, num_rows); // don't fall below the initial size defined
         if(new_size < matrix.length) {
             T[][] new_matrix=(T[][])new Object[new_size][];

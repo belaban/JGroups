@@ -56,7 +56,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
     protected int                 max_pool=5;
 
     @Property(description="Keep alive for pool threads serving state requests")
-    protected long                pool_thread_keep_alive=20 * 1000;
+    protected long                pool_thread_keep_alive=(long) 20 * 1000;
 
 
 
