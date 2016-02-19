@@ -251,7 +251,7 @@ public class StompConnection implements Runnable {
                 if (!isConnected() && reconnect) {
                     log.info("Reconnecting in "+timeout+"s.");
                     try {
-                        Thread.sleep(timeout * 1000);
+                        Thread.sleep((long)timeout * 1000);
                     }
                     catch (InterruptedException e1) {
                         // pass

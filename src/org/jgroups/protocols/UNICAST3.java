@@ -39,7 +39,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     @Property(description="Time (in milliseconds) after which an idle incoming or outgoing connection is closed. The " +
       "connection will get re-established when used again. 0 disables connection reaping")
-    protected long    conn_expiry_timeout=60000 * 2;
+    protected long    conn_expiry_timeout=(long) 60000 * 2;
 
     @Property(description="Time (in ms) until a connection marked to be closed will get removed. 0 disables this")
     protected long    conn_close_timeout=10000;
@@ -56,7 +56,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     @Property(description="Number of milliseconds after which the matrix in the retransmission table " +
       "is compacted (only for experts)",writable=false)
-    protected long    xmit_table_max_compaction_time=10 * 60 * 1000;
+    protected long    xmit_table_max_compaction_time= (long) 10 * 60 * 1000;
 
     // @Property(description="Max time (in ms) after which a connection to a non-member is closed")
     protected long    max_retransmit_time=60 * 1000L;

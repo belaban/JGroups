@@ -1805,7 +1805,7 @@ public class Util {
      */
     public static List<Range> computeFragOffsets(int offset,int length,int frag_size) {
         List<Range> retval=new ArrayList<>();
-        long total_size=length + offset;
+        long total_size=(long)length + offset;
         int index=offset;
         int tmp_size=0;
         Range r;
@@ -2964,7 +2964,7 @@ public class Util {
             }
         }
 
-        long counter=Util.random(Short.MAX_VALUE * 2);
+        long counter=Util.random((long)Short.MAX_VALUE * 2);
         return retval + "-" + counter;
     }
 
