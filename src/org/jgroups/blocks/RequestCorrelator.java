@@ -283,12 +283,10 @@ public class RequestCorrelator {
      */
     public boolean receiveMessage(Message msg) {
         Header hdr=(Header)msg.getHeader(this.corr_id);
-        if(hdr == null)
-            return false;
 
         // Check if the message was sent by a request correlator with the same name;
         // there may be multiple request correlators in the same protocol stack
-        if(hdr.corrId != this.corr_id) {
+        if(hdr == null || hdr.corrId != this.corr_id) {
             log.trace("ID of request correlator header (%d) is different from ours (%d). Msg not accepted, passed up",
                       hdr.corrId, this.corr_id);
             return false;
