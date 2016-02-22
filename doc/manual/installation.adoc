@@ -271,8 +271,9 @@ java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props /home/bela/ud
 ----
 
 The JDK uses IPv6 by default, although is has a dual stack, that is, it also supports IPv4.
-http://java.sun.com/j2se/1.4/docs/guide/net/ipv6_guide/[Here's] more details on the subject.
+To force use of IPv6, start your JVM with `-Djava.net.preferIPv6Addresses=true`.
         
+http://java.sun.com/j2se/1.4/docs/guide/net/ipv6_guide/[Here's] more details on the subject.
 
 
 
