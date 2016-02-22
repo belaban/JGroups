@@ -96,13 +96,13 @@ public class COMPRESS extends Protocol {
                         System.arraycopy(compressed_payload,0,new_payload,0,compressed_size);
                         Message copy=msg.copy(false).setBuffer(new_payload).putHeader(this.id,new CompressHeader(length));
                         if(log.isTraceEnabled())
-                            log.trace("down(): compressed payload from " + length + " bytes to " + compressed_size + " bytes");
+                            log.trace("compressed payload from %d bytes to %d bytes", length, compressed_size);
                         return down_prot.down(new Event(Event.MSG, copy));
                     }
                     else {
                         if(log.isTraceEnabled())
-                            log.trace("down(): skipping compression since the compressed message (" + compressed_size +
-                                        ") is not smaller than the original (" + length + ")");
+                            log.trace("skipping compression since the compressed message (%d) is not " +
+                                        "smaller than the original (%d)", compressed_size, length);
                     }
                 }
                 catch(InterruptedException e) {
@@ -132,7 +132,7 @@ public class COMPRESS extends Protocol {
                 Message uncompressed_msg=uncompress(msg, hdr.original_size);
                 if(uncompressed_msg != null) {
                     if(log.isTraceEnabled())
-                        log.trace("up(): uncompressed " + msg.getLength() + " bytes to " + uncompressed_msg.getLength() + " bytes");
+                        log.trace("uncompressed %d bytes to %d bytes", msg.getLength(), uncompressed_msg.getLength());
                     return up_prot.up(new Event(Event.MSG, uncompressed_msg));
                 }
             }
@@ -147,7 +147,7 @@ public class COMPRESS extends Protocol {
                 Message uncompressed_msg=uncompress(msg, hdr.original_size);
                 if(uncompressed_msg != null) {
                     if(log.isTraceEnabled())
-                        log.trace("up(): uncompressed " + msg.getLength() + " bytes to " + uncompressed_msg.getLength() + " bytes");
+                        log.trace("uncompressed %d bytes to %d bytes", msg.getLength(), uncompressed_msg.getLength());
                     batch.replace(msg, uncompressed_msg); // replace msg in batch with uncompressed_msg
                 }
             }
