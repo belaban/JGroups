@@ -2135,7 +2135,7 @@ public class Util {
 
 
     public static <T> T pickRandomElement(List<T> list) {
-        if(list == null) return null;
+        if(list == null || list.isEmpty()) return null;
         int size=list.size();
         int index=(int)((Math.random() * size * 10) % size);
         return list.get(index);
