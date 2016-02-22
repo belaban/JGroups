@@ -76,7 +76,7 @@ abstract public class Executing extends Protocol {
     protected final Map<Owner, Runnable> _awaitingReturn;
     
     /**
-     * This is a server side store of all the tasks that want to be ran on a
+     * This is a server side store of all the tasks that want to be run on a
      * given thread.  This  map should be updated by an incoming request before
      * awaking the task with the latch.  This map should only be retrieved after
      * first waiting on the latch for a consumer
@@ -177,8 +177,7 @@ abstract public class Executing extends Protocol {
                 // overflows it will still be positive
                 long requestId = Math.abs(counter.getAndIncrement());
                 if(requestId == Long.MIN_VALUE) {
-                    // TODO: need to fix this it isn't safe for concurrent
-                    // modifications
+                    // TODO: need to fix this it isn't safe for concurrent modifications
                     counter.set(0);
                     requestId = Math.abs(counter.getAndIncrement());
                 }
@@ -730,7 +729,7 @@ abstract public class Executing extends Protocol {
             _tasks.put(threadId, runnable);
             
             CyclicBarrier barrier = _taskBarriers.remove(threadId);
-            if (received = barrier != null) {
+            if (received = (barrier != null)) {
                 // Only wait 10 milliseconds, in case if the consumer was
                 // stopped between when we were told it was available and now
                 barrier.await(10, TimeUnit.MILLISECONDS);

@@ -17,7 +17,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * This is a jgroups implementation of an ExecutorService, where the consumers
+ * This is a JGroups implementation of an ExecutorService, where the consumers
  * are running on any number of nodes.  The nodes should run 
  * {@link ExecutionRunner} to start picking up requests.
  * <p>
