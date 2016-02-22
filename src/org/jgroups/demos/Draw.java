@@ -6,6 +6,7 @@ package org.jgroups.demos;
 import org.jgroups.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.stack.AddressGenerator;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.OneTimeAddressGenerator;
 import org.jgroups.util.Util;
 
@@ -254,32 +255,32 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
     }
 
 
-
-    public void receive(Message msg) {
-        byte[] buf=msg.getRawBuffer();
-        if(buf == null) {
-            System.err.println("[" + channel.getAddress() + "] received null buffer from " + msg.getSrc() +
-                    ", headers: " + msg.printHeaders());
-            return;
-        }
-
-        try {
-            DrawCommand comm=(DrawCommand)Util.streamableFromByteBuffer(DrawCommand.class, buf, msg.getOffset(), msg.getLength());
-            switch(comm.mode) {
-                case DrawCommand.DRAW:
-                    if(panel != null)
-                        panel.drawPoint(comm);
-                    break;
-                case DrawCommand.CLEAR:
-                    clearPanel();
-                    break;
-                default:
-                    System.err.println("***** received invalid draw command " + comm.mode);
-                    break;
+    public void receive(MessageBatch batch) {
+        for(Message msg: batch) {
+            byte[] buf=msg.getRawBuffer();
+            if(buf == null) {
+                System.err.printf("%s: received null buffer from %s, headers: %s\n", channel.getAddress(), msg.src(), msg.printHeaders());
+                continue;
             }
-        }
-        catch(Exception e) {
-            e.printStackTrace();
+
+            try {
+                DrawCommand comm=(DrawCommand)Util.streamableFromByteBuffer(DrawCommand.class, buf, msg.getOffset(), msg.getLength());
+                switch(comm.mode) {
+                    case DrawCommand.DRAW:
+                        if(panel != null)
+                            panel.drawPoint(comm);
+                        break;
+                    case DrawCommand.CLEAR:
+                        clearPanel();
+                        break;
+                    default:
+                        System.err.println("***** received invalid draw command " + comm.mode);
+                        break;
+                }
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

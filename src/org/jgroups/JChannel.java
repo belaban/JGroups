@@ -731,22 +731,21 @@ public class JChannel extends Channel {
         if(discard_own_messages && local_addr != null && batch.sender() != null && local_addr.equals(batch.sender()))
             return;
 
-        for(Message msg: batch) {
-            if(up_handler != null) {
-                try {
-                    up_handler.up(new Event(Event.MSG, msg));
-                }
-                catch(Throwable t) {
-                    log.error(Util.getMessage("UpHandlerFailure"), t);
-                }
+        if(up_handler != null) {
+            try {
+                up_handler.up(batch);
             }
-            else if(receiver != null) {
-                try {
-                    receiver.receive(msg);
-                }
-                catch(Throwable t) {
-                    log.error(Util.getMessage("ReceiverFailure"), t);
-                }
+            catch(Throwable t) {
+                log.error(Util.getMessage("UpHandlerFailure"), t);
+            }
+            return;
+        }
+        if(receiver != null) {
+            try {
+                receiver.receive(batch);
+            }
+            catch(Throwable t) {
+                log.error(Util.getMessage("ReceiverFailure"), t);
             }
         }
     }

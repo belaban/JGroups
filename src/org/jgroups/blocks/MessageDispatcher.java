@@ -646,7 +646,11 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
             return null;
         }
 
-
+        public void up(MessageBatch batch) {
+            if(corr == null)
+                return;
+            corr.receiveMessageBatch(batch);
+        }
 
         @Override
         public Object down(Event evt) {

@@ -1,6 +1,8 @@
 
 package org.jgroups;
 
+import org.jgroups.util.MessageBatch;
+
 /**
  * MessageListener allows a listener to be notified when a {@link Message} or a state transfer
  * events arrives to a node.
@@ -20,8 +22,15 @@ public interface MessageListener extends StateListener {
 
    /**
     * Called when a message is received.
-    * 
     * @param msg
     */
-    void          receive(Message msg);
+    void receive(Message msg);
+
+    /** Called when a batch of messages is received */
+    default void receive(MessageBatch batch) {
+        for(Message msg: batch) {
+            try {receive(msg);}
+            catch(Throwable t) {}
+        }
+    }
 }

@@ -1,5 +1,7 @@
 package org.jgroups;
 
+import org.jgroups.util.MessageBatch;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -13,24 +15,34 @@ import java.io.OutputStream;
  */
 public class ReceiverAdapter implements Receiver {
 
-   public void receive(Message msg) {
+    public void receive(Message msg) {
     }
 
-   public void getState(OutputStream output) throws Exception {
+    public void receive(MessageBatch batch) {
+        for(Message msg: batch) {
+            try {
+                receive(msg);
+            }
+            catch(Throwable t) {
+            }
+        }
     }
 
-   public void setState(InputStream input) throws Exception {
+    public void getState(OutputStream output) throws Exception {
     }
 
-   public void viewAccepted(View view) {
+    public void setState(InputStream input) throws Exception {
     }
 
-   public void suspect(Address mbr) {
+    public void viewAccepted(View view) {
     }
 
-   public void block() {
+    public void suspect(Address mbr) {
     }
 
-   public void unblock() {
+    public void block() {
+    }
+
+    public void unblock() {
     }
 }

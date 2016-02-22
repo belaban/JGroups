@@ -11,13 +11,17 @@ import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Bits;
 import org.jgroups.util.Buffer;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.NotSerializableException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -298,7 +302,33 @@ public class RequestCorrelator {
                 return true; // don't pass this message further up
             }
         }
+        dispatch(msg, hdr);
+        return true; // message was consumed
+    }
 
+    public void receiveMessageBatch(MessageBatch batch) {
+        for(Message msg : batch) {
+            Header hdr=(Header)msg.getHeader(this.corr_id);
+            if(hdr == null || hdr.corrId != this.corr_id) // msg was sent by a different request corr in the same stack
+                continue;
+
+            if(hdr instanceof MultiDestinationHeader) {
+                // if we are part of the exclusion list, then we discard the request (addressed to different members)
+                Address[] exclusion_list=((MultiDestinationHeader)hdr).exclusion_list;
+                if(exclusion_list != null && local_addr != null && Util.contains(local_addr, exclusion_list)) {
+                    log.trace("%s: dropped req from %s as we are in the exclusion list, hdr=%s", local_addr, msg.src(), hdr);
+                    batch.remove(msg);
+                    continue; // don't pass this message further up
+                }
+            }
+            dispatch(msg, hdr);
+        }
+    }
+
+
+
+    // .......................................................................
+    protected void dispatch(final Message msg, final Header hdr) {
         switch(hdr.type) {
             case Header.REQ:
                 handleRequest(msg, hdr);
@@ -307,40 +337,17 @@ public class RequestCorrelator {
             case Header.RSP:
             case Header.EXC_RSP:
                 Request req=requests.get(hdr.req_id);
-                if(req != null) {
-                    boolean is_exception=hdr.type == Header.EXC_RSP;
-                    Address sender=msg.getSrc();
-                    Object retval;
-                    byte[] buf=msg.getRawBuffer();
-                    int offset=msg.getOffset(), length=msg.getLength();
-                    try {
-                        retval=marshaller != null? marshaller.objectFromBuffer(buf, offset, length) :
-                                Util.objectFromByteBuffer(buf, offset, length);
-                    }
-                    catch(Exception e) {
-                        log.error(Util.getMessage("FailedUnmarshallingBufferIntoReturnValue"), e);
-                        retval=e;
-                        is_exception=true;
-                    }
-                    req.receiveResponse(retval, sender, is_exception);
-                }
+                if(req != null)
+                    handleResponse(req, msg.src(), msg.getRawBuffer(), msg.getOffset(), msg.getLength(), hdr.type == Header.EXC_RSP);
                 break;
 
             default:
                 log.error(Util.getMessage("HeaderSTypeIsNeitherREQNorRSP"));
                 break;
         }
-        return true; // message was consumed
     }
 
-
-    // .......................................................................
-
-
-    /**
-     * Handle a request msg for this correlator
-     * @param req the request msg
-     */
+    /** Handle a request msg for this correlator */
     protected void handleRequest(Message req, Header hdr) {
         Object        retval;
         boolean       threw_exception=false;
@@ -371,6 +378,20 @@ public class RequestCorrelator {
         }
         if(hdr.rspExpected())
             sendReply(req, hdr.req_id, retval, threw_exception);
+    }
+
+    protected void handleResponse(Request req, Address sender, byte[] buf, int offset, int length, boolean is_exception) {
+        Object retval;
+        try {
+            retval=marshaller != null? marshaller.objectFromBuffer(buf, offset, length) :
+              Util.objectFromByteBuffer(buf, offset, length);
+        }
+        catch(Exception e) {
+            log.error(Util.getMessage("FailedUnmarshallingBufferIntoReturnValue"), e);
+            retval=e;
+            is_exception=true;
+        }
+        req.receiveResponse(retval, sender, is_exception);
     }
 
 
