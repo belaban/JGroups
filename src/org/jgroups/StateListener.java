@@ -25,7 +25,7 @@ public interface StateListener {
     *            can re-throw them and let the caller know what happened
     * @see OutputStream#close()
     */
-    void getState(OutputStream output) throws Exception;
+    default void getState(OutputStream output) throws Exception {}
 
    /**
     * Allows an application to read a state through a provided InputStream. After the state has been
@@ -39,5 +39,5 @@ public interface StateListener {
     *            can catch them and thus know what happened
     * @see InputStream#close()
     */
-    void setState(InputStream input) throws Exception;
+    default void setState(InputStream input) throws Exception {}
 }
