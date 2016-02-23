@@ -89,18 +89,18 @@ public class ENCRYPTAsymmetricTest {
 
 
     @Test(expectedExceptions=Exception.class)
-    public static void testInitIDEAProperties() throws Exception {    
+    public static void testInitIDEAProperties() throws Exception {
         ENCRYPT encrypt=new ENCRYPT();
         encrypt.symAlgorithm =  "IDEA";
         encrypt.symInit = 128;
-        encrypt.init();        
+        encrypt.init();
     }
 
 
-    public static void testInitAESProperties() throws Exception {       
+    public static void testInitAESProperties() throws Exception {
         ENCRYPT encrypt=new ENCRYPT();
         encrypt.symAlgorithm = "AES";
-        encrypt.symInit = 128;     
+        encrypt.symInit = 128;
         encrypt.init();
 
         // test the default symetric key
@@ -303,7 +303,7 @@ public class ENCRYPTAsymmetricTest {
         Util.assertTrue(peerObserver.upMessages.isEmpty());
         updateViewFor(peer, server, serverObserver, serverEvent, peerObserver);
         Util.assertFalse(peerObserver.upMessages.isEmpty());
-        
+
         Event event = new Event(Event.VIEW_CHANGE, View.create(peer2_addr, 2, peer2_addr));
 
         // send to peer - should set peer2 as keyserver
@@ -319,7 +319,7 @@ public class ENCRYPTAsymmetricTest {
         Util.assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.KEY_REQUEST);
         Util.assertEquals(new String(((Message)sent.getArg()).getBuffer()), new String(peer.getKpair().getPublic().getEncoded()));
 
-        
+
         // this should have changed us to the key server
         peer2.up(event);
 
@@ -390,7 +390,7 @@ public class ENCRYPTAsymmetricTest {
         peer.setUpProtocol(peerObserver);
         peer.setDownProtocol(peerObserver);
         peer.keyServer=false;
-        
+
         updateViewFor(peer, server, serverObserver, serverEvent, peerObserver);
 
         // set up peer2 with server as key server
@@ -401,8 +401,8 @@ public class ENCRYPTAsymmetricTest {
         peer2.keyServer=false;
         updateViewFor(peer2, server, serverObserver, serverEvent, peer2Observer);
 
-        Assert.assertEquals(server.getDesKey(), peer.getDesKey());
-        Assert.assertEquals(server.getDesKey(), peer2.getDesKey());
+        Assert.assertEquals(server.getDesKey().getEncoded(), peer.getDesKey().getEncoded());
+        Assert.assertEquals(server.getDesKey().getEncoded(), peer2.getDesKey().getEncoded());
 
         Event viewChange2 = new Event(Event.VIEW_CHANGE, View.create(peer2_addr, 2, peer2_addr));
         peer2.up(new Event(Event.TMP_VIEW, viewChange2.getArg()));
@@ -411,7 +411,7 @@ public class ENCRYPTAsymmetricTest {
         updateViewFor(peer, peer2, peer2Observer, viewChange2, peerObserver);
 
         Assert.assertFalse(server.getDesKey().equals(peer.getDesKey()));
-        Assert.assertEquals(peer.getDesKey(), peer2.getDesKey());
+        Assert.assertEquals(peer.getDesKey().getEncoded(), peer2.getDesKey().getEncoded());
 
     }
 
@@ -428,18 +428,18 @@ public class ENCRYPTAsymmetricTest {
         Event initalView = new Event(Event.VIEW_CHANGE, View.create(server_addr, 1, server_addr));
         server.up(new Event(Event.TMP_VIEW, initalView.getArg()));
         server.up(initalView);
-        
+
         SecretKey key = server.getDesKey();
-        
+
         //	Update the view with new member
         Event updatedView = new Event(Event.VIEW_CHANGE, View.create(server_addr, 2, peer_addr));
         server.up(new Event(Event.TMP_VIEW, updatedView.getArg()));
         server.up(updatedView);
-        
+
         SecretKey keyAfterViewChange = server.getDesKey();
         Util.assertFalse(key.equals(keyAfterViewChange));
     }
-    
+
 	private static void updateViewFor(ENCRYPT peer, ENCRYPT keyServer, MockProtocol serverObserver, Event serverEvent,
                                       MockProtocol peerObserver) {
 		peer.up(serverEvent);
@@ -450,7 +450,7 @@ public class ENCRYPTAsymmetricTest {
 	}
 
 
-    
+
     static class MockProtocol extends Protocol {
         private final TreeMap<String, Event> upMessages=new TreeMap<>();
         private final TreeMap<String, Event> downMessages=new TreeMap<>();
