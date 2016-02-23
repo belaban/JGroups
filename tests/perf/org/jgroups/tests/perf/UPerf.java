@@ -85,12 +85,7 @@ public class UPerf extends ReceiverAdapter {
 
 
     public void init(String props, String name, boolean xsite, AddressGenerator generator, int bind_port) throws Throwable {
-        channel=new JChannel(props);
-        if(generator != null)
-            channel.addAddressGenerator(generator);
-        if(name != null)
-            channel.setName(name);
-
+        channel=new JChannel(props).addAddressGenerator(generator).setName(name);
         if(bind_port > 0) {
             TP transport=channel.getProtocolStack().getTransport();
             transport.setBindPort(bind_port);

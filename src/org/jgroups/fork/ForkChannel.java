@@ -101,8 +101,9 @@ public class ForkChannel extends JChannel implements ChannelListener {
     }
 
     @Override
-    public void setName(String name) {
+    public ForkChannel setName(String name) {
         log.error("name (%s) cannot be set in a fork-channel", name);
+        return this;
     }
 
     @Override
@@ -137,11 +138,11 @@ public class ForkChannel extends JChannel implements ChannelListener {
      * @throws Exception
      */
     @Override
-    public void connect(String cluster_name) throws Exception {
+    public ForkChannel connect(String cluster_name) throws Exception {
         if(!this.main_channel.isConnected())
             throw new IllegalStateException("main channel is not connected");
         if(state == State.CONNECTED)
-            return;
+            return this;
         if(state == State.CLOSED)
             throw new IllegalStateException("a closed fork channel cannot reconnect");
 
@@ -160,30 +161,33 @@ public class ForkChannel extends JChannel implements ChannelListener {
         View current_view=main_channel.getView();
         if(current_view != null) {
             up(new Event(Event.VIEW_CHANGE, current_view));
-            prot_stack.down(new Event(Event.VIEW_CHANGE, current_view)); // todo: check if we need to pass it up instead of down !
+            prot_stack.down(new Event(Event.VIEW_CHANGE, current_view));
         }
         state=State.CONNECTED;
         notifyChannelConnected(this);
+        return this;
     }
 
     @Override
-    public void connect(String cluster_name, Address target, long timeout) throws Exception {
+    public ForkChannel connect(String cluster_name, Address target, long timeout) throws Exception {
         connect(cluster_name);
         main_channel.getState(target, timeout);
+        return this;
     }
 
     /** Removes the fork-channel from the fork-stack's hashmap and resets its state. Does <em>not</em> affect the
      * main-channel */
     @Override
-    public void disconnect() {
+    public ForkChannel disconnect() {
         if(state != State.CONNECTED)
-            return;
+            return this;
         prot_stack.down(new Event(Event.DISCONNECT, local_addr)); // will be discarded by ForkProtocol
         prot_stack.stopStack(cluster_name);
         ((ForkProtocolStack)prot_stack).remove(fork_channel_id);
         nullFields();
         state=State.OPEN;
         notifyChannelDisconnected(this);
+        return this;
     }
 
     /** Closes the fork-channel, essentially setting its state to CLOSED. Note that - contrary to a regular channel -
@@ -207,7 +211,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
     }
 
     @Override
-    public void send(Message msg) throws Exception {
+    public ForkChannel send(Message msg) throws Exception {
         checkClosedOrNotConnected();
         FORK.ForkHeader hdr=(FORK.ForkHeader)msg.getHeader(FORK.ID);
         if(hdr != null)
@@ -217,46 +221,50 @@ public class ForkChannel extends JChannel implements ChannelListener {
             msg.putHeader(FORK.ID, hdr);
         }
         prot_stack.down(new Event(Event.MSG, msg));
+        return this;
     }
 
     @Override
-    public void startFlush(List<Address> flushParticipants, boolean automatic_resume) throws Exception {
+    public ForkChannel startFlush(List<Address> flushParticipants, boolean automatic_resume) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void startFlush(boolean automatic_resume) throws Exception {
+    public ForkChannel startFlush(boolean automatic_resume) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void stopFlush() {
+    public ForkChannel stopFlush() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void stopFlush(List<Address> flushParticipants) {
+    public ForkChannel stopFlush(List<Address> flushParticipants) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void getState(Address target, long timeout) throws Exception {
+    public ForkChannel getState(Address target, long timeout) throws Exception {
         main_channel.getState(target, timeout);
+        return this;
     }
 
     @Override
-    public void addAddressGenerator(AddressGenerator address_generator) {
+    public ForkChannel addAddressGenerator(AddressGenerator address_generator) {
         if(main_channel instanceof JChannel)
             ((JChannel)main_channel).addAddressGenerator(address_generator);
+        return this;
     }
 
-    protected void setLocalAddress(Address local_addr) {
+    protected ForkChannel setLocalAddress(Address local_addr) {
         if(local_addr != null) {
             Event evt=new Event(Event.SET_LOCAL_ADDRESS, local_addr);
             ((ForkProtocolStack)prot_stack).setLocalAddress(local_addr); // sets the address only in the protocols managed by the fork-prot-stack
             if(up_handler != null)
                 up_handler.up(evt);
         }
+        return this;
     }
 
 
@@ -266,7 +274,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
     protected static FORK getFORK(Channel ch, int position, Class<? extends Protocol> neighbor,
                                   boolean create_fork_if_absent) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
-        FORK fork=(FORK)stack.findProtocol(FORK.class);
+        FORK fork=stack.findProtocol(FORK.class);
         if(fork == null) {
             if(!create_fork_if_absent)
                 throw new IllegalArgumentException("FORK not found in main stack");

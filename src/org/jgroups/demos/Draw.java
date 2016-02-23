@@ -55,13 +55,8 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         if(no_channel)
             return;
 
-        channel=new JChannel(props);
-        if(gen != null)
-            channel.addAddressGenerator(gen);
-        if(name != null)
-            channel.setName(name);
-        channel.setReceiver(this);
-        channel.addChannelListener(this);
+        channel=new JChannel(props).addAddressGenerator(gen).setName(name);
+        channel.setReceiver(this).addChannelListener(this);
         this.send_own_state_on_merge=send_own_state_on_merge;
     }
 
