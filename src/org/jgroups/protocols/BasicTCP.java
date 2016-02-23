@@ -9,7 +9,6 @@ import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.Receiver;
 import org.jgroups.util.AsciiString;
 import org.jgroups.util.Util;
-
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -57,8 +56,8 @@ public abstract class BasicTCP extends TP implements Receiver {
     @Property(description="SO_LINGER in msec. Default of -1 disables it")
     protected int         linger=-1; // SO_LINGER (number of ms, -1 disables it)
 
-    @Property(description="Sets socket option SO_REUSEADDR (https://issues.jboss.org/browse/JGRP-2009)")
-    protected boolean     reuse_addr;
+    // @Property(description="Sets socket option SO_REUSEADDR (https://issues.jboss.org/browse/JGRP-2009)")
+    // protected boolean     reuse_addr;
 
     @LocalAddress
     @Property(name="client_bind_addr",
@@ -86,8 +85,6 @@ public abstract class BasicTCP extends TP implements Receiver {
     public void    setReaperInterval(long interval) {this.reaper_interval=interval;}
     public long    getConnExpireTime()              {return conn_expire_time;}
     public void    setConnExpireTime(long time)     {this.conn_expire_time=time;}
-    public boolean  getReuseAddress()                {return this.reuse_addr;}
-    public BasicTCP setReuseAddress(boolean b)       {this.reuse_addr=b; return this;}
 
 
     public void init() throws Exception {
