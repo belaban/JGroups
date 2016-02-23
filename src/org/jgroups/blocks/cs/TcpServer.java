@@ -28,7 +28,7 @@ public class TcpServer extends TcpBaseServer {
      * @throws Exception Thrown if the creation failed
      */
     public TcpServer(InetAddress bind_addr, int port) throws Exception {
-        this(new DefaultThreadFactory("tcp", false), new DefaultSocketFactory(), bind_addr, port, port+50, null, 0, true);
+        this(new DefaultThreadFactory("tcp", false), new DefaultSocketFactory(), bind_addr, port, port+50, null, 0);
     }
 
     /**
@@ -51,16 +51,16 @@ public class TcpServer extends TcpBaseServer {
      *                 exception will be thrown. If srv_port == end_port, only 1 port will be tried.
      * @param external_addr The external address in case of NAT. Ignored if null.
      * @param external_port The external port on the NA. If 0, srv_port is used.
-     * @param reuse_addr sets server socket option SO_REUSEADDR
      * @throws Exception Thrown if the creation failed
      */
     public TcpServer(ThreadFactory thread_factory, SocketFactory socket_factory,
                      InetAddress bind_addr, int srv_port, int end_port,
-                     InetAddress external_addr, int external_port, boolean reuse_addr) throws Exception {
+                     InetAddress external_addr, int external_port) throws Exception {
         this(thread_factory, socket_factory);
-        this.srv_sock=this.socket_factory.createServerSocket("jgroups.tcp.server");
-        this.srv_sock.setReuseAddress(reuse_addr);
-        Util.bind(this.srv_sock, bind_addr, srv_port, end_port);
+        // this.srv_sock=this.socket_factory.createServerSocket("jgroups.tcp.server");
+        // this.srv_sock.setReuseAddress(reuse_addr);
+        // Util.bind(this.srv_sock, bind_addr, srv_port, end_port);
+        this.srv_sock=Util.createServerSocket(this.socket_factory, "jgroups.tcp.server", bind_addr, srv_port, end_port);
         acceptor=factory.newThread(new Acceptor(),"TcpServer.Acceptor [" + srv_sock.getLocalPort() + "]");
         local_addr=localAddress(bind_addr, srv_sock.getLocalPort(), external_addr, external_port);
         addConnectionListener(this);

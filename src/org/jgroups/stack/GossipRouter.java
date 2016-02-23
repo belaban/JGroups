@@ -139,8 +139,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
             JmxConfigurator.register(this, Util.getMBeanServer(), "jgroups:name=GossipRouter");
 
         InetAddress tmp=bind_addr != null? InetAddress.getByName(bind_addr) : null;
-        server=use_nio? new NioServer(thread_factory, socket_factory, tmp, port, port, null, 0, true)
-          : new TcpServer(thread_factory, socket_factory, tmp, port, port, null, 0, true);
+        server=use_nio? new NioServer(thread_factory, socket_factory, tmp, port, port, null, 0)
+          : new TcpServer(thread_factory, socket_factory, tmp, port, port, null, 0);
         server.receiver(this);
         server.start();
         server.addConnectionListener(this);
