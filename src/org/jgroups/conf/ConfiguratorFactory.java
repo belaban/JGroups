@@ -76,13 +76,11 @@ public class ConfiguratorFactory {
 
     /**
      * Returns a protocol stack configurator based on the provided properties string.
-     *
-     * @param properties an old style property string, a string representing a system resource containing a JGroups
-     *                   XML configuration, a string representing a URL pointing to a JGroups XML configuration,
-     *                   or a string representing a file name that contains a JGroups XML configuration.
+     * @param properties a string representing a system resource containing a JGroups XML configuration, a URL pointing
+     *                   to a JGroups XML configuration or a string representing a file name that contains a JGroups
+     *                   XML configuration.
      */
     public static ProtocolStackConfigurator getStackConfigurator(String properties) throws Exception {
-        // added by bela: for null String props we use the default properties
         if(properties == null)
             properties=Global.DEFAULT_PROTOCOL_STACK;
 
@@ -92,10 +90,9 @@ public class ConfiguratorFactory {
         checkForNullConfiguration(properties);
         configurator=getXmlConfigurator(properties);
 
-        if (configurator != null) // did the properties string point to a JGroups XML configuration ?
+        if(configurator != null) // did the properties string point to a JGroups XML configuration ?
             return configurator;
-        else
-            return new PlainConfigurator(properties); // try to process the properties string as an old style property string
+        throw new IllegalStateException(String.format("configuration %s not found or invalid", properties));
     }
 
 

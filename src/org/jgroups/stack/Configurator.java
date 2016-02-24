@@ -14,10 +14,6 @@ import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 import org.w3c.dom.Node;
 
-import java.io.IOException;
-import java.io.PushbackReader;
-import java.io.Reader;
-import java.io.StringReader;
 import java.lang.reflect.*;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
@@ -203,135 +199,6 @@ public class Configurator {
     }
 
 
-    /**
-     * Get a string of the form "P1(config_str1):P2:P3(config_str3)" and return
-     * ProtocolConfigurations for it. That means, parse "P1(config_str1)", "P2" and
-     * "P3(config_str3)"
-     * @param config_str Configuration string
-     * @return Vector of strings
-     */
-    private static List<String> parseProtocols(String config_str) throws IOException {
-        List<String> retval=new LinkedList<>();
-        PushbackReader reader=new PushbackReader(new StringReader(config_str));
-        int ch;
-        StringBuilder sb;
-        boolean running=true;
-
-        while(running) {
-            String protocol_name=readWord(reader);
-            sb=new StringBuilder();
-            sb.append(protocol_name);
-
-            ch=read(reader);
-            if(ch == -1) {
-                retval.add(sb.toString());
-                break;
-            }
-
-            if(ch == ':') {  // no attrs defined
-                retval.add(sb.toString());
-                continue;
-            }
-
-            if(ch == '(') { // more attrs defined
-                reader.unread(ch);
-                String attrs=readUntil(reader, ')');
-                sb.append(attrs);
-                retval.add(sb.toString());
-            }
-            else {
-                retval.add(sb.toString());
-            }
-
-            while(true) {
-                ch=read(reader);
-                if(ch == ':') {
-                    break;
-                }
-                if(ch == -1) {
-                    running=false;
-                    break;
-                }
-            }
-        }
-        reader.close();
-
-        return retval;
-    }
-
-
-    private static int read(Reader reader) throws IOException {
-        int ch=-1;
-        while((ch=reader.read()) != -1) {
-            if(!Character.isWhitespace(ch))
-                return ch;
-        }
-        return ch;
-    }
-
-    /**
-     * Return a number of ProtocolConfigurations in a vector
-     * @param configuration protocol-stack configuration string
-     * @return List of ProtocolConfigurations
-     */
-    public static List<ProtocolConfiguration> parseConfigurations(String configuration) throws Exception {
-        List<ProtocolConfiguration> retval=new ArrayList<>();
-        List<String> protocol_string=parseProtocols(configuration);
-
-        if(protocol_string == null)
-            return null;
-        
-        for(String component_string: protocol_string) {                       
-            retval.add(new ProtocolConfiguration(component_string));
-        }
-        return retval;
-    }
-
-
-    public static String printConfigurations(Collection<ProtocolConfiguration> configs) {
-        StringBuilder sb=new StringBuilder();
-        boolean first=true;
-        for(ProtocolConfiguration config: configs) {
-            if(first)
-                first=false;
-            else
-                sb.append(":");
-            sb.append(config.getProtocolName());
-            if(!config.getProperties().isEmpty()) {
-                sb.append('(').append(config.propertiesToString()).append(')');
-            }
-        }
-
-        return sb.toString();
-    }
-
-    private static String readUntil(Reader reader, char c) throws IOException {
-        StringBuilder sb=new StringBuilder();
-        int ch;
-        while((ch=read(reader)) != -1) {
-            sb.append((char)ch);
-            if(ch == c)
-                break;
-        }
-        return sb.toString();
-    }
-
-    private static String readWord(PushbackReader reader) throws IOException {
-        StringBuilder sb=new StringBuilder();
-        int ch;
-
-        while((ch=read(reader)) != -1) {
-            if(Character.isLetterOrDigit(ch) || ch == '_' || ch == '.' || ch == '$') {
-                sb.append((char)ch);
-            }
-            else {
-                reader.unread(ch);
-                break;
-            }
-        }
-
-        return sb.toString();
-    }
 
 
     /**
@@ -637,7 +504,7 @@ public class Configurator {
                             propertyValue=tmp;
                         
     					if ((propertyValue != null || !PropertyHelper.usesDefaultConverter(fields[j]))
-    							&& InetAddressInfo.isInetAddressRelated(protocol, fields[j])) {
+    							&& InetAddressInfo.isInetAddressRelated(fields[j])) {
     						Object converted = null ;
 							try {
 								converted=PropertyHelper.getConvertedValue(protocol, fields[j], properties, propertyValue, false);
@@ -673,7 +540,7 @@ public class Configurator {
                 Field[] fields=clazz.getDeclaredFields();
                 for(int j=0; j < fields.length; j++) {
                     if(fields[j].isAnnotationPresent(Property.class)) {
-                        if(InetAddressInfo.isInetAddressRelated(protocol, fields[j])) {
+                        if(InetAddressInfo.isInetAddressRelated(fields[j])) {
                             Object value=getValueFromProtocol(protocol, fields[j]);
                             if(value instanceof InetAddress)
                                 retval.add((InetAddress)value);
@@ -757,7 +624,7 @@ public class Configurator {
 
                     // get the default value for the field - check for InetAddress types
                     String defaultValue=null;
-                    if(InetAddressInfo.isInetAddressRelated(protocol, fields[j])) {
+                    if(InetAddressInfo.isInetAddressRelated(fields[j])) {
                         defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
                         if(defaultValue != null && !defaultValue.isEmpty()) {
                             // condition for invoking converter
@@ -800,7 +667,7 @@ public class Configurator {
             Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(protocol.getClass(), Property.class);
             for(int j=0; j < fields.length; j++) {
                 // get the default value for the field - check for InetAddress types
-                if(InetAddressInfo.isInetAddressRelated(protocol, fields[j])) {
+                if(InetAddressInfo.isInetAddressRelated(fields[j])) {
                     Object propertyValue=getValueFromProtocol(protocol, fields[j]);
                     if(propertyValue == null) {
                         // add to collection of @Properties with no user specified value
@@ -1228,13 +1095,9 @@ public class Configurator {
     		}
     	}
 
-    	// Protocol getProtocol() {return protocol ;}
-    	Object getProtocol() {return protocol ;}
-    	AccessibleObject getFieldOrMethod() {return fieldOrMethod ;}
     	boolean isField() { return isField ; }
     	String getStringValue() {return stringValue ;}
     	String getPropertyName() {return propertyName ;}
-    	Map<String,String> getProperties() {return properties ;}
     	Object getConvertedValue() {return convertedValue ;}
     	boolean isParameterized() {return isParameterized ;}
     	Object getBaseType() { return baseType ;}
@@ -1254,7 +1117,7 @@ public class Configurator {
     		return (types[0] instanceof ParameterizedType) ;
     	}
 
-    	static boolean isInetAddressRelated(Protocol prot, Field f) {
+    	static boolean isInetAddressRelated(Field f) {
     		if (hasParameterizedType(f)) {
     			// check for List<InetAddress>, List<InetSocketAddress>, List<IpAddress>
     			ParameterizedType fieldtype = (ParameterizedType) f.getGenericType() ;

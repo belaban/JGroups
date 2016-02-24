@@ -294,8 +294,8 @@ public class JChannel implements Closeable {
 
 
     /**
-     * Returns the protocol stack configuration in string format. An example of this property is<br/>
-     * "UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:STATE_TRANSFER:QUEUE"
+     * Returns the protocol stack configuration in string format. An example of this property is
+     * <pre>"UDP:PING:FDALL:STABLE:NAKACK2:UNICAST3:FRAG2:GMS"</pre>
      */
     public String getProperties() {return prot_stack != null? prot_stack.printProtocolSpec(true) : null;}
 

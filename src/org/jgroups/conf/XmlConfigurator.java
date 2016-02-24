@@ -9,7 +9,6 @@ package org.jgroups.conf;
 import org.jgroups.Global;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.stack.Configurator;
 import org.jgroups.util.Util;
 import org.w3c.dom.*;
 import org.xml.sax.ErrorHandler;
@@ -234,13 +233,8 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     public static void main(String[] args) throws Exception {
         String input_file=null;
         XmlConfigurator conf;
-        boolean old_format=false;
 
         for(int i=0;i < args.length;i++) {
-            if(args[i].equals("-old")) {
-                old_format=true;
-                continue;
-            }
             if(args[i].equals("-file")) {
                 input_file=args[++i];
                 continue;
@@ -268,20 +262,12 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             if(input == null)
                 input=Thread.currentThread().getContextClassLoader().getResourceAsStream(input_file);
 
-            if(old_format) {
-                String cfg=inputAsString(input);
-                List<ProtocolConfiguration> tmp=Configurator.parseConfigurations(cfg);
-                System.out.println(dump(tmp));
-            }
-            else {
-                conf=XmlConfigurator.getInstance(input);
-                String tmp=conf.getProtocolStackString();
-                System.out.println("\n" + tmp);
-            }
+            conf=XmlConfigurator.getInstance(input);
+            String tmp=conf.getProtocolStackString();
+            System.out.println("\n" + tmp);
         }
-        else {
+        else
             throw new Exception("no input file given");
-        }
     }
 
     
@@ -357,7 +343,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     }
 
     static void help() {
-        System.out.println("XmlConfigurator -file <input XML file> [-old]");
-        System.out.println("(-old: converts old (plain-text) input format into new XML format)");
+        System.out.println("XmlConfigurator -file <input XML file>");
     }
 }
