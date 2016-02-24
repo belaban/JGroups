@@ -31,23 +31,23 @@ public class FORWARD_TO_COORD_Test {
     void setUp() throws Exception {
         System.out.print("Connecting channels: ");
         for(int i=0; i < NUM; i++) {
-            channels[i]=Util.createChannel(new SHARED_LOOPBACK(),
-                                           new DISCARD(),
-                                           new SHARED_LOOPBACK_PING(),
-                                           new NAKACK2().setValue("use_mcast_xmit",false)
-                                             .setValue("discard_delivered_msgs",true)
-                                             .setValue("log_discard_msgs",true).setValue("log_not_found_msgs",true)
-                                             .setValue("xmit_table_num_rows",5)
-                                             .setValue("xmit_table_msgs_per_row",10),
-                                           new UNICAST3().setValue("xmit_table_num_rows",5).setValue("xmit_interval", 300)
-                                             .setValue("xmit_table_msgs_per_row",10)
-                                             .setValue("conn_expiry_timeout", 10000),
-                                           new GMS().setValue("print_local_addr",false)
-                                             .setValue("leave_timeout",2000)
-                                             .setValue("log_view_warnings",false)
-                                             .setValue("view_ack_collection_timeout",2000)
-                                             .setValue("log_collect_msgs",false),
-                                           new FORWARD_TO_COORD());
+            channels[i]=new JChannel(new SHARED_LOOPBACK(),
+                                     new DISCARD(),
+                                     new SHARED_LOOPBACK_PING(),
+                                     new NAKACK2().setValue("use_mcast_xmit",false)
+                                       .setValue("discard_delivered_msgs",true)
+                                       .setValue("log_discard_msgs",true).setValue("log_not_found_msgs",true)
+                                       .setValue("xmit_table_num_rows",5)
+                                       .setValue("xmit_table_msgs_per_row",10),
+                                     new UNICAST3().setValue("xmit_table_num_rows",5).setValue("xmit_interval", 300)
+                                       .setValue("xmit_table_msgs_per_row",10)
+                                       .setValue("conn_expiry_timeout", 10000),
+                                     new GMS().setValue("print_local_addr",false)
+                                       .setValue("leave_timeout",2000)
+                                       .setValue("log_view_warnings",false)
+                                       .setValue("view_ack_collection_timeout",2000)
+                                       .setValue("log_collect_msgs",false),
+                                     new FORWARD_TO_COORD());
             String name=String.valueOf((char)(i + BASE));
             channels[i].setName(name);
             receivers[i]=new MyReceiver();
@@ -101,7 +101,7 @@ public class FORWARD_TO_COORD_Test {
     public void testForwardingWithCoordLeaving() throws Exception {
         Message msg=new Message(null, 25);
 
-        DISCARD discard=(DISCARD)channels[NUM-1].getProtocolStack().findProtocol(DISCARD.class);
+        DISCARD discard=channels[NUM-1].getProtocolStack().findProtocol(DISCARD.class);
         discard.setDropDownUnicasts(1);
 
         // Sends the message to A, but C will discard it, so A will never get it
@@ -133,7 +133,7 @@ public class FORWARD_TO_COORD_Test {
     public void testForwardingWithCoordCrashing() throws Exception {
         Message msg=new Message(null, 30);
 
-        DISCARD discard=(DISCARD)channels[0].getProtocolStack().findProtocol(DISCARD.class);
+        DISCARD discard=channels[0].getProtocolStack().findProtocol(DISCARD.class);
         discard.setDiscardAll(true);
 
         // Sends the message to A, but C will discard it, so A will never get it
@@ -147,7 +147,7 @@ public class FORWARD_TO_COORD_Test {
 
         System.out.println("Injecting view " + view + " into B and C");
         for(JChannel ch: Arrays.asList(channels[1], channels[2])) {
-            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.up(new Event(Event.VIEW_CHANGE, view));
         }
 
@@ -177,7 +177,7 @@ public class FORWARD_TO_COORD_Test {
                                       channels[0].getAddress(), channels[2].getAddress());
         System.out.println("Installing view " + new_view + " members A and C (not B !)");
         for(JChannel ch: new JChannel[]{channels[0], channels[2]}) {
-            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.up(new Event(Event.VIEW_CHANGE, new_view));
         }
 
@@ -194,10 +194,10 @@ public class FORWARD_TO_COORD_Test {
         Util.sleep(500);
 
         System.out.println("Injecting view " + new_view + " into B and C");
-        GMS gms=(GMS)channels[1].getProtocolStack().findProtocol(GMS.class);
+        GMS gms=channels[1].getProtocolStack().findProtocol(GMS.class);
         gms.up(new Event(Event.VIEW_CHANGE, new_view));
 
-        gms=(GMS)channels[NUM-1].getProtocolStack().findProtocol(GMS.class);
+        gms=channels[NUM-1].getProtocolStack().findProtocol(GMS.class);
         gms.up(new Event(Event.VIEW_CHANGE, new_view));
 
         MyReceiver receiver=receivers[1]; // B

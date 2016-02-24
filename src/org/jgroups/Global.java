@@ -77,6 +77,7 @@ public final class Global {
     public static final String MATCH_INTF="match-interface";
 
     public static final String PREFIX="org.jgroups.protocols.";
+    public static final String DEFAULT_PROTOCOL_STACK="udp.xml";
     
     public static final String XML_VALIDATION="jgroups.xml.validation";
 

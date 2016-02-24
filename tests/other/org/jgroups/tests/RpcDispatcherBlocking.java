@@ -31,7 +31,7 @@ import org.jgroups.util.Util;
  */
 public class RpcDispatcherBlocking implements MembershipListener {
     RpcDispatcher disp;
-    Channel       channel;
+    JChannel channel;
     long          timeout=30000;
     String        props=null;
     int           i=0;

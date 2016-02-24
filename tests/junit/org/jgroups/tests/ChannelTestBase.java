@@ -1,6 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.PhysicalAddress;
@@ -161,14 +161,14 @@ public class ChannelTestBase {
             return createChannel(channel_conf);
         }
 
-        public Channel createChannel(boolean unique, int num) throws Exception {
+        public JChannel createChannel(boolean unique, int num) throws Exception {
             JChannel c = createChannel(channel_conf);
             if(unique)
                 makeUnique(c, num);
             return c;
         }
 
-        public Channel createChannel(final JChannel ch) throws Exception {
+        public JChannel createChannel(final JChannel ch) throws Exception {
             return new JChannel(ch);
         }
 
@@ -176,13 +176,13 @@ public class ChannelTestBase {
             return new JChannel(configFile);
         }
 
-        protected void makeUnique(Channel channel, int num) throws Exception {
+        protected void makeUnique(JChannel channel, int num) throws Exception {
             String str = Util.getProperty(new String[]{ Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup" },
                                           null, "mcast_addr", null);
             makeUnique(channel, num, str);
         }
 
-        protected void makeUnique(Channel channel, int num, String mcast_address) throws Exception {
+        protected void makeUnique(JChannel channel, int num, String mcast_address) throws Exception {
             ProtocolStack stack = channel.getProtocolStack();
             Protocol transport = stack.getTransport();
 

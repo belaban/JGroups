@@ -28,7 +28,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
         MembershipListener {
     static final String channel_name="Quotes";
     RpcDispatcher disp;
-    Channel channel;
+    JChannel channel;
     final Button get=new Button("Get");
     final Button set=new Button("Set");
     final Button quit=new Button("Quit");

@@ -40,7 +40,7 @@ import java.util.stream.Stream;
  * @author Bela Ban
  */
 public class MessageDispatcher implements RequestHandler, ChannelListener, Closeable {
-    protected Channel                               channel;
+    protected JChannel                              channel;
     protected RequestCorrelator                     corr;
     protected MembershipListener                    membership_listener;
     protected StateListener                         state_listener;
@@ -67,7 +67,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
     public MessageDispatcher() {
     }
 
-    public MessageDispatcher(Channel channel) {
+    public MessageDispatcher(JChannel channel) {
         this.channel=channel;
         prot_adapter=new ProtocolAdapter();
         if(channel != null) {
@@ -80,7 +80,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
     }
 
 
-    public MessageDispatcher(Channel channel, RequestHandler req_handler) {
+    public MessageDispatcher(JChannel channel, RequestHandler req_handler) {
         this(channel);
         setRequestHandler(req_handler);
     }
@@ -196,11 +196,11 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
         return this;
     }
 
-    public Channel getChannel() {
+    public JChannel getChannel() {
         return channel;
     }
 
-    public void setChannel(Channel ch) {
+    public void setChannel(JChannel ch) {
         if(ch == null)
             return;
         this.channel=ch;
@@ -301,7 +301,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
             real_dests=new ArrayList<>(members);
 
         // Remove the local member from the target destination set if we should not deliver our own message
-        Channel tmp=channel;
+        JChannel tmp=channel;
         if((tmp != null && tmp.getDiscardOwnMessages()) || options.transientFlagSet(Message.TransientFlag.DONT_LOOPBACK)) {
             if(local_addr == null)
                 local_addr=tmp != null? tmp.getAddress() : null;
@@ -477,21 +477,21 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
     /* --------------------- Interface ChannelListener ---------------------- */
 
     @Override
-    public void channelConnected(Channel channel) {
+    public void channelConnected(JChannel channel) {
         notifyListener(false, channel, this::channelConnected);
     }
 
     @Override
-    public void channelDisconnected(Channel channel) {
+    public void channelDisconnected(JChannel channel) {
         notifyListener(true, channel, this::channelDisconnected);
     }
 
     @Override
-    public void channelClosed(Channel channel) {
+    public void channelClosed(JChannel channel) {
         notifyListener(true, channel, this::channelClosed);
     }
 
-    protected void notifyListener(boolean stop, Channel ch, Consumer<Channel> cons) {
+    protected void notifyListener(boolean stop, JChannel ch, Consumer<JChannel> cons) {
         if(stop)
             stop();
         channel_listeners.forEach(l -> {

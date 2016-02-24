@@ -2,7 +2,7 @@
 package org.jgroups.demos;
 
 
-import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.JChannel;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
@@ -29,7 +29,7 @@ import java.util.*;
 
 public class QuoteServer extends ReceiverAdapter {
     final Map<String,Float> stocks=new HashMap<>();
-    Channel                channel;
+    JChannel channel;
     RpcDispatcher          disp;
     static final String    channel_name="Quotes";
     protected Log           log=LogFactory.getLog(getClass());

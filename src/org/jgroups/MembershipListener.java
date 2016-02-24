@@ -25,7 +25,7 @@ public interface MembershipListener {
     * needs to be performed, it should be done in a separate thread.
     * <p/>
     * Note that on reception of the first view (a new member just joined), the channel will not yet
-    * be in the connected state. This only happens when {@link Channel#connect(String)} returns.
+    * be in the connected state. This only happens when {@link JChannel#connect(String)} returns.
     */
     default void viewAccepted(View new_view) {}
     

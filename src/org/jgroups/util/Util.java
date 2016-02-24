@@ -266,7 +266,7 @@ public class Util {
      * @param channels The channels which should form the view. The expected view size is channels.length.
      *                 Must be non-null
      */
-    public static void waitUntilAllChannelsHaveSameSize(long timeout,long interval,Channel... channels) throws TimeoutException {
+    public static void waitUntilAllChannelsHaveSameSize(long timeout,long interval,JChannel... channels) throws TimeoutException {
         int size=channels.length;
 
         if(interval >= timeout || timeout <= 0)
@@ -274,7 +274,7 @@ public class Util {
         long target_time=System.currentTimeMillis() + timeout;
         while(System.currentTimeMillis() <= target_time) {
             boolean all_channels_have_correct_size=true;
-            for(Channel ch : channels) {
+            for(JChannel ch : channels) {
                 View view=ch.getView();
                 if(view == null || view.size() != size) {
                     all_channels_have_correct_size=false;
@@ -399,7 +399,7 @@ public class Util {
      * Drops messages to/from other members and then closes the channel. Note that this member won't get excluded from
      * the view until failure detection has kicked in and the new coord installed the new view
      */
-    public static void shutdown(Channel ch) throws Exception {
+    public static void shutdown(JChannel ch) throws Exception {
         DISCARD discard=new DISCARD();
         discard.setLocalAddress(ch.getAddress());
         discard.setDiscardAll(true);
@@ -2184,18 +2184,6 @@ public class Util {
     }
 
 
-    public static JChannel createChannel(Protocol... prots) throws Exception {
-        JChannel ch=new JChannel(false);
-        ProtocolStack stack=new ProtocolStack();
-        ch.setProtocolStack(stack);
-        for(Protocol prot : prots) {
-            stack.addProtocol(prot);
-            prot.setProtocolStack(stack);
-        }
-        stack.init();
-        return ch;
-    }
-
     public static byte[] generateArray(int size) {
         byte[] retval=new byte[size];
         for(int i=0; i < retval.length; i++) {
@@ -2879,9 +2867,9 @@ public class Util {
      * @param randomSleepTimeoutFloor   the minimum sleep time between attempts in ms
      * @param randomSleepTimeoutCeiling the maximum sleep time between attempts in ms
      * @return true if channel was flushed successfully, false otherwise
-     * @see Channel#startFlush(List,boolean)
+     * @see JChannel#startFlush(List,boolean)
      */
-    public static boolean startFlush(Channel c,List<Address> flushParticipants,
+    public static boolean startFlush(JChannel c,List<Address> flushParticipants,
                                      int numberOfAttempts,long randomSleepTimeoutFloor,long randomSleepTimeoutCeiling) {
         int attemptCount=0;
         while(attemptCount < numberOfAttempts) {
@@ -2901,9 +2889,9 @@ public class Util {
      * Performs the flush of the given channel and the specified flush participants
      * @param c                 the channel
      * @param flushParticipants the flush participants in this flush attempt
-     * @see Channel#startFlush(List,boolean)
+     * @see JChannel#startFlush(List,boolean)
      */
-    public static boolean startFlush(Channel c,List<Address> flushParticipants) {
+    public static boolean startFlush(JChannel c,List<Address> flushParticipants) {
         return startFlush(c,flushParticipants,4,1000,5000);
     }
 
@@ -2915,9 +2903,9 @@ public class Util {
      * @param randomSleepTimeoutFloor   the minimum sleep time between attempts in ms
      * @param randomSleepTimeoutCeiling the maximum sleep time between attempts in ms
      * @return true if channel was flushed successfully, false otherwise
-     * @see Channel#startFlush(boolean)
+     * @see JChannel#startFlush(boolean)
      */
-    public static boolean startFlush(Channel c,int numberOfAttempts,long randomSleepTimeoutFloor,long randomSleepTimeoutCeiling) {
+    public static boolean startFlush(JChannel c,int numberOfAttempts,long randomSleepTimeoutFloor,long randomSleepTimeoutCeiling) {
         int attemptCount=0;
         while(attemptCount < numberOfAttempts) {
             try {
@@ -2936,9 +2924,9 @@ public class Util {
      * Performs the flush of the given channel
      * @param c the channel
      * @return true if channel was flushed successfully, false otherwise
-     * @see Channel#startFlush(boolean)
+     * @see JChannel#startFlush(boolean)
      */
-    public static boolean startFlush(Channel c) {
+    public static boolean startFlush(JChannel c) {
         return startFlush(c,4,1000,5000);
     }
 

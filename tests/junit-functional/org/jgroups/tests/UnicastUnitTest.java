@@ -183,12 +183,12 @@ public class UnicastUnitTest {
 
 
     protected static class MyReceiver extends ReceiverAdapter {
-        protected Channel             channel;
+        protected JChannel channel;
         protected Throwable           ex;
         protected final List<Integer> list=new ArrayList<>();
 
         public               MyReceiver()           {this(null);}
-        public               MyReceiver(Channel ch) {this.channel=ch;}
+        public               MyReceiver(JChannel ch) {this.channel=ch;}
         public Throwable     getEx()                {return ex;}
         public List<Integer> list()                 {return list;}
         public void          clear()                {list.clear();}

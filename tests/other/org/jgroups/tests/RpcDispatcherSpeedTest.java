@@ -18,7 +18,7 @@ import java.util.concurrent.CountDownLatch;
  * @version $Revision: 1.23 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
-    Channel               channel;
+    JChannel channel;
     RpcDispatcher         disp;
     String                props=null;
     boolean               server=false; // role is client by default

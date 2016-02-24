@@ -128,13 +128,13 @@ public class MergeStressTest extends ChannelTestBase {
     public class MyThread extends ReceiverAdapter implements Runnable {
         int index=-1;
         long total_connect_time=0, total_disconnect_time=0;
-        private final Channel ch;
+        private final JChannel ch;
         private Address my_addr=null;
         private View current_view;
         private final Thread thread;
         private int num_members=0;
 
-        public MyThread(int i,Channel ch) {
+        public MyThread(int i,JChannel ch) {
             this.ch=ch;
             thread=new Thread(this, "thread #" + i);
             index=i;

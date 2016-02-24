@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.JChannel;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
@@ -51,12 +52,12 @@ public class PRIO extends Protocol {
     private Address local_addr;
 
     /**
-     * This method is called on a {@link org.jgroups.Channel#connect(String)}. Starts work.
+     * This method is called on a {@link JChannel#connect(String)}. Starts work.
      * Protocols are connected and queues are ready to receive events.
      * Will be called <em>from bottom to top</em>. This call will replace
      * the <b>START</b> and <b>START_OK</b> events.
      * @exception Exception Thrown if protocol cannot be started successfully. This will cause the ProtocolStack
-     *                      to fail, so {@link org.jgroups.Channel#connect(String)} will throw an exception
+     *                      to fail, so {@link JChannel#connect(String)} will throw an exception
      */
     public void start() throws Exception {
 		if (prioritize_down) {
@@ -73,7 +74,7 @@ public class PRIO extends Protocol {
     }
 
     /**
-     * This method is called on a {@link org.jgroups.Channel#disconnect()}. Stops work (e.g. by closing multicast socket).
+     * This method is called on a {@link JChannel#disconnect()}. Stops work (e.g. by closing multicast socket).
      * Will be called <em>from top to bottom</em>. This means that at the time of the method invocation the
      * neighbor protocol below is still working. This method will replace the
      * <b>STOP</b>, <b>STOP_OK</b>, <b>CLEANUP</b> and <b>CLEANUP_OK</b> events. The ProtocolStack guarantees that

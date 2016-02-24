@@ -19,12 +19,12 @@ import java.util.List;
  * @since  3.4
  */
 public class ForkChannel extends JChannel implements ChannelListener {
-    protected final Channel           main_channel;
+    protected final JChannel          main_channel;
     protected final String            fork_channel_id;
     protected static final Field[]    copied_fields;
 
     static {
-        String[] fields={"state", "local_addr", "name", "cluster_name", "my_view"};
+        String[] fields={"state", "local_addr", "name", "cluster_name", "view"};
         copied_fields=new Field[fields.length];
         for(int i=0; i < fields.length; i++) {
             Field field=Util.getField(JChannel.class, fields[i]);
@@ -57,7 +57,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
      *
      * @throws Exception
      */
-    public ForkChannel(final Channel main_channel, String fork_stack_id, String fork_channel_id,
+    public ForkChannel(final JChannel main_channel, String fork_stack_id, String fork_channel_id,
                        boolean create_fork_if_absent, int position, Class<? extends Protocol> neighbor,
                        Protocol ... protocols) throws Exception {
 
@@ -95,7 +95,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
      *                  a ForkChannel to mux/demux messages, but doesn't need a different protocol stack.
      * @throws Exception
      */
-    public ForkChannel(final Channel main_channel, String fork_stack_id, String fork_channel_id,
+    public ForkChannel(final JChannel main_channel, String fork_stack_id, String fork_channel_id,
                        Protocol ... protocols) throws Exception {
         this(main_channel, fork_stack_id, fork_channel_id, false, 0, null, protocols);
     }
@@ -112,7 +112,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
         return this;
     }
 
-    public void channelConnected(Channel channel) {
+    @Override public void channelConnected(JChannel channel) {
         copyFields();
         if(local_addr == null) return;
         Event evt=new Event(Event.SET_LOCAL_ADDRESS, local_addr);
@@ -120,11 +120,11 @@ public class ForkChannel extends JChannel implements ChannelListener {
             up_handler.up(evt);
     }
 
-    public void channelDisconnected(Channel channel) {
+    @Override public void channelDisconnected(JChannel channel) {
         copyFields();
     }
 
-    public void channelClosed(Channel channel) {
+    @Override public void channelClosed(JChannel channel) {
         copyFields();
     }
 
@@ -149,12 +149,12 @@ public class ForkChannel extends JChannel implements ChannelListener {
         state=State.CONNECTING;
         this.main_channel.addChannelListener(this);
         copyFields();
-        Channel existing_ch=((ForkProtocolStack)prot_stack).putIfAbsent(fork_channel_id,this);
+        JChannel existing_ch=((ForkProtocolStack)prot_stack).putIfAbsent(fork_channel_id,this);
         if(existing_ch != null && existing_ch != this)
             throw new IllegalArgumentException("fork-channel with id=" + fork_channel_id + " is already present");
         setLocalAddress(local_addr);
 
-        prot_stack.startStack(cluster_name, local_addr);
+        prot_stack.startStack();
 
         prot_stack.down(new Event(Event.CONNECT, cluster_name));
 
@@ -252,8 +252,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
 
     @Override
     public ForkChannel addAddressGenerator(AddressGenerator address_generator) {
-        if(main_channel instanceof JChannel)
-            ((JChannel)main_channel).addAddressGenerator(address_generator);
+        main_channel.addAddressGenerator(address_generator);
         return this;
     }
 
@@ -271,7 +270,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
     /**
      * Creates a new FORK protocol, or returns the existing one, or throws an exception. Never returns null.
      */
-    protected static FORK getFORK(Channel ch, int position, Class<? extends Protocol> neighbor,
+    protected static FORK getFORK(JChannel ch, int position, Class<? extends Protocol> neighbor,
                                   boolean create_fork_if_absent) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         FORK fork=stack.findProtocol(FORK.class);

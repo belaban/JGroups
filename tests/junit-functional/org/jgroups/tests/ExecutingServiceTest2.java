@@ -1,6 +1,5 @@
 package org.jgroups.tests;
 
-import org.jgroups.Channel;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.executor.ExecutionRunner;
@@ -24,13 +23,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED}, singleThreaded=true)
 public class ExecutingServiceTest2 {
 
-    Set<Thread> threads=new HashSet<>();
-    Set<Channel> channels=new HashSet<>();
+    Set<Thread>   threads=new HashSet<>();
+    Set<JChannel> channels=new HashSet<>();
 
     @AfterMethod
     public void tearDown() {
         threads.forEach(Thread::interrupt);
-        channels.forEach(Channel::close);
+        channels.forEach(JChannel::close);
     }
 
     @Test

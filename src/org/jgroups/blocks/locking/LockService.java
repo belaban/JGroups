@@ -1,7 +1,7 @@
 package org.jgroups.blocks.locking;
 
 import org.jgroups.Event;
-import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.protocols.Locking;
 
 import java.util.Date;
@@ -12,7 +12,7 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * LockService is the main class for to use for distributed locking functionality. LockService needs access to a
- * {@link Channel} and interacts with a locking protocol (e.g. {@link org.jgroups.protocols.CENTRAL_LOCK}) via events.<p/>
+ * {@link JChannel} and interacts with a locking protocol (e.g. {@link org.jgroups.protocols.CENTRAL_LOCK}) via events.<p/>
  * When no locking protocol is seen on the channel's stack, LockService will throw an exception at startup. An example
  * of using LockService is:
  * <pre>
@@ -37,7 +37,7 @@ import java.util.concurrent.locks.Lock;
  * @since 2.12
  */
 public class LockService {
-    protected Channel ch;
+    protected JChannel ch;
     protected Locking  lock_prot;
 
 
@@ -45,11 +45,11 @@ public class LockService {
         
     }
 
-    public LockService(Channel ch) {
+    public LockService(JChannel ch) {
         setChannel(ch);
     }
 
-    public void setChannel(Channel ch) {
+    public void setChannel(JChannel ch) {
         this.ch=ch;
         lock_prot=(Locking)ch.getProtocolStack().findProtocol(Locking.class);
         if(lock_prot == null)

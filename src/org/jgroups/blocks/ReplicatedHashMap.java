@@ -80,7 +80,7 @@ public class ReplicatedHashMap<K, V> extends
         }
     }
 
-    private final Channel channel;
+    private final JChannel channel;
     protected RpcDispatcher disp=null;
     private String cluster_name=null;
     // to be notified when mbrship changes
@@ -100,7 +100,7 @@ public class ReplicatedHashMap<K, V> extends
     /**
      * Constructs a new ReplicatedHashMap with channel. Call {@link #start(long)} to start this map.
      */
-    public ReplicatedHashMap(Channel channel) {
+    public ReplicatedHashMap(JChannel channel) {
         this.channel=channel;
         this.map=new ConcurrentHashMap<>();
         init();
@@ -110,7 +110,7 @@ public class ReplicatedHashMap<K, V> extends
     /**
      * Constructs a new ReplicatedHashMap using provided map instance.
      */
-    public ReplicatedHashMap(ConcurrentMap<K,V> map, Channel channel) {
+    public ReplicatedHashMap(ConcurrentMap<K,V> map, JChannel channel) {
         if(channel == null)
             throw new IllegalArgumentException("Cannot create ReplicatedHashMap with null channel");
         if(map == null)
@@ -173,7 +173,7 @@ public class ReplicatedHashMap<K, V> extends
         return cluster_name;
     }
 
-    public Channel getChannel() {
+    public JChannel getChannel() {
         return channel;
     }
 

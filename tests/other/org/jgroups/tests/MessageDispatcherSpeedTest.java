@@ -16,7 +16,7 @@ import org.jgroups.util.Util;
  * @author Bela Ban
  */
 public class MessageDispatcherSpeedTest extends ReceiverAdapter implements RequestHandler {
-    Channel             channel;
+    JChannel channel;
     MessageDispatcher   disp;
     String              props=null;
     boolean             server=false; // role is client by default

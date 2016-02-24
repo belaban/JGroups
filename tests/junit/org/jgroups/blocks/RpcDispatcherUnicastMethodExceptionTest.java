@@ -1,6 +1,6 @@
 package org.jgroups.blocks;
 
-import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.Global;
 import org.jgroups.tests.ChannelTestBase;
 import org.testng.annotations.AfterClass;
@@ -16,7 +16,7 @@ import java.util.concurrent.TimeoutException;
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
-    Channel channel;
+    JChannel channel;
 
     @BeforeClass
     protected void setUp() throws Exception {

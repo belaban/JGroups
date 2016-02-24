@@ -80,9 +80,9 @@ public class ForkProtocolStack extends ProtocolStack {
     }
 
     @Override
-    public synchronized void startStack(String cluster, Address local_addr) throws Exception {
+    public synchronized void startStack() throws Exception {
         if(++connects == 1)
-            super.startStack(cluster, local_addr);
+            super.startStack();
     }
 
     @Override

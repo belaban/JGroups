@@ -6,10 +6,8 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /**
@@ -17,29 +15,22 @@ import org.testng.annotations.Test;
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ProgrammaticApiTest {
-    JChannel c1, c2;
+    protected JChannel ch;
 
-    @BeforeMethod void init() {
-        c1=new JChannel(false).name("A");
-        c2=new JChannel(false).name("B");
-    }
 
     @AfterMethod void destroy() {
-        Util.close(c2, c1);
+        Util.close(ch);
     }
 
     public void testChannelCreation() throws Exception {
-        MyReceiver receiver=new MyReceiver(null);
-        c1.setReceiver(receiver);
-        ProtocolStack stack=new ProtocolStack();
-        c1.setProtocolStack(stack);
-        stack.addProtocol(new SHARED_LOOPBACK()).addProtocol(new MockProtocol1()).addProtocol(new MockProtocol2());
-        stack.init();
-        c1.connect("demo");
+        ch=new JChannel(new SHARED_LOOPBACK(), new MockProtocol1(), new MockProtocol2()).name("A");
+        MyReceiver receiver=new MyReceiver();
+        ch.setReceiver(receiver);
+        ch.connect("demo");
 
-        Protocol transport=stack.getTransport();
+        Protocol transport=ch.getProtocolStack().getTransport();
         transport.up(new Event(Event.MSG, new Message(null, Util.createRandomAddress(), "hello world")));
-        assert receiver.getNumMsgsReceived() == 1;
+        assert receiver.num_msgs_received == 1;
     }
 
 
@@ -73,19 +64,10 @@ public class ProgrammaticApiTest {
 
 
     static class MyReceiver extends ReceiverAdapter {
-        int num_msgs_received=0;
-        final String name;
-
-        public MyReceiver(String name) {
-            this.name=name;
-        }
-
-        public int getNumMsgsReceived() {
-            return num_msgs_received;
-        }
+        int num_msgs_received;
 
         public void receive(Message msg) {
-            System.out.println((name != null? "[" + name + "]" : "") + "<< " + msg.getObject());
+            System.out.println("<< " + msg.getObject());
             num_msgs_received++;
         }
     }

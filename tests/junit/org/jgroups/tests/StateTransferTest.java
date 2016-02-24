@@ -95,7 +95,7 @@ public class StateTransferTest extends ChannelTestBase {
         }
 
         // Make sure everyone is in sync
-        Channel[] tmp=new Channel[apps.length];
+        JChannel[] tmp=new JChannel[apps.length];
         for(int i=0; i < apps.length; i++)
             tmp[i]=apps[i].getChannel();
 

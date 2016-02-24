@@ -3,10 +3,12 @@ package org.jgroups.blocks;
 
 
 import org.jgroups.Address;
-import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.MembershipListener;
 import org.jgroups.Message;
-import org.jgroups.util.*;
+import org.jgroups.util.Buffer;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -34,7 +36,7 @@ public class RpcDispatcher extends MessageDispatcher {
     }
 
 
-    public RpcDispatcher(Channel channel, Object server_obj) {
+    public RpcDispatcher(JChannel channel, Object server_obj) {
         super(channel);
         setRequestHandler(this);
         this.server_obj=server_obj;

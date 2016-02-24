@@ -262,7 +262,7 @@ public class OOBTest extends ChannelTestBase {
                 threads[i]=new Thread() {
                     public void run() {
                         for(int j=0; j < msgs_per_thread; j++) {
-                            Channel sender=Util.tossWeightedCoin(0.5) ? a : b;
+                            JChannel sender=Util.tossWeightedCoin(0.5) ? a : b;
                             boolean oob=Util.tossWeightedCoin(oob_prob);
                             int num=counter.incrementAndGet();
                             Message msg=new Message(dest, num);
@@ -287,7 +287,7 @@ public class OOBTest extends ChannelTestBase {
 
 
         for(int i=0; i < num_msgs; i++) {
-            Channel sender=Util.tossWeightedCoin(0.5) ? a : b;
+            JChannel sender=Util.tossWeightedCoin(0.5) ? a : b;
             boolean oob=Util.tossWeightedCoin(oob_prob);
             Message msg=new Message(dest, null, i);
             if(oob)
@@ -354,7 +354,7 @@ public class OOBTest extends ChannelTestBase {
 
 
     private static void setOOBPoolSize(JChannel... channels) {
-        for(Channel channel: channels) {
+        for(JChannel channel: channels) {
             TP transport=channel.getProtocolStack().getTransport();
             transport.setOOBThreadPoolMinThreads(4);
             transport.setOOBThreadPoolMaxThreads(8);
@@ -362,7 +362,7 @@ public class OOBTest extends ChannelTestBase {
     }
 
     private static void setStableGossip(JChannel... channels) {
-        for(Channel channel: channels) {
+        for(JChannel channel: channels) {
             ProtocolStack stack=channel.getProtocolStack();
             STABLE stable=(STABLE)stack.findProtocol(STABLE.class);
             stable.setDesiredAverageGossip(2000);

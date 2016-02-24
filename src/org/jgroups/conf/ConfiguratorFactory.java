@@ -1,7 +1,7 @@
 
 package org.jgroups.conf;
 
-import org.jgroups.JChannel;
+import org.jgroups.Global;
 import org.jgroups.util.Util;
 import org.w3c.dom.Element;
 
@@ -84,7 +84,7 @@ public class ConfiguratorFactory {
     public static ProtocolStackConfigurator getStackConfigurator(String properties) throws Exception {
         // added by bela: for null String props we use the default properties
         if(properties == null)
-            properties=JChannel.DEFAULT_PROTOCOL_STACK;
+            properties=Global.DEFAULT_PROTOCOL_STACK;
 
         // Attempt to treat the properties string as a pointer to an XML configuration.
         XmlConfigurator configurator = null;
@@ -155,7 +155,7 @@ public class ConfiguratorFactory {
 
         // added by bela: for null String props we use the default properties
         if(properties == null)
-            properties=JChannel.DEFAULT_PROTOCOL_STACK;
+            properties=Global.DEFAULT_PROTOCOL_STACK;
 
         if(properties instanceof URL) {
             try {

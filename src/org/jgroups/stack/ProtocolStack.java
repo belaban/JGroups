@@ -1,6 +1,5 @@
 package org.jgroups.stack;
 
-import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
@@ -833,7 +832,7 @@ public class ProtocolStack extends Protocol {
      * <em>from top to bottom</em>.
      * Each layer can perform some initialization, e.g. create a multicast socket
      */
-    public void startStack(String cluster, Address local_addr) throws Exception {
+    public void startStack() throws Exception {
         if(!stopped) return;
         for(Protocol prot: getProtocols())
             prot.start();

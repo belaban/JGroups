@@ -260,10 +260,10 @@ public class ReconciliationTest {
 
     protected static class MyReceiver extends ReceiverAdapter {
         protected final Map<Address,List<Integer>> msgs=new HashMap<>(10);
-        protected final Channel channel;
+        protected final JChannel channel;
         protected final String  name;
 
-        public MyReceiver(Channel ch,String name) {
+        public MyReceiver(JChannel ch, String name) {
             this.channel=ch;
             this.name=name;
         }
@@ -320,7 +320,7 @@ public class ReconciliationTest {
         Util.close(b,a);
     }
 
-    protected static void flush(Channel channel) {
+    protected static void flush(JChannel channel) {
         try {
             assert Util.startFlush(channel);
         }
@@ -331,10 +331,10 @@ public class ReconciliationTest {
 
     protected static class Cache extends ReceiverAdapter {
         protected final Map<Object,Object> data;
-        protected Channel                  ch;
+        protected JChannel ch;
         protected String                   name;
 
-        public Cache(Channel ch,String name) {
+        public Cache(JChannel ch, String name) {
             this.data=new HashMap<>();
             this.ch=ch;
             this.name=name;

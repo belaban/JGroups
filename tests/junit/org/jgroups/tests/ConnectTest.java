@@ -121,7 +121,7 @@ public class ConnectTest extends ChannelTestBase {
     }
 
 
-    private static void changeProps(Channel ch) {
+    private static void changeProps(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
         TP transport=stack.getTransport();
         transport.setLogDiscardMessages(false);

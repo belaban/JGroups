@@ -135,11 +135,11 @@ public class DuplicateTest extends ChannelTestBase {
     }
 
 
-     private static void send(Channel sender_channel, Address dest, boolean oob, int num_msgs) throws Exception {
+     private static void send(JChannel sender_channel, Address dest, boolean oob, int num_msgs) throws Exception {
          send(sender_channel, dest, oob, false, num_msgs);
      }
 
-     private static void send(Channel sender_channel, Address dest, boolean oob, boolean mixed, int num_msgs) throws Exception {
+     private static void send(JChannel sender_channel, Address dest, boolean oob, boolean mixed, int num_msgs) throws Exception {
          long seqno=1;
          for(int i=0; i < num_msgs; i++) {
              Message msg=new Message(dest, null, seqno++);

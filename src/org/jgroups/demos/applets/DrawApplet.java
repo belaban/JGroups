@@ -30,7 +30,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
     private Label mbr_label;
     private final Font default_font=new Font("Helvetica", Font.PLAIN, 12);
     private static final String groupname="DrawGroup";
-    private Channel channel=null;
+    private JChannel channel=null;
     private int member_size=1;
     private int red=0, green=0, blue=0;
     private Color default_color=null;
