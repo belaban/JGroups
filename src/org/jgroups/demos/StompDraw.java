@@ -86,9 +86,9 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
 
 
     private Color selectColor() {
-        int red=Math.abs(random.nextInt()) % 255;
-        int green=Math.abs(random.nextInt()) % 255;
-        int blue=Math.abs(random.nextInt()) % 255;
+        int red = random.nextInt() % 255;
+        int green = random.nextInt() % 255;
+        int blue = random.nextInt() % 255;
         return new Color(red, green, blue);
     }
 
