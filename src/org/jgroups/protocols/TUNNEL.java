@@ -236,7 +236,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     private class DefaultTUNNELPolicy implements TUNNELPolicy {
 
         public void sendToAllMembers(final String group, final byte[] data, final int offset, final int length) throws Exception {
-            stubManager.forAny((stub) -> {
+            stubManager.forAny( stub -> {
                 try {
                     if(log.isTraceEnabled())
                         log.trace("sent a message to all members, GR used %s", stub.gossipRouterAddress());
@@ -249,7 +249,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         }
 
         public void sendToSingleMember(final String group, final Address dest, final byte[] data, final int offset, final int length) throws Exception {
-            stubManager.forAny((stub) -> {
+            stubManager.forAny( stub -> {
                 try {
                     if(log.isTraceEnabled())
                         log.trace("sent a message to all members, GR used %s", stub.gossipRouterAddress());

@@ -149,7 +149,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
         }
 
         log.trace("fetching members from GossipRouter(s)");
-        stubManager.forEach((stub) -> {
+        stubManager.forEach( stub -> {
             try {
                 stub.getMembers(TCPGOSSIP.this.cluster_name, TCPGOSSIP.this);
             }

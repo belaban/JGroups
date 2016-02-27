@@ -133,7 +133,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
                 // mcasting the call to all local cluster members
                 RspList<Object> rsps=disp.callRemoteMethods(null, call,
                                                             new RequestOptions(ResponseMode.GET_ALL, RPC_TIMEOUT).anycasting(false));
-                rsps.entrySet().stream().forEach((entry) -> {
+                rsps.entrySet().stream().forEach( entry  -> {
                     Rsp<Object> val=entry.getValue();
                     System.out.println("<< " + val.getValue() + " from " + entry.getKey());
                 });
