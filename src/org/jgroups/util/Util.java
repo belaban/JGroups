@@ -401,7 +401,7 @@ public class Util {
         discard.setDiscardAll(true);
         ProtocolStack stack=ch.getProtocolStack();
         TP transport=stack.getTransport();
-        stack.insertProtocol(discard,ProtocolStack.ABOVE,transport.getClass());
+        stack.insertProtocol(discard,ProtocolStack.Position.ABOVE,transport.getClass());
 
         //abruptly shutdown FD_SOCK just as in real life when member gets killed non gracefully
         FD_SOCK fd=ch.getProtocolStack().findProtocol(FD_SOCK.class);
@@ -1005,6 +1005,18 @@ public class Util {
         return bytes != null? new String(bytes) : null;
     }
 
+    public static String byteArrayToHexString(byte[] b) {
+        if(b == null)
+            return "null";
+        StringBuilder sb = new StringBuilder(b.length * 2);
+        for (int i = 0; i < b.length; i++){
+            int v = b[i] & 0xff;
+            if (v < 16) { sb.append('0'); }
+            sb.append(Integer.toHexString(v));
+        }
+        return sb.toString().toUpperCase();
+    }
+
     /** Compares 2 byte arrays, elements are treated as unigned */
     public static int compare(byte[] left,byte[] right) {
         for(int i=0, j=0; i < left.length && j < right.length; i++,j++) {
@@ -1323,10 +1335,7 @@ public class Util {
     }
 
     public static int size(byte[] buf) {
-        int retval=Global.BYTE_SIZE + Global.INT_SIZE;
-        if(buf != null)
-            retval+=buf.length;
-        return retval;
+        return buf == null? Global.BYTE_SIZE : Global.BYTE_SIZE + Global.INT_SIZE + buf.length;
     }
 
     private static Address readOtherAddress(DataInput in) throws Exception {
@@ -1681,9 +1690,8 @@ public class Util {
             out.writeInt(length);
             out.write(buf,offset,length);
         }
-        else {
+        else
             out.write(0);
-        }
     }
 
     public static byte[] readByteBuffer(DataInput in) throws Exception {

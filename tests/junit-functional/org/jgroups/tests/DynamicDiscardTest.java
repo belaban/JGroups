@@ -55,7 +55,7 @@ public class DynamicDiscardTest {
 
         // discard all messages (except those to self)
         DISCARD discard = new DISCARD();
-        channels[0].getProtocolStack().insertProtocol(discard, ProtocolStack.ABOVE, TP.class);
+        channels[0].getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
         discard.setDiscardAll(true);
 
         // send a RSVP message

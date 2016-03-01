@@ -81,6 +81,17 @@ public class ViewTest {
         assert !view.containsMember(i) : "Member should not be in view";
     }
 
+    public void testContainsMembers() {
+        assert view.containsMembers(b,a,d,c);
+        assert !view.containsMembers(a,b,d,f, Util.createRandomAddress("X"));
+
+        View v=View.create(a,1,a,b,c);
+        assert v.containsMembers(a,b);
+
+        v=View.create(a,2,a,b);
+        assert !v.containsMembers(a,b,c);
+    }
+
     public void testEqualsCreator() {
         assert a.equals(view.getCreator()) : "Creator should be a";
         assert !view.getCreator().equals(d) : "Creator should not be d";

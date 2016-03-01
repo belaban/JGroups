@@ -164,7 +164,7 @@ public class UNICAST_ConnectionTests {
 
         // add a Drop protocol to drop the first unicast message
         Drop drop=new Drop(true);
-        a.getProtocolStack().insertProtocol(drop, ProtocolStack.BELOW,(Class<? extends Protocol>[])Util.getUnicastProtocols());
+        a.getProtocolStack().insertProtocol(drop, ProtocolStack.Position.BELOW,(Class<? extends Protocol>[])Util.getUnicastProtocols());
 
         // then send messages from A to B
         sendAndCheck(a, b_addr, 10, r2);

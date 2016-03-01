@@ -498,24 +498,9 @@ public class Message implements Streamable {
         return this;
     }
 
-   /**
-    * Puts a header given a key into the map, only if the key doesn't exist yet
-    */
-    public Message putHeaderIfAbsent(short id, Header hdr) {
-        if(id <= 0)
-            throw new IllegalArgumentException("An ID of " + id + " is invalid");
-        if(hdr != null)
-            hdr.setProtId(id);
-        synchronized(this) {
-            Header[] resized_array=Headers.putHeader(this.headers, id, hdr, false);
-            if(resized_array != null)
-                this.headers=resized_array;
-        }
-        return this;
-    }
 
 
-    public Header getHeader(short id) {
+    public <T extends Header> T getHeader(short id) {
         if(id <= 0)
             throw new IllegalArgumentException("An ID of " + id + " is invalid. Add the protocol which calls " +
                                                  "getHeader() to jg-protocol-ids.xml");

@@ -54,7 +54,7 @@ public class NAKACK_Test extends ChannelTestBase {
         c2.setReceiver(receiver2);
         c3.setReceiver(receiver3);
 
-        c1.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.BELOW, NAKACK2.class);
+        c1.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.Position.BELOW, NAKACK2.class);
 
         c1.connect("NAKACK_OOB_Test");
         c2.connect("NAKACK_OOB_Test");

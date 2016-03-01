@@ -132,7 +132,7 @@ public class RemoteGetStressTest {
         TP transport=ch.getProtocolStack().getTransport();
         DISCARD discard=new DISCARD();
         discard.setUpDiscardRate(discard_rate);
-        ch.getProtocolStack().insertProtocol(discard, ProtocolStack.ABOVE, transport.getClass());
+        ch.getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE, transport.getClass());
     }
 
     protected class Invoker extends Thread {

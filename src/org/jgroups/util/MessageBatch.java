@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -213,6 +214,16 @@ public class MessageBatch implements Iterable<Message> {
             }
         }
         return retval;
+    }
+
+    public <T> void forEach(BiConsumer<Message,MessageBatch> consumer) {
+        for(int i=0; i < index; i++) {
+            try {
+                consumer.accept(messages[i], this);
+            }
+            catch(Throwable t) {
+            }
+        }
     }
 
 

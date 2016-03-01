@@ -76,7 +76,7 @@ public class UNICAST_MessagesToSelfTest {
                                  new STABLE().setValue("max_bytes", 50000),
                                  new GMS().setValue("print_local_addr", false));
         if(discard != null)
-            ch.getProtocolStack().insertProtocol(discard, ProtocolStack.ABOVE, SHARED_LOOPBACK.class);
+            ch.getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE, SHARED_LOOPBACK.class);
         return ch;
     }
 

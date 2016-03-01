@@ -627,7 +627,7 @@ public class MergeTest4 {
             ProtocolStack stack=ch.getProtocolStack();
             DISCARD discard=stack.findProtocol(DISCARD.class);
             if(discard == null)
-                stack.insertProtocol(discard=new DISCARD(), ProtocolStack.ABOVE, stack.getTransport().getClass());
+                stack.insertProtocol(discard=new DISCARD(), ProtocolStack.Position.ABOVE, stack.getTransport().getClass());
             discard.setDiscardAll(flag);
         }
     }

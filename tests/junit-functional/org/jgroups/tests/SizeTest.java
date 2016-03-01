@@ -619,10 +619,10 @@ public class SizeTest {
     }
 
 
-    public static void testEncryptHeader() throws Exception {
-        ENCRYPT.EncryptHeader hdr=new ENCRYPT.EncryptHeader((byte)1, new byte[]{'b','e', 'l', 'a'});
+    public void testEncryptHeader() throws Exception {
+        EncryptHeader hdr=new EncryptHeader(EncryptHeader.ENCRYPT, new byte[]{'b','e', 'l', 'a'});
         _testSize(hdr);
-        hdr=new ENCRYPT.EncryptHeader((byte)2, "Hello world".getBytes());
+        hdr=new EncryptHeader(EncryptHeader.ENCRYPT, "Hello".getBytes()).signature("bla".getBytes());
         _testSize(hdr);
     }
 

@@ -1231,7 +1231,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         Message msg=(Message)evt.getArg();
         if(header != null)
-            msg.putHeaderIfAbsent(this.id, header); // added patch by Roland Kurmann (March 20 2003)
+            msg.putHeader(this.id, header); // added patch by Roland Kurmann (March 20 2003)
 
         setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
 

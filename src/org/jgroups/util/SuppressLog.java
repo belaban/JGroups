@@ -19,7 +19,7 @@ public class SuppressLog<T> {
         this.log=log;
         cache=new SuppressCache<>();
         message_format=Util.getMessage(message_key);
-        suppress_format=Util.getMessage(suppress_msg); // "(received {3} identical messages from {2} in the last {4} ms)"
+        suppress_format=Util.getMessage(suppress_msg); // "(received %d identical messages from %s in the last %d ms)"
     }
 
     public SuppressCache<T> getCache()               {return cache;}

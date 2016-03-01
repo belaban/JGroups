@@ -610,8 +610,8 @@ public class Merger {
             // wait until num_rsps_expected >= num_rsps or timeout elapsed
             merge_rsps.waitForAllResponses(timeout);
             gotAllResponses=merge_rsps.hasAllResponses();
-            long stop=System.currentTimeMillis();
-            log.trace("%s: collected %d merge response(s) in %d ms", gms.local_addr, merge_rsps.numberOfValidResponses(), stop - start);
+            long time=System.currentTimeMillis() - start;
+            log.trace("%s: collected %d merge response(s) in %d ms", gms.local_addr, merge_rsps.numberOfValidResponses(), time);
             return gotAllResponses;
         }
 

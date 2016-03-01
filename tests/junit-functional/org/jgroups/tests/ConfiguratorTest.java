@@ -58,7 +58,7 @@ public class ConfiguratorTest {
     
     public void testAddingAboveTop() throws Exception{
         Protocol new_prot=new TRACE();
-        stack.insertProtocol(new_prot, ProtocolStack.ABOVE, MFC.class);
+        stack.insertProtocol(new_prot, ProtocolStack.Position.ABOVE, MFC.class);
         List<Protocol> protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());       
         assert protocols.get(0).getName().endsWith("TRACE");
@@ -71,7 +71,7 @@ public class ConfiguratorTest {
     @Test(expectedExceptions={IllegalArgumentException.class})
     public void testAddingBelowBottom() throws Exception{
         Protocol new_prot=new TRACE();
-        stack.insertProtocol(new_prot, ProtocolStack.BELOW, UDP.class);
+        stack.insertProtocol(new_prot, ProtocolStack.Position.BELOW, UDP.class);
     }
     
     
@@ -89,7 +89,7 @@ public class ConfiguratorTest {
 
         // insert below
         Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
-        stack.insertProtocol(new_prot, ProtocolStack.BELOW, UNICAST3.class);
+        stack.insertProtocol(new_prot, ProtocolStack.Position.BELOW, UNICAST3.class);
         protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());
         for(int i=0; i < below.length; i++) {
@@ -111,7 +111,7 @@ public class ConfiguratorTest {
 
         // insert above
         new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
-        stack.insertProtocol(new_prot, ProtocolStack.ABOVE, UNICAST3.class);
+        stack.insertProtocol(new_prot, ProtocolStack.Position.ABOVE, UNICAST3.class);
         protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());
         for(int i=0; i < above.length; i++) {

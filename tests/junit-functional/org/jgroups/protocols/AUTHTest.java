@@ -9,7 +9,7 @@ import org.jgroups.stack.IpAddress;
 import org.testng.annotations.Test;
 
 /**
- * A set of JUnit tests for the AUTH protocol
+ * A set of tests for the AUTH protocol
  * @author Chris Mills
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)

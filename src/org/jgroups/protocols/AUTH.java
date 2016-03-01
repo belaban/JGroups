@@ -19,7 +19,9 @@ import java.util.List;
 
 
 /**
- * The AUTH protocol adds a layer of authentication to JGroups
+ * The AUTH protocol adds a layer of authentication to JGroups. It intercepts join and merge requests and rejects them
+ * if the joiner or merger is not permitted to join a or merge into a cluster. AUTH should be placed right below
+ * {@link GMS} in the configuration.
  * @author Chris Mills
  * @author Bela Ban
  */
@@ -41,16 +43,16 @@ public class AUTH extends Protocol {
         /**
          * Called when an up event has been received
          * @param evt the event
-         * @return true if the event should be pass up, else false
+         * @return true if the event should be passed up, else false
          */
         boolean handleUpEvent(Event evt);
     }
 
 
     /** Used on the coordinator to authentication joining member requests against */
-    protected AuthToken             auth_token=null;
+    protected AuthToken             auth_token;
 
-    protected static final short    gms_id=ClassConfigurator.getProtocolId(GMS.class);
+    protected static final short    GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
 
     /** List of UpHandler which are called when an up event has been received. Usually used by AuthToken impls */
     protected final List<UpHandler> up_handlers=new ArrayList<>();
@@ -60,14 +62,14 @@ public class AUTH extends Protocol {
 
     public AUTH() {name="AUTH";}
 
-    private volatile boolean authenticateCoord = false;
+    protected volatile boolean      authenticate_coord=true;
     
-   @Property(name="authenticate_coord")
-   public void setAuthCoord( boolean authenticateCoord) {
-	   this.authenticateCoord = authenticateCoord;
-   }
+    @Property(description="Do join or merge responses from the coordinator also need to be authenticated")
+    public AUTH setAuthCoord( boolean authenticateCoord) {
+        this.authenticate_coord= authenticateCoord; return this;
+    }
 
-    @Property(name="auth_class")
+    @Property(name="auth_class",description="The fully qualified name of the class implementing the AuthToken interface")
     public void setAuthClass(String class_name) throws Exception {
         Object obj=Class.forName(class_name).newInstance();
         auth_token=(AuthToken)obj;
@@ -76,9 +78,9 @@ public class AUTH extends Protocol {
 
     public String    getAuthClass()                {return auth_token != null? auth_token.getClass().getName() : null;}
     public AuthToken getAuthToken()                {return auth_token;}
-    public void      setAuthToken(AuthToken token) {this.auth_token=token;}
-    public void      register(UpHandler handler)   {up_handlers.add(handler);}
-    public void      unregister(UpHandler handler) {up_handlers.remove(handler);}
+    public AUTH      setAuthToken(AuthToken token) {this.auth_token=token; return this;}
+    public AUTH      register(UpHandler handler)   {up_handlers.add(handler); return this;}
+    public AUTH      unregister(UpHandler handler) {up_handlers.remove(handler);return this;}
     public Address   getAddress()                  {return local_addr;}
     public PhysicalAddress getPhysicalAddress()    {return getTransport().getPhysicalAddress();}
 
@@ -92,6 +94,8 @@ public class AUTH extends Protocol {
 
     public void init() throws Exception {
         super.init();
+        if(auth_token == null)
+            throw new IllegalStateException("no authentication mechanism configured");
         if(auth_token instanceof X509Token) {
             X509Token tmp=(X509Token)auth_token;
             tmp.setCertificate();
@@ -118,25 +122,23 @@ public class AUTH extends Protocol {
     }
 
     /**
-     * An event was received from the layer below. Usually the current layer will want to examine
-     * the event type and - depending on its type - perform some computation
-     * (e.g. removing headers from a MSG event type, or updating the internal membership list
-     * when receiving a VIEW_CHANGE event).
-     * Finally the event is either a) discarded, or b) an event is sent down
-     * the stack using <code>down_prot.down()</code> or c) the event (or another event) is sent up
-     * the stack using <code>up_prot.up()</code>.
+     * An event was received from the layer below. Usually the current layer will want to examine the event type and
+     * - depending on its type - perform some computation (e.g. removing headers from a MSG event type, or updating
+     * the internal membership list when receiving a VIEW_CHANGE event).
+     * Finally the event is either a) discarded, or b) an event is sent down the stack using {@code down_prot.down()}
+     * or c) the event (or another event) is sent up the stack using {@code up_prot.up()}.
      */
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
+                Message msg=evt.getArg();
 
                 // If we have a join or merge request --> authenticate, else pass up
                 GMS.GmsHeader gms_hdr=getGMSHeader(evt);
                 if(gms_hdr != null && needsAuthentication(gms_hdr)) {
-                    AuthHeader auth_hdr=(AuthHeader)msg.getHeader(id);
+                    AuthHeader auth_hdr=msg.getHeader(id);
                     if(auth_hdr == null)
-                        throw new IllegalStateException("found GMS join or merge request but no AUTH header");
+                        throw new IllegalStateException(String.format("found %s from %s but no AUTH header", gms_hdr, msg.src()));
                     if(!handleAuthHeader(gms_hdr, auth_hdr, msg)) // authentication failed
                         return null;    // don't pass up
                 }
@@ -153,9 +155,9 @@ public class AUTH extends Protocol {
             // If we have a join or merge request --> authenticate, else pass up
             GMS.GmsHeader gms_hdr=getGMSHeader(msg);
             if(gms_hdr != null && needsAuthentication(gms_hdr)) {
-                AuthHeader auth_hdr=(AuthHeader)msg.getHeader(id);
+                AuthHeader auth_hdr=msg.getHeader(id);
                 if(auth_hdr == null) {
-                    log.warn("found GMS join or merge request but no AUTH header");
+                    log.warn("%s: found GMS join or merge request from %s but no AUTH header", local_addr, batch.sender());
                     sendRejectionMessage(gms_hdr.getType(), batch.sender(), "join or merge without an AUTH header");
                     batch.remove(msg);
                 }
@@ -172,21 +174,20 @@ public class AUTH extends Protocol {
      * An event is to be sent down the stack. The layer may want to examine its type and perform
      * some action on it, depending on the event's type. If the event is a message MSG, then
      * the layer may need to add a header to it (or do nothing at all) before sending it down
-     * the stack using <code>down_prot.down()</code>. In case of a GET_ADDRESS event (which tries to
+     * the stack using {@code down_prot.down()}. In case of a GET_ADDRESS event (which tries to
      * retrieve the stack's address from one of the bottom layers), the layer may need to send
-     * a new response event back up the stack using <code>up_prot.up()</code>.
+     * a new response event back up the stack using {@code up_prot.up()}.
      */
     public Object down(Event evt) {
         GMS.GmsHeader hdr = getGMSHeader(evt);
         if(hdr != null && needsAuthentication(hdr)) {
             // we found a join request message - now add an AUTH Header
-            Message msg = (Message)evt.getArg();
-            AuthHeader authHeader = new AuthHeader(this.auth_token);
-            msg.putHeader(this.id, authHeader);
+            Message msg=evt.getArg();
+            msg.putHeader(this.id, new AuthHeader(this.auth_token));
         }
 
         if(evt.getType() == Event.SET_LOCAL_ADDRESS)
-            local_addr=(Address)evt.getArg();
+            local_addr=evt.getArg();
 
         return down_prot.down(evt);
     }
@@ -194,17 +195,18 @@ public class AUTH extends Protocol {
 
 
     protected boolean needsAuthentication(GMS.GmsHeader hdr) {
-    	switch(hdr.getType()) {
-        case GMS.GmsHeader.JOIN_REQ:
-        case GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
-        case GMS.GmsHeader.MERGE_REQ:
-            return true;
-        case GMS.GmsHeader.JOIN_RSP:
-        case GMS.GmsHeader.MERGE_RSP:
-        	return this.authenticateCoord;
-        default:
-            return false;
-            }
+        switch(hdr.getType()) {
+            case GMS.GmsHeader.JOIN_REQ:
+            case GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
+            case GMS.GmsHeader.MERGE_REQ:
+                return true;
+            case GMS.GmsHeader.JOIN_RSP:
+            case GMS.GmsHeader.MERGE_RSP:
+            case GMS.GmsHeader.INSTALL_MERGE_VIEW:
+                return this.authenticate_coord;
+            default:
+                return false;
+        }
     }
 
 
@@ -215,17 +217,17 @@ public class AUTH extends Protocol {
      * @return true if the message should be passed up, or else false
      */
     protected boolean handleAuthHeader(GMS.GmsHeader gms_hdr, AuthHeader auth_hdr, Message msg) {
-    	if ( needsAuthentication(gms_hdr)) {
-            if(this.auth_token.authenticate(auth_hdr.getToken(), msg)) {
+        if(needsAuthentication(gms_hdr)) {
+            if(this.auth_token.authenticate(auth_hdr.getToken(), msg))
                 return true; //  authentication passed, send message up the stack
-            } else {
-                log.warn("failed to validate AuthHeader token from " + msg.getSrc() + ", token: " + auth_token);
+            else {
+                log.warn("%s: failed to validate AuthHeader (token: %s) from %s; dropping message",
+                         local_addr, auth_token.getClass().getSimpleName(), msg.src());
                 sendRejectionMessage(gms_hdr.getType(), msg.getSrc(), "authentication failed");
                 return false;
             }
-    	} else {
-    		return true;
-    	}
+        }
+        return true;
     }
 
 
@@ -238,9 +240,6 @@ public class AUTH extends Protocol {
             case GMS.GmsHeader.MERGE_REQ:
                 sendMergeRejectionMessage(dest);
                 break;
-            default:
-                log.error("type " + type + " unknown");
-                break;
         }
     }
 
@@ -249,17 +248,19 @@ public class AUTH extends Protocol {
             return;
 
         JoinRsp joinRes=new JoinRsp(error_msg); // specify the error message on the JoinRsp
-        Message msg = new Message(dest).putHeader(gms_id, new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP))
+        Message msg = new Message(dest).putHeader(GMS_ID, new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP))
           .setBuffer(GMS.marshal(joinRes));
+        if(this.authenticate_coord)
+            msg.putHeader(this.id, new AuthHeader(this.auth_token));
         down_prot.down(new Event(Event.MSG, msg));
     }
 
     protected void sendMergeRejectionMessage(Address dest) {
-        Message msg=new Message(dest).setFlag(Message.Flag.OOB);
-        GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
-        hdr.setMergeRejected(true);
-        msg.putHeader(gms_id, hdr);
-        if(log.isDebugEnabled()) log.debug("merge response=" + hdr);
+        GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP).setMergeRejected(true);
+        Message msg=new Message(dest).setFlag(Message.Flag.OOB).putHeader(GMS_ID, hdr);
+        if(this.authenticate_coord)
+            msg.putHeader(this.id, new AuthHeader(this.auth_token));
+        log.debug("merge response=%s", hdr);
         down_prot.down(new Event(Event.MSG, msg));
     }
 
@@ -282,7 +283,7 @@ public class AUTH extends Protocol {
     }
 
     protected static GMS.GmsHeader getGMSHeader(Message msg){
-        Header hdr = msg.getHeader(gms_id);
+        Header hdr = msg.getHeader(GMS_ID);
         if(hdr instanceof GMS.GmsHeader)
             return (GMS.GmsHeader)hdr;
         return null;

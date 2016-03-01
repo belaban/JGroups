@@ -135,7 +135,7 @@ public class SEQUENCER2 extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
             	
-                Message msg=(Message)evt.getArg();
+                Message msg=evt.getArg();
                 if(msg.getDest() != null || msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
                     break;
                 
@@ -158,15 +158,15 @@ public class SEQUENCER2 extends Protocol {
                 return null; // don't pass down
 
             case Event.VIEW_CHANGE:
-                handleViewChange((View)evt.getArg());
+                handleViewChange(evt.getArg());
                 break;
 
             case Event.TMP_VIEW:
-                handleTmpView((View)evt.getArg());
+                handleTmpView(evt.getArg());
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);
@@ -178,10 +178,10 @@ public class SEQUENCER2 extends Protocol {
 
         switch(evt.getType()) {
             case Event.MSG:
-                msg=(Message)evt.getArg();
+                msg=evt.getArg();
                 if(msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
                     break;
-                hdr=(SequencerHeader)msg.getHeader(this.id);
+                hdr=msg.getHeader(this.id);
                 if(hdr == null)
                     break; // pass up
                                 
@@ -236,11 +236,11 @@ public class SEQUENCER2 extends Protocol {
 
             case Event.VIEW_CHANGE:
                 Object retval=up_prot.up(evt);
-                handleViewChange((View)evt.getArg());
+                handleViewChange(evt.getArg());
                 return retval;
 
             case Event.TMP_VIEW:
-                handleTmpView((View)evt.getArg());
+                handleTmpView(evt.getArg());
                 break;
         }
 
@@ -433,7 +433,7 @@ public class SEQUENCER2 extends Protocol {
                 Message first=batch.first(), last=batch.last();
                 StringBuilder sb=new StringBuilder(local_addr + ": delivering");
                 if(first != null && last != null) {
-                    SequencerHeader hdr1=(SequencerHeader)first.getHeader(id), hdr2=(SequencerHeader)last.getHeader(id);
+                    SequencerHeader hdr1=first.getHeader(id), hdr2=last.getHeader(id);
                     sb.append(" #").append(hdr1.seqno).append(" - #").append(hdr2.seqno);
                 }
                 sb.append(" (" + batch.size()).append(" messages)");

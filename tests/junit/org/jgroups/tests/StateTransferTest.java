@@ -218,7 +218,7 @@ public class StateTransferTest extends ChannelTestBase {
         else { // no state transfer protocol found in stack
             Protocol flush=stack.findProtocol(FLUSH.class);
             if(flush != null)
-                stack.insertProtocol(new_state_transfer_protcol, ProtocolStack.BELOW, FLUSH.class);
+                stack.insertProtocol(new_state_transfer_protcol, ProtocolStack.Position.BELOW, FLUSH.class);
             else
                 stack.insertProtocolAtTop(new_state_transfer_protcol);
         }

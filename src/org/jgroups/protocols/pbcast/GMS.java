@@ -620,8 +620,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         if(jr != null && newMembers != null && !newMembers.isEmpty()) {
             final ViewId view_id=jr.getView().getViewId();
             ack_collector.reset(new ArrayList<>(newMembers));
-            for(Address joiner: newMembers)
+            for(Address joiner: newMembers) {
+                log.trace("%s: sending join-rsp to %s: view=%s (%d mbrs)\n", local_addr, joiner, jr.getView(), jr.getView().size());
                 sendJoinResponse(jr, joiner);
+            }
             try {
                 ack_collector.waitForAllAcks(view_ack_collection_timeout);
                 log.trace("%s: got all ACKs (%d) from joiners for view %s", local_addr, ack_collector.expectedAcks(), view_id);
@@ -847,8 +849,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         switch(evt.getType()) {
 
             case Event.MSG:
-                final Message msg=(Message)evt.getArg();
-                GmsHeader hdr=(GmsHeader)msg.getHeader(this.id);
+                final Message msg=evt.getArg();
+                GmsHeader hdr=msg.getHeader(this.id);
                 if(hdr == null)
                     break;
 
@@ -1006,18 +1008,18 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
             case Event.SUSPECT:
                 Object retval=up_prot.up(evt);
-                Address suspected=(Address)evt.getArg();
+                Address suspected=evt.getArg();
                 view_handler.add(new Request(Request.SUSPECT, suspected, true));
                 ack_collector.suspect(suspected);
                 merge_ack_collector.suspect(suspected);
                 return retval;
 
             case Event.UNSUSPECT:
-                impl.unsuspect((Address)evt.getArg());
+                impl.unsuspect(evt.getArg());
                 return null;                              // discard
 
             case Event.MERGE:
-                view_handler.add(new Request(Request.MERGE, null, false, (Map<Address,View>)evt.getArg()));
+                view_handler.add(new Request(Request.MERGE, null, false, evt.getArg()));
                 return null;                              // don't pass up
 
             case Event.IS_MERGE_IN_PROGRESS:
@@ -1069,7 +1071,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 return null;  // don't pass down: event has already been passed down
 
             case Event.DISCONNECT:
-                impl.leave((Address)evt.getArg());
+                impl.leave(evt.getArg());
                 if(!(impl instanceof CoordGmsImpl)) {
                     initState(); // in case connect() is called again
                 }
@@ -1077,14 +1079,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 return null;
 
             case Event.CONFIG :
-               Map<String,Object> config=(Map<String,Object>)evt.getArg();
+               Map<String,Object> config=evt.getArg();
                if((config != null && config.containsKey("flush_supported"))){
                  flushProtocolInStack=true;
                }
                break;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
             case Event.GET_VIEW_FROM_COORD:
                 Address coord=view != null? view.getCreator() : null;
@@ -1397,7 +1399,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         public MergeId   getMergeId()                             {return merge_id;}
         public void      setMergeId(MergeId merge_id)             {this.merge_id=merge_id;}
         public boolean   isMergeRejected()                        {return merge_rejected;}
-        public void      setMergeRejected(boolean merge_rejected) {this.merge_rejected=merge_rejected;}
+        public GmsHeader setMergeRejected(boolean merge_rejected) {this.merge_rejected=merge_rejected; return this;}
 
 
 

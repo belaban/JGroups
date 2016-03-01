@@ -9,13 +9,6 @@
     <FD_SOCK/>
     <VERIFY_SUSPECT/>
 
-    <!-- Symmetric encryption with a keystore -->
-    <!--SYM_ENCRYPT
-        provider="SunJCE"
-        sym_algorithm="AES"
-        encrypt_entire_message="true"
-        keystore_name="/home/bela/JGroups/keystore/defaultStore.keystore" 
-        store_password="changeit" alias="myKey"/-->
     <!-- Asymmetric encryption using public/private encryption to fetch the shared secret key -->
     <ASYM_ENCRYPT
             encrypt_entire_message="true"
@@ -28,7 +21,7 @@
     <UNICAST3/>
     <pbcast.STABLE/>
     <FRAG2/>
-
+    <!-- AUTH below is required by ASYM_ENCRYPT -->
     <AUTH auth_class="org.jgroups.auth.MD5Token"
           auth_value="chris"
           token_hash="MD5"/>

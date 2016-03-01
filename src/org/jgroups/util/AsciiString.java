@@ -69,8 +69,9 @@ public class AsciiString implements Comparable<AsciiString> {
 
     public int hashCode() {
         int h=0;
-        for(int i=0; i < val.length; i++)
-            h=31 * h + val[i];
+        if(val != null)
+            for(int i=0; i < val.length; i++)
+                h=31 * h + val[i];
         return h;
     }
 

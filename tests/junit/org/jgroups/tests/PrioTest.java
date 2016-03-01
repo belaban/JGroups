@@ -29,7 +29,7 @@ public class PrioTest {
 
     @BeforeTest void init() throws Exception {
         c1=createChannel("A");
-        c1.getProtocolStack().insertProtocol(new PRIO(), ProtocolStack.ABOVE, NAKACK2.class);
+        c1.getProtocolStack().insertProtocol(new PRIO(), ProtocolStack.Position.ABOVE, NAKACK2.class);
         c2=createChannel("B");
         c1.connect("PrioTest");
         c1.setReceiver(r1=new PrioReceiver());

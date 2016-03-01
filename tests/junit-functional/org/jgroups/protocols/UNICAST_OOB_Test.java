@@ -66,7 +66,7 @@ public class UNICAST_OOB_Test {
         ProtocolStack stack=a.getProtocolStack();
         Protocol neighbor=stack.findProtocol(Util.getUnicastProtocols());
         System.out.println("Found unicast protocol " + neighbor.getClass().getSimpleName());
-        stack.insertProtocolInStack(discard,neighbor,ProtocolStack.BELOW);
+        stack.insertProtocolInStack(discard,neighbor,ProtocolStack.Position.BELOW);
 
         a.connect("UNICAST_OOB_Test");
         b.connect("UNICAST_OOB_Test");

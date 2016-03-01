@@ -180,7 +180,7 @@ public class DuplicateTest extends ChannelTestBase {
         a=createChannel(true, 3, "A");
         DUPL dupl=new DUPL(copy_multicasts, copy_unicasts, num_incoming_copies, num_outgoing_copies);
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(dupl,ProtocolStack.BELOW,NAKACK2.class);
+        stack.insertProtocol(dupl,ProtocolStack.Position.BELOW,NAKACK2.class);
 
         b=createChannel(a, "B");
         c=createChannel(a, "C");

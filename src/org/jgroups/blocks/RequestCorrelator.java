@@ -226,19 +226,19 @@ public class RequestCorrelator {
     public boolean receive(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE: // adjust number of responses to wait for
-                receiveView((View)evt.getArg());
+                receiveView(evt.getArg());
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                setLocalAddress((Address)evt.getArg());
+                setLocalAddress(evt.getArg());
                 break;
 
             case Event.MSG:
-                if(receiveMessage((Message)evt.getArg()))
+                if(receiveMessage(evt.getArg()))
                     return true; // message was consumed, don't pass it up
                 break;
             case Event.SITE_UNREACHABLE:
-                SiteMaster site_master=(SiteMaster)evt.getArg();
+                SiteMaster site_master=evt.getArg();
                 String site=site_master.getSite();
                 setSiteUnreachable(site);
                 break; // let others have a stab at this event, too
@@ -292,7 +292,7 @@ public class RequestCorrelator {
      * @return true if the message was consumed, don't pass it further up, else false
      */
     public boolean receiveMessage(Message msg) {
-        Header hdr=(Header)msg.getHeader(this.corr_id);
+        Header hdr=msg.getHeader(this.corr_id);
 
         // Check if the message was sent by a request correlator with the same name;
         // there may be multiple request correlators in the same protocol stack
@@ -316,7 +316,7 @@ public class RequestCorrelator {
 
     public void receiveMessageBatch(MessageBatch batch) {
         for(Message msg : batch) {
-            Header hdr=(Header)msg.getHeader(this.corr_id);
+            Header hdr=msg.getHeader(this.corr_id);
             if(hdr == null || hdr.corrId != this.corr_id) // msg was sent by a different request corr in the same stack
                 continue;
 

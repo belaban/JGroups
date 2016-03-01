@@ -168,13 +168,13 @@ public class DISCARD extends Protocol {
 
     public Object up(Event evt) {
         if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
-            localAddress=(Address)evt.getArg();
+            localAddress=evt.getArg();
             if(discard_dialog != null)
                 discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
         }
 
         if(evt.getType() == Event.MSG) {
-            Message msg=(Message)evt.getArg();
+            Message msg=evt.getArg();
             if(shouldDropUpMessage(msg, msg.getSrc()))
                 return null;
         }
@@ -200,7 +200,7 @@ public class DISCARD extends Protocol {
 
         switch(evt.getType()) {
             case Event.MSG:
-                msg=(Message)evt.getArg();
+                msg=evt.getArg();
                 Address dest=msg.getDest();
                 boolean multicast=dest == null;
 
@@ -238,7 +238,7 @@ public class DISCARD extends Protocol {
                 }
                 break;
             case Event.VIEW_CHANGE:
-                View view=(View)evt.getArg();
+                View view=evt.getArg();
                 List<Address> mbrs=view.getMembers();
                 members.clear();
                 members.addAll(mbrs);
@@ -248,7 +248,7 @@ public class DISCARD extends Protocol {
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                localAddress=(Address)evt.getArg();
+                localAddress=evt.getArg();
                 if(discard_dialog != null)
                     discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
                 break;
@@ -351,6 +351,7 @@ public class DISCARD extends Protocol {
                         ((JCheckBox)c).setSelected(false);
                     }
                 }
+                ignoredMembers.clear();
             }
         }
 

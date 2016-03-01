@@ -140,7 +140,7 @@ public class SEQUENCER extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
+                Message msg=evt.getArg();
                 if(msg.getDest() != null || msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
                     break;
 
@@ -174,15 +174,15 @@ public class SEQUENCER extends Protocol {
                 return null; // don't pass down
 
             case Event.VIEW_CHANGE:
-                handleViewChange((View)evt.getArg());
+                handleViewChange(evt.getArg());
                 break;
 
             case Event.TMP_VIEW:
-                handleTmpView((View)evt.getArg());
+                handleTmpView(evt.getArg());
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);
@@ -197,10 +197,10 @@ public class SEQUENCER extends Protocol {
 
         switch(evt.getType()) {
             case Event.MSG:
-                msg=(Message)evt.getArg();
+                msg=evt.getArg();
                 if(msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
                     break;
-                hdr=(SequencerHeader)msg.getHeader(this.id);
+                hdr=msg.getHeader(this.id);
                 if(hdr == null)
                     break; // pass up
 
@@ -238,11 +238,11 @@ public class SEQUENCER extends Protocol {
 
             case Event.VIEW_CHANGE:
                 Object retval=up_prot.up(evt);
-                handleViewChange((View)evt.getArg());
+                handleViewChange(evt.getArg());
                 return retval;
 
             case Event.TMP_VIEW:
-                handleTmpView((View)evt.getArg());
+                handleTmpView(evt.getArg());
                 break;
         }
 
@@ -484,7 +484,7 @@ public class SEQUENCER extends Protocol {
     protected void unwrapAndDeliver(final Message msg, boolean flush_ack) {
         try {
             Message msg_to_deliver=Util.streamableFromBuffer(Message.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-            SequencerHeader hdr=(SequencerHeader)msg_to_deliver.getHeader(this.id);
+            SequencerHeader hdr=msg_to_deliver.getHeader(this.id);
             if(flush_ack)
                 hdr.flush_ack=true;
             deliver(msg_to_deliver, new Event(Event.MSG, msg_to_deliver), hdr);

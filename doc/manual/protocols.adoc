@@ -1487,149 +1487,163 @@ Read more about flushing in <<Flushing>>.
 
 ${FLUSH}
 
-[[Misc]]
-
-
-=== Misc
-
-[[STATS]]
-
-
-==== Statistics
-
-STATS exposes various statistics, e.g. number of received multicast and unicast messages, number of
-                bytes sent etc. It should be placed directly over the transport
-            
-
-${STATS}
 
 [[Security]]
+=== Security
+
+Security is used to prevent (1) non-authorized nodes being able to join a cluster and (2) non-members being
+able to communicate with cluster members.
+
+(1) is handled by AUTH or SASL which allows only authenticated nodes to join a cluster.
+
+(2) is handled by the encryption protocol (SYM_ENCRYPT or ASYM_ENCRYPT) which encrypts messages between cluster
+members such that a non-member cannot understand them.
 
 
-==== Security
-
-JGroups provides protocols to encrypt cluster traffic (ENCRYPT), and to make sure that only
-                authorized members can join a cluster (AUTH and SASL).
-            
 
 [[ENCRYPT]]
+==== Encryption
 
+Encryption is based on a shared secret key that all members of a cluster have. The key is either acquired from a shared
+keystore (symmetric encryption) or a new joiner fetches it from the coordinator via public/private key exchange
+(asymmetric encryption).
 
-===== ENCRYPT
+A sender encrypts a message with the shared secret key and the receivers decrypt it with the same secret key.
 
-A detailed description of ENCRYPT is found in the JGroups source (__JGroups/doc/ENCRYPT.html__).
-Encryption by default only encrypts the message body, but doesn't encrypt message headers.
-To encrypt the entire message (including all headers, plus destination and source addresses),
-the property ++$$encrypt_entire_message$$++ has to be set to true.
-Also, ENCRYPT has to be below any protocols whose headers we want to encrypt, e.g.
+By default, the entire message (including the headers) is encrypted, but it is also possible to only encrypt the payload
+(this is configurable). If the headers are not encrypted, it is possible to use replay attacks, because the
+sequence numbers (seqnos) of a message are seen. For example, if a seqno is 50, then an attacker might copy the message,
+and increment the seqno. This is prevented by copying and _signing_ the message.
 
+A message can be signed, which is a hash over the encrypted message, encrypted with the secret key. If the hash shipped
+with a message doesn't match the hash computed over the received message, the message will be discarded by a receiver,
+and no attempt is made to decrypt it.
 
-[source,xml]
-----
-<config ... >
-    <UDP />
-    <PING />
-    <MERGE2 />
-    <FD />
-    <VERIFY_SUSPECT />
-    <pbcast.NAKACK />
-    <UNICAST />
-    <pbcast.STABLE />
-    <FRAG2 />
-    <pbcast.GMS />
-    <ENCRYPT encrypt_entire_message="false"
-             sym_init="128" sym_algorithm="AES/ECB/PKCS5Padding"
-             asym_init="512" asym_algorithm="RSA"/>
-</config>
-----
+The cost of encrypting the entire message includes serializing the entire message (including headers, flags, destination
+address etc) and encrypting it into the buffer of a new message (to the same destination). If message signing is enabled,
+the cost of computing a hashcode and encrypting it is added to the above cost.
 
-Note that ENCRYPT sits below NAKACK and UNICAST, so the sequence numbers for these 2 protocols will
-                    be encrypted. Had ENCRYPT been placed below UNICAST but above NAKACK, then only UNICAST's headers
-                    (including sequence numbers) would have been encrypted, but not NAKACKs.
-                
+Attributes present in both symmetric and asymmetric encryption include `sign_msgs` and `encrypt_entire_message`.
 
-Note that it doesn't make too much sense to place ENCRYPT even lower in the stack, because then
-                    almost all traffic (even merge or discovery traffic) will be encrypted, which may be somewhat of
-                    a performance drag.
-                    
+[[SYM_ENCRYPT]]
+===== SYM_ENCRYPT
 
-When we encrypt an entire message, we have to marshal the message into a byte buffer first and
-                    then encrypt it. This entails marshalling and copying of the byte buffer, which is not so good
-                    performance wise...
-                
+This is done by SYM_ENCRYPT. The configuration includes mainly attributes that define the keystore, e.g. `keystore_name`
+(name of the keystore, needs to be found on the classpath), `store_password`, `key_password` and `alias`.
 
-
-
-.Using a key store
-ENCRYPT uses store type JCEKS (for details between JKS and JCEKS see here), however
-                        +keytool+ uses JKS, therefore a keystore generated with keytool will not be accessible.
-                    
+SYM_ENCRYPT uses store type JCEKS (for details between JKS and JCEKS see here), however `keytool` uses JKS, therefore
+a keystore generated with keytool will not be accessible.
 
 To generate a keystore compatible with JCEKS, use the following command line options to keytool:
-                    
-
 
 ----
-
 keytool -genseckey -alias myKey -keypass changeit -storepass changeit  -keyalg Blowfish -keysize 56 -keystore defaultStore.keystore -storetype  JCEKS
-                    
 ----
 
-ENCRYPT could then be configured as follows:
-                    
+SYM_ENCRYPT could then be configured as follows:
+
 
 
 [source,xml]
 ----
-
-<ENCRYPT key_store_name="defaultStore.keystore"
-         store_password="changeit"
-         alias="myKey"/>
-                    
+<SYM_ENCRYPT sym_algorithm="AES"
+             encrypt_entire_message="true"
+             key_store_name="defaultStore.keystore"
+             store_password="changeit"
+             alias="myKey"/>
 ----
 
 Note that defaultStore.keystore will have to be found in the claspath.
-                    
+
+NOTE: Both SYM_ENCRYPT and ASYM_ENCRYPT should be placed directly under NAKACK2
+(see link:https://github.com/belaban/JGroups/tree/master/conf[sample configurations], e.g. sym-encrypt.xml or
+asym-encrypt.xml).
 
 
-NOTE: If asymmetric encryption is used (no shared key via keystore), ENCRYPT has to be placed somewhere _above_ GMS,
-      or else the JOIN process would not function (as the JOIN response would get dropped).
+${SYM_ENCRYPT}
 
-${ENCRYPT}
+
+
+[[ASYM_ENCRYPT]]
+===== ASYM_ENCRYPT
+Contrary to SYM_ENCRYPT, the secret key is not fetched from a shared keystore, but from the current coordinator C. After
+new member P joined the cluster (passing the join check done by AUTH), P sends a request to get the secret key
+(including P's public key) to C.
+
+C then sends the secret key back to P, encrypted with P's public key, and P decrypts it with its private key
+and installs it. From then on, P encrypts and decrypts messages using the secret key.
+
+When a member leaves, C can optionally (based on `change_key_on_leave`) create a new secret key, and every cluster member
+needs to fetch it again, using the public/private key exchange described above.
+
+A stack configured to use asymmetric encryption could look like this:
+[source,xml]
+----
+    ...
+    <VERIFY_SUSPECT/>
+    <ASYM_ENCRYPT encrypt_entire_message="true"
+             sym_keylength="128"
+             sym_algorithm="AES/ECB/PKCS5Padding"
+             asym_keylength="512"
+             asym_algorithm="RSA"/>
+
+    <pbcast.NAKACK2/>
+    <UNICAST3/>
+    <pbcast.STABLE/>
+    <FRAG2/>
+    <AUTH auth_class="org.jgroups.auth.MD5Token"
+          auth_value="chris"
+          token_hash="MD5"/>
+    <pbcast.GMS join_timeout="2000" />
+----
+
+The configuration snippet shows ASYM_ENCRYPT positioned just below NAKACK2, so that headers of the important
+retransmission protocols NAKACK2 and UNICAST3 are encrypted, too. Note that AUTH should be part of the configuration, or
+else unauthenticated nodes would be able to acquire the secret key from the coordinator.
+
+${ASYM_ENCRYPT}
+
+
+
+
 
 [[AUTH]]
+==== AUTH
+Authentication is performed by AUTH. Its main use is to make sure only authenticated members can join a cluster.
+Other scenarios where a check is performed are:
+* Merging: make sure only authenticated members can merge into a new cluster
+* View installation (if enabled): views and merge views can only be installed by authenticated members
 
+So authentication makes sure that rogue nodes will never be able to be members of a cluster, be it via joining or
+merging. Note that while AUTH is optional with SYM_ENCRYPT, it is required by ASYM_ENCRYPT: there's a sanity check that
+will prevent a member to start if ASYM_ENCRYPT is present but AUTH is absent.
 
-===== AUTH
-
-AUTH is used to provide a layer of authentication to JGroups.  This allows you to define pluggable
-                    security that defines if a node should be allowed to join a cluster.  AUTH sits below the GMS
-                    protocol and listens for JOIN REQUEST messages.  When a JOIN REQUEST is received it tries to find
-                    an AuthHeader object, inside of which should be an implementation of the AuthToken object.
-                
+AUTH provides pluggable security that defines if a node should be allowed to join a cluster.
+AUTH sits below the GMS protocol and listens for JOIN REQUEST messages.  When a JOIN REQUEST is received it tries to find
+an AuthHeader object, inside of which should be an implementation of the AuthToken object.
 
 AuthToken is an abstract class, implementations of which are responsible for providing the
-                    actual authentication mechanism.  Some basic implementations of AuthToken are provide in the
-                    org.jgroups.auth package (SimpleToken, MD5Token and X509Token).  Effectivly all these implementations
-                    do is encrypt a string (found in the jgroups config) and pass that on the JOIN REQUEST.
-                
+actual authentication mechanism.  Some basic implementations of AuthToken are provide in the
+org.jgroups.auth package (SimpleToken, MD5Token and X509Token).  Effectivly all these implementations
+do is encrypt a string (found in the jgroups config) and pass that on the JOIN REQUEST.
+
 
 When authentication is successful, the message is simply passed up the stack to the GMS protocol.
-                    When it fails, the AUTH protocol creates a JOIN RESPONSE message with a failure string and passes
-                    it back down the stack.  This failure string informs the client of the reason for failure.
-                    Clients will then fail to join the group and will throw a SecurityException.
-                    If this error string is null then authentication is considered to have passed.
-                
+When it fails, the AUTH protocol creates a JOIN RESPONSE message with a failure string and passes
+it back down the stack.  This failure string informs the client of the reason for failure.
+Clients will then fail to join the group and will throw a SecurityException.
+If this error string is null then authentication is considered to have passed.
+
 
 For more information refer to the wiki at http://community.jboss.org/wiki/JGroupsAUTH[AUTH].
-                
+
 
 ${AUTH}
 
 [[SASL]]
 
 
-===== SASL
+==== SASL
 
 SASL is an alternative to the AUTH protocol which provides a layer of authentication to JGroups by allowing the
                     use of one of the SASL mechanisms made available by the JDK. SASL sits below the GMS
@@ -1638,17 +1652,17 @@ SASL is an alternative to the AUTH protocol which provides a layer of authentica
                     of challenge/response messages which, if successful, culminates in allowing the new node to join the cluster. The actual
                     validation logic required by the SASL mech must be provided by the user in the form of a standard javax.security.auth.CallbackHandler
                     implementation.
-                
+
 
 When authentication is successful, the message is simply passed up the stack to the GMS protocol.
                     When it fails, the SASL protocol creates a JOIN / MERGE RESPONSE message with a failure string and passes
                     it back down the stack.  This failure string informs the client of the reason for failure.
                     Clients will then fail to join the group and will throw a SecurityException.
                     If this error string is null then authentication is considered to have passed.
-                
+
 
 SASL can be (minimally) configured as follows:
-                
+
 
 
 [source,xml]
@@ -1660,19 +1674,19 @@ SASL can be (minimally) configured as follows:
     <pbcast.NAKACK />
     <UNICAST3 />
     <pbcast.STABLE />
-    <SASL mech="DIGEST-MD5" 
-        client_callback_handler="org.example.ClientCallbackHandler" 
+    <SASL mech="DIGEST-MD5"
+        client_callback_handler="org.example.ClientCallbackHandler"
         server_callback_handler="org.example.ServerCallbackHandler"/>
     <pbcast.GMS />
-    
+
 </config>
-                
+
 ----
 
 The +mech+ property specifies the SASL mech you want to use, as defined by RFC-4422. You will also need to provide two
-                    callback handlers, one used when the node is running as coordinator (++$$server_callback_handler$$++) and one used in all other 
-                    cases (++$$client_callback_handler$$++). Refer to the JDK's SASL reference guide for more details: link:$$http://docs.oracle.com/javase/7/docs/technotes/guides/security/sasl/sasl-refguide.html$$[] 
-                
+                    callback handlers, one used when the node is running as coordinator (++$$server_callback_handler$$++) and one used in all other
+                    cases (++$$client_callback_handler$$++). Refer to the JDK's SASL reference guide for more details: link:$$http://docs.oracle.com/javase/7/docs/technotes/guides/security/sasl/sasl-refguide.html$$[]
+
 The JGroups package comes with a simple properties-based CallbackHandler which can be used when a more complex Kerberos/LDAP approach is not needed. To use this set both the (++$$server_callback_handler$$++) and
                     the (++$$client_callback_handler$$++) to org.jgroups.auth.sasl.SimpleAuthorizingCallbackHandler. This CallbackHandler can be configured either programmatically by passing to the constructor an
                     instance of java.util.Properties containing the appropriate properties, or via standard Java system properties (i.e. set on the command-line using the -DpropertyName=propertyValue notation.
@@ -1685,6 +1699,24 @@ The JGroups package comes with a simple properties-based CallbackHandler which c
 * sasl.realm - (optional) the name of the realm to use for the SASL mechanisms that require it
 
 ${SASL}
+
+
+
+
+
+[[Misc]]
+=== Misc
+
+[[STATS]]
+==== Statistics
+
+STATS exposes various statistics, e.g. number of received multicast and unicast messages, number of
+                bytes sent etc. It should be placed directly over the transport
+            
+
+${STATS}
+
+
 
 [[COMPRESS]]
 

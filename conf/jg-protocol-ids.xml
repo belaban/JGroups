@@ -20,7 +20,6 @@
     <class id="21" name="org.jgroups.protocols.UDP"/>
     <class id="22" name="org.jgroups.protocols.TCP"/>
     <class id="24" name="org.jgroups.protocols.TUNNEL"/>
-    <class id="25" name="org.jgroups.protocols.ENCRYPT"/>
     <class id="26" name="org.jgroups.protocols.SEQUENCER"/>
     <class id="29" name="org.jgroups.protocols.FD_ALL"/>
     <class id="30" name="org.jgroups.protocols.FD_ALL2"/>
@@ -61,6 +60,8 @@
     <class id="73" name="org.jgroups.protocols.ABP"/>
     <class id="74" name="org.jgroups.protocols.TCP_NIO2"/>
     <class id="75" name="org.jgroups.protocols.TP"/>
+    <class id="76" name="org.jgroups.protocols.SYM_ENCRYPT"/>
+    <class id="77" name="org.jgroups.protocols.ASYM_ENCRYPT"/>
 
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->
