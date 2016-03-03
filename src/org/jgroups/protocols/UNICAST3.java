@@ -128,7 +128,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected static final Message         DUMMY_OOB_MSG=new Message().setFlag(Message.Flag.OOB);
 
-    protected final Predicate<Message>     drop_oob_and_dont_loopback_msgs_filter=(msg) ->
+    protected final Predicate<Message>     drop_oob_and_dont_loopback_msgs_filter= msg ->
       msg != null && msg != DUMMY_OOB_MSG
         && (!msg.isFlagSet(Message.Flag.OOB) || msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
         && !(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK) && local_addr != null && local_addr.equals(msg.src()));

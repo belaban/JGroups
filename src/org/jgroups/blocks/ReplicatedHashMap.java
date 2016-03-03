@@ -493,7 +493,7 @@ public class ReplicatedHashMap<K, V> extends
         // 2. Compute set of members that left: all that were in old_mbrs, but not in new_mbrs
         List<Address> left=old_mbrs.stream().filter(mbr -> !new_mbrs.contains(mbr)).collect(Collectors.toList());
 
-        notifs.forEach((notif) -> notif.viewChange(view, joined, left));
+        notifs.forEach( notif -> notif.viewChange(view, joined, left));
     }
 
 
