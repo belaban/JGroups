@@ -8,9 +8,9 @@
     **** we're trying to simplify it
     ****
 -->
-<RelayConfiguration xmlns="urn:jgroups:relay:1.0"
+<RelayConfiguration xmlns="urn:org.jgroups:relay:3.6"
                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                    xsi:schemaLocation="urn:jgroups:relay:1.0 relay.xsd">
+                    xsi:schemaLocation="urn:org.jgroups:relay:3.6 http://www.jgroups.org/schema/relay-3.6.xsd">
 
     <sites>
         <site name="lon">

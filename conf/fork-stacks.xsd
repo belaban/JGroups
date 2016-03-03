@@ -1,11 +1,12 @@
 <?xml version="1.0"?>
 
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-           targetNamespace="fork"
-           elementFormDefault="qualified" attributeFormDefault="qualified"
-           xmlns:jgroups="urn:org:jgroups">
+           targetNamespace="urn:org.jgroups:fork:3.6"
+           elementFormDefault="qualified" attributeFormDefault="unqualified"
+           xmlns="urn:org.jgroups:fork:3.6"
+           xmlns:jgroups="urn:org.jgroups:jgroups:3.6">
 
-   <xs:import namespace="urn:org:jgroups" schemaLocation="http://www.jgroups.org/schema/jgroups.xsd"/>
+    <xs:import namespace="urn:org.jgroups:jgroups:3.6" schemaLocation="http://www.jgroups.org/schema/jgroups-3.6.xsd"/>
 
     <xs:complexType name="ForkStack">
         <xs:sequence>

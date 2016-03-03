@@ -99,9 +99,9 @@ A typical protocol stack configuration using UDP is:
 [source,xml]
 ----
 
-<config xmlns="urn:org:jgroups"
+<config xmlns="urn:org.jgroups:jgroups:3.6"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+        xsi:schemaLocation="urn:org.jgroups:jgroups:3.6 http://www.jgroups.org/schema/jgroups-3.6.xsd">
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
          ucast_recv_buf_size="20M"
@@ -1614,22 +1614,22 @@ The config property points to an XML file which defines the setup of the sites, 
 [source,xml]
 ----
 
-<RelayConfiguration xmlns="urn:jgroups:relay:1.0">
+<RelayConfiguration xmlns="urn:org.jgroups:relay:3.6">
 
     <sites>
-        <site name="lon" id="0">
+        <site name="lon">
             <bridges>
                 <bridge config="/home/bela/global.xml" name="global"/>
             </bridges>
         </site>
 
-        <site name="nyc" id="1">
+        <site name="nyc">
             <bridges>
                 <bridge config="/home/bela/global.xml" name="global"/>
             </bridges>
         </site>
 
-        <site name="sfo" id="2">
+        <site name="sfo">
             <bridges>
                 <bridge name="global" config="/home/bela/global.xml"/>
             </bridges>
@@ -2227,7 +2227,7 @@ All rules to be installed in SUPERVISOR are listed in an XML file, e.g. rules.xm
 [source,xml]
 ----
 
-<rules xmlns="urn:jgroups:rules:1.0">
+<rules xmlns="urn:org.jgroups:rules:3.6">
      <rule name="rule1" class="org.jgroups.protocols.rules.CheckFDMonitorRule"
            interval="1000"/>
 </rules>
