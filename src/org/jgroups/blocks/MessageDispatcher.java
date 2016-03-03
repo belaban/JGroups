@@ -603,7 +603,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
                         break;
                     case "rpcs-details":
                         if(!rpc_stats.extendedStats())
-                            retval.put(key, "<details not enabled: use rpc-enable-details to enable>");
+                            retval.put(key, "<details not enabled: use rpcs-enable-details to enable>");
                         else
                             retval.put(key, rpc_stats.printOrderByDest());
                         break;
