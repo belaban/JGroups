@@ -9,19 +9,19 @@
     <xs:import namespace="urn:org.jgroups:jgroups:3.6" schemaLocation="http://www.jgroups.org/schema/jgroups-3.6.xsd"/>
 
     <xs:complexType name="ForkStack">
-        <xs:sequence>
-            <xs:element name="config" type="jgroups:ConfigType"/>
-        </xs:sequence>
-        <xs:attribute name="id" type="xs:string" use="required"/>
+        <xs:complexContent>
+            <xs:extension base="jgroups:ConfigType">
+                <xs:attribute name="id" type="xs:string" use="required"/>
+            </xs:extension>
+        </xs:complexContent>
     </xs:complexType>
 
     <xs:complexType name="ForkStacksType">
-        <xs:sequence minOccurs="1" maxOccurs="unbounded">
-            <xs:element name="fork-stack" type="ForkStack"/>
+        <xs:sequence >
+            <xs:element name="stack" type="ForkStack" minOccurs="1" maxOccurs="unbounded"/>
         </xs:sequence>
     </xs:complexType>
 
-    <xs:element name="fork-stacks" type="ForkStacksType"/>
-
+    <xs:element name="stacks" type="ForkStacksType"/>
 
 </xs:schema>

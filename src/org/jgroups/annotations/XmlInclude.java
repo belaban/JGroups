@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  * <pre>
  *     &lt;xs:schema... xmlns:relay="urn:org.jgroups:relay:3.6" /&gt;
  *     ...
- *     &lt;xs:import schemaLocation="fork-stacks.xsd" namespace="urn:org.jgroups:relay:3.6" /&gt;
+ *     &lt;xs:import schemaLocation="fork.xsd" namespace="urn:org.jgroups:relay:3.6" /&gt;
  * </pre>
  * @author Bela Ban
  * @since  3.5

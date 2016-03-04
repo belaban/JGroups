@@ -1,20 +1,18 @@
 <?xml version="1.0"?>
 
-<fork-stacks xmlns="urn:org.jgroups:fork:3.6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<fork:stacks xmlns:fork="urn:org.jgroups:fork:3.6"
+             xmlns="urn:org.jgroups:jgroups:3.6"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xsi:schemaLocation="urn:org.jgroups:fork:3.6 http://www.jgroups.org/schema/fork-3.6.xsd">
 
-    <fork-stack id="counter">
-        <config>
-            <COUNTER bypass_bundling="true"/>
-            <COMPRESS/>
-        </config>
-    </fork-stack>
+    <fork:stack id="counter">
+        <COUNTER bypass_bundling="true"/>
+        <COMPRESS/>
+    </fork:stack>
 
-    <fork-stack id="locking">
-        <config>
-            <CENTRAL_LOCK num_backups="2"/>
-        </config>
-    </fork-stack>
+    <fork:stack id="locking">
+        <CENTRAL_LOCK num_backups="2"/>
+    </fork:stack>
 
 
-</fork-stacks>
+</fork:stacks>

@@ -85,7 +85,7 @@ public class XMLSchemaGenerator {
 
             Element anyProtocol = xmldoc.createElement("xs:any");
             anyProtocol.setAttribute("namespace", "##other");
-            complexType.appendChild(anyProtocol);
+            allType.appendChild(anyProtocol);
 
             Element xsElement = xmldoc.createElement("xs:element");
             xsElement.setAttribute("name", "config");
