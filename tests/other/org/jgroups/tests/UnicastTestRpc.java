@@ -32,9 +32,9 @@ public class UnicastTestRpc extends ReceiverAdapter {
     private Address                   local_addr;
     private RpcDispatcher             disp;
     private String                    groupname="UTestRpc";
-    private boolean                   sync=false, oob=false, anycasting=false;
-    private int                       num_threads=1;
-    private int                       num_msgs=50000, msg_size=1000, print=num_msgs / 10;
+    private boolean                   sync=true, oob=true, anycasting=false;
+    private int                       num_threads=25;
+    private int                       num_msgs=100000, msg_size=1000, print=num_msgs / 10;
     private int                       anycast_count=1;
     private final Collection<Address> anycast_mbrs=new ArrayList<>();
     private Address                   destination=null;
