@@ -83,6 +83,12 @@ public class UnicastTestRpc extends ReceiverAdapter {
         Util.close(channel);
     }
 
+
+    @SuppressWarnings("UnusedParameters")
+    public static void receiveData(byte[] data) {
+        ;
+    }
+
     public void viewAccepted(View new_view) {
         System.out.println("** view: " + new_view);
     }
@@ -291,7 +297,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
 
     protected static List<String> getSites(JChannel channel) {
-        RELAY2 relay=(RELAY2)channel.getProtocolStack().findProtocol(RELAY2.class);
+        RELAY2 relay=channel.getProtocolStack().findProtocol(RELAY2.class);
         return relay != null? relay.siteNames() : Collections.<String>emptyList();
     }
 
