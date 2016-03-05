@@ -57,9 +57,9 @@ function toggleAllBoxes() {
 <tr>
 <td>Tests passed/Failed/Skipped:</td><td>32/0/0</td>
 </tr><tr>
-<td>Started on:</td><td>Sat Feb 20 13:10:58 CST 2016</td>
+<td>Started on:</td><td>Thu Feb 25 09:41:42 CST 2016</td>
 </tr>
-<tr><td>Total time:</td><td>12 seconds (12769 ms)</td>
+<tr><td>Total time:</td><td>9 seconds (9244 ms)</td>
 </tr><tr>
 <td>Included groups:</td><td></td>
 </tr><tr>
@@ -77,7 +77,7 @@ function toggleAllBoxes() {
 <tr>
 <td title='org.jgroups.protocols.S3_PING2Test.testCheckBucketExists()'><b>testCheckBucketExists</b><br>Test class: org.jgroups.protocols.S3_PING2Test</td>
 <td></td>
-<td>1</td>
+<td>0</td>
 <td>org.jgroups.protocols.S3_PING2Test@5e91a191</td></tr>
 <tr>
 <td title='org.jgroups.protocols.S3_PING2Test.testCreateBucket()'><b>testCreateBucket</b><br>Test class: org.jgroups.protocols.S3_PING2Test</td>
@@ -172,7 +172,7 @@ function toggleAllBoxes() {
 <tr>
 <td title='org.jgroups.protocols.S3_PING2Test.testPutAcl()'><b>testPutAcl</b><br>Test class: org.jgroups.protocols.S3_PING2Test</td>
 <td></td>
-<td>4</td>
+<td>1</td>
 <td>org.jgroups.protocols.S3_PING2Test@5e91a191</td></tr>
 <tr>
 <td title='org.jgroups.protocols.S3_PING2Test.testPutBucketLogging()'><b>testPutBucketLogging</b><br>Test class: org.jgroups.protocols.S3_PING2Test</td>
@@ -229,8 +229,8 @@ function toggleAllBoxes() {
 	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
-</pre></div><a href='#' onClick='toggleBox("stack-trace1829860190", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1829860190'><pre>java.lang.IllegalArgumentException: pre-signed url http://s3.amazonaws.com/ must point to a file within a bucket
+</pre></div><a href='#' onClick='toggleBox("stack-trace1301861918", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1301861918'><pre>java.lang.IllegalArgumentException: pre-signed url http://s3.amazonaws.com/ must point to a file within a bucket
 	at org.jgroups.protocols.S3_PING2$PreSignedUrlParser.&lt;init&gt;(S3_PING2.java:371)
 	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:279)
 	at org.jgroups.protocols.S3_PING2Test.testValidatePropertiesWithBothPreSignedSetButNoBucket(S3_PING2Test.java:483)
@@ -291,8 +291,8 @@ function toggleAllBoxes() {
 	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
-</pre></div><a href='#' onClick='toggleBox("stack-trace818167552", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace818167552'><pre>java.lang.IllegalArgumentException: pre-signed url http://test-bucket.s3.amazonaws.com/ must point to a file within a bucket
+</pre></div><a href='#' onClick='toggleBox("stack-trace339158670", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace339158670'><pre>java.lang.IllegalArgumentException: pre-signed url http://test-bucket.s3.amazonaws.com/ must point to a file within a bucket
 	at org.jgroups.protocols.S3_PING2$PreSignedUrlParser.&lt;init&gt;(S3_PING2.java:371)
 	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:279)
 	at org.jgroups.protocols.S3_PING2Test.testValidatePropertiesWithBothPreSignedSetButNoFile(S3_PING2Test.java:490)
@@ -353,8 +353,8 @@ function toggleAllBoxes() {
 	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
-</pre></div><a href='#' onClick='toggleBox("stack-trace1990271995", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1990271995'><pre>java.lang.IllegalArgumentException: pre-signed url http://test-bucket.s3.amazonaws.com/subdir/DemoCluster/node1 may only have only subdirectory under a bucket
+</pre></div><a href='#' onClick='toggleBox("stack-trace1167581862", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1167581862'><pre>java.lang.IllegalArgumentException: pre-signed url http://test-bucket.s3.amazonaws.com/subdir/DemoCluster/node1 may only have only subdirectory under a bucket
 	at org.jgroups.protocols.S3_PING2$PreSignedUrlParser.&lt;init&gt;(S3_PING2.java:374)
 	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:279)
 	at org.jgroups.protocols.S3_PING2Test.testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories(S3_PING2Test.java:497)
@@ -424,8 +424,8 @@ function toggleAllBoxes() {
 	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
-</pre></div><a href='#' onClick='toggleBox("stack-trace1200638256", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1200638256'><pre>java.lang.IllegalArgumentException: pre_signed_put_url and pre_signed_delete_url must both be set or both unset
+</pre></div><a href='#' onClick='toggleBox("stack-trace711256894", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace711256894'><pre>java.lang.IllegalArgumentException: pre_signed_put_url and pre_signed_delete_url must both be set or both unset
 	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:286)
 	at org.jgroups.protocols.S3_PING2Test.testValidatePropertiesWithPreSignedDeleteSet(S3_PING2Test.java:476)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
@@ -484,8 +484,8 @@ function toggleAllBoxes() {
 	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
-</pre></div><a href='#' onClick='toggleBox("stack-trace64179659", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace64179659'><pre>java.lang.IllegalArgumentException: pre_signed_put_url and pre_signed_delete_url must both be set or both unset
+</pre></div><a href='#' onClick='toggleBox("stack-trace834745930", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace834745930'><pre>java.lang.IllegalArgumentException: pre_signed_put_url and pre_signed_delete_url must both be set or both unset
 	at org.jgroups.protocols.S3_PING2.validateProperties(S3_PING2.java:286)
 	at org.jgroups.protocols.S3_PING2Test.testValidatePropertiesWithPreSignedPutSet(S3_PING2Test.java:469)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
