@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -37,8 +38,8 @@ public class MessageBatch implements Iterable<Message> {
     protected Mode             mode=Mode.REG;
 
     protected static final int INCR=5; // number of elements to add when resizing
-    protected static final     Visitor<Integer> length_visitor=(msg, batch) -> msg != null? msg.getLength() : 0;
-    protected static final     Visitor<Long>    total_size_visitor=(msg, batch) -> msg != null? msg.size() : 0;
+    protected static final     BiFunction<Message,MessageBatch,Integer> length_visitor=(msg, batch) -> msg != null? msg.getLength() : 0;
+    protected static final     BiFunction<Message,MessageBatch,Long>    total_size_visitor=(msg, batch) -> msg != null? msg.size() : 0;
 
 
     public MessageBatch(int capacity) {
@@ -197,11 +198,11 @@ public class MessageBatch implements Iterable<Message> {
 
 
     /** Applies a function to all messages and returns a list of the function results */
-    public <T> Collection<T> map(Visitor<T> visitor) {
+    public <T> Collection<T> map(BiFunction<Message,MessageBatch,T> visitor) {
         Collection<T> retval=null;
         for(int i=0; i < index; i++) {
             try {
-                T result=visitor.visit(messages[i], this);
+                T result=visitor.apply(messages[i], this);
                 if(result != null) {
                     if(retval == null)
                         retval=new ArrayList<>();
@@ -257,7 +258,7 @@ public class MessageBatch implements Iterable<Message> {
     public long totalSize() {
         long retval=0;
         for(int i=0; i < index; i++)
-            retval+=total_size_visitor.visit(messages[i], this);
+            retval+=total_size_visitor.apply(messages[i], this);
         return retval;
     }
 
@@ -265,7 +266,7 @@ public class MessageBatch implements Iterable<Message> {
     public int length() {
         int retval=0;
         for(int i=0; i < index; i++)
-            retval+=length_visitor.visit(messages[i], this);
+            retval+=length_visitor.apply(messages[i], this);
         return retval;
     }
 
@@ -314,17 +315,6 @@ public class MessageBatch implements Iterable<Message> {
     }
 
 
-    /** Used for iteration over the messages */
-    @FunctionalInterface
-    public interface Visitor<T> {
-        /**
-         * Called when iterating over the message batch
-         * @param msg The message, can be null
-         * @param batch
-         * @return
-         */
-        T visit(final Message msg, final MessageBatch batch);
-    }
 
     public enum Mode {OOB, REG, INTERNAL, MIXED}
 

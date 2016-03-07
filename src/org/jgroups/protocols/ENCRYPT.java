@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiFunction;
 
 /**
  * ENCRYPT layer. Encrypt and decrypt communication in JGroups
@@ -920,11 +921,11 @@ public class ENCRYPT extends Protocol {
 
 
     /** Decrypts all messages in a batch, replacing encrypted messages in-place with their decrypted versions */
-    protected class Decrypter implements MessageBatch.Visitor<Message> {
+    protected class Decrypter implements BiFunction<Message,MessageBatch,Message> {
         protected Lock   lock;
         protected Cipher cipher;
 
-        public Message visit(Message msg, MessageBatch batch) {
+        public Message apply(Message msg, MessageBatch batch) {
             EncryptHeader hdr;
 
             if(msg == null || (msg.getLength() == 0 && !encrypt_entire_message) || ((hdr=(EncryptHeader)msg.getHeader(id)) == null))

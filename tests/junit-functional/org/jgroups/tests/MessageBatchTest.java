@@ -15,6 +15,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -32,7 +33,7 @@ public class MessageBatchTest {
       UDP_ID=ClassConfigurator.getProtocolId(UDP.class);
     protected final Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B");
 
-    protected static final MessageBatch.Visitor<Integer> print_numbers=(msg, batch) -> msg != null? (Integer)msg.getObject() : null;
+    protected static final BiFunction<Message,MessageBatch,Integer> print_numbers=(msg, batch) -> msg != null? (Integer)msg.getObject() : null;
 
 
 
