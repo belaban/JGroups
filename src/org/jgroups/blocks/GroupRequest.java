@@ -134,7 +134,7 @@ public class GroupRequest<T> extends Request {
 
         boolean changed=false;
         Rsp<T> rsp=requests.get(suspected_member);
-        if(rsp !=  null) {
+        if(rsp != null) {
             if(rsp.setSuspected()) {
                 changed=true;
                 lock.lock();
@@ -142,15 +142,13 @@ public class GroupRequest<T> extends Request {
                     if(!(rsp.wasReceived() || rsp.wasUnreachable()))
                         num_received++;
                     cond.signal(true);
+                    checkCompletion(this);
                 }
                 finally {
                     lock.unlock();
                 }
             }
         }
-
-        if(changed)
-            checkCompletion(this);
     }
 
     public void siteUnreachable(String site) {
@@ -171,15 +169,13 @@ public class GroupRequest<T> extends Request {
                             if(!(rsp.wasReceived() || rsp.wasSuspected()))
                                 num_received++;
                             cond.signal(true);
+                            checkCompletion(this);
                         }
                         finally {
                             lock.unlock();
                         }
                     }
                 }
-
-                if(changed)
-                    checkCompletion(this);
             }
         }
     }
@@ -225,14 +221,14 @@ public class GroupRequest<T> extends Request {
                     }
                 }
             }
-            if(changed)
+            if(changed) {
                 cond.signal(true);
+                checkCompletion(this);
+            }
         }
         finally {
             lock.unlock();
         }
-        if(changed)
-            checkCompletion(this);
     }
 
     /** Marks all responses with an exception (unless a response was already marked as done) */
@@ -251,13 +247,12 @@ public class GroupRequest<T> extends Request {
             }
             if(changed) {
                 cond.signal(true);
+                checkCompletion(this);
             }
         }
         finally {
             lock.unlock();
         }
-        if(changed)
-            checkCompletion(this);
     }
 
     /* -------------------- End of Interface RspCollector ----------------------------------- */

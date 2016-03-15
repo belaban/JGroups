@@ -67,12 +67,12 @@ public class UnicastRequest<T> extends Request {
             done=responsesComplete() || (rsp_filter != null && !rsp_filter.needMoreResponses());
             if(done && corr != null && this.req_id > 0)
                 corr.done(this.req_id);
+            checkCompletion(this);
         }
         finally {
             cond.signal(true); // wakes up execute()
             lock.unlock();
         }
-        checkCompletion(this);
     }
 
     public boolean responseReceived() {return num_received >= 1;}
@@ -98,11 +98,11 @@ public class UnicastRequest<T> extends Request {
             if(corr != null && this.req_id > 0)
                 corr.done(this.req_id);
             cond.signal(true);
+            checkCompletion(this);
         }
         finally {
             lock.unlock();
         }
-        checkCompletion(this);
     }
 
     public void siteUnreachable(String site) {
@@ -122,11 +122,11 @@ public class UnicastRequest<T> extends Request {
             if(corr != null && this.req_id > 0)
                 corr.done(this.req_id);
             cond.signal(true);
+            checkCompletion(this);
         }
         finally {
             lock.unlock();
         }
-        checkCompletion(this);
     }
 
     /**
@@ -147,13 +147,12 @@ public class UnicastRequest<T> extends Request {
                 if(corr != null && this.req_id > 0)
                     corr.done(this.req_id);
                 cond.signal(true);
+                checkCompletion(this);
             }
         }
         finally {
             lock.unlock();
         }
-        
-        checkCompletion(this);
     }
 
     public void transportClosed() {
@@ -167,11 +166,11 @@ public class UnicastRequest<T> extends Request {
             if(corr != null && this.req_id > 0)
                 corr.done(this.req_id);
             cond.signal(true);
+            checkCompletion(this);
         }
         finally {
             lock.unlock();
         }
-        checkCompletion(this);
     }
 
     /* -------------------- End of Interface RspCollector ----------------------------------- */
