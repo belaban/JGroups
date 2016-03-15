@@ -111,12 +111,14 @@ public class GroupRequest<T> extends Request {
                 cond.signal(true); // wakes up execute()
             if(done && corr != null && this.req_id > 0)
                 corr.done(this.req_id);
+
+            if(responseReceived || done) // moved inside the locks scope (https://issues.jboss.org/browse/JGRP-2026)
+                checkCompletion(this);
         }
         finally {
             lock.unlock();
         }
-        if(responseReceived || done)
-            checkCompletion(this);
+
     }
 
 
