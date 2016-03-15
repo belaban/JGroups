@@ -116,28 +116,34 @@ public class GroupRequest<T> extends Request<RspList<T>> {
 
 
     public void siteUnreachable(String site) {
-        for(Map.Entry<Address, Rsp<T>> entry: rsps.entrySet()) {
-            Address member=entry.getKey();
-            if(!(member instanceof SiteAddress))
-                continue;
-            SiteAddress addr=(SiteAddress)member;
-            if(addr.getSite().equals(site)) {
-                Rsp<T> rsp=entry.getValue();
-                if(rsp != null && rsp.setUnreachable()) {
-                    lock.lock();
-                    try {
-                        if(!(rsp.wasReceived() || rsp.wasSuspected()))
-                            num_received++;
-                    }
-                    finally {
-                        lock.unlock();
+        lock.lock();
+        try {
+            for(Map.Entry<Address,Rsp<T>> entry : rsps.entrySet()) {
+                Address member=entry.getKey();
+                if(!(member instanceof SiteAddress))
+                    continue;
+                SiteAddress addr=(SiteAddress)member;
+                if(addr.getSite().equals(site)) {
+                    Rsp<T> rsp=entry.getValue();
+                    if(rsp != null && rsp.setUnreachable()) {
+                        lock.lock();
+                        try {
+                            if(!(rsp.wasReceived() || rsp.wasSuspected()))
+                                num_received++;
+                        }
+                        finally {
+                            lock.unlock();
+                        }
                     }
                 }
             }
+            if(responsesComplete()) {
+                complete(this.rsps);
+                corrDone();
+            }
         }
-        if(responsesComplete()) {
-            complete(this.rsps);
-            corrDone();
+        finally {
+            lock.unlock();
         }
     }
 
