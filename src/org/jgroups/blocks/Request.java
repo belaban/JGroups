@@ -50,7 +50,7 @@ public abstract class Request implements NotifyingFuture, org.jgroups.util.Condi
     }
 
 
-    public Request setListener(FutureListener listener) {
+    public NotifyingFuture setListener(FutureListener listener) {
         this.listener=listener;
         if(done)
             listener.futureDone(this);
