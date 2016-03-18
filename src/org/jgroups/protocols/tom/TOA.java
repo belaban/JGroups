@@ -125,8 +125,8 @@ public class TOA extends Protocol implements DeliveryProtocol {
     public void deliver(Message message) {
         message.setDest(localAddress);
 
-        if (log.isDebugEnabled()) {
-            log.debug("Deliver message " + message + "(" + message.getHeader(id) + ") in total order");
+        if (log.isTraceEnabled()) {
+            log.trace("Deliver message " + message + "(" + message.getHeader(id) + ") in total order");
         }
 
         up_prot.up(new Event(Event.MSG, message));
@@ -247,8 +247,8 @@ public class TOA extends Protocol implements DeliveryProtocol {
     }
 
     private void send(Collection<Address> destinations, Message msg, boolean sendToMyself) {
-        if (log.isDebugEnabled()) {
-            log.debug("sending anycast total order message " + msg + " to " + destinations);
+        if (log.isTraceEnabled()) {
+            log.trace("sending anycast total order message " + msg + " to " + destinations);
         }
         for (Address address : destinations) {
             if (!sendToMyself && address.equals(localAddress)) {
@@ -362,8 +362,8 @@ public class TOA extends Protocol implements DeliveryProtocol {
     }
 
     private void logException(String msg, Exception e) {
-        if (log.isDebugEnabled()) {
-            log.debug(msg, e);
+        if (log.isTraceEnabled()) {
+            log.trace(msg, e);
         } else if (log.isWarnEnabled()) {
             log.warn(msg + ". Error is " + e.getLocalizedMessage());
         }
