@@ -6,14 +6,14 @@ import org.jgroups.blocks.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.SiteMaster;
-import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
 import java.io.BufferedReader;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -356,33 +356,22 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
 
-    static class CustomMarshaller implements RpcDispatcher.Marshaller {
+    protected class CustomMarshaller implements Marshaller {
 
-        public Buffer objectToBuffer(Object obj) throws Exception {
-            MethodCall call=(MethodCall)obj;
-            if(call.getId() == 0) {
-                byte[] arg=(byte[])call.getArgs()[0];
-                ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE + arg.length);
-                buf.put((byte)0).putInt(arg.length).put(arg, 0, arg.length);
-                return new Buffer(buf.array());
-            }
-            else
-                throw new IllegalStateException("method " + call.getMethod() + " not known");
+        public int estimatedSize(Object arg) {
+            if(arg == null)
+                return 10;
+            if(arg instanceof byte[])
+                return UnicastTestRpc.this.msg_size;
+            return 50;
         }
 
-        public Object objectFromBuffer(byte[] buffer, int offset, int length) throws Exception {
-            ByteBuffer buf=ByteBuffer.wrap(buffer, offset, length);
+        public void objectToStream(Object obj, DataOutput out) throws Exception {
+            Util.objectToStream(obj, out);
+        }
 
-            byte type=buf.get();
-            switch(type) {
-                case 0:
-                    int len=buf.getInt();
-                    byte[] arg=new byte[len];
-                    buf.get(arg, 0, arg.length);
-                    return new MethodCall((short)0, arg);
-                default:
-                    throw new IllegalStateException("type " + type + " not known");
-            }
+        public Object objectFromStream(DataInput in) throws Exception {
+            return Util.objectFromStream(in);
         }
     }
 

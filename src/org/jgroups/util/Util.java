@@ -47,20 +47,19 @@ public class Util {
     private static final NumberFormat f;
 
     private static final Map<Class<? extends Object>,Byte> PRIMITIVE_TYPES=new HashMap<>(15);
-    private static final byte TYPE_NULL=0;
-    private static final byte TYPE_STREAMABLE=1;
-    private static final byte TYPE_SERIALIZABLE=2;
-
-    private static final byte TYPE_BOOLEAN=10;
-    private static final byte TYPE_BYTE=11;
-    private static final byte TYPE_CHAR=12;
-    private static final byte TYPE_DOUBLE=13;
-    private static final byte TYPE_FLOAT=14;
-    private static final byte TYPE_INT=15;
-    private static final byte TYPE_LONG=16;
-    private static final byte TYPE_SHORT=17;
-    private static final byte TYPE_STRING=18;
-    private static final byte TYPE_BYTEARRAY=19;
+    private static final byte TYPE_NULL         =  0;
+    private static final byte TYPE_STREAMABLE   =  1;
+    private static final byte TYPE_SERIALIZABLE =  2;
+    private static final byte TYPE_BOOLEAN      = 10;
+    private static final byte TYPE_BYTE         = 11;
+    private static final byte TYPE_CHAR         = 12;
+    private static final byte TYPE_DOUBLE       = 13;
+    private static final byte TYPE_FLOAT        = 14;
+    private static final byte TYPE_INT          = 15;
+    private static final byte TYPE_LONG         = 16;
+    private static final byte TYPE_SHORT        = 17;
+    private static final byte TYPE_STRING       = 18;
+    private static final byte TYPE_BYTEARRAY    = 19;
 
     // constants
     public static final int MAX_PORT=65535; // highest port allocatable
@@ -88,13 +87,9 @@ public class Util {
 
     public enum AddressScope {GLOBAL,SITE_LOCAL,LINK_LOCAL,LOOPBACK,NON_LOOPBACK}
 
-    ;
-
     private static StackType ip_stack_type=_getIpStackType();
 
-
     protected static ResourceBundle resource_bundle;
-
 
     static {
         resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Thread.currentThread().getContextClassLoader());
@@ -446,17 +441,17 @@ public class Util {
     /**
      * Creates an object from a byte buffer
      */
-    public static Object objectFromByteBuffer(byte[] buffer) throws Exception {
+    public static <T extends Object> T objectFromByteBuffer(byte[] buffer) throws Exception {
         if(buffer == null) return null;
         return objectFromByteBuffer(buffer,0,buffer.length);
     }
 
-    public static Object objectFromByteBuffer(byte[] buffer,int offset,int length) throws Exception {
+    public static <T extends Object> T objectFromByteBuffer(byte[] buffer,int offset,int length) throws Exception {
         return objectFromByteBuffer(buffer, offset, length, null);
     }
 
 
-    public static Object objectFromByteBuffer(byte[] buffer,int offset,int length, ClassLoader loader) throws Exception {
+    public static <T extends Object> T objectFromByteBuffer(byte[] buffer,int offset,int length, ClassLoader loader) throws Exception {
         if(buffer == null) return null;
         byte type=buffer[offset++];
         length--;
@@ -468,21 +463,21 @@ public class Util {
             case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
                 InputStream in_stream=new ByteArrayInputStream(buffer,offset,length);
                 try(ObjectInputStream oin=new ObjectInputStreamWithClassloader(in_stream, loader)) {
-                    return oin.readObject();
+                    return (T)oin.readObject();
                 }
-            case TYPE_BOOLEAN: return buffer[offset] == 1;
-            case TYPE_BYTE:    return buffer[offset];
-            case TYPE_CHAR:    return Bits.readChar(buffer, offset);
-            case TYPE_DOUBLE:  return Bits.readDouble(buffer, offset);
-            case TYPE_FLOAT:   return Bits.readFloat(buffer, offset);
-            case TYPE_INT:     return Bits.readInt(buffer, offset);
-            case TYPE_LONG:    return Bits.readLong(buffer, offset);
-            case TYPE_SHORT:   return Bits.readShort(buffer, offset);
-            case TYPE_STRING:  return new String(buffer,offset,length);
+            case TYPE_BOOLEAN: return (T)(Boolean)(buffer[offset] == 1);
+            case TYPE_BYTE:    return (T)(Byte)buffer[offset];
+            case TYPE_CHAR:    return (T)(Character)Bits.readChar(buffer, offset);
+            case TYPE_DOUBLE:  return (T)(Double)Bits.readDouble(buffer, offset);
+            case TYPE_FLOAT:   return (T)(Float)Bits.readFloat(buffer, offset);
+            case TYPE_INT:     return (T)(Integer)Bits.readInt(buffer, offset);
+            case TYPE_LONG:    return (T)(Long)Bits.readLong(buffer, offset);
+            case TYPE_SHORT:   return (T)(Short)Bits.readShort(buffer, offset);
+            case TYPE_STRING:  return (T)new String(buffer, offset, length);
             case TYPE_BYTEARRAY:
                 byte[] tmp=new byte[length];
                 System.arraycopy(buffer,offset,tmp,0,length);
-                return tmp;
+                return (T)tmp;
             default:
                 throw new IllegalArgumentException("type " + type + " is invalid");
         }
@@ -645,7 +640,7 @@ public class Util {
     }
 
 
-    public static void objectToStream(Object obj,DataOutput out) throws Exception {
+    public static void objectToStream(Object obj, DataOutput out) throws Exception {
         if(obj == null) {
             out.write(TYPE_NULL);
             return;
@@ -721,11 +716,11 @@ public class Util {
         }
     }
 
-    public static Object objectFromStream(DataInput in) throws Exception {
+    public static <T extends Object> T objectFromStream(DataInput in) throws Exception {
         return objectFromStream(in, null);
     }
 
-    public static Object objectFromStream(DataInput in, ClassLoader loader) throws Exception {
+    public static <T extends Object> T objectFromStream(DataInput in, ClassLoader loader) throws Exception {
         if(in == null) return null;
         byte b=in.readByte();
 
@@ -736,38 +731,38 @@ public class Util {
                 InputStream is=in instanceof ByteArrayDataInputStream?
                   new org.jgroups.util.InputStreamAdapter((ByteArrayDataInputStream)in) : (InputStream)in;
                 try(ObjectInputStream tmp=new ObjectInputStreamWithClassloader(is, loader)) {
-                    return tmp.readObject();
+                    return (T)tmp.readObject();
                 }
-            case TYPE_BOOLEAN:    return in.readBoolean();
-            case TYPE_BYTE:       return in.readByte();
-            case TYPE_CHAR:       return in.readChar();
-            case TYPE_DOUBLE:     return in.readDouble();
-            case TYPE_FLOAT:      return in.readFloat();
-            case TYPE_INT:        return in.readInt();
-            case TYPE_LONG:       return in.readLong();
-            case TYPE_SHORT:      return in.readShort();
+            case TYPE_BOOLEAN:    return (T)(Boolean)in.readBoolean();
+            case TYPE_BYTE:       return (T)(Byte)in.readByte();
+            case TYPE_CHAR:       return (T)(Character)in.readChar();
+            case TYPE_DOUBLE:     return (T)(Double)in.readDouble();
+            case TYPE_FLOAT:      return (T)(Float)in.readFloat();
+            case TYPE_INT:        return (T)(Integer)in.readInt();
+            case TYPE_LONG:       return (T)(Long)in.readLong();
+            case TYPE_SHORT:      return (T)(Short)in.readShort();
             case TYPE_STRING:
                 if(in.readBoolean()) { // large string
                     try(ObjectInputStream ois=new ObjectInputStream(in instanceof ByteArrayDataInputStream?
                                                                       new org.jgroups.util.InputStreamAdapter((ByteArrayDataInputStream)in) :
                                                                       (InputStream)in)) {
-                        return ois.readObject();
+                        return (T)ois.readObject();
                     }
                 }
                 else
-                    return in.readUTF();
+                    return (T)in.readUTF();
             case TYPE_BYTEARRAY:
                 int len=in.readInt();
                 byte[] tmpbuf=new byte[len];
                 in.readFully(tmpbuf,0,tmpbuf.length);
-                return tmpbuf;
+                return (T)tmpbuf;
             default:
                 throw new IllegalArgumentException("type " + b + " is invalid");
         }
     }
 
 
-    public static Streamable streamableFromByteBuffer(Class<? extends Streamable> cl,byte[] buffer) throws Exception {
+    public static <T extends Streamable> T streamableFromByteBuffer(Class<? extends Streamable> cl,byte[] buffer) throws Exception {
         return streamableFromByteBuffer(cl,buffer,0,buffer.length);
     }
 
@@ -787,7 +782,7 @@ public class Util {
     }
 
 
-    public static <T extends Streamable> Streamable streamableFromByteBuffer(Class<? extends Streamable> cl,byte[] buffer,int offset,int length) throws Exception {
+    public static <T extends Streamable> T streamableFromByteBuffer(Class<? extends Streamable> cl,byte[] buffer,int offset,int length) throws Exception {
         if(buffer == null) return null;
         DataInput in=new ByteArrayDataInputStream(buffer,offset,length);
         T retval=(T)cl.newInstance();
@@ -798,7 +793,7 @@ public class Util {
 
     public static <T extends Streamable> T streamableFromBuffer(Class<T> clazz,byte[] buffer,int offset,int length) throws Exception {
         DataInput in=new ByteArrayDataInputStream(buffer,offset,length);
-        return (T)Util.readStreamable(clazz,in);
+        return Util.readStreamable(clazz, in);
     }
 
 
@@ -848,6 +843,18 @@ public class Util {
             }
         }
         return left.length - right.length;
+    }
+
+    public static Object convert(String arg, Class<?> type) {
+        if(type == String.class) return arg;
+        if(type == boolean.class || type == Boolean.class) return Boolean.valueOf(arg);
+        if(type == byte.class    || type == Byte.class)    return Byte.valueOf(arg);
+        if(type == short.class   || type == Short.class)   return Short.valueOf(arg);
+        if(type == int.class     || type == Integer.class) return Integer.valueOf(arg);
+        if(type == long.class    || type == Long.class)    return Long.valueOf(arg);
+        if(type == float.class   || type == Float.class)   return Float.valueOf(arg);
+        if(type == double.class  || type == Double.class)  return Double.valueOf(arg);
+        return arg;
     }
 
     public static void writeView(View view,DataOutput out) throws Exception {
@@ -1112,17 +1119,17 @@ public class Util {
     }
 
 
-    public static Streamable readStreamable(Class clazz,DataInput in) throws Exception {
-        Streamable retval=null;
+    public static <T extends Streamable> T readStreamable(Class<T> clazz,DataInput in) throws Exception {
+        T retval=null;
         if(!in.readBoolean())
             return null;
-        retval=(Streamable)clazz.newInstance();
+        retval=clazz.newInstance();
         retval.readFrom(in);
         return retval;
     }
 
 
-    public static void writeGenericStreamable(Streamable obj,DataOutput out) throws Exception {
+    public static void writeGenericStreamable(Streamable obj, DataOutput out) throws Exception {
         short magic_number;
         String classname;
 
@@ -1141,12 +1148,12 @@ public class Util {
         obj.writeTo(out); // write the contents
     }
 
-    public static Streamable readGenericStreamable(DataInput in) throws Exception {
+    public static <T extends Streamable> T readGenericStreamable(DataInput in) throws Exception {
         return readGenericStreamable(in, null);
     }
 
-    public static Streamable readGenericStreamable(DataInput in, ClassLoader loader) throws Exception {
-        Streamable retval=null;
+    public static <T extends Streamable> T readGenericStreamable(DataInput in, ClassLoader loader) throws Exception {
+        T retval=null;
         int b=in.readByte();
         if(b == 0)
             return null;
@@ -1164,7 +1171,7 @@ public class Util {
             clazz=ClassConfigurator.get(classname, loader);
         }
 
-        retval=(Streamable)clazz.newInstance();
+        retval=(T)clazz.newInstance();
         retval.readFrom(in);
         return retval;
     }

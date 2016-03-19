@@ -6,9 +6,7 @@ import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.MembershipListener;
 import org.jgroups.Message;
-import org.jgroups.util.Buffer;
-import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -43,32 +41,10 @@ public class RpcDispatcher extends MessageDispatcher {
     }
 
 
-
-
-
-
-    public interface Marshaller {
-        /**
-         * Marshals the object into a byte[] buffer and returns a Buffer with a ref to the underlying byte[] buffer,
-         * offset and length.<br/>
-         * <em>
-         * Note that the underlying byte[] buffer must not be changed as this would change the buffer of a message which
-         * potentially can get retransmitted, and such a retransmission would then carry a ref to a changed byte[] buffer !
-         * </em>
-         * @param obj
-         * @return a Buffer
-         * @throws Exception
-         */
-        Buffer objectToBuffer(Object obj) throws Exception;
-        Object objectFromBuffer(byte[] buf, int offset, int length) throws Exception;
-    }
-
-
-
-
     public static String getName()                                   {return RpcDispatcher.class.getSimpleName();}
     public Marshaller    getMarshaller()                             {return marshaller;}
-    public RpcDispatcher setMarshaller(Marshaller m)                 {marshaller=m; return this;}
+    public RpcDispatcher setMarshaller(Marshaller m)                 {marshaller=m; if(corr != null)
+                                                                                    corr.setMarshaller(m); return this;}
     public Object        getServerObject()                           {return server_obj;}
     public RpcDispatcher setServerObject(Object server_obj)          {this.server_obj=server_obj; return this;}
     public RpcDispatcher setMembershipListener(MembershipListener l) {return (RpcDispatcher)super.setMembershipListener(l);}
@@ -111,14 +87,14 @@ public class RpcDispatcher extends MessageDispatcher {
     public <T> RspList<T> callRemoteMethods(Collection<Address> dests, MethodCall method_call,
                                             RequestOptions opts) throws Exception {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
-            log.trace("destination list of %s() is empty: no need to send message", method_call.getName());
+            log.trace("destination list of %s() is empty: no need to send message", method_call.methodName());
             return empty_rsplist;
         }
 
         if(log.isTraceEnabled())
             log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, opts);
 
-        Buffer buf=marshaller != null? marshaller.objectToBuffer(method_call) : Util.objectToBuffer(method_call);
+        Buffer buf=methodCallToBuffer(method_call, marshaller);
         RspList<T> retval=super.castMessage(dests, buf, opts);
         if(log.isTraceEnabled()) log.trace("responses: %s", retval);
         return retval;
@@ -138,14 +114,14 @@ public class RpcDispatcher extends MessageDispatcher {
     public <T> CompletableFuture<RspList<T>> callRemoteMethodsWithFuture(Collection<Address> dests, MethodCall method_call,
                                                                          RequestOptions options) throws Exception {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
-            log.trace("destination list of %s() is empty: no need to send message", method_call.getName());
+            log.trace("destination list of %s() is empty: no need to send message", method_call.methodName());
             return CompletableFuture.completedFuture(empty_rsplist);
         }
 
         if(log.isTraceEnabled())
             log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, options);
 
-        Buffer buf=marshaller != null? marshaller.objectToBuffer(method_call) : Util.objectToBuffer(method_call);
+        Buffer buf=methodCallToBuffer(method_call, marshaller);
         return super.castMessageWithFuture(dests, buf, options);
     }
 
@@ -179,7 +155,7 @@ public class RpcDispatcher extends MessageDispatcher {
         if(log.isTraceEnabled())
             log.trace("dest=%s, method_call=%s, options=%s", dest, call, options);
 
-        Buffer buf=marshaller != null? marshaller.objectToBuffer(call) : Util.objectToBuffer(call);
+        Buffer buf=methodCallToBuffer(call, marshaller);
         T retval=super.sendMessage(dest, buf, options);
         if(log.isTraceEnabled()) log.trace("retval: %s", retval);
         return retval;
@@ -198,15 +174,11 @@ public class RpcDispatcher extends MessageDispatcher {
     public <T> CompletableFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions opts) throws Exception {
         if(log.isTraceEnabled())
             log.trace("dest=%s, method_call=%s, options=%s", dest, call, opts);
-        Buffer buf=marshaller != null? marshaller.objectToBuffer(call) : Util.objectToBuffer(call);
+        Buffer buf=methodCallToBuffer(call, marshaller);
         return super.sendMessageWithFuture(dest, buf, opts);
     }
 
 
-    protected void correlatorStarted() {
-        if(corr != null)
-            corr.setMarshaller(marshaller);
-    }
 
 
     /**
@@ -224,28 +196,45 @@ public class RpcDispatcher extends MessageDispatcher {
             return null;
         }
 
-        Object body=marshaller != null?
-          marshaller.objectFromBuffer(req.getRawBuffer(), req.getOffset(), req.getLength()) : req.getObject();
-
-        if(!(body instanceof MethodCall))
-            throw new IllegalArgumentException("message does not contain a MethodCall object") ;
-
-        MethodCall method_call=(MethodCall)body;
-
+        MethodCall method_call=methodCallFromBuffer(req.getRawBuffer(), req.getOffset(), req.getLength(), marshaller);
         if(log.isTraceEnabled())
             log.trace("[sender=%s], method_call: %s", req.getSrc(), method_call);
 
-        if(method_call.getMode() == MethodCall.ID) {
+        if(method_call.mode() == MethodCall.ID) {
             if(method_lookup == null)
-                throw new Exception(String.format("MethodCall uses ID=%d, but method_lookup has not been set", method_call.getId()));
-            Method m=method_lookup.findMethod(method_call.getId());
+                throw new Exception(String.format("MethodCall uses ID=%d, but method_lookup has not been set", method_call.methodId()));
+            Method m=method_lookup.findMethod(method_call.methodId());
             if(m == null)
-                throw new Exception("no method found for " + method_call.getId());
-            method_call.setMethod(m);
+                throw new Exception("no method found for " + method_call.methodId());
+            method_call.method(m);
         }
             
         return method_call.invoke(server_obj);
     }
 
+    protected static Buffer methodCallToBuffer(final MethodCall call, Marshaller marshaller) throws Exception {
+        Object[] args=call.args();
+
+        int estimated_size=64;
+        if(args != null)
+            for(Object arg: args)
+                estimated_size+=marshaller != null? marshaller.estimatedSize(arg) : (arg == null? 2 : 50);
+
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(estimated_size, true);
+        call.writeTo(out, marshaller);
+        return out.getBuffer();
+    }
+
+    protected static MethodCall methodCallFromBuffer(final byte[] buf, int offset, int length, Marshaller marshaller) throws Exception {
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
+        MethodCall call=new MethodCall();
+        call.readFrom(in, marshaller);
+        return call;
+    }
+
+    protected void correlatorStarted() {
+        if(corr != null)
+            corr.setMarshaller(marshaller);
+    }
 
 }

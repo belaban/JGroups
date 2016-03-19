@@ -193,7 +193,7 @@ public class SizeTest {
 
 
 
-    public static void testUnicast3Header() throws Exception {
+    public void testUnicast3Header() throws Exception {
         UNICAST3.Header hdr=UNICAST3.Header.createDataHeader(322649, (short)127, false);
         _testSize(hdr);
         _testMarshalling(hdr);
@@ -560,7 +560,7 @@ public class SizeTest {
     }
 
 
-    public static void testFCHeader() throws Exception {
+    public void testFCHeader() throws Exception {
         FcHeader hdr=new FcHeader(FcHeader.REPLENISH);
         _testSize(hdr);
     }

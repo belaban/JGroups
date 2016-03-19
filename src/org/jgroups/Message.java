@@ -222,7 +222,7 @@ public class Message implements Streamable {
     *
     * @return byte array with a copy of the buffer.
     */
-    final public byte[] getBuffer() {
+    public byte[] getBuffer() {
         if(buf == null)
             return null;
         if(offset == 0 && length == buf.length)
@@ -232,6 +232,12 @@ public class Message implements Streamable {
             System.arraycopy(buf, offset, retval, 0, length);
             return retval;
         }
+    }
+
+    public Buffer getBuffer2() {
+        if(buf == null)
+            return null;
+        return new Buffer(buf, offset, length);
     }
 
     /**
@@ -349,7 +355,7 @@ public class Message implements Streamable {
     }
 
 
-    final public Object getObject() {
+    final public <T extends Object> T getObject() {
         return getObject(null);
     }
 
@@ -365,7 +371,7 @@ public class Message implements Streamable {
      *
      * @return the object
      */
-    final public Object getObject(ClassLoader loader) {
+    final public <T extends Object> T getObject(ClassLoader loader) {
         try {
             return Util.objectFromByteBuffer(buf, offset, length, loader);
         }
@@ -653,21 +659,6 @@ public class Message implements Streamable {
             ret.append(", transient_flags=" + transientFlagsToString(transient_flags));
         ret.append(']');
         return ret.toString();
-    }
-
-
-
-
-    /** Tries to read an object from the message's buffer and prints it */
-    public String toStringAsObject() {
-        if(buf == null) return null;
-        try {
-            Object obj=getObject();
-            return obj != null ? obj.toString() : "";
-        }
-        catch(Exception e) {  // it is not an object
-            return "";
-        }
     }
 
 

@@ -89,19 +89,11 @@ public class SiteUUID extends ExtendedUUID implements SiteAddress {
             byte[] val=values[i];
             Object obj=null;
             try {
-                obj=Util.objectFromByteBuffer(val);
+                obj=Util.bytesToString(val);
             }
             catch(Throwable t) {
+                obj=val != null? val.length + " bytes" : null;
             }
-            if(obj == null) {
-                try {
-                    obj=Util.bytesToString(val);
-                }
-                catch(Throwable t) {
-                    obj=val != null? val.length + " bytes" : null;
-                }
-            }
-
             sb.append(", ").append(new AsciiString(key)).append("=").append(obj);
         }
         return sb.toString();

@@ -87,7 +87,7 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                         Protocol prot=ch.getProtocolStack().findProtocol(protocol_name);
                         Field field=prot != null? Util.getField(prot.getClass(), attrname) : null;
                         if(field != null) {
-                            Object value=MethodCall.convert(attrvalue,field.getType());
+                            Object value=Util.convert(attrvalue,field.getType());
                             if(value != null)
                                 prot.setValue(attrname, value);
                         }
@@ -100,7 +100,7 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                                       ((ResourceDMBean.FieldAccessor)setter).getField().getType() :
                                       setter instanceof ResourceDMBean.MethodAccessor?
                                         ((ResourceDMBean.MethodAccessor)setter).getMethod().getParameterTypes()[0].getClass() : null;
-                                    Object converted_value=MethodCall.convert(attrvalue, type);
+                                    Object converted_value=Util.convert(attrvalue, type);
                                     setter.invoke(converted_value);
                                 }
                                 catch(Exception e) {
@@ -181,7 +181,7 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
             converted_args=new Object[args.length];
             Class<?>[] types=method.getParameterTypes();
             for(int i=0; i < args.length; i++)
-                converted_args[i]=MethodCall.convert(args[i], types[i]);
+                converted_args[i]=Util.convert(args[i], types[i]);
         }
         Object retval=call.invoke(prot, converted_args);
         if(retval != null)

@@ -206,7 +206,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
                             handleEOF(sender);
                             break;
                         case StateHeader.STATE_EX:
-                            handleException((Throwable)msg.getObject());
+                            handleException(msg.getObject());
                             break;
                         default:
                             log.error("%s: type %d not known in StateHeader", local_addr, hdr.type);

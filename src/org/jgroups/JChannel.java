@@ -699,7 +699,7 @@ public class JChannel implements Closeable {
                 if(up_handler != null) {
                     try {
                         Object retval=up_handler.up(evt);
-                        state_promise.setResult(new StateTransferResult());
+                        state_promise.setResult(result);
                         return retval;
                     }
                     catch(Throwable t) {

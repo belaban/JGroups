@@ -4,10 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.tests.ChannelTestBase;
-import org.jgroups.util.Buffer;
-import org.jgroups.util.Rsp;
-import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -64,7 +61,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
     }
 
     public void testMarshaller() throws Exception {
-        RpcDispatcher.Marshaller m=new MyMarshaller();
+        Marshaller m=new MyMarshaller();
         disp.setMarshaller(m);
         disp2.setMarshaller(m);
 
@@ -107,66 +104,49 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
 
 
 
-    static class MyMarshaller implements RpcDispatcher.Marshaller {
-        static final byte NULL  = 0;
-        static final byte BOOL  = 1;
-        static final byte LONG  = 2;
-        static final byte OBJ   = 3;
+    static class MyMarshaller implements Marshaller {
+        static final byte NULL   = 0;
+        static final byte BOOL   = 1;
+        static final byte LONG   = 2;
+        static final byte OBJ    = 3;
 
-        public Buffer objectToBuffer(Object obj) throws Exception {
-            ByteArrayOutputStream out=new ByteArrayOutputStream(24);
-            ObjectOutputStream oos=new ObjectOutputStream(out);
-
-            try {
-                if(obj == null) {
-                    oos.writeByte(NULL);
-                }
-                else if(obj instanceof Boolean) {
-                    oos.writeByte(BOOL);
-                    oos.writeBoolean((Boolean)obj);
-                }
-                else if(obj instanceof Long) {
-                    oos.writeByte(LONG);
-                    oos.writeLong((Long)obj);
-                }
-                else {
-                    oos.writeByte(OBJ);
-                    oos.writeObject(obj);
-                }
-                oos.flush();
-                return new Buffer(out.toByteArray());
+        public void objectToStream(Object obj, DataOutput out) throws Exception {
+            if(obj == null)
+                out.writeByte(NULL);
+            else if(obj instanceof Boolean) {
+                out.writeByte(BOOL);
+                out.writeBoolean((Boolean)obj);
             }
-            finally {
-                Util.close(oos);
+            else if(obj instanceof Long) {
+                out.writeByte(LONG);
+                out.writeLong((Long)obj);
+            }
+            else {
+                out.writeByte(OBJ);
+                Buffer buf=Util.objectToBuffer(obj);
+                out.write(buf.getBuf(), buf.getOffset(), buf.getLength());
             }
         }
 
-        public Object objectFromBuffer(byte[] buf, int offset, int length) throws Exception {
-            ByteArrayInputStream inp=new ByteArrayInputStream(buf, offset, length);
-            ObjectInputStream in=new ObjectInputStream(inp);
-
-            try {
-                int type=in.readByte();
-                switch(type) {
-                    case NULL:
-                        return null;
-                    case BOOL:
-                        return in.readBoolean();
-                    case LONG:
-                        return in.readLong();
-                    case OBJ:
-                        return in.readObject();
-                    default:
-                        throw new IllegalArgumentException("incorrect type " + type);
-                }
-            }
-            finally {
-                Util.close(in);
+        public Object objectFromStream(DataInput in) throws Exception {
+            int type=in.readByte();
+            switch(type) {
+                case NULL:
+                    return null;
+                case BOOL:
+                    return in.readBoolean();
+                case LONG:
+                    return in.readLong();
+                case OBJ:
+                    return Util.objectFromStream(in);
+                default:
+                    throw new IllegalArgumentException("incorrect type " + type);
             }
         }
     }
 
     static class Target {
+        @SuppressWarnings("UnusedParameters")
         public static void methodA(boolean b, long l) {
             ;
         }
@@ -182,7 +162,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
 
 
     static class NonSerializable {
-        int i;
+        @SuppressWarnings("unused") int i;
     }
 
 }

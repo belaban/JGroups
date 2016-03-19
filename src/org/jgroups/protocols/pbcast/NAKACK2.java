@@ -594,10 +594,14 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                         return null;        // transmitter passes message up for us !
 
                     case NakAckHeader2.XMIT_REQ:
-                        SeqnoList missing=(SeqnoList)msg.getObject();
-                        if(missing == null)
-                            return null;
-                        handleXmitReq(msg.getSrc(), missing, hdr.sender);
+                        try {
+                            SeqnoList missing=Util.streamableFromBuffer(SeqnoList.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                            if(missing != null)
+                                handleXmitReq(msg.getSrc(), missing, hdr.sender);
+                        }
+                        catch(Exception e) {
+                            log.error("failed deserializing retransmission list", e);
+                        }
                         return null;
 
                     case NakAckHeader2.XMIT_RSP:
@@ -652,9 +656,14 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     msgs.add(new Tuple<>(hdr.seqno, msg));
                     break;
                 case NakAckHeader2.XMIT_REQ:
-                    SeqnoList missing=(SeqnoList)msg.getObject();
-                    if(missing != null)
-                        handleXmitReq(msg.getSrc(), missing, hdr.sender);
+                    try {
+                        SeqnoList missing=Util.streamableFromBuffer(SeqnoList.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                        if(missing != null)
+                            handleXmitReq(msg.getSrc(), missing, hdr.sender);
+                    }
+                    catch(Exception e) {
+                        log.error("failed deserializing retransmission list", e);
+                    }
                     break;
                 case NakAckHeader2.XMIT_RSP:
                     Message xmitted_msg=msgFromXmitRsp(msg, hdr);
@@ -1420,7 +1429,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 dest=random_member;
         }
 
-        Message retransmit_msg=new Message(dest, missing_msgs).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+        Message retransmit_msg=new Message(dest).setBuffer(Util.streamableToBuffer(missing_msgs))
+          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .putHeader(this.id, NakAckHeader2.createXmitRequestHeader(sender));
 
         log.trace("%s: sending XMIT_REQ (%s) to %s", local_addr, missing_msgs, dest);

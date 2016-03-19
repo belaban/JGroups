@@ -35,7 +35,7 @@ public class MPerfRpc extends ReceiverAdapter {
 
     protected int                                 num_msgs=1000 * 1000;
     protected int                                 msg_size=1000;
-    protected int                                 num_threads=1;
+    protected int                                 num_threads=25;
     protected int                                 log_interval=num_msgs / 10; // log every 10%
     protected int                                 receive_log_interval=num_msgs / 10;
     protected int                                 num_senders=-1; // <= 0: all
@@ -129,7 +129,7 @@ public class MPerfRpc extends ReceiverAdapter {
     protected void loop() {
         int c;
 
-        final String INPUT="[1] Send [2] View\n" +
+        final String INPUT="[1] Invoke [2] View\n" +
           "[3] Set num RPCs (%d) [4] Set msg size (%s) [5] Set threads (%d)\n" +
           "[6] Number of senders (%s) [s] Toggle sync (%s) [o] Toggle OOB (%s)\n" +
           "[x] Exit this [X] Exit all";
@@ -440,11 +440,11 @@ public class MPerfRpc extends ReceiverAdapter {
 
         for(int i=0; i < num_threads; i++) {
             senders[i]=new Sender(barrier, num_msgs_sent, seqno, payload);
-            senders[i].setName("sender-" + i);
+            senders[i].setName("invoker-" + i);
             senders[i].start();
         }
         try {
-            System.out.println("-- sending " + num_msgs + " msgs");
+            System.out.println("-- invoking " + num_msgs + " msgs");
             barrier.await();
         }
         catch(Exception e) {
@@ -644,40 +644,23 @@ public class MPerfRpc extends ReceiverAdapter {
         }
     }
 
-    protected class MperfMarshaller implements RpcDispatcher.Marshaller {
+    protected class MperfMarshaller implements Marshaller {
 
-        public Buffer objectToBuffer(Object obj) throws Exception {
-            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(msg_size + 100);
-            boolean is_mc=obj instanceof MethodCall;
-            out.writeBoolean(is_mc);
-            if(!is_mc)
-                Util.objectToStream(obj, out);
-            else {
-                MethodCall mc=(MethodCall)obj;
-                out.writeShort(mc.getId());
-                Object[] args=mc.getArgs();
-                int num_args=args == null? 0 : args.length;
-                out.writeShort(num_args);
-                for(int i=0; i < num_args; i++)
-                    Util.objectToStream(args[i], out);
-            }
-            return out.getBuffer();
+        public int estimatedSize(Object arg) {
+            if(arg == null) return 10;
+            if(arg instanceof byte[])
+                return MPerfRpc.this.msg_size;
+            return 50;
         }
 
-        public Object objectFromBuffer(byte[] buf, int offset, int length) throws Exception {
-            DataInput in=new ByteArrayDataInputStream(buf, offset, length);
-            if(!in.readBoolean())
-                return Util.objectFromStream(in);
-
-            short id=in.readShort();
-            short num_args=in.readShort();
-            Object[] args=num_args > 0? new Object[num_args] : null;
-            if(args != null) {
-                for(int i=0; i < args.length; i++)
-                    args[i]=Util.objectFromStream(in);
-            }
-            return new MethodCall(id, args);
+        public void objectToStream(Object obj, DataOutput out) throws Exception {
+            Util.objectToStream(obj, out);
         }
+
+        public Object objectFromStream(DataInput in) throws Exception {
+            return Util.objectFromStream(in);
+        }
+
     }
 
 

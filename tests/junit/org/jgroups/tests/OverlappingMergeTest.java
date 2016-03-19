@@ -529,7 +529,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
     private static String print(List<Message> msgs) {
         StringBuilder sb=new StringBuilder();
         for(Message msg: msgs) {
-            sb.append(msg.getSrc()).append(": ").append(msg.getObject()).append(" ");
+            sb.append(msg.getSrc()).append(": ").append((Object)msg.getObject()).append(" ");
         }
         return sb.toString();
     }

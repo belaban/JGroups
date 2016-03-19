@@ -124,7 +124,7 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
                         break;
                     case StateHeader.STATE_EX:
                         closeHoleFor(msg.getSrc());
-                        handleException((Throwable)msg.getObject());
+                        handleException(msg.getObject());
                         break;
                     default:
                         log.error("%s: type %s not known in StateHeader", local_addr, hdr.type);

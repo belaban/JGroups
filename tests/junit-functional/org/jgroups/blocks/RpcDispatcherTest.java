@@ -6,7 +6,10 @@ import org.jgroups.protocols.FRAG;
 import org.jgroups.protocols.FRAG2;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
+import org.jgroups.util.RpcStats;
+import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -14,6 +17,7 @@ import org.testng.annotations.Test;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Stream;
 
 /**
  * A collection of tests to test the RpcDispatcher.
@@ -250,6 +254,18 @@ public class RpcDispatcherTest {
         Object val=future.get();
         assert val instanceof Exception;
     }
+
+    public void testMulticastInvocationWithMethodLookup() throws Exception {
+        MethodCall call=new MethodCall((short)6, 3, 4); // ServerObject.add()
+        Stream.of(da,db,dc).forEach(d -> d.setMethodLookup(id -> ServerObject.methods[id]));
+        RspList<Integer> rsps=da.callRemoteMethods(null, call, RequestOptions.SYNC());
+        System.out.printf("rsps:\n%s\n", rsps);
+        assert rsps != null;
+        assert rsps.size() == 3;
+        for(Rsp<Integer> rsp: rsps.values())
+            assert rsp.getValue() != null && rsp.getValue().equals(7);
+    }
+
 
 
     /**
@@ -789,11 +805,33 @@ public class RpcDispatcherTest {
      * function foo() returns the id of the server
      * function largeReturnValue(int size) returns a byte array of size 'size'
      */
-    private static class ServerObject {
-        int i;
+    protected static class ServerObject {
+        protected int i;
+
+        protected static final Method[] methods;
+
+        static {
+            try {
+                methods=new Method[] {
+                  ServerObject.class.getDeclaredMethod("foo"), // index 0
+                  ServerObject.class.getDeclaredMethod("bar"),
+                  ServerObject.class.getDeclaredMethod("sleep", long.class),
+                  ServerObject.class.getDeclaredMethod("throwException"),
+                  ServerObject.class.getDeclaredMethod("returnException"),
+                  ServerObject.class.getDeclaredMethod("largeReturnValue", int.class),
+                  ServerObject.class.getDeclaredMethod("add", int.class, int.class) // index 6
+                };
+            }
+            catch(NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+
         public ServerObject(int i) {
             this.i=i;
         }
+
         public int foo() {return i;}
         public static void bar() {;}
         
@@ -812,10 +850,12 @@ public class RpcDispatcherTest {
             return new Exception("booom");
         }
 
-
         public static byte[] largeReturnValue(int size) {
             return new byte[size];
         }
+
+        public int add(int a, int b) {return a+b;}
+
     }
 
 

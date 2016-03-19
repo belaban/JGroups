@@ -262,7 +262,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
 
         ch=new JChannel(props);
         disp=new RpcDispatcher(ch, this).setMethodLookup(methods::get).setMembershipListener(this);
-        RpcDispatcher.Marshaller marshaller=new CustomMarshaller();
+        Marshaller marshaller=new CustomMarshaller();
         disp.setMarshaller(marshaller);
 
         ch.connect(cluster_name);
@@ -844,75 +844,34 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
     }
 
 
-    private static class CustomMarshaller implements RpcDispatcher.Marshaller {
-        static final byte NULL        = 0;
-        static final byte OBJ         = 1;
-        static final byte METHOD_CALL = 2;
+    private static class CustomMarshaller implements Marshaller {
+        static final byte NULL        = 1;
+        static final byte OBJ         = 2;
         static final byte VALUE       = 3;
-        
 
-        public Buffer objectToBuffer(Object obj) throws Exception {
-            ByteArrayOutputStream out_stream=new ByteArrayOutputStream(35);
-            DataOutputStream out=new DataOutputStream(out_stream);
-            try {
-                if(obj == null) {
-                    out_stream.write(NULL);
-                    out_stream.flush();
-                    return new Buffer(out_stream.toByteArray());
-                }
 
-                if(obj instanceof MethodCall) {
-                    out.writeByte(METHOD_CALL);
-                    MethodCall call=(MethodCall)obj;
-                    out.writeShort(call.getId());
-                    Object[] args=call.getArgs();
-                    if(args == null || args.length == 0) {
-                        out.writeShort(0);
-                    }
-                    else {
-                        out.writeShort(args.length);
-                        for(int i=0; i < args.length; i++) {
-                            Util.objectToStream(args[i], out);
-                        }
-                    }
-                }
-                else if(obj instanceof Cache.Value) {
-                    Cache.Value value=(Cache.Value)obj;
-                    out.writeByte(VALUE);
-                    out.writeLong(value.getTimeout());
-                    Util.objectToStream(value.getValue(), out);
-                }
-                else {
-                    out.writeByte(OBJ);
-                    Util.objectToStream(obj, out);
-                }
-                out.flush();
-                return new Buffer(out_stream.toByteArray());
+        public void objectToStream(Object obj, DataOutput out) throws Exception {
+            if(obj == null) {
+                out.write(NULL);
+                return;
             }
-            finally {
-                Util.close(out);
+            if(obj instanceof Cache.Value) {
+                Cache.Value value=(Cache.Value)obj;
+                out.writeByte(VALUE);
+                out.writeLong(value.getTimeout());
+                Util.objectToStream(value.getValue(), out);
+            }
+            else {
+                out.writeByte(OBJ);
+                Util.objectToStream(obj, out);
             }
         }
 
-        public Object objectFromBuffer(byte[] buf, int offset, int length) throws Exception {
-            if(buf == null)
-                return null;
-
-            DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf, offset, length));
+        public Object objectFromStream(DataInput in) throws Exception {
             byte type=in.readByte();
             if(type == NULL)
                 return null;
-            if(type == METHOD_CALL) {
-                short id=in.readShort();
-                short len=in.readShort();
-                Object[] args=len > 0? new Object[len] : null;
-                if(args != null) {
-                    for(int i=0; i < args.length; i++)
-                        args[i]=Util.objectFromStream(in);
-                }
-                return new MethodCall(id, args);
-            }
-            else if(type == VALUE) {
+            if(type == VALUE) {
                 long expiration_time=in.readLong();
                 Object obj=Util.objectFromStream(in);
                 return new Cache.Value(obj, expiration_time);
@@ -920,5 +879,6 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
             else
                 return Util.objectFromStream(in);
         }
+
     }
 }

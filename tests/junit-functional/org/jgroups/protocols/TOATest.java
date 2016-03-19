@@ -432,7 +432,7 @@ public class TOATest {
         @Override
         public void receive(Message msg) {
             synchronized (messages) {
-                messages.add(String.valueOf(msg.getObject()));
+                messages.add(String.valueOf((Object)msg.getObject()));
             }
         }
 

@@ -26,7 +26,7 @@ public class DISCARD_PAYLOAD extends Protocol {
             Message msg=(Message)evt.getArg();
             if(msg.getLength() > 0) {
                 try {
-                    Long payload=(Long)msg.getObject();
+                    Long payload=msg.getObject();
                     if(payload != null) {
                         if(payload == seqno) {
                             synchronized(this) {

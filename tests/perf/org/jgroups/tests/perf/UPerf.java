@@ -91,7 +91,8 @@ public class UPerf extends ReceiverAdapter {
             transport.setBindPort(bind_port);
         }
 
-        disp=new RpcDispatcher(channel, this).setMembershipListener(this).setMethodLookup(id -> METHODS[id]);
+        disp=new RpcDispatcher(channel, this).setMembershipListener(this).setMethodLookup(id -> METHODS[id])
+          .setMarshaller(new UPerfMarshaller());
         channel.connect(groupname);
         local_addr=channel.getAddress();
 
@@ -420,6 +421,27 @@ public class UPerf extends ReceiverAdapter {
             return null;
         }
     }
+
+    protected class UPerfMarshaller implements Marshaller {
+        public int estimatedSize(Object arg) {
+            if(arg == null)
+                return 2;
+            if(arg instanceof byte[])
+                return msg_size;
+            if(arg instanceof Long)
+                return 10;
+            return 50;
+        }
+
+        public void objectToStream(Object obj, DataOutput out) throws Exception {
+            Util.objectToStream(obj, out);
+        }
+
+        public Object objectFromStream(DataInput in) throws Exception {
+            return Util.objectFromStream(in);
+        }
+    }
+
 
     private class Invoker extends Thread {
         private final List<Address>  dests=new ArrayList<>();

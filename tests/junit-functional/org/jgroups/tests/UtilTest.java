@@ -298,19 +298,19 @@ public class UtilTest {
         list.add("Jeannette");
 
         buf=Util.objectToByteBuffer(addr);
-        addr2=(Address)Util.objectFromByteBuffer(buf);
+        addr2=Util.objectFromByteBuffer(buf);
         System.out.println("addr=" + addr + ", addr2=" + addr2);
         Assert.assertEquals(addr, addr2);
 
         buf=Util.objectToByteBuffer(list);
-        list2=(List<String>)Util.objectFromByteBuffer(buf);
+        list2=Util.objectFromByteBuffer(buf);
         System.out.println("list=" + list + ", list2=" + list2);
         Assert.assertEquals(list, list2);
 
         byte[] buffer={'B', 'e', 'l', 'a', ' ', 'B', 'a', 'n'};
         buf=Util.objectToByteBuffer(buffer);
 
-        byte[] buffer2=(byte[])Util.objectFromByteBuffer(buf);
+        byte[] buffer2=Util.objectFromByteBuffer(buf);
         assert buffer2 != null && buffer.length == buffer2.length;
         assert Arrays.equals(buffer, buffer2);
 
@@ -355,6 +355,7 @@ public class UtilTest {
     }
 
 
+
     public static void testMessageToByteBuffer() throws Exception {
         _testMessage(new Message());
         _testMessage(new Message(null, null, "hello world"));
@@ -375,10 +376,10 @@ public class UtilTest {
         byte[] tmp={'B', 'e', 'l', 'a'};
         String str=new String(tmp);
         byte[] buf=Util.objectToByteBuffer(str);
-        String str2=(String)Util.objectFromByteBuffer(buf);
+        String str2=Util.objectFromByteBuffer(buf);
         assert str.equals(str2);
         tmp[1]='a';
-        str2=(String)Util.objectFromByteBuffer(buf);
+        str2=Util.objectFromByteBuffer(buf);
         assert str.equals(str2);
     }
 
@@ -439,7 +440,7 @@ public class UtilTest {
         String str=new String(tmp, 0, tmp.length);
         byte[] retval=Util.objectToByteBuffer(str);
         System.out.println("length=" + retval.length + " bytes");
-        String obj=(String)Util.objectFromByteBuffer(retval);
+        String obj=Util.objectFromByteBuffer(retval);
         System.out.println("read " + obj.length() + " string");
     }
 
@@ -479,8 +480,8 @@ public class UtilTest {
         byte[] buf=outstream.toByteArray();
         ByteArrayInputStream instream=new ByteArrayInputStream(buf);
         DataInputStream dis=new DataInputStream(instream);
-        Message m2=(Message)Util.readGenericStreamable(dis);
-        ViewId v3=(ViewId)Util.readGenericStreamable(dis);
+        Message m2=Util.readGenericStreamable(dis);
+        ViewId v3=Util.readGenericStreamable(dis);
         assert m2.getBuffer() != null;
         Assert.assertEquals(m.getLength(), m2.getLength());
         assert v3 != null;
@@ -508,9 +509,9 @@ public class UtilTest {
         byte[] buf=outstream.toByteArray();
         ByteArrayInputStream instream=new ByteArrayInputStream(buf);
         DataInputStream dis=new DataInputStream(instream);
-        View v2=(View)Util.readGenericStreamable(dis);
+        View v2=Util.readGenericStreamable(dis);
         Assert.assertEquals(v, v2);
-        v2=(View)Util.readStreamable(View.class, dis);
+        v2=Util.readStreamable(View.class, dis);
         Assert.assertEquals(v, v2);
     }
 
@@ -1040,6 +1041,7 @@ public class UtilTest {
         assert method_name.equals(expected_output) :
                 "attrname=" + input + ", method name=" + method_name + ", expected output=" + expected_output;
     }
+
 
 }
 

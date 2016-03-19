@@ -9,10 +9,7 @@ import org.jgroups.protocols.TP;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Bits;
-import org.jgroups.util.Buffer;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -47,7 +44,7 @@ public class RequestCorrelator {
     protected RequestHandler                         request_handler;
 
     /** Possibility for an external marshaller to marshal/unmarshal responses */
-    protected RpcDispatcher.Marshaller               marshaller;
+    protected Marshaller                             marshaller;
 
     /** makes the instance unique (together with IDs) */
     protected short                                  corr_id=ClassConfigurator.getProtocolId(this.getClass());
@@ -102,15 +99,15 @@ public class RequestCorrelator {
         start();
     }
 
-    public Address                  getLocalAddress()              {return local_addr;}
-    public void                     setLocalAddress(Address a)     {this.local_addr=a;}
-    protected void                  removeEntry(long id)           {requests.remove(id);}
-    public RpcDispatcher.Marshaller getMarshaller()                {return marshaller;}
-    public void                     setMarshaller(RpcDispatcher.Marshaller marshaller) {this.marshaller=marshaller;}
-    public boolean                  asyncDispatching()             {return async_dispatching;}
-    public RequestCorrelator        asyncDispatching(boolean flag) {async_dispatching=flag; return this;}
-    public boolean                  wrapExceptions()               {return wrap_exceptions;}
-    public RequestCorrelator        wrapExceptions(boolean flag)   {wrap_exceptions=flag; return this;}
+    public Address                getLocalAddress()              {return local_addr;}
+    public RequestCorrelator      setLocalAddress(Address a)     {this.local_addr=a; return this;}
+    protected RequestCorrelator   removeEntry(long id)           {requests.remove(id); return this;}
+    public Marshaller             getMarshaller()                {return marshaller;}
+    public RequestCorrelator      setMarshaller(Marshaller m)    {this.marshaller=m; return this;}
+    public boolean                asyncDispatching()             {return async_dispatching;}
+    public RequestCorrelator      asyncDispatching(boolean flag) {async_dispatching=flag; return this;}
+    public boolean                wrapExceptions()               {return wrap_exceptions;}
+    public RequestCorrelator      wrapExceptions(boolean flag)   {wrap_exceptions=flag; return this;}
 
 
     /**
@@ -381,8 +378,7 @@ public class RequestCorrelator {
     protected void handleResponse(Request req, Address sender, byte[] buf, int offset, int length, boolean is_exception) {
         Object retval;
         try {
-            retval=marshaller != null? marshaller.objectFromBuffer(buf, offset, length) :
-              Util.objectFromByteBuffer(buf, offset, length);
+            retval=replyFromBuffer(buf, offset, length, marshaller);
         }
         catch(Exception e) {
             log.error(Util.getMessage("FailedUnmarshallingBufferIntoReturnValue"), e);
@@ -396,11 +392,11 @@ public class RequestCorrelator {
     protected void sendReply(final Message req, final long req_id, Object reply, boolean is_exception) {
         Buffer rsp_buf;
         try {  // retval could be an exception, or a real value
-            rsp_buf=marshaller != null? marshaller.objectToBuffer(reply) : Util.objectToBuffer(reply);
+            rsp_buf=replyToBuffer(reply, marshaller);
         }
         catch(Throwable t) {
             try {  // this call should succeed (all exceptions are serializable)
-                rsp_buf=marshaller != null? marshaller.objectToBuffer(t) : Util.objectToBuffer(t);
+                rsp_buf=replyToBuffer(t, marshaller);
                 is_exception=true;
             }
             catch(NotSerializableException not_serializable) {
@@ -412,11 +408,9 @@ public class RequestCorrelator {
                 return;
             }
         }
-
         Message rsp=req.makeReply().setFlag(req.getFlags()).setBuffer(rsp_buf)
           .clearFlag(Message.Flag.RSVP, Message.Flag.INTERNAL); // JGRP-1940
-
-       sendResponse(rsp, req_id, is_exception);
+        sendResponse(rsp, req_id, is_exception);
     }
 
     protected void sendResponse(Message rsp, long req_id, boolean is_exception) {
@@ -425,6 +419,21 @@ public class RequestCorrelator {
         if(log.isTraceEnabled())
             log.trace("sending rsp for %d to %s", req_id, rsp.getDest());
         transport.down(new Event(Event.MSG, rsp));
+    }
+
+    protected static Buffer replyToBuffer(Object obj, Marshaller marshaller) throws Exception {
+        int estimated_size=marshaller != null? marshaller.estimatedSize(obj) : 50;
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(estimated_size, true);
+        if(marshaller != null)
+            marshaller.objectToStream(obj, out);
+        else
+            Util.objectToStream(obj, out);
+        return out.getBuffer();
+    }
+
+    protected static Object replyFromBuffer(final byte[] buf, int offset, int length, Marshaller marshaller) throws Exception {
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
+        return marshaller != null? marshaller.objectFromStream(in) : Util.objectFromStream(in);
     }
 
 

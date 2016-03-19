@@ -1,15 +1,13 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Average;
+import org.jgroups.util.Bits;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
@@ -383,12 +381,12 @@ public abstract class FlowControl extends Protocol {
         switch(hdr.type) {
             case FcHeader.REPLENISH:
                 num_credit_responses_received++;
-                handleCredit(msg.getSrc(), (Long)msg.getObject());
+                handleCredit(msg.getSrc(), bufferToLong(msg.getRawBuffer(), msg.getOffset()));
                 break;
             case FcHeader.CREDIT_REQUEST:
                 num_credit_requests_received++;
                 Address sender=msg.getSrc();
-                Long requested_credits=(Long)msg.getObject();
+                Long requested_credits=bufferToLong(msg.getRawBuffer(), msg.getOffset());
                 if(requested_credits != null)
                     handleCreditRequest(received, sender,requested_credits);
                 break;
@@ -489,8 +487,8 @@ public abstract class FlowControl extends Protocol {
     protected void sendCredit(Address dest, long credits) {
         if(log.isTraceEnabled())
             log.trace("sending %d credits to %s", credits, dest);
-        Message msg=new Message(dest, credits).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
-          .putHeader(this.id,REPLENISH_HDR);
+        Message msg=new Message(dest, longToBuffer(credits))
+          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE).putHeader(this.id,REPLENISH_HDR);
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_responses_sent++;
     }
@@ -504,8 +502,8 @@ public abstract class FlowControl extends Protocol {
     protected void sendCreditRequest(final Address dest, long credits_needed) {
         if(log.isTraceEnabled())
             log.trace("sending request for %d credits to %s", credits_needed, dest);
-        Message msg=new Message(dest, credits_needed).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
-          .putHeader(this.id, CREDIT_REQUEST_HDR);
+        Message msg=new Message(dest, longToBuffer(credits_needed))
+          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE).putHeader(this.id, CREDIT_REQUEST_HDR);
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_requests_sent++;
     }
@@ -528,6 +526,16 @@ public abstract class FlowControl extends Protocol {
         return m.entrySet().stream().collect(StringBuilder::new,
                                              (sb,entry) -> sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n"),
                                              (l,r) -> {}).toString();
+    }
+
+    protected static byte[] longToBuffer(long num) {
+        byte[] buf=new byte[Global.LONG_SIZE];
+        Bits.writeLong(num, buf, 0);
+        return buf;
+    }
+
+    protected static long bufferToLong(byte[] buf, int offset) {
+        return Bits.readLong(buf, offset);
     }
 
 

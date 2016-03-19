@@ -55,7 +55,7 @@ public class DeliveryThread extends Thread {
                     try {
                         deliveryProtocol.deliver(msg);
                     } catch(Throwable t) {
-                        log.warn("Exception caught while delivering message " + msg + ":" + t.getMessage());
+                        log.warn("Exception caught while delivering message " + msg, t);
                     }
                 }
             } catch (InterruptedException e) {

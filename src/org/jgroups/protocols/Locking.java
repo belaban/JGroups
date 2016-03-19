@@ -219,7 +219,14 @@ abstract public class Locking extends Protocol {
                 if(hdr == null)
                     break;
 
-                Request req=(Request)msg.getObject();
+                Request req=null;
+                try {
+                    req=Util.streamableFromBuffer(Request.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                }
+                catch(Exception ex) {
+                    log.error("failed deserializng request", ex);
+                    return null;
+                }
                 log.trace("[%s] <-- [%s] %s", local_addr, msg.getSrc(), req);
                 switch(req.type) {
                     case GRANT_LOCK:
@@ -363,8 +370,7 @@ abstract public class Locking extends Protocol {
     }
 
     protected void send(Address dest, Request req) {
-       // Message msg=new Message(dest, req).putHeader(id, new LockingHeader()).setFlag(Message.Flag.OOB);
-        Message msg=new Message(dest, req).putHeader(id, new LockingHeader());
+        Message msg=new Message(dest, Util.streamableToBuffer(req)).putHeader(id, new LockingHeader());
         if(bypass_bundling)
             msg.setFlag(Message.Flag.DONT_BUNDLE);
         log.trace("[%s] --> %s] %s", local_addr, dest == null? "ALL" : dest, req);
