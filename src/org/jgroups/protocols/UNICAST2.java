@@ -423,7 +423,13 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                             sendAck(sender, hdr.seqno, hdr.conn_id);
                         return null; // we pass the deliverable message up in handleDataReceived()
                     case Unicast2Header.XMIT_REQ:  // received ACK for previously sent message
-                        handleXmitRequest(sender, (SeqnoList)msg.getObject());
+                        try {
+                            SeqnoList seqnos=Util.streamableFromBuffer(SeqnoList.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                            handleXmitRequest(sender, seqnos);
+                        }
+                        catch(Exception e) {
+                            log.error("failed deserializing retransmission list", e);
+                        }
                         break;
                     case Unicast2Header.SEND_FIRST_SEQNO:
                         handleResendingOfFirstMessage(sender, hdr.seqno);
@@ -743,7 +749,8 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
     public void retransmit(SeqnoList missing, Address sender) {
         Unicast2Header hdr=Unicast2Header.createXmitReqHeader();
-        Message retransmit_msg=new Message(sender, missing).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL);
+        Message retransmit_msg=new Message(sender).setBuffer(Util.streamableToBuffer(missing))
+          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL);
         if(log.isTraceEnabled())
             log.trace(local_addr + ": sending XMIT_REQ (" + missing + ") to " + sender);
         retransmit_msg.putHeader(this.id, hdr);

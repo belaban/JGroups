@@ -1,15 +1,13 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Average;
+import org.jgroups.util.Bits;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
@@ -397,12 +395,12 @@ public abstract class FlowControl extends Protocol {
         switch(hdr.type) {
             case FcHeader.REPLENISH:
                 num_credit_responses_received++;
-                handleCredit(msg.getSrc(), (Long)msg.getObject());
+                handleCredit(msg.getSrc(), bufferToLong(msg.getRawBuffer(), msg.getOffset()));
                 break;
             case FcHeader.CREDIT_REQUEST:
                 num_credit_requests_received++;
                 Address sender=msg.getSrc();
-                Long requested_credits=(Long)msg.getObject();
+                Long requested_credits=bufferToLong(msg.getRawBuffer(), msg.getOffset());
                 if(requested_credits != null)
                     handleCreditRequest(received, sender,requested_credits);
                 break;
@@ -550,6 +548,16 @@ public abstract class FlowControl extends Protocol {
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         }
         return sb.toString();
+    }
+
+    protected static byte[] longToBuffer(long num) {
+        byte[] buf=new byte[Global.LONG_SIZE];
+        Bits.writeLong(num, buf, 0);
+        return buf;
+    }
+
+    protected static long bufferToLong(byte[] buf, int offset) {
+        return Bits.readLong(buf, offset);
     }
 
 
