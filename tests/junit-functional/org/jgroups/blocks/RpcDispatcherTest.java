@@ -215,6 +215,17 @@ public class RpcDispatcherTest {
         }
     }
 
+    public void testUnicastExceptionNested()  {
+        try {
+            da.callRemoteMethod(b.getAddress(), "throwExceptionNested", null, null, new RequestOptions(ResponseMode.GET_ALL, 5000));
+        }
+        catch(Throwable throwable) {
+            System.out.printf("received exception (as expected): %s\n", throwable);
+            assert throwable instanceof IllegalArgumentException;
+            assert throwable.getCause() instanceof NullPointerException;
+        }
+    }
+
     public void testAsyncUnicast() throws Exception {
         MethodCall call=new MethodCall(ServerObject.class.getMethod("foo"));
         Integer result=da.callRemoteMethod(b.getAddress(), call, RequestOptions.ASYNC());
@@ -855,6 +866,13 @@ public class RpcDispatcherTest {
         }
 
         public int add(int a, int b) {return a+b;}
+
+        public static void throwExceptionNested() throws Exception {
+            Exception ex=new IllegalArgumentException("illegal argument - see cause for details");
+            Exception cause=new NullPointerException("the arg was null!");
+            ex.initCause(cause);
+            throw ex;
+        }
 
     }
 

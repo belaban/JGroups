@@ -124,7 +124,12 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
                         break;
                     case StateHeader.STATE_EX:
                         closeHoleFor(msg.getSrc());
-                        handleException(msg.getObject());
+                        try {
+                            handleException(Util.exceptionFromBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
+                        }
+                        catch(Throwable t) {
+                            log.error("failed deserializaing state exception", t);
+                        }
                         break;
                     default:
                         log.error("%s: type %s not known in StateHeader", local_addr, hdr.type);
@@ -339,7 +344,8 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
 
     protected void sendException(Address requester, Throwable exception) {
         try {
-            Message ex_msg=new Message(requester, exception).putHeader(getId(), new StateHeader(StateHeader.STATE_EX));
+            Message ex_msg=new Message(requester).setBuffer(Util.exceptionToBuffer(exception))
+              .putHeader(getId(), new StateHeader(StateHeader.STATE_EX));
             down(new Event(Event.MSG, ex_msg));
         }
         catch(Throwable t) {

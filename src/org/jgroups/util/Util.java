@@ -57,6 +57,7 @@ public class Util {
     private static final byte TYPE_SHORT        = 17;
     private static final byte TYPE_STRING       = 18;
     private static final byte TYPE_BYTEARRAY    = 19;
+    private static final byte TYPE_EXCEPTION    = 20;
 
     // constants
     public static final int MAX_PORT=65535; // highest port allocatable
@@ -475,6 +476,9 @@ public class Util {
                 byte[] tmp=new byte[length];
                 System.arraycopy(buffer,offset,tmp,0,length);
                 return (T)tmp;
+            case TYPE_EXCEPTION:
+                in=new ByteArrayDataInputStream(buffer,offset,length);
+                return (T)Util.exceptionFromStream(in);
             default:
                 throw new IllegalArgumentException("type " + type + " is invalid");
         }
@@ -488,6 +492,15 @@ public class Util {
     public static byte[] objectToByteBuffer(Object obj) throws Exception {
         if(obj == null)
             return TYPE_NULL_ARRAY;
+
+        if(obj instanceof Throwable) {
+            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512, true);
+            out.write(TYPE_EXCEPTION);
+            Util.exceptionToStream((Throwable)obj, out);
+            byte[] ret=new byte[out.position()];
+            System.arraycopy(out.buffer(), 0, ret, 0, out.position());
+            return ret;
+        }
 
         if(obj instanceof Streamable) {
             final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512, true);
@@ -565,6 +578,13 @@ public class Util {
         if(obj == null)
             return new Buffer(TYPE_NULL_ARRAY);
 
+        if(obj instanceof Throwable) {
+            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512, true);
+            out.write(TYPE_EXCEPTION);
+            Util.exceptionToStream((Throwable)obj, out);
+            return out.getBuffer();
+        }
+
         if(obj instanceof Streamable) {
             final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512, true);
             out.write(TYPE_STREAMABLE);
@@ -640,6 +660,12 @@ public class Util {
     public static void objectToStream(Object obj, DataOutput out) throws Exception {
         if(obj == null) {
             out.write(TYPE_NULL);
+            return;
+        }
+
+        if(obj instanceof Throwable) {
+            out.write(TYPE_EXCEPTION);
+            Util.exceptionToStream((Throwable)obj, out);
             return;
         }
 
@@ -753,6 +779,8 @@ public class Util {
                 byte[] tmpbuf=new byte[len];
                 in.readFully(tmpbuf,0,tmpbuf.length);
                 return (T)tmpbuf;
+            case TYPE_EXCEPTION:
+                return (T)Util.exceptionFromStream(in);
             default:
                 throw new IllegalArgumentException("type " + b + " is invalid");
         }
@@ -764,7 +792,7 @@ public class Util {
     }
 
     /**
-     * Poor man's serialization of an exception. Serializes only the reason and stack trace
+     * Poor man's serialization of an exception. Serializes only the message, stack trace and cause (not suppressed exceptions)
      */
     public static void exceptionToStream(Throwable t, DataOutput out) throws Exception {
         Set<Throwable> causes=new HashSet<>();
@@ -772,13 +800,55 @@ public class Util {
     }
 
     protected static void exceptionToStream(Set<Throwable> causes, Throwable t, DataOutput out) throws Exception {
-        // 1. classname
+        // 1. null check
+        if( t == null) {
+            out.writeBoolean(true);
+            return;
+        }
+        out.writeBoolean(false);
+
+        // 2. InvocationTargetException
+        boolean invocation_target_ex=t instanceof InvocationTargetException;
+        out.writeBoolean(invocation_target_ex);
+        if(invocation_target_ex) {
+            writeException(causes, t.getCause(), out);
+            return;
+        }
+
+        writeException(causes, t, out);
+    }
+
+    public static Buffer exceptionToBuffer(Throwable t) throws Exception {
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512, true);
+        exceptionToStream(t, out);
+        return out.getBuffer();
+    }
+
+
+    public static Throwable exceptionFromStream(DataInput in) throws Exception {
+        return exceptionFromStream(in, 0);
+    }
+
+
+    protected static Throwable exceptionFromStream(DataInput in, int recursion_count) throws Exception {
+        // 1. null check
+        if(in.readBoolean())
+            return null;
+
+        // 2. InvocationTargetException
+        if(in.readBoolean())
+            return new InvocationTargetException(readException(in, recursion_count));
+        return readException(in, recursion_count);
+    }
+
+    protected static void writeException(Set<Throwable> causes, Throwable t, DataOutput out) throws Exception {
+        // 3. classname
         Bits.writeString(t.getClass().getName(), out);
 
-        // 2. message
+        // 4. message
         Bits.writeString(t.getMessage(), out);
 
-        // 3. stack trace
+        // 5. stack trace
         StackTraceElement[] stack_trace=t.getStackTrace();
         int depth=stack_trace == null? 0 : stack_trace.length;
         out.writeShort(depth);
@@ -792,7 +862,7 @@ public class Util {
             }
         }
 
-        // 4. cause
+        // 6. cause
         Throwable cause=t.getCause();
         boolean serialize_cause=cause != null && causes.add(cause);
         out.writeBoolean(serialize_cause);
@@ -801,23 +871,32 @@ public class Util {
     }
 
 
-    public static Throwable exceptionFromStream(DataInput in) throws Exception {
-        return exceptionFromStream(in, 0);
-    }
-
-
-    protected static Throwable exceptionFromStream(DataInput in, int recursion_count) throws Exception {
-        // 1. classname
+    protected static Throwable readException(DataInput in, int recursion_count) throws Exception {
+        // 3. classname
         String classname=Bits.readString(in);
         Class<? extends Throwable> clazz=(Class<? extends Throwable>)Util.loadClass(classname, (ClassLoader)null);
 
-        // 2. message
+        // 4. message
         String message=Bits.readString(in);
 
-        Constructor<? extends Throwable> ctor=clazz.getDeclaredConstructor(String.class);
-        Throwable t=ctor.newInstance(message);
+        Throwable retval=null;
+        Constructor<? extends Throwable> ctor=null;
 
-        // 3. stack trace
+        try {
+            ctor=clazz.getDeclaredConstructor(String.class);
+            if(ctor != null) {
+                if(!ctor.isAccessible())
+                    ctor.setAccessible(true);
+                retval=ctor.newInstance(message);
+            }
+        }
+        catch(Throwable t) {
+        }
+
+        if(retval == null)
+            retval=clazz.newInstance();
+
+        // 5. stack trace
         int depth=in.readShort();
         if(depth > 0) {
             StackTraceElement[] stack_trace=new StackTraceElement[depth];
@@ -829,10 +908,10 @@ public class Util {
                 StackTraceElement trace=new StackTraceElement(class_name, method_name, filename, line_number);
                 stack_trace[i]=trace;
             }
-            t.setStackTrace(stack_trace);
+            retval.setStackTrace(stack_trace);
         }
 
-        // 4. cause
+        // 6. cause
         if(in.readBoolean()) {
             // if malicious code constructs an exception whose causes have circles, then that would blow up the stack, so
             // we make sure here that we stop after a certain number of recursive calls
@@ -840,10 +919,20 @@ public class Util {
                 throw new IllegalStateException(String.format("failed deserializing exception: recursion count=%d",
                                                               recursion_count));
             Throwable cause=exceptionFromStream(in, recursion_count);
-            t.initCause(cause);
+            try {
+                retval.initCause(cause); // will throw an exception if cause is already set
+            }
+            catch(Throwable t) {
+                return retval;
+            }
         }
+        return retval;
+    }
 
-        return t;
+
+    public static Throwable exceptionFromBuffer(byte[] buf, int offset, int length) throws Exception {
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset,length);
+        return exceptionFromStream(in);
     }
 
 

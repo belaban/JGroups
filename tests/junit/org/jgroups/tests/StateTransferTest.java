@@ -275,7 +275,7 @@ public class StateTransferTest extends ChannelTestBase {
         }
 
         public void receive(Message msg) {
-            String key=(String)msg.getObject();
+            String key=msg.getObject();
 
             Address sender=msg.getSrc();
             AtomicInteger cnt=count.get(sender);
@@ -310,7 +310,7 @@ public class StateTransferTest extends ChannelTestBase {
 
         @SuppressWarnings("unchecked")
         public void setState(InputStream istream) throws Exception {
-            Map<String,List<Long>> tmp=(Map<String,List<Long>>)Util.objectFromStream(new DataInputStream(istream));
+            Map<String,List<Long>> tmp=Util.objectFromStream(new DataInputStream(istream));
             synchronized(map) {
                 map.clear();
                 map.putAll(tmp);

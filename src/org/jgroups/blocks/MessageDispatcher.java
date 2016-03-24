@@ -46,7 +46,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
     protected StateListener                         state_listener;
     protected RequestHandler                        req_handler;
     protected boolean                               async_dispatching;
-    protected boolean                               wrap_exceptions=false;
+    protected boolean                               wrap_exceptions;
     protected ProtocolAdapter                       prot_adapter;
     protected volatile Collection<Address>          members=new HashSet<>();
     protected Address                               local_addr;

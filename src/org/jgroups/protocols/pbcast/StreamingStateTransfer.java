@@ -206,7 +206,12 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
                             handleEOF(sender);
                             break;
                         case StateHeader.STATE_EX:
-                            handleException(msg.getObject());
+                            try {
+                                handleException(Util.exceptionFromBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
+                            }
+                            catch(Throwable t) {
+                                log.error("failed deserializaing state exception", t);
+                            }
                             break;
                         default:
                             log.error("%s: type %d not known in StateHeader", local_addr, hdr.type);
@@ -335,7 +340,8 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
     protected void sendException(Address requester, Throwable exception) {
         try {
-            Message ex_msg=new Message(requester, null, exception).putHeader(getId(), new StateHeader(StateHeader.STATE_EX));
+            Message ex_msg=new Message(requester).setBuffer(Util.exceptionToBuffer(exception))
+              .putHeader(getId(), new StateHeader(StateHeader.STATE_EX));
             down(new Event(Event.MSG, ex_msg));
         }
         catch(Throwable t) {
@@ -570,8 +576,8 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
-            digest=(Digest)Util.readStreamable(Digest.class, in);
-            bind_addr=(IpAddress)Util.readStreamable(IpAddress.class, in);
+            digest=Util.readStreamable(Digest.class, in);
+            bind_addr=Util.readStreamable(IpAddress.class, in);
         }
 
         public int size() {
