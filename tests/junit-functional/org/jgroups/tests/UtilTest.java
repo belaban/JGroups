@@ -404,6 +404,31 @@ public class UtilTest {
     }
 
 
+    public void testExceptionToStream() throws Exception {
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512, true);
+        Throwable cause=new IllegalArgumentException("this is highly illegal!");
+        NullPointerException ex=new NullPointerException("boom");
+        ex.initCause(cause);
+        int stack_len=ex.getStackTrace().length;
+
+        Util.exceptionToStream(ex, out);
+
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(out.buffer(), 0, out.position());
+        Throwable new_ex=Util.exceptionFromStream(in);
+        int new_stack_len=new_ex.getStackTrace().length;
+
+
+        assert new_ex instanceof NullPointerException;
+        assert new_ex.getMessage().equals("boom");
+        assert new_ex.getStackTrace().length > 0;
+        assert new_stack_len == stack_len;
+
+        Throwable new_cause=new_ex.getCause();
+        assert new_cause instanceof IllegalArgumentException;
+        assert new_cause.getMessage().startsWith("this is highly");
+    }
+
+
     protected static class MyNioReceiver extends org.jgroups.blocks.cs.ReceiverAdapter {
         protected String name;
 

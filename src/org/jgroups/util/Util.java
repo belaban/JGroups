@@ -21,10 +21,7 @@ import java.lang.annotation.Annotation;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
@@ -764,6 +761,89 @@ public class Util {
 
     public static <T extends Streamable> T streamableFromByteBuffer(Class<? extends Streamable> cl,byte[] buffer) throws Exception {
         return streamableFromByteBuffer(cl,buffer,0,buffer.length);
+    }
+
+    /**
+     * Poor man's serialization of an exception. Serializes only the reason and stack trace
+     */
+    public static void exceptionToStream(Throwable t, DataOutput out) throws Exception {
+        Set<Throwable> causes=new HashSet<>();
+        exceptionToStream(causes, t, out);
+    }
+
+    protected static void exceptionToStream(Set<Throwable> causes, Throwable t, DataOutput out) throws Exception {
+        // 1. classname
+        Bits.writeString(t.getClass().getName(), out);
+
+        // 2. message
+        Bits.writeString(t.getMessage(), out);
+
+        // 3. stack trace
+        StackTraceElement[] stack_trace=t.getStackTrace();
+        int depth=stack_trace == null? 0 : stack_trace.length;
+        out.writeShort(depth);
+        if(depth > 0) {
+            for(int i=0; i < stack_trace.length; i++) {
+                StackTraceElement trace=stack_trace[i];
+                Bits.writeString(trace.getClassName(), out);
+                Bits.writeString(trace.getMethodName(), out);
+                Bits.writeString(trace.getFileName(), out);
+                Bits.writeInt(trace.getLineNumber(), out);
+            }
+        }
+
+        // 4. cause
+        Throwable cause=t.getCause();
+        boolean serialize_cause=cause != null && causes.add(cause);
+        out.writeBoolean(serialize_cause);
+        if(serialize_cause)
+            exceptionToStream(causes, cause, out);
+    }
+
+
+    public static Throwable exceptionFromStream(DataInput in) throws Exception {
+        return exceptionFromStream(in, 0);
+    }
+
+
+    protected static Throwable exceptionFromStream(DataInput in, int recursion_count) throws Exception {
+        // 1. classname
+        String classname=Bits.readString(in);
+        Class<? extends Throwable> clazz=(Class<? extends Throwable>)Util.loadClass(classname, (ClassLoader)null);
+
+        // 2. message
+        String message=Bits.readString(in);
+
+        Constructor<? extends Throwable> ctor=clazz.getDeclaredConstructor(String.class);
+        Throwable t=ctor.newInstance(message);
+
+        // 3. stack trace
+        int depth=in.readShort();
+        if(depth > 0) {
+            StackTraceElement[] stack_trace=new StackTraceElement[depth];
+            for(int i=0; i < depth; i++) {
+                String class_name=Bits.readString(in);
+                String method_name=Bits.readString(in);
+                String filename=Bits.readString(in);
+                int line_number=Bits.readInt(in);
+                StackTraceElement trace=new StackTraceElement(class_name, method_name, filename, line_number);
+                stack_trace[i]=trace;
+            }
+            t.setStackTrace(stack_trace);
+        }
+
+        // 4. cause
+        if(in.readBoolean()) {
+            // if malicious code constructs an exception whose causes have circles, then that would blow up the stack, so
+            // we make sure here that we stop after a certain number of recursive calls
+            if(++recursion_count > 20)
+                throw new IllegalStateException(String.format("failed deserializing exception: recursion count=%d",
+                                                              recursion_count));
+            Throwable cause=exceptionFromStream(in, recursion_count);
+            t.initCause(cause);
+        }
+
+        return t;
     }
 
 
