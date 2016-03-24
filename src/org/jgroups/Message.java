@@ -676,20 +676,6 @@ public class Message implements Streamable {
 
 
 
-    /** Tries to read an object from the message's buffer and prints it */
-    public String toStringAsObject() {
-        if(buf == null) return null;
-        try {
-            Object obj=getObject();
-            return obj != null ? obj.toString() : "";
-        }
-        catch(Exception e) {  // it is not an object
-            return "";
-        }
-    }
-
-
-
     public String printObjectHeaders() {
         return Headers.printObjectHeaders(this.headers);
     }
