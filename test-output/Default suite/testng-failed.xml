@@ -3,21 +3,17 @@
 <suite guice-stage="DEVELOPMENT" name="Failed suite [Default suite]">
   <test name="Default test(failed)">
     <classes>
-      <class name="org.jgroups.protocols.S3_PING2Test">
+      <class name="org.jgroups.protocols.aws.v4.requests.s3.AWS_AUTH4Test">
         <methods>
-          <include name="testDeleteBucket"/>
-          <include name="testDeleteObject"/>
-          <include name="testGetObject"/>
-          <include name="testCreateBucket"/>
           <include name="testGetBucketLocation"/>
-          <include name="testListBucket"/>
-          <include name="testGetAcl"/>
-          <include name="testCheckBucketExists"/>
-          <include name="testPutObject"/>
+          <include name="testGetObject"/>
+          <include name="testBucketExists"/>
           <include name="setUp"/>
+          <include name="testGetPresignedURL"/>
           <include name="testListAllMyBuckets"/>
+          <include name="testPutObject"/>
         </methods>
-      </class> <!-- org.jgroups.protocols.S3_PING2Test -->
+      </class> <!-- org.jgroups.protocols.aws.v4.requests.s3.AWS_AUTH4Test -->
     </classes>
   </test> <!-- Default test(failed) -->
 </suite> <!-- Failed suite [Default suite] -->

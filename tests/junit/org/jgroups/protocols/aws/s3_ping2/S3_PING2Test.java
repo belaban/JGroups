@@ -1,4 +1,4 @@
-package org.jgroups.protocols;
+package org.jgroups.protocols.aws.s3_ping2;
 
 import java.net.HttpURLConnection;
 import java.util.Arrays;
@@ -8,16 +8,17 @@ import java.util.List;
 import java.util.Map;
 
 import org.jgroups.Global;
-import org.jgroups.protocols.S3_PING2.AWSAuthConnection;
-import org.jgroups.protocols.S3_PING2.Bucket;
-import org.jgroups.protocols.S3_PING2.GetResponse;
-import org.jgroups.protocols.S3_PING2.ListAllMyBucketsResponse;
-import org.jgroups.protocols.S3_PING2.ListBucketResponse;
-import org.jgroups.protocols.S3_PING2.LocationResponse;
-import org.jgroups.protocols.S3_PING2.PreSignedUrlParser;
-import org.jgroups.protocols.S3_PING2.Response;
-import org.jgroups.protocols.S3_PING2.S3Object;
-import org.jgroups.protocols.S3_PING2.Utils;
+import org.jgroups.protocols.aws.s3_ping2.S3_PING2;
+import org.jgroups.protocols.aws.s3_ping2.S3_PING2.AWSAuthConnection;
+import org.jgroups.protocols.aws.s3_ping2.S3_PING2.Bucket;
+import org.jgroups.protocols.aws.s3_ping2.S3_PING2.GetResponse;
+import org.jgroups.protocols.aws.s3_ping2.S3_PING2.ListAllMyBucketsResponse;
+import org.jgroups.protocols.aws.s3_ping2.S3_PING2.ListBucketResponse;
+import org.jgroups.protocols.aws.s3_ping2.S3_PING2.LocationResponse;
+import org.jgroups.protocols.aws.s3_ping2.S3_PING2.PreSignedUrlParser;
+import org.jgroups.protocols.aws.s3_ping2.S3_PING2.Response;
+import org.jgroups.protocols.aws.s3_ping2.S3_PING2.S3Object;
+import org.jgroups.protocols.aws.s3_ping2.S3_PING2.Utils;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -561,7 +562,7 @@ public class S3_PING2Test {
     @Test
     public void testGeneratePreSignedUrlForPut() {
         String expectedUrl = "http://test-bucket.s3.amazonaws.com/subdir/node1?AWSAccessKeyId=abcd&Expires=1234567890&Signature=GWu2Mm5MysW83YDgS2R0Jakthes%3D";
-        String preSignedUrl = S3_PING.generatePreSignedUrl("abcd", "efgh", "put",
+        String preSignedUrl = S3_PING2.generatePreSignedUrl("abcd", "efgh", "put",
                                                            "test-bucket", "subdir/node1",
                                                            1234567890);
         Assert.assertEquals(preSignedUrl, expectedUrl);
@@ -570,7 +571,7 @@ public class S3_PING2Test {
     @Test
     public void testGeneratePreSignedUrlForDelete() {
         String expectedUrl = "http://test-bucket.s3.amazonaws.com/subdir/node1?AWSAccessKeyId=abcd&Expires=1234567890&Signature=qbEMukqq0KIpZVjXaDi0VxepSVo%3D";
-        String preSignedUrl = S3_PING.generatePreSignedUrl("abcd", "efgh", "delete",
+        String preSignedUrl = S3_PING2.generatePreSignedUrl("abcd", "efgh", "delete",
                                                            "test-bucket", "subdir/node1",
                                                            1234567890);
         Assert.assertEquals(preSignedUrl, expectedUrl);

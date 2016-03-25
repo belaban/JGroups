@@ -1,7 +1,9 @@
-package org.jgroups.protocols;
+package org.jgroups.protocols.aws.s3_ping2;
 
 import org.jgroups.Address;
 import org.jgroups.annotations.Property;
+import org.jgroups.protocols.FILE_PING;
+import org.jgroups.protocols.PingData;
 import org.jgroups.protocols.aws.v4.requests.AWS4Signer;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
@@ -416,26 +418,65 @@ public class S3_PING2 extends FILE_PING {
         private int port;
         private CallingFormat callingFormat;
 
+        /**
+         * Create a new interface to interact with S3
+         * @param region
+         * @param awsAccessKeyId
+         * @param awsSecretAccessKey
+         */
         public AWSAuthConnection(String region, String awsAccessKeyId, String awsSecretAccessKey) {
             this(region, awsAccessKeyId, awsSecretAccessKey, true);
         }
 
+        /**
+         * Create a new interface to interact with S3
+         * @param region
+         * @param awsAccessKeyId
+         * @param awsSecretAccessKey
+         * @param isSecure
+         */
         public AWSAuthConnection(String region, String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure) {
             this(region, awsAccessKeyId, awsSecretAccessKey, isSecure, Utils.DEFAULT_HOST);
         }
 
+        /**
+         * Create a new interface to interact with S3
+         * @param region
+         * @param awsAccessKeyId
+         * @param awsSecretAccessKey
+         * @param isSecure
+         * @param server
+         */
         public AWSAuthConnection(String region, String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
                                  String server) {
             this(region, awsAccessKeyId, awsSecretAccessKey, isSecure, server,
                  isSecure? Utils.SECURE_PORT : Utils.INSECURE_PORT);
         }
 
+        /**
+         * Create a new interface to interact with S3
+         * @param region
+         * @param awsAccessKeyId
+         * @param awsSecretAccessKey
+         * @param isSecure
+         * @param server
+         * @param port
+         */
         public AWSAuthConnection(String region, String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
                                  String server, int port) {
             this(region, awsAccessKeyId, awsSecretAccessKey, isSecure, server, port, CallingFormat.getSubdomainCallingFormat());
 
         }
 
+        /**
+         * Create a new interface to interact with S3
+         * @param region
+         * @param awsAccessKeyId
+         * @param awsSecretAccessKey
+         * @param isSecure
+         * @param server
+         * @param format             Type of request Subdomain/Path or Vanity domain
+         */
         public AWSAuthConnection(String region, String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
                                  String server, CallingFormat format) {
             this(region, awsAccessKeyId, awsSecretAccessKey, isSecure, server,
@@ -444,14 +485,14 @@ public class S3_PING2 extends FILE_PING {
         }
 
         /**
-         * Create a new interface to interact with S3 with the given credential and connection
-         * parameters
+         * Create a new interface to interact with S3
+         * @param region
          * @param awsAccessKeyId     Your user key into AWS
          * @param awsSecretAccessKey The secret string used to generate signatures for authentication.
          * @param isSecure           use SSL encryption
          * @param server             Which host to connect to.  Usually, this will be s3.amazonaws.com
          * @param port               Which port to use.
-         * @param format             Type of request Regular/Vanity or Pure Vanity domain
+         * @param format             Type of request Subdomain/Path or Vanity domain
          */
         public AWSAuthConnection(String region, String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
                                  String server, int port, CallingFormat format) {
@@ -2262,6 +2303,8 @@ public class S3_PING2 extends FILE_PING {
 
     abstract static class CallingFormat {
 
+		// Test edit from EA
+    	
         protected static CallingFormat pathCallingFormat=new PathCallingFormat();
         protected static CallingFormat subdomainCallingFormat=new SubdomainCallingFormat();
         protected static CallingFormat vanityCallingFormat=new VanityCallingFormat();

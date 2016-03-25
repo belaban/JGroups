@@ -33,7 +33,7 @@ public class AWS_AUTH4Test {
         awsSecretKey = System.getenv("awsSecretKey");
         
         bucketName = System.getenv("bucketName");
-        bucketName = "eu-central-1-tti-mark";
+        bucketName = "eu-central-1-tti-alice";
 
         //regionName = System.getenv("regionName"); // Frankfurt eu-central-1
         regionName = "eu-central-1"; // Frankfurt eu-central-1
