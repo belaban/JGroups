@@ -83,15 +83,14 @@ public final class SaslUtils {
 
             Provider[] providers = Security.getProviders();
             for (Provider currentProvider : providers) {
-                final ClassLoader cl = Thread.currentThread().getContextClassLoader();
+                final ClassLoader cl = currentProvider.getClass().getClassLoader();
                 currentProvider.keySet().stream().filter(currentKey -> currentKey instanceof String && ((String)currentKey).startsWith(filter)
                   && ((String)currentKey).indexOf(' ') < 0).forEach(currentKey -> {
                     String className=currentProvider.getProperty((String)currentKey);
                     if(className != null && loadedClasses.add(className)) {
                         try {
                             factories.add(Class.forName(className, true, cl).asSubclass(type).newInstance());
-                        }
-                        catch(ClassNotFoundException | ClassCastException | InstantiationException | IllegalAccessException e) {
+                        } catch(ClassNotFoundException | ClassCastException | InstantiationException | IllegalAccessException e) {
                         }
                     }
                 });
@@ -101,7 +100,7 @@ public final class SaslUtils {
     }
 
     public static SaslServerFactory getSaslServerFactory(String mech, Map<String, ?> props) {
-        Iterator<SaslServerFactory> saslFactories = SaslUtils.getSaslServerFactories(Thread.currentThread().getContextClassLoader(), true);
+        Iterator<SaslServerFactory> saslFactories = SaslUtils.getSaslServerFactories(SaslUtils.class.getClassLoader(), true);
         while (saslFactories.hasNext()) {
             SaslServerFactory saslFactory = saslFactories.next();
             for (String supportedMech : saslFactory.getMechanismNames(props)) {
@@ -114,7 +113,7 @@ public final class SaslUtils {
     }
 
     public static SaslClientFactory getSaslClientFactory(String mech, Map<String, ?> props) {
-        Iterator<SaslClientFactory> saslFactories = SaslUtils.getSaslClientFactories(Thread.currentThread().getContextClassLoader(), true);
+        Iterator<SaslClientFactory> saslFactories = SaslUtils.getSaslClientFactories(SaslUtils.class.getClassLoader(), true);
         while (saslFactories.hasNext()) {
             SaslClientFactory saslFactory = saslFactories.next();
             for (String supportedMech : saslFactory.getMechanismNames(props)) {

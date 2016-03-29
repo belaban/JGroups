@@ -90,7 +90,7 @@ public class Util {
     protected static ResourceBundle resource_bundle;
 
     static {
-        resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Thread.currentThread().getContextClassLoader());
+        resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Util.class.getClassLoader());
 
         f=NumberFormat.getNumberInstance();
         f.setGroupingUsed(false);
