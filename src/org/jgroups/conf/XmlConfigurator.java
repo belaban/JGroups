@@ -179,7 +179,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         InputStream is = cl == null ? null : cl.getResourceAsStream(filename);
         if (is == null) {
             // check system class loader
-            is = Thread.currentThread().getContextClassLoader().getResourceAsStream(filename);
+            is = XmlConfigurator.class.getClassLoader().getResourceAsStream(filename);
         }
         return is;
     }
