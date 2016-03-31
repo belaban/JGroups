@@ -2849,12 +2849,12 @@ public class Util {
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Returns a list of IpAddresses
      */
     public static List<PhysicalAddress> parseCommaDelimitedHosts(String hosts,int port_range) throws UnknownHostException {
-        StringTokenizer tok=new StringTokenizer(hosts,",");
+        StringTokenizer tok=hosts != null? new StringTokenizer(hosts,",") : null;
         String t;
         IpAddress addr;
         Set<PhysicalAddress> retval=new HashSet<>();
 
-        while(tok.hasMoreTokens()) {
+        while(tok != null && tok.hasMoreTokens()) {
             t=tok.nextToken().trim();
             String host=t.substring(0,t.indexOf('['));
             host=host.trim();
