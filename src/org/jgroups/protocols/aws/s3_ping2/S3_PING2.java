@@ -80,42 +80,49 @@ public class S3_PING2 extends FILE_PING {
     public boolean isInitilized = false;
     @Override
     public void init() throws Exception {
+    	
         super.init();
 
         /* Use the environment to pass the AWS info
          during development so your keys are not 
          commited to the repo by accident. */
-        if(access_key == null || access_key.length() > 0){
-        	access_key = System.getenv("access_key");
-        }
-        if(secret_access_key == null || secret_access_key.length() > 0){
-        	secret_access_key = System.getenv("secret_access_key");
-        }        
+        
+		if (access_key == null) {
+			access_key = System.getenv("access_key");
+		}
 
-        if(host == null)
-            host=Utils.DEFAULT_HOST;
-        validateProperties();
-        conn=createConnection();
+		if (secret_access_key == null) {
+			secret_access_key = System.getenv("secret_access_key");
+		}
 
-        if(prefix != null && !prefix.isEmpty()) {
-            ListAllMyBucketsResponse bucket_list=conn.listAllMyBuckets(null);
-            List buckets=bucket_list.entries;
-            if(buckets != null) {
-                boolean found=false;
-                for(Object tmp: buckets) {
-                    if(tmp instanceof Bucket) {
-                        Bucket bucket=(Bucket)tmp;
-                        if(bucket.name.startsWith(prefix)) {
-                            location=bucket.name;
-                            found=true;
-                        }
-                    }
-                }
-                if(!found) {
-                    location=prefix + "-" + java.util.UUID.randomUUID().toString();
-                }
-            }
-        }
+		if (host == null) {
+			host = Utils.DEFAULT_HOST;
+		}
+
+		validateProperties();
+
+		conn = createConnection();
+
+		if (prefix != null && !prefix.isEmpty()) {
+			ListAllMyBucketsResponse bucket_list = conn.listAllMyBuckets(null);
+			List buckets = bucket_list.entries;
+			if (buckets != null) {
+				boolean found = false;
+				for (Object tmp : buckets) {
+					if (tmp instanceof Bucket) {
+						Bucket bucket = (Bucket) tmp;
+						if (bucket.name.startsWith(prefix)) {
+							location = bucket.name;
+							found = true;
+						}
+					}
+				}
+				if (!found) {
+					location = prefix + "-"
+							+ java.util.UUID.randomUUID().toString();
+				}
+			}
+		}
 
         if(usingPreSignedUrls()) {
             PreSignedUrlParser parsedPut = new PreSignedUrlParser(pre_signed_put_url);
