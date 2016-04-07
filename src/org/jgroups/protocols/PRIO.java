@@ -40,7 +40,7 @@ public class PRIO extends Protocol {
     private DownMessageThread                      downMessageThread;
     private UpMessageThread                        upMessageThread;
 
-	@Property(description="The number of miliseconds to sleep before after an error occurs before sending the next message")
+	@Property(description="The number of milliseconds to sleep before after an error occurs before sending the next message")
 	private int message_failure_sleep_time = 120000; // two seconds (bela: 2 minutes, is that what you wanted ?)
 
 	@Property(description="true to prioritize outgoing messages")
