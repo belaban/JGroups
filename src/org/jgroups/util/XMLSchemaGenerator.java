@@ -26,7 +26,11 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -106,7 +110,14 @@ public class XMLSchemaGenerator {
         for(String suffix: suffixes) {
             String package_name=PROT_PACKAGE + (suffix == null || suffix.isEmpty()? "" : "." + suffix);
             Set<Class<?>> classes=getClasses(Protocol.class, package_name);
-            for (Class<?> clazz : classes)
+            List<Class<?>> sortedClasses = new LinkedList<>(classes);
+            Collections.sort(sortedClasses, new Comparator<Class<?>>() {
+                @Override
+                public int compare(Class<?> o1, Class<?> o2) {
+                    return o1.getCanonicalName().compareTo(o2.getCanonicalName());
+                }
+            });
+            for (Class<?> clazz : sortedClasses)
                 classToXML(xmldoc, parent, clazz, package_name);
         }
     }
@@ -125,7 +136,13 @@ public class XMLSchemaGenerator {
                     if (file.endsWith(".class")) {
                         String name = packageName + '.' + file.substring(0, file.indexOf(".class"));
                         Class<?> clazz = Class.forName(name);
-                        if (assignableFrom.isAssignableFrom(clazz))
+
+                        int mods=clazz.getModifiers();
+                        boolean isConcreteClass=!Modifier.isAbstract(mods);
+                        boolean is_public=Modifier.isPublic(mods);
+                        boolean generate=is_public && isConcreteClass && !clazz.isAnonymousClass();
+
+                        if (assignableFrom.isAssignableFrom(clazz) && generate)
                             classes.add(clazz);
                     }
                 }
@@ -136,14 +153,6 @@ public class XMLSchemaGenerator {
 
     private static void classToXML(Document xmldoc, Element parent, Class<?> clazz,
                                    String preAppendToSimpleClassName) throws Exception {
-        int mods=clazz.getModifiers();
-        boolean isConcreteClass=!Modifier.isAbstract(mods);
-        boolean is_public=Modifier.isPublic(mods);
-        boolean generate=is_public && isConcreteClass && !clazz.isAnonymousClass();
-
-        if(!generate)
-            return;
-
         XmlInclude incl=Util.getAnnotation(clazz, XmlInclude.class);
         if(incl != null) {
             String[] schemas=incl.schema();
