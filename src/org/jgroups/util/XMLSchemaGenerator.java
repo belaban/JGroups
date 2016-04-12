@@ -58,7 +58,8 @@ public class XMLSchemaGenerator {
             }
         }
 
-        File f = new File(outputDir, "jgroups-" + Version.major + "." + Version.minor + ".xsd");
+        String version = Version.major + "." + Version.minor;
+        File f = new File(outputDir, "jgroups-" + version + ".xsd");
         try {
             FileWriter fw = new FileWriter(f, false);
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -68,6 +69,7 @@ public class XMLSchemaGenerator {
             xmldoc.getDocumentElement().setAttribute("targetNamespace", "urn:org:jgroups");
             xmldoc.getDocumentElement().setAttribute("elementFormDefault", "qualified");
             xmldoc.getDocumentElement().setAttribute("attributeFormDefault", "qualified");
+            xmldoc.getDocumentElement().setAttribute("version", version);
 
             Element complexType = xmldoc.createElement("xs:complexType");
             complexType.setAttribute("name", "ConfigType");
