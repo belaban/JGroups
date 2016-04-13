@@ -147,21 +147,19 @@ public class XMLSchemaGenerator {
         XmlInclude incl=Util.getAnnotation(clazz, XmlInclude.class);
         if(incl != null) {
             String[] schemas=incl.schema();
-            if(schemas != null) {
-                for(String schema: schemas) {
-                    Element incl_el=xmldoc.createElement(incl.type() == XmlInclude.Type.IMPORT? "xs:import" : "xs:include");
-                    if(incl.namespace() != null && !incl.namespace().isEmpty())
-                        incl_el.setAttribute("namespace",incl.namespace());
-                    incl_el.setAttribute("schemaLocation", schema);
+            for (String schema : schemas) {
+                Element incl_el = xmldoc.createElement(incl.type() == XmlInclude.Type.IMPORT ? "xs:import" : "xs:include");
+                if (!incl.namespace().isEmpty())
+                    incl_el.setAttribute("namespace", incl.namespace());
+                incl_el.setAttribute("schemaLocation", schema);
 
-                    Node first_child=xmldoc.getDocumentElement().getFirstChild();
-                    if(first_child == null)
-                        xmldoc.getDocumentElement().appendChild(incl_el);
-                    else
-                        xmldoc.getDocumentElement().insertBefore(incl_el, first_child);
-                }
+                Node first_child = xmldoc.getDocumentElement().getFirstChild();
+                if (first_child == null)
+                    xmldoc.getDocumentElement().appendChild(incl_el);
+                else
+                    xmldoc.getDocumentElement().insertBefore(incl_el, first_child);
             }
-            if(incl.alias() != null && !incl.alias().isEmpty())
+            if(!incl.alias().isEmpty())
                 xmldoc.getDocumentElement().setAttribute("xmlns:" + incl.alias(), incl.namespace());
         }
 
@@ -172,7 +170,7 @@ public class XMLSchemaGenerator {
 
         Element classElement = xmldoc.createElement("xs:element");
         String elementName = pkgname + "." + clazz.getSimpleName();
-        if(elementName == null || elementName.isEmpty()) {
+        if(elementName.isEmpty()) {
             throw new IllegalArgumentException("Cannot create empty attribute name for element xs:element, class is " + clazz);
         }
 
@@ -199,7 +197,7 @@ public class XMLSchemaGenerator {
         XmlAttribute xml_attr=Util.getAnnotation(clazz, XmlAttribute.class);
         if(xml_attr != null) {
             String[] attrs=xml_attr.attrs();
-            if(attrs != null && attrs.length > 0) {
+            if(attrs.length > 0) {
                 Set<String> set=new HashSet<>(Arrays.asList(attrs)); // to weed out dupes
                 for(String attr: set) {
                     Element attributeElement = xmldoc.createElement("xs:attribute");
