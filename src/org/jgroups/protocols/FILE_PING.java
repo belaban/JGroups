@@ -71,11 +71,17 @@ public class FILE_PING extends Discovery {
     public void init() throws Exception {
         super.init();
         createRootDir();
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                remove(cluster_name, local_addr);
-            }
-        });
+        try {
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                public void run() {
+                    remove(cluster_name, local_addr);
+                }
+            });
+        }
+        // This can be thrown if the JVM is already in the process of shutting down
+        catch (IllegalStateException e) {
+            log.debug("Unable to add shutdown hook for " + this.getClass().getCanonicalName() + ". File " + cluster_name + "/" + addressToFilename(local_addr) + " may not be deleted.");
+        }
     }
 
 
