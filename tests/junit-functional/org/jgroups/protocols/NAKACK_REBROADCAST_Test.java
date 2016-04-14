@@ -88,7 +88,12 @@ public class NAKACK_REBROADCAST_Test {
                 Message msg=(Message)evt.getArg();
                 NakAckHeader2 hdr=(NakAckHeader2)msg.getHeader(NAKACK_ID);
                 if(hdr != null && hdr.getType() == NakAckHeader2.XMIT_REQ) {
-                    this.range=(SeqnoList)msg.getObject();
+                    try {
+                        this.range=Util.streamableFromBuffer(SeqnoList.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    }
+                    catch(Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
 
