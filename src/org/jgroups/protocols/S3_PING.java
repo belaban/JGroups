@@ -1887,7 +1887,7 @@ public class S3_PING extends FILE_PING {
             String canonicalString =
                 makeCanonicalString(method, bucket, key, pathArgs, headers, String.valueOf(expirationDate));
             String encodedCanonical = encode(awsSecretAccessKey, canonicalString, true);
-            return "http://" + bucket + "." + DEFAULT_HOST + "/" + key + "?" +
+            return "https://" + bucket + "." + DEFAULT_HOST + "/" + key + "?" +
                 "AWSAccessKeyId=" + awsAccessKey + "&Expires=" + expirationDate +
                 "&Signature=" + encodedCanonical;
         }
