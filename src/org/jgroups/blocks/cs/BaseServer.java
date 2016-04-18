@@ -353,14 +353,16 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public void removeConnectionIfPresent(Address address, Connection conn) {
         if(address == null || conn == null)
             return;
-
+        Connection tmp=null;
         synchronized(this) {
             Connection existing=conns.get(address);
             if(conn == existing) {
-                Connection tmp=conns.remove(address);
-                log.trace("%s: removed connection to %s", local_addr, address);
-                Util.close(tmp);
+                tmp=conns.remove(address);
             }
+        }
+        if(tmp != null) { // Moved conn close outside of sync block (https://issues.jboss.org/browse/JGRP-2053)
+            log.trace("%s: removed connection to %s", local_addr, address);
+            Util.close(tmp);
         }
     }
 
