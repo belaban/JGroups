@@ -24,7 +24,7 @@
     <class id="53"  name="org.jgroups.protocols.COMPRESS$CompressHeader"/>
     <class id="54"  name="org.jgroups.protocols.FcHeader"/>
     <class id="56"  name="org.jgroups.protocols.TpHeader"/>
-    <class id="57"  name="org.jgroups.protocols.ENCRYPT$EncryptHeader"/>
+    <class id="57"  name="org.jgroups.protocols.EncryptHeader"/>
     <class id="58"  name="org.jgroups.protocols.SEQUENCER$SequencerHeader"/>
     <class id="61"  name="org.jgroups.protocols.FD_ALL$HeartbeatHeader"/>
     <class id="62"  name="org.jgroups.protocols.FD_ALL2$HeartbeatHeader"/>

@@ -1,0 +1,29 @@
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="urn:org:jgroups"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+    <UDP />
+    <PING/>
+    <MERGE3/>
+    <FD_ALL timeout="5000"/>
+    <FD_SOCK/>
+    <VERIFY_SUSPECT/>
+
+    <!-- Asymmetric encryption using public/private encryption to fetch the shared secret key -->
+    <ASYM_ENCRYPT
+            encrypt_entire_message="true"
+            sym_keylength="128"
+            sym_algorithm="AES/ECB/PKCS5Padding"
+            asym_keylength="512"
+            asym_algorithm="RSA"/>
+
+    <pbcast.NAKACK2/>
+    <UNICAST3/>
+    <pbcast.STABLE/>
+    <FRAG2/>
+    <!-- AUTH below is required by ASYM_ENCRYPT -->
+    <AUTH auth_class="org.jgroups.auth.MD5Token"
+          auth_value="chris"
+          token_hash="MD5"/>
+    <pbcast.GMS join_timeout="2000" />
+</config>

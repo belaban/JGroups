@@ -88,14 +88,12 @@ public class Event {
         this.arg=arg;
     }
 
-    public final int getType() {
+    public final int             getType() {
         return type;
     }
-
-
-    public Object getArg() {
-        return arg;
-    }
+    public int                   type()    {return type;}
+    public Object                getArg()  {return arg;}
+    public <T extends Object> T  arg()     {return (T)arg;}
 
 
 

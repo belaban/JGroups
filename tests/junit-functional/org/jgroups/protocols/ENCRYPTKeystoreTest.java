@@ -21,7 +21,7 @@ import java.util.Map;
  * @author xenephon
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, sequential=false)
+@Test(groups=Global.FUNCTIONAL)
 public class ENCRYPTKeystoreTest {
 
     static final short ENCRYPT_ID=ClassConfigurator.getProtocolId(ENCRYPT.class);
@@ -68,7 +68,7 @@ public class ENCRYPTKeystoreTest {
     }
 
 
-    public static void testMessageUpDecode() throws Exception {
+    public void testMessageUpDecode() throws Exception {
         ENCRYPT encrypt=create("defaultStore.keystore"), encrypt2=create("defaultStore.keystore");
         
         MockProtocol observer=new MockProtocol();

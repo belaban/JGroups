@@ -861,6 +861,18 @@ public class Util {
         return bytes != null? new String(bytes) : null;
     }
 
+    public static String byteArrayToHexString(byte[] b) {
+        if(b == null)
+            return "null";
+        StringBuilder sb = new StringBuilder(b.length * 2);
+        for (int i = 0; i < b.length; i++){
+            int v = b[i] & 0xff;
+            if (v < 16) { sb.append('0'); }
+            sb.append(Integer.toHexString(v));
+        }
+        return sb.toString().toUpperCase();
+    }
+
     /** Compares 2 byte arrays, elements are treated as unigned */
     public static int compare(byte[] left,byte[] right) {
         for(int i=0, j=0; i < left.length && j < right.length; i++,j++) {
@@ -1016,10 +1028,11 @@ public class Util {
     }
 
     public static int size(byte[] buf) {
-        int retval=Global.BYTE_SIZE + Global.INT_SIZE;
+       /* int retval=Global.BYTE_SIZE + Global.INT_SIZE;
         if(buf != null)
             retval+=buf.length;
-        return retval;
+        return retval;*/
+        return buf == null? Global.BYTE_SIZE : Global.BYTE_SIZE + Global.INT_SIZE + buf.length;
     }
 
     private static Address readOtherAddress(DataInput in) throws Exception {

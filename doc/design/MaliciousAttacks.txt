@@ -1,0 +1,91 @@
+
+Use of encryption and authentication protocols to fend off malicious attacks
+============================================================================
+Author: Bela Ban, April 2016
+JIRA:   https://issues.jboss.org/browse/JGRP-2021
+
+The following discussion refers to the changes made in JGroups 4.0. These have been backported to the 3.6 branch, but
+the syntax looks different. However, the concepts are the same.
+
+
+
+Types of attacks handled
+------------------------
+Malicious attacks essentially include (1) non-authorized nodes being able to join a cluster and (2) non-members being
+able to communicate with cluster members.
+
+(1) is handled by AUTH which allows only authenticated nodes to join a cluster.
+
+(2) is handled by the encryption protocol (SYM_ENCRYPT or ASYM_ENCRYPT) which encrypts messages between cluster
+members such that a non-member cannot understand them.
+
+
+
+Authentication
+--------------
+Authentication is performed by AUTH. Its main use is to make sure only authenticated members can join a cluster.
+Other scenarios where a check is performed are:
+* Merging: make sure only authenticated members can merge into a new cluster
+* View installation (if enabled): views and merge views can only be installed by authenticated members
+
+So authentication makes sure that rogue nodes will never be able to be members of a cluster, be it via joining or
+merging. Note that while AUTH is optional with SYM_ENCRYPT, it is required by ASYM_ENCRYPT: there's a sanity check that
+will prevent a member to start if ASYM_ENCRYPT is present but AUTH is absent.
+
+
+
+Authorization
+-------------
+There is currently no authorization in JGroups. Once a member is admitted to the cluster (via authentication),
+it can send and receive messages to anyone.
+
+
+
+Encryption
+----------
+This is based on a shared secret key that all members of a cluster have. The key is either acquired from a shared
+keystore (symmetric encryption, below) or a new joiner fetches it from the coordinator via public/private key exchange
+(asymmetric encryption, below).
+
+A sent message is encrypted with the shared secret key by the sender and decrypted with the same secret key by the
+receiver(s).
+
+By default, the entire message (including the headers) is encrypted, but it is also possible to only encrypt the payload
+(this is configurable). If the headers are not encrypted, it is possible to use replay attacks, because the
+sequence numbers (seqnos) of a message are seen. For example, if a seqno is 50, then an attacker might copy the message,
+and increment the seqno. This is prevented by copying and _signing_ the message.
+
+A message can be signed, which is a hash over the encrypted message, encrypted with the secret key. If the hash shipped
+with a message doesn't match the hash computed over the received message, the message will be discarded by a receiver,
+and no attempt is made to decrypt it.
+
+The cost of encrypting the entire message includes serializing the entire message (including headers, flags, destination
+address etc) and encrypting it into the buffer of a new message (to the same destination). If message signing is enabled,
+the cost of computing a hashcode and encrypting it is added to the above cost.
+
+Attributes present in both symmetric and asymmetric encryption include sign_msgs and encrypt_entire_message.
+
+
+Symmetric encryption
+--------------------
+This is done by SYM_ENCRYPT. The configuration includes mainly attributes that define the keystore, e.g. keystore_name
+(name of the keystore, needs to be found on the classpath), store_password, key_password and alias.
+
+
+Asymmetric encryption
+---------------------
+Contrary to SYM_ENCRYPT, the secret key is not fetched from a shared keystore, but from the current coordinator C. After
+new member P joined the cluster (passing the join check done by AUTH), P sends a request to get the secret key
+(including P's public key) to C.
+
+C then sends the secret key back to P, encrypted with P's public key, and P decrypts it with its private key
+and installs it. From then on, P encrypts and decrypts messages using the secret key.
+
+When a member leaves, C can optionally (based on change_key_on_leave) create a new secret key, and every cluster member
+needs to fetch it again, using the public/private key exchange described above.
+
+
+
+
+
+

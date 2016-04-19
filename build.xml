@@ -631,6 +631,43 @@
                  threadcount="5" />
     </target>
 
+    <!--listeners="org.jgroups.util.JUnitXMLReporter"-->
+
+    <target name="encrypt" description="Runs SYM_ENCRYPT_Test only" depends="define-testng-task">
+        <mkdir dir="${tmp.dir}/test-results/xml/functional"/>
+
+        <testng classpathref="jg.classpath"
+                suitename="encrypt-test"
+                groups="encr"
+                parallel="classes"
+                threadcount="5"
+                usedefaultlisteners="false"
+                outputdir="${tmp.dir}/test-results/xml/functional"
+                timeout="${unittest.timeout}"
+                timeOut="${unittest.timeout}"
+                verbose="1"
+                listeners="org.jgroups.util.JUnitXMLReporter"
+                configfailurepolicy="continue">
+
+            <classfileset dir="${compile.dir}"/>
+
+            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.udp.ip_ttl=0"/>
+            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+            <jvmarg value="-Djgroups.tunnel.gossip_router_hosts=${jgroups.tunnel.gossip_router_hosts}"/>
+            <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
+            <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
+            <jvmarg value="-Dlog4j.configurationFile=${conf.dir}/log4j2.xml"/>
+            <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
+            <jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
+            <jvmarg value="-Xms400M"/>
+            <jvmarg value="-Xmx800M"/>
+            <!--<additional-args/>-->
+        </testng>
+
+
+    </target>
+
 
     <target name="byteman" depends="postcompile,define-testng-task" description="Runs the byteman tests">
         <mkdir dir="${tmp.dir}/test-results/xml/byteman"/>

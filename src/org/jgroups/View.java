@@ -109,6 +109,8 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
         return view_id.getCreator();
     }
 
+    public Address getCoord() {return members.length > 0? members[0] : null;}
+
     /**
      * Returns the member list
      * @return an unmodifiable list
@@ -136,6 +138,17 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
             if(member != null && member.equals(mbr))
                 return true;
         return false;
+    }
+
+    /** Returns true if all mbrs are elements of this view, false otherwise */
+    public boolean containsMembers(Address ... mbrs) {
+        if(mbrs == null || members == null)
+            return false;
+        for(Address mbr: mbrs) {
+            if(!containsMember(mbr))
+                return false;
+        }
+        return true;
     }
 
 

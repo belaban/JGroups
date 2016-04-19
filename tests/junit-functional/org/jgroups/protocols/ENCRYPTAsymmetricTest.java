@@ -9,7 +9,6 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.protocols.ENCRYPT.EncryptHeader;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
@@ -27,7 +26,7 @@ import java.util.TreeMap;
  * @author xenephon
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, sequential=false)
+@Test(groups=Global.FUNCTIONAL)
 public class ENCRYPTAsymmetricTest {
 
     protected static final short ENCRYPT_ID=ClassConfigurator.getProtocolId(ENCRYPT.class);
@@ -136,7 +135,7 @@ public class ENCRYPTAsymmetricTest {
         byte[] symVersion=digest.digest();
         encrypt.keyServer=false;
         Message msg=new Message().setBuffer(cipher.doFinal("hello".getBytes()))
-          .putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, symVersion));
+          .putHeader(ENCRYPT_ID, new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT, symVersion));
 
         encrypt.up(new Event(Event.MSG, msg));
 
@@ -152,7 +151,7 @@ public class ENCRYPTAsymmetricTest {
 
         // send another encrypted message
         Message msg2=new Message().setBuffer(cipher.doFinal("hello2".getBytes()))
-          .putHeader(ENCRYPT_ID,new EncryptHeader(EncryptHeader.ENCRYPT,symVersion));
+          .putHeader(ENCRYPT_ID,new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT,symVersion));
 
         // we should have three messages now in our observer that are decrypted
         encrypt.up(new Event(Event.MSG, msg2));
@@ -199,7 +198,7 @@ public class ENCRYPTAsymmetricTest {
         Cipher cipher=server.getSymEncodingCipher();
         byte[] symVersion=digest.digest();
         Message msg=new Message().setBuffer(cipher.doFinal("hello".getBytes()))
-          .putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, symVersion));
+          .putHeader(ENCRYPT_ID, new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT, symVersion));
 
         peer.up(new Event(Event.MSG, msg));
         //assert that message is queued as we have no key from server
@@ -216,7 +215,7 @@ public class ENCRYPTAsymmetricTest {
 
         Event sent=peerObserver.downMessages.get("message0");
 
-        Util.assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.KEY_REQUEST);
+        Util.assertEquals(((ENCRYPT.EncryptHeader)((Message)sent.getArg()).getHeader(ENCRYPT_ID)).getType(), ENCRYPT.EncryptHeader.KEY_REQUEST);
         Util.assertEquals(new String(((Message)sent.getArg()).getBuffer()), new String(peer.getKpair().getPublic().getEncoded()));
 
         // send this event to server
@@ -225,7 +224,7 @@ public class ENCRYPTAsymmetricTest {
         Event reply=serverObserver.downMessages.get("message1");
 
         //assert that reply is the session key encrypted with peer's public key
-        Util.assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.SECRETKEY);
+        Util.assertEquals(((ENCRYPT.EncryptHeader)((Message)reply.getArg()).getHeader(ENCRYPT_ID)).getType(), ENCRYPT.EncryptHeader.SECRETKEY);
 
 
         assert !peer.getDesKey().equals(server.getDesKey());
@@ -237,7 +236,7 @@ public class ENCRYPTAsymmetricTest {
 
         // send another encrypted message to peer to test queue
         Message msg2=new Message().setBuffer(cipher.doFinal("hello2".getBytes()))
-          .putHeader(ENCRYPT_ID,new EncryptHeader(EncryptHeader.ENCRYPT,symVersion));
+          .putHeader(ENCRYPT_ID,new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT,symVersion));
         peer.up(new Event(Event.MSG, msg2));
 
         // make sure we have the events now in the up layers
@@ -316,7 +315,7 @@ public class ENCRYPTAsymmetricTest {
         Event sent=peerObserver.downMessages.get("message0");
 
         // ensure type and that request contains peers pub key
-        Util.assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.KEY_REQUEST);
+        Util.assertEquals(((ENCRYPT.EncryptHeader)((Message)sent.getArg()).getHeader(ENCRYPT_ID)).getType(), ENCRYPT.EncryptHeader.KEY_REQUEST);
         Util.assertEquals(new String(((Message)sent.getArg()).getBuffer()), new String(peer.getKpair().getPublic().getEncoded()));
 
 
@@ -328,7 +327,7 @@ public class ENCRYPTAsymmetricTest {
         Event reply=peer2Observer.downMessages.get("message1");
 
         //assert that reply is the session key encrypted with peer's public key
-        Util.assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.SECRETKEY);
+        Util.assertEquals(((ENCRYPT.EncryptHeader)((Message)reply.getArg()).getHeader(ENCRYPT_ID)).getType(), ENCRYPT.EncryptHeader.SECRETKEY);
 
 
         assert !peer.getDesKey().equals(peer2.getDesKey());

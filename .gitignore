@@ -2,6 +2,7 @@
 *.iws
 *.ipr
 *.iml
+.ant-targets-build.xml
 .project
 .classpath
 .factorypath

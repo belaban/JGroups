@@ -1507,10 +1507,15 @@ ${STATS}
 
 
 ==== Security
+Security is used to prevent (1) non-authorized nodes being able to join a cluster and (2) non-members being
+able to communicate with cluster members.
 
-JGroups provides protocols to encrypt cluster traffic (ENCRYPT), and to make sure that only
-                authorized members can join a cluster (AUTH and SASL).
-            
+(1) is handled by AUTH or SASL which allows only authenticated nodes to join a cluster.
+
+(2) is handled by the encryption protocol (ENCRYPT, SYM_ENCRYPT or ASYM_ENCRYPT) which encrypts messages between cluster
+members such that a non-member cannot understand them.
+
+NOTE: ENCRYPT is deprecated, and SYM_ENCRYPT or ASYM_ENCRYPT are recommended for encryption.
 
 [[ENCRYPT]]
 
@@ -1596,6 +1601,85 @@ NOTE: If asymmetric encryption is used (no shared key via keystore), ENCRYPT has
       or else the JOIN process would not function (as the JOIN response would get dropped).
 
 ${ENCRYPT}
+
+[[SYM_ENCRYPT]]
+===== SYM_ENCRYPT
+
+This is done by SYM_ENCRYPT. The configuration includes mainly attributes that define the keystore, e.g. `keystore_name`
+(name of the keystore, needs to be found on the classpath), `store_password`, `key_password` and `alias`.
+
+SYM_ENCRYPT uses store type JCEKS (for details between JKS and JCEKS see here), however `keytool` uses JKS, therefore
+a keystore generated with keytool will not be accessible.
+
+To generate a keystore compatible with JCEKS, use the following command line options to keytool:
+
+----
+keytool -genseckey -alias myKey -keypass changeit -storepass changeit  -keyalg Blowfish -keysize 56 -keystore defaultStore.keystore -storetype  JCEKS
+----
+
+SYM_ENCRYPT could then be configured as follows:
+
+
+
+[source,xml]
+----
+<SYM_ENCRYPT sym_algorithm="AES"
+             encrypt_entire_message="true"
+             key_store_name="defaultStore.keystore"
+             store_password="changeit"
+             alias="myKey"/>
+----
+
+Note that defaultStore.keystore will have to be found in the claspath.
+
+NOTE: Both SYM_ENCRYPT and ASYM_ENCRYPT should be placed directly under NAKACK2
+(see link:https://github.com/belaban/JGroups/tree/master/conf[sample configurations]).
+
+
+${SYM_ENCRYPT}
+
+
+
+[[ASYM_ENCRYPT]]
+===== ASYM_ENCRYPT
+Contrary to SYM_ENCRYPT, the secret key is not fetched from a shared keystore, but from the current coordinator C. After
+new member P joined the cluster (passing the join check done by AUTH), P sends a request to get the secret key
+(including P's public key) to C.
+
+C then sends the secret key back to P, encrypted with P's public key, and P decrypts it with its private key
+and installs it. From then on, P encrypts and decrypts messages using the secret key.
+
+When a member leaves, C can optionally (based on `change_key_on_leave`) create a new secret key, and every cluster member
+needs to fetch it again, using the public/private key exchange described above.
+
+A stack configured to use asymmetric encryption could look like this:
+[source,xml]
+----
+    ...
+    <VERIFY_SUSPECT/>
+    <ASYM_ENCRYPT encrypt_entire_message="true"
+             sym_keylength="128"
+             sym_algorithm="AES/ECB/PKCS5Padding"
+             asym_keylength="512"
+             asym_algorithm="RSA"/>
+
+    <pbcast.NAKACK2/>
+    <UNICAST3/>
+    <pbcast.STABLE/>
+    <FRAG2/>
+    <AUTH auth_class="org.jgroups.auth.MD5Token"
+          auth_value="chris"
+          token_hash="MD5"/>
+    <pbcast.GMS join_timeout="2000" />
+----
+
+The configuration snippet shows ASYM_ENCRYPT positioned just below NAKACK2, so that headers of the important
+retransmission protocols NAKACK2 and UNICAST3 are encrypted, too. Note that AUTH should be part of the configuration, or
+else unauthenticated nodes would be able to acquire the secret key from the coordinator.
+
+${ASYM_ENCRYPT}
+
+
 
 [[AUTH]]
 
