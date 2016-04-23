@@ -2,7 +2,8 @@ package org.jgroups.util;
 
 /**
  * Maintains an approximation of an average of values. Done by keeping track of the number of samples, and computing
- * the new average as (count*avg + new-sample) / ++count. We reset the count if count*avg would lead to an overflow.
+ * the new average as (count*avg + new-sample) / ++count. We reset the count if count*avg would lead to an overflow.<p/>
+ * This class is not thread-safe and relies on external synchronization.
  * @author Bela Ban
  * @since  3.4
  */

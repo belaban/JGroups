@@ -1,6 +1,5 @@
 package org.jgroups.tests;
 
-import org.jgroups.JChannel;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.PhysicalAddress;
@@ -121,11 +120,11 @@ public class ChannelTestBase {
      * @param num The number of channels we will create. Only important (for port_range) with TCP, ignored by UDP
      */
     protected JChannel createChannel(boolean unique, int num) throws Exception {
-        return (JChannel) new DefaultChannelTestFactory().createChannel(unique, num);
+        return new DefaultChannelTestFactory().createChannel(unique, num);
     }
 
     protected JChannel createChannel(boolean unique, int num, String name) throws Exception {
-        return (JChannel)new DefaultChannelTestFactory().createChannel(unique, num).name(name);
+        return new DefaultChannelTestFactory().createChannel(unique, num).name(name);
     }
 
     protected JChannel createChannel() throws Exception {
@@ -137,11 +136,11 @@ public class ChannelTestBase {
     }
 
     protected JChannel createChannel(JChannel ch) throws Exception {
-        return (JChannel) new DefaultChannelTestFactory().createChannel(ch);
+        return new DefaultChannelTestFactory().createChannel(ch);
     }
 
     protected JChannel createChannel(JChannel ch, String name) throws Exception {
-        return (JChannel) new DefaultChannelTestFactory().createChannel(ch).name(name);
+        return new DefaultChannelTestFactory().createChannel(ch).name(name);
     }
 
     protected static String getUniqueClusterName() {

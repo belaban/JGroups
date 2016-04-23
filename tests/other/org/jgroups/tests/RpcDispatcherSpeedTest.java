@@ -1,260 +1,172 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.*;
+import org.jgroups.JChannel;
+import org.jgroups.MembershipListener;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.blocks.MethodCall;
+import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.ResponseMode;
+import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.blocks.*;
+import org.jgroups.util.Average;
+import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
 import java.lang.reflect.Method;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.CountDownLatch;
 
 
 /**
- * Test for measuring performance of group RPCs.
+ * Test for measuring performance of RPCs. See {@link RoundTrip} for simple messages
  * @author Bela Ban
- * @version $Revision: 1.23 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
-    JChannel channel;
-    RpcDispatcher         disp;
-    String                props=null;
-    boolean               server=false; // role is client by default
-    boolean               jmx=false;
-    int                   num=1000;
-    int                   num_threads=1;
-    static final long     TIMEOUT=10000;
-    final Method[]        METHODS=new Method[1];
-    private long          sleep=0;
-    private final boolean async;
-    private final boolean oob;
+    protected JChannel              channel;
+    protected RpcDispatcher         disp;
+    protected String                props;
+    protected boolean               jmx;
+    protected int                   num=5000;
+    protected static final Method[] METHODS=new Method[1];
+    protected boolean               oob, dont_bundle;
+    protected static final String   format="[1] invoke RPCs [2] num (%d) [o] oob (%b) [b] dont_bundle (%b) [x] exit\n";
 
 
-    public RpcDispatcherSpeedTest(String props, boolean server, boolean async, boolean oob, int num, int num_threads,
-                                  boolean jmx, long sleep) throws NoSuchMethodException {
-        this.props=props;
-        this.server=server;
-        this.async=async;
-        this.oob=oob;
-        this.num=num;
-        this.num_threads=num_threads;
-        this.jmx=jmx;
-        this.sleep=sleep;
-        initMethods();
+    static {
+        try {
+            METHODS[0]=RpcDispatcherSpeedTest.class.getMethod("measure");
+        }
+        catch(Throwable t) {
+            throw new RuntimeException(t);
+        }
     }
 
-    final void initMethods() throws NoSuchMethodException {
-        Class cl=this.getClass();
-        METHODS[0]=cl.getMethod("measure");
-    }
-
-    public long measure() throws Exception {
-        long retval=System.currentTimeMillis();
-        if(sleep > 0)
-            Util.sleep(sleep);
-        return retval;
+    public static void measure() {
+        ;
     }
 
 
-    public void start() throws Exception {
-        channel=new JChannel(props);
-        channel.setDiscardOwnMessages(true);
+    public void start(String props, boolean jmx, String name) throws Exception {
+        channel=new JChannel(props).name(name);
         disp=new RpcDispatcher(channel, this) // no concurrent processing on incoming method calls
           .setMembershipListener(this).setMethodLookup(id -> METHODS[0]);
 
         if(jmx) {
             MBeanServer srv=Util.getMBeanServer();
             if(srv == null)
-                throw new Exception("No MBeanServers found;" +
-                        "\nDraw needs to be run with an MBeanServer present, or inside JDK 5");
-            JmxConfigurator.registerChannel((JChannel)channel, srv, "jgroups", channel.getClusterName(), true);
+                throw new Exception("No MBeanServers found");
+            JmxConfigurator.registerChannel(channel, srv, "jgroups", channel.getClusterName(), true);
         }
+        channel.connect("rpc-speed-test");
+        View view=channel.getView();
+        if(view.size() > 2)
+            System.err.printf("More than 2 members in cluster: %s; terminating\n", view);
+        else
+            loop();
+        Util.close(disp, channel);
+    }
 
-        channel.connect("RpcDispatcherSpeedTestGroup");
-
-        try {
-            if(server) {
-                System.out.println("-- Started as server. Press ctrl-c to kill");
-                while(true) {
-                    Util.sleep(10000);
+    protected void loop() {
+        boolean looping=true;
+        while(looping) {
+            try {
+                int c=Util.keyPress(String.format(format, num, oob, dont_bundle));
+                switch(c) {
+                    case '1':
+                        invokeRpcs();
+                        break;
+                    case '2':
+                        num=Util.readIntFromStdin("num: ");
+                        break;
+                    case 'o':
+                        oob=!oob;
+                        break;
+                    case 'b':
+                        dont_bundle=!dont_bundle;
+                        break;
+                    case 'x':
+                        looping=false;
+                        break;
                 }
             }
-            else {
-                invokeRpcs(num, num_threads, async, oob);
-            }
-        }
-        catch(Throwable t) {
-            t.printStackTrace(System.err);
-        }
-        finally {
-            channel.close();
-            disp.stop();
-        }
-    }
-
-
-    void invokeRpcs(int num, int num_threads, boolean async, boolean oob) throws Exception {
-        long    start;
-        int     show=num / 10;
-
-        Method measure_method=getClass().getMethod("measure");
-        MethodCall measure_method_call=new MethodCall(measure_method);
-
-        if(show <=0)
-            show=1;
-        ResponseMode request_type=async ? ResponseMode.GET_NONE : ResponseMode.GET_ALL;
-
-        measure_method_call=new MethodCall((short)0);
-        RequestOptions opts=new RequestOptions(request_type, TIMEOUT, false, null,
-                                               Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
-        if(oob)
-            opts.flags(Message.Flag.OOB);
-
-        final AtomicInteger sent=new AtomicInteger(0);
-        final CountDownLatch latch=new CountDownLatch(1);
-        final Publisher[] senders=new Publisher[num_threads];
-        for(int i=0; i < senders.length; i++) {
-            senders[i]=new Publisher(measure_method_call, sent, num, opts, disp, latch);
-            senders[i].start();
-        }
-
-        start=System.currentTimeMillis();
-        latch.countDown();
-
-        for(Publisher sender: senders)
-            sender.join();
-
-        long stop=System.currentTimeMillis();
-        printStats(stop-start, num);
-    }
-
-
-    static class Publisher extends Thread {
-        final MethodCall call;
-        final RequestOptions options;
-        final AtomicInteger sent;
-        final int num_msgs_to_send;
-        final RpcDispatcher disp;
-        final CountDownLatch latch;
-        final int print;
-
-        public Publisher(MethodCall call, AtomicInteger sent, final int num, RequestOptions options, RpcDispatcher disp, CountDownLatch latch) {
-            this.call=call;
-            this.sent=sent;
-            this.num_msgs_to_send=num;
-            this.options=options;
-            this.disp=disp;
-            this.latch=latch;
-            print = num_msgs_to_send / 10;
-        }
-
-        public void run() {
-            try {
-                latch.await();
-            }
-            catch(InterruptedException e) {
+            catch(Exception e) {
                 e.printStackTrace();
             }
-            while(true) {
-                int tmp=sent.incrementAndGet();
-                if(tmp > num_msgs_to_send)
-                    break;
-                try {
-                    disp.callRemoteMethods(null, call, options);
-                    if(tmp > 0 && tmp % print == 0)
-                    System.out.println(tmp);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 
+    protected void invokeRpcs() throws Exception {
+        Average avg=new Average();
+        long min=Long.MAX_VALUE, max=0;
+        RequestOptions opts=new RequestOptions(ResponseMode.GET_FIRST, 0).transientFlags(Message.TransientFlag.DONT_LOOPBACK);
+        MethodCall call=new MethodCall((short)0);
+        int print=num/10;
 
-    static void printStats(long total_time, int num) {
-        double throughput=((double)num)/((double)total_time/1000.0);
-        System.out.println("time for " + num + " remote calls was " +
-                           total_time + "ms, avg=" + (total_time / (double)num) +
-                           "ms/invocation, " + (long)throughput + " calls/sec");
+        if(oob)
+            opts.flags(Message.Flag.OOB);
+        if(dont_bundle)
+            opts.flags(Message.Flag.DONT_BUNDLE);
+
+        if(channel.getView().size() != 2) {
+            System.err.printf("Cluster must have exactly 2 members: %s\n", channel.getView());
+            return;
+        }
+
+        System.out.printf("\nInvoking %d blocking RPCs (oob: %b, dont_bundle: %b)\n", num, oob, dont_bundle);
+        for(int i=0; i < num; i++) {
+            long start=System.nanoTime();
+            RspList<Void> rsps=disp.callRemoteMethods(null, call, opts);
+            long time_ns=System.nanoTime() - start;
+            if(i > 0 && i % print == 0)
+                System.out.print(".");
+            boolean all_received=rsps.values().stream().allMatch(Rsp::wasReceived);
+            if(!all_received)
+                System.err.printf("didn't receive all responses: %s\n", rsps);
+            avg.add(time_ns);
+            min=Math.min(min, time_ns);
+            max=Math.max(max, time_ns);
+        }
+        System.out.println("");
+        System.out.printf("\nround-trip = min/avg/max: %.2f / %.2f / %.2f us\n\n", min/1000.0, avg.getAverage() / 1000.0, max/1000.0);
     }
+
+
+
+
 
     public void viewAccepted(View new_view) {
         System.out.println("-- new view: " + new_view);
     }
 
-    public void suspect(Address suspected_mbr) {
-    }
 
-    public void block() {
-    }
-
-    public void unblock() {
-    }
-
-
-    public static void main(String[] args) {
-        String                 props=null;
-        boolean                server=false, jmx=false;
-        int                    num=1000;
-        int                    num_threads=1;
-        long                   sleep=0;
-        RpcDispatcherSpeedTest test;
-        boolean                async=false;
-        boolean                oob=false;
-
+    public static void main(String[] args) throws Exception {
+        String                 props=null, name=null;
+        boolean                jmx=false;
 
         for(int i=0; i < args.length; i++) {
             if("-props".equals(args[i])) {
                 props=args[++i];
                 continue;
             }
-            if("-server".equals(args[i])) {
-                server=true;
-                continue;
-            }
-            if("-async".equals(args[i])) {
-                async=true;
-                continue;
-            }
-            if("-num".equals(args[i])) {
-                num=Integer.parseInt(args[++i]);
-                continue;
-            }
             if("-jmx".equals(args[i])) {
                 jmx=true;
                 continue;
             }
-            if("-sleep".equals(args[i])) {
-                sleep=Long.parseLong(args[++i]);
-                continue;
-            }
-            if("-num_threads".equals(args[i])) {
-                num_threads=Integer.parseInt(args[++i]);
-                continue;
-            }
-            if("-oob".equals(args[i])) {
-                oob=true;
+            if("-name".equals(args[i])) {
+                name=args[++i];
                 continue;
             }
             help();
             return;
         }
 
-
-        try {
-            test=new RpcDispatcherSpeedTest(props, server, async, oob, num, num_threads, jmx, sleep);
-            test.start();
-        }
-        catch(Exception e) {
-            System.err.println(e);
-        }
+        RpcDispatcherSpeedTest test=new RpcDispatcherSpeedTest();
+        test.start(props, jmx, name);
     }
 
     static void help() {
-        System.out.println("RpcDispatcherSpeedTest [-help] [-props <props>] " +
-                           "[-server] [-async] [-num <number of calls>] [-jmx] [-sleep <ms>]");
+        System.out.println("RpcDispatcherSpeedTest [-help] [-props <props>] [-name name] [-jmx]");
     }
 }

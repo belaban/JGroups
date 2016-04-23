@@ -1,45 +1,35 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.View;
+import org.jgroups.util.Average;
+import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
 /**
- * Class that measure RTT between a client and server
+ * Class that measure RTT for multicast messages between 2 cluster members. See {@link RpcDispatcherSpeedTest} for
+ * RPCs
  * @author Bela Ban
  */
 public class RoundTrip extends ReceiverAdapter {
-    JChannel channel;
-    String props;
-    int num=1000;
-    int msg_size=10;
-    boolean server=false;
-    final byte[] RSP_BUF=new byte[]{1}; // 1=response
-    int   num_responses=0;
-    final Object mutex=new Object(); // to sync sending and reception of a message
+    protected JChannel               channel;
+    protected final Promise<Boolean> promise=new Promise<>();
+    protected int                    num_msgs=5000;
+    protected int                    msg_size=1000;
+    protected boolean                oob, dont_bundle;
 
 
-    private void start(boolean server, int num, int msg_size, String props) throws Exception {
-        this.server=server;
-        this.num=num;
-        this.msg_size=msg_size;
-        this.props=props;
-
-        channel=new JChannel(props);
-        channel.setReceiver(this);
+    protected void start(String props, String name) throws Exception {
+        channel=new JChannel(props).name(name).setReceiver(this);
         channel.connect("rt");
-
-        if(server) {
-            System.out.println("server started (ctrl-c to kill)");
-            while(true) {
-                Util.sleep(60000);
-            }
-        }
-        else {
-            channel.setDiscardOwnMessages(true);
-            System.out.println("sending " + num + " requests");
-            sendRequests();
-            channel.close();
-        }
+        View view=channel.getView();
+        if(view.size() > 2)
+            System.err.printf("More than 2 members found (%s); terminating\n", view);
+        else
+            loop();
+        Util.close(channel);
     }
 
     /**
@@ -47,119 +37,112 @@ public class RoundTrip extends ReceiverAdapter {
      * @param msg
      */
     public void receive(Message msg) {
-        byte[] buf=msg.getRawBuffer();
-        if(buf == null) {
-            System.err.println("buffer was null !");
+        if(msg.dest() == null) { // request: send unicast response
+            Message rsp=new Message(msg.src());
+            try {
+                channel.send(rsp);
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
+        else
+            promise.setResult(true);
+    }
+
+    public void viewAccepted(View view) {
+        System.out.println("view = " + view);
+    }
+
+    protected void loop() {
+        boolean looping=true;
+        while(looping) {
+            int c=Util.keyPress(String.format("[1] send [2] num_msgs (%d) [3] msg_size (%d) [o] oob (%b) [b] dont_bundle (%b)[x] exit\n",
+                                              num_msgs, msg_size, oob, dont_bundle));
+            try {
+                switch(c) {
+                    case '1':
+                        sendRequests();
+                        break;
+                    case '2':
+                        num_msgs=Util.readIntFromStdin("num_msgs: ");
+                        break;
+                    case '3':
+                        msg_size=Util.readIntFromStdin("msg_size: ");
+                        break;
+                    case 'o':
+                        oob=!oob;
+                        break;
+                    case 'b':
+                        dont_bundle=!dont_bundle;
+                        break;
+                    case 'x':
+                        looping=false;
+                        break;
+                }
+            }
+            catch(Throwable t) {
+                t.printStackTrace();
+            }
+        }
+    }
+
+    protected void sendRequests() throws Exception {
+        View view=channel.getView();
+        if(view.size() != 2) {
+            System.err.printf("Cluster must have exactly 2 members: %s\n", view);
             return;
         }
-        if(buf[msg.getOffset()] == 0) { // request
-            if(!server) {// client ignores requests
-                return;
-            }
-            // System.out.println("-- SERVER: received " + num_requests + " requests");
-            Message response=new Message(msg.getSrc(), null, null);
-            response.setBuffer(RSP_BUF, 0, RSP_BUF.length);
-            try {
-                channel.send(response);
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-            }
-        }
-        else { // response
-            synchronized(mutex) {
-                num_responses++;
-                // System.out.println("-- SERVER: received " + num_responses + " responses");
-                mutex.notify();
-            }
-        }
-    }
 
-    private void sendRequests() {
         byte[] buf=new byte[msg_size];
-        long   start, stop, total;
-        double requests_per_sec;
-        double    ms_per_req;
-        Message msg;
-        int     print=num / 10;
-        int     count=0;
+        Average avg=new Average();
+        long min=Long.MAX_VALUE, max=0;
+        int print=num_msgs/10;
+        System.out.println("");
 
-        num_responses=0;
-        for(int i=0; i < buf.length; i++) {
-            buf[i]=0; // 0=request
+        for(int i=0; i < num_msgs; i++) {
+            Message req=new Message(null, buf).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
+            if(oob)
+                req.setFlag(Message.Flag.OOB);
+            if(dont_bundle)
+                req.setFlag(Message.Flag.DONT_BUNDLE);
+            promise.reset(false);
+            long start=System.nanoTime();
+            channel.send(req);
+            if(i > 0 && i % print == 0)
+                System.out.print(".");
+            promise.getResult(0);
+            long time_ns=System.nanoTime()-start;
+            avg.add(time_ns);
+            min=Math.min(min, time_ns);
+            max=Math.max(max, time_ns);
         }
-
-/*        Address dest;
-        Vector v=new Vector(channel.getView().getMembers());
-        v.remove(channel.getLocalAddress());
-        dest=(Address)v.firstElement();*/
-
-        start=System.currentTimeMillis();
-        for(int i=0; i < num; i++) {
-            msg=new Message(null, null, null);
-            msg.setBuffer(buf);
-            try {
-                channel.send(msg);
-                synchronized(mutex) {
-                    while(num_responses != count +1) {
-                        mutex.wait(1000);
-                    }
-                    count=num_responses;
-                    if(num_responses >= num) {
-                        System.out.println("received all responses (" + num_responses + ")");
-                        break;
-                    }
-                }
-                if(num_responses % print == 0) {
-                    System.out.println("- received " + num_responses);
-                }
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-            }
-        }
-        stop=System.currentTimeMillis();
-        total=stop-start;
-        requests_per_sec=num / (total / 1000.0);
-        ms_per_req=total / (double)num;
-        System.out.println("Took " + total + "ms for " + num + " requests: " + requests_per_sec +
-                " requests/sec, " + ms_per_req + " ms/request");
+        System.out.println("");
+        System.out.printf("\nround-trip = min/avg/max: %.2f / %.2f / %.2f us\n\n", min/1000.0, avg.getAverage() / 1000.0, max/1000.0);
     }
+
 
 
     public static void main(String[] args) throws Exception {
-        boolean server=false;
-        int num=100;
-        int msg_size=10; // 10 bytes
-        String props=null;
-
+        String props=null, name=null;
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-num")) {
-                num=Integer.parseInt(args[++i]);
-                continue;
-            }
-            if(args[i].equals("-server")) {
-                server=true;
-                continue;
-            }
-            if(args[i].equals("-size")) {
-                msg_size=Integer.parseInt(args[++i]);
-                continue;
-            }
             if(args[i].equals("-props")) {
                 props=args[++i];
+                continue;
+            }
+            if(args[i].equals("-name")) {
+                name=args[++i];
                 continue;
             }
             help();
             return;
         }
-        new RoundTrip().start(server, num, msg_size, props);
+        new RoundTrip().start(props, name);
     }
 
 
 
     private static void help() {
-        System.out.println("RoundTrip [-server] [-num <number of messages>] " +
-                "[-size <size of each message (in bytes)>] [-props <properties>]");
+        System.out.println("RoundTrip [-props <properties>] [-name name]");
     }
 }

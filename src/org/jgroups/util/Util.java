@@ -1848,6 +1848,10 @@ public class Util {
         }
     }
 
+    public static String printNanos(long time_ns) {
+        double us=time_ns / 1_000.0;
+        return String.format("%d ns (%.2f us)", time_ns, us);
+    }
 
     public static String printTime(long time,TimeUnit unit) {
         long ns=TimeUnit.NANOSECONDS.convert(time,unit);
