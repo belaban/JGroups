@@ -29,7 +29,7 @@ fi;
 
 #JG_FLAGS="-Djgroups.bind_addr=match-address:192.168.1.*"
 JG_FLAGS="$JG_FLAGS -Djava.net.preferIPv4Stack=true"
-FLAGS="-server -Xmx600M -Xms600M"
+FLAGS="-server -Xmx1G -Xms500M"
 FLAGS="$FLAGS -XX:CompileThreshold=10000 -XX:ThreadStackSize=64K -XX:SurvivorRatio=8"
 FLAGS="$FLAGS -XX:TargetSurvivorRatio=90 -XX:MaxTenuringThreshold=15"
 FLAGS="$FLAGS -Xshare:off"
