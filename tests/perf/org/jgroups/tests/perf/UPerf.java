@@ -9,7 +9,6 @@ import org.jgroups.protocols.TP;
 import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.stack.AddressGenerator;
-import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import javax.management.MBeanServer;
@@ -17,8 +16,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.text.NumberFormat;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -39,15 +38,17 @@ public class UPerf extends ReceiverAdapter {
     protected Thread               event_loop_thread;
 
 
+
     // ============ configurable properties ==================
     @Property protected boolean sync=true, oob=false;
     @Property protected int     num_threads=25;
     @Property protected int     num_msgs=20000, msg_size=1000;
     @Property protected int     anycast_count=2;
-    @Property protected boolean use_anycast_addrs;
     @Property protected boolean msg_bundling=true;
     @Property protected double  read_percentage=0.8; // 80% reads, 20% writes
-    @Property protected boolean get_before_put=false; // invoke a sync GET before a PUT
+    @Property protected boolean allow_local_gets;
+    @Property protected boolean print_invokers;
+    @Property protected boolean print_details;
     // ... add your own here, just don't forget to annotate them with @Property
     // =======================================================
 
@@ -61,7 +62,13 @@ public class UPerf extends ReceiverAdapter {
 
     private final AtomicInteger COUNTER=new AtomicInteger(1);
     private byte[] BUFFER=new byte[msg_size];
-    static NumberFormat f;
+    protected static final String format=
+      "[1] Invoke RPCs [6] Sender threads (%d) [7] Num msgs (%d) [8] Msg size (%s)" +
+        "\n[s] Sync (%b) [o] OOB (%b) [b] Msg bundling (%b)" +
+        "\n[a] Anycast count (%d) [r] Read percentage (%.2f) " +
+        "\n[l] local gets (%b) [d] print details (%b)  [i] print invokers (%b)" +
+        "\n[v] View [x] Exit [X] Exit all\n";
+
 
     static {
         try {
@@ -71,12 +78,7 @@ public class UPerf extends ReceiverAdapter {
             METHODS[GET_CONFIG]            = UPerf.class.getMethod("getConfig");
             METHODS[SET]                   = UPerf.class.getMethod("set", String.class, Object.class);
             METHODS[QUIT_ALL]              = UPerf.class.getMethod("quitAll");
-
             ClassConfigurator.add((short)11000, Results.class);
-            f=NumberFormat.getNumberInstance();
-            f.setGroupingUsed(false);
-            f.setMinimumFractionDigits(2);
-            f.setMaximumFractionDigits(2);
         }
         catch(NoSuchMethodException e) {
             throw new RuntimeException(e);
@@ -132,16 +134,14 @@ public class UPerf extends ReceiverAdapter {
         Config config=disp.callRemoteMethod(coord, new MethodCall(GET_CONFIG), new RequestOptions(ResponseMode.GET_ALL, 5000));
         if(config != null) {
             applyConfig(config);
-            System.out.println("Fetched config from " + coord + ": " + config);
+            System.out.println("Fetched config from " + coord + ": " + config + "\n");
         }
         else
             System.err.println("failed to fetch config from " + coord);
     }
 
     void stop() {
-        if(disp != null)
-            disp.stop();
-        Util.close(channel);
+        Util.close(disp, channel);
     }
 
     protected void startEventThread() {
@@ -190,32 +190,50 @@ public class UPerf extends ReceiverAdapter {
         BUFFER=new byte[msg_size];
         addSiteMastersToMembers();
 
-        System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(BUFFER.length) + ", sync=" + sync +
-                             ", oob=" + oob + ", msg_bundling=" + msg_bundling + ", use_anycast_addrs=" + use_anycast_addrs);
+        System.out.printf("invoking %d RPCs of %s, sync=%b, oob=%b, msg_bundling=%b\n",
+                          num_msgs, Util.printBytes(BUFFER.length), sync, oob, msg_bundling);
         int total_gets=0, total_puts=0;
         final AtomicInteger num_msgs_sent=new AtomicInteger(0);
+        final CountDownLatch latch=new CountDownLatch(num_threads+1);
 
         Invoker[] invokers=new Invoker[num_threads];
-        for(int i=0; i < invokers.length; i++)
-            invokers[i]=new Invoker(members, num_msgs, num_msgs_sent);
-
-        long start=System.currentTimeMillis();
-        for(Invoker invoker: invokers)
-            invoker.start();
-
-        for(Invoker invoker: invokers) {
-            invoker.join();
-            total_gets+=invoker.numGets();
-            total_puts+=invoker.numPuts();
+        for(int i=0; i < invokers.length; i++) {
+            invokers[i]=new Invoker(members, latch, num_msgs, num_msgs_sent);
+            invokers[i].start(); // waits on latch
         }
 
+        long start=System.currentTimeMillis();
+        latch.countDown();
+        for(Invoker invoker: invokers)
+            invoker.join();
         long total_time=System.currentTimeMillis() - start;
-        System.out.println("\ndone (in " + total_time + " ms)");
-        return new Results(total_gets, total_puts, total_time);
+
+        System.out.println("");
+        AverageMinMax avg_gets=null, avg_puts=null;
+        for(Invoker invoker: invokers) {
+            total_gets+=invoker.numGets();
+            total_puts+=invoker.numPuts();
+            if(print_invokers)
+                System.out.printf("invoker %s: gets %s puts %s us\n", invoker.getId(),
+                                  print(invoker.avgGets(), print_details), print(invoker.avgPuts(), print_details));
+            if(avg_gets == null)
+                avg_gets=invoker.avgGets();
+            else
+                avg_gets.merge(invoker.avgGets());
+            if(avg_puts == null)
+                avg_puts=invoker.avgPuts();
+            else
+                avg_puts.merge(invoker.avgPuts());
+        }
+        if(print_invokers)
+            System.out.printf("\navg over all invokers: gets %s puts %s\n",
+                              print(avg_gets, print_details), print(avg_puts, print_details));
+
+        System.out.printf("\ndone (in %s ms)\n", total_time);
+        return new Results(total_gets, total_puts, total_time, avg_gets, avg_puts);
     }
 
     public void quitAll() {
-        // Util.sleepRandom(10, 10000);
         System.out.println("-- received quitAll(): shutting down");
         stopEventThread();
     }
@@ -265,22 +283,16 @@ public class UPerf extends ReceiverAdapter {
         addSiteMastersToMembers();
 
         while(looping) {
-            c=Util.keyPress("[1] Send msgs [2] Print view" +
-                              "\n[6] Set sender threads (" + num_threads + ") [7] Set num msgs (" + num_msgs + ") " +
-                              "[8] Set msg size (" + Util.printBytes(msg_size) + ")" +
-                              " [9] Set anycast count (" + anycast_count + ")" +
-                              "\n[o] Toggle OOB (" + oob + ") [s] Toggle sync (" + sync +
-                              ") [r] Set read percentage (" + f.format(read_percentage) + ") [g] get_before_put (" + get_before_put + ") " +
-                              "\n[a] Toggle use_anycast_addrs (" + use_anycast_addrs + ") [b] Toggle msg_bundling (" +
-                              (msg_bundling? "on" : "off") + ")" +
-                              "\n[q] Quit [X] quit all\n");
+            c=Util.keyPress(String.format(format, num_threads, num_msgs, Util.printBytes(msg_size),
+                                          sync, oob, msg_bundling, anycast_count, read_percentage,
+                                          allow_local_gets, print_details, print_invokers));
             switch(c) {
                 case -1:
                     break;
                 case '1':
                     startBenchmark();
                     break;
-                case '2':
+                case 'v':
                     printView();
                     break;
                 case '6':
@@ -292,13 +304,10 @@ public class UPerf extends ReceiverAdapter {
                 case '8':
                     changeFieldAcrossCluster("msg_size", Util.readIntFromStdin("Message size: "));
                     break;
-                case '9':
+                case 'a':
                     int tmp=getAnycastCount();
                     if(tmp >= 0)
                         changeFieldAcrossCluster("anycast_count", tmp);
-                    break;
-                case 'a':
-                    changeFieldAcrossCluster("use_anycast_addrs", !use_anycast_addrs);
                     break;
                 case 'o':
                     changeFieldAcrossCluster("oob", !oob);
@@ -314,11 +323,17 @@ public class UPerf extends ReceiverAdapter {
                 case 'b':
                     changeFieldAcrossCluster("msg_bundling", !msg_bundling);
                     break;
-                case 'g':
-                    changeFieldAcrossCluster("get_before_put", !get_before_put);
+                case 'd':
+                    changeFieldAcrossCluster("print_details", !print_details);
                     break;
-                case 'q':
-                    channel.close();
+                case 'i':
+                    changeFieldAcrossCluster("print_invokers", !print_invokers);
+                    break;
+                case 'l':
+                    changeFieldAcrossCluster("allow_local_gets", !allow_local_gets);
+                    break;
+                case 'x':
+                    Util.close(channel);
                     return;
                 case 'X':
                     try {
@@ -355,6 +370,7 @@ public class UPerf extends ReceiverAdapter {
 
         long total_reqs=0;
         long total_time=0;
+        AverageMinMax avg_gets=null, avg_puts=null;
 
         System.out.println("\n======================= Results: ===========================");
         for(Map.Entry<Address,Rsp<Results>> entry: responses.entrySet()) {
@@ -364,17 +380,24 @@ public class UPerf extends ReceiverAdapter {
             if(result != null) {
                 total_reqs+=result.num_gets + result.num_puts;
                 total_time+=result.time;
+                if(avg_gets == null)
+                    avg_gets=result.avg_gets;
+                else
+                    avg_gets.merge(result.avg_gets);
+                if(avg_puts == null)
+                    avg_puts=result.avg_puts;
+                else
+                    avg_puts.merge(result.avg_puts);
             }
             System.out.println(mbr + ": " + result);
         }
         double total_reqs_sec=total_reqs / ( total_time/ 1000.0);
         double throughput=total_reqs_sec * BUFFER.length;
-        double ms_per_req=total_time / (double)total_reqs;
-        Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         System.out.println("\n");
-        System.out.println(Util.bold("Average of " + f.format(total_reqs_sec) + " requests / sec (" +
-                                       Util.printBytes(throughput) + " / sec), " +
-                                       f.format(ms_per_req) + " ms /request (prot=" + prot.getName() + ")"));
+        System.out.println(Util.bold(String.format("Throughput: %.2f reqs/sec/node (%s/sec)\n" +
+                                                   "Roundtrip:  gets %s, puts %s\n",
+                                                   total_reqs_sec, Util.printBytes(throughput),
+                                                   print(avg_gets, print_details), print(avg_puts, print_details))));
         System.out.println("\n\n");
     }
     
@@ -405,13 +428,19 @@ public class UPerf extends ReceiverAdapter {
     }
 
 
-    void printView() {
+    protected void printView() {
         System.out.println("\n-- view: " + view + '\n');
         try {
             System.in.skip(System.in.available());
         }
         catch(Exception e) {
         }
+    }
+
+    protected static String print(AverageMinMax avg, boolean details) {
+        return details? String.format("min/avg/max = %.2f/%.2f/%.2f us",
+                                      avg.min() / 1000.0, avg.average() / 1000.0, avg.max() / 1000.0) :
+          String.format("avg = %.2f us", avg.average() / 1000.0);
     }
 
     protected static List<String> getSites(JChannel channel) {
@@ -435,14 +464,18 @@ public class UPerf extends ReceiverAdapter {
 
     private class Invoker extends Thread {
         private final List<Address>  dests=new ArrayList<>();
+        private final CountDownLatch latch;
         private final int            num_msgs_to_send;
         private final AtomicInteger  num_msgs_sent;
-        private int                  num_gets=0;
-        private int                  num_puts=0;
+        private int                  num_gets;
+        private int                  num_puts;
+        private final AverageMinMax  avg_gets=new AverageMinMax(); // in ns
+        private final AverageMinMax  avg_puts=new AverageMinMax(); // in ns
         private final int            PRINT;
 
 
-        public Invoker(Collection<Address> dests, int num_msgs_to_send, AtomicInteger num_msgs_sent) {
+        public Invoker(Collection<Address> dests, CountDownLatch latch, int num_msgs_to_send, AtomicInteger num_msgs_sent) {
+            this.latch=latch;
             this.num_msgs_sent=num_msgs_sent;
             this.dests.addAll(dests);
             this.num_msgs_to_send=num_msgs_to_send;
@@ -451,8 +484,10 @@ public class UPerf extends ReceiverAdapter {
         }
 
         
-        public int numGets() {return num_gets;}
-        public int numPuts() {return num_puts;}
+        public int           numGets() {return num_gets;}
+        public AverageMinMax avgGets() {return avg_gets;}
+        public int           numPuts() {return num_puts;}
+        public AverageMinMax avgPuts() {return avg_puts;}
 
 
         public void run() {
@@ -462,7 +497,6 @@ public class UPerf extends ReceiverAdapter {
             MethodCall put_call=new MethodCall(PUT, put_args);
             RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, 40000, false, null);
             RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, 40000, true, null);
-            RequestOptions get_before_put_options=new RequestOptions(ResponseMode.GET_FIRST, 40000, true, null, Message.Flag.DONT_BUNDLE, Message.Flag.OOB);
 
             if(oob) {
                 get_options.setFlags(Message.Flag.OOB);
@@ -472,8 +506,8 @@ public class UPerf extends ReceiverAdapter {
                 get_options.setFlags(Message.Flag.DONT_BUNDLE);
                 put_options.setFlags(Message.Flag.DONT_BUNDLE);
             }
-            if(use_anycast_addrs)
-                put_options.useAnycastAddresses(true);
+
+            latch.countDown();
 
             while(true) {
                 long i=num_msgs_sent.getAndIncrement();
@@ -487,25 +521,24 @@ public class UPerf extends ReceiverAdapter {
                 try {
                     if(get) { // sync GET
                         Address target=pickTarget();
-                        if(target != null && target.equals(local_addr)) {
+                        long start=System.nanoTime();
+                        if(allow_local_gets && Objects.equals(target, local_addr))
                             get(1);
-                        }
                         else {
                             get_args[0]=i;
                             disp.callRemoteMethod(target, get_call, get_options);
                         }
+                        long time=System.nanoTime()-start;
+                        avg_gets.add(time);
                         num_gets++;
                     }
                     else {    // sync or async (based on value of 'sync') PUT
                         final Collection<Address> targets=pickAnycastTargets();
-                        if(get_before_put) {
-                            // sync GET
-                            get_args[0]=i;
-                            disp.callRemoteMethods(targets, get_call, get_before_put_options);
-                            num_gets++;
-                        }
                         put_args[0]=i;
+                        long start=System.nanoTime();
                         disp.callRemoteMethods(targets, put_call, put_options);
+                        long time=System.nanoTime()-start;
+                        avg_puts.add(time);
                         num_puts++;
                     }
                 }
@@ -517,9 +550,6 @@ public class UPerf extends ReceiverAdapter {
 
         private Address pickTarget() {
             return Util.pickRandomElement(dests);
-            // int index=dests.indexOf(local_addr);
-            // int new_index=(index +1) % dests.size();
-            // return dests.get(new_index);
         }
 
         private Collection<Address> pickAnycastTargets() {
@@ -537,36 +567,46 @@ public class UPerf extends ReceiverAdapter {
 
 
     public static class Results implements Streamable {
-        long num_gets=0;
-        long num_puts=0;
-        long time=0;
+        protected long          num_gets;
+        protected long          num_puts;
+        protected long          time;     // in ms
+        protected AverageMinMax avg_gets; // RTT in ns
+        protected AverageMinMax avg_puts; // RTT in ns
 
         public Results() {
             
         }
 
-        public Results(int num_gets, int num_puts, long time) {
+        public Results(int num_gets, int num_puts, long time, AverageMinMax avg_gets, AverageMinMax avg_puts) {
             this.num_gets=num_gets;
             this.num_puts=num_puts;
             this.time=time;
+            this.avg_gets=avg_gets;
+            this.avg_puts=avg_puts;
         }
 
         public void writeTo(DataOutput out) throws Exception {
-            out.writeLong(num_gets);
-            out.writeLong(num_puts);
-            out.writeLong(time);
+            Bits.writeLong(num_gets, out);
+            Bits.writeLong(num_puts, out);
+            Bits.writeLong(time, out);
+            Util.writeStreamable(avg_gets, out);
+            Util.writeStreamable(avg_puts, out);
         }
 
         public void readFrom(DataInput in) throws Exception {
-            num_gets=in.readLong();
-            num_puts=in.readLong();
-            time=in.readLong();
+            num_gets=Bits.readLong(in);
+            num_puts=Bits.readLong(in);
+            time=Bits.readLong(in);
+            avg_gets=(AverageMinMax)Util.readStreamable(AverageMinMax.class, in);
+            avg_puts=(AverageMinMax)Util.readStreamable(AverageMinMax.class, in);
         }
 
         public String toString() {
             long total_reqs=num_gets + num_puts;
             double total_reqs_per_sec=total_reqs / (time / 1000.0);
-            return f.format(total_reqs_per_sec) + " reqs/sec (" + num_gets + " GETs, " + num_puts + " PUTs total)";
+            return String.format("%.2f reqs/sec (%d gets, %d puts, get RTT %.2f us, put RTT %.2f us)",
+                                 total_reqs_per_sec, num_gets, num_puts, avg_gets.average() / 1000.0,
+                                 avg_puts.getAverage()/1000.0);
         }
     }
 

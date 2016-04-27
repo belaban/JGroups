@@ -1709,6 +1709,11 @@ public class Util {
     }
 
 
+    public static String printNanos(double time_ns) {
+        double us=time_ns / 1_000.0;
+        return String.format("%.2f ns (%.2f us)", time_ns, us);
+    }
+
     public static String printTime(long time,TimeUnit unit) {
         long ns=TimeUnit.NANOSECONDS.convert(time,unit);
         long us=TimeUnit.MICROSECONDS.convert(time,unit);
