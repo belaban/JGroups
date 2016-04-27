@@ -12,7 +12,7 @@ import java.util.stream.IntStream;
  * @author Bela Ban
  * @since  3.6.8
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=false)
+@Test(groups=Global.FUNCTIONAL)
 public class AverageTest {
 
     public void testAverage() {
