@@ -79,10 +79,9 @@ public class AverageTest {
         System.out.printf("avg1: %s, avg2: %s\n", avg1, avg2);
         avg1.merge(avg2);
         System.out.printf("merged avg1: %s\n", avg1);
-        assert avg1.count() == 5500;
-        double diff=Math.abs(avg1.getAverage() - 1.90);
-        assert diff < 0.01;
-        assert avg1.min() == 1;
+        assert avg1.count() == 5000;
+        assert avg1.average() == 2.0;
+        assert avg1.min() == 2;
         assert avg1.max() == 2;
     }
 
