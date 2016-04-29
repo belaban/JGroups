@@ -13,10 +13,10 @@ public class RoundTripUdp {
     DatagramSocket sock;
     InetAddress host;
     int port=7500;
-    int num=1000;
+    int num=20000;
     int msg_size=10;
     boolean server=false;
-    final byte[] RSP_BUF=new byte[]{1}; // 1=response
+    final byte[] RSP_BUF={1}; // 1=response
     int   num_responses=0;
 
 
@@ -26,7 +26,6 @@ public class RoundTripUdp {
         this.msg_size=msg_size;
         this.host=host;
         this.port=port;
-
 
         if(server) {
             sock=new DatagramSocket(port, host);
@@ -52,9 +51,6 @@ public class RoundTripUdp {
 
     private void sendRequests() {
         byte[] buf=new byte[msg_size];
-        long   start, stop, total;
-        double requests_per_sec;
-        double    ms_per_req;
         int     print=num / 10;
 
         num_responses=0;
@@ -62,7 +58,7 @@ public class RoundTripUdp {
             buf[i]=0; // 0=request
         }
 
-        start=System.currentTimeMillis();
+        long start=System.nanoTime();
         for(int i=0; i < num; i++) {
             DatagramPacket packet=new DatagramPacket(buf, 0, buf.length, host, port);
             try {
@@ -84,18 +80,17 @@ public class RoundTripUdp {
                 e.printStackTrace();
             }
         }
-        stop=System.currentTimeMillis();
-        total=stop-start;
-        requests_per_sec=num / (total / 1000.0);
-        ms_per_req=total / (double)num;
-        System.out.println("Took " + total + "ms for " + num + " requests: " + requests_per_sec +
-                " requests/sec, " + ms_per_req + " ms/request");
+        long total=System.nanoTime() - start;
+        double requests_per_sec=num / (total / 1000_000_000.0);
+        double us_per_req=total / 1000.0 / (double)num;
+        System.out.printf("\n%.2f ms for %d requests: %.2f reqs/sec, %.2f us/request\n\n",
+                          total / 1000_000.0, num, requests_per_sec, us_per_req);
     }
 
 
     public static void main(String[] args) throws IOException {
         boolean server=false;
-        int num=100;
+        int num=20000;
         int msg_size=10; // 10 bytes
         InetAddress host=null;
         int port=7500;
@@ -133,7 +128,7 @@ public class RoundTripUdp {
 
 
     private static void help() {
-        System.out.println("RoundTrip [-server] [-num <number of messages>] " +
-                "[-size <size of each message (in bytes)>] [-host <host>] [-port <port>]");
+        System.out.println("RoundTripUdp [-server] [-num <number of messages>] " +
+                             "[-size <size of each message (in bytes)>] [-host <host>] [-port <port>]");
     }
 }

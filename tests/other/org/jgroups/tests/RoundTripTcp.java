@@ -17,10 +17,10 @@ public class RoundTripTcp {
     ServerSocket srv_sock;
     InetAddress host;
     int port=7500;
-    int num=1000;
+    int num=20000;
     int msg_size=10;
     boolean server=false;
-    final byte[] RSP_BUF=new byte[]{1}; // 1=response
+    final byte[] RSP_BUF={1}; // 1=response
     int   num_responses=0;
 
 
@@ -43,14 +43,11 @@ public class RoundTripTcp {
                     try {
                         in=client_sock.getInputStream();
                         out=client_sock.getOutputStream();
-                        int b=in.read();
+                        in.read();
                         out.write(RSP_BUF, 0, RSP_BUF.length);
                     }
                     catch(Exception ex) {
-                        // ex.printStackTrace();
-                        Util.close(in);
-                        Util.close(out);
-                        client_sock.close();
+                        Util.close(in, out, client_sock);
                         break;
                     }
                 }
@@ -67,16 +64,12 @@ public class RoundTripTcp {
 
     private void sendRequests(Socket sock) throws IOException {
         byte[] buf=new byte[msg_size];
-        long   start, stop, total;
         double requests_per_sec;
-        double    ms_per_req;
-        int     print=num / 10;
+        int    print=num / 10;
 
         num_responses=0;
-        for(int i=0; i < buf.length; i++) {
+        for(int i=0; i < buf.length; i++)
             buf[i]=0; // 0=request
-        }
-
 
         OutputStream out=null;
         InputStream in=null;
@@ -84,11 +77,11 @@ public class RoundTripTcp {
         try {
             out=sock.getOutputStream();
             in=sock.getInputStream();
-            start=System.currentTimeMillis();
+            long start=System.nanoTime();
             for(int i=0; i < num; i++) {
                 try {
                     out.write(buf, 0, buf.length);
-                    int b=in.read();
+                    in.read();
                     num_responses++;
                     if(num_responses >= num) {
                         System.out.println("received all responses (" + num_responses + ")");
@@ -102,17 +95,14 @@ public class RoundTripTcp {
                     e.printStackTrace();
                 }
             }
-            stop=System.currentTimeMillis();
-            total=stop-start;
-            requests_per_sec=num / (total / 1000.0);
-            ms_per_req=total / (double)num;
-            System.out.println("Took " + total + "ms for " + num + " requests: " + requests_per_sec +
-                    " requests/sec, " + ms_per_req + " ms/request");
+            long total=System.nanoTime()-start;
+            requests_per_sec=num / (total / 1_000_000_000.0);
+            double us_per_req=total / 1000.0 / (double)num;
+            System.out.printf("\n%.2f ms for %d requests: %.2f reqs/sec, %.2f us/req\n\n",
+                              total/1_000_000.0, num, requests_per_sec, us_per_req);
         }
         finally {
-            Util.close(in);
-            Util.close(out);
-            sock.close();
+            Util.close(in, out, sock);
         }
     }
 

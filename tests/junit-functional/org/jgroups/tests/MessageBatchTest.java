@@ -82,7 +82,7 @@ public class MessageBatchTest {
         System.out.println("batch = " + batch.map(print_numbers));
         assert batch.size() == 15;
         for(Message msg: batch) {
-            int num=(Integer)msg.getObject();
+            int num=msg.getObject();
             if(num <= 10)
                 assert msg.isTransientFlagSet(Message.TransientFlag.OOB_DELIVERED);
         }
@@ -174,7 +174,7 @@ public class MessageBatchTest {
         Queue<String> names=new LinkedBlockingQueue<>(Arrays.asList("Bela", "Michelle", "Nicole"));
         for(Message msg: batch) {
             String expected=names.poll();
-            String name=(String)msg.getObject();
+            String name=msg.getObject();
             System.out.println("found=" + name + ", expected=" + expected);
             assert name.equals(expected) : "found=" + name + ", expected=" + expected;
         }
@@ -184,7 +184,7 @@ public class MessageBatchTest {
     public void testReplaceDuplicates() {
         final Set<Integer> dupes=new HashSet<>(5);
         Predicate<Message> filter=(msg) -> {
-            Integer num=(Integer)msg.getObject();
+            Integer num=msg.getObject();
             return dupes.add(num) == false;
         };
 
@@ -282,7 +282,7 @@ public class MessageBatchTest {
         List<Message> msgs=createMessages();
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutputStream out=new DataOutputStream(output);
-        TP.writeMessageList(b, a, "cluster".getBytes(), msgs, out, false, UDP_ID);
+        Util.writeMessageList(b, a, "cluster".getBytes(), msgs, out, false, UDP_ID);
         out.flush();
 
         byte[] buf=output.toByteArray();
@@ -291,7 +291,7 @@ public class MessageBatchTest {
         DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf));
         in.readShort(); // version
         in.readByte(); // flags
-        List<Message> list=TP.readMessageList(in, UDP_ID);
+        List<Message> list=Util.readMessageList(in, UDP_ID);
         assert msgs.size() == list.size();
     }
 

@@ -203,7 +203,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         String group=cluster_name != null? cluster_name.toString() : null;
 
         ByteArrayDataOutputStream dos=new ByteArrayDataOutputStream((int)(msg.size() + 50));
-        writeMessage(msg, dos, dest == null);
+        Util.writeMessage(msg, dos, dest == null);
 
         if(stats) {
             num_msgs_sent++;

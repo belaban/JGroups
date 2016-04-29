@@ -2,7 +2,6 @@ package org.jgroups.tests;
 
 import org.jgroups.Message;
 import org.jgroups.Version;
-import org.jgroups.protocols.TP;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
@@ -50,7 +49,7 @@ public class ParseMessages {
                 boolean multicast=(flags & MULTICAST) == MULTICAST;
 
                 if(is_message_list) { // used if message bundling is enabled
-                    final MessageBatch[] batches=TP.readMessageBatch(dis,multicast);
+                    final MessageBatch[] batches=Util.readMessageBatch(dis,multicast);
                     for(MessageBatch batch: batches) {
                         if(batch != null)
                             for(Message msg: batch)
@@ -58,7 +57,7 @@ public class ParseMessages {
                     }
                 }
                 else {
-                    Message msg=TP.readMessage(dis);
+                    Message msg=Util.readMessage(dis);
                     retval.add(msg);
                 }
             }

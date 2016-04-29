@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.util.Average;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
@@ -37,7 +34,7 @@ public class RoundTrip extends ReceiverAdapter {
      * @param msg
      */
     public void receive(Message msg) {
-        if(msg.dest() == null) { // request: send unicast response
+        if(msg.getLength() > 0) {       // request: send unicast response
             Message rsp=new Message(msg.src());
             try {
                 channel.send(rsp);
@@ -68,7 +65,11 @@ public class RoundTrip extends ReceiverAdapter {
                         num_msgs=Util.readIntFromStdin("num_msgs: ");
                         break;
                     case '3':
-                        msg_size=Util.readIntFromStdin("msg_size: ");
+                        int tmp=Util.readIntFromStdin("msg_size: ");
+                        if(tmp <= 0)
+                            System.err.printf("msg_size of %d is invalid\n", tmp);
+                        else
+                            msg_size=tmp;
                         break;
                     case 'o':
                         oob=!oob;
@@ -94,14 +95,15 @@ public class RoundTrip extends ReceiverAdapter {
             return;
         }
 
+        Address target=Util.pickNext(view.getMembers(), channel.getAddress());
         byte[] buf=new byte[msg_size];
         Average avg=new Average();
         long min=Long.MAX_VALUE, max=0;
         int print=num_msgs/10;
-        System.out.println("");
+        System.out.printf("-- sending %d requests to %s (size=%d)\n", num_msgs, target, msg_size);
 
         for(int i=0; i < num_msgs; i++) {
-            Message req=new Message(null, buf).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
+            Message req=new Message(target, buf);
             if(oob)
                 req.setFlag(Message.Flag.OOB);
             if(dont_bundle)
