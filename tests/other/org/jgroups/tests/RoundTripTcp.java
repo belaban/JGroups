@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Bela Ban
  */
 public class RoundTripTcp {
-    protected int                    num_msgs=5000;
+    protected int                    num_msgs=20000;
     protected int                    num_senders=1; // number of sender threads
     protected boolean                details;
     protected static final byte      REQ=0, RSP=1;
