@@ -114,11 +114,16 @@ public class Promise<T> implements org.jgroups.util.Condition {
      * Causes all waiting threads to return
      */
     public void reset() {
+        reset(true);
+    }
+
+    public void reset(boolean signal) {
         lock.lock();
         try {
             result=null;
             hasResult=false;
-            cond.signal(true);
+            if(signal)
+                cond.signal(true);
         }
         finally {
             lock.unlock();

@@ -45,7 +45,7 @@ public class GroupRequest<T> extends Request {
 
     /** Correlates requests and responses */
     @GuardedBy("lock")
-    private final Map<Address,Rsp<T>> requests;
+    protected final Map<Address,Rsp<T>> requests;
 
     @GuardedBy("lock")
     int num_valid;       // the number of valid responses (values or exceptions that passed the response filter)

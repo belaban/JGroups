@@ -158,7 +158,6 @@ public class RoundTripTcp {
 
 
     private static void help() {
-        System.out.println("RoundTrip [-server] [-num <number of messages>] " +
-                "[-size <size of each message (in bytes)>] [-host <host>] [-port <port>]");
+        System.out.println("RoundTripTcp [-server] [-host <host>] [-port <port>]");
     }
 }

@@ -22,23 +22,21 @@ public class RpcStats {
     protected final AtomicInteger                    async_multicasts=new AtomicInteger(0);
     protected final AtomicInteger                    sync_anycasts=new AtomicInteger(0);
     protected final AtomicInteger                    async_anycasts=new AtomicInteger(0);
-    protected boolean                                extended_stats;
     protected volatile ConcurrentMap<Address,Result> stats;
 
     public enum Type {MULTICAST, UNICAST, ANYCAST}
 
     public RpcStats(boolean extended_stats) {
-        this.extended_stats=extended_stats;
+        extendedStats(extended_stats);
     }
 
     public int unicasts(boolean sync)    {return sync? sync_unicasts.get()   : async_unicasts.get();}
     public int multicasts(boolean sync)  {return sync? sync_multicasts.get() : async_multicasts.get();}
     public int anycasts(boolean sync)    {return sync? sync_anycasts.get()   : async_anycasts.get();}
 
-    public boolean  extendedStats()          {return extended_stats;}
+    public boolean  extendedStats()          {return stats != null;}
     public RpcStats extendedStats(boolean f) {
-        this.extended_stats=f;
-        if(extended_stats) {
+        if(f) {
             if(stats == null)
                 stats=new ConcurrentHashMap<>();
         }
@@ -75,6 +73,7 @@ public class RpcStats {
 
 
     public String printOrderByDest() {
+        if(stats == null) return "(no stats)";
         StringBuilder sb=new StringBuilder("\n");
         for(Map.Entry<Address,Result> entry: stats.entrySet()) {
             Address dst=entry.getKey();
@@ -130,36 +129,28 @@ public class RpcStats {
 
 
     protected static class Result {
-        protected long          min=-1, max=-1, sync, async;
-        protected final Average avg=new Average();
-
+        protected long                sync, async;
+        protected final AverageMinMax avg=new AverageMinMax();
         protected long                sync()  {return sync;}
         protected long                async() {return async;}
-        protected long                min()   {return min;}
-        protected long                max()   {return max;}
-        protected synchronized double avg()   {return avg.getAverage();}
+        protected long                min()   {return avg.min();}
+        protected long                max()   {return avg.max();}
+        protected synchronized double avg()   {return avg.average();}
 
         protected synchronized void add(boolean sync, long time) {
             if(sync)
                 this.sync++;
             else
                 this.async++;
-            if(time > 0) {
-                if(min == -1)
-                    min=max=time;
-                else {
-                    min=Math.min(min, time);
-                    max=Math.max(max, time);
-                }
+            if(time > 0)
                 avg.add(time);
-            }
         }
 
         public String toString() {
-            double avg_ms=avg() / 1000000.0; // convert nanos to millis
-            double min_ms=min == -1? min : min / 1000000.0;
-            double max_ms=max == -1? max : max / 1000000.0;
-            return String.format("async: %d, sync: %d, min/max/avg (ms): %.2f/%.2f/%.3f", async, sync, min_ms, max_ms, avg_ms);
+            double avg_us=avg()/1000.0;     // convert nanos to microsecs
+            double min_us=avg.min()/1000.0; // us
+            double max_us=avg.max()/1000.0; // us
+            return String.format("async: %d, sync: %d, round-trip min/avg/max (us): %.2f / %.2f / %.2f", async, sync, min_us, avg_us, max_us);
         }
     }
 }

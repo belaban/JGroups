@@ -33,6 +33,7 @@ public abstract class Request implements NotifyingFuture, org.jgroups.util.Condi
     protected final RequestOptions    options;
     protected volatile boolean        done;
     protected volatile FutureListener listener;
+    protected long                    start_time;   // in ns, to compute RTT for blocking RPCs
 
 
     
