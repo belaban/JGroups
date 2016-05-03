@@ -180,7 +180,7 @@ public class RoundTrip extends ReceiverAdapter {
 
         public void run() {
             for(;;) {
-                int num=sent_msgs.incrementAndGet();
+                int num=sent_msgs.getAndIncrement();
                 if(num >= num_msgs)
                     break;
                 if(num > 0 && num % print == 0)

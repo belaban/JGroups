@@ -177,7 +177,7 @@ public class RoundTripRpc implements MembershipListener {
             if(dont_bundle) opts.flags(Message.Flag.DONT_BUNDLE);
             MethodCall call=new MethodCall((short)1, id);
             for(;;) {
-                int num=sent_msgs.incrementAndGet();
+                int num=sent_msgs.getAndIncrement();
                 if(num >= num_msgs)
                     break;
                 if(num > 0 && num % print == 0)
@@ -210,12 +210,12 @@ public class RoundTripRpc implements MembershipListener {
             help();
             return;
         }
-        new RoundTrip().start(props, name);
+        new RoundTripRpc().start(props, name);
     }
 
 
 
     private static void help() {
-        System.out.println("RoundTrip [-props <properties>] [-name name]");
+        System.out.println("RoundTripRpc [-props <properties>] [-name name]");
     }
 }

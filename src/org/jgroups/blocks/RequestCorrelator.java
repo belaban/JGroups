@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Framework to send requests and receive matching responses (on request ID).
  * Multiple requests can be sent at a time. Whenever a response is received, the correct {@code Request} is looked up
- * (key = id) and its method {@code receiveResponse()} invoked.<p>
+ * (key = id) and its method {@code receiveResponse()} invoked.
  * @author Bela Ban
  */
 public class RequestCorrelator {
@@ -62,7 +62,9 @@ public class RequestCorrelator {
     // send exceptions back wrapped in an {@link InvocationTargetException}, or not
     protected boolean                                wrap_exceptions=false;
 
-    private final MyProbeHandler                     probe_handler=new MyProbeHandler();
+    protected final MyProbeHandler                   probe_handler=new MyProbeHandler();
+
+    protected final RpcStats                         rpc_stats=new RpcStats(false);
 
     protected static final Log                       log=LogFactory.getLog(RequestCorrelator.class);
 
@@ -101,7 +103,6 @@ public class RequestCorrelator {
 
     public Address                getLocalAddress()              {return local_addr;}
     public RequestCorrelator      setLocalAddress(Address a)     {this.local_addr=a; return this;}
-    protected RequestCorrelator   removeEntry(long id)           {requests.remove(id); return this;}
     public Marshaller             getMarshaller()                {return marshaller;}
     public RequestCorrelator      setMarshaller(Marshaller m)    {this.marshaller=m; return this;}
     public boolean                asyncDispatching()             {return async_dispatching;}
@@ -133,7 +134,7 @@ public class RequestCorrelator {
         Message msg=new Message(null, data).putHeader(this.corr_id, hdr)
           .setFlag(opts.flags()).setTransientFlag(opts.transientFlags());
 
-        if(req != null) {
+        if(req != null) { // sync
             long req_id=REQUEST_ID.getAndIncrement();
             req.requestId(req_id);
             hdr.requestId(req_id); // set the request-id only for *synchronous RPCs*
@@ -142,6 +143,14 @@ public class RequestCorrelator {
             requests.putIfAbsent(req_id, req);
             // make sure no view is received before we add ourself as a view handler (https://issues.jboss.org/browse/JGRP-1428)
             req.viewChange(view);
+            if(rpc_stats.extendedStats())
+                req.start_time=System.nanoTime();
+        }
+        else {  // async
+            if(opts != null && opts.anycasting())
+                rpc_stats.addAnycast(false, 0, dest_mbrs);
+            else
+                rpc_stats.add(RpcStats.Type.MULTICAST, null, false, 0);
         }
 
         if(opts.anycasting()) {
@@ -174,7 +183,7 @@ public class RequestCorrelator {
         Message msg=new Message(dest, data).putHeader(this.corr_id, hdr)
           .setFlag(opts.flags()).setTransientFlag(opts.transientFlags());
 
-        if(req != null) {
+        if(req != null) { // sync RPC
             long req_id=REQUEST_ID.getAndIncrement();
             req.requestId(req_id);
             hdr.requestId(req_id); // set the request-id only for *synchronous RPCs*
@@ -183,7 +192,11 @@ public class RequestCorrelator {
             requests.putIfAbsent(req_id, req);
             // make sure no view is received before we add ourself as a view handler (https://issues.jboss.org/browse/JGRP-1428)
             req.viewChange(view);
+            if(rpc_stats.extendedStats())
+                req.start_time=System.nanoTime();
         }
+        else // async RPC
+            rpc_stats.add(RpcStats.Type.UNICAST, dest, false, 0);
         transport.down(new Event(Event.MSG, msg));
     }
 
@@ -323,6 +336,26 @@ public class RequestCorrelator {
 
 
     // .......................................................................
+    protected RequestCorrelator removeEntry(long id) {
+        Request req=requests.remove(id);
+        if(req != null) {
+            long time_ns=req.start_time > 0? System.nanoTime() - req.start_time : 0;
+            if(req instanceof UnicastRequest)
+                rpc_stats.add(RpcStats.Type.UNICAST, ((UnicastRequest)req).target, true, time_ns);
+            else if(req instanceof GroupRequest) {
+                if(req.options != null && req.options.anycasting())
+                    rpc_stats.addAnycast(true, time_ns, ((GroupRequest)req).rsps.keySet());
+                else
+                    rpc_stats.add(RpcStats.Type.MULTICAST, null, true, time_ns);
+            }
+            else
+                log.error("request type %s not known", req != null? req.getClass().getSimpleName() : req);
+        }
+        return this;
+    }
+
+
+
     protected void dispatch(final Message msg, final Header hdr) {
         switch(hdr.type) {
             case Header.REQ:
@@ -592,13 +625,36 @@ public class RequestCorrelator {
                     case "reqtable-info":
                         retval.put(key, String.format("size=%d, next-id=%d", requests.size(), REQUEST_ID.get()));
                         break;
+                    case "rpcs":
+                        retval.put("sync  unicast   RPCs", String.valueOf(rpc_stats.unicasts(true)));
+                        retval.put("sync  multicast RPCs", String.valueOf(rpc_stats.multicasts(true)));
+                        retval.put("async unicast   RPCs", String.valueOf(rpc_stats.unicasts(false)));
+                        retval.put("async multicast RPCs", String.valueOf(rpc_stats.multicasts(false)));
+                        retval.put("sync  anycast   RPCs", String.valueOf(rpc_stats.anycasts(true)));
+                        retval.put("async anycast   RPCs", String.valueOf(rpc_stats.anycasts(false)));
+                        break;
+                    case "rpcs-reset":
+                        rpc_stats.reset();
+                        break;
+                    case "rpcs-enable-details":
+                        rpc_stats.extendedStats(true);
+                        break;
+                    case "rpcs-disable-details":
+                        rpc_stats.extendedStats(false);
+                        break;
+                    case "rpcs-details":
+                        if(!rpc_stats.extendedStats())
+                            retval.put(key, "<details not enabled: use rpcs-enable-details to enable>");
+                        else
+                            retval.put(key, rpc_stats.printOrderByDest());
+                        break;
                 }
             }
             return retval;
         }
 
         public String[] supportedKeys() {
-            return new String[]{"requests", "reqtable-info"};
+            return new String[]{"requests", "reqtable-info", "rpcs", "rpcs-reset", "rpcs-enable-details", "rpcs-disable-details", "rpcs-details"};
         }
     }
 

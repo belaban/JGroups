@@ -154,7 +154,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
             }
             TP transport=channel.getProtocolStack().getTransport();
             hardware_multicast_supported=transport.supportsMulticasting();
-            transport.registerProbeHandler(probe_handler);
+            // transport.registerProbeHandler(probe_handler);
         }
     }
 
@@ -174,7 +174,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
 
         if(channel instanceof JChannel) {
             TP transport=channel.getProtocolStack().getTransport();
-            transport.unregisterProbeHandler(probe_handler);
+            // transport.unregisterProbeHandler(probe_handler);
             if(corr != null)
                 corr.unregisterProbeHandler(transport);
         }

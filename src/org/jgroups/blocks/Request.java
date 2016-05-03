@@ -18,6 +18,7 @@ public abstract class Request<T> extends CompletableFuture<T> {
     protected long                    req_id;
     protected final RequestCorrelator corr;         // either use RequestCorrelator or ...
     protected final RequestOptions    options;
+    protected long                    start_time;   // in ns, to compute RTT for blocking RPCs
 
 
     public Request(RequestCorrelator corr, RequestOptions options) {
