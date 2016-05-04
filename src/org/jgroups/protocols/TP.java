@@ -271,8 +271,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @ManagedAttribute(description="Fully qualified classname of bundler")
     public String getBundlerClass() {
-        if(bundler == null) return "null";
-        return bundler.getClass().getName();
+        return bundler != null? bundler.getClass().getName() : "null";
     }
 
     public void setMaxBundleSize(int size) {
@@ -1128,8 +1127,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public void stop() {
         stopDiagnostics();
-        if(bundler != null)
+        if(bundler != null) {
             bundler.stop();
+            bundler=null;
+        }
     }
 
     @ManagedOperation(description="Enables diagnostics and starts DiagnosticsHandler (if not running)")

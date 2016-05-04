@@ -966,7 +966,6 @@ public class JChannel implements Closeable {
 
 
     protected JChannel startStack(String cluster_name) throws Exception {
-        /*make sure the channel is not closed*/
         checkClosed();
 
         this.cluster_name=cluster_name;
