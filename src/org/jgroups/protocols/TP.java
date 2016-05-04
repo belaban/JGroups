@@ -367,7 +367,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected String bundler_type="transfer-queue";
 
     @Property(description="The max number of elements in a bundler if the bundler supports size limitations")
-    protected int bundler_capacity=20000;
+    protected int bundler_capacity=16384; // some bundler require this value to be a power of 2
 
     @ManagedAttribute(description="Fully qualified classname of bundler")
     public String getBundlerClass() {
