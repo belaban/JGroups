@@ -641,7 +641,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     // ================================= Default SocketFactory ========================
     protected SocketFactory           socket_factory=new DefaultSocketFactory();
 
-    protected Bundler                 bundler;
+    protected volatile Bundler        bundler;
 
     protected DiagnosticsHandler      diag_handler;
     protected final List<DiagnosticsHandler.ProbeHandler> preregistered_probe_handlers=new LinkedList<>();
@@ -1302,8 +1302,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public void stop() {
         stopDiagnostics();
-        if(bundler != null)
+        if(bundler != null) {
             bundler.stop();
+            bundler=null;
+        }
     }
 
     @ManagedOperation(description="Enables diagnostics and starts DiagnosticsHandler (if not running)")
