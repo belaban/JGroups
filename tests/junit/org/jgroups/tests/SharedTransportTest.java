@@ -118,7 +118,7 @@ public class SharedTransportTest extends ChannelTestBase {
 
         // async sending - wait until the message has been received by A and C
         for(int i=0; i < 20; i++) {
-            if(r1.getList().size() == 2 && r3.getList().size() == 3)
+            if(r1.getList().size() == 2 && r3.getList().size() == 2)
                 break;
             Util.sleep(500);
         }

@@ -38,6 +38,8 @@ import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.jgroups.protocols.TP.MULTICAST;
+
 
 /**
  * Collection of various utility routines that can not be assigned to other classes.
@@ -884,6 +886,154 @@ public class Util {
         }
         return left.length - right.length;
     }
+
+    /**
+     * This method needs to be synchronized on out_stream when it is called
+     * @param msg
+     * @throws java.io.IOException
+     */
+    public static void writeMessage(Message msg, DataOutput dos, boolean multicast) throws Exception {
+        byte flags=0;
+        dos.writeShort(Version.version); // write the version
+        if(multicast)
+            flags+=MULTICAST;
+        dos.writeByte(flags);
+        msg.writeTo(dos);
+    }
+
+    public static Message readMessage(DataInput instream) throws Exception {
+        Message msg=new Message(false); // don't create headers, readFrom() will do this
+        msg.readFrom(instream);
+        return msg;
+    }
+
+
+
+
+    /**
+     * Write a list of messages with the *same* destination and src addresses. The message list is
+     * marshalled as follows (see doc/design/MarshallingFormat.txt for details):
+     * <pre>
+     * List: * | version | flags | dest | src | cluster-name | [Message*] |
+     *
+     * Message:  | presence | leading | flags | [src] | length | [buffer] | size | [Headers*] |
+     *
+     * </pre>
+     * @param dest
+     * @param src
+     * @param msgs
+     * @param dos
+     * @param multicast
+     * @throws Exception
+     */
+    public static void writeMessageList(Address dest, Address src, byte[] cluster_name,
+                                        List<Message> msgs, DataOutput dos, boolean multicast, short transport_id) throws Exception {
+        writeMessageListHeader(dest, src, cluster_name, msgs != null ? msgs.size() : 0, dos, multicast);
+
+        if(msgs != null)
+            for(Message msg: msgs)
+                msg.writeToNoAddrs(src, dos, transport_id); // exclude the transport header
+    }
+
+    public static void writeMessageListHeader(Address dest, Address src, byte[] cluster_name, int numMsgs, DataOutput dos, boolean multicast) throws Exception {
+        dos.writeShort(Version.version);
+
+        byte flags=TP.LIST;
+        if(multicast)
+            flags+=TP.MULTICAST;
+
+        dos.writeByte(flags);
+
+        Util.writeAddress(dest, dos);
+
+        Util.writeAddress(src, dos);
+
+        dos.writeShort(cluster_name != null? cluster_name.length : -1);
+        if(cluster_name != null)
+            dos.write(cluster_name);
+
+        dos.writeInt(numMsgs);
+    }
+
+
+    public static List<Message> readMessageList(DataInput in, short transport_id) throws Exception {
+        List<Message> list=new LinkedList<>();
+        Address dest=Util.readAddress(in);
+        Address src=Util.readAddress(in);
+        // AsciiString cluster_name=Bits.readAsciiString(in); // not used here
+        short length=in.readShort();
+        byte[] cluster_name=length >= 0? new byte[length] : null;
+        if(cluster_name != null)
+            in.readFully(cluster_name, 0, cluster_name.length);
+
+        int len=in.readInt();
+
+        for(int i=0; i < len; i++) {
+            Message msg=new Message(false);
+            msg.readFrom(in);
+            msg.setDest(dest);
+            if(msg.getSrc() == null)
+                msg.setSrc(src);
+
+            // Now add a TpHeader back on, was not marshalled. Every message references the *same* TpHeader, saving memory !
+            msg.putHeader(transport_id, new TpHeader(cluster_name));
+
+            list.add(msg);
+        }
+        return list;
+    }
+
+    /**
+     * Reads a list of messages into 4 MessageBatches:
+     * <ol>
+     *     <li>regular</li>
+     *     <li>OOB</li>
+     *     <li>INTERNAL-OOB (INTERNAL and OOB)</li>
+     *     <li>INTERNAL (INTERNAL)</li>
+     * </ol>
+     * @param in
+     * @return an array of 4 MessageBatches in the order above, the first batch is at index 0
+     * @throws Exception
+     */
+    public static MessageBatch[] readMessageBatch(DataInput in, boolean multicast) throws Exception {
+        MessageBatch[] batches=new MessageBatch[4]; // [0]: reg, [1]: OOB, [2]: internal-oob, [3]: internal
+        Address dest=Util.readAddress(in);
+        Address src=Util.readAddress(in);
+        // AsciiString cluster_name=Bits.readAsciiString(in);
+        short length=in.readShort();
+        byte[] cluster_name=length >= 0? new byte[length] : null;
+        if(cluster_name != null)
+            in.readFully(cluster_name, 0, cluster_name.length);
+
+        int len=in.readInt();
+        for(int i=0; i < len; i++) {
+            Message msg=new Message(false);
+            msg.readFrom(in);
+            msg.setDest(dest);
+            if(msg.getSrc() == null)
+                msg.setSrc(src);
+            boolean oob=msg.isFlagSet(Message.Flag.OOB);
+            boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
+            int index=0;
+            MessageBatch.Mode mode=MessageBatch.Mode.REG;
+
+            if(oob && !internal) {
+                index=1; mode=MessageBatch.Mode.OOB;
+            }
+            else if(oob && internal) {
+                index=2; mode=MessageBatch.Mode.OOB;
+            }
+            else if(!oob && internal) {
+                index=3; mode=MessageBatch.Mode.INTERNAL;
+            }
+
+            if(batches[index] == null)
+                batches[index]=new MessageBatch(dest, src, cluster_name != null? new AsciiString(cluster_name) : null, multicast, mode, len);
+            batches[index].add(msg);
+        }
+        return batches;
+    }
+
 
     public static void writeView(View view,DataOutput out) throws Exception {
         if(view == null) {

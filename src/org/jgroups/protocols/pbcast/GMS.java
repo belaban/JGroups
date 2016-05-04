@@ -7,7 +7,6 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.logging.Log;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GmsImpl.Request;
 import org.jgroups.stack.DiagnosticsHandler;
@@ -308,8 +307,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public void resumeViewHandler() {
         view_handler.resumeForce();
     }
-
-    Log getLog() {return log;}
 
     ViewHandler getViewHandler() {return view_handler;}
 
