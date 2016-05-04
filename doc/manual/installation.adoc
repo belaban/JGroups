@@ -127,8 +127,7 @@ public interface CustomLogFactory {
 
 The implementation needs to return an implementation of `org.jgroups.logging.Log`.
 
-To force using the custom log implementation, the fully qualified classname of the custom log
-factory has to be provided via `-Djgroups.logging.log_factory_class=com.foo.MyCustomLogger`.
+To use the custom log, `LogFactory.setCustomLogFactory(CustomLogFactory f)` needs to be called.
 
 
 [[TestingTheSetup]]
