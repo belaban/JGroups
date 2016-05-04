@@ -21,12 +21,12 @@ import static org.jgroups.protocols.TP.MSG_OVERHEAD;
  */
 public class BaseBundler implements Bundler {
     /** Keys are destinations, values are lists of Messages */
-    final Map<SingletonAddress,List<Message>>  msgs=new HashMap<>(24);
-    protected TP                         transport;
-    @GuardedBy("lock") long              count;    // current number of bytes accumulated
-    protected final ReentrantLock        lock=new ReentrantLock();
-    protected ByteArrayDataOutputStream  output;
-    protected Log                        log;
+    protected final Map<SingletonAddress,List<Message>>  msgs=new HashMap<>(24);
+    protected TP                                         transport;
+    @GuardedBy("lock") protected long                    count;    // current number of bytes accumulated
+    protected final ReentrantLock                        lock=new ReentrantLock();
+    protected ByteArrayDataOutputStream                  output;
+    protected Log                                        log;
 
     public void init(TP transport) {
         this.transport=transport;
