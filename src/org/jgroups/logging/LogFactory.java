@@ -13,29 +13,21 @@ import org.jgroups.Global;
 public class LogFactory {
     public static final boolean    IS_LOG4J2_AVAILABLE; // log4j2 is preferred over log4j
     public static final boolean    IS_LOG4J_AVAILABLE;
-    protected static final boolean USE_JDK_LOGGER;
+    protected static boolean USE_JDK_LOGGER;
 
-    protected static final CustomLogFactory custom_log_factory;
+    protected static CustomLogFactory custom_log_factory;
 
 
     static {
-        String customLogFactoryClass=System.getProperty(Global.CUSTOM_LOG_FACTORY);
-        CustomLogFactory customLogFactoryX=null;
-        if(customLogFactoryClass != null) {
-            try {
-                customLogFactoryX=(CustomLogFactory)Class.forName(customLogFactoryClass).newInstance();
-            }
-            catch(Exception e) {
-            }
-        }
-
-        custom_log_factory=customLogFactoryX;
         USE_JDK_LOGGER=isPropertySet(Global.USE_JDK_LOGGER);
         IS_LOG4J_AVAILABLE=isAvailable("org.apache.log4j.Logger");
         IS_LOG4J2_AVAILABLE=isAvailable("org.apache.logging.log4j.core.Logger");
     }
 
-
+    public static CustomLogFactory getCustomLogFactory()                         {return custom_log_factory;}
+    public static void             setCustomLogFactory(CustomLogFactory factory) {custom_log_factory=factory;}
+    public static boolean          useJdkLogger()                                {return USE_JDK_LOGGER;}
+    public static void             useJdkLogger(boolean flag)                    {USE_JDK_LOGGER=flag;}
     public static String loggerType() {
         if(USE_JDK_LOGGER)      return "jdk";
         if(IS_LOG4J2_AVAILABLE) return "log4j2";
