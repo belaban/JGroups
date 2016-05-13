@@ -106,7 +106,7 @@ public class JDBC_PING extends Discovery {
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    private DataSource dataSourceFromJNDI = null;
+    private DataSource dataSource = null;
 
     protected Future<?> info_writer;
 
@@ -119,14 +119,21 @@ public class JDBC_PING extends Discovery {
     @ManagedOperation(description="Causes the member to write its own information into the DB, replacing an existing entry")
     public void writeInfo() {writeOwnInformation(true);}
 
+    public void setDataSource(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
     @Override
     public void init() throws Exception {
         super.init();
-        verifyconfigurationParameters();
-        if (stringIsEmpty(datasource_jndi_name))
-            loadDriver();
-        else
-            dataSourceFromJNDI = getDataSourceFromJNDI(datasource_jndi_name.trim());
+        verifyConfigurationParameters();
+        // If dataSource is already set, skip loading driver or JNDI lookup
+        if (dataSource == null) {
+            if (stringIsEmpty(datasource_jndi_name))
+                loadDriver();
+            else
+                dataSource = getDataSourceFromJNDI(datasource_jndi_name.trim());
+        }
         attemptSchemaInitialization();
         if (register_shutdown_hook) {
 	        Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -330,7 +337,7 @@ public class JDBC_PING extends Discovery {
     }
 
     protected Connection getConnection() {
-        if (dataSourceFromJNDI == null) {
+        if (dataSource == null) {
             Connection connection;
             try {
                 connection = DriverManager.getConnection(connection_url, connection_username, connection_password);
@@ -345,7 +352,7 @@ public class JDBC_PING extends Discovery {
         }
         else {
             try {
-                return dataSourceFromJNDI.getConnection();
+                return dataSource.getConnection();
             } catch (SQLException e) {
                 log.error(Util.getMessage("CouldNotOpenConnectionToDatabase"), e);
                 return null;
@@ -446,21 +453,25 @@ public class JDBC_PING extends Discovery {
         }
     }
     
-    protected void verifyconfigurationParameters() {
-        if (stringIsEmpty(this.connection_url) ||
-          stringIsEmpty(this.connection_driver) ||
-          stringIsEmpty(this.connection_username) ) {
-            if (stringIsEmpty(this.datasource_jndi_name)) {
-                throw new IllegalArgumentException("Either the 4 configuration properties starting with 'connection_' or the datasource_jndi_name must be set");
+    protected void verifyConfigurationParameters() {
+        // Skip if datasource is already set via integration code (e.g. WildFly)
+        if (dataSource == null) {
+            if (stringIsEmpty(this.connection_url) ||
+                    stringIsEmpty(this.connection_driver) ||
+                    stringIsEmpty(this.connection_username)) {
+                if (stringIsEmpty(this.datasource_jndi_name)) {
+                    throw new IllegalArgumentException("Either the 4 configuration properties starting with 'connection_' or the datasource_jndi_name must be set");
+                }
+            }
+            if (stringNotEmpty(this.connection_url) ||
+                    stringNotEmpty(this.connection_driver) ||
+                    stringNotEmpty(this.connection_username)) {
+                if (stringNotEmpty(this.datasource_jndi_name)) {
+                    throw new IllegalArgumentException("When using the 'datasource_jndi_name' configuration property, all properties starting with 'connection_' must not be set");
+                }
             }
         }
-        if (stringNotEmpty(this.connection_url) ||
-          stringNotEmpty(this.connection_driver) ||
-          stringNotEmpty(this.connection_username) ) {
-            if (stringNotEmpty(this.datasource_jndi_name)) {
-                throw new IllegalArgumentException("When using the 'datasource_jndi_name' configuration property, all properties starting with 'connection_' must not be set");
-            }
-        }
+
         if (stringIsEmpty(this.insert_single_sql)) {
             throw new IllegalArgumentException("The insert_single_sql configuration property is mandatory");
         }
@@ -472,11 +483,11 @@ public class JDBC_PING extends Discovery {
         }
     }
     
-    private static final boolean stringIsEmpty(final String value) {
+    private static boolean stringIsEmpty(final String value) {
         return value == null || value.trim().isEmpty();
     }
     
-    private static final boolean stringNotEmpty(final String value) {
+    private static boolean stringNotEmpty(final String value) {
         return !stringIsEmpty(value);
     }
 
