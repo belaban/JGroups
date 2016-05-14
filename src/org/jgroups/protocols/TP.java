@@ -606,8 +606,11 @@ public abstract class TP extends Protocol {
     public void registerProbeHandler(DiagnosticsHandler.ProbeHandler handler) {
         if(diag_handler != null)
             diag_handler.registerProbeHandler(handler);
-        else
-            preregistered_probe_handlers.add(handler);
+        else {
+            synchronized(preregistered_probe_handlers) {
+                preregistered_probe_handlers.add(handler);
+            }
+        }
     }
 
     public void unregisterProbeHandler(DiagnosticsHandler.ProbeHandler handler) {
@@ -1059,8 +1062,12 @@ public abstract class TP extends Protocol {
             if(diag_handler_created)
                 diag_handler.start();
             
-            for(DiagnosticsHandler.ProbeHandler handler: preregistered_probe_handlers)
-                diag_handler.registerProbeHandler(handler);
+            synchronized(preregistered_probe_handlers) {
+                for(DiagnosticsHandler.ProbeHandler handler: preregistered_probe_handlers)
+                    diag_handler.registerProbeHandler(handler);
+            }
+        }
+        synchronized(preregistered_probe_handlers) {
             preregistered_probe_handlers.clear();
         }
 
@@ -1092,7 +1099,9 @@ public abstract class TP extends Protocol {
             diag_handler.stop();
             diag_handler=null;
         }
-        preregistered_probe_handlers.clear();
+        synchronized(preregistered_probe_handlers) {
+            preregistered_probe_handlers.clear();
+        }
         if(bundler != null)
             bundler.stop();
     }
