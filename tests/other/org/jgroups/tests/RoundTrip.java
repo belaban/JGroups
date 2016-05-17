@@ -25,8 +25,9 @@ public class RoundTrip extends ReceiverAdapter {
     protected void start(String props, String name) throws Exception {
         channel=new JChannel(props).name(name).setReceiver(this);
         TP transport=channel.getProtocolStack().getTransport();
-        transport.setOOBThreadPool(new DirectExecutor());
-        transport.setDefaultThreadPool(new DirectExecutor());
+        // uncomment below to disable the regular and OOB thread pools
+        // transport.setOOBThreadPool(new DirectExecutor());
+        // transport.setDefaultThreadPool(new DirectExecutor());
 
         //ThreadPoolExecutor thread_pool=new ThreadPoolExecutor(4, 4, 30000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(5000));
         //transport.setDefaultThreadPool(thread_pool);
