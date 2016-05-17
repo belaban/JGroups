@@ -31,7 +31,6 @@ public class RoundTripTcp {
     protected InputStream            input;
     protected Receiver               receiver_thread;
 
-    // todo: use buffered streams for in/out
 
     private void start(InetAddress host, int port, boolean server) throws IOException {
         if(server) { // simple single threaded server, can only handle a single connection at a time
