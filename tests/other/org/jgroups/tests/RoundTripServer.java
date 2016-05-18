@@ -78,6 +78,7 @@ public class RoundTripServer {
             srv.tcpNodelay(true);
             srv.receiver(srv_handler); // handles requests
             srv.start();
+            System.out.printf("server started on %s (ctrl-c to terminate)\n", srv.localAddress());
         }
         else {
             client=nio? new NioClient(null, 0, host, port) : new TcpClient(null, 0, host, port);
@@ -220,7 +221,7 @@ public class RoundTripServer {
                 continue;
             }
             if(args[i].equals("-nio")) {
-                nio=Boolean.parseBoolean(args[++i]);
+                nio=true;
                 continue;
             }
             if(args[i].equals("-host")) {
@@ -244,6 +245,6 @@ public class RoundTripServer {
 
 
     private static void help() {
-        System.out.println("RoundTripServer [-server] [-host <host>] [-port <port>] [-nio true|false]");
+        System.out.println("RoundTripServer [-server] [-host <host>] [-port <port>] [-nio]");
     }
 }
