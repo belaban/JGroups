@@ -14,7 +14,6 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static java.lang.System.out;
 
 /**
  * Class that measure RTT between a client and server using NIO.2 {@link java.nio.channels.ServerSocketChannel} and
@@ -37,16 +36,15 @@ public class RoundTripNio {
         if(server) { // simple single threaded server, can only handle a single connection at a time
             ServerSocketChannel srv_channel=ServerSocketChannel.open();
             srv_channel.bind(new InetSocketAddress(host, port), 50);
-            out.println("server started (ctrl-c to kill)");
+            System.out.println("server started (ctrl-c to kill)");
+            int size=Global.BYTE_SIZE + Global.SHORT_SIZE;
+            ByteBuffer buf=direct_buffers? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
+            ByteBuffer rsp_buf=direct_buffers? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
+            rsp_buf.put(0, RSP); // rsp_buf[0] is always a RSP byte
 
             for(;;) {
                 SocketChannel client_ch=srv_channel.accept();
                 client_ch.socket().setTcpNoDelay(true); // we're concerned about latency
-
-                int size=Global.BYTE_SIZE + Global.SHORT_SIZE;
-                ByteBuffer buf=direct_buffers? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
-                ByteBuffer rsp_buf=direct_buffers? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
-                rsp_buf.put(0, RSP); // rsp_buf[0] is always a RSP byte
                 while(true) {
                     try {
                         buf.position(0);
@@ -141,17 +139,17 @@ public class RoundTripNio {
 
         AverageMinMax avg=null;
         if(details)
-            out.println("");
+            System.out.println("");
         for(Sender sender: senders) {
             if(details)
-                out.printf("%d: %s\n", sender.id, print(sender.avg));
+                System.out.printf("%d: %s\n", sender.id, print(sender.avg));
             if(avg == null)
                 avg=sender.avg;
             else
                 avg.merge(sender.avg);
         }
 
-        out.printf(Util.bold("\n\nreqs/sec = %.2f, " +
+        System.out.printf(Util.bold("\n\nreqs/sec = %.2f, " +
                                       "round-trip = min/avg/max: %.2f / %.2f / %.2f us\n\n"),
                           msgs_sec, avg.min()/1000.0, avg.average() / 1000.0, avg.max()/1000.0);
     }
@@ -175,7 +173,7 @@ public class RoundTripNio {
             this.id=id;
             this.latch=latch;
             this.sent_msgs=sent_msgs;
-            print=num_msgs / 10;
+            print=Math.max(1, num_msgs / 10);
             int required_size=Global.BYTE_SIZE + Global.SHORT_SIZE; // request and id
             req_buf=direct_buffers? ByteBuffer.allocateDirect(required_size) : ByteBuffer.allocate(required_size);
             req_buf.put(REQ).putShort(id);
@@ -185,10 +183,10 @@ public class RoundTripNio {
             latch.countDown();
             for(;;) {
                 int num=sent_msgs.incrementAndGet();
-                if(num >= num_msgs)
+                if(num > num_msgs)
                     break;
                 if(num > 0 && num % print == 0)
-                    out.printf(".");
+                    System.out.printf(".");
                 promise.reset(false);
                 try {
                     long start=System.nanoTime();
@@ -274,6 +272,6 @@ public class RoundTripNio {
 
 
     private static void help() {
-        out.println("RoundTripNio [-server] [-host <host>] [-port <port>] [-direct true|false]");
+        System.out.println("RoundTripNio [-server] [-host <host>] [-port <port>] [-direct true|false]");
     }
 }

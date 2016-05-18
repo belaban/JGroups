@@ -176,13 +176,13 @@ public class RoundTrip extends ReceiverAdapter {
             this.target=target;
             req_buf[0]=REQ;
             Bits.writeShort(id, req_buf, 1); // writes id at buf_reqs[1-2]
-            print=num_msgs / 10;
+            print=Math.max(1, num_msgs / 10);
         }
 
         public void run() {
             for(;;) {
                 int num=sent_msgs.getAndIncrement();
-                if(num >= num_msgs)
+                if(num > num_msgs)
                     break;
                 if(num > 0 && num % print == 0)
                     System.out.printf(".");

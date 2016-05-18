@@ -168,7 +168,7 @@ public class RoundTripRpc implements MembershipListener {
             this.latch=latch;
             this.sent_msgs=sent_msgs;
             this.target=target;
-            print=num_msgs / 10;
+            print=Math.max(1, num_msgs / 10);
         }
 
         public void run() {
@@ -178,7 +178,7 @@ public class RoundTripRpc implements MembershipListener {
             MethodCall call=new MethodCall((short)1, id);
             for(;;) {
                 int num=sent_msgs.getAndIncrement();
-                if(num >= num_msgs)
+                if(num > num_msgs)
                     break;
                 if(num > 0 && num % print == 0)
                     System.out.printf(".");
