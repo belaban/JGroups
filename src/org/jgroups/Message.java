@@ -84,11 +84,9 @@ public class Message implements Streamable {
 
 
    /**
-    * Constructs a Message given a destination Address
-    *
-    * @param dest
-    *           Address of receiver. If it is <em>null</em> then the message sent to the group.
-    *           Otherwise, it contains a single destination and is sent to that member.
+    * Constructs a message given a destination address
+    * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
+    *             sent to a single member.
     */
     public Message(Address dest) {
         setDest(dest);
@@ -96,17 +94,12 @@ public class Message implements Streamable {
     }
 
    /**
-    * Constructs a Message given a destination Address, a source Address and the payload byte buffer
-    *
-    * @param dest
-    *           Address of receiver. If it is <em>null</em> then the message sent to the group.
-    *           Otherwise, it contains a single destination and is sent to that member.
-    *           <p>
-    * @param src
-    *           Address of sender
-    * @param buf
-    *           Message to be sent. Note that this buffer must not be modified (e.g. buf[0]=0 is not
-    *           allowed), since we don't copy the contents on clopy() or clone().
+    * Constructs a message given a destination and source address and the payload byte buffer
+    * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
+    *             sent to a single member.
+    * @param src The address of the sender. Can be null; in this case the transport will fill in the sender's address
+    * @param buf The payload. Note that this buffer must not be modified (e.g. buf[0]='x' is not
+    *           allowed) since we don't copy the contents.
     */
     public Message(Address dest, Address src, byte[] buf) {
         this(dest);
@@ -120,29 +113,22 @@ public class Message implements Streamable {
 
 
    /**
-    * Constructs a message. The index and length parameters allow to provide a <em>reference</em> to
-    * a byte buffer, rather than a copy, and refer to a subset of the buffer. This is important when
-    * we want to avoid copying. When the message is serialized, only the subset is serialized.<br/>
+    * Constructs a message. The index and length parameters provide a reference to a byte buffer, rather than a copy,
+    * and refer to a subset of the buffer. This is important when we want to avoid copying. When the message is
+    * serialized, only the subset is serialized.</p>
     * <em>
     * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
     * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
     * retransmit a changed byte[] buffer !
     * </em>
     *
-    * @param dest
-    *           Address of receiver. If it is <em>null</em> then the message sent to the group.
-    *           Otherwise, it contains a single destination and is sent to that member.
-    *           <p>
-    * @param src
-    *           Address of sender
-    * @param buf
-    *           A reference to a byte buffer
-    * @param offset
-    *           The index into the byte buffer
-    * @param length
-    *           The number of bytes to be used from <tt>buf</tt>. Both index and length are checked
-    *           for array index violations and an ArrayIndexOutOfBoundsException will be thrown if
-    *           invalid
+    * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
+    *             sent to a single member.
+    * @param src The address of the sender. Can be null; in this case the transport will fill in the sender's address
+    * @param buf A reference to a byte buffer
+    * @param offset The index into the byte buffer
+    * @param length The number of bytes to be used from <tt>buf</tt>. Both index and length are checked
+    *           for array index violations and an ArrayIndexOutOfBoundsException will be thrown if invalid
     */
     public Message(Address dest, Address src, byte[] buf, int offset, int length) {
         this(dest);
@@ -161,21 +147,12 @@ public class Message implements Streamable {
 
 
    /**
-    * Constructs a Message given a destination Address, a source Address and the payload Object
-    *
-    * @param dest
-    *           Address of receiver. If it is <em>null</em> then the message sent to the group.
-    *           Otherwise, it contains a single destination and is sent to that member.
-    *           <p>
-    * @param src
-    *           Address of sender
-    * @param obj
-    *           The object will be marshalled into the byte buffer.
-    *           <em>Obj has to be serializable (e.g. implementing
-    *              Serializable, Externalizable or Streamable, or be a basic type (e.g. Integer, Short etc)).</em>
-    *           ! The resulting buffer must not be modified (e.g. buf[0]=0 is not allowed), since we
-    *           don't copy the contents on clopy() or clone().
-    *           <p/>
+    * Constructs a message given a destination and source address and the payload object
+    * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
+    *             sent to a single member.
+    * @param src The address of the sender. Can be null; in this case the transport will fill in the sender's address
+    * @param obj The object that will be marshalled into the byte buffer. Has to be serializable (e.g. implementing
+    *            Serializable, Externalizable or Streamable, or be a basic type (e.g. Integer, Short etc)).
     */
     public Message(Address dest, Address src, Object obj) {
         this(dest);
