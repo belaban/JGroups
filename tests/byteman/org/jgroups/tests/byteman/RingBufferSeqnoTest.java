@@ -3,7 +3,7 @@ package org.jgroups.tests.byteman;
 import org.jboss.byteman.contrib.bmunit.BMNGRunner;
 import org.jboss.byteman.contrib.bmunit.BMScript;
 import org.jgroups.Global;
-import org.jgroups.util.RingBufferLockless;
+import org.jgroups.util.RingBufferSeqnoLockless;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -14,7 +14,7 @@ import java.util.List;
  * @since 3.1
  */
 @Test(groups={Global.BYTEMAN,Global.EAP_EXCLUDED},description="Correctness tests for RingBuffer",enabled=false)
-public class RingBufferTest extends BMNGRunner {
+public class RingBufferSeqnoTest extends BMNGRunner {
 
 
 
@@ -59,9 +59,9 @@ public class RingBufferTest extends BMNGRunner {
      * T1 does a CAS(null, 5) and succeeds because T2 just nulled the element
      ==> We now deliver the message at index 5 TWICE (or multiple times) !
      */
-    @BMScript(dir="scripts/RingBufferTest", value="testRemoveAndConcurrentAdd")
+    @BMScript(dir="scripts/RingBufferSeqnoTest", value="testRemoveAndConcurrentAdd")
     public void testRemoveAndConcurrentAdd() throws InterruptedException {
-        final RingBufferLockless<Integer> buf=new RingBufferLockless<>(10, 0);
+        final RingBufferSeqnoLockless<Integer> buf=new RingBufferSeqnoLockless<>(10, 0);
         for(int i=1; i <= 5; i++)
             buf.add(i, i);
         buf.removeMany(true,4);
@@ -88,9 +88,9 @@ public class RingBufferTest extends BMNGRunner {
      * Same as above, but using removeMany() rather than remove()
      * @throws InterruptedException
      */
-    @BMScript(dir="scripts/RingBufferTest", value="testRemoveAndConcurrentAdd2")
+    @BMScript(dir="scripts/RingBufferSeqnoTest", value="testRemoveAndConcurrentAdd2")
     public void testRemoveAndConcurrentAdd2() throws InterruptedException {
-        final RingBufferLockless<Integer> buf=new RingBufferLockless<>(10, 0);
+        final RingBufferSeqnoLockless<Integer> buf=new RingBufferSeqnoLockless<>(10, 0);
         for(int i=1; i <= 10; i++)
             buf.add(i, i);
         buf.removeMany(true, 4);
@@ -119,7 +119,7 @@ public class RingBufferTest extends BMNGRunner {
 
 
 
-    protected static <T> void assertIndices(RingBufferLockless<T> buf, long low, long hd, long hr) {
+    protected static <T> void assertIndices(RingBufferSeqnoLockless<T> buf, long low, long hd, long hr) {
         assert buf.getLow() == low : "expected low=" + low + " but was " + buf.getLow();
         assert buf.getHighestDelivered() == hd : "expected hd=" + hd + " but was " + buf.getHighestDelivered();
         assert buf.getHighestReceived()  == hr : "expected hr=" + hr + " but was " + buf.getHighestReceived();
@@ -129,10 +129,10 @@ public class RingBufferTest extends BMNGRunner {
 
     protected static class Adder extends Thread {
         protected final int                 seqno;
-        protected final RingBufferLockless<Integer> buf;
+        protected final RingBufferSeqnoLockless<Integer> buf;
         protected final boolean             block;
 
-        public Adder(int seqno, RingBufferLockless<Integer> buf, boolean block) {
+        public Adder(int seqno, RingBufferSeqnoLockless<Integer> buf, boolean block) {
             this.seqno=seqno;
             this.buf=buf;
             this.block=block;
@@ -145,10 +145,10 @@ public class RingBufferTest extends BMNGRunner {
     }
 
     protected static class Remover extends Thread {
-        protected final RingBufferLockless<Integer> buf;
+        protected final RingBufferSeqnoLockless<Integer> buf;
         protected final int remove_num_elements;
 
-        public Remover(RingBufferLockless<Integer> buf, int num) {
+        public Remover(RingBufferSeqnoLockless<Integer> buf, int num) {
             this.buf=buf;
             remove_num_elements=num;
         }

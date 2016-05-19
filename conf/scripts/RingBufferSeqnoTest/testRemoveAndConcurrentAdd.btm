@@ -3,7 +3,7 @@
 # an element more than once
 
 RULE Remove1
-CLASS RingBufferLockless
+CLASS RingBufferSeqnoLockless
 METHOD remove(boolean)
 AT WRITE hd
 IF true
@@ -13,7 +13,7 @@ DO System.out.println("---> Remover: waiting on \"remove\"");
 ENDRULE
 
 RULE Remove2
-CLASS RingBufferLockless
+CLASS RingBufferSeqnoLockless
 METHOD remove(boolean)
 AT EXIT
 IF true
@@ -22,7 +22,7 @@ DO System.out.println("---> Remover: signalling \"add\"");
 ENDRULE
 
 RULE Add
-CLASS RingBufferLockless
+CLASS RingBufferSeqnoLockless
 METHOD add(long,java.lang.Object,boolean)
 AFTER INVOKE RingBuffer.index(long)
 IF !createCountDown("tmp", 4) && countDown("tmp")

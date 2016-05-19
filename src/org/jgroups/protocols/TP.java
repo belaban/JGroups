@@ -199,10 +199,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected int timer_max_threads=4;
 
     @Property(name="timer.keep_alive_time", description="Timeout in ms to remove idle threads from the timer pool")
-    protected long timer_keep_alive_time=5000;
+    protected long timer_keep_alive_time=30000;
 
     @Property(name="timer.queue_max_size", description="Max number of elements on a timer queue")
-    protected int timer_queue_max_size=500;
+    protected int timer_queue_max_size=100;
 
     @Property(name="timer.rejection_policy",description="Timer rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
     protected String timer_rejection_policy="abort"; // abort will spawn a new thread if the timer thread pool is full
@@ -269,6 +269,18 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="The max number of elements in a bundler if the bundler supports size limitations")
     protected int bundler_capacity=20000;
 
+    @Property(name="no_bundler.pool_size",description="Pool size of buffers for marshalling in NoBundler")
+    protected int no_bundler_pool_size=10;
+
+    @Property(name="no_bundler.initial_buf_size",description="The initial size of each buffer (in bytes)")
+    protected int no_bundler_initial_buf_size=512;
+
+    @Property(description="Number of spins before a real lock is acquired")
+    protected int bundler_num_spins=40;
+
+    @Property(description="The wait strategy for a RingBuffer")
+    protected String bundler_wait_strategy;
+
     @ManagedAttribute(description="Fully qualified classname of bundler")
     public String getBundlerClass() {
         return bundler != null? bundler.getClass().getName() : "null";
@@ -285,7 +297,41 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedAttribute public int getBundlerBufferSize() {
         if(bundler instanceof TransferQueueBundler)
             return ((TransferQueueBundler)bundler).getBufferSize();
+        if(bundler instanceof RingBufferBundler)
+            return ((RingBufferBundler)bundler).size();
+        if(bundler instanceof RingBufferBundlerLockless)
+            return ((RingBufferBundlerLockless)bundler).size();
+        if(bundler instanceof RingBufferBundlerLockless2)
+            return ((RingBufferBundlerLockless2)bundler).size();
         return 0;
+    }
+
+    @ManagedAttribute(description="The wait strategy for a RingBuffer")
+    public String bundlerWaitStrategy() {
+        return bundler instanceof RingBufferBundler? ((RingBufferBundler)bundler).waitStrategy() : bundler_wait_strategy;
+    }
+
+    @ManagedAttribute(description="Sets the wait strategy in the RingBufferBundler. Allowed values are \"spin\", " +
+      "\"yield\", \"park\", \"spin-park\" and \"spin-yield\" or a fully qualified classname")
+    public void bundlerWaitStrategy(String strategy) {
+        if(bundler instanceof RingBufferBundler) {
+            ((RingBufferBundler)bundler).waitStrategy(strategy);
+            this.bundler_wait_strategy=strategy;
+        }
+        else
+            this.bundler_wait_strategy=strategy;
+    }
+
+    @ManagedAttribute(description="Number of spins before a real lock is acquired")
+    public int bundlerNumSpins() {
+        return bundler instanceof RingBufferBundler? ((RingBufferBundler)bundler).numSpins() : bundler_num_spins;
+    }
+
+    @ManagedAttribute(description="Sets the number of times a thread spins until a real lock is acquired")
+    public void bundlerNumSpins(int spins) {
+        this.bundler_num_spins=spins;
+        if(bundler instanceof RingBufferBundler)
+            ((RingBufferBundler)bundler).numSpins(spins);
     }
 
     @ManagedAttribute(description="Is the logical_addr_cache reaper task running")
@@ -952,7 +998,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public void init() throws Exception {
         this.id=ClassConfigurator.getProtocolId(TP.class);
-        // super.init();
 
         // Create the default thread factory
         if(global_thread_factory == null)
@@ -1002,7 +1047,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(oob_thread_pool == null
           || (oob_thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)oob_thread_pool).isShutdown())) {
             if(oob_thread_pool_queue_enabled)
-                oob_thread_pool_queue=new LinkedBlockingQueue<>(oob_thread_pool_queue_max_size);
+                oob_thread_pool_queue=new ArrayBlockingQueue<>(oob_thread_pool_queue_max_size);
             else
                 oob_thread_pool_queue=new SynchronousQueue<>();
             oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
@@ -1014,7 +1059,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(thread_pool == null
           || (thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)thread_pool).isShutdown())) {
             if(thread_pool_queue_enabled)
-                thread_pool_queue=new LinkedBlockingQueue<>(thread_pool_queue_max_size);
+                thread_pool_queue=new ArrayBlockingQueue<>(thread_pool_queue_max_size);
             else
                 thread_pool_queue=new SynchronousQueue<>();
             thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
@@ -1027,7 +1072,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(internal_thread_pool == null
           || (internal_thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)internal_thread_pool).isShutdown())) {
             if(internal_thread_pool_queue_enabled)
-                internal_thread_pool_queue=new LinkedBlockingQueue<>(internal_thread_pool_queue_max_size);
+                internal_thread_pool_queue=new ArrayBlockingQueue<>(internal_thread_pool_queue_max_size);
             else
                 internal_thread_pool_queue=new SynchronousQueue<>();
             internal_thread_pool=createThreadPool(internal_thread_pool_min_threads, internal_thread_pool_max_threads, internal_thread_pool_keep_alive_time,
@@ -1280,14 +1325,32 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected Bundler createBundler(String type) {
         if(type == null)
-            throw new IllegalArgumentException("bunder type has to be non-null");
-        if(type.startsWith("transfer-queue"))
-            return type.endsWith("simplified")? new SimplifiedTransferQueueBundler(bundler_capacity) :
-              new TransferQueueBundler(bundler_capacity);
-        if(type.startsWith("sender-sends"))
-            return new SenderSendsBundler();
-        if(type.startsWith("no-bundler"))
-            return new NoBundler();
+            throw new IllegalArgumentException("bundler type has to be non-null");
+
+        switch(type) {
+            case "transfer-queue":
+            case "tq":
+                return new TransferQueueBundler(bundler_capacity);
+            case "simplified-transfer-queue":
+            case "stq":
+                return new SimplifiedTransferQueueBundler(bundler_capacity);
+            case "sender-sends":
+            case "ss":
+                return new SenderSendsBundler();
+            case "ring-buffer":
+            case "rb":
+                return new RingBufferBundler(bundler_capacity).numSpins(bundler_num_spins).waitStrategy(bundler_wait_strategy);
+            case "ring-buffer-lockless":
+            case "rbl":
+                return new RingBufferBundlerLockless(bundler_capacity);
+            case "ring-buffer-lockless2":
+            case "rbl2":
+                return new RingBufferBundlerLockless2(bundler_capacity);
+            case "no-bundler":
+            case "nb":
+                return new NoBundler().poolSize(no_bundler_pool_size).initialBufSize(no_bundler_initial_buf_size);
+        }
+
         try {
             Class<Bundler> clazz=Util.loadClass(type, getClass());
             return clazz.newInstance();
@@ -1377,21 +1440,19 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected void passBatchUp(MessageBatch batch, boolean perform_cluster_name_matching, boolean discard_own_mcast) {
         if(log.isTraceEnabled())
             log.trace("%s: received message batch of %d messages from %s", local_addr, batch.size(), batch.sender());
-
-        AsciiString ch_name=batch.clusterName();
         if(up_prot == null)
             return;
 
         // Discard if message's cluster name is not the same as our cluster name
-        if(perform_cluster_name_matching && cluster_name != null && !cluster_name.equals(ch_name)) {
+        if(perform_cluster_name_matching && cluster_name != null && !cluster_name.equals(batch.clusterName())) {
             if(log_discard_msgs && log.isWarnEnabled()) {
                 Address sender=batch.sender();
                 if(suppress_log_different_cluster != null)
                     suppress_log_different_cluster.log(SuppressLog.Level.warn, sender,
                                                        suppress_time_different_cluster_warnings,
-                                                       ch_name,cluster_name, sender);
+                                                       batch.clusterName(),cluster_name, sender);
                 else
-                    log.warn(Util.getMessage("BatchDroppedDiffCluster"), ch_name,cluster_name, sender);
+                    log.warn(Util.getMessage("BatchDroppedDiffCluster"), batch.clusterName(),cluster_name, sender);
             }
             return;
         }
@@ -1439,25 +1500,22 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
             if(oob_batch != null && !oob_batch.isEmpty()) {
                 num_oob_msgs_received+=oob_batch.size();
-                oob_thread_pool.execute(new BatchHandler(oob_batch));
+                submitToThreadPool(oob_thread_pool, new BatchHandler(oob_batch));
             }
             if(batch != null) {
                 num_incoming_msgs_received+=batch.size();
-                thread_pool.execute(new BatchHandler(batch));
+                submitToThreadPool(thread_pool, new BatchHandler(batch));
             }
             if(internal_batch_oob != null && !internal_batch_oob.isEmpty()) {
                 num_oob_msgs_received+=internal_batch_oob.size();
                 Executor pool=internal_thread_pool != null? internal_thread_pool : oob_thread_pool;
-                pool.execute(new BatchHandler(internal_batch_oob));
+                submitToThreadPool(pool, new BatchHandler(internal_batch_oob));
             }
             if(internal_batch != null) {
                 num_internal_msgs_received+=internal_batch.size();
                 Executor pool=internal_thread_pool != null? internal_thread_pool : oob_thread_pool;
-                pool.execute(new BatchHandler(internal_batch));
+                submitToThreadPool(pool, new BatchHandler(internal_batch));
             }
-        }
-        catch(RejectedExecutionException rejected) {
-            num_rejected_msgs++;
         }
         catch(Throwable t) {
             log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
@@ -1493,10 +1551,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 num_incoming_msgs_received++;
 
             Executor pool=pickThreadPool(oob, internal);
-            pool.execute(new SingleMessageHandler(msg));
-        }
-        catch(RejectedExecutionException ex) {
-            num_rejected_msgs++;
+            submitToThreadPool(pool, new SingleMessageHandler(msg));
         }
         catch(Throwable t) {
             log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
@@ -1510,28 +1565,28 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         for(MessageBatch oob_batch: oob_batches) {
             if(oob_batch == null)
                 continue;
-
             for(Message msg: oob_batch) {
                 if(msg.isFlagSet(Message.Flag.DONT_BUNDLE) && msg.isFlagSet(Message.Flag.OOB)) {
                     boolean oob=msg.isFlagSet(Message.Flag.OOB), internal=msg.isFlagSet(Message.Flag.INTERNAL);
                     msg.putHeader(id, new TpHeader(oob_batch.clusterName()));
                     Executor pool=pickThreadPool(oob, internal);
-                    try {
-                        oob_batch.remove(msg);
-                        pool.execute(new SingleMessageHandler(msg));
-                        num_oob_msgs_received++;
-                    }
-                    catch(RejectedExecutionException ex) {
-                        num_rejected_msgs++;
-                        if (log.isDebugEnabled())
-                            log.debug("%s: failed submitting DONT_BUNDLE message to thread pool: %s. Msg: %s",
-                                      local_addr, ex, msg.printHeaders());
-                    }
-                    catch(Throwable t) {
-                        log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
-                    }
+                    oob_batch.remove(msg);
+                    num_oob_msgs_received++;
+                    submitToThreadPool(pool, new SingleMessageHandler(msg));
                 }
             }
+        }
+    }
+
+    protected void submitToThreadPool(Executor thread_pool, Runnable task) {
+        try {
+            thread_pool.execute(task);
+        }
+        catch(RejectedExecutionException ex) {
+            num_rejected_msgs++;
+        }
+        catch(Throwable t) {
+            log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
         }
     }
 
@@ -1895,6 +1950,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             Thread thread=((TransferQueueBundler)bundler).getThread();
             if(thread != null)
                 global_thread_factory.renameThread(TransferQueueBundler.THREAD_NAME, thread);
+        }
+        else if(bundler instanceof RingBufferBundler) {
+            Thread thread=((RingBufferBundler)bundler).getThread();
+            if(thread != null)
+                global_thread_factory.renameThread(RingBufferBundler.THREAD_NAME, thread);
         }
     }
 

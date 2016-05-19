@@ -117,7 +117,7 @@ public class RoundTripRpc implements MembershipListener {
         }
 
         Address target=Util.pickNext(view.getMembers(), channel.getAddress());
-        final CountDownLatch latch=new CountDownLatch(num_senders +1);
+        final CountDownLatch latch=new CountDownLatch(1);
         final AtomicInteger sent_msgs=new AtomicInteger(0);
         invokers=new Invoker[num_senders];
         for(int i=0; i < num_senders; i++) {
@@ -172,6 +172,12 @@ public class RoundTripRpc implements MembershipListener {
         }
 
         public void run() {
+            try {
+                latch.await();
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
             RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, 0);
             if(oob) opts.flags(Message.Flag.OOB);
             if(dont_bundle) opts.flags(Message.Flag.DONT_BUNDLE);

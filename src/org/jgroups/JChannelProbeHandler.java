@@ -99,7 +99,7 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                                     Class<?> type=setter instanceof ResourceDMBean.FieldAccessor?
                                       ((ResourceDMBean.FieldAccessor)setter).getField().getType() :
                                       setter instanceof ResourceDMBean.MethodAccessor?
-                                        ((ResourceDMBean.MethodAccessor)setter).getMethod().getParameterTypes()[0].getClass() : null;
+                                        ((ResourceDMBean.MethodAccessor)setter).getMethod().getParameterTypes()[0] : null;
                                     Object converted_value=Util.convert(attrvalue, type);
                                     setter.invoke(converted_value);
                                 }

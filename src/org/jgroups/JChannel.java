@@ -359,8 +359,7 @@ public class JChannel implements Closeable {
     protected synchronized JChannel connect(String cluster_name, boolean useFlushIfPresent) throws Exception {
         if(!_preConnect(cluster_name))
             return this;
-        Event connect_event=useFlushIfPresent? new Event(Event.CONNECT_USE_FLUSH, cluster_name)
-          : new Event(Event.CONNECT, cluster_name);
+        Event connect_event=new Event(useFlushIfPresent? Event.CONNECT_USE_FLUSH : Event.CONNECT, cluster_name);
         _connect(connect_event);
         state=State.CONNECTED;
         notifyChannelConnected(this);
@@ -407,8 +406,7 @@ public class JChannel implements Closeable {
 
         boolean canFetchState=false;
         try {
-            Event connect_event=useFlushIfPresent? new Event(Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH, cluster_name)
-              : new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
+            Event connect_event=new Event(useFlushIfPresent? Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH : Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
             _connect(connect_event);
             state=State.CONNECTED;
             notifyChannelConnected(this);
@@ -482,9 +480,9 @@ public class JChannel implements Closeable {
      * @exception IllegalStateException thrown if the channel is disconnected or closed
      */
     public JChannel send(Message msg) throws Exception {
-        checkClosedOrNotConnected();
         if(msg == null)
             throw new NullPointerException("msg is null");
+        checkClosedOrNotConnected();
         down(new Event(Event.MSG, msg));
         return this;
     }
@@ -1037,9 +1035,10 @@ public class JChannel implements Closeable {
     }
 
     protected JChannel checkClosedOrNotConnected() {
-        if(state == State.CLOSED)
+        State tmp=state;
+        if(tmp == State.CLOSED)
             throw new IllegalStateException("channel is closed");
-        if(!(state == State.CONNECTING || state == State.CONNECTED))
+        if(!(tmp == State.CONNECTING || tmp == State.CONNECTED))
             throw new IllegalStateException("channel is disconnected");
         return this;
     }

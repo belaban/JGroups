@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Bela Ban
  * @since  4.0
  */
-public class SenderSendsBundler extends BaseBundler implements Bundler {
+public class SenderSendsBundler extends BaseBundler {
     protected final AtomicInteger num_senders=new AtomicInteger(0); // current senders adding msgs to the bundler
 
     public void send(Message msg) throws Exception {

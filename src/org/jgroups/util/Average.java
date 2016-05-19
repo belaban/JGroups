@@ -16,6 +16,9 @@ public class Average implements Streamable {
 
 
     public <T extends Average> T add(long num) {
+        if(num < 0)
+            return (T)this;
+
         // If the product of the average and the number of samples would be greater than Long.MAX_VALUE, we have
         // to reset the count and average to prevent a long overflow. This will temporarily lose the sample history, and
         // the next sample will be the new average, but with more data points, the average should become more precise.

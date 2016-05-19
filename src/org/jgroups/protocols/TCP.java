@@ -28,8 +28,7 @@ import java.util.Collection;
  * @author Bela Ban
  */
 public class TCP extends BasicTCP {
-    
-    private TcpServer server=null;
+    protected TcpServer server;
 
     public TCP() {}
 

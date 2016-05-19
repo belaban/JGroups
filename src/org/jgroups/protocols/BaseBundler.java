@@ -54,6 +54,14 @@ public abstract class BaseBundler implements Bundler {
         }
     }
 
+    public int size() {
+        int num=0;
+        Collection<List<Message>> values=msgs.values();
+        for(List<Message> list: values)
+            num+=list.size();
+        return num;
+    }
+
     /**
      * Sends all messages in the map. Messages for the same destination are bundled into a message list.
      * The map will be cleared when done.
@@ -61,7 +69,7 @@ public abstract class BaseBundler implements Bundler {
     protected void sendBundledMessages() {
         if(log.isTraceEnabled()) {
             double percentage=100.0 / transport.getMaxBundleSize() * count;
-            log.trace(BUNDLE_MSG, transport.localAddress(), numMessages(), count, percentage, msgs.size(), msgs.keySet());
+            log.trace(BUNDLE_MSG, transport.localAddress(), size(), count, percentage, msgs.size(), msgs.keySet());
         }
 
         for(Map.Entry<Address,List<Message>> entry: msgs.entrySet()) {
@@ -69,6 +77,7 @@ public abstract class BaseBundler implements Bundler {
             if(list.isEmpty())
                 continue;
 
+            output.position(0);
             if(list.size() == 1)
                 sendSingleMessage(list.get(0));
             else {
@@ -86,19 +95,10 @@ public abstract class BaseBundler implements Bundler {
         msgs.values().stream().filter(list -> list != null).forEach(List::clear);
     }
 
-    protected int numMessages() {
-        int num=0;
-        Collection<List<Message>> values=msgs.values();
-        for(List<Message> list: values)
-            num+=list.size();
-        return num;
-    }
-
 
     protected void sendSingleMessage(final Message msg) {
         Address dest=msg.getDest();
         try {
-            output.position(0);
             Util.writeMessage(msg, output, dest == null);
             transport.doSend(output.buffer(), 0, output.position(), dest);
             if(transport.statsEnabled())
@@ -118,7 +118,6 @@ public abstract class BaseBundler implements Bundler {
 
     protected void sendMessageList(final Address dest, final Address src, final List<Message> list) {
         try {
-            output.position(0);
             Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, output, dest == null, transport.getId());
             transport.doSend(output.buffer(), 0, output.position(), dest);
         }

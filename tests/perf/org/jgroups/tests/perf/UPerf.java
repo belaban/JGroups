@@ -182,7 +182,7 @@ public class UPerf extends ReceiverAdapter {
                           num_msgs, Util.printBytes(BUFFER.length), sync, oob, msg_bundling);
         int total_gets=0, total_puts=0;
         final AtomicInteger num_msgs_sent=new AtomicInteger(0);
-        final CountDownLatch latch=new CountDownLatch(num_threads+1);
+        final CountDownLatch latch=new CountDownLatch(1);
 
         Invoker[] invokers=new Invoker[num_threads];
         for(int i=0; i < invokers.length; i++) {
@@ -482,6 +482,7 @@ public class UPerf extends ReceiverAdapter {
         private final AverageMinMax  avg_gets=new AverageMinMax(); // in ns
         private final AverageMinMax  avg_puts=new AverageMinMax(); // in ns
         private final int            PRINT;
+        private final List<Address>  targets=new ArrayList<>(anycast_count);
 
 
         public Invoker(Collection<Address> dests, CountDownLatch latch, int num_msgs_to_send, AtomicInteger num_msgs_sent) {
@@ -517,7 +518,12 @@ public class UPerf extends ReceiverAdapter {
                 put_options.flags(Message.Flag.DONT_BUNDLE);
             }
 
-            latch.countDown();
+            try {
+                latch.await();
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
 
             while(true) {
                 long i=num_msgs_sent.getAndIncrement();
@@ -543,7 +549,7 @@ public class UPerf extends ReceiverAdapter {
                         num_gets++;
                     }
                     else {    // sync or async (based on value of 'sync') PUT
-                        final Collection<Address> targets=pickAnycastTargets();
+                        pickAnycastTargets(targets);
                         put_args[0]=i;
                         long start=System.nanoTime();
                         disp.callRemoteMethods(targets, put_call, put_options);
@@ -562,8 +568,7 @@ public class UPerf extends ReceiverAdapter {
             return Util.pickRandomElement(dests);
         }
 
-        private Collection<Address> pickAnycastTargets() {
-            Collection<Address> anycast_targets=new ArrayList<>(anycast_count);
+        private void pickAnycastTargets(List<Address> anycast_targets) {
             int index=dests.indexOf(local_addr);
             for(int i=index + 1; i < index + 1 + anycast_count; i++) {
                 int new_index=i % dests.size();
@@ -571,7 +576,6 @@ public class UPerf extends ReceiverAdapter {
                 if(!anycast_targets.contains(tmp))
                     anycast_targets.add(tmp);
             }
-            return anycast_targets;
         }
     }
 

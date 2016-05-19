@@ -20,4 +20,7 @@ public interface Bundler {
     void send(Message msg) throws Exception;
     @SuppressWarnings("UnusedParameters")
     default void viewChange(View view) {}
+
+    /** The number of unsent messages in the bundler */
+    int size();
 }
