@@ -840,14 +840,13 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             unknownMember(sender, "batch");
             return;
         }
-        int size=msgs.size();
-        num_messages_received+=size;
+        num_messages_received+= msgs.size();
         boolean loopback=local_addr.equals(sender);
         boolean added=loopback || buf.add(msgs, oob, oob? DUMMY_OOB_MSG : null);
 
         if(added && log.isTraceEnabled())
             log.trace("%s: received %s#%d-%d (%d messages)",
-                      local_addr, sender, msgs.get(0).getVal1(), msgs.get(size-1).getVal1(), msgs.size());
+                      local_addr, sender, msgs.get(0).getVal1(), msgs.get(msgs.size() -1).getVal1(), msgs.size());
 
 
         // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
