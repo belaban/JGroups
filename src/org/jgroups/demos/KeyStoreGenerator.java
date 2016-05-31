@@ -3,12 +3,12 @@ package org.jgroups.demos;
 
 import org.jgroups.util.Util;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.security.KeyStore;
-
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Generates a keystore file that has a SecretKey in it. It is not possible to
@@ -124,6 +124,17 @@ public class KeyStoreGenerator {
         keyGen.init(keySize);
         return keyGen.generateKey();
 
+    }
+
+    public static SecretKey createSecretKey() throws Exception {
+        return createSecretKey(symAlg, keySize);
+    }
+
+    public static SecretKey createSecretKey(String sym_alg, int key_size) throws NoSuchAlgorithmException {
+        // KeyGenerator keyGen=KeyGenerator.getInstance(getAlgorithm(sym_alg));
+        KeyGenerator keyGen=KeyGenerator.getInstance(sym_alg);
+        keyGen.init(key_size);
+        return keyGen.generateKey();
     }
 
     private static String getAlgorithm(String s) {

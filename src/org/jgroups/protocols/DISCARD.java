@@ -63,8 +63,8 @@ public class DISCARD extends Protocol {
         return discard_all;
     }
 
-    public void setDiscardAll(boolean discard_all) {
-        this.discard_all=discard_all;
+    public DISCARD setDiscardAll(boolean discard_all) {
+        this.discard_all=discard_all; return this;
     }
 
     public boolean isExcludeItself() {

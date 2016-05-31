@@ -3,8 +3,8 @@ package org.jgroups.util;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Generic receiver for a JChannel
@@ -12,18 +12,20 @@ import java.util.List;
  * @since  3.3
  */
 public class MyReceiver<T> extends ReceiverAdapter {
-    protected final List<T> list=new ArrayList<T>();
+    protected final List<T> list=new CopyOnWriteArrayList<T>();
     protected String        name;
     protected boolean       verbose;
+    protected boolean       raw_msgs;
 
     public void receive(Message msg) {
-        T obj=(T)msg.getObject();
+        T obj=raw_msgs? (T)msg : (T)msg.getObject();
         list.add(obj);
         if(verbose) {
             System.out.println((name() != null? name() + ":" : "") + " received message from " + msg.getSrc() + ": " + obj);
         }
     }
 
+    public MyReceiver    rawMsgs(boolean flag) {this.raw_msgs=flag; return this;}
     public List<T>       list()                {return list;}
     public MyReceiver<T> verbose(boolean flag) {verbose=flag; return this;}
     public String        name()                {return name;}

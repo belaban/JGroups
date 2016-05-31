@@ -66,6 +66,10 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
     }
 
 
+    public static View create(Address coord, long id, Address ... members) {
+        return new View(new ViewId(coord, id), Arrays.asList(members));
+    }
+
     /**
      * Returns the view ID of this view
      * if this view was created with the empty constructur, null will be returned
@@ -85,6 +89,8 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
         return vid.getCreator();
     }
 
+    public Address getCoord() {return !members.isEmpty()? members.get(0) : null;}
+
     /**
      * Returns a reference to the List of members (ordered)
      * Do NOT change this list, hence your will invalidate the view
@@ -96,6 +102,15 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
         return Collections.unmodifiableList(members);
     }
 
+    /** Returns the underlying list. The caller <em>must not</em> modify the contents. Should not be used by
+     *  application code ! This method may be removed at any time, so don't use it !
+     */
+    public List<Address> getMembersRaw() {
+           return members;
+       }
+
+
+
     /**
      * Returns true, if this view contains a certain member
      *
@@ -105,6 +120,27 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
      */
     public boolean containsMember(Address mbr) {
         return mbr != null && members.contains(mbr);
+    }
+
+    /** Returns true if all mbrs are elements of this view, false otherwise */
+    public boolean containsMembers(Address ... mbrs) {
+        if(mbrs == null || members == null)
+            return false;
+        for(Address mbr: mbrs) {
+            if(!containsMember(mbr))
+                return false;
+        }
+        return true;
+    }
+
+    public boolean containsMembers(Collection<Address> mbrs) {
+        if(mbrs == null || members == null)
+            return false;
+        for(Address mbr: mbrs) {
+            if(!containsMember(mbr))
+                return false;
+        }
+        return true;
     }
 
 
