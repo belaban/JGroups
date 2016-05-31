@@ -55,7 +55,7 @@ public class STABLE extends Protocol {
      * This should be set to a very small number (> 0 !) if <code>max_bytes</code> is used
      */
     @Property(description="Delay before stability message is sent. Default is 6000 msec")
-    private long stability_delay=6000;
+    private long stability_delay=1000;
 
     /**
      * Total amount of bytes from incoming messages (default = 0 = disabled).
@@ -144,6 +144,8 @@ public class STABLE extends Protocol {
     public void setDesiredAverageGossip(long gossip_interval) {
         desired_avg_gossip=gossip_interval;
     }
+
+    public STABLE desiredAverageGossip(long t) {desired_avg_gossip=t; return this;}
 
     public long getMaxBytes() {
         return max_bytes;

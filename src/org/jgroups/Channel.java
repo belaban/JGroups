@@ -397,6 +397,8 @@ public abstract class Channel /* implements Transport */ {
     * 
     * */
     public void setReceiver(Receiver r) {
+        if(receiver != null && r != null)
+            getLog().warn(String.format("%s: receiver already set", getAddress()));
         receiver=r;
     }
 

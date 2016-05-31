@@ -1,12 +1,12 @@
 package org.jgroups.auth;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
+import org.jgroups.util.Bits;
 import org.jgroups.util.Util;
+
+import java.io.DataInput;
+import java.io.DataOutput;
 
 /**
  * <p>
@@ -25,7 +25,7 @@ import org.jgroups.util.Util;
  */
 public class SimpleToken extends AuthToken {
 
-    @Property
+    @Property(exposeAsManagedAttribute=false)
     private String auth_value = null;
 
     public SimpleToken() { // need an empty constructor
@@ -85,7 +85,7 @@ public class SimpleToken extends AuthToken {
         if (log.isDebugEnabled()) {
             log.debug("SimpleToken writeTo()");
         }
-        Util.writeString(this.auth_value, out);
+        Bits.writeString(this.auth_value,out);
     }
 
     /**
@@ -100,6 +100,14 @@ public class SimpleToken extends AuthToken {
         if (log.isDebugEnabled()) {
             log.debug("SimpleToken readFrom()");
         }
-        this.auth_value = Util.readString(in);
+        this.auth_value = Bits.readString(in);
+    }
+
+    public int size() {
+        return Util.size(auth_value);
+    }
+
+    public String toString() {
+        return "auth_value=" + auth_value;
     }
 }

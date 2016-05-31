@@ -10,6 +10,7 @@ import org.jgroups.util.Streamable;
  * Abstract AuthToken class used by implementations of AUTH, e.g. SimpleToken, X509Token
  * 
  * @author Chris Mills
+ * @author Bela Ban
  */
 public abstract class AuthToken implements Streamable {
     protected final Log log = LogFactory.getLog(this.getClass());
@@ -21,7 +22,10 @@ public abstract class AuthToken implements Streamable {
         this.auth = auth;
     }
 
-    public void init() {}
+    public void init() throws Exception {}
+    public void start() throws Exception {}
+    public void stop() {}
+    public void destroy() {}
 
     /**
      * Used to return the full package and class name of the implementation. This is used by the
@@ -30,6 +34,11 @@ public abstract class AuthToken implements Streamable {
      * @return a java.lang.String object of the package and class name
      */
     public abstract String getName();
+
+
+    /** The size of the marshalled AuthToken */
+    public abstract int size();
+
 
     /**
      * This method should be implemented to perform the actual authentication of joining members.

@@ -174,6 +174,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public int getNumMembers() {return members.size();}
     public long getJoinTimeout() {return join_timeout;}
     public void setJoinTimeout(long t) {join_timeout=t;}
+    public GMS joinTimeout(long t) {setJoinTimeout(t); return this;}
     public long getMergeTimeout() {return merge_timeout;}
     public void setMergeTimeout(long timeout) {merge_timeout=timeout;}
     public long getMaxJoinAttempts() {return max_join_attempts;}
@@ -973,6 +974,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     public String[] supportedKeys() {
         return new String[]{"fix-digests"};
+    }
+
+    public static Buffer marshal(JoinRsp join_rsp) {
+         return Util.streamableToBuffer(join_rsp);
     }
 
     /* ------------------------------- Private Methods --------------------------------- */

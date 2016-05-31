@@ -1,42 +1,25 @@
-/*
- * JBoss, Home of Professional Open Source
- * Copyright 2005, JBoss Inc., and individual contributors as indicated
- * by the @authors tag. See the copyright.txt in the distribution for a
- * full listing of individual contributors.
- *
- * This is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * This software is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this software; if not, write to the Free
- * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
- */
 package org.jgroups.auth;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Property;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Bits;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
 /**
  * <p>
- * The FixedMemberShipToken object predefines a list of IP addresses and ports that can join the
- * group.
+ * The FixedMemberShipToken object predefines a list of IP addresses and ports that can join the group.
  * </p>
  * <p>
  * Configuration parameters for this example are shown below:
@@ -50,13 +33,17 @@ import java.util.StringTokenizer;
  * @author Chris Mills (millsy@jboss.com)
  */
 public class FixedMembershipToken extends AuthToken {
-    private List<String> memberList = null;
-    private String token = "emptyToken";
+    private final List<InetSocketAddress> memberList = new ArrayList<InetSocketAddress>();
+    private String                        token = "emptyToken";
 
     @Property
     private String fixed_members_seperator = ",";
 
     public FixedMembershipToken() {
+    }
+
+    public FixedMembershipToken(String token) {
+        this.token=token;
     }
 
     public String getName() {
@@ -68,82 +55,70 @@ public class FixedMembershipToken extends AuthToken {
         fixed_members_seperator = value;
     }
 
+    /** Check if I'm in memberList, too */
+    /*public void start() throws Exception {
+        super.start();
+        IpAddress self=(IpAddress)auth.getPhysicalAddress();
+        if(!isInMembersList(self))
+            throw new IllegalStateException("own physical address " + self + " is not in members (" + memberList + ")");
+    } */
+
     public boolean authenticate(AuthToken token, Message msg) {
         if ((token != null) && (token instanceof FixedMembershipToken) && (this.memberList != null)) {
-            PhysicalAddress src = (PhysicalAddress) auth.down(new Event(Event.GET_PHYSICAL_ADDRESS,
-                            msg.getSrc()));
+            PhysicalAddress src = (PhysicalAddress) auth.down(new Event(Event.GET_PHYSICAL_ADDRESS, msg.getSrc()));
             if (src == null) {
-                if (log.isErrorEnabled())
-                    log.error("didn't find physical address for " + msg.getSrc());
+                log.error(Util.getMessage("DidnTFindPhysicalAddressFor") + msg.getSrc());
                 return false;
             }
-
-            String sourceAddressWithPort = src.toString();
-            String sourceAddressWithoutPort = sourceAddressWithPort.substring(0,
-                            sourceAddressWithPort.indexOf(":"));
-
-            if (log.isDebugEnabled()) {
-                log.debug("AUTHToken received from " + sourceAddressWithPort);
-            }
-
-            for (String member : memberList) {
-                if (hasPort(member)) {
-                    if (member.equals(sourceAddressWithPort))
-                        return true;
-                } else {
-                    if (member.equals(sourceAddressWithoutPort))
-                        return true;
-                }
-            }
-            return false;
+            return isInMembersList((IpAddress)src);
         }
 
-        if (log.isWarnEnabled()) {
+        if (log.isWarnEnabled())
             log.warn("Invalid AuthToken instance - wrong type or null");
+        return false;
+    }
+
+    public boolean isInMembersList(IpAddress sender) {
+        if(memberList == null || sender == null)
+            return false;
+
+        for(InetSocketAddress addr: memberList) {
+            if(match(sender, addr))
+                return true;
         }
         return false;
     }
 
-    private static boolean hasPort(String member) {
-        return member.contains(":");
+    public static boolean match(IpAddress sender, InetSocketAddress addr) {
+        return !(sender == null || addr == null)
+          && addr.getAddress().equals(sender.getIpAddress())
+          && (addr.getPort() == 0 || addr.getPort() == sender.getPort());
     }
+
 
     @Property(name = "fixed_members_value")
-    public void setMemberList(String list) {
-        memberList = new ArrayList<String>();
+    public void setMemberList(String list) throws UnknownHostException {
+        memberList.clear();
         StringTokenizer memberListTokenizer = new StringTokenizer(list, fixed_members_seperator);
         while (memberListTokenizer.hasMoreTokens()) {
-            memberList.add(memberListTokenizer.nextToken().replace('/', ':'));
+            String tmp=memberListTokenizer.nextToken().trim();
+            int index=tmp.lastIndexOf('/');
+            int port=index != -1? Integer.parseInt(tmp.substring(index+1)) : 0;
+            String addr_str=index != -1? tmp.substring(0, index) : tmp;
+            InetAddress addr=InetAddress.getByName(addr_str);
+            memberList.add(new InetSocketAddress(addr, port));
         }
     }
 
-    /**
-     * Required to serialize the object to pass across the wire
-     * 
-     *
-     *
-     * @param out
-     * @throws java.io.IOException
-     */
     public void writeTo(DataOutput out) throws Exception {
-        if (log.isDebugEnabled()) {
-            log.debug("SimpleToken writeTo()");
-        }
-        Util.writeString(this.token, out);
+        Bits.writeString(this.token,out);
     }
 
-    /**
-     * Required to deserialize the object when read in from the wire
-     * 
-     *
-     *
-     * @param in
-     * @throws Exception
-     */
     public void readFrom(DataInput in) throws Exception {
-        if (log.isDebugEnabled()) {
-            log.debug("SimpleToken readFrom()");
-        }
-        this.token = Util.readString(in);
+        this.token = Bits.readString(in);
+    }
+
+    public int size() {
+        return Util.size(token);
     }
 }

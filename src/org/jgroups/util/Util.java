@@ -10,6 +10,8 @@ import org.jgroups.logging.Log;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.protocols.pbcast.NAKACK2;
+import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
@@ -204,6 +206,11 @@ public class Util {
             assert val == null;
     }
 
+    public static int getNextHigherPowerOfTwo(int num) {
+        if(num <= 0) return 1;
+        int highestBit=Integer.highestOneBit(num);
+        return num <= highestBit? highestBit : highestBit << 1;
+    }
 
     public static String bold(String msg) {
         StringBuilder sb=new StringBuilder("\033[1m");
@@ -220,6 +227,29 @@ public class Util {
         return msg != null? MessageFormat.format(msg, args) : null;
     }
 
+
+    /**
+     * Returns a default stack for testing with transport = SHARED_LOOPBACK
+     * @param additional_protocols Any number of protocols to add to the top of the returned protocol list
+     * @return
+     */
+    public static Protocol[] getTestStack(Protocol... additional_protocols) {
+        Protocol[] protocols={
+          new SHARED_LOOPBACK(),
+          new PING(),
+          new NAKACK2(),
+          new UNICAST2(),
+          new STABLE(),
+          new GMS().joinTimeout(1000),
+          new FRAG2().fragSize(8000)
+        };
+
+        if(additional_protocols == null)
+            return protocols;
+        Protocol[] tmp=Arrays.copyOf(protocols,protocols.length + additional_protocols.length);
+        System.arraycopy(additional_protocols, 0, tmp, protocols.length, additional_protocols.length);
+        return tmp;
+    }
 
     /**
      * Blocks until all channels have the same view
@@ -745,6 +775,22 @@ public class Util {
         return result;
     }
 
+    public static <T extends Streamable> T streamableFromBuffer(Class<T> clazz,byte[] buffer,int offset,int length) throws Exception {
+        DataInput in=new ByteArrayDataInputStream(buffer,offset,length);
+        return (T)Util.readStreamable(clazz,in);
+    }
+
+    public static Buffer streamableToBuffer(Streamable obj) {
+        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
+        try {
+            Util.writeStreamable(obj,out);
+            return out.getBuffer();
+        }
+        catch(Exception ex) {
+            return null;
+        }
+    }
+
 
     public static byte[] collectionToByteBuffer(Collection<Address> c) throws Exception {
         byte[] result=null;
@@ -764,16 +810,41 @@ public class Util {
     }
 
     public static AuthToken readAuthToken(DataInput in) throws Exception {
-        try{
-            String type = Util.readString(in);
-            Object obj = Class.forName(type).newInstance();
-            AuthToken token = (AuthToken) obj;
+        try {
+            String type=Util.readString(in);
+            Object obj=Class.forName(type).newInstance();
+            AuthToken token=(AuthToken)obj;
             token.readFrom(in);
             return token;
         }
         catch(ClassNotFoundException cnfe) {
             return null;
         }
+    }
+
+
+    public static String byteArrayToHexString(byte[] b) {
+        if(b == null)
+            return "null";
+        StringBuilder sb = new StringBuilder(b.length * 2);
+        for (int i = 0; i < b.length; i++){
+            int v = b[i] & 0xff;
+            if (v < 16) { sb.append('0'); }
+            sb.append(Integer.toHexString(v));
+        }
+        return sb.toString().toUpperCase();
+    }
+
+    /** Compares 2 byte arrays, elements are treated as unigned */
+    public static int compare(byte[] left,byte[] right) {
+        for(int i=0, j=0; i < left.length && j < right.length; i++,j++) {
+            int a=(left[i] & 0xff);
+            int b=(right[j] & 0xff);
+            if(a != b) {
+                return a - b;
+            }
+        }
+        return left.length - right.length;
     }
 
 
@@ -914,10 +985,11 @@ public class Util {
     }
 
     public static int size(byte[] buf) {
-        int retval=Global.BYTE_SIZE + Global.INT_SIZE;
+       /* int retval=Global.BYTE_SIZE + Global.INT_SIZE;
         if(buf != null)
             retval+=buf.length;
-        return retval;
+        return retval;*/
+        return buf == null? Global.BYTE_SIZE : Global.BYTE_SIZE + Global.INT_SIZE + buf.length;
     }
 
     private static Address readOtherAddress(DataInput in) throws Exception {

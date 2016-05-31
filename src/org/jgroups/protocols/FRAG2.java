@@ -70,6 +70,7 @@ public class FRAG2 extends Protocol {
 
     public int getFragSize() {return frag_size;}
     public void setFragSize(int s) {frag_size=s;}
+    public FRAG2 fragSize(int s) {setFragSize(s); return this;}
     public long getNumberOfSentMessages() {return num_sent_msgs.get();}
     public long getNumberOfSentFragments() {return num_sent_frags.get();}
     public long getNumberOfReceivedMessages() {return num_received_msgs.get();}

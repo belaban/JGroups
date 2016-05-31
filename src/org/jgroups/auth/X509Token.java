@@ -1,25 +1,21 @@
 package org.jgroups.auth;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.UnrecoverableEntryException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
+import org.jgroups.Message;
+import org.jgroups.annotations.Property;
+import org.jgroups.util.Util;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-
-import org.jgroups.Message;
-import org.jgroups.annotations.Property;
-import org.jgroups.util.Util;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.IOException;
+import java.security.*;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
 /**
  * <p>
@@ -60,19 +56,19 @@ public class X509Token extends AuthToken {
     private boolean valueSet = false;
 
     @Property
-    private String keystore_type = "JKS";
+    protected String keystore_type = "JKS";
 
     @Property
-    private String cert_alias = null;
+    protected String cert_alias = null;
 
     @Property
-    private String keystore_path = null;
+    protected String keystore_path = null;
+
+    @Property(exposeAsManagedAttribute=false)
+    protected String auth_value = null;
 
     @Property
-    private String auth_value = null;
-
-    @Property
-    private String cipher_type = "RSA";
+    protected String cipher_type = "RSA";
 
     private byte[] encryptedToken = null;
 
@@ -87,16 +83,22 @@ public class X509Token extends AuthToken {
         // need an empty constructor
     }
 
-    @Property(name = "cert_password")
+    @Property(name = "cert_password",exposeAsManagedAttribute=false)
     public void setCertPassword(String pwd) {
         this.cert_password = pwd.toCharArray();
     }
 
-    @Property(name = "keystore_password")
+    @Property(name = "keystore_password",exposeAsManagedAttribute=false)
     public void setKeyStorePassword(String pwd) {
         this.keystore_password = pwd.toCharArray();
         if (cert_password == null)
             cert_password = keystore_password;
+    }
+
+    /** To be used for testing only */
+    public X509Token encryptedToken(byte[] buf) {
+        encryptedToken=buf;
+        return this;
     }
 
     public String getName() {
@@ -106,7 +108,7 @@ public class X509Token extends AuthToken {
     public boolean authenticate(AuthToken token, Message msg) {
         if (!this.valueSet) {
             if (log.isErrorEnabled()) {
-                log.error("X509Token not setup correctly - check token attrs");
+                log.error(Util.getMessage("X509TokenNotSetupCorrectlyCheckTokenAttrs"));
             }
             return false;
         }
@@ -116,7 +118,7 @@ public class X509Token extends AuthToken {
             X509Token serverToken = (X509Token) token;
             if (!serverToken.valueSet) {
                 if (log.isErrorEnabled()) {
-                    log.error("X509Token - recieved token not valid");
+                    log.error(Util.getMessage("X509TokenReceivedTokenNotValid"));
                 }
                 return false;
             }
@@ -160,19 +162,25 @@ public class X509Token extends AuthToken {
         this.valueSet = true;
     }
 
+    public int size() {
+        return Util.size(encryptedToken);
+    }
+
     /**
      * Used during setup to get the certification from the keystore and encrypt the auth_value with
      * the private key
-     * 
-     * @return true if the certificate was found and the string encypted correctly otherwise returns
-     *         false
      */
     public void setCertificate() throws KeyStoreException, IOException, NoSuchAlgorithmException,
                     CertificateException, NoSuchPaddingException, InvalidKeyException,
                     IllegalBlockSizeException, BadPaddingException, UnrecoverableEntryException {
         KeyStore store = KeyStore.getInstance(this.keystore_type);
-        java.io.FileInputStream fis = new java.io.FileInputStream(this.keystore_path);
-        store.load(fis, this.keystore_password);
+        InputStream inputStream=null;
+        inputStream=Thread.currentThread()
+                          .getContextClassLoader()
+                          .getResourceAsStream(this.keystore_path);
+        if(inputStream == null)
+          inputStream=new FileInputStream(this.keystore_path);
+        store.load(inputStream, this.keystore_password);
 
         this.cipher = Cipher.getInstance(this.cipher_type);
         this.certificate = (X509Certificate) store.getCertificate(this.cert_alias);
