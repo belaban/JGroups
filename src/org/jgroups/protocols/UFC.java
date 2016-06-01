@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
+import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
@@ -34,7 +35,9 @@ import java.util.Map;
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class UFC extends FlowControl {
-    
+    protected final static FcHeader UFC_REPLENISH_HDR = new FcHeader(FcHeader.REPLENISH);
+    protected final static FcHeader UFC_CREDIT_REQUEST_HDR = new FcHeader(FcHeader.CREDIT_REQUEST);
+
     /**
      * Map<Address,Long>: keys are members, values are credits left. For each send,
      * the number of credits is decremented by the message size
@@ -65,9 +68,9 @@ public class UFC extends FlowControl {
     }
 
 
-    protected boolean handleMulticastMessage() {
-        return false;
-    }
+    protected boolean          handleMulticastMessage() {return false;}
+    @Override protected Header getReplenishHeader()     {return UFC_REPLENISH_HDR;}
+    @Override protected Header getCreditRequestHeader() {return UFC_CREDIT_REQUEST_HDR;}
 
 
 

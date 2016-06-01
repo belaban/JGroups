@@ -28,10 +28,6 @@ import java.util.concurrent.TimeUnit;
 @MBean(description="Simple flow control protocol based on a credit system")
 public abstract class FlowControl extends Protocol {
 
-    protected final static FcHeader REPLENISH_HDR=new FcHeader(FcHeader.REPLENISH);
-    protected final static FcHeader CREDIT_REQUEST_HDR=new FcHeader(FcHeader.CREDIT_REQUEST);  
-
-    
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
     /**
@@ -254,7 +250,11 @@ public abstract class FlowControl extends Protocol {
      */
     protected abstract boolean handleMulticastMessage();
 
-    protected abstract void handleCredit(Address sender, long increase);
+    protected abstract void    handleCredit(Address sender, long increase);
+
+    protected abstract Header  getReplenishHeader();
+    protected abstract Header  getCreditRequestHeader();
+
 
 
     /**
@@ -488,7 +488,8 @@ public abstract class FlowControl extends Protocol {
         if(log.isTraceEnabled())
             log.trace("sending %d credits to %s", credits, dest);
         Message msg=new Message(dest, longToBuffer(credits))
-          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE).putHeader(this.id,REPLENISH_HDR);
+          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
+          .putHeader(this.id,getReplenishHeader());
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_responses_sent++;
     }
@@ -503,7 +504,8 @@ public abstract class FlowControl extends Protocol {
         if(log.isTraceEnabled())
             log.trace("sending request for %d credits to %s", credits_needed, dest);
         Message msg=new Message(dest, longToBuffer(credits_needed))
-          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE).putHeader(this.id, CREDIT_REQUEST_HDR);
+          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
+          .putHeader(this.id, getCreditRequestHeader());
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_requests_sent++;
     }
