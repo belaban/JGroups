@@ -263,7 +263,10 @@ public abstract class FlowControl extends Protocol {
      */
     protected abstract boolean handleMulticastMessage();
 
-    protected abstract void handleCredit(Address sender, long increase);
+    protected abstract void    handleCredit(Address sender, long increase);
+
+    protected abstract Header  getReplenishHeader();
+    protected abstract Header  getCreditRequestHeader();
 
 
     /**
@@ -502,7 +505,6 @@ public abstract class FlowControl extends Protocol {
         num_credit_responses_sent++;
     }
 
-    protected abstract Header getReplenishHeader();
 
     /**
      * We cannot send this request as OOB message, as the credit request needs to queue up behind the regular messages;
@@ -519,7 +521,6 @@ public abstract class FlowControl extends Protocol {
         num_credit_requests_sent++;
     }
 
-    protected abstract Header getCreditRequestHeader();
 
 
     protected void handleViewChange(List<Address> mbrs) {

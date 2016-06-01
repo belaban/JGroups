@@ -68,10 +68,9 @@ public class UFC extends FlowControl {
         return retval;
     }
 
-
-    protected boolean handleMulticastMessage() {
-        return false;
-    }
+    protected boolean handleMulticastMessage()          {return false;}
+    @Override protected Header getReplenishHeader()     {return UFC_REPLENISH_HDR;}
+    @Override protected Header getCreditRequestHeader() {return UFC_CREDIT_REQUEST_HDR;}
 
 
 
@@ -138,15 +137,7 @@ public class UFC extends FlowControl {
         return down_prot.down(evt);
     }
 
-    @Override
-    protected Header getReplenishHeader() {
-        return UFC_REPLENISH_HDR;
-    }
 
-    @Override
-    protected Header getCreditRequestHeader() {
-        return UFC_CREDIT_REQUEST_HDR;
-    }
 
 
     protected void handleViewChange(List<Address> mbrs) {

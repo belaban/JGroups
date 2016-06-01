@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class MFC extends FlowControl {
-    protected final static FcHeader MFC_REPLENISH_HDR = new FcHeader(FcHeader.REPLENISH);
+    protected final static FcHeader MFC_REPLENISH_HDR      = new FcHeader(FcHeader.REPLENISH);
     protected final static FcHeader MFC_CREDIT_REQUEST_HDR = new FcHeader(FcHeader.CREDIT_REQUEST);
 
     
@@ -82,9 +82,9 @@ public class MFC extends FlowControl {
         return credits.getAverageBlockTime();
     }
 
-    protected boolean handleMulticastMessage() {
-        return true;
-    }
+    protected boolean          handleMulticastMessage() {return true;}
+    @Override protected Header getReplenishHeader()     {return MFC_REPLENISH_HDR;}
+    @Override protected Header getCreditRequestHeader() {return MFC_CREDIT_REQUEST_HDR;}
 
    
     public void init() throws Exception {
@@ -123,15 +123,6 @@ public class MFC extends FlowControl {
         return down_prot.down(evt);
     }
 
-    @Override
-    protected Header getReplenishHeader() {
-        return MFC_REPLENISH_HDR;
-    }
-
-    @Override
-    protected Header getCreditRequestHeader() {
-        return MFC_CREDIT_REQUEST_HDR;
-    }
 
 
     protected synchronized boolean needToSendCreditRequest() {
