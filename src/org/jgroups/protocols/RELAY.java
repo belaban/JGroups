@@ -208,6 +208,36 @@ public class RELAY extends Protocol {
     }
 
 
+    public void up(MessageBatch batch) {
+        for(Message msg: batch) {
+            RelayHeader hdr=(RelayHeader)msg.getHeader(getId());
+            if(hdr != null) {
+                batch.remove(msg);
+                try {
+                    handleUpEvent(msg, hdr);
+                    continue; // fix for https://issues.jboss.org/browse/JGRP-2073
+                }
+                catch(Throwable t) {
+                    log.error(Util.getMessage("FailedProcessingMessage"), t);
+                }
+            }
+
+            // Leave the messages in the batch: they're going to be forwarded, but we also need to deliver them locally
+            if(is_coord && relay && msg.dest() == null && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
+                Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // we only copy headers from building blocks
+                try {
+                    byte[] buf=Util.streamableToByteBuffer(tmp);
+                    forward(buf, 0, buf.length);
+                }
+                catch(Exception e) {
+                    log.warn("failed relaying message", e);
+                }
+            }
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
+
     protected Object handleUpEvent(Message msg, RelayHeader hdr) {
         switch(hdr.type) {
             case DISSEMINATE:
@@ -233,35 +263,6 @@ public class RELAY extends Protocol {
         return null;
     }
 
-
-    public void up(MessageBatch batch) {
-        for(Message msg: batch) {
-            RelayHeader hdr=(RelayHeader)msg.getHeader(getId());
-            if(hdr != null) {
-                batch.remove(msg);
-                try {
-                    handleUpEvent(msg, hdr);
-                }
-                catch(Throwable t) {
-                    log.error(Util.getMessage("FailedProcessingMessage"), t);
-                }
-            }
-
-            // Leave the messages in the batch: they're going to be forwarded, but we also need to deliver them locally
-            if(is_coord && relay && msg.dest() == null && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
-                Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // we only copy headers from building blocks
-                try {
-                    byte[] buf=Util.streamableToByteBuffer(tmp);
-                    forward(buf, 0, buf.length);
-                }
-                catch(Exception e) {
-                    log.warn("failed relaying message", e);
-                }
-            }
-        }
-        if(!batch.isEmpty())
-            up_prot.up(batch);
-    }
 
     protected void handleView(final View view) {
         List<Address> new_mbrs=null;
@@ -298,7 +299,7 @@ public class RELAY extends Protocol {
 
     protected Object installView(byte[] buf, int offset, int length) {
         try {
-            ViewData data=(ViewData)Util.streamableFromByteBuffer(ViewData.class, buf, offset, length);
+            ViewData data=Util.streamableFromByteBuffer(ViewData.class, buf, offset, length);
             if(data.uuids != null)
                 UUID.add(data.uuids);
 
@@ -427,7 +428,6 @@ public class RELAY extends Protocol {
             bridge.setDiscardOwnMessages(true); // don't receive my own messages
             bridge.setReceiver(new Receiver());
             bridge.connect(bridge_name);
-
         }
         catch(Exception e) {
             log.error(Util.getMessage("FailedCreatingBridgeChannelProps") + bridge_props + ")", e);
@@ -437,7 +437,7 @@ public class RELAY extends Protocol {
 
     protected void sendOnLocalCluster(byte[] buf, int offset, int length) {
         try {
-            Message msg=(Message)Util.streamableFromByteBuffer(Message.class, buf, offset, length);
+            Message msg=Util.streamableFromByteBuffer(Message.class, buf, offset, length);
             Address sender=msg.getSrc();
             Address dest=msg.getDest();
 
@@ -539,8 +539,8 @@ public class RELAY extends Protocol {
                     break;
                 case VIEW:
                     try {
-                        ViewData data=(ViewData)Util.streamableFromByteBuffer(ViewData.class, msg.getRawBuffer(),
-                                                                              msg.getOffset(), msg.getLength());
+                        ViewData data=Util.streamableFromByteBuffer(ViewData.class, msg.getRawBuffer(),
+                                                                    msg.getOffset(), msg.getLength());
                         // replace addrs with proxies
                         if(data.remote_view != null) {
                             List<Address> mbrs=data.remote_view.getMembers().stream().collect(Collectors.toCollection(LinkedList::new));
