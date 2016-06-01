@@ -242,6 +242,7 @@ public class RELAY extends Protocol {
                 batch.remove(msg);
                 try {
                     handleUpEvent(msg, hdr);
+                    continue;
                 }
                 catch(Throwable t) {
                     log.error(Util.getMessage("FailedProcessingMessage"), t);
