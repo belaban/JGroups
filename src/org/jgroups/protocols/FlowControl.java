@@ -41,7 +41,7 @@ public abstract class FlowControl extends Protocol {
      * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to wait forever.
      */
     @Property(description="Max time (in ms) to block")
-    protected long max_block_time=5000;
+    protected long max_block_time=500;
 
     /**
      * Defines the max number of milliseconds for a message to block before being sent, based on the length of
