@@ -28,11 +28,6 @@ import java.util.concurrent.TimeUnit;
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public abstract class FlowControl extends Protocol {
-
-    protected final static FcHeader REPLENISH_HDR=new FcHeader(FcHeader.REPLENISH);
-    protected final static FcHeader CREDIT_REQUEST_HDR=new FcHeader(FcHeader.CREDIT_REQUEST);  
-
-    
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
     /**
@@ -502,10 +497,12 @@ public abstract class FlowControl extends Protocol {
         if(log.isTraceEnabled())
             log.trace("sending %d credits to %s", credits, dest);
         Message msg=new Message(dest, longToBuffer(credits)).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
-          .putHeader(this.id,REPLENISH_HDR);
+          .putHeader(this.id,getReplenishHeader());
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_responses_sent++;
     }
+
+    protected abstract Header getReplenishHeader();
 
     /**
      * We cannot send this request as OOB message, as the credit request needs to queue up behind the regular messages;
@@ -517,10 +514,12 @@ public abstract class FlowControl extends Protocol {
         if(log.isTraceEnabled())
             log.trace("sending request for %d credits to %s", credits_needed, dest);
         Message msg=new Message(dest, longToBuffer(credits_needed)).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
-          .putHeader(this.id, CREDIT_REQUEST_HDR);
+          .putHeader(this.id, getCreditRequestHeader());
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_requests_sent++;
     }
+
+    protected abstract Header getCreditRequestHeader();
 
 
     protected void handleViewChange(List<Address> mbrs) {
@@ -583,6 +582,7 @@ public abstract class FlowControl extends Protocol {
             if(timeout <= 0)
                 return false;
 
+            log.trace("Waiting for credits: %d requested, %d available", credits, credits_left);
             long start=avg_blockings != null? System.nanoTime() : 0;
             try {
                 this.wait(timeout);

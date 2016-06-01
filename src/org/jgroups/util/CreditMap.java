@@ -2,6 +2,8 @@ package org.jgroups.util;
 
 import org.jgroups.Address;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -14,6 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 public class CreditMap {
+    protected static final Log log = LogFactory.getLog(CreditMap.class);
     protected final long              max_credits;
 
     @GuardedBy("lock")
@@ -141,6 +144,7 @@ public class CreditMap {
             if(timeout <= 0)
                 return false;
 
+            log.trace("Waiting for credits: %d requested, %s - %d available", credits, this.credits, accumulated_credits);
             long start=System.nanoTime();
             try {
                 credits_available.await(timeout, TimeUnit.MILLISECONDS);

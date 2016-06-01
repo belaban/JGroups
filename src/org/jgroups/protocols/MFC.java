@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
+import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
@@ -36,6 +37,8 @@ import java.util.concurrent.TimeUnit;
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class MFC extends FlowControl {
+    protected final static FcHeader MFC_REPLENISH_HDR = new FcHeader(FcHeader.REPLENISH);
+    protected final static FcHeader MFC_CREDIT_REQUEST_HDR = new FcHeader(FcHeader.CREDIT_REQUEST);
 
     
     
@@ -120,7 +123,15 @@ public class MFC extends FlowControl {
         return down_prot.down(evt);
     }
 
+    @Override
+    protected Header getReplenishHeader() {
+        return MFC_REPLENISH_HDR;
+    }
 
+    @Override
+    protected Header getCreditRequestHeader() {
+        return MFC_CREDIT_REQUEST_HDR;
+    }
 
 
     protected synchronized boolean needToSendCreditRequest() {
