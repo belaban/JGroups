@@ -28,6 +28,9 @@ import java.util.concurrent.atomic.AtomicLong;
 @XmlElement(name="RelayConfiguration",type="relay:RelayConfigurationType")
 @MBean(description="RELAY2 protocol")
 public class RELAY2 extends Protocol {
+    // reserved flags
+    public static final short site_master_flag            = 1 << 0;
+    public static final short can_become_site_master_flag = 1 << 1;
 
     /* ------------------------------------------    Properties     ---------------------------------------------- */
     @Property(description="Name of the site (needs to be defined in the configuration)",writable=false)
@@ -218,7 +221,7 @@ public class RELAY2 extends Protocol {
     }
 
     public List<String> getSites() {
-        return sites.isEmpty()? Collections.<String>emptyList() : new ArrayList<>(sites.keySet());
+        return sites.isEmpty()? Collections.emptyList() : new ArrayList<>(sites.keySet());
     }
 
 
@@ -258,7 +261,7 @@ public class RELAY2 extends Protocol {
             ch.addAddressGenerator(() -> {
                 ExtendedUUID retval=ExtendedUUID.randomUUID();
                 if(can_become_site_master)
-                    retval.setFlag(ExtendedUUID.can_become_site_master);
+                    retval.setFlag(can_become_site_master_flag);
                 return retval;
             });
         }
@@ -685,7 +688,7 @@ public class RELAY2 extends Protocol {
         int selected=0;
 
         for(Address member: view) {
-            if(member instanceof ExtendedUUID && !((ExtendedUUID)member).isFlagSet(ExtendedUUID.can_become_site_master))
+            if(member instanceof ExtendedUUID && !((ExtendedUUID)member).isFlagSet(can_become_site_master_flag))
                 continue;
 
             if(selected++ < max_site_masters)

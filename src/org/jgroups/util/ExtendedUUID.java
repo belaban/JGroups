@@ -12,15 +12,11 @@ import java.util.Arrays;
  * @author Bela Ban
  * @since  3.5
  */
-public class ExtendedUUID extends UUID {
-    private static final long serialVersionUID=-2335117576152990301L;
-    protected short           flags;
+public class ExtendedUUID extends FlagsUUID {
+    private static final long serialVersionUID=81916525425329355L;
     protected byte[][]        keys;
     protected byte[][]        values;
 
-    // reserved flags
-    public static final short site_master            = 1 << 0;
-    public static final short can_become_site_master = 1 << 1;
 
     public ExtendedUUID() {
         super();
@@ -34,18 +30,19 @@ public class ExtendedUUID extends UUID {
         super(mostSigBits,leastSigBits);
     }
 
-    public ExtendedUUID(ExtendedUUID other) {
-        super(other.mostSigBits, other.leastSigBits);
-        flags=other.flags;
-        if(other.keys != null) {
-            keys=Arrays.copyOf(other.keys, other.keys.length);
-            values=Arrays.copyOf(other.values, other.values.length);
+    public <T extends FlagsUUID> ExtendedUUID(T o) {
+        super(o);
+        if(o instanceof ExtendedUUID) {
+            ExtendedUUID other=(ExtendedUUID)o;
+            if(other.keys != null) {
+                keys=Arrays.copyOf(other.keys, other.keys.length);
+                values=Arrays.copyOf(other.values, other.values.length);
+            }
         }
     }
 
-    public static ExtendedUUID randomUUID() {
-        return new ExtendedUUID(generateRandomBytes());
-    }
+
+    public static ExtendedUUID randomUUID() {return new ExtendedUUID(generateRandomBytes());}
 
     public static ExtendedUUID randomUUID(String name) {
         ExtendedUUID retval=new ExtendedUUID(generateRandomBytes());
@@ -54,17 +51,7 @@ public class ExtendedUUID extends UUID {
         return retval;
     }
 
-    public ExtendedUUID setFlag(short flag) {
-        flags |= flag; return this;
-    }
 
-    public ExtendedUUID clearFlag(short flag) {
-        flags &= ~flag; return this;
-    }
-
-    public boolean isFlagSet(short flag) {
-        return (flags & flag) == flag;
-    }
 
     public byte[] get(byte[] key) {
         if(keys == null || key == null)
@@ -142,18 +129,23 @@ public class ExtendedUUID extends UUID {
         return keyExists(Util.stringToBytes(key));
     }
 
-    public ExtendedUUID addContents(ExtendedUUID other) {
-        flags|=other.flags;
-        if(other.keys != null) {
-            for(int i=0; i < other.keys.length; i++) {
-                byte[] key=other.keys[i];
-                byte[] val=other.values[i];
-                if(!keyExists(key))
-                    put(key, val); // overwrite
+    @Override
+    public <T extends FlagsUUID> T addContents(T o) {
+        super.addContents(o);
+        if(o instanceof ExtendedUUID) {
+            ExtendedUUID other=(ExtendedUUID)o;
+            if(other.keys != null) {
+                for(int i=0; i < other.keys.length; i++) {
+                    byte[] key=other.keys[i];
+                    byte[] val=other.values[i];
+                    if(!keyExists(key))
+                        put(key, val); // overwrite
+                }
             }
         }
-        return this;
+        return (T)this;
     }
+
 
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
@@ -179,7 +171,7 @@ public class ExtendedUUID extends UUID {
 
     /** The number of bytes required to serialize this instance */
     public int size() {
-        return super.size() + Global.SHORT_SIZE + Global.BYTE_SIZE + sizeofHashMap();
+        return super.size() + Global.BYTE_SIZE + sizeofHashMap();
     }
 
     /** The number of non-null keys */
@@ -193,17 +185,10 @@ public class ExtendedUUID extends UUID {
         return retval;
     }
 
-    public String toString() {return super.toString();}
-
-
-    public String print() {
-        StringBuilder sb=new StringBuilder(super.toString());
-        if(flags != 0 || keys != null)
-            sb.append(" (");
-        if(flags != 0)
-            sb.append("flags=" + flags + " (" + flagsToString() + ")");
+    public String toString() {
         if(keys == null)
-            return sb.toString();
+            return super.toString();
+        StringBuilder sb=new StringBuilder(super.toString());
         for(int i=0; i < keys.length; i++) {
             byte[] key=keys[i];
             if(key == null)
@@ -220,16 +205,15 @@ public class ExtendedUUID extends UUID {
                     }
                 }
             }
-
             sb.append(", ").append(new AsciiString(key)).append("=").append(obj);
         }
-        if(flags != 0 || keys != null)
+        if(keys != null)
             sb.append(")");
         return sb.toString();
     }
 
+
     protected void write(DataOutput out) throws IOException {
-        out.writeShort(flags);
         int length=length();
         out.writeByte(length);
         if(keys == null)
@@ -249,7 +233,6 @@ public class ExtendedUUID extends UUID {
     }
 
     protected void read(DataInput in) throws IOException {
-        flags=in.readShort();
         int length=in.readUnsignedByte();
         if(length == 0)
             return;
@@ -301,19 +284,4 @@ public class ExtendedUUID extends UUID {
         values=Arrays.copyOf(values, new_length);
     }
 
-    protected String flagsToString() {
-        StringBuilder sb=new StringBuilder();
-        boolean first=true;
-        for(Tuple<Short,String> flag: Arrays.asList(new Tuple<>(site_master, "sm"),
-                                                    new Tuple<>(can_become_site_master, "can_be_sm"))) {
-            if(isFlagSet(flag.getVal1())) {
-                if(first)
-                    first=false;
-                else
-                    sb.append("|");
-                sb.append(flag.getVal2());
-            }
-        }
-        return sb.toString();
-    }
 }

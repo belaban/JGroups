@@ -79,7 +79,7 @@ public class SiteUUID extends ExtendedUUID implements SiteAddress {
     protected String printOthers() {
         StringBuilder sb=new StringBuilder();
         if(flags != 0)
-            sb.append(" flags=" + flags + " (" + flagsToString() + ")");
+            sb.append(" flags=" + flags + " (" + flags + ")");
         if(keys == null)
             return sb.toString();
         for(int i=0; i < keys.length; i++) {

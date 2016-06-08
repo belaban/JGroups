@@ -1,15 +1,15 @@
 package org.jgroups.protocols;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.jgroups.Global;
 import org.jgroups.protocols.S3_PING.PreSignedUrlParser;
 import org.jgroups.protocols.S3_PING.Utils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 @Test(groups={Global.STACK_INDEPENDENT})
 public class S3_PINGTest {

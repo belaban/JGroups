@@ -1,9 +1,11 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
+import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.util.ExtendedUUID;
+import org.jgroups.util.FlagsUUID;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
@@ -21,19 +23,34 @@ import java.util.Map;
 public class ExtendedUUIDTest {
 
     public void testCreation() {
-        ExtendedUUID uuid=ExtendedUUID.randomUUID("A").setFlag(ExtendedUUID.site_master);
+        ExtendedUUID uuid=ExtendedUUID.randomUUID("A").setFlag(RELAY2.site_master_flag);
         System.out.println("uuid = " + uuid);
     }
 
     public void testFlags() {
-        ExtendedUUID uuid=ExtendedUUID.randomUUID("A").setFlag(ExtendedUUID.site_master).setFlag((short)2).setFlag((short)4);
+        ExtendedUUID uuid=ExtendedUUID.randomUUID("A").setFlag(RELAY2.site_master_flag).setFlag((short)2).setFlag((short)4);
         System.out.println("uuid = " + uuid);
-        assert uuid.isFlagSet(ExtendedUUID.site_master);
+        assert uuid.isFlagSet(RELAY2.site_master_flag);
         assert uuid.isFlagSet((short)2);
         assert uuid.isFlagSet((short)4);
         uuid.clearFlag((short)2);
         assert !uuid.isFlagSet((short)2);
     }
+
+    public void testFlags2() throws Exception {
+        FlagsUUID uuid=FlagsUUID.randomUUID("A").setFlag(RELAY2.site_master_flag).setFlag((short)2).setFlag((short)4);
+        System.out.println("uuid = " + uuid);
+        assert uuid.isFlagSet(RELAY2.site_master_flag);
+        assert uuid.isFlagSet((short)2);
+        assert uuid.isFlagSet((short)4);
+        uuid.clearFlag((short)2);
+        assert !uuid.isFlagSet((short)2);
+
+        byte[] buf=Util.streamableToByteBuffer(uuid);
+        FlagsUUID uuid2=Util.streamableFromByteBuffer(FlagsUUID.class, buf, 0, buf.length);
+        assert uuid.equals(uuid2);
+    }
+
 
     public void testPut() throws Exception {
         ExtendedUUID uuid=ExtendedUUID.randomUUID("A").put("name", Util.objectToByteBuffer("Bela"))
@@ -46,10 +63,10 @@ public class ExtendedUUIDTest {
     }
 
     public void testAddContents() throws Exception {
-        ExtendedUUID a=ExtendedUUID.randomUUID("A").setFlag((short)1).put("name",Util.stringToBytes("Bela"))
-          .put("age",Util.objectToByteBuffer(49)).put("bool",Util.objectToByteBuffer(true));
-        ExtendedUUID b=ExtendedUUID.randomUUID("B").setFlag((short)2).setFlag((short)4)
-          .put("one",null).put("two",Util.stringToBytes("two")).put("name", Util.stringToBytes("Michelle"));
+        ExtendedUUID a=ExtendedUUID.randomUUID("A").setFlag((short)1);
+        a.put("name",Util.stringToBytes("Bela")).put("age",Util.objectToByteBuffer(49)).put("bool",Util.objectToByteBuffer(true));
+        ExtendedUUID b=ExtendedUUID.randomUUID("B").setFlag((short)2).setFlag((short)4);
+        b.put("one",null).put("two",Util.stringToBytes("two")).put("name", Util.stringToBytes("Michelle"));
         a.addContents(b);
         System.out.println("a = " + a);
         for(short flag: Arrays.asList((short)1,(short)2, (short)4))
@@ -132,7 +149,7 @@ public class ExtendedUUIDTest {
         int size=uuid.size();
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
-        ExtendedUUID uuid2=(ExtendedUUID)Util.streamableFromByteBuffer(ExtendedUUID.class,buffer);
+        ExtendedUUID uuid2=Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);
         System.out.println("uuid2 = " + uuid2);
         assert uuid2.isFlagSet((short)16);
         assert uuid2.isFlagSet((short)32);
@@ -146,7 +163,7 @@ public class ExtendedUUIDTest {
         int size=uuid.size();
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
-        ExtendedUUID uuid2=(ExtendedUUID)Util.streamableFromByteBuffer(ExtendedUUID.class,buffer);
+        ExtendedUUID uuid2=Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);
         System.out.println("uuid2 = " + uuid2);
     }
 
@@ -158,7 +175,7 @@ public class ExtendedUUIDTest {
         int size=uuid.size();
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
-        ExtendedUUID uuid2=(ExtendedUUID)Util.streamableFromByteBuffer(ExtendedUUID.class,buffer);
+        ExtendedUUID uuid2=Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);
         System.out.println("uuid2 = " + uuid2);
         for(int i=1; i <= 5; i++) {
             byte[] val=uuid.get(String.valueOf(i));
@@ -175,7 +192,7 @@ public class ExtendedUUIDTest {
         int size=uuid.size();
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
-        ExtendedUUID uuid2=(ExtendedUUID)Util.streamableFromByteBuffer(ExtendedUUID.class,buffer);
+        ExtendedUUID uuid2=Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);
         System.out.println("uuid2 = " + uuid2);
         for(int i=1; i <= 5; i++) {
             byte[] val=uuid.get(String.valueOf(i));
@@ -205,7 +222,7 @@ public class ExtendedUUIDTest {
         int size=uuid.size();
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
-        ExtendedUUID uuid2=(ExtendedUUID)Util.streamableFromByteBuffer(ExtendedUUID.class,buffer);
+        ExtendedUUID uuid2=Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);
         System.out.println("uuid2 = " + uuid2);
         assert uuid2.length() == 5;
 
@@ -239,8 +256,8 @@ public class ExtendedUUIDTest {
     public void testSiteUUID() throws Exception {
         UUID a=(UUID)Util.createRandomAddress("A"), b=(UUID)Util.createRandomAddress("B");
         SiteUUID sa=new SiteUUID(a, "sm-a", "sfo");
-        SiteUUID sb=(SiteUUID)new SiteUUID(b, "b", "lon").setFlag(ExtendedUUID.can_become_site_master)
-          .put(Util.stringToBytes("id"),Util.objectToByteBuffer(322649));
+        SiteUUID sb=new SiteUUID(b, "b", "lon")
+          .put(Util.stringToBytes("id"),Util.objectToByteBuffer(322649)).setFlag(RELAY2.can_become_site_master_flag);
         System.out.println("sb = " + sb);
         assert sa.getName().equals("sm-a");
         assert sa.getSite().equals("sfo");
