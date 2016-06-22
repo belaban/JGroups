@@ -6,7 +6,6 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.relay.SiteAddress;
-import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
@@ -54,7 +53,6 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
     protected boolean                               hardware_multicast_supported=false;
     protected final Set<ChannelListener>            channel_listeners=new CopyOnWriteArraySet<>();
     protected final RpcStats                        rpc_stats=new RpcStats(false);
-    protected final DiagnosticsHandler.ProbeHandler probe_handler=new MyProbeHandler();
     protected static final RspList                  empty_rsplist=new RspList();
     protected static final GroupRequest             empty_group_request;
 
@@ -108,6 +106,17 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
 
     public UpHandler getProtocolAdapter() {
         return prot_adapter;
+    }
+
+    public RequestCorrelator               correlator() {return corr;}
+    public <T extends MessageDispatcher> T correlator(RequestCorrelator c) {
+        if(c == null)
+            return (T)this;
+        stop();
+        this.corr=c;
+        corr.asyncDispatching(this.async_dispatching).wrapExceptions(this.wrap_exceptions);
+        start();
+        return (T)this;
     }
 
 
@@ -169,14 +178,12 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
     @Override public void close() throws IOException {stop();}
 
     public void stop() {
-        if(corr != null)
+        if(corr != null) {
             corr.stop();
-
-        if(channel instanceof JChannel) {
-            TP transport=channel.getProtocolStack().getTransport();
-            // transport.unregisterProbeHandler(probe_handler);
-            if(corr != null)
+            if(channel instanceof JChannel) {
+                TP transport=channel.getProtocolStack().getTransport();
                 corr.unregisterProbeHandler(transport);
+            }
         }
     }
 
@@ -524,7 +531,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
 
             case Event.GET_STATE_OK:
                 if(state_listener != null) {
-                    StateTransferResult result=(StateTransferResult)evt.getArg();
+                    StateTransferResult result=evt.getArg();
                     if(result.hasBuffer()) {
                         ByteArrayInputStream input=new ByteArrayInputStream(result.getBuffer());
                         state_listener.setState(input);
@@ -533,19 +540,19 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
                 break;
 
             case Event.STATE_TRANSFER_OUTPUTSTREAM:
-                OutputStream os=(OutputStream)evt.getArg();
+                OutputStream os=evt.getArg();
                 if(state_listener != null && os != null)
                     state_listener.getState(os);
                 break;
 
             case Event.STATE_TRANSFER_INPUTSTREAM:
-                InputStream is=(InputStream)evt.getArg();
+                InputStream is=evt.getArg();
                 if(state_listener != null && is!=null)
                     state_listener.setState(is);
                 break;
 
             case Event.VIEW_CHANGE:
-                View v=(View) evt.getArg();
+                View v=evt.getArg();
                 List<Address> new_mbrs=v.getMembers();
                 setMembers(new_mbrs);
                 if(membership_listener != null)
@@ -554,12 +561,12 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
 
             case Event.SET_LOCAL_ADDRESS:
                 log.trace("setting local_addr (%s) to %s", local_addr, evt.getArg());
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
 
             case Event.SUSPECT:
                 if(membership_listener != null)
-                    membership_listener.suspect((Address) evt.getArg());
+                    membership_listener.suspect(evt.getArg());
                 break;
 
             case Event.BLOCK:
@@ -576,47 +583,6 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
     }
 
 
-    protected class MyProbeHandler implements DiagnosticsHandler.ProbeHandler {
-
-        @Override
-        public Map<String,String> handleProbe(String... keys) {
-            Map<String,String> retval=new LinkedHashMap<>(16);
-            for(String key: keys) {
-                switch(key) {
-                    case "rpcs":
-                        String channel_name=channel != null? channel.getClusterName() : "";
-                        retval.put(channel_name + ": sync  unicast   RPCs", String.valueOf(rpc_stats.unicasts(true)));
-                        retval.put(channel_name + ": sync  multicast RPCs", String.valueOf(rpc_stats.multicasts(true)));
-                        retval.put(channel_name + ": async unicast   RPCs", String.valueOf(rpc_stats.unicasts(false)));
-                        retval.put(channel_name + ": async multicast RPCs", String.valueOf(rpc_stats.multicasts(false)));
-                        retval.put(channel_name + ": sync  anycast   RPCs", String.valueOf(rpc_stats.anycasts(true)));
-                        retval.put(channel_name + ": async anycast   RPCs", String.valueOf(rpc_stats.anycasts(false)));
-                        break;
-                    case "rpcs-reset":
-                        rpc_stats.reset();
-                        break;
-                    case "rpcs-enable-details":
-                        rpc_stats.extendedStats(true);
-                        break;
-                    case "rpcs-disable-details":
-                        rpc_stats.extendedStats(false);
-                        break;
-                    case "rpcs-details":
-                        if(!rpc_stats.extendedStats())
-                            retval.put(key, "<details not enabled: use rpcs-enable-details to enable>");
-                        else
-                            retval.put(key, rpc_stats.printOrderByDest());
-                        break;
-                }
-            }
-            return retval;
-        }
-
-        @Override
-        public String[] supportedKeys() {
-            return new String[]{"rpcs", "rpcs-reset", "rpcs-enable-details", "rpcs-disable-details", "rpcs-details"};
-        }
-    }
 
 
     class ProtocolAdapter extends Protocol implements UpHandler {
