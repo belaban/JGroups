@@ -34,7 +34,6 @@
     <class id="76"  name="org.jgroups.protocols.DAISYCHAIN$DaisyHeader"/>
     <class id="77"  name="org.jgroups.protocols.RELAY$RelayHeader"/>
     <class id="78"  name="org.jgroups.protocols.STOMP$StompHeader"/>
-    <class id="80"  name="org.jgroups.protocols.PrioHeader"/>
     <class id="81"  name="org.jgroups.protocols.Locking$LockingHeader"/>
     <class id="85"  name="org.jgroups.protocols.Executing$ExecutorHeader"/>
     <class id="86"  name="org.jgroups.protocols.Executing$Request"/>

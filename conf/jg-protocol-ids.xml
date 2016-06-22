@@ -35,7 +35,6 @@
     <class id="45" name="org.jgroups.protocols.UFC"/>
     <class id="46" name="org.jgroups.protocols.JDBC_PING"/>
     <class id="47" name="org.jgroups.protocols.STOMP"/>
-    <class id="48" name="org.jgroups.protocols.PRIO"/>
     <class id="49" name="org.jgroups.protocols.BPING"/>
     <class id="50" name="org.jgroups.protocols.CENTRAL_LOCK"/>
     <class id="52" name="org.jgroups.protocols.CENTRAL_EXECUTOR"/>
