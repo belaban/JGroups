@@ -333,7 +333,7 @@ public abstract class FlowControl extends Protocol {
                 return retval;
 
             case Event.CONFIG:
-                handleConfigEvent((Map<String,Object>)evt.getArg()); 
+                handleConfigEvent((Map<String,Object>)evt.getArg());
                 break;
             
             case Event.VIEW_CHANGE:
@@ -370,15 +370,17 @@ public abstract class FlowControl extends Protocol {
                     return null; // don't pass message up
                 }
 
-                Address sender=msg.getSrc();
-                long new_credits=adjustCredit(received, sender, msg.getLength());
-                
                 try {
                     return up_prot.up(evt);
                 }
                 finally {
-                    if(new_credits > 0)
-                        sendCredit(sender, new_credits);
+                    int length=msg.getLength();
+                    if(length > 0) {
+                        Address sender=msg.getSrc();
+                        long new_credits=adjustCredit(received, sender, length);
+                        if(new_credits > 0)
+                            sendCredit(sender, new_credits);
+                    }
                 }
 
             case Event.VIEW_CHANGE:
@@ -431,18 +433,17 @@ public abstract class FlowControl extends Protocol {
             length+=msg.getLength();
         }
 
-        Address sender=batch.sender();
-        long new_credits=0;
-        if(length > 0)
-            new_credits=adjustCredit(received, sender, length);
-
         if(!batch.isEmpty()) {
             try {
                 up_prot.up(batch);
             }
             finally {
-                if(new_credits > 0)
-                    sendCredit(sender, new_credits);
+                if(length > 0) {
+                    Address sender=batch.sender();
+                    long new_credits=adjustCredit(received, sender, length);
+                    if(new_credits > 0)
+                        sendCredit(sender, new_credits);
+                }
             }
         }
     }
