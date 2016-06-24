@@ -294,7 +294,7 @@ public abstract class FlowControl extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
+                Message msg=evt.getArg();
                 if(msg.isFlagSet(Message.Flag.NO_FC))
                     break;
 
@@ -321,7 +321,7 @@ public abstract class FlowControl extends Protocol {
                 return retval;
 
             case Event.CONFIG:
-                handleConfigEvent((Map<String,Object>)evt.getArg()); 
+                handleConfigEvent(evt.getArg());
                 break;
             
             case Event.VIEW_CHANGE:
@@ -329,7 +329,7 @@ public abstract class FlowControl extends Protocol {
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt); // this could potentially use the lower protocol's thread which may block
@@ -341,14 +341,14 @@ public abstract class FlowControl extends Protocol {
         switch(evt.getType()) {
 
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
+                Message msg=evt.getArg();
                 if(msg.isFlagSet(Message.Flag.NO_FC))
                     break;
 
                 Address dest=msg.getDest();
                 boolean multicast=dest == null;
                 boolean handle_multicasts=handleMulticastMessage();
-                FcHeader hdr=(FcHeader)msg.getHeader(this.id);
+                FcHeader hdr=msg.getHeader(this.id);
                 boolean process=(handle_multicasts && multicast) || (!handle_multicasts && !multicast) || hdr != null;
                 if(!process)
                     break;
@@ -358,15 +358,17 @@ public abstract class FlowControl extends Protocol {
                     return null; // don't pass message up
                 }
 
-                Address sender=msg.getSrc();
-                long new_credits=adjustCredit(received, sender, msg.getLength());
-                
                 try {
                     return up_prot.up(evt);
                 }
                 finally {
-                    if(new_credits > 0)
-                        sendCredit(sender, new_credits);
+                    int length=msg.getLength();
+                    if(length > 0) {
+                        Address sender=msg.getSrc();
+                        long new_credits=adjustCredit(received, sender, length);
+                        if(new_credits > 0)
+                            sendCredit(sender, new_credits);
+                    }
                 }
 
             case Event.VIEW_CHANGE:
@@ -406,7 +408,7 @@ public abstract class FlowControl extends Protocol {
             Address dest=msg.getDest();
             boolean multicast=dest == null;
             boolean handle_multicasts=handleMulticastMessage();
-            FcHeader hdr=(FcHeader)msg.getHeader(this.id);
+            FcHeader hdr=msg.getHeader(this.id);
             boolean process=(handle_multicasts && multicast) || (!handle_multicasts && !multicast) || hdr != null;
             if(!process)
                 continue;
@@ -419,18 +421,17 @@ public abstract class FlowControl extends Protocol {
             length+=msg.getLength();
         }
 
-        Address sender=batch.sender();
-        long new_credits=0;
-        if(length > 0)
-            new_credits=adjustCredit(received, sender, length);
-
         if(!batch.isEmpty()) {
             try {
                 up_prot.up(batch);
             }
             finally {
-                if(new_credits > 0)
-                    sendCredit(sender, new_credits);
+                if(length > 0) {
+                    Address sender=batch.sender();
+                    long new_credits=adjustCredit(received, sender, length);
+                    if(new_credits > 0)
+                        sendCredit(sender, new_credits);
+                }
             }
         }
     }
