@@ -258,9 +258,9 @@ public class S3_PING extends FILE_PING {
         } else if (pre_signed_put_url != null || pre_signed_delete_url != null) {
             throw new IllegalArgumentException("pre_signed_put_url and pre_signed_delete_url must both be set or both unset");
         }
-        if (prefix != null && location != null) {
-            throw new IllegalArgumentException("set either prefix or location, but not both");
-        }
+        //if (prefix != null && location != null) {
+        //    throw new IllegalArgumentException("set either prefix or location, but not both");
+        //}
         if (prefix != null && (access_key == null || secret_access_key == null)) {
             throw new IllegalArgumentException("access_key and secret_access_key must be set when setting prefix");
         }
