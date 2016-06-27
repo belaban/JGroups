@@ -1087,7 +1087,7 @@ public class JChannel extends Channel {
     class MyProbeHandler implements DiagnosticsHandler.ProbeHandler {
 
         public Map<String, String> handleProbe(String... keys) {
-            Map<String, String> map=new HashMap<>(3);
+            Map<String, String> map=new TreeMap<>();
             for(String key: keys) {
                 if(key.startsWith("jmx")) {
                     handleJmx(map, key);

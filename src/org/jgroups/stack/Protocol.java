@@ -217,7 +217,7 @@ public abstract class Protocol {
     }
 
     public Map<String,Object> dumpStats() {
-        HashMap<String,Object> map=new HashMap<>();
+        Map<String,Object> map=new TreeMap<>();
         for(Class<?> clazz=this.getClass();clazz != null;clazz=clazz.getSuperclass()) {
             Field[] fields=clazz.getDeclaredFields();
             for(Field field: fields) {
