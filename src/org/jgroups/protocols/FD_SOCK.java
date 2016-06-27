@@ -482,7 +482,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             Address first=eligible_mbrs.get(0);
             if(local_addr.equals(first)) {
                 log.debug("%s: suspecting %s", local_addr, suspected_mbrs);
-                for(Address suspect: suspects) {
+                for(Address suspect: suspected_mbrs) {
                     up_prot.up(new Event(Event.SUSPECT, suspect));
                     down_prot.down(new Event(Event.SUSPECT, suspect));
                 }
