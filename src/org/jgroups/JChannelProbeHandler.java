@@ -10,10 +10,10 @@ import org.jgroups.util.Util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * @author Bela Ban
@@ -29,7 +29,7 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
     }
 
     public Map<String, String> handleProbe(String... keys) {
-        Map<String, String> map=new HashMap<>(3);
+        Map<String, String> map=new TreeMap<>();
         for(String key: keys) {
             if(key.startsWith("jmx")) {
                 handleJmx(map, key);
