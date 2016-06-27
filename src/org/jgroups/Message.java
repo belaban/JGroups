@@ -670,11 +670,13 @@ public class Message implements Streamable {
         Header[] hdrs=this.headers;
         int size=Headers.size(hdrs);
         out.writeShort(size);
-        for(Header hdr: hdrs) {
-            if(hdr == null)
-                break;
-            out.writeShort(hdr.getProtId());
-            writeHeader(hdr, out);
+        if(size > 0) {
+            for(Header hdr : hdrs) {
+                if(hdr == null)
+                    break;
+                out.writeShort(hdr.getProtId());
+                writeHeader(hdr, out);
+            }
         }
 
         // 6. buf
@@ -718,14 +720,16 @@ public class Message implements Streamable {
         Header[] hdrs=this.headers;
         int size=Headers.size(hdrs, excluded_headers);
         out.writeShort(size);
-        for(Header hdr: hdrs) {
-            if(hdr == null)
-                break;
-            short id=hdr.getProtId();
-            if(excluded_headers != null && Util.containsId(id, excluded_headers))
-                continue;
-            out.writeShort(id);
-            writeHeader(hdr, out);
+        if(size > 0) {
+            for(Header hdr : hdrs) {
+                if(hdr == null)
+                    break;
+                short id=hdr.getProtId();
+                if(excluded_headers != null && Util.containsId(id, excluded_headers))
+                    continue;
+                out.writeShort(id);
+                writeHeader(hdr, out);
+            }
         }
 
         // 6. buf
