@@ -863,9 +863,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         boolean loopback=local_addr.equals(sender);
         boolean added=loopback || buf.add(msgs, oob, oob? DUMMY_OOB_MSG : null);
 
-        if(added && log.isTraceEnabled())
+        if(added && log.isTraceEnabled()) {
+            size=msgs.size();
             log.trace("%s: received %s#%d-%d (%d messages)",
-                      local_addr, sender, msgs.get(0).getVal1(), msgs.get(size-1).getVal1(), msgs.size());
+                      local_addr, sender, msgs.get(0).getVal1(), msgs.get(size - 1).getVal1(), size);
+        }
 
 
         // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
