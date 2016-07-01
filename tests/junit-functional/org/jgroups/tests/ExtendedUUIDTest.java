@@ -55,7 +55,6 @@ public class ExtendedUUIDTest {
     public void testPut() throws Exception {
         ExtendedUUID uuid=ExtendedUUID.randomUUID("A").put("name", Util.objectToByteBuffer("Bela"))
           .put("age",Util.objectToByteBuffer(49)).put("bool",Util.objectToByteBuffer(true));
-        System.out.println("uuid = " + uuid);
         assert uuid.keyExists("name");
         assert uuid.keyExists("bool");
         byte[] val=uuid.get("age");
@@ -68,7 +67,6 @@ public class ExtendedUUIDTest {
         ExtendedUUID b=ExtendedUUID.randomUUID("B").setFlag((short)2).setFlag((short)4);
         b.put("one",null).put("two",Util.stringToBytes("two")).put("name", Util.stringToBytes("Michelle"));
         a.addContents(b);
-        System.out.println("a = " + a);
         for(short flag: Arrays.asList((short)1,(short)2, (short)4))
             assert a.isFlagSet(flag);
         for(String key: Arrays.asList("name", "age", "bool", "one", "two"))
@@ -83,7 +81,6 @@ public class ExtendedUUIDTest {
         byte[] val=Util.objectToByteBuffer("tmp");
         for(int i=1; i <= 10; i++)
             uuid.put(String.valueOf(i), val);
-        System.out.println("uuid = " + uuid);
 
         byte[] tmp=uuid.remove(String.valueOf(5));
         assert tmp != null && Arrays.equals(tmp, val);
@@ -105,7 +102,6 @@ public class ExtendedUUIDTest {
             uuid.put(String.valueOf(i), val);
             assert uuid.keyExists(String.valueOf(i));
         }
-        System.out.println("uuid = " + uuid);
     }
 
     public void testResizeBeyond255() throws Exception {
@@ -113,7 +109,6 @@ public class ExtendedUUIDTest {
         byte[] val=Util.objectToByteBuffer("tmp");
         for(int i=1; i <= 0xff; i++)
             uuid.put(String.valueOf(i), val);
-        System.out.println("uuid = " + uuid);
 
         try {
             uuid.put(String.valueOf(256), val);
@@ -129,10 +124,8 @@ public class ExtendedUUIDTest {
         uuid.put("name", Util.objectToByteBuffer("Bela"))
           .put("age",Util.objectToByteBuffer(49))
           .put("bool",Util.objectToByteBuffer(true));
-        System.out.println("uuid = " + uuid);
 
         ExtendedUUID uuid2=new ExtendedUUID(uuid);
-        System.out.println("uuid2 = " + uuid2);
         assert uuid.getMostSignificantBits() == uuid2.getMostSignificantBits();
         assert uuid.getLeastSignificantBits() == uuid2.getLeastSignificantBits();
         assert uuid2.isFlagSet((short)16) && uuid2.isFlagSet((short)32);
@@ -150,7 +143,6 @@ public class ExtendedUUIDTest {
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
         ExtendedUUID uuid2=Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);
-        System.out.println("uuid2 = " + uuid2);
         assert uuid2.isFlagSet((short)16);
         assert uuid2.isFlagSet((short)32);
         for(String key: Arrays.asList("name", "age", "bool"))
@@ -163,8 +155,7 @@ public class ExtendedUUIDTest {
         int size=uuid.size();
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
-        ExtendedUUID uuid2=Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);
-        System.out.println("uuid2 = " + uuid2);
+        Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);
     }
 
     public void testMarshallingLargeValues() throws Exception {
@@ -188,12 +179,10 @@ public class ExtendedUUIDTest {
         byte[] value=Util.objectToByteBuffer("Bela");
         for(int i=1; i <= 5; i++)
             uuid.put(String.valueOf(i), i % 2 == 0? value : null);
-        System.out.println("uuid = " + uuid);
         int size=uuid.size();
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
         ExtendedUUID uuid2=Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);
-        System.out.println("uuid2 = " + uuid2);
         for(int i=1; i <= 5; i++) {
             byte[] val=uuid.get(String.valueOf(i));
             boolean null_val=i % 2 != 0;
@@ -212,18 +201,15 @@ public class ExtendedUUIDTest {
             uuid.put(String.valueOf(i), value);
         assert uuid.length() == 10;
 
-        System.out.println("uuid = " + uuid);
         for(int i=1; i <= 10; i++)
             if(i % 2 == 0)
                 uuid.remove(String.valueOf(i));
-        System.out.println("uuid = " + uuid);
         assert uuid.length() == 5;
 
         int size=uuid.size();
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
         ExtendedUUID uuid2=Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);
-        System.out.println("uuid2 = " + uuid2);
         assert uuid2.length() == 5;
 
         for(int i=1; i <= 10; i++) {
