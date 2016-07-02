@@ -43,7 +43,7 @@
          oob_thread_pool.queue_max_size="100"
          oob_thread_pool.rejection_policy="discard"/>
 
-    <S3_PING2
+    <aws.s3_ping2.S3_PING2
     s3_ping2_debug="true"
     region="eu-central-1"
     location="eu-central-1-tti-bob-2"
