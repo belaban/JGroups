@@ -5,6 +5,7 @@ package org.jgroups.stack;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.JChannel;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
@@ -26,8 +27,8 @@ import java.util.*;
 
 /**
  * The Protocol class provides a set of common services for protocol layers. Each layer has to
- * be a subclass of Protocol and override a number of methods (typically just <code>up()</code>,
- * <code>down()</code> and <code>getName()</code>. Layers are stacked in a certain order to form
+ * be a subclass of Protocol and override a number of methods (typically just {@code up()},
+ * {@code down()} and {@code getName()}. Layers are stacked in a certain order to form
  * a protocol stack. <a href=org.jgroups.Event.html>Events</a> are passed from lower
  * layers to upper ones and vice versa. E.g. a Message received by the UDP layer at the bottom
  * will be passed to its higher layer as an Event. That layer will in turn pass the Event to
@@ -72,11 +73,12 @@ public abstract class Protocol {
 
 
     /**
-     * Sets the level of a logger. This method is used to dynamically change the logging level of a
-     * running system, e.g. via JMX. The appender of a level needs to exist.
+     * Sets the level of a logger. This method is used to dynamically change the logging level of a running system,
+     * e.g. via JMX. The appender of a level needs to exist.
      * @param level The new level. Valid values are "fatal", "error", "warn", "info", "debug", "trace"
      * (capitalization not relevant)
      */
+    public Log           getLog()                          {return log;}
     public Protocol      setLevel(String level)            {log.setLevel(level); return this;}
     @Property(name="level", description="logger level (see javadocs)")
     public String        getLevel()                        {return log.getLevel();}
@@ -125,7 +127,7 @@ public abstract class Protocol {
             return this;
         Field field=Util.getField(getClass(), name);
         if(field == null)
-            throw new IllegalArgumentException("field \"" + name + "\n not found");
+            throw new IllegalArgumentException("field " + name + " not found");
         Property prop=field.getAnnotation(Property.class);
         if(prop != null) {
             String deprecated_msg=prop.deprecatedMessage();
@@ -194,7 +196,6 @@ public abstract class Protocol {
 
     /**
      * Sets a SocketFactory. Socket factories are typically provided by the transport ({@link org.jgroups.protocols.TP})
-     * or {@link org.jgroups.protocols.TP.ProtocolAdapter}
      * @param factory
      */
     public void setSocketFactory(SocketFactory factory) {
@@ -216,7 +217,7 @@ public abstract class Protocol {
     }
 
     public Map<String,Object> dumpStats() {
-        HashMap<String,Object> map=new HashMap<>();
+        Map<String,Object> map=new TreeMap<>();
         for(Class<?> clazz=this.getClass();clazz != null;clazz=clazz.getSuperclass()) {
             Field[] fields=clazz.getDeclaredFields();
             for(Field field: fields) {
@@ -289,18 +290,18 @@ public abstract class Protocol {
     }
 
     /**
-     * This method is called on a {@link org.jgroups.Channel#connect(String)}. Starts work.
+     * This method is called on a {@link JChannel#connect(String)}. Starts work.
      * Protocols are connected and queues are ready to receive events.
      * Will be called <em>from bottom to top</em>. This call will replace
      * the <b>START</b> and <b>START_OK</b> events.
      * @exception Exception Thrown if protocol cannot be started successfully. This will cause the ProtocolStack
-     *                      to fail, so {@link org.jgroups.Channel#connect(String)} will throw an exception
+     *                      to fail, so {@link JChannel#connect(String)} will throw an exception
      */
     public void start() throws Exception {
     }
 
     /**
-     * This method is called on a {@link org.jgroups.Channel#disconnect()}. Stops work (e.g. by closing multicast socket).
+     * This method is called on a {@link JChannel#disconnect()}. Stops work (e.g. by closing multicast socket).
      * Will be called <em>from top to bottom</em>. This means that at the time of the method invocation the
      * neighbor protocol below is still working. This method will replace the
      * <b>STOP</b>, <b>STOP_OK</b>, <b>CLEANUP</b> and <b>CLEANUP_OK</b> events. The ProtocolStack guarantees that
@@ -311,7 +312,7 @@ public abstract class Protocol {
 
 
     /**
-     * This method is called on a {@link org.jgroups.Channel#close()}.
+     * This method is called on a {@link JChannel#close()}.
      * Does some cleanup; after the call the VM will terminate
      */
     public void destroy() {
@@ -372,26 +373,14 @@ public abstract class Protocol {
      * (e.g. removing headers from a MSG event type, or updating the internal membership list
      * when receiving a VIEW_CHANGE event).
      * Finally the event is either a) discarded, or b) an event is sent down
-     * the stack using <code>down_prot.down()</code> or c) the event (or another event) is sent up
-     * the stack using <code>up_prot.up()</code>.
+     * the stack using {@code down_prot.down()} or c) the event (or another event) is sent up
+     * the stack using {@code up_prot.up()}.
      */
     public Object up(Event evt) {
         return up_prot.up(evt);
     }
 
-    /**
-     * Called by the default implementation of {@link #up(org.jgroups.util.MessageBatch)} for each message to determine
-     * if the message should be removed from the message batch (and handled by the current protocol) or not.
-     * @param msg The message. Guaranteed to be non-null
-     * @return True if the message should be handled by this protocol (will be removed from the batch), false if the
-     * message should remain in the batch and be passed up.<p/>
-     * The default implementation tries to find a header matching the current protocol's ID and returns true if there
-     * is a match, or false otherwise
-     */
-    protected boolean accept(Message msg) {
-        short tmp_id=getId();
-        return tmp_id > 0 && msg.getHeader(tmp_id) != null;
-    }
+
 
 
     /**
@@ -430,15 +419,27 @@ public abstract class Protocol {
      * An event is to be sent down the stack. The layer may want to examine its type and perform
      * some action on it, depending on the event's type. If the event is a message MSG, then
      * the layer may need to add a header to it (or do nothing at all) before sending it down
-     * the stack using <code>down_prot.down()</code>. In case of a GET_ADDRESS event (which tries to
+     * the stack using {@code down_prot.down()}. In case of a GET_ADDRESS event (which tries to
      * retrieve the stack's address from one of the bottom layers), the layer may need to send
-     * a new response event back up the stack using <code>up_prot.up()</code>.
+     * a new response event back up the stack using {@code up_prot.up()}.
      */
     public Object down(Event evt) {
         return down_prot.down(evt);
     }
 
 
-
+    /**
+     * Called by the default implementation of {@link #up(org.jgroups.util.MessageBatch)} for each message to determine
+     * if the message should be removed from the message batch (and handled by the current protocol) or not.
+     * @param msg The message. Guaranteed to be non-null
+     * @return True if the message should be handled by this protocol (will be removed from the batch), false if the
+     * message should remain in the batch and be passed up.<p/>
+     * The default implementation tries to find a header matching the current protocol's ID and returns true if there
+     * is a match, or false otherwise
+     */
+    protected boolean accept(Message msg) {
+        short tmp_id=getId();
+        return tmp_id > 0 && msg.getHeader(tmp_id) != null;
+    }
 
 }

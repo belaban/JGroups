@@ -48,11 +48,11 @@ public class ConcurrentCloseTest extends ChannelTestBase {
 
 
     private static class Closer extends Thread {
-        private final Channel channel;
+        private final JChannel channel;
         final private CyclicBarrier barrier;
 
 
-        public Closer(Channel channel, CyclicBarrier barrier) {
+        public Closer(JChannel channel, CyclicBarrier barrier) {
             this.channel=channel;
             this.barrier=barrier;
         }

@@ -15,7 +15,7 @@ import java.util.List;
 public class DeliveryThread extends Thread {
     private DeliveryManager  deliveryManager;
     private volatile boolean running = false;
-    private DeliveryProtocol deliveryProtocol;
+    private final DeliveryProtocol deliveryProtocol;
 
     private final Log log = LogFactory.getLog(this.getClass());
 
@@ -55,7 +55,7 @@ public class DeliveryThread extends Thread {
                     try {
                         deliveryProtocol.deliver(msg);
                     } catch(Throwable t) {
-                        log.warn("Exception caught while delivering message " + msg + ":" + t.getMessage());
+                        log.warn("Exception caught while delivering message " + msg, t);
                     }
                 }
             } catch (InterruptedException e) {

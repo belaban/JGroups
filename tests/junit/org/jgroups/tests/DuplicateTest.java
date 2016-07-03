@@ -3,7 +3,6 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.DUPL;
-import org.jgroups.protocols.UNICAST2;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
@@ -136,11 +135,11 @@ public class DuplicateTest extends ChannelTestBase {
     }
 
 
-     private static void send(Channel sender_channel, Address dest, boolean oob, int num_msgs) throws Exception {
+     private static void send(JChannel sender_channel, Address dest, boolean oob, int num_msgs) throws Exception {
          send(sender_channel, dest, oob, false, num_msgs);
      }
 
-     private static void send(Channel sender_channel, Address dest, boolean oob, boolean mixed, int num_msgs) throws Exception {
+     private static void send(JChannel sender_channel, Address dest, boolean oob, boolean mixed, int num_msgs) throws Exception {
          long seqno=1;
          for(int i=0; i < num_msgs; i++) {
              Message msg=new Message(dest, null, seqno++);
@@ -176,20 +175,12 @@ public class DuplicateTest extends ChannelTestBase {
     }
 
 
-    private static void sendUnicastStableMessages(JChannel ... channels) {
-        for(JChannel ch: channels) {
-            UNICAST2 unicast=(UNICAST2)ch.getProtocolStack().findProtocol(UNICAST2.class);
-            if(unicast != null)
-                unicast.sendStableMessages();
-        }
-    }
-
 
     private void createChannels(boolean copy_multicasts, boolean copy_unicasts, int num_outgoing_copies, int num_incoming_copies) throws Exception {
         a=createChannel(true, 3, "A");
         DUPL dupl=new DUPL(copy_multicasts, copy_unicasts, num_incoming_copies, num_outgoing_copies);
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(dupl,ProtocolStack.BELOW,NAKACK2.class);
+        stack.insertProtocol(dupl,ProtocolStack.Position.BELOW,NAKACK2.class);
 
         b=createChannel(a, "B");
         c=createChannel(a, "C");

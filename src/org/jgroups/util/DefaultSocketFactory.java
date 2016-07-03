@@ -2,6 +2,7 @@ package org.jgroups.util;
 
 import java.io.IOException;
 import java.net.*;
+import java.nio.channels.ServerSocketChannel;
 import java.util.Map;
 
 /**
@@ -44,6 +45,23 @@ public class DefaultSocketFactory implements SocketFactory {
 
     public ServerSocket createServerSocket(String service_name, int port, int backlog, InetAddress bindAddr) throws IOException {
         return new ServerSocket(port, backlog, bindAddr);
+    }
+
+    @SuppressWarnings("UnusedParameters")
+    public ServerSocketChannel createServerSocketChannel(String service_name) throws IOException {
+        return ServerSocketChannel.open();
+    }
+
+    public ServerSocketChannel createServerSocketChannel(String service_name, int port) throws IOException {
+        return createServerSocketChannel(service_name).bind(new InetSocketAddress(port));
+    }
+
+    public ServerSocketChannel createServerSocketChannel(String service_name, int port, int backlog) throws IOException {
+        return createServerSocketChannel(service_name).bind(new InetSocketAddress(port), backlog);
+    }
+
+    public ServerSocketChannel createServerSocketChannel(String service_name, int port, int backlog, InetAddress bindAddr) throws IOException {
+        return createServerSocketChannel(service_name).bind(new InetSocketAddress(bindAddr, port), backlog);
     }
 
     public DatagramSocket createDatagramSocket(String service_name) throws SocketException {

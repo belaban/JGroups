@@ -91,7 +91,6 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
         return new View(new ViewId(coord, id), members);
     }
 
-    @Deprecated public ViewId getVid()    {return view_id;}
 
     /**
      * Returns the view ID of this view
@@ -105,9 +104,9 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
      * if this view was created with the empty constructur, null will be returned
      * @return the creator of this view in form of an Address object
      */
-    public Address getCreator() {
-        return view_id.getCreator();
-    }
+    public Address getCreator() {return view_id.getCreator();}
+
+    public Address getCoord() {return members.length > 0? members[0] : null;}
 
     /**
      * Returns the member list
@@ -133,9 +132,20 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
         if(mbr == null || members == null)
             return false;
         for(Address member: members)
-            if(member != null && member.equals(mbr))
+            if(Objects.equals(member, mbr))
                 return true;
         return false;
+    }
+
+    /** Returns true if all mbrs are elements of this view, false otherwise */
+    public boolean containsMembers(Address ... mbrs) {
+        if(mbrs == null || members == null)
+            return false;
+        for(Address mbr: mbrs) {
+            if(!containsMember(mbr))
+                return false;
+        }
+        return true;
     }
 
 
@@ -164,14 +174,6 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
         return members.length;
     }
 
-    /**
-     * Creates a copy of a view
-     * @return
-     * @deprecated View is immutable, so copy() is unnecessary
-     */
-    @Deprecated public View copy() {
-        return this;
-    }
 
 
     public String toString() {
@@ -206,7 +208,6 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
      * Returns a list of members which left from view one to two
      * @param one
      * @param two
-     * @return
      */
     public static List<Address> leftMembers(View one, View two) {
         if(one == null || two == null)

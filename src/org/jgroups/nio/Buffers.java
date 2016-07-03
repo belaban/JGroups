@@ -153,7 +153,7 @@ public class Buffers implements Iterable<ByteBuffer> {
      * {@link ByteBuffer#clear()} has to be called (all buffers have their position == limit on a successfull read).
      */
     public boolean read(SocketChannel ch) throws Exception {
-        long bytes=ch.read(bufs, position, limit);
+        long bytes=ch.read(bufs, position, limit-position);
         if(bytes == -1)
             throw new EOFException();
         return adjustPosition(false);

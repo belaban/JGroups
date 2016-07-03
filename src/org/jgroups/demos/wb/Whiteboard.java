@@ -19,9 +19,9 @@ import java.io.OutputStream;
  * be sent to specific or all members. Whiteboard is both an application and an applet.
  * @author Bela Ban
  */
-public class Whiteboard extends Applet implements MessageListener, MembershipListener, ActionListener, ComponentListener, FocusListener {
+public class Whiteboard extends Applet implements MembershipListener, ActionListener, ComponentListener, FocusListener {
     public RpcDispatcher           disp;
-    Channel                        channel;
+    JChannel channel;
     GraphPanel                     panel;
     private Button                 leave_button;
     private Label                  mbr_label;
@@ -32,9 +32,6 @@ public class Whiteboard extends Applet implements MessageListener, MembershipLis
     Log                            log=LogFactory.getLog(getClass());
 
 
-    public void receive(Message m) {
-        ;
-    }
 
     
 
@@ -46,7 +43,7 @@ public class Whiteboard extends Applet implements MessageListener, MembershipLis
         panel.setState(istream);
     }
 
-    private String getInfo() {
+    private static String getInfo() {
         StringBuilder ret = new StringBuilder();
         ret.append(" (" + System.getProperty("os.name") + ' ' + System.getProperty("os.version") +
                    ' ' + System.getProperty("os.arch") + ')');
@@ -100,7 +97,7 @@ public class Whiteboard extends Applet implements MessageListener, MembershipLis
 
         try {
             channel = new JChannel(props);
-            disp = new RpcDispatcher(channel, this, this, this);
+            disp =(RpcDispatcher)new RpcDispatcher(channel, this).setMembershipListener(this);
             channel.connect(groupname);
             channel.getState(null, 0);
         } catch (Exception e) {
@@ -166,11 +163,10 @@ public class Whiteboard extends Applet implements MessageListener, MembershipLis
 
 
     public void viewAccepted(View v) {
-        if (v != null) {
-            if (mbr_label != null)
-                mbr_label.setText(v.size() + " mbr(s)");
-        }
-        panel.adjustNodes(v.getMembers());
+        if(v != null && mbr_label != null)
+            mbr_label.setText(v.size() + " mbr(s)");
+        if(panel != null)
+            panel.adjustNodes(v.getMembers());
     }
 
     public void suspect(Address obj) {

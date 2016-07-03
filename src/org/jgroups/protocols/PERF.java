@@ -37,7 +37,7 @@ public class PERF extends Protocol {
 
     public void init() throws Exception {
         super.init();
-        avg=new Average(avg_size);
+        avg=new Average();
     }
 
     public void resetStats() {

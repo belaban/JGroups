@@ -1,7 +1,9 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Global;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.util.Bits;
 import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Util;
@@ -9,8 +11,8 @@ import org.jgroups.util.Util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  * Encapsulates information about a cluster node, e.g. local address, coordinator's address, logical name and
@@ -36,28 +38,11 @@ public class PingData implements SizeStreamable {
         server(is_server);
     }
 
-    /** @deprecated Use the constructor wityh a single PhysicalAddress instead */
-    @Deprecated
-    public PingData(Address sender, View view, boolean is_server,
-                    String logical_name, Collection<PhysicalAddress> physical_addrs) {
-        this(sender, is_server);
-        this.logical_name=logical_name;
-        if(physical_addrs != null && !physical_addrs.isEmpty())
-            this.physical_addr=physical_addrs.iterator().next();
-    }
 
     public PingData(Address sender, boolean is_server, String logical_name, PhysicalAddress physical_addr) {
         this(sender, is_server);
         this.logical_name=logical_name;
         this.physical_addr=physical_addr;
-    }
-
-
-    /** @deprecated Use the constructor with a single PhysicalAddress instead */
-    @Deprecated
-    public PingData(Address sender, View view, ViewId view_id, boolean is_server,
-                    String logical_name, Collection<PhysicalAddress> physical_addrs) {
-        this(sender, is_server, logical_name, (physical_addrs == null || physical_addrs.isEmpty())? null : physical_addrs.iterator().next());
     }
 
 
@@ -95,8 +80,6 @@ public class PingData implements SizeStreamable {
         return logical_name;
     }
 
-    @Deprecated
-    public Collection<PhysicalAddress>   getPhysicalAddrs()                       {return Arrays.asList(physical_addr);}
     public PhysicalAddress               getPhysicalAddr()                        {return physical_addr;}
     public PingData                      mbrs(Collection<? extends Address> mbrs) {this.mbrs=mbrs; return this;}
     public Collection<? extends Address> mbrs()                                   {return mbrs;}
@@ -106,7 +89,7 @@ public class PingData implements SizeStreamable {
         if(!(obj instanceof PingData))
             return false;
         PingData other=(PingData)obj;
-        return sender != null && sender.equals(other.sender);
+        return Objects.equals(sender, other.sender);
     }
 
     public int hashCode() {

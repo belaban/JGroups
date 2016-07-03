@@ -35,19 +35,6 @@ public abstract class Discovery extends Protocol {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
-    @Deprecated
-    @Property(description="Timeout to wait for the initial members",deprecatedMessage="GMS.join_timeout should be used instead")
-    protected long                       timeout=3000;
-
-    @Deprecated
-    @Property(description="Minimum number of initial members to get a response from",deprecatedMessage="will be ignored")
-    protected int                        num_initial_members=10;
-
-    @Deprecated
-    @Property(description="Minimum number of server responses (PingData.isServer()=true). If this value is " +
-            "greater than 0, we'll ignore num_initial_members",deprecatedMessage="not used anymore")
-    protected int                        num_initial_srv_members;
-
     @Property(description="Return from the discovery phase as soon as we have 1 coordinator response")
     protected boolean                    break_on_coord_rsp=true;
 
@@ -67,11 +54,6 @@ public abstract class Discovery extends Protocol {
     @Property(description="If a persistent disk cache (PDC) is present, combine the discovery results with the " +
       "contents of the disk cache before returning the results")
     protected boolean                    use_disk_cache=false;
-
-    @Deprecated
-    @Property(description="When sending a discovery request, always send the physical address and logical name too",
-    deprecatedMessage="ignored")
-    protected boolean                    always_send_physical_addr_with_discovery_request=true;
 
     @Property(description="Max size of the member list shipped with a discovery request. If we have more, the " +
       "mbrs field in the discovery request header is nulled and members return the entire membership, " +
@@ -146,19 +128,7 @@ public abstract class Discovery extends Protocol {
 
     }
 
-    public long      getTimeout()                       {return timeout;}
-    public void      setTimeout(long timeout)           {this.timeout=timeout;}
-    @Deprecated
-    public int       getNumInitialMembers()             {return -1;}
-    @Deprecated
-    public void      setNumInitialMembers(int num)      {}
     public int       getNumberOfDiscoveryRequestsSent() {return num_discovery_requests;}
-    public long      timeout()                          {return timeout;}
-    public Discovery timeout(long timeout)              {this.timeout=timeout; return this;}
-    @Deprecated
-    public long      numInitialMembers()                {return -1;}
-    @Deprecated
-    public Discovery numInitialMembers(int num)         {return this;}
     public boolean   breakOnCoordResponse()             {return break_on_coord_rsp;}
     public Discovery breakOnCoordResponse(boolean flag) {break_on_coord_rsp=flag; return this;}
     public boolean   returnEntireCache()                {return return_entire_cache;}
@@ -235,11 +205,8 @@ public abstract class Discovery extends Protocol {
         synchronized(ping_responses) {
             ping_responses.put(System.nanoTime(), rsps);
         }
-        if(async || async_discovery) {
-            timer.execute(new Runnable() {
-                public void run() {findMembers(members, initial_discovery, rsps);}
-            });
-        }
+        if(async || async_discovery)
+            timer.execute(() -> findMembers(members, initial_discovery, rsps));
         else
             findMembers(members, initial_discovery, rsps);
         weedOutCompletedDiscoveryResponses();
@@ -373,7 +340,7 @@ public abstract class Discovery extends Protocol {
         // add physical address (if available) to transport's cache
         Address logical_addr=data.getAddress() != null? data.getAddress() : sender;
         addDiscoveryResponseToCaches(logical_addr, data.getLogicalName(), data.getPhysicalAddr());
-        boolean overwrite=logical_addr != null && logical_addr.equals(sender);
+        boolean overwrite=Objects.equals(logical_addr, sender);
         addResponse(data, overwrite);
     }
 
@@ -501,7 +468,7 @@ public abstract class Discovery extends Protocol {
                 out.write(phys_addr.toString().getBytes());
                 out.write(WHITESPACE);
 
-                out.write(data.isCoord()? "T\n".getBytes() : "F\n".getBytes());
+                out.write(data.isCoord()? String.format("T%n").getBytes() : String.format("F%n").getBytes());
             }
         }
         finally {
@@ -601,11 +568,9 @@ public abstract class Discovery extends Protocol {
             int rank=Util.getRank(view, local_addr); // returns 0 if view or local_addr are null
             long sleep_time=rank == 0? Util.random(stagger_timeout)
               : stagger_timeout * rank / view_size - (stagger_timeout / view_size);
-            timer.schedule(new Runnable() {
-                public void run() {
-                    log.trace("%s: received GET_MBRS_REQ from %s, sending staggered response %s", local_addr, sender, data);
-                    down_prot.down(new Event(Event.MSG, rsp_msg));
-                }
+            timer.schedule((Runnable)() -> {
+                log.trace("%s: received GET_MBRS_REQ from %s, sending staggered response %s", local_addr, sender, data);
+                down_prot.down(new Event(Event.MSG, rsp_msg));
             }, sleep_time, TimeUnit.MILLISECONDS);
             return;
         }
@@ -639,7 +604,7 @@ public abstract class Discovery extends Protocol {
             current_mbrs.removeAll(left_mbrs);
 
         // 1. Send information about <everyone - self - left_mbrs> to new_mbrs
-        Set<Address> info=new HashSet<Address>(current_mbrs);
+        Set<Address> info=new HashSet<>(current_mbrs);
         for(Address addr : info) {
             PhysicalAddress phys_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS,addr));
             if(phys_addr == null)
@@ -650,7 +615,7 @@ public abstract class Discovery extends Protocol {
         }
 
         // 2. Send information about new_mbrs to <everyone - self - left_mbrs - new_mbrs>
-        Set<Address> targets=new HashSet<Address>(current_mbrs);
+        Set<Address> targets=new HashSet<>(current_mbrs);
         targets.removeAll(new_mbrs);
 
         if(!targets.isEmpty()) {

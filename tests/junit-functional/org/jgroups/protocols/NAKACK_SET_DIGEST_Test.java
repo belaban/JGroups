@@ -2,10 +2,15 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.util.*;
+import org.jgroups.util.Digest;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.TimeScheduler3;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.concurrent.TimeoutException;
 
 /**
  * Tests setting of digest NAKACK.down(SET_DIGEST), JIRA issue is https://jira.jboss.org/jira/browse/JGRP-1060
@@ -34,12 +39,12 @@ public class NAKACK_SET_DIGEST_Test {
 
         TP transport=new TP() {
             public boolean supportsMulticasting() {return false;}
-            public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {}
+            public void sendMulticast(byte[] data, int offset, int length) throws Exception {}
             public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
             public String getInfo() {return null;}
             public Object down(Event evt) {return null;}
             protected PhysicalAddress getPhysicalAddress() {return null;}
-            public TimeScheduler getTimer() {return new DefaultTimeScheduler(1);}
+            public TimeScheduler getTimer() {return new TimeScheduler3();}
         };
         transport.setId(TP_ID);
         nak.setDownProtocol(transport);

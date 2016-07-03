@@ -66,7 +66,7 @@ abstract public class Locking extends Protocol {
     
 
 
-    protected static enum Type {
+    protected enum Type {
         GRANT_LOCK,        // request to acquire a lock
         LOCK_GRANTED,      // response to sender of GRANT_LOCK on succcessful lock acquisition
         LOCK_DENIED,       // response to sender of GRANT_LOCK on unsuccessful lock acquisition (e.g. on tryLock())
@@ -219,7 +219,14 @@ abstract public class Locking extends Protocol {
                 if(hdr == null)
                     break;
 
-                Request req=(Request)msg.getObject();
+                Request req=null;
+                try {
+                    req=Util.streamableFromBuffer(Request.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                }
+                catch(Exception ex) {
+                    log.error("failed deserializng request", ex);
+                    return null;
+                }
                 log.trace("[%s] <-- [%s] %s", local_addr, msg.getSrc(), req);
                 switch(req.type) {
                     case GRANT_LOCK:
@@ -363,8 +370,7 @@ abstract public class Locking extends Protocol {
     }
 
     protected void send(Address dest, Request req) {
-       // Message msg=new Message(dest, req).putHeader(id, new LockingHeader()).setFlag(Message.Flag.OOB);
-        Message msg=new Message(dest, req).putHeader(id, new LockingHeader());
+        Message msg=new Message(dest, Util.streamableToBuffer(req)).putHeader(id, new LockingHeader());
         if(bypass_bundling)
             msg.setFlag(Message.Flag.DONT_BUNDLE);
         log.trace("[%s] --> %s] %s", local_addr, dest == null? "ALL" : dest, req);
@@ -1054,33 +1060,23 @@ abstract public class Locking extends Protocol {
             Map<Owner,ClientLock> owners=table.get(lock_name);
             if(owners != null) {
                 ClientLock lock=owners.remove(owner);
-                if(lock != null) {
-                    if(owners.isEmpty())
-                        table.remove(lock_name);
-                }
+                if(lock != null && owners.isEmpty())
+                    table.remove(lock_name);
             }
         }
 
         protected void unlockAll() {
             List<ClientLock> lock_list=new ArrayList<>();
             synchronized(this) {
-                Collection<Map<Owner,ClientLock>> maps=table.values();
-                for(Map<Owner,ClientLock> map: maps)
-                    lock_list.addAll(map.values());
+                table.values().forEach(map -> lock_list.addAll(map.values()));
             }
-            for(ClientLock lock: lock_list)
-                lock.unlock();
+            lock_list.forEach(ClientLock::unlock);
         }
 
         protected void resendPendingLockRequests() {
-            if(!table.isEmpty()) {
-                for(Map<Owner,ClientLock> map: table.values()) {
-                    for(ClientLock lock: map.values()) {
-                        if(!lock.acquired && !lock.denied)
-                            sendGrantLockRequest(lock.name, lock.lock_id, lock.owner, lock.timeout, lock.is_trylock);
-                    }
-                }
-            }
+            if(!table.isEmpty())
+                table.values().forEach(map -> map.values().stream().filter(lock -> !lock.acquired && !lock.denied)
+                  .forEach(lock -> sendGrantLockRequest(lock.name, lock.lock_id, lock.owner, lock.timeout, lock.is_trylock)));
         }
 
         protected synchronized Collection<Map<Owner,ClientLock>> values() {
@@ -1196,16 +1192,11 @@ abstract public class Locking extends Protocol {
 
         @Override
         public boolean awaitUntil(Date deadline) throws InterruptedException {
-            long waitUntilTime = deadline.getTime();
-            long currentTime = System.currentTimeMillis();
-            
-            long waitTime = waitUntilTime - currentTime;
-            if (waitTime > 0) {
-                return await(waitTime, TimeUnit.MILLISECONDS);
-            }
-            else {
-                return false;
-            }
+            long waitUntilTime=deadline.getTime();
+            long currentTime=System.currentTimeMillis();
+
+            long waitTime=waitUntilTime - currentTime;
+            return waitTime > 0 && await(waitTime, TimeUnit.MILLISECONDS);
         }
         
         protected void await(boolean throwInterrupt) throws InterruptedException {

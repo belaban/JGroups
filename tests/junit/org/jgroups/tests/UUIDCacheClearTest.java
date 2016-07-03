@@ -2,7 +2,6 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.protocols.UNICAST2;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -64,7 +63,6 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             for(int i=0; i < 10; i++) { // poor man's way of waiting until we have 1 message in each receiver... :-)
                 if(!c1_list.isEmpty() && !c2_list.isEmpty())
                     break;
-                stable(a, b);
                 Util.sleep(1000);
             }
 
@@ -92,13 +90,6 @@ public class UUIDCacheClearTest extends ChannelTestBase {
         }
     }
 
-    protected static void stable(JChannel... channels) {
-        for(JChannel ch: channels) {
-            UNICAST2 unicast2=(UNICAST2)ch.getProtocolStack().findProtocol(UNICAST2.class);
-            if(unicast2 != null)
-                unicast2.sendStableMessages();
-        }
-    }
 
     private static void printCaches(JChannel ... channels) {
         System.out.println("caches:\n");

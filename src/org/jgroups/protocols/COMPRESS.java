@@ -63,15 +63,13 @@ public class COMPRESS extends Protocol {
     }
 
     public void destroy() {
-        for(Deflater deflater: deflater_pool)
-            deflater.end();
-        for(Inflater inflater: inflater_pool)
-            inflater.end();
+        deflater_pool.forEach(Deflater::end);
+        inflater_pool.forEach(Inflater::end);
     }   
 
 
     /**
-     * We compress the payload if it is larger than <code>min_size</code>. In this case we add a header containing
+     * We compress the payload if it is larger than {@code min_size}. In this case we add a header containing
      * the original size before compression. Otherwise we add no header.<br/>
      * Note that we compress either the entire buffer (if offset/length are not used), or a subset (if offset/length
      * are used)
@@ -94,17 +92,16 @@ public class COMPRESS extends Protocol {
                     int compressed_size=deflater.getTotalOut();
 
                     if(compressed_size < length ) { // JGRP-1000
-                        byte[] new_payload=new byte[compressed_size];
-                        System.arraycopy(compressed_payload,0,new_payload,0,compressed_size);
-                        Message copy=msg.copy(false).setBuffer(new_payload).putHeader(this.id,new CompressHeader(length));
+                        Message copy=msg.copy(false).putHeader(this.id,new CompressHeader(length))
+                          .setBuffer(compressed_payload, 0, compressed_size);
                         if(log.isTraceEnabled())
-                            log.trace("down(): compressed payload from " + length + " bytes to " + compressed_size + " bytes");
+                            log.trace("compressed payload from %d bytes to %d bytes", length, compressed_size);
                         return down_prot.down(new Event(Event.MSG, copy));
                     }
                     else {
                         if(log.isTraceEnabled())
-                            log.trace("down(): skipping compression since the compressed message (" + compressed_size +
-                                        ") is not smaller than the original (" + length + ")");
+                            log.trace("skipping compression since the compressed message (%d) is not " +
+                                        "smaller than the original (%d)", compressed_size, length);
                     }
                 }
                 catch(InterruptedException e) {
@@ -134,7 +131,7 @@ public class COMPRESS extends Protocol {
                 Message uncompressed_msg=uncompress(msg, hdr.original_size);
                 if(uncompressed_msg != null) {
                     if(log.isTraceEnabled())
-                        log.trace("up(): uncompressed " + msg.getLength() + " bytes to " + uncompressed_msg.getLength() + " bytes");
+                        log.trace("uncompressed %d bytes to %d bytes", msg.getLength(), uncompressed_msg.getLength());
                     return up_prot.up(new Event(Event.MSG, uncompressed_msg));
                 }
             }
@@ -149,7 +146,7 @@ public class COMPRESS extends Protocol {
                 Message uncompressed_msg=uncompress(msg, hdr.original_size);
                 if(uncompressed_msg != null) {
                     if(log.isTraceEnabled())
-                        log.trace("up(): uncompressed " + msg.getLength() + " bytes to " + uncompressed_msg.getLength() + " bytes");
+                        log.trace("uncompressed %d bytes to %d bytes", msg.getLength(), uncompressed_msg.getLength());
                     batch.replace(msg, uncompressed_msg); // replace msg in batch with uncompressed_msg
                 }
             }

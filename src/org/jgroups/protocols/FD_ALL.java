@@ -318,8 +318,7 @@ public class FD_ALL extends Protocol {
             timestamps.keySet().retainAll(mbrs);
         }
 
-        for(Address member: mbrs) // JGRP-1856
-            addIfAbsent(member);
+        mbrs.forEach(this::addIfAbsent);
 
         if(mbrs.size() > 1) {
             startHeartbeatSender();

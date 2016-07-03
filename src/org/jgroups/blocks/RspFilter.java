@@ -14,7 +14,7 @@ public interface RspFilter {
 
     /**
      * Determines whether a response from a given sender should be added to the response list of the request
-     * @param response The response (usually a serializable value)
+     * @param response The response (usually a serializable value), may also be a Throwable
      * @param sender The sender of response
      * @return True if we should add the response to the response list ({@link org.jgroups.util.RspList}) of a request,
      * otherwise false. In the latter case, we don't add the response to the response list.

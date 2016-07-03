@@ -11,6 +11,7 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.Buffer;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
@@ -46,7 +47,7 @@ public class DynamicDiscardTest {
                                         .setValue("throw_exception_on_timeout", false));
             channels[i].setName(Character.toString((char) ('A' + i)));
             channels[i].setDiscardOwnMessages(true);
-            dispatchers[i]=new MessageDispatcher(channels[i], null, null, new MyRequestHandler());
+            dispatchers[i]=new MessageDispatcher(channels[i], new MyRequestHandler());
             channels[i].connect("DynamicDiscardTest");
             System.out.print(i + 1 + " ");
         }
@@ -54,15 +55,15 @@ public class DynamicDiscardTest {
 
         // discard all messages (except those to self)
         DISCARD discard = new DISCARD();
-        channels[0].getProtocolStack().insertProtocol(discard, ProtocolStack.ABOVE, TP.class);
+        channels[0].getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
         discard.setDiscardAll(true);
 
         // send a RSVP message
-        Message msg = new Message(null, "message2");
-        msg.setFlag(Message.Flag.RSVP, Message.Flag.OOB);
-        RspList<Object> rsps = dispatchers[0].castMessage(null, msg, RequestOptions.SYNC().setTimeout(5000));
-
-        Rsp<Object> objectRsp = rsps.get(channels[1].getAddress());
+        byte[] data="message2".getBytes();
+        Buffer buf=new Buffer(data, 0, data.length);
+        RspList<Object> rsps=dispatchers[0].castMessage(null, buf, RequestOptions.SYNC().timeout(5000)
+          .flags(Message.Flag.RSVP, Message.Flag.OOB));
+        Rsp<Object> objectRsp=rsps.get(channels[1].getAddress());
         assertFalse(objectRsp.wasReceived());
         assertTrue(objectRsp.wasSuspected());
     }

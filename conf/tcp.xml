@@ -9,11 +9,9 @@
         xmlns="urn:org:jgroups"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
     <TCP bind_port="7800"
-         recv_buf_size="${tcp.recv_buf_size:5M}"
-         send_buf_size="${tcp.send_buf_size:5M}"
+         recv_buf_size="${tcp.recv_buf_size:130k}"
+         send_buf_size="${tcp.send_buf_size:130k}"
          max_bundle_size="64K"
-         max_bundle_timeout="30"
-         use_send_queues="true"
          sock_conn_timeout="300"
 
          timer_type="new3"
@@ -22,7 +20,6 @@
          timer.keep_alive_time="3000"
          timer.queue_max_size="500"
          
-         thread_pool.enabled="true"
          thread_pool.min_threads="2"
          thread_pool.max_threads="8"
          thread_pool.keep_alive_time="5000"
@@ -30,7 +27,6 @@
          thread_pool.queue_max_size="10000"
          thread_pool.rejection_policy="discard"
 
-         oob_thread_pool.enabled="true"
          oob_thread_pool.min_threads="1"
          oob_thread_pool.max_threads="8"
          oob_thread_pool.keep_alive_time="5000"

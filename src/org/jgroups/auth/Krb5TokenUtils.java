@@ -68,19 +68,17 @@ public class Krb5TokenUtils {
 
         // The GSS context initiation has to be performed as a privileged action.
         return Subject.doAs(subject,
-                            new PrivilegedAction<byte[]>() {
-                                public byte[] run() {
-                                    try {
-                                        byte[] token = new byte[0];
-                                        // This is a one pass context initialization.
-                                        context.requestMutualAuth(false);
-                                        context.requestCredDeleg(false);
-                                        return context.initSecContext(token, 0,
-                                                                      token.length);
-                                    } catch (GSSException e) {
-                                        log.error(Util.getMessage("Krb5TokenKerberosContextProcessingException"),e);
-                                        return null;
-                                    }
+                            (PrivilegedAction<byte[]>)() -> {
+                                try {
+                                    byte[] token = new byte[0];
+                                    // This is a one pass context initialization.
+                                    context.requestMutualAuth(false);
+                                    context.requestCredDeleg(false);
+                                    return context.initSecContext(token, 0,
+                                                                  token.length);
+                                } catch (GSSException e) {
+                                    log.error(Util.getMessage("Krb5TokenKerberosContextProcessingException"),e);
+                                    return null;
                                 }
                             });
     }
@@ -89,19 +87,17 @@ public class Krb5TokenUtils {
     public static String validateSecurityContext(Subject subject, final byte[] serviceTicket) throws GSSException {
 
         // Accept the context and return the client principal name.
-        return Subject.doAs(subject, new PrivilegedAction<String>() {
-            public String run() {
-                try {
-                    // Identify the server that communications are being made
-                    // to.
-                    GSSManager manager = GSSManager.getInstance();
-                    GSSContext context = manager.createContext((GSSCredential) null);
-                    context.acceptSecContext(serviceTicket, 0, serviceTicket.length);
-                    return context.getSrcName().toString();
-                } catch (Exception e) {
-                    log.error(Util.getMessage("Krb5TokenKerberosContextProcessingException"),e);
-                    return null;
-                }
+        return Subject.doAs(subject, (PrivilegedAction<String>)() -> {
+            try {
+                // Identify the server that communications are being made
+                // to.
+                GSSManager manager = GSSManager.getInstance();
+                GSSContext context = manager.createContext((GSSCredential) null);
+                context.acceptSecContext(serviceTicket, 0, serviceTicket.length);
+                return context.getSrcName().toString();
+            } catch (Exception e) {
+                log.error(Util.getMessage("Krb5TokenKerberosContextProcessingException"),e);
+                return null;
             }
         });
     }

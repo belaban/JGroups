@@ -1,8 +1,7 @@
 
 package org.jgroups;
 
-import java.io.InputStream;
-import java.io.OutputStream;
+import org.jgroups.util.MessageBatch;
 
 /**
  * MessageListener allows a listener to be notified when a {@link Message} or a state transfer
@@ -19,41 +18,19 @@ import java.io.OutputStream;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  */
-public interface MessageListener {
+public interface MessageListener extends StateListener {
 
    /**
     * Called when a message is received.
-    * 
     * @param msg
     */
-    void          receive(Message msg);
+    void receive(Message msg);
 
-
-   /**
-    * Allows an application to write a state through a provided OutputStream. After the state has
-    * been written the OutputStream doesn't need to be closed as stream closing is automatically
-    * done when a calling thread returns from this callback.
-    * 
-    * @param output
-    *           the OutputStream
-    * @throws Exception
-    *            if the streaming fails, any exceptions should be thrown so that the state requester
-    *            can re-throw them and let the caller know what happened
-    * @see java.io.OutputStream#close()
-    */
-    void getState(OutputStream output) throws Exception;
-
-   /**
-    * Allows an application to read a state through a provided InputStream. After the state has been
-    * read the InputStream doesn't need to be closed as stream closing is automatically done when a
-    * calling thread returns from this callback.
-    * 
-    * @param input
-    *           the InputStream
-    * @throws Exception
-    *            if the streaming fails, any exceptions should be thrown so that the state requester
-    *            can catch them and thus know what happened
-    * @see java.io.InputStream#close()
-    */
-    void setState(InputStream input) throws Exception;
+    /** Called when a batch of messages is received */
+    default void receive(MessageBatch batch) {
+        for(Message msg: batch) {
+            try {receive(msg);}
+            catch(Throwable t) {}
+        }
+    }
 }

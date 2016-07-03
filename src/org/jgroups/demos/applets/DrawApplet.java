@@ -30,7 +30,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
     private Label mbr_label;
     private final Font default_font=new Font("Helvetica", Font.PLAIN, 12);
     private static final String groupname="DrawGroup";
-    private Channel channel=null;
+    private JChannel channel=null;
     private int member_size=1;
     private int red=0, green=0, blue=0;
     private Color default_color=null;
@@ -134,9 +134,9 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
 
 
     private void selectColor() {
-        red=Math.abs(random.nextInt()) % 255;
-        green=Math.abs(random.nextInt()) % 255;
-        blue=Math.abs(random.nextInt()) % 255;
+        red=Math.abs(random.nextInt() % 255);
+        green=Math.abs(random.nextInt() % 255);
+        blue=Math.abs(random.nextInt() % 255);
         default_color=new Color(red, green, blue);
     }
 
@@ -182,12 +182,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
     }
 
     public void mouseDragged(MouseEvent e) {
-        int tmp[]=new int[1], x, y;
-
-        tmp[0]=0;
-        x=e.getX();
-        y=e.getY();
-
+        int x=e.getX(), y=e.getY();
         graphics.fillOval(x, y, 10, 10);
 
         try {
@@ -220,11 +215,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
 
 
     public void sendClearPanelMsg() {
-        int tmp[]=new int[1];
-        tmp[0]=0;
-
         clearPanel();
-
         try {
             out.reset();
             outstream=new DataOutputStream(out);

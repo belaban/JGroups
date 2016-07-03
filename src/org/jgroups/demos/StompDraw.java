@@ -86,9 +86,9 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
 
 
     private Color selectColor() {
-        int red=Math.abs(random.nextInt()) % 255;
-        int green=Math.abs(random.nextInt()) % 255;
-        int blue=Math.abs(random.nextInt()) % 255;
+        int red=Math.abs(random.nextInt() % 255);
+        int green=Math.abs(random.nextInt() % 255);
+        int blue=Math.abs(random.nextInt() % 255);
         return new Color(red, green, blue);
     }
 
@@ -197,7 +197,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
         if(buf == null)
             return;
         String destination=headers.get("destination");
-        if(destination != null && destination.equals(clients_dest)) {
+        if(Objects.equals(destination, clients_dest)) {
             String new_client=headers.get("client-joined");
             if(new_client != null) {
                 synchronized(clients) {

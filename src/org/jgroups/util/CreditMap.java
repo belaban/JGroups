@@ -23,7 +23,7 @@ public class CreditMap {
     protected final Lock              lock=new ReentrantLock();
     protected final Condition         credits_available=lock.newCondition();
     protected int                     num_blockings;
-    protected final Average           avg_block_time=new Average(50); // in ns
+    protected final Average           avg_block_time=new Average(); // in ns
 
 
     public CreditMap(long max_credits) {
@@ -93,10 +93,8 @@ public class CreditMap {
         try {
             if(credit_needed > min_credits) {
                 flushAccumulatedCredits();
-                for(Map.Entry<Address,Long> entry: credits.entrySet()) {
-                    if(entry.getValue() < credit_needed)
-                        retval.add(entry.getKey());
-                }
+                credits.entrySet().stream().filter(entry -> entry.getValue() < credit_needed)
+                  .forEach(entry -> retval.add(entry.getKey()));
             }
             return retval;
         }
@@ -112,10 +110,9 @@ public class CreditMap {
         lock.lock();
         try {
             flushAccumulatedCredits();
-            for(Map.Entry<Address,Long> entry: credits.entrySet()) {
-                if(entry.getValue() <= min_credits )
-                    retval.add(new Tuple<>(entry.getKey(), entry.getValue()));
-            }
+            credits.entrySet().stream().filter(entry -> entry.getValue() <= min_credits)
+              .forEach(entry -> retval.add(new Tuple<>(entry.getKey(), entry.getValue())));
+
             return retval;
         }
         finally {

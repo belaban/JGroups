@@ -3,7 +3,6 @@ package org.jgroups.tests;
 
 
 import org.jgroups.Global;
-import org.jgroups.TimeoutException;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
@@ -12,6 +11,7 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 
 /**
@@ -72,9 +72,9 @@ public class QueueTest {
     @Test(expectedExceptions=QueueClosedException.class)
     public static void testCloseWithFlush2() throws QueueClosedException {
         final Queue queue=new Queue();
-        queue.add(new Integer(1));
-        queue.add(new Integer(2));
-        queue.add(new Integer(3));
+        queue.add(1);
+        queue.add(2);
+        queue.add(3);
         queue.close(true);
         for(int i=1; i <= 3; i++) {
             Object obj=queue.remove();
@@ -88,10 +88,10 @@ public class QueueTest {
 
     public static void testValues() throws QueueClosedException {
         final Queue queue=new Queue();
-        queue.add(new Integer(1));
-        queue.add(new Integer(3));
-        queue.add(new Integer(99));
-        queue.add(new Integer(8));
+        queue.add(1);
+        queue.add(3);
+        queue.add(99);
+        queue.add(8);
         System.out.println("queue: " + Util.dumpQueue(queue));
         int size=queue.size();
         assert size == 4;
@@ -223,7 +223,7 @@ public class QueueTest {
     public static void testWaitUntilClosed4() throws QueueClosedException {
         final Queue queue=new Queue();
         for(int i=0; i < 10; i++)
-            queue.add(new Integer(i));
+            queue.add(i);
         new Thread() {
             public void run() {
                 while(!queue.closed()) {
@@ -247,7 +247,7 @@ public class QueueTest {
     public static void testWaitUntilClosed5() throws QueueClosedException {
         final Queue queue=new Queue();
         for(int i=0; i < 10; i++)
-            queue.add(new Integer(i));
+            queue.add(i);
         new Thread() {
             public void run() {
                 while(!queue.closed()) {
@@ -582,9 +582,9 @@ public class QueueTest {
         Util.sleep(200);
 
         System.out.println("-- adding element 99");
-        queue.add(new Long(99));
+        queue.add(99L);
         System.out.println("-- adding element 100");
-        queue.add(new Long(100));
+        queue.add(100L);
 
         long target_time=System.currentTimeMillis() + 10000L;
         do {
@@ -813,7 +813,7 @@ public class QueueTest {
         public void run() {
             try {
                 for(int i=0; i < iteration; i++) {
-                    queue.add(new Long(rank));
+                    queue.add((long)rank);
                     // Util.sleepRandom(1);
                     // System.out.println("Thread #" + rank + " added element (" + rank + ")");
                 }
@@ -907,7 +907,7 @@ public class QueueTest {
         public void run() {
             while(running) {
                 try {
-                    queue.add(new Long(System.currentTimeMillis()));
+                    queue.add(System.currentTimeMillis());
                     num_writes++;
                 }
                 catch(QueueClosedException closed) {

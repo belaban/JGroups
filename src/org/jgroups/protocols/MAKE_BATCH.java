@@ -159,14 +159,7 @@ public class MAKE_BATCH extends Protocol {
                 }
                 reg_map_ucast.clear();
             }
-
-            for(MessageBatch batch: batches) {
-                if(!batch.isEmpty()) {
-                    // if(UUID.get(batch.sender()).equals("A"))
-                       // System.out.println("**** sending up batch " + batch + ", hdrs: " + batch.printHeaders());
-                    up_prot.up(batch);
-                }
-            }
+            batches.stream().filter(batch -> !batch.isEmpty()).forEach(batch -> up_prot.up(batch));
         }
     }
 }

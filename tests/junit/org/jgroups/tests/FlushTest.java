@@ -32,7 +32,7 @@ public class FlushTest {
         s.release(1);
 
         // Make sure everyone is in sync
-        Channel[] tmp = new Channel[receivers.length];
+        JChannel[] tmp = new JChannel[receivers.length];
         for (int i = 0; i < receivers.length; i++)
             tmp[i] = receivers[i].getChannel();
         Util.waitUntilAllChannelsHaveSameSize(10000, 1000, tmp);
@@ -95,7 +95,7 @@ public class FlushTest {
     }
     
     public void testSequentialFlushInvocation() throws Exception {
-        Channel a=null, b=null, c=null;
+        JChannel a=null, b=null, c=null;
         try {
             a = createChannel("A");
             a.connect("testSequentialFlushInvocation");
@@ -289,7 +289,7 @@ public class FlushTest {
                 first = false;
             }
 
-            Channel[] tmp = new Channel[channels.size()];
+            JChannel[] tmp = new JChannel[channels.size()];
             int cnt = 0;
             for (FlushTestReceiver receiver : channels)
                 tmp[cnt++] = receiver.getChannel();
@@ -302,8 +302,7 @@ public class FlushTest {
             Util.sleep(1000); //let all events propagate...
             for (FlushTestReceiver app : channels)
                 app.getChannel().setReceiver(null);
-            for (FlushTestReceiver app : channels)
-                app.cleanup();
+            channels.forEach(FlushTestReceiver::cleanup);
 
             // verify block/unblock/view/get|set state sequences for all members
             for (FlushTestReceiver receiver : channels) {
@@ -312,8 +311,7 @@ public class FlushTest {
             }
         }
         finally {
-            for (FlushTestReceiver app : channels)
-                app.cleanup();
+            channels.forEach(FlushTestReceiver::cleanup);
         }
     }
 
@@ -483,10 +481,10 @@ public class FlushTest {
     }
 
     private static class SimpleReplier extends ReceiverAdapter {
-        protected final Channel channel;
+        protected final JChannel channel;
         protected boolean       handle_requests=false;
 
-        public SimpleReplier(Channel channel, boolean handle_requests) {
+        public SimpleReplier(JChannel channel, boolean handle_requests) {
             this.channel = channel;
             this.handle_requests = handle_requests;
         }

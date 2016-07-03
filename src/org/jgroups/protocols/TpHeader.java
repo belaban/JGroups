@@ -36,7 +36,7 @@ public class TpHeader extends Header {
     }
 
     public String toString() {
-        return "[cluster_name=" + new String(cluster_name) + ']';
+        return String.format("[cluster_name=%s]", new String(cluster_name));
     }
 
     public int size() {

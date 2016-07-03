@@ -28,7 +28,7 @@ public class LazyThreadFactory extends DefaultThreadFactory {
      }
 
 
-    public Thread newThread(ThreadGroup group, Runnable r, String name) {
+    private Thread newThread(ThreadGroup group, Runnable r, String name) {
         Thread retval=null;
         String addr=address;
         if(addr == null)

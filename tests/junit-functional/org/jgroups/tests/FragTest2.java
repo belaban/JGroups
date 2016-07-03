@@ -60,8 +60,7 @@ public class FragTest2 {
 
     protected JChannel create(String name) throws Exception {
         return new JChannel(
-          new UDP().setValue("bind_addr", InetAddress.getByName(bind_addr))
-            .setValue("thread_pool_enabled", false).setValue("oob_thread_pool_enabled", false),
+          new UDP().setValue("bind_addr", InetAddress.getByName(bind_addr)),
           new PING(),
           new NAKACK2(),
           new UNICAST3(),

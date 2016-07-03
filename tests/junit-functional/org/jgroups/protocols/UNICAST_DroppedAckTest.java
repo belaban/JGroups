@@ -33,7 +33,6 @@ public class UNICAST_DroppedAckTest {
     @DataProvider
     static Object[][] configProvider() {
         return new Object[][]{
-          {UNICAST.class},
           {UNICAST3.class}
         };
     }
@@ -48,7 +47,7 @@ public class UNICAST_DroppedAckTest {
         for(int i=1; i <= 5; i++)
             b.send(a.getAddress(), i);
 
-        Protocol unicast_b=b.getProtocolStack().findProtocol(UNICAST.class, UNICAST3.class);
+        Protocol unicast_b=b.getProtocolStack().findProtocol(UNICAST3.class);
         for(int i=0; i < 10; i++) {
             int num_unacked_msgs=numUnackedMessages(unicast_b);
             System.out.println("num_unacked_msgs=" + num_unacked_msgs);
@@ -61,11 +60,9 @@ public class UNICAST_DroppedAckTest {
     }
 
     protected int numUnackedMessages(Protocol unicast) {
-        if(unicast instanceof UNICAST)
-            return ((UNICAST)unicast).getNumUnackedMessages();
         if(unicast instanceof UNICAST3)
             return ((UNICAST3)unicast).getNumUnackedMessages();
-        throw new IllegalArgumentException("Protocol " + unicast.getClass().getSimpleName() + " needs to be UNICAST or UNICAST3");
+        throw new IllegalArgumentException("Protocol " + unicast.getClass().getSimpleName() + " needs to be UNICAST3");
     }
 
 

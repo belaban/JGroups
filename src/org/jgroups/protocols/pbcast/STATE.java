@@ -93,7 +93,7 @@ public class STATE extends StreamingStateTransfer {
     protected Tuple<InputStream,Object> createStreamToProvider(final Address provider, final StateHeader hdr) {
         Util.close(input_stream);
         input_stream=new BlockingInputStream(buffer_size);
-        return new Tuple<InputStream,Object>(input_stream, null);
+        return new Tuple<>(input_stream, null);
     }
 
     @Override
@@ -110,10 +110,8 @@ public class STATE extends StreamingStateTransfer {
         }
 
         public void close() throws IOException {
-            if(closed.compareAndSet(false, true)) {
-                if(stats)
-                    avg_state_size=num_bytes_sent.addAndGet(bytesWrittenCounter) / num_state_reqs.doubleValue();
-            }
+            if(closed.compareAndSet(false, true) && stats)
+                avg_state_size=num_bytes_sent.addAndGet(bytesWrittenCounter) / num_state_reqs.doubleValue();
         }
 
         public void write(byte[] b, int off, int len) throws IOException {

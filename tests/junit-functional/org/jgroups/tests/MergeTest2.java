@@ -48,10 +48,10 @@ public class MergeTest2 {
                                                5,10,
                                                3000, 1000, "abort");
 
-        ThreadPoolExecutor oob_thread_pool=new ThreadPoolExecutor(5, 50, 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(1000));
+        ThreadPoolExecutor oob_thread_pool=new ThreadPoolExecutor(5, 50, 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1000));
         oob_thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
-        ThreadPoolExecutor thread_pool=new ThreadPoolExecutor(5, 10, 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(10000));
+        ThreadPoolExecutor thread_pool=new ThreadPoolExecutor(5, 10, 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(10000));
         thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
 
         a=createChannel("A", timer, thread_pool, oob_thread_pool);
@@ -68,19 +68,19 @@ public class MergeTest2 {
         shared_loopback.setDefaultThreadPool(thread_pool);
         shared_loopback.setDiagnosticsHandler(handler);
 
-        JChannel retval=Util.createChannel(shared_loopback,
-                                           new DISCARD().setValue("discard_all",true),
-                                           new SHARED_LOOPBACK_PING(),
-                                           new NAKACK2().setValue("use_mcast_xmit",false)
-                                             .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
-                                           new UNICAST3(),
-                                           new STABLE().setValue("max_bytes",50000),
-                                           new GMS().setValue("print_local_addr",false)
-                                             .setValue("leave_timeout",100)
-                                             .setValue("merge_timeout",3000)
-                                             .setValue("log_view_warnings",false)
-                                             .setValue("view_ack_collection_timeout",50)
-                                             .setValue("log_collect_msgs",false));
+        JChannel retval=new JChannel(shared_loopback,
+                                     new DISCARD().setValue("discard_all",true),
+                                     new SHARED_LOOPBACK_PING(),
+                                     new NAKACK2().setValue("use_mcast_xmit",false)
+                                       .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
+                                     new UNICAST3(),
+                                     new STABLE().setValue("max_bytes",50000),
+                                     new GMS().setValue("print_local_addr",false)
+                                       .setValue("leave_timeout",100)
+                                       .setValue("merge_timeout",3000)
+                                       .setValue("log_view_warnings",false)
+                                       .setValue("view_ack_collection_timeout",50)
+                                       .setValue("log_collect_msgs",false));
         retval.setName(name);
         JmxConfigurator.registerChannel(retval, Util.getMBeanServer(), name, retval.getClusterName(), true);
         retval.connect("MergeTest2");

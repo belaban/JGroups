@@ -6,7 +6,7 @@ The JGroups tutorial
 :homepage: http://www.jgroups.org
 :source-highlighter: pygments
 
-Copyright Red Hat 1998 - 2015
+Copyright Red Hat 1998 - 2035
 
 This document is licensed under the
 http://creativecommons.org/licenses/by-sa/3.0/us/legalcode["Creative Commons Attribution-ShareAlike (CC-BY-SA) 3.0"]

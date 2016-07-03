@@ -78,7 +78,7 @@ public class UNICAST_RetransmitTest {
         for(JChannel ch: channels) {
             TP transport=ch.getProtocolStack().getTransport();
             transport.setMaxBundleSize(MAX_BUNDLE_SIZE);
-            UNICAST3 ucast=(UNICAST3)ch.getProtocolStack().findProtocol(UNICAST3.class);
+            UNICAST3 ucast=ch.getProtocolStack().findProtocol(UNICAST3.class);
             if(ucast == null)
                 throw new IllegalStateException("UNICAST3 not present in the stack");
             ucast.setValue("max_xmit_req_size", 5000);
@@ -101,21 +101,21 @@ public class UNICAST_RetransmitTest {
 
     protected void stopRetransmission(JChannel ... channels) {
         for(JChannel ch: channels) {
-            UNICAST3 ucast=(UNICAST3)ch.getProtocolStack().findProtocol(UNICAST3.class);
+            UNICAST3 ucast=ch.getProtocolStack().findProtocol(UNICAST3.class);
             ucast.stopRetransmitTask();
         }
     }
 
     protected void startRetransmission(JChannel ... channels) {
         for(JChannel ch: channels) {
-            UNICAST3 ucast=(UNICAST3)ch.getProtocolStack().findProtocol(UNICAST3.class);
+            UNICAST3 ucast=ch.getProtocolStack().findProtocol(UNICAST3.class);
             ucast.startRetransmitTask();
         }
     }
 
     protected static void insertDiscardProtocol(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        stack.insertProtocolInStack(new DiscardEveryOtherUnicastMessage(), stack.getTransport(), ProtocolStack.ABOVE);
+        stack.insertProtocolInStack(new DiscardEveryOtherUnicastMessage(), stack.getTransport(), ProtocolStack.Position.ABOVE);
     }
 
     protected static void removeDiscardProtocol(JChannel ch) {

@@ -1,9 +1,9 @@
 
 package org.jgroups.util;
 
-import org.jgroups.TimeoutException;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -16,17 +16,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * result. In order to block for a different result, {@link #reset()} has to be called first.
  * @author Bela Ban
  */
-public class Promise<T> implements org.jgroups.util.Condition {
+public class Promise<T> {
     protected final Lock        lock=new ReentrantLock();
     protected final CondVar     cond=new CondVar(lock);
     protected T                 result;
     protected volatile boolean  hasResult=false; // condition
 
-
-    public boolean isMet() {
-        return hasResult();
-    }
-    
 
     /**
      * Blocks until a result is available, or timeout milliseconds have elapsed
@@ -114,11 +109,16 @@ public class Promise<T> implements org.jgroups.util.Condition {
      * Causes all waiting threads to return
      */
     public void reset() {
+        reset(true);
+    }
+
+    public void reset(boolean signal) {
         lock.lock();
         try {
             result=null;
             hasResult=false;
-            cond.signal(true);
+            if(signal)
+                cond.signal(true);
         }
         finally {
             lock.unlock();
@@ -127,7 +127,7 @@ public class Promise<T> implements org.jgroups.util.Condition {
 
 
     public String toString() {
-        return "hasResult=" + hasResult + ", result=" + result;
+        return String.format("hasResult=%b, result=%s", hasResult, result);
     }
 
 
@@ -141,8 +141,8 @@ public class Promise<T> implements org.jgroups.util.Condition {
      */
     protected T _getResultWithTimeout(final long timeout) throws TimeoutException {
         if(timeout <= 0)
-            cond.waitFor(this);
-        else if(!cond.waitFor(this, timeout, TimeUnit.MILLISECONDS))
+            cond.waitFor(this::hasResult);
+        else if(!cond.waitFor(this::hasResult, timeout, TimeUnit.MILLISECONDS))
             throw new TimeoutException();
         return result;
     }

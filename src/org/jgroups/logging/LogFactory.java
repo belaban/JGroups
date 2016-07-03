@@ -10,40 +10,27 @@ import org.jgroups.Global;
  * @author Bela Ban
  * @since 4.0
  */
-public class LogFactory {
-    public static final boolean    IS_LOG4J2_AVAILABLE; // log4j2 is the default
-    protected static final boolean USE_JDK_LOGGER;
+public final class LogFactory {
+    public static final boolean       IS_LOG4J2_AVAILABLE; // log4j2 is the default
+    protected static boolean          use_jdk_logger;
+    protected static CustomLogFactory custom_log_factory=null;
 
-    protected static CustomLogFactory custom_log_factory;
-
+	private LogFactory() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
 
     static {
-        String customLogFactoryClass=System.getProperty(Global.CUSTOM_LOG_FACTORY);
-        CustomLogFactory customLogFactoryX=null;
-        if(customLogFactoryClass != null) {
-            try {
-                customLogFactoryX=(CustomLogFactory)Class.forName(customLogFactoryClass).newInstance();
-            }
-            catch(Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        custom_log_factory=customLogFactoryX;
-        USE_JDK_LOGGER=isPropertySet(Global.USE_JDK_LOGGER);
+        use_jdk_logger=isPropertySet(Global.USE_JDK_LOGGER);
         IS_LOG4J2_AVAILABLE=isAvailable("org.apache.logging.log4j.core.Logger");
     }
 
-    public static CustomLogFactory getCustomLogFactory() {
-        return custom_log_factory;
-    }
-
-    public static void setCustomLogFactory(CustomLogFactory factory) {
-        custom_log_factory=factory;
-    }
+    public static CustomLogFactory getCustomLogFactory()                         {return custom_log_factory;}
+    public static void             setCustomLogFactory(CustomLogFactory factory) {custom_log_factory=factory;}
+    public static boolean          useJdkLogger()                                {return use_jdk_logger;}
+    public static void             useJdkLogger(boolean flag)                    {use_jdk_logger=flag;}
 
     public static String loggerType() {
-        if(USE_JDK_LOGGER)      return "jdk";
+        if(use_jdk_logger)      return "jdk";
         if(IS_LOG4J2_AVAILABLE) return "log4j2";
         return "jdk";
     }
@@ -70,7 +57,7 @@ public class LogFactory {
         if(custom_log_factory != null)
             return custom_log_factory.getLog(clazz);
 
-        if(USE_JDK_LOGGER)
+        if(use_jdk_logger)
             return new JDKLogImpl(clazz);
 
         if(IS_LOG4J2_AVAILABLE)
@@ -83,7 +70,7 @@ public class LogFactory {
         if(custom_log_factory != null)
             return custom_log_factory.getLog(category);
 
-        if(USE_JDK_LOGGER)
+        if(use_jdk_logger)
             return new JDKLogImpl(category);
 
         if(IS_LOG4J2_AVAILABLE)

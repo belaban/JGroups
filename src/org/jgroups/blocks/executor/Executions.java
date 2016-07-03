@@ -11,7 +11,12 @@ import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 
-public class Executions {
+public final class Executions {
+	
+	private Executions() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
+
     /**
      * This method should be used to convert a callable that would not normally
      * be serializable, externalizable or streamable but has serializable,

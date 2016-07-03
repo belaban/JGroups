@@ -94,18 +94,17 @@ public class TCP_NIO2 extends BasicTCP {
     }
 
     public void start() throws Exception {
-        server=(NioServer)((NioServer)new NioServer(getThreadFactory(), bind_addr, bind_port, bind_port+port_range, external_addr, external_port)
-          .receiver(this)
+        server=new NioServer(getThreadFactory(), getSocketFactory(), bind_addr, bind_port, bind_port+port_range, external_addr, external_port);
+        server.receiver(this)
           .timeService(time_service)
           .receiveBufferSize(recv_buf_size)
           .sendBufferSize(send_buf_size)
           .socketConnectionTimeout(sock_conn_timeout)
           .tcpNodelay(tcp_nodelay).linger(linger)
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
-          .log(this.log))
-          .maxSendBuffers(max_send_buffers).usePeerConnections(true);
-        server.copyOnPartialWrite(this.copy_on_partial_write)
-          .readerIdleTime(this.reader_idle_time);
+          .log(this.log);
+        server.maxSendBuffers(max_send_buffers).usePeerConnections(true);
+        server.copyOnPartialWrite(this.copy_on_partial_write).readerIdleTime(this.reader_idle_time);
 
         if(reaper_interval > 0 || conn_expire_time > 0) {
             if(reaper_interval == 0) {
@@ -113,7 +112,7 @@ public class TCP_NIO2 extends BasicTCP {
                 log.warn("reaper_interval was 0, set it to %d", reaper_interval);
             }
             if(conn_expire_time == 0) {
-                conn_expire_time=1000 * 60 * 5;
+                conn_expire_time=(long) 1000 * 60 * 5;
                 log.warn("conn_expire_time was 0, set it to %d", conn_expire_time);
             }
             server.connExpireTimeout(conn_expire_time).reaperInterval(reaper_interval);
@@ -130,23 +129,11 @@ public class TCP_NIO2 extends BasicTCP {
 
 
     protected void handleConnect() throws Exception {
-        if(isSingleton()) {
-            if(connect_count == 0)
-                server.start();
-            super.handleConnect();
-        }
-        else
-            server.start();
+        server.start();
     }
 
     protected void handleDisconnect() {
-        if(isSingleton()) {
-            super.handleDisconnect();
-            if(connect_count == 0)
-                server.stop();
-        }
-        else
-            server.stop();
+        server.stop();
     }   
 
 

@@ -9,8 +9,7 @@ import java.util.List;
 /**
  * Simple protocol to test round trip times. Requests are [PING], responses are [PONG]. Start multiple instances
  * and press <return> to get the round trip times for all nodes in the cluster<p/>
- * See {@link org.jgroups.tests.PingPongDatagram} for the same program using MulticastSockets, and
- * {@link LatencyTest} for simple latency tests (not round trip).
+ * See {@link org.jgroups.tests.PingPongDatagram} for the same program using MulticastSockets
  * @author Bela Ban
  */
 public class PingPong extends ReceiverAdapter {
@@ -38,10 +37,10 @@ public class PingPong extends ReceiverAdapter {
             Util.keyPress("enter to ping");
             Address dest=null;
             if(unicast)
-                dest=(Address)Util.pickRandomElement(members);
+                dest=Util.pickRandomElement(members);
             
             Message msg=new Message(dest, null, PING_REQ);
-            msg.setFlag(Message.Flag.DONT_BUNDLE, Message.NO_FC);
+            msg.setFlag(Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
             start=System.nanoTime();
             ch.send(msg);
         }
@@ -58,7 +57,7 @@ public class PingPong extends ReceiverAdapter {
         switch(type) {
             case PING:
                 final Message rsp=new Message(msg.getSrc(), null, PONG_RSP);
-                rsp.setFlag(Message.Flag.DONT_BUNDLE, Message.NO_FC);
+                rsp.setFlag(Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
                 try {
                     ch.send(rsp);
                 }
@@ -69,7 +68,7 @@ public class PingPong extends ReceiverAdapter {
             case PONG:
                 long rtt=System.nanoTime() - start;
                 double ms=rtt / 1000.0 / 1000.0;
-                System.out.println("RTT for " + msg.getSrc() + ": " + Util.format(ms) + " ms");
+                System.out.printf("RTT for %s: %.2f ms\n", msg.src(), ms);
                 break;
         }
     }

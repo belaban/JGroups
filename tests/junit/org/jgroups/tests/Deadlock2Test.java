@@ -16,8 +16,8 @@ import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
 /**
  * Test the distributed RPC deadlock detection mechanism, using one or two channels.
@@ -29,7 +29,7 @@ import java.util.Vector;
  */
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class Deadlock2Test extends ChannelTestBase {
-    private String name = "Deadlock2Test";
+    private static final String name = "Deadlock2Test";
 
     private JChannel c1, c2;
 
@@ -125,7 +125,7 @@ public class Deadlock2Test extends ChannelTestBase {
         obj2.setRpcDispatcher(disp2);
         c2.connect(name);
 
-        Vector<Address> dests=new Vector<>();
+        List<Address> dests=new ArrayList<>();
         dests.add(c1.getAddress());
         dests.add(c2.getAddress());
 
@@ -165,7 +165,7 @@ public class Deadlock2Test extends ChannelTestBase {
             MethodCall call = new MethodCall("innerMethod", new Object[0], new Class[0]);
             // RspList rspList = disp.callRemoteMethods(null, call, GroupResponseMode.GET_ALL, 5000);
             RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, 0, false, null, (Message.Flag[])null);
-            opts.setFlags(Message.Flag.OOB);
+            opts.flags(Message.Flag.OOB);
             RspList<String> rspList = disp.callRemoteMethods(null, call, opts);
             List<String> results = rspList.getResults();
             log("results of calling innerMethod():\n" + rspList);

@@ -1,6 +1,5 @@
 package org.jgroups.tests;
 
-import org.jgroups.Channel;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.executor.ExecutionRunner;
@@ -17,7 +16,6 @@ import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -25,23 +23,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED}, singleThreaded=true)
 public class ExecutingServiceTest2 {
 
-    Set<Thread> threads=new HashSet<>();
-    Set<Channel> channels=new HashSet<>();
+    Set<Thread>   threads=new HashSet<>();
+    Set<JChannel> channels=new HashSet<>();
 
     @AfterMethod
     public void tearDown() {
-        for(Thread thread : threads)
-            thread.interrupt();
-        for(Channel channel : channels)
-            channel.close();
+        threads.forEach(Thread::interrupt);
+        channels.forEach(JChannel::close);
     }
 
     @Test
     public void testDisconnect() throws Exception {
         JChannel channel1=new JChannel(Util.getTestStack(new CENTRAL_EXECUTOR()));
         JChannel channel2=new JChannel(Util.getTestStack(new CENTRAL_EXECUTOR()));
-        // channel1.getProtocolStack().addProtocol(new CENTRAL_EXECUTOR());
-        // channel2.getProtocolStack().addProtocol(new CENTRAL_EXECUTOR());
         channels.add(channel1);
         channels.add(channel2);
 
@@ -62,13 +56,10 @@ public class ExecutingServiceTest2 {
 
         final AtomicInteger submittedTasks=new AtomicInteger();
         final AtomicInteger finishedTasks=new AtomicInteger();
-        final FutureListener<Void> listener=new FutureListener<Void>() {
-            @Override
-            public void futureDone(Future<Void> future) {
-                finishedTasks.incrementAndGet();
-                synchronized(ExecutingServiceTest2.this) {
-                    ExecutingServiceTest2.this.notify();
-                }
+        final FutureListener<Void> listener=future -> {
+            finishedTasks.incrementAndGet();
+            synchronized(ExecutingServiceTest2.this) {
+                ExecutingServiceTest2.this.notify();
             }
         };
 

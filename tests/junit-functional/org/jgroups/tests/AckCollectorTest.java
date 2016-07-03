@@ -4,14 +4,16 @@ package org.jgroups.tests;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.TimeoutException;
 import org.jgroups.util.AckCollector;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 @Test(groups=Global.FUNCTIONAL)
 public class AckCollectorTest {
@@ -143,7 +145,7 @@ public class AckCollectorTest {
         assert ac.size() == 5;
     }
 
-    public void testDestroy() {
+    public void testDestroy() throws TimeoutException {
         List<Address> tmp_list=Arrays.asList(one,two,one,three,four,one,five);
         final AckCollector ac=new AckCollector(tmp_list);
         System.out.println("ac = " + ac);
@@ -174,17 +176,15 @@ public class AckCollectorTest {
 
     public void testSuspect() {
         final AckCollector ac=new AckCollector(list);
-        for(Address member: Arrays.asList(one,four,five))
-            ac.ack(member);
+        Stream.of(one, four,five).forEach(ac::ack);
         System.out.println("ac = " + ac);
-        for(Address suspected: Arrays.asList(two,three))
-            ac.suspect(suspected);
+        Arrays.asList(two, three).forEach(ac::suspect);
         System.out.println("ac = " + ac);
         assert ac.size() == 0;
         assert ac.waitForAllAcks();
     }
 
-    public void testRetainAll() {
+    public void testRetainAll() throws TimeoutException {
         final AckCollector ac=new AckCollector(list);
         List<Address> members=Arrays.asList(one, two, three);
         ac.retainAll(members);
@@ -205,7 +205,7 @@ public class AckCollectorTest {
         assert received_all;
     }
 
-    public void testRetainAll2() {
+    public void testRetainAll2() throws TimeoutException {
         final AckCollector ac=new AckCollector(list);
         assert ac.size() == 5;
         System.out.println("ac = " + ac);
@@ -216,7 +216,7 @@ public class AckCollectorTest {
         new Thread() {
             public void run() {
                 Util.sleep(1000);
-                ac.retainAll(Arrays.asList(five));
+                ac.retainAll(Collections.singletonList(five));
                 System.out.println("ac=" + ac);
             }
         }.start();

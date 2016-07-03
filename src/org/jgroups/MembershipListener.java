@@ -25,14 +25,14 @@ public interface MembershipListener {
     * needs to be performed, it should be done in a separate thread.
     * <p/>
     * Note that on reception of the first view (a new member just joined), the channel will not yet
-    * be in the connected state. This only happens when {@link Channel#connect(String)} returns.
+    * be in the connected state. This only happens when {@link JChannel#connect(String)} returns.
     */
-    void viewAccepted(View new_view);
+    default void viewAccepted(View new_view) {}
     
    /**
     * Called whenever a member is suspected of having crashed, but has not yet been excluded.
     */
-    void suspect(Address suspected_mbr);
+    default void suspect(Address suspected_mbr) {}
 
    /**
     * Called (usually by the FLUSH protocol), as an indication that the member should stop sending
@@ -42,7 +42,7 @@ public interface MembershipListener {
     * {@link org.jgroups.MembershipListener#unblock()}. Note that block() is the equivalent
     * of reception of a BlockEvent in the pull mode.
     */
-    void block();
+    default void block() {}
 
    /**
     * Called <em>after</em> the FLUSH protocol has unblocked previously blocked senders, and
@@ -57,6 +57,6 @@ public interface MembershipListener {
     * For more details see https://jira.jboss.org/jira/browse/JGRP-986
     * 
     */
-    void unblock();
+    default void unblock() {}
 
 }

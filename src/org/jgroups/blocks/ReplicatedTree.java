@@ -412,7 +412,7 @@ public class ReplicatedTree extends ReceiverAdapter {
     * Returns the Channel the DistributedTree is connected to 
     * @return Channel
     */
-    public Channel getChannel()             {return channel;}
+    public JChannel getChannel()             {return channel;}
 
    /**
     * Returns the number of current members joined to the group
@@ -682,7 +682,7 @@ public class ReplicatedTree extends ReceiverAdapter {
     }
 
 
-    public static class Node implements Serializable {
+    public static final class Node implements Serializable {
         String name=null;     // relative name (e.g. "Security")
         String fqn=null;      // fully qualified name (e.g. "/federations/fed1/servers/Security")
         Node parent=null;   // parent node
@@ -831,7 +831,7 @@ public class ReplicatedTree extends ReceiverAdapter {
     }
 
 
-    private static class StringHolder {
+    private static final class StringHolder {
         String s=null;
 
         private StringHolder() {
@@ -850,7 +850,7 @@ public class ReplicatedTree extends ReceiverAdapter {
     /**
      * Class used to multicast add(), remove() and set() methods to all members.
      */
-    private static class Request implements Serializable {
+    private static final class Request implements Serializable {
         static final int PUT=1;
         static final int REMOVE=2;
 

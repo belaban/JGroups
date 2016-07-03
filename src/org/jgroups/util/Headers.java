@@ -24,22 +24,26 @@ import java.util.Map;
  * This class is synchronized for writes (put(), resize()), but not for reads (size(), get())
  * @author Bela Ban
  */
-public class Headers {
+public final class Headers {
     private static final int RESIZE_INCR=3;
+
+	private Headers() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
 
     /**
      * Returns the header associated with an ID
      * @param id The ID
      * @return
      */
-    public static Header getHeader(final Header[] hdrs, short id) {
+    public static <T extends Header> T getHeader(final Header[] hdrs, short id) {
         if(hdrs == null)
             return null;
         for(Header hdr: hdrs) {
             if(hdr == null)
                 return null;
             if(hdr.getProtId() == id)
-                return hdr;
+                return (T)hdr;
         }
         return null;
     }

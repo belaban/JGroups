@@ -1,8 +1,10 @@
 package org.jgroups.auth.sasl;
 
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
-import java.util.Map;
+import org.jgroups.Address;
+import org.jgroups.Message;
+import org.jgroups.protocols.SASL;
+import org.jgroups.protocols.SaslHeader;
+import org.jgroups.protocols.SaslHeader.Type;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
@@ -10,12 +12,9 @@ import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslClient;
 import javax.security.sasl.SaslClientFactory;
 import javax.security.sasl.SaslException;
-
-import org.jgroups.Address;
-import org.jgroups.Message;
-import org.jgroups.protocols.SASL;
-import org.jgroups.protocols.SaslHeader;
-import org.jgroups.protocols.SaslHeader.Type;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.util.Map;
 
 public class SaslClientContext implements SaslContext {
     private static final byte[] EMPTY_CHALLENGE = new byte[0];
@@ -26,13 +25,8 @@ public class SaslClientContext implements SaslContext {
         this.subject = subject;
         if (this.subject != null) {
             try {
-                client = Subject.doAs(this.subject, new PrivilegedExceptionAction<SaslClient>() {
-
-                    @Override
-                    public SaslClient run() throws Exception {
-                        return saslClientFactory.createSaslClient(new String[] { mech }, null, SASL.SASL_PROTOCOL_NAME, server_name, props, callback_handler);
-                    }
-                });
+                client = Subject.doAs(this.subject, (PrivilegedExceptionAction<SaslClient>)()
+                  -> saslClientFactory.createSaslClient(new String[] { mech }, null, SASL.SASL_PROTOCOL_NAME, server_name, props, callback_handler));
             } catch (PrivilegedActionException e) {
                 throw (SaslException)e.getCause(); // The createSaslServer will only throw this type of exception
             }
@@ -101,12 +95,7 @@ public class SaslClientContext implements SaslContext {
     private byte[] evaluateChallenge(final byte[] challenge) throws SaslException {
         if (subject != null) {
            try {
-              return Subject.doAs(subject, new PrivilegedExceptionAction<byte[]>() {
-                 @Override
-                 public byte[] run() throws Exception {
-                    return client.evaluateChallenge(challenge);
-                 }
-              });
+              return Subject.doAs(subject, (PrivilegedExceptionAction<byte[]>)() -> client.evaluateChallenge(challenge));
            } catch (PrivilegedActionException e) {
               Throwable cause = e.getCause();
               if (cause instanceof SaslException) {

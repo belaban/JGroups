@@ -5,13 +5,13 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.tom.TOA;
 import org.jgroups.stack.Protocol;
-import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertTrue;
@@ -29,9 +29,7 @@ public class TOATest {
 
     @AfterMethod(alwaysRun = true)
     public void closeAndDisconnect() {
-        for (TOANode toaNode : registeredToaNodes) {
-            toaNode.stop();
-        }
+        registeredToaNodes.forEach(TOANode::stop);
         registeredToaNodes.clear();
     }
 
@@ -110,9 +108,8 @@ public class TOATest {
                         shutdown.countDown();
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
-                    } catch (BrokenBarrierException e) {
-                        e.printStackTrace();
-                    } catch (Exception e) {
+                    }
+                    catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -177,9 +174,8 @@ public class TOATest {
                             shutdown.countDown();
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
-                        } catch (BrokenBarrierException e) {
-                            e.printStackTrace();
-                        } catch (Exception e) {
+                        }
+                        catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
@@ -197,9 +193,8 @@ public class TOATest {
                             shutdown.countDown();
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
-                        } catch (BrokenBarrierException e) {
-                            e.printStackTrace();
-                        } catch (Exception e) {
+                        }
+                        catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
@@ -278,9 +273,8 @@ public class TOATest {
 
         //wait until all is delivered
         singleMember.waitMessages(maxMessages, 30, TimeUnit.SECONDS);
-        for (int i = 0; i < maxMessages; ++i) {
-            AssertJUnit.assertEquals("Wrong message.", Integer.toString(i), singleMember.pop());
-        }
+        for (int i = 0; i < maxMessages; ++i)
+            assertEquals("Wrong message.", Integer.toString(i), singleMember.pop());
     }
 
     private void doSingleDestinationWithMultipleMembersTest(boolean totalOrder, int members) throws Exception {
@@ -294,8 +288,7 @@ public class TOATest {
         for (TOANode member : registeredToaNodes) {
             member.waitAllMembers(registeredToaNodes, 30, TimeUnit.SECONDS);
         }
-        AssertJUnit.assertTrue("Expected more than one node. value=" + registeredToaNodes.size(),
-                registeredToaNodes.size() > 1);
+        assertTrue("Expected more than one node. value=" + registeredToaNodes.size(), registeredToaNodes.size() > 1);
         final TOANode sender = registeredToaNodes.get(0);
 
         for (TOANode destination : registeredToaNodes) {
@@ -311,10 +304,9 @@ public class TOATest {
         for (TOANode destination : registeredToaNodes) {
             //wait until all is delivered
             destination.waitMessages(maxMessages, 30, TimeUnit.SECONDS);
-            for (int i = 0; i < maxMessages; ++i) {
-                AssertJUnit.assertEquals("Wrong message in member " + destination.channel.getAddress(),
-                        Integer.toString(i), destination.pop());
-            }
+            for (int i = 0; i < maxMessages; ++i)
+                assertEquals("Wrong message in member " + destination.channel.getAddress(),
+                             Integer.toString(i), destination.pop());
         }
     }
 
@@ -405,11 +397,7 @@ public class TOATest {
         }
 
         public void waitAllMembers(Collection<TOANode> members, int timeout, TimeUnit timeUnit) throws InterruptedException {
-            List<Address> addresses = new ArrayList<>(members.size());
-            for (TOANode member : members) {
-                addresses.add(member.localAddress());
-            }
-
+            List<Address> addresses=members.stream().map(TOANode::localAddress).collect(Collectors.toList());
             waitForMembersInView(timeout, timeUnit, addresses.toArray(new Address[addresses.size()]));
         }
 
@@ -421,7 +409,7 @@ public class TOATest {
                     messages.wait(TimeUnit.SECONDS.toMillis(2));
                 }
             }
-            AssertJUnit.assertEquals("Wrong number of messages received.", size, messages.size());
+            assertEquals("Wrong number of messages received.", size, messages.size());
         }
 
         public void sendAnycastMessage(AnycastAddress anycastAddress, String data) throws Exception {
@@ -444,7 +432,7 @@ public class TOATest {
         @Override
         public void receive(Message msg) {
             synchronized (messages) {
-                messages.add(String.valueOf(msg.getObject()));
+                messages.add(String.valueOf((Object)msg.getObject()));
             }
         }
 

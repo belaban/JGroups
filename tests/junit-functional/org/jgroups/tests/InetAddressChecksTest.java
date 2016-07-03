@@ -42,8 +42,8 @@ public class InetAddressChecksTest {
 	@Test(expectedExceptions=RuntimeException.class)
 	public void testIPVersionCheckingNoConsistentVersion() throws Exception {
 
-		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
-		Vector<Protocol> protocols = new Vector<>() ;
+		List<ProtocolConfiguration> protocol_configs = new ArrayList<>() ;
+		List<Protocol> protocols = new ArrayList<>() ;
 		
 		// create the layer described by IPCHECK
 		protocol = Configurator.createProtocol(ipCheckNoConsistentProps, stack) ;
@@ -79,8 +79,8 @@ public class InetAddressChecksTest {
 	 */
 	public void testIPVersionCheckingConsistentVersion() throws Exception {
 
-		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
-		Vector<Protocol> protocols = new Vector<>() ;
+		List<ProtocolConfiguration> protocol_configs = new ArrayList<>() ;
+		List<Protocol> protocols = new ArrayList<>() ;
 		
 		// create the layer described by IPCHECK
 		protocol = Configurator.createProtocol(ipCheckConsistentProps, stack) ;

@@ -3,11 +3,12 @@ package org.jgroups.tests;
 
 
 import org.jgroups.Global;
-import org.jgroups.TimeoutException;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.util.concurrent.TimeoutException;
 
 
 /**
@@ -107,7 +108,7 @@ public class PromiseTest {
     }
 
 
-    public static void testReset() {
+    public static void testReset() throws TimeoutException {
         final Promise p=new Promise();
         Resetter resetter=new Resetter(p, 2000);
         resetter.start();
@@ -116,7 +117,7 @@ public class PromiseTest {
         assert result == null;
     }
 
-    public static void testReset2() {
+    public static void testReset2() throws TimeoutException {
         final Promise p=new Promise();
         Resetter resetter=new Resetter(p, 2000);
         resetter.start();

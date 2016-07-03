@@ -15,6 +15,7 @@ import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 
 /**
@@ -149,21 +150,23 @@ public class MERGE3 extends Protocol {
         return min_interval;
     }
 
-    public void setMinInterval(long i) {
+    public MERGE3 setMinInterval(long i) {
         if(min_interval < 0 || min_interval >= max_interval)
             throw new IllegalArgumentException("min_interval (" + min_interval + ") has to be < max_interval (" + max_interval + ")");
         min_interval=i;
+        return this;
     }
 
     public long getMaxInterval() {
         return max_interval;
     }
 
-    public void setMaxInterval(long val) {
+    public MERGE3 setMaxInterval(long val) {
         if(val <= 0)
             throw new IllegalArgumentException("max_interval must be > 0");
         max_interval=val;
         check_interval=computeCheckInterval();
+        return this;
     }
 
 
@@ -235,7 +238,7 @@ public class MERGE3 extends Protocol {
 
                 List<Address> mbrs=view.getMembers();
                 Address coord=mbrs.isEmpty()? null : mbrs.get(0);
-                if(coord != null && coord.equals(local_addr)) {
+                if(Objects.equals(coord, local_addr)) {
                     is_coord=true;
                     startViewConsistencyChecker(); // start task if we became coordinator (doesn't start if already running)
                 }
@@ -446,10 +449,7 @@ public class MERGE3 extends Protocol {
             log.debug("I (%s) will be the merge leader", local_addr);
 
             // add merge participants
-            for(Set<Address> set: converted_views.values()) {
-                if(!set.isEmpty())
-                    coords.add(set.iterator().next());
-            }
+            coords.addAll(converted_views.values().stream().filter(set -> !set.isEmpty()).map(set -> set.iterator().next()).collect(Collectors.toList()));
 
             if(coords.size() <= 1) {
                 log.trace("cancelling merge as we only have 1 coordinator: %s", coords);
@@ -484,10 +484,7 @@ public class MERGE3 extends Protocol {
             view_rsps.waitForAllResponses(check_interval / 10);
             Map<Address,View> results=view_rsps.getResults();
             Map<Address,View> merge_views=new HashMap<>();
-
-            for(Map.Entry<Address,View> entry: results.entrySet())
-                if(entry.getValue() != null)
-                    merge_views.put(entry.getKey(), entry.getValue());
+            results.entrySet().stream().filter(entry -> entry.getValue() != null).forEach(entry -> merge_views.put(entry.getKey(), entry.getValue()));
             view_rsps.reset();
 
             if(merge_views.size() >= 2) {
@@ -576,6 +573,6 @@ public class MERGE3 extends Protocol {
             return sb.toString();
         }
 
-        protected static enum Type {INFO, VIEW_REQ, VIEW_RSP}
+        protected enum Type {INFO, VIEW_REQ, VIEW_RSP}
     }
 }

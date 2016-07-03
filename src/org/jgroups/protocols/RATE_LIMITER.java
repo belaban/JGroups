@@ -142,13 +142,9 @@ public class RATE_LIMITER extends Protocol {
             Integer tmp=map != null? (Integer)map.get("frag_size") : null;
             if(tmp != null)
                 frag_size=tmp;
-            if(frag_size > 0) {
-                if(max_bytes % frag_size != 0) {
-                    if(log.isWarnEnabled())
-                        log.warn("For optimal performance, max_bytes (" + max_bytes +
-                                   ") should be a multiple of frag_size (" + frag_size + ")");
-                }
-            }
+            if(frag_size > 0 && max_bytes % frag_size != 0)
+                log.warn("For optimal performance, max_bytes (" + max_bytes +
+                           ") should be a multiple of frag_size (" + frag_size + ")");
         }
 
         return down_prot.down(evt);

@@ -13,11 +13,11 @@ public interface ReplicatedMap<K, V> extends ConcurrentMap<K, V> {
 
     void _clear();
 
-    V _remove(Object key);
+    V _remove(K key);
 
     V _putIfAbsent(K key, V value);
 
-    boolean _remove(Object key, Object value);
+    boolean _remove(K key, V value);
 
     boolean _replace(K key, V oldValue, V newValue);
 

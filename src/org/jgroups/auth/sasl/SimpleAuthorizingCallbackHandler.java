@@ -83,7 +83,7 @@ public class SimpleAuthorizingCallbackHandler implements CallbackHandler {
         realm = properties.getProperty("sasl.realm");
     }
 
-    private String requireProperty(Properties properties, String propertyName) {
+    private static String requireProperty(Properties properties, String propertyName) {
         String value = properties.getProperty(propertyName);
         if (value == null) {
             throw new IllegalStateException("The required system property " + propertyName + " has not been set");
@@ -113,11 +113,9 @@ public class SimpleAuthorizingCallbackHandler implements CallbackHandler {
             } else if (current instanceof PasswordCallback) {
                 responseCallbacks.add(current);
             } else if (current instanceof RealmCallback) {
-                String realm = ((RealmCallback) current).getDefaultText();
-                if (realm != null) {
-                    if (this.realm.equals(realm) == false) {
-                        throw new IOException("Invalid realm " + realm);
-                    }
+                String realmLocal = ((RealmCallback) current).getDefaultText();
+                if (realmLocal != null && !this.realm.equals(realmLocal)) {
+                    throw new IOException("Invalid realm " + realmLocal);
                 }
                 responseCallbacks.add(current);
             } else {

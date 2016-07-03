@@ -7,145 +7,128 @@ import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.Average;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-
 /**
- * Measure the latency between messages with message bundling enabled at the transport level
+ * Measure the latency between messages with message bundling enabled at the transport level.
+ * Update April 2016: this test is more or less useless, as System.nanoTime() can yield different values, depending
+ * on which core it is run. E.g. the sender (main) thread might run on core-0, but the receiver thread on core-1,
+ * and since the cores can have different counters for nanoTime(), subtracting the values is meaningless.
+ * System.nanoTime() only really works when invoked by the same thread, e.g. as in {@link #testSimple()}.</p>
+ * This was changed by making the sender block on a promise which is signalled by the receiver thread when a message
+ * has been received. After that, System.nanoTime() is called by the sender, so start and stop times are called by the
+ * same thread. Of course, (uncontended) lock acquisition, thread context switching etc amount to some overhead...
+ *
  * @author Bela Ban
  */
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class MessageBundlingTest extends ChannelTestBase {
-    private JChannel           a, b;
-    private MyReceiver         r2;
-    private final static long  LATENCY=1500L;
-    private final static long  SLEEP=5000L;
-    private static final int   MAX_BYTES=64000;
+    private JChannel               a, b;
+    private final Promise<Boolean> promise=new Promise<>();
+    private SimpleReceiver         r2;
+    private final static long      LATENCY=1500L;
+    private final static long      LATENCY_NS=LATENCY * 1_000_000_000L;
+    private final static long      SLEEP=5000L; // ms
+    private final static long      SLEEP_NS=SLEEP * 1_000_000_000;
+    private static final int       MAX_BYTES=62000;
 
 
     @BeforeMethod
     protected void createChannels() throws Exception {
         a=createChannel(true, 2, "A");
-        setBundling(a,MAX_BYTES,LATENCY);
+        setBundling(a,MAX_BYTES);
         a.connect("MessageBundlingTest");
         b=createChannel(a, "B");
-        r2=new MyReceiver();
+        r2=new SimpleReceiver(promise);
         b.setReceiver(r2);
         b.connect("MessageBundlingTest");
         Util.waitUntilAllChannelsHaveSameSize(10000,1000,a,b);
     }
 
-    @AfterMethod void tearDown() throws Exception {Util.close(b,a);}
+    protected JChannel create(String name) throws Exception {
+        return new JChannel(Util.getTestStack()).name(name);
+    }
+
+    @AfterMethod void tearDown() throws Exception {promise.reset(false); Util.close(b,a);}
 
     protected boolean useBlocking() {return false;}
     
 
     public void testSimple() throws Exception {
-        final Promise<Boolean> promise=new Promise<>();
-        SimpleReceiver receiver=new SimpleReceiver(promise);
-        b.setReceiver(receiver);
-        long start=System.currentTimeMillis();
+        long start=System.nanoTime();
         a.send(new Message());
         promise.getResult(5000);
-        long diff=System.currentTimeMillis() - start;
-        System.out.println("toook " + diff + " ms to send and receive a multicast message");
-        assert diff < SLEEP /2;
+        long diff=System.nanoTime() - start;
+        System.out.printf("took %s to send and receive a multicast message\n", print(diff));
+        assert diff < SLEEP_NS /2;
     }
 
     public void testLatencyWithoutMessageBundling() throws Exception {
-        Message tmp=new Message().setFlag(Message.Flag.DONT_BUNDLE);
-        setBundling(a, MAX_BYTES, 30);
-        r2.setNumExpectedMesssages(1);
-        Promise<Integer> promise=new Promise<>();
-        r2.setPromise(promise);
-        long time=System.currentTimeMillis();
-        a.send(tmp);
-        System.out.println(">>> sent message at " + new Date());
-        promise.getResult(SLEEP);
-        List<Long> list=r2.getTimes();
-        Assert.assertEquals(1, list.size());
-        Long time2=list.get(0);
-        long diff=time2 - time;
-        System.out.println("latency: " + diff + " ms");
-        assertTrue("latency (" + diff + "ms) should be less than " + LATENCY + " ms", diff <= LATENCY);
+        _testLatencyWithoutMessageBundling(true);
     }
 
 
     public void testLatencyWithMessageBundling() throws Exception {
-        Message tmp=new Message();
-        r2.setNumExpectedMesssages(1);
-        Promise<Integer> promise=new Promise<>();
-        r2.setPromise(promise);
-        long time=System.currentTimeMillis();
-        a.send(tmp);
-        System.out.println(">>> sent message at " + new Date());
-        promise.getResult(SLEEP);
-        List<Long> list=r2.getTimes();
-        Assert.assertEquals(1, list.size());
-        Long time2=list.get(0);
-        long diff=time2 - time;
-        System.out.println("latency: " + diff + " ms");
-        assertTrue("latency (" + diff + "ms) should be less than 2 times the LATENCY (" + LATENCY *2 + ")",
-                   diff <= LATENCY * 2);
-    }
-
-
-
-    public void testLatencyWithMessageBundlingAndLoopback() throws Exception {
-        Message tmp=new Message();
-        r2.setNumExpectedMesssages(1);
-        Promise<Integer> promise=new Promise<>();
-        r2.setPromise(promise);
-        long time=System.currentTimeMillis();
-        System.out.println(">>> sending message at " + new Date());
-        a.send(tmp);
-        promise.getResult(SLEEP);
-        List<Long> list=r2.getTimes();
-        Assert.assertEquals(1, list.size());
-        Long time2=list.get(0);
-        long diff=time2 - time;
-        System.out.println("latency: " + diff + " ms");
-        assertTrue("latency (" + diff + "ms) should be less than 2 times the LATENCY (" + LATENCY *2 + ")",
-                   diff <= LATENCY * 2);
+       _testLatencyWithoutMessageBundling(false);
     }
 
 
     public void testLatencyWithMessageBundlingAndMaxBytes() throws Exception {
-        r2.setNumExpectedMesssages(10);
-        Promise<Integer> promise=new Promise<>();
-        r2.setPromise(promise);
-        Util.sleep(LATENCY * 2);
-        System.out.println(">>> sending 10 messages at " + new Date());
-        for(int i=0; i < 10; i++)
-            a.send(new Message(null, null, new byte[2000]));
+        final int num=500;
+        final Average avg=new Average();
+        long min=Long.MAX_VALUE, max=0;
 
-        promise.getResult(SLEEP); // we should get the messages immediately because max_bundle_size has been exceeded by the 20 messages
-        List<Long> list=r2.getTimes();
-        Assert.assertEquals(10, list.size());
-
-        for(Iterator<Long> it=list.iterator(); it.hasNext();) {
-            Long val=it.next();
-            System.out.println(val);
+        System.out.printf(">>> sending %s messages\n", num);
+        long[] times=new long[num];
+        for(int i=0; i < num; i++) {
+            long start=System.nanoTime();
+            a.send(new Message(null, new byte[4000]));
+            promise.getResult(SLEEP);
+            long time=System.nanoTime()-start;
+            times[i]=time;
+            avg.add(time);
+            min=Math.min(min, time);
+            max=Math.max(max, time);
+            promise.reset(false);
         }
+        for(int i=0; i < times.length; i++)
+            System.out.printf("latency for %d: %s\n", i, print(times[i]));
+        System.out.printf("\nmin/max/avg (us): %.2f  / %.2f / %.2f\n", min / 1000.0, max / 1000.0, avg.getAverage() / 1000.0);
+        assert avg.getAverage() < LATENCY_NS;
     }
 
 
+    protected void _testLatencyWithoutMessageBundling(boolean use_bundling) throws Exception {
+        Message tmp=new Message();
+        if(use_bundling) {
+            tmp.setFlag(Message.Flag.DONT_BUNDLE);
+            setBundling(a, MAX_BYTES);
+        }
+        long time=System.nanoTime();
+        a.send(tmp);
+        System.out.println(">>> sent message");
+        promise.getResult(SLEEP);
+        long diff=System.nanoTime() - time;
+        System.out.printf("latency: %s\n", print(diff));
+        assertTrue(String.format("latency (%s) should be less than %d ms", print(diff), LATENCY), diff <= LATENCY_NS);
+    }
 
-    private static void setBundling(JChannel ch, int max_bytes, long timeout) {
+
+    private static String print(long time_ns) {
+        double us=time_ns / 1_000.0;
+        return String.format("%d ns (%.2f us)", time_ns, us);
+    }
+
+    private static void setBundling(JChannel ch, int max_bytes) {
         ProtocolStack stack=ch.getProtocolStack();
         TP transport=stack.getTransport();
         transport.setMaxBundleSize(max_bytes);
-        transport.setMaxBundleTimeout(timeout);
-        GMS gms=(GMS)stack.findProtocol(GMS.class);
+        GMS gms=stack.findProtocol(GMS.class);
         gms.setViewAckCollectionTimeout(LATENCY * 2);
         gms.setJoinTimeout(LATENCY * 2);
     }
@@ -163,36 +146,5 @@ public class MessageBundlingTest extends ChannelTestBase {
             promise.setResult(true);
         }
     }
-
-    private static class MyReceiver extends ReceiverAdapter {
-        private final List<Long> times=new LinkedList<>();
-        private int num_expected_msgs;
-        private Promise<Integer> promise;
-
-        public List<Long> getTimes() {
-            return times;
-        }
-
-        public void setNumExpectedMesssages(int num_expected_msgs) {
-            this.num_expected_msgs=num_expected_msgs;
-        }
-
-        public void setPromise(Promise<Integer> promise) {
-            this.promise=promise;
-        }
-
-        public int size() {
-            return times.size();
-        }
-
-        public void receive(Message msg) {
-            times.add(System.currentTimeMillis());
-            System.out.println("<<< received message from " + msg.getSrc() + " at " + new Date());
-            if(times.size() >= num_expected_msgs && promise != null) {
-                promise.setResult(times.size());
-            }
-        }
-    }
-
 
 }

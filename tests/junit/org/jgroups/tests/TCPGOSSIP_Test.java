@@ -181,8 +181,7 @@ public class TCPGOSSIP_Test {
         initial_hosts.add(new InetSocketAddress(bind_addr, gossip_router_port));
         gossip.setInitialHosts(initial_hosts);
 
-        JChannel ch=new JChannel(new TCP().setValue("use_send_queues",true)
-                                   .setValue("sock_conn_timeout",300).setValue("bind_addr", bind_addr),
+        JChannel ch=new JChannel(new TCP().setValue("sock_conn_timeout",300).setValue("bind_addr", bind_addr),
                                  gossip,
                                  new MERGE3().setValue("min_interval",1000).setValue("max_interval",3000),
                                  new FD().setValue("timeout",2000).setValue("max_tries",2),

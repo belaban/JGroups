@@ -1,38 +1,23 @@
 package org.jgroups.blocks.executor;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.AbstractExecutorService;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.AbstractQueuedSynchronizer;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.protocols.Executing;
 import org.jgroups.util.FutureListener;
 import org.jgroups.util.NotifyingFuture;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
- * This is a jgroups implementation of an ExecutorService, where the consumers
+ * This is a JGroups implementation of an ExecutorService, where the consumers
  * are running on any number of nodes.  The nodes should run 
  * {@link ExecutionRunner} to start picking up requests.
  * <p>
@@ -50,7 +35,7 @@ import org.jgroups.util.Util;
  * @since 2.12.0
  */
 public class ExecutionService extends AbstractExecutorService {
-    protected Channel ch;
+    protected JChannel ch;
     protected Executing _execProt;
     
     protected Lock _unfinishedLock = new ReentrantLock();
@@ -64,13 +49,13 @@ public class ExecutionService extends AbstractExecutorService {
         
     }
 
-    public ExecutionService(Channel ch) {
+    public ExecutionService(JChannel ch) {
         setChannel(ch);
     }
 
-    public void setChannel(Channel ch) {
+    public void setChannel(JChannel ch) {
         this.ch=ch;
-        _execProt=(Executing)ch.getProtocolStack().findProtocol(Executing.class);
+        _execProt=ch.getProtocolStack().findProtocol(Executing.class);
         if(_execProt == null)
             throw new IllegalStateException("Channel configuration must include a executing protocol " +
                                               "(subclass of " + Executing.class.getName() + ")");
@@ -110,7 +95,7 @@ public class ExecutionService extends AbstractExecutorService {
         protected final Sync<V> sync;
         
         /** The following values are only used on the client side */
-        private final Channel channel;
+        private final JChannel channel;
         private final Set<Future<?>> _unfinishedFutures;
         private final Lock _unfinishedLock;
         private final Condition _unfinishedCondition;
@@ -128,7 +113,7 @@ public class ExecutionService extends AbstractExecutorService {
          *        it is finished. 
          * @param callable The callable to actually run on the server side
          */
-        public DistributedFuture(Channel channel, Lock unfinishedLock,
+        public DistributedFuture(JChannel channel, Lock unfinishedLock,
                           Condition condition,
                           Set<Future<?>> futuresToFinish, 
                           Callable<V> callable) {
@@ -160,7 +145,7 @@ public class ExecutionService extends AbstractExecutorService {
          * <tt>Future&lt;?&gt; f = new FutureTask&lt;Object&gt;(runnable, null)</tt>
          * @throws NullPointerException if runnable is null
          */
-        public DistributedFuture(Channel channel, Lock unfinishedLock,
+        public DistributedFuture(JChannel channel, Lock unfinishedLock,
                           Condition condition, Set<Future<?>> futuresToFinish, 
                           Runnable runnable, V result) {
             sync = new Sync<>(this, new RunnableAdapter<>(runnable, result));
@@ -710,7 +695,7 @@ public class ExecutionService extends AbstractExecutorService {
     }
     
     /**
-     * This is copied from {@see java.util.concurrent.Executors} class which
+     * This is copied from {@link java.util.concurrent.Executors} class which
      * contains RunnableAdapter.  However that adapter isn't serializable, and
      * is final and package level so we can' reference.
      */
@@ -781,16 +766,14 @@ public class ExecutionService extends AbstractExecutorService {
     // @see java.util.concurrent.AbstractExecutorService#newTaskFor(java.lang.Runnable, java.lang.Object)
     @Override
     protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
-        DistributedFuture<T> future = new DistributedFuture<>(ch, _unfinishedLock,
-                _unfinishedCondition, _unfinishedFutures, runnable, value);
-        return future;
+        return new DistributedFuture<>(ch, _unfinishedLock,
+                                       _unfinishedCondition, _unfinishedFutures, runnable, value);
     }
 
     // @see java.util.concurrent.AbstractExecutorService#newTaskFor(java.util.concurrent.Callable)
     @Override
     protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
-        DistributedFuture<T> future = new DistributedFuture<>(ch, _unfinishedLock,
-                _unfinishedCondition, _unfinishedFutures, callable);
-        return future;
+        return new DistributedFuture<>(ch, _unfinishedLock,
+                                       _unfinishedCondition, _unfinishedFutures, callable);
     }
 }

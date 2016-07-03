@@ -1,6 +1,5 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.util.Bits;
 
@@ -33,18 +32,18 @@ public class FragHeader extends Header {
 
     public void writeTo(DataOutput out) throws Exception {
         Bits.writeLong(id,out);
-        out.writeInt(frag_id);
-        out.writeInt(num_frags);
+        Bits.writeInt(frag_id, out);
+        Bits.writeInt(num_frags, out);
     }
 
     public int size() {
-        return Bits.size(id) + 2*Global.INT_SIZE;
+        return Bits.size(id) + Bits.size(frag_id) + Bits.size(num_frags);
     }
 
     public void readFrom(DataInput in) throws Exception {
         id=Bits.readLong(in);
-        frag_id=in.readInt();
-        num_frags=in.readInt();
+        frag_id=Bits.readInt(in);
+        num_frags=Bits.readInt(in);
     }
 
 }

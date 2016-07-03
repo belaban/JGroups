@@ -139,7 +139,7 @@ public class SUPERVISOR extends Protocol {
     public void installRule(String name, long interval, Rule rule) {
         rule.supervisor(this).log(log).init();
         Future<?> future=timer.scheduleAtFixedRate(rule, interval, interval, TimeUnit.MILLISECONDS);
-        Tuple<Rule,Future<?>> existing=rules.put(name != null? name : rule.name(), new Tuple<Rule,Future<?>>(rule, future));
+        Tuple<Rule,Future<?>> existing=rules.put(name != null? name : rule.name(), new Tuple<>(rule, future));
         if(existing != null)
             existing.getVal2().cancel(true);
     }

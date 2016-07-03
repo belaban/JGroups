@@ -52,7 +52,7 @@ public class ForkChannelTest {
                 "hijack-stack",
                 "lead-hijacker",
                 true,
-                ProtocolStack.ABOVE,
+                ProtocolStack.Position.ABOVE,
                 FRAG2.class);
         assert fc.isOpen() && !fc.isConnected() && !fc.isClosed() : "state=" + fc.getState();
 
@@ -261,8 +261,8 @@ public class ForkChannelTest {
      * @throws Exception
      */
     public void testCounterService() throws Exception {
-        fc1=new ForkChannel(a, "stack", "fc1", false,ProtocolStack.ABOVE, FORK.class, new COUNTER());
-        fc2=new ForkChannel(a, "stack", "fc2", false,ProtocolStack.ABOVE, FORK.class, new COUNTER());
+        fc1=new ForkChannel(a, "stack", "fc1", false,ProtocolStack.Position.ABOVE, FORK.class, new COUNTER());
+        fc2=new ForkChannel(a, "stack", "fc2", false,ProtocolStack.Position.ABOVE, FORK.class, new COUNTER());
         a.connect(CLUSTER);
         fc1.connect("foo");
         fc2.connect("bar");

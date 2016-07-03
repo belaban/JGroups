@@ -251,8 +251,7 @@ public class FD extends Protocol {
                         if(hdr.mbrs == null)
                             return null;
                         log.trace("%s: received unsuspect message: %s", local_addr, hdr);
-                        for(Address tmp: hdr.mbrs)
-                            unsuspect(tmp);
+                        hdr.mbrs.forEach(this::unsuspect);
                         break;
                 }
                 return null;
@@ -340,7 +339,7 @@ public class FD extends Protocol {
     }
 
     protected void updateTimestamp(Address sender) {
-        if(sender != null && sender.equals(ping_dest)) {
+        if(Objects.equals(sender, ping_dest)) {
             last_ack=System.nanoTime();
             num_tries.set(1);
         }

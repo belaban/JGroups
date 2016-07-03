@@ -9,7 +9,6 @@ import org.jgroups.util.Util;
 import javax.management.MBeanServer;
 import javax.management.Notification;
 import javax.management.NotificationBroadcasterSupport;
-import javax.management.NotificationListener;
 
 /**
  * Shows how annotations can be used to expose attributes and operations
@@ -102,14 +101,7 @@ public class JmxDemo extends NotificationBroadcasterSupport {
 
     public static void main(String[] args) {
         JmxDemo demo=new JmxDemo();
-        demo.addNotificationListener(new NotificationListener() {
-
-            @Override
-            public void handleNotification(Notification notification, Object handback) {
-                System.out.println(">> " + notification + ", handback=" + handback);
-            }
-        }, null, "myHandback");
-
+        demo.addNotificationListener((notification, handback) -> System.out.println(">> " + notification + ", handback=" + handback), null, "myHandback");
         demo.startNotifications();
 
         MBeanServer server=Util.getMBeanServer();

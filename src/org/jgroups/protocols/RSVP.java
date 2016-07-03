@@ -13,10 +13,7 @@ import org.jgroups.util.Util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Protocol which implements synchronous messages (https://issues.jboss.org/browse/JGRP-1389). A send of a message M
@@ -74,7 +71,7 @@ public class RSVP extends Protocol {
             log.warn(Util.getMessage("RSVP_Misconfig"), resend_interval, timeout);
             resend_interval=timeout / 3;
         }
-        handle_unicasts=stack.findProtocol(UNICAST.class, UNICAST3.class) == null;
+        handle_unicasts=stack.findProtocol(UNICAST3.class) == null;
     }
 
 
@@ -85,8 +82,7 @@ public class RSVP extends Protocol {
 
     public void stop() {
         stopResendTask();
-        for(Entry entry: ids.values())
-            entry.destroy();
+        ids.values().forEach(Entry::destroy);
         ids.clear();
         super.stop();
     }
@@ -129,7 +125,7 @@ public class RSVP extends Protocol {
                 }
                 catch(TimeoutException e) {
                     if(throw_exception_on_timeout)
-                        throw e;
+                        throw new RuntimeException(e);
                     else if(log.isWarnEnabled())
                         log.warn(Util.getMessage("RSVP_Timeout"), entry);
                 }

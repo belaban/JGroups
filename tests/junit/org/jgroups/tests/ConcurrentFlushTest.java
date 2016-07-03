@@ -142,14 +142,14 @@ public class ConcurrentFlushTest {
         assert l3.unblockReceived;
     }
 
-    protected static boolean startFlush(Channel ch, boolean automatic_resume) {
+    protected static boolean startFlush(JChannel ch, boolean automatic_resume) {
         boolean result=Util.startFlush(ch);
         if(automatic_resume)
             ch.stopFlush();
         return result;
     }
 
-    protected boolean startFlush(Channel ch, int num_attempts, long timeout, boolean automatic_resume) {
+    protected boolean startFlush(JChannel ch, int num_attempts, long timeout, boolean automatic_resume) {
         boolean result=Util.startFlush(ch, num_attempts, 10, timeout);
         if(automatic_resume)
             ch.stopFlush();

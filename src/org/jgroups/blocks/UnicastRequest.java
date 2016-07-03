@@ -1,15 +1,20 @@
 package org.jgroups.blocks;
 
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.SuspectedException;
+import org.jgroups.UnreachableException;
+import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.protocols.relay.SiteAddress;
-import org.jgroups.util.Rsp;
+import org.jgroups.util.Buffer;
 
 import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 
 /**
@@ -17,34 +22,22 @@ import java.util.concurrent.TimeoutException;
  *
  * @author Bela Ban
  */
-public class UnicastRequest<T> extends Request {
-    protected final Rsp<T>     result;
+public class UnicastRequest<T> extends Request<T> {
     protected final Address    target;
-    protected int              num_received=0;
 
 
-
-    public UnicastRequest(Message msg, RequestCorrelator corr, Address target, RequestOptions options) {
-        super(msg, corr, options);
-        this.target=target;
-        result=new Rsp<>(target);
-    }
-
-    public UnicastRequest(Message msg, Address target, RequestOptions options) {
-        super(msg, null, options);
-        this.target=target;
-        result=new Rsp<>(target);
+    public UnicastRequest(RequestCorrelator corr, Address target, RequestOptions options) {
+        super(corr, options);
+        this.target=target; // target is guaranteed to be non-null
     }
 
 
-    protected void sendRequest() throws Exception {
+    public void sendRequest(Buffer data) throws Exception {
         try {
-            if(log.isTraceEnabled()) log.trace(new StringBuilder("sending request (id=").append(req_id).append(')'));
-            corr.sendUnicastRequest(req_id, target, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this);
+            corr.sendUnicastRequest(target, data, options.mode() == ResponseMode.GET_NONE? null : this, this.options);
         }
         catch(Exception ex) {
-            if(corr != null)
-                corr.done(req_id);
+            corrDone();
             throw ex;
         }
     }
@@ -53,92 +46,28 @@ public class UnicastRequest<T> extends Request {
     /* ---------------------- Interface RspCollector -------------------------- */
     /**
      * <b>Callback</b> (called by RequestCorrelator or Transport).
-     * Adds a response to the response table. When all responses have been received,
-     * <code>execute()</code> returns.
+     * Adds a response to the response table. When all responses have been received, {@code execute()} returns.
      */
     public void receiveResponse(Object response_value, Address sender, boolean is_exception) {
-        RspFilter rsp_filter=options.getRspFilter();
-
-        lock.lock();
-        try {
-            if(done)
-                return;
-            if(!result.wasReceived()) {
-                num_received++;
-                if(rsp_filter == null || rsp_filter.isAcceptable(response_value, sender)) {
-                    if(is_exception && response_value instanceof Throwable)
-                        result.setException((Throwable)response_value);
-                    else
-                        result.setValue((T)response_value);
-                }
-            }
-            done=responsesComplete() || (rsp_filter != null && !rsp_filter.needMoreResponses());
-            if(done && corr != null)
-                corr.done(req_id);
-        }
-        finally {
-            cond.signal(true); // wakes up execute()
-            lock.unlock();
-        }
-        checkCompletion(this);
-    }
-
-    public boolean responseReceived() {return num_received >= 1;}
-
-
-    /**
-     * <b>Callback</b> (called by RequestCorrelator or Transport).
-     * Report to <code>GroupRequest</code> that a member is reported as faulty (suspected).
-     * This method would probably be called when getting a suspect message from a failure detector
-     * (where available). It is used to exclude faulty members from the response list.
-     */
-    public void suspect(Address suspected_member) {
-        if(suspected_member == null || !suspected_member.equals(target))
+        if(isDone())
             return;
-
-        lock.lock();
-        try {
-            if(done)
-                return;
-            if(result != null && !result.wasReceived())
-                result.setSuspected();
-            done=true;
-            if(corr != null)
-                corr.done(req_id);
-            cond.signal(true);
-        }
-        finally {
-            lock.unlock();
-        }
-        checkCompletion(this);
+        if(is_exception && response_value instanceof Throwable)
+            completeExceptionally((Throwable)response_value);
+        else
+            complete((T)response_value);
+        corrDone();
     }
+
 
     public void siteUnreachable(String site) {
-        if(!(target instanceof SiteAddress))
+        if(!(target instanceof SiteAddress) || !((SiteAddress)target).getSite().equals(site) || isDone())
             return;
-
-        if(!((SiteAddress)target).getSite().equals(site))
-            return;
-
-        lock.lock();
-        try {
-            if(done)
-                return;
-            if(result != null && !result.wasUnreachable())
-                result.setUnreachable();
-            done=true;
-            if(corr != null)
-                corr.done(req_id);
-            cond.signal(true);
-        }
-        finally {
-            lock.unlock();
-        }
-        checkCompletion(this);
+        completeExceptionally(new UnreachableException(target));
+        corrDone();
     }
 
     /**
-     * If the target address is not a member of the new view, we'll mark the response as not received and unblock
+     * If the target address is not a member of the new view, we'll mark the response as suspected and unblock
      * the caller of execute()
      */
     public void viewChange(View new_view) {
@@ -146,105 +75,88 @@ public class UnicastRequest<T> extends Request {
         if(mbrs == null)
             return;
 
-        lock.lock();
-        try {
-            // SiteAddresses are not checked as they might be in a different cluster
-            if(!(target instanceof SiteAddress) && !mbrs.contains(target)) {
-                result.setSuspected();
-                done=true;
-                if(corr != null)
-                    corr.done(req_id);
-                cond.signal(true);
-            }
+        // SiteAddresses are not checked as they might be in a different cluster
+        if(!(target instanceof SiteAddress) && !mbrs.contains(target) && !isDone()) {
+            completeExceptionally(new SuspectedException(target));
+            corrDone();
         }
-        finally {
-            lock.unlock();
-        }
-        
-        checkCompletion(this);
     }
 
     public void transportClosed() {
-        lock.lock();
-        try {
-            if(done)
-                return;
-            if(result != null && !result.wasReceived())
-                result.setException(new IllegalStateException("transport was closed"));
-            done=true;
-            if(corr != null)
-                corr.done(req_id);
-            cond.signal(true);
-        }
-        finally {
-            lock.unlock();
-        }
-        checkCompletion(this);
+        if(isDone())
+            return;
+        completeExceptionally(new IllegalStateException("transport was closed"));
+        corrDone();
     }
 
     /* -------------------- End of Interface RspCollector ----------------------------------- */
-
-    public Rsp<T> getResult() {
-        return result;
-    }
-
-
-
-    public T getValue() throws ExecutionException {
-        if(result.wasSuspected())
-            throw new ExecutionException(new SuspectedException(target));
-
-        if(result.hasException())
-            throw new ExecutionException(result.getException());
-
-        if(result.wasUnreachable())
-            throw new ExecutionException(new UnreachableException(target));
-        if(!result.wasReceived())
-            throw new ExecutionException(new TimeoutException("timeout sending message to " + target));
-        return result.getValue();
-    }
-
-
     public T get() throws InterruptedException, ExecutionException {
-        lock.lock();
         try {
-            waitForResults(0);
-            return getValue();
+            return super.get();
         }
         finally {
-            lock.unlock();
+            corrDone();
         }
     }
 
     public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        boolean ok;
-        lock.lock();
         try {
-            ok=waitForResults(unit.toMillis(timeout));
+            return super.get(timeout, unit);
         }
         finally {
-            lock.unlock();
+            corrDone();
         }
-        if(!ok)
-            throw new TimeoutException();
-        return getValue();
     }
+
+    public T join() {
+        return around(super::join);
+    }
+
+    public T getNow(T valueIfAbsent) {
+        return around(() -> super.getNow(valueIfAbsent));
+    }
+
+    public T waitForCompletion(long timeout, TimeUnit unit) throws Exception {
+        return getResult(() -> get(timeout, unit));
+    }
+
+    public T waitForCompletion() throws Exception {
+        return getResult(this::get);
+    }
+
 
     public String toString() {
-        StringBuilder ret=new StringBuilder(128);
-        ret.append(super.toString());
-        ret.append(", target=" + target);
-        return ret.toString();
+        return String.format("%s, target=%s", super.toString(), target);
     }
-
 
 
     @GuardedBy("lock")
-    protected boolean responsesComplete() {
-        return done || options.getMode() == ResponseMode.GET_NONE || result.wasReceived() ||
-          result.wasSuspected() || result.wasUnreachable() || num_received >= 1;
+    public boolean responsesComplete() {
+        return options.mode() == ResponseMode.GET_NONE || isDone();
+    }
+
+    protected T around(Supplier<T> supplier) {
+        try {return supplier.get();}
+        finally {corrDone();}
     }
 
 
-
+    protected T getResult(Callable<T> supplier) throws Exception {
+        try {
+            T result=supplier.call();
+            if(result == null && !isDone())
+                throw new TimeoutException("timeout waiting for response from " + target + ", request: " + toString());
+            return result;
+        }
+        catch(ExecutionException ex) {
+            Throwable exception=ex.getCause();
+            if(exception instanceof Error) throw (Error)exception;
+            else if(exception instanceof RuntimeException) throw (RuntimeException)exception;
+            else if(exception instanceof Exception) throw (Exception)exception;
+            else throw new RuntimeException(exception);
+        }
+        finally {
+            corrDone();
+        }
+    }
 }

@@ -3,7 +3,6 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.TimeoutException;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
@@ -17,10 +16,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -112,7 +108,12 @@ public class BARRIER extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.CLOSE_BARRIER:
-                closeBarrier();
+                try {
+                    closeBarrier();
+                }
+                catch(TimeoutException e) {
+                    throw new RuntimeException(e);
+                }
                 return null;
             case Event.OPEN_BARRIER:
                 openBarrier();
@@ -155,7 +156,12 @@ public class BARRIER extends Protocol {
                     unblock(current_thread);
                 }
             case Event.CLOSE_BARRIER:
-                closeBarrier();
+                try {
+                    closeBarrier();
+                }
+                catch(TimeoutException e) {
+                    throw new RuntimeException(e);
+                }
                 return null;
 
             case Event.OPEN_BARRIER:
@@ -168,11 +174,12 @@ public class BARRIER extends Protocol {
 
 
     public void up(MessageBatch batch) {
-        if(batch.dest() != null) { // let unicast message batches pass
-            if((batch.mode() == MessageBatch.Mode.OOB && batch.mode() == MessageBatch.Mode.INTERNAL) || holes.contains(batch.sender())) {
-                up_prot.up(batch);
-                return;
-            }
+        // let unicast message batches pass
+        if(batch.dest() != null
+          && (batch.mode() == MessageBatch.Mode.OOB && batch.mode() == MessageBatch.Mode.INTERNAL)
+          || holes.contains(batch.sender())) {
+            up_prot.up(batch);
+            return;
         }
 
         if(barrier_closed.get()) {
@@ -205,7 +212,7 @@ public class BARRIER extends Protocol {
     }
 
     /** Close the barrier. Temporarily remove all threads which are waiting or blocked, re-insert them after the call */
-    public void closeBarrier() {
+    public void closeBarrier() throws TimeoutException {
         if(!barrier_closed.compareAndSet(false, true))
             return; // barrier is already closed
 
@@ -295,8 +302,7 @@ public class BARRIER extends Protocol {
 
     protected void scheduleBarrierOpener() {
         if(barrier_opener_future == null || barrier_opener_future.isDone()) {
-            barrier_opener_future=timer.schedule(new Runnable() {public void run() {openBarrier();}},
-                                                 max_close_time, TimeUnit.MILLISECONDS);
+            barrier_opener_future=timer.schedule(this::openBarrier, max_close_time, TimeUnit.MILLISECONDS);
         }
     }
 

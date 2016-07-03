@@ -10,6 +10,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -17,69 +19,76 @@ import java.util.List;
  */
 @Test(groups=Global.STACK_DEPENDENT)
 public class RpcDispatcherAnycastTest extends ChannelTestBase {
-    RpcDispatcher disp, disp2, disp3;
-    JChannel ch, ch2, ch3;
+    protected RpcDispatcher disp, disp2, disp3;
+    protected JChannel a, b, c;
 
     @BeforeMethod
     void setUp() throws Exception {
-        ch=createChannel(true,3);
+        a=createChannel(true, 3).name("A");
         ServerObject obj=new ServerObject(null);
-        disp=new RpcDispatcher(ch, obj);
-        ch.connect("RpcDispatcherAnycastTest");
-        obj.setAddress(ch.getAddress());
+        disp=new RpcDispatcher(a, obj);
+        a.connect("RpcDispatcherAnycastTest");
+        obj.setAddress(a.getAddress());
 
-        ch2=createChannel(ch);
+        b=createChannel(a).name("B");
         ServerObject obj2=new ServerObject(null);
-        disp2=new RpcDispatcher(ch2, obj2);
-        ch2.connect("RpcDispatcherAnycastTest");
-        obj2.setAddress(ch2.getAddress());
+        disp2=new RpcDispatcher(b, obj2);
+        b.connect("RpcDispatcherAnycastTest");
+        obj2.setAddress(b.getAddress());
 
-        ch3=createChannel(ch);
+        c=createChannel(a).name("C");
         ServerObject obj3=new ServerObject(null);
-        disp3=new RpcDispatcher(ch3, obj3);
-        ch3.connect("RpcDispatcherAnycastTest");
-        obj3.setAddress(ch3.getAddress());
+        disp3=new RpcDispatcher(c, obj3);
+        c.connect("RpcDispatcherAnycastTest");
+        obj3.setAddress(c.getAddress());
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a,b,c);
     }
 
-    @AfterMethod
-    void tearDown() throws Exception {
-        ch3.close();
-        disp3.stop();
-        ch2.close();
-        disp2.stop();
-        ch.close();
-        disp.stop();
+    @AfterMethod void tearDown() throws Exception {
+        Util.close(disp3, disp2, disp, c,b,a);
     }
 
 
 
     public void testUnserializableValue() throws Exception {
-        List<Address> members=ch.getView().getMembers();
+        List<Address> members=a.getView().getMembers();
         System.out.println("members: " + members);
         assert members.size() > 1: "we should have more than 1 member";
 
-        List<Address> subset=Util.pickSubset(members, 0.2);
-        System.out.println("subset: " + subset);
-
-        Util.sleep(1000);
-
-        RspList rsps=disp.callRemoteMethods(subset, "foo", null, null, new RequestOptions(ResponseMode.GET_ALL, 0, false));
+        List<Address> subset=Collections.singletonList(b.getAddress());
+        RspList<Address> rsps=disp.callRemoteMethods(subset, "foo", null, null, new RequestOptions(ResponseMode.GET_ALL, 0, false));
         System.out.println("rsps (no anycast): " + rsps);
+        assert rsps.size() == 1;
+        assert rsps.containsKey(b.getAddress());
 
         rsps=disp.callRemoteMethods(subset, "foo", null, null, new RequestOptions(ResponseMode.GET_ALL, 0, true));
         System.out.println("rsps (with anycast): " + rsps);
+        assert rsps.size() == 1;
+        assert rsps.containsKey(b.getAddress());
+
+        subset=Arrays.asList(b.getAddress(), c.getAddress());
+        rsps=disp.callRemoteMethods(subset, "foo", null, null, new RequestOptions(ResponseMode.GET_ALL, 0, false));
+        System.out.println("rsps (no anycast): " + rsps);
+        assert rsps.size() == 2;
+        assert rsps.containsKey(b.getAddress());
+        assert rsps.containsKey(c.getAddress());
+
+        rsps=disp.callRemoteMethods(subset, "foo", null, null, new RequestOptions(ResponseMode.GET_ALL, 0, true));
+        System.out.println("rsps (with anycast): " + rsps);
+        assert rsps.size() == 2;
+        assert rsps.containsKey(b.getAddress());
+        assert rsps.containsKey(c.getAddress());
     }
 
 
-    static class ServerObject {
-        Address addr;
+    protected static class ServerObject {
+        protected Address addr;
 
         public ServerObject(Address addr) {
             this.addr=addr;
         }
 
         public Address foo() {
-            // System.out.println("foo() - returning " + addr);
             return addr;
         }
 

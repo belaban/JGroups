@@ -145,7 +145,7 @@ public class SequencerFailoverTest extends BMNGRunner {
         discard.setDiscardAll(true);
         ProtocolStack stack=a.getProtocolStack();
         TP transport=stack.getTransport();
-        stack.insertProtocol(discard,  ProtocolStack.ABOVE, transport.getClass());
+        stack.insertProtocol(discard,  ProtocolStack.Position.ABOVE, transport.getClass());
         
         MySender[] senders=new MySender[num_senders];
         for(int i=0; i < senders.length; i++) {

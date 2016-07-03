@@ -72,7 +72,7 @@ public class PingPongDatagram {
                         case PONG:
                             long rtt=System.nanoTime() - start;
                             double ms=rtt / 1000.0 / 1000.0;
-                            System.out.println("RTT for " + sender + ": " + Util.format(ms) + " ms");
+                            System.out.printf("RTT for %s: %.2f ms\n", sender, ms);
                             break;
                         default:
                             System.err.println("type " + type + " unknown");

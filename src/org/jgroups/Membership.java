@@ -76,17 +76,12 @@ public class Membership {
 
    /**
     * Adds a list of members to this membership
-    * 
-    * @param v
-    *           - a vector containing Address objects
-    * @throws ClassCastException
-    *            if v contains objects that don't implement the Address interface
-    * 
+    * @param v - a listof addresses
+    * @throws ClassCastException if v contains objects that don't implement the Address interface
     */
     public Membership add(Collection<Address> v) {
         if(v != null)
-            for(Address addr: v)
-                add(addr);
+            v.forEach(this::add);
         return this;
     }
 
@@ -145,7 +140,7 @@ public class Membership {
 
    /**
     * Clears the membership and adds all members of v This method will clear out all the old members
-    * of this membership by invoking the <code>Clear</code> method. Then it will add all the all
+    * of this membership by invoking the {@code Clear} method. Then it will add all the all
     * members provided in the vector v
     * 
     * @param v
@@ -160,10 +155,8 @@ public class Membership {
    /**
     * Clears the membership and adds all members of a given membership parameter. Prior to setting
     * membership this method will clear out all the old members of this membership by invoking the
-    * <code>clear</code> method.
-    * 
-    * @param m
-    *           - a membership containing all the members this membership will contain
+    * {@code clear} method.
+    * @param m a membership containing all the members this membership will contain
     */
     public Membership set(Membership m) {
         clear();

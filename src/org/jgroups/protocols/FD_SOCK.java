@@ -237,8 +237,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     case FdHeader.UNSUSPECT:
                         if(hdr.mbrs != null) {
                             log.trace("%s: received UNSUSPECT message from %s: mbrs=%s", local_addr, msg.getSrc(), hdr.mbrs);
-                            for(Address tmp: hdr.mbrs)
-                                unsuspect(tmp);
+                            hdr.mbrs.forEach(this::unsuspect);
                         }
                         break;
 
@@ -385,13 +384,11 @@ public class FD_SOCK extends Protocol implements Runnable {
     public void run() {
 
         // 1. Broadcast my own addr:sock to all members so they can update their cache
-        if(!srv_sock_sent) {
-            if(srv_sock_addr != null) {
-                sendIHaveSockMessage(null, // send to all members
-                                     local_addr,
-                                     srv_sock_addr);
-                srv_sock_sent=true;
-            }
+        if(!srv_sock_sent && srv_sock_addr != null) {
+            sendIHaveSockMessage(null, // send to all members
+                    local_addr,
+                    srv_sock_addr);
+            srv_sock_sent=true;
         }
 
         // 2. Get the addr:pid cache from the coordinator (only if not already fetched)
@@ -471,8 +468,8 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         suspects.remove(local_addr);
         final List<Address> eligible_mbrs=new ArrayList<>();
-        for(Address suspect: suspects)
-            suspect_history.add(String.format("%s: %s", new Date(), suspect));
+        suspects.forEach(suspect -> suspect_history.add(String.format("%s: %s", new Date(), suspect)));
+
         suspected_mbrs.addAll(suspects);
         eligible_mbrs.addAll(this.members);
         eligible_mbrs.removeAll(suspected_mbrs);
@@ -482,7 +479,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             Address first=eligible_mbrs.get(0);
             if(local_addr.equals(first)) {
                 log.debug("%s: suspecting %s", local_addr, suspected_mbrs);
-                for(Address suspect: suspects) {
+                for(Address suspect: suspected_mbrs) {
                     up_prot.up(new Event(Event.SUSPECT, suspect));
                     down_prot.down(new Event(Event.SUSPECT, suspect));
                 }
@@ -604,7 +601,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     /**
-     * Creates a socket to <code>dest</code>, and assigns it to ping_sock. Also assigns ping_input
+     * Creates a socket to {@code dest}, and assigns it to ping_sock. Also assigns ping_input
      */
     protected boolean setupPingSocket(IpAddress dest) {
         synchronized(sock_mutex) {
@@ -759,7 +756,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     /**
-     Attempts to obtain the ping_addr first from the cache, then by unicasting q request to <code>mbr</code>,
+     Attempts to obtain the ping_addr first from the cache, then by unicasting q request to {@code mbr},
      then by multicasting a request to all members.
      */
     protected IpAddress fetchPingAddress(Address mbr) {

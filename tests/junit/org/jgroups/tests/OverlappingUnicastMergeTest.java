@@ -164,7 +164,7 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
     static String print(List<Message> list) {
         StringBuilder sb=new StringBuilder();
         for(Message msg: list) {
-            sb.append(msg.getSrc()).append(": ").append(msg.getObject()).append(" ");
+            sb.append(msg.getSrc()).append(": ").append((Object)msg.getObject()).append(" ");
         }
         return sb.toString();
     }

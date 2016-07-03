@@ -10,13 +10,10 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -59,7 +56,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     @ManagedAttribute(writable=true)
     private long caching_time=30000L; // in milliseconds. -1 means don't cache, 0 means cache forever (or until changed)
     private HashFunction<K> hash_function=null;
-    private Set<MembershipListener> membership_listeners=new HashSet<>();
+    private final Set<MembershipListener> membership_listeners=new HashSet<>();
 
     /** On a view change, if a member P1 detects that for any given key K, P1 is not the owner of K, then
      * it will compute the new owner P2 and transfer ownership for all Ks for which P2 is the new owner. P1
@@ -211,15 +208,9 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         hash_function=new ConsistentHashFunction<>();
         addMembershipListener((MembershipListener)hash_function);
         ch=new JChannel(props);
-        disp=new RpcDispatcher(ch, null, this, this);
-        RpcDispatcher.Marshaller marshaller=new CustomMarshaller();
-        disp.setRequestMarshaller(marshaller);
-        disp.setResponseMarshaller(marshaller);
-        disp.setMethodLookup(new MethodLookup() {
-            public Method findMethod(short id) {
-                return methods.get(id);
-            }
-        });
+        Marshaller marshaller=new CustomMarshaller();
+        disp=new RpcDispatcher(ch, this).setMembershipListener(this)
+          .setMarshaller(marshaller).setMethodLookup(methods::get);
 
         ch.connect(cluster_name);
         local_addr=ch.getAddress();
@@ -294,10 +285,8 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
                 val=l2_cache.getEntry(key);
             }
             else {
-                val=(Cache.Value<V>)disp.callRemoteMethod(dest_node,
-                                                          new MethodCall(GET, key),
-                                                          new RequestOptions(ResponseMode.GET_FIRST,
-                                                          call_timeout));
+                val=disp.callRemoteMethod(dest_node, new MethodCall(GET, key),
+                                          new RequestOptions(ResponseMode.GET_FIRST, call_timeout));
             }
             if(val != null) {
                 V retval=val.getValue();
@@ -431,7 +420,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
 
     public static class ConsistentHashFunction<K> implements MembershipListener, HashFunction<K> {
-        private SortedMap<Short,Address> nodes=new TreeMap<>();
+        private final SortedMap<Short,Address> nodes=new TreeMap<>();
         private final static int HASH_SPACE=2048; // must be > max number of nodes in a cluster, and a power of 2
 
         public Address hash(K key, List<Address> members) {
@@ -496,81 +485,39 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
 
 
-    private static class CustomMarshaller implements RpcDispatcher.Marshaller {
-        static final byte NULL        = 0;
-        static final byte OBJ         = 1;
-        static final byte METHOD_CALL = 2;
+    private static class CustomMarshaller implements Marshaller {
+        static final byte NULL        = 1;
+        static final byte OBJ         = 2;
         static final byte VALUE       = 3;
-        
 
-        public Buffer objectToBuffer(Object obj) throws Exception {
 
-            ByteArrayOutputStream out_stream=new ByteArrayOutputStream(35);
-            DataOutputStream out=new DataOutputStream(out_stream);
-            try {
-                if(obj == null) {
-                    out_stream.write(NULL);
-                    out_stream.flush();
-                    return new Buffer(out_stream.toByteArray());
-                }
-                if(obj instanceof MethodCall) {
-                    out.writeByte(METHOD_CALL);
-                    MethodCall call=(MethodCall)obj;
-                    out.writeShort(call.getId());
-                    Object[] args=call.getArgs();
-                    if(args == null || args.length == 0) {
-                        out.writeShort(0);
-                    }
-                    else {
-                        out.writeShort(args.length);
-                        for(int i=0; i < args.length; i++) {
-                            Util.objectToStream(args[i], out);
-                        }
-                    }
-                }
-                else if(obj instanceof Cache.Value) {
-                    Cache.Value value=(Cache.Value)obj;
-                    out.writeByte(VALUE);
-                    out.writeLong(value.getTimeout());
-                    Util.objectToStream(value.getValue(), out);
-                }
-                else {
-                    out.writeByte(OBJ);
-                    Util.objectToStream(obj, out);
-                }
-                out.flush();
-                return new Buffer(out_stream.toByteArray());
+        public void objectToStream(Object obj, DataOutput out) throws Exception {
+            if(obj == null) {
+                out.write(NULL);
+                return;
             }
-            finally {
-                Util.close(out);
+            if(obj instanceof Cache.Value) {
+                Cache.Value value=(Cache.Value)obj;
+                out.writeByte(VALUE);
+                out.writeLong(value.getTimeout());
+                Util.objectToStream(value.getValue(), out);
+            }
+            else {
+                out.writeByte(OBJ);
+                Util.objectToStream(obj, out);
             }
         }
 
-        public Object objectFromBuffer(byte[] buf, int offset, int length) throws Exception {
-            if(buf == null)
-                return null;
-
-            DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf));
+        public Object objectFromStream(DataInput in) throws Exception {
             byte type=in.readByte();
             if(type == NULL)
                 return null;
-            if(type == METHOD_CALL) {
-                short id=in.readShort();
-                short len=in.readShort();
-                Object[] args=len > 0? new Object[len] : null;
-                if(args != null) {
-                    for(int i=0; i < args.length; i++)
-                        args[i]=Util.objectFromStream(in);
-                }
-                return new MethodCall(id, args);
-            }
-            else if(type == VALUE) {
+            if(type == VALUE) {
                 long expiration_time=in.readLong();
                 Object obj=Util.objectFromStream(in);
                 return new Cache.Value(obj, expiration_time);
             }
-            else
-                return Util.objectFromStream(in);
+            return Util.objectFromStream(in);
         }
     }
 }

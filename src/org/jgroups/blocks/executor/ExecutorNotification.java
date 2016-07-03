@@ -4,9 +4,9 @@ package org.jgroups.blocks.executor;
  * @author wburns
  */
 public interface ExecutorNotification {
-    public void resultReturned(Object obj);
+    void resultReturned(Object obj);
     
-    public void throwableEncountered(Throwable t);
+    void throwableEncountered(Throwable t);
     
-    public void interrupted(Runnable runnable);
+    void interrupted(Runnable runnable);
 }

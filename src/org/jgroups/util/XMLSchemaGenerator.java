@@ -26,8 +26,14 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Iterates over all concrete Protocol classes and creates XML schema used for validation of configuration files.
@@ -58,7 +64,8 @@ public class XMLSchemaGenerator {
             }
         }
 
-        File f = new File(outputDir, "jgroups-" + Version.major + "." + Version.minor + ".xsd");
+        String version = Version.major + "." + Version.minor;
+        File f = new File(outputDir, "jgroups-" + version + ".xsd");
         try {
             FileWriter fw = new FileWriter(f, false);
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -68,6 +75,7 @@ public class XMLSchemaGenerator {
             xmldoc.getDocumentElement().setAttribute("targetNamespace", "urn:org:jgroups");
             xmldoc.getDocumentElement().setAttribute("elementFormDefault", "qualified");
             xmldoc.getDocumentElement().setAttribute("attributeFormDefault", "qualified");
+            xmldoc.getDocumentElement().setAttribute("version", version);
 
             Element complexType = xmldoc.createElement("xs:complexType");
             complexType.setAttribute("name", "ConfigType");
@@ -104,7 +112,14 @@ public class XMLSchemaGenerator {
         for(String suffix: suffixes) {
             String package_name=PROT_PACKAGE + (suffix == null || suffix.isEmpty()? "" : "." + suffix);
             Set<Class<?>> classes=getClasses(Protocol.class, package_name);
-            for (Class<?> clazz : classes)
+            List<Class<?>> sortedClasses = new LinkedList<>(classes);
+            Collections.sort(sortedClasses, new Comparator<Class<?>>() {
+                @Override
+                public int compare(Class<?> o1, Class<?> o2) {
+                    return o1.getCanonicalName().compareTo(o2.getCanonicalName());
+                }
+            });
+            for (Class<?> clazz : sortedClasses)
                 classToXML(xmldoc, parent, clazz, package_name);
         }
     }
@@ -123,7 +138,13 @@ public class XMLSchemaGenerator {
                     if (file.endsWith(".class")) {
                         String name = packageName + '.' + file.substring(0, file.indexOf(".class"));
                         Class<?> clazz = Class.forName(name);
-                        if (assignableFrom.isAssignableFrom(clazz))
+
+                        int mods=clazz.getModifiers();
+                        boolean isConcreteClass=!Modifier.isAbstract(mods);
+                        boolean is_public=Modifier.isPublic(mods);
+                        boolean generate=is_public && isConcreteClass && !clazz.isAnonymousClass();
+
+                        if (assignableFrom.isAssignableFrom(clazz) && generate)
                             classes.add(clazz);
                     }
                 }
@@ -134,43 +155,33 @@ public class XMLSchemaGenerator {
 
     private static void classToXML(Document xmldoc, Element parent, Class<?> clazz,
                                    String preAppendToSimpleClassName) throws Exception {
-        int mods=clazz.getModifiers();
-        boolean isConcreteClass=!Modifier.isAbstract(mods);
-        boolean is_public=Modifier.isPublic(mods);
-        boolean generate=is_public && isConcreteClass && !clazz.isAnonymousClass();
-
-        if(!generate)
-            return;
-
         XmlInclude incl=Util.getAnnotation(clazz, XmlInclude.class);
         if(incl != null) {
             String[] schemas=incl.schema();
-            if(schemas != null) {
-                for(String schema: schemas) {
-                    Element incl_el=xmldoc.createElement(incl.type() == XmlInclude.Type.IMPORT? "xs:import" : "xs:include");
-                    if(incl.namespace() != null && !incl.namespace().isEmpty())
-                        incl_el.setAttribute("namespace",incl.namespace());
-                    incl_el.setAttribute("schemaLocation", schema);
+            for (String schema : schemas) {
+                Element incl_el = xmldoc.createElement(incl.type() == XmlInclude.Type.IMPORT ? "xs:import" : "xs:include");
+                if (!incl.namespace().isEmpty())
+                    incl_el.setAttribute("namespace", incl.namespace());
+                incl_el.setAttribute("schemaLocation", schema);
 
-                    Node first_child=xmldoc.getDocumentElement().getFirstChild();
-                    if(first_child == null)
-                        xmldoc.getDocumentElement().appendChild(incl_el);
-                    else
-                        xmldoc.getDocumentElement().insertBefore(incl_el, first_child);
-                }
+                Node first_child = xmldoc.getDocumentElement().getFirstChild();
+                if (first_child == null)
+                    xmldoc.getDocumentElement().appendChild(incl_el);
+                else
+                    xmldoc.getDocumentElement().insertBefore(incl_el, first_child);
             }
-            if(incl.alias() != null && !incl.alias().isEmpty())
+            if(!incl.alias().isEmpty())
                 xmldoc.getDocumentElement().setAttribute("xmlns:" + incl.alias(), incl.namespace());
         }
 
         parent.appendChild(createXMLTree(xmldoc, clazz, preAppendToSimpleClassName));
     }
 
-    private static Element createXMLTree(Document xmldoc, Class<?> clazz, String pkgname) throws Exception {
+    private static Element createXMLTree(final Document xmldoc, Class<?> clazz, String pkgname) throws Exception {
 
         Element classElement = xmldoc.createElement("xs:element");
         String elementName = pkgname + "." + clazz.getSimpleName();
-        if(elementName == null || elementName.isEmpty()) {
+        if(elementName.isEmpty()) {
             throw new IllegalArgumentException("Cannot create empty attribute name for element xs:element, class is " + clazz);
         }
 
@@ -178,7 +189,7 @@ public class XMLSchemaGenerator {
 
         classElement.setAttribute("name",elementName);
 
-        Element complexType = xmldoc.createElement("xs:complexType");
+        final Element complexType = xmldoc.createElement("xs:complexType");
         classElement.appendChild(complexType);
 
         // the protocol has its own subtree
@@ -194,16 +205,23 @@ public class XMLSchemaGenerator {
             choice.appendChild(tmp);
         }
 
+        Map<String, DelayingElementWriter> sortedElements = new TreeMap<String, DelayingElementWriter>();
+
         XmlAttribute xml_attr=Util.getAnnotation(clazz, XmlAttribute.class);
         if(xml_attr != null) {
             String[] attrs=xml_attr.attrs();
-            if(attrs != null && attrs.length > 0) {
+            if(attrs.length > 0) {
                 Set<String> set=new HashSet<>(Arrays.asList(attrs)); // to weed out dupes
-                for(String attr: set) {
-                    Element attributeElement = xmldoc.createElement("xs:attribute");
-                    attributeElement.setAttribute("name", attr);
-                    attributeElement.setAttribute("type", "xs:string");
-                    complexType.appendChild(attributeElement);
+                for(final String attr: set) {
+                    sortedElements.put(attr, new DelayingElementWriter() {
+                        @Override
+                        public void writeElement() {
+                            Element attributeElement = xmldoc.createElement("xs:attribute");
+                            attributeElement.setAttribute("name", attr);
+                            attributeElement.setAttribute("type", "xs:string");
+                            complexType.appendChild(attributeElement);
+                        }
+                    });
                 }
             }
         }
@@ -214,32 +232,38 @@ public class XMLSchemaGenerator {
             Field[] fields = clazzInLoop.getDeclaredFields();
             for (Field field : fields) {
                 if (field.isAnnotationPresent(Property.class)) {
-                    String property = field.getName();
-                    Property r = field.getAnnotation(Property.class);
-                    boolean annotationRedefinesName =!r.name().isEmpty()
-                      && r.deprecatedMessage().isEmpty();
+                    final String property;
+                    final Property r = field.getAnnotation(Property.class);
+                    boolean annotationRedefinesName = !r.name().isEmpty() && r.deprecatedMessage().isEmpty();
                     if (annotationRedefinesName) {
                         property = r.name();
+                    } else {
+                        property = field.getName();
                     }
                     if(property == null || property.isEmpty()) {
                         throw new IllegalArgumentException("Cannot create empty attribute name for element xs:attribute, field is " + field);
                     }
-                    Element attributeElement = xmldoc.createElement("xs:attribute");
-                    attributeElement.setAttribute("name", property);
+                    sortedElements.put(property, new DelayingElementWriter() {
+                        @Override
+                        public void writeElement() {
+                            Element attributeElement = xmldoc.createElement("xs:attribute");
+                            attributeElement.setAttribute("name", property);
 
-                    // Agreement with Bela Ban on Jan-20-2009 (Go Obama!!!) to treat all types as
-                    // xs:string since we do not know where users are going to use
-                    // replacement tokens in configuration files. Therefore, the type becomes
-                    // indeterminate.
-                    attributeElement.setAttribute("type", "xs:string");
-                    complexType.appendChild(attributeElement);
+                            // Agreement with Bela Ban on Jan-20-2009 (Go Obama!!!) to treat all types as
+                            // xs:string since we do not know where users are going to use
+                            // replacement tokens in configuration files. Therefore, the type becomes
+                            // indeterminate.
+                            attributeElement.setAttribute("type", "xs:string");
+                            complexType.appendChild(attributeElement);
 
-                    Element annotationElement = xmldoc.createElement("xs:annotation");
-                    attributeElement.appendChild(annotationElement);
+                            Element annotationElement = xmldoc.createElement("xs:annotation");
+                            attributeElement.appendChild(annotationElement);
 
-                    Element documentationElement = xmldoc.createElement("xs:documentation");
-                    documentationElement.setTextContent(r.description());
-                    annotationElement.appendChild(documentationElement);
+                            Element documentationElement = xmldoc.createElement("xs:documentation");
+                            documentationElement.setTextContent(r.description());
+                            annotationElement.appendChild(documentationElement);
+                        }
+                    });
                 }
             }
         }
@@ -249,27 +273,44 @@ public class XMLSchemaGenerator {
         for (Method method : methods) {
             if (method.isAnnotationPresent(Property.class)) {
 
-                Property annotation = method.getAnnotation(Property.class);
-                String name = annotation.name();
-                if (name.length() < 1) {
+                final Property annotation = method.getAnnotation(Property.class);
+                final String name;
+                if (annotation.name().length() < 1) {
                     name = Util.methodNameToAttributeName(method.getName());
+                } else {
+                    name = annotation.name();
                 }
-                Element attributeElement = xmldoc.createElement("xs:attribute");
-                attributeElement.setAttribute("name", name);
-                attributeElement.setAttribute("type", "xs:string");
-                complexType.appendChild(attributeElement);
+                sortedElements.put(name, new DelayingElementWriter() {
+                    @Override
+                    public void writeElement() {
+                        Element attributeElement = xmldoc.createElement("xs:attribute");
+                        attributeElement.setAttribute("name", name);
+                        attributeElement.setAttribute("type", "xs:string");
+                        complexType.appendChild(attributeElement);
 
-                String desc = annotation.description();
-                if (!desc.isEmpty()) {
-                    Element annotationElement = xmldoc.createElement("xs:annotation");
-                    attributeElement.appendChild(annotationElement);
+                        String desc = annotation.description();
+                        if (!desc.isEmpty()) {
+                            Element annotationElement = xmldoc.createElement("xs:annotation");
+                            attributeElement.appendChild(annotationElement);
 
-                    Element documentationElement = xmldoc.createElement("xs:documentation");
-                    documentationElement.setTextContent(annotation.description());
-                    annotationElement.appendChild(documentationElement);
-                }
+                            Element documentationElement = xmldoc.createElement("xs:documentation");
+                            documentationElement.setTextContent(annotation.description());
+                            annotationElement.appendChild(documentationElement);
+                        }
+                    }
+                });
             }
         }
+
+        // write out ordered and duplicates weeded out elements
+        for (Map.Entry<String, DelayingElementWriter> entry : sortedElements.entrySet()) {
+            entry.getValue().writeElement();
+        }
+
         return classElement;
+    }
+
+    private interface DelayingElementWriter {
+        void writeElement();
     }
 }

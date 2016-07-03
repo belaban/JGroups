@@ -24,7 +24,6 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
      * the client and server.
      * @param bind_addr The address to which the local socket should bind to. Can be null, then the OS picks the address
      * @param server_addr The address of the server to connect to
-     * @return An instance of {@link TcpClient}
      * @throws Exception If the creation failed
      */
     public TcpClient(IpAddress bind_addr, IpAddress server_addr) {
@@ -43,19 +42,17 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
      * @param bind_port The local port. Can be 0, then the OS picks the port.
      * @param server_addr The address of the server to connect to
      * @param server_port The port of the server to connect to.
-     * @return An instance of {@link TcpClient}
      * @throws Exception If the creation failed
      */
     public TcpClient(InetAddress bind_addr, int bind_port, InetAddress server_addr, int server_port) {
         this(new DefaultThreadFactory("tcp", false), new DefaultSocketFactory());
         clientBindAddress(bind_addr).clientBindPort(bind_port);
-        useSendQueues(false); // ok for clients to block on send()
         this.remote_addr=new IpAddress(server_addr, server_port);
     }
 
 
     protected TcpClient(ThreadFactory thread_factory, SocketFactory socket_factory) {
-        super(thread_factory);
+        super(thread_factory, socket_factory);
         this.socket_factory=socket_factory;
     }
 

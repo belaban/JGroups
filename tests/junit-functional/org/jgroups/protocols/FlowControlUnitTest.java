@@ -18,6 +18,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
+import java.util.Map;
 
 /**
  * Tests blocking in UFC / MFC (https://issues.jboss.org/browse/JGRP-1665)
@@ -63,18 +64,19 @@ public class FlowControlUnitTest {
         byte[] buffer=new byte[num_bytes];
         if(target != null) { // unicast
             Object retval=da.callRemoteMethod(target,new MethodCall(RECEIVE, a.getAddress(), buffer),RequestOptions.SYNC()
-              .setTimeout(5000).setFlags(Message.Flag.OOB));
+              .timeout(5000).flags(Message.Flag.OOB));
             System.out.println("retval=" + retval);
             int actual_bytes=(Integer)retval;
             assert actual_bytes == num_bytes : "expected " + Util.printBytes(num_bytes) + ", but call returned " + Util.printBytes(actual_bytes);
         }
         else {               // multicast
             RspList<Object> rsps=da.callRemoteMethods(null,new MethodCall(RECEIVE,a.getAddress(),buffer),RequestOptions.SYNC()
-              .setTimeout(5000).setFlags(Message.Flag.OOB));
+              .timeout(5000).flags(Message.Flag.OOB));
             System.out.println("rsps:\n" + rsps);
             assert rsps.size() == 2;
-            for(Rsp rsp: rsps) {
-                assert rsp.wasReceived() : " rsp from " + rsp.getSender() + " was not received";
+            for(Map.Entry<Address,Rsp<Object>> entry: rsps.entrySet()) {
+                Rsp<Object> rsp=entry.getValue();
+                assert rsp.wasReceived() : " rsp from " + entry.getKey() + " was not received";
                 int actual_bytes=(Integer)rsp.getValue();
                 assert actual_bytes == num_bytes : "expected " + Util.printBytes(num_bytes) + ", but call returned " + Util.printBytes(actual_bytes);
             }
@@ -102,14 +104,14 @@ public class FlowControlUnitTest {
 
     protected void invoke(RpcDispatcher disp, Address target, int num_bytes) throws Exception {
         // B invokes (blocking) A.forward
-        disp.callRemoteMethod(a.getAddress(), new MethodCall(FORWARD, target, num_bytes), RequestOptions.SYNC().setTimeout(5000));
+        disp.callRemoteMethod(a.getAddress(), new MethodCall(FORWARD, target, num_bytes), RequestOptions.SYNC().timeout(5000));
     }
 
 
 
     protected JChannel create(String name) throws Exception {
         return new JChannel(new SHARED_LOOPBACK(),
-                            new SHARED_LOOPBACK_PING().timeout(1000),
+                            new SHARED_LOOPBACK_PING(),
                             new NAKACK2(),
                             new UNICAST3(),
                             new STABLE(),

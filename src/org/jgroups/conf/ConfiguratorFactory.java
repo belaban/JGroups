@@ -1,7 +1,7 @@
 
 package org.jgroups.conf;
 
-import org.jgroups.JChannel;
+import org.jgroups.Global;
 import org.jgroups.util.Util;
 import org.w3c.dom.Element;
 
@@ -36,7 +36,7 @@ public class ConfiguratorFactory {
      * Returns a protocol stack configurator based on the XML configuration provided by the specified File.
      * 
      * @param file a File with a JGroups XML configuration.
-     * @return a <code>ProtocolStackConfigurator</code> containing the stack configuration.
+     * @return a {@code ProtocolStackConfigurator} containing the stack configuration.
      * @throws Exception if problems occur during the configuration of the protocol stack.
      */
     public static ProtocolStackConfigurator getStackConfigurator(File file) throws Exception {
@@ -53,7 +53,7 @@ public class ConfiguratorFactory {
      * Returns a protocol stack configurator based on the XML configuration provided at the specified URL.
      *
      * @param url a URL pointing to a JGroups XML configuration.
-     * @return a <code>ProtocolStackConfigurator</code> containing the stack configuration.
+     * @return a {@code ProtocolStackConfigurator} containing the stack configuration.
      * @throws Exception if problems occur during the configuration of the protocol stack.
      */
     public static ProtocolStackConfigurator getStackConfigurator(URL url) throws Exception {
@@ -66,7 +66,7 @@ public class ConfiguratorFactory {
      * Returns a protocol stack configurator based on the XML configuration provided by the specified XML element.
      *
      * @param element a XML element containing a JGroups XML configuration.
-     * @return a <code>ProtocolStackConfigurator</code> containing the stack configuration.
+     * @return a {@code ProtocolStackConfigurator} containing the stack configuration.
      * @throws Exception if problems occur during the configuration of the protocol stack.
      */
     public static ProtocolStackConfigurator getStackConfigurator(Element element) throws Exception {
@@ -76,15 +76,13 @@ public class ConfiguratorFactory {
 
     /**
      * Returns a protocol stack configurator based on the provided properties string.
-     *
-     * @param properties an old style property string, a string representing a system resource containing a JGroups
-     *                   XML configuration, a string representing a URL pointing to a JGroups XML configuration,
-     *                   or a string representing a file name that contains a JGroups XML configuration.
+     * @param properties a string representing a system resource containing a JGroups XML configuration, a URL pointing
+     *                   to a JGroups XML configuration or a string representing a file name that contains a JGroups
+     *                   XML configuration.
      */
     public static ProtocolStackConfigurator getStackConfigurator(String properties) throws Exception {
-        // added by bela: for null String props we use the default properties
         if(properties == null)
-            properties=JChannel.DEFAULT_PROTOCOL_STACK;
+            properties=Global.DEFAULT_PROTOCOL_STACK;
 
         // Attempt to treat the properties string as a pointer to an XML configuration.
         XmlConfigurator configurator = null;
@@ -92,10 +90,9 @@ public class ConfiguratorFactory {
         checkForNullConfiguration(properties);
         configurator=getXmlConfigurator(properties);
 
-        if (configurator != null) // did the properties string point to a JGroups XML configuration ?
+        if(configurator != null) // did the properties string point to a JGroups XML configuration ?
             return configurator;
-        else
-            return new PlainConfigurator(properties); // try to process the properties string as an old style property string
+        throw new IllegalStateException(String.format("configuration %s not found or invalid", properties));
     }
 
 
@@ -129,11 +126,8 @@ public class ConfiguratorFactory {
         try {
             configStream=new FileInputStream(properties);
         }
-        catch(FileNotFoundException fnfe) {
+        catch(FileNotFoundException | AccessControlException fnfe) {
             // the properties string is likely not a file
-        }
-        catch(AccessControlException access_ex) {
-            // fixes http://jira.jboss.com/jira/browse/JGRP-94
         }
 
         // Check to see if the properties string is a URL.
@@ -158,7 +152,7 @@ public class ConfiguratorFactory {
 
         // added by bela: for null String props we use the default properties
         if(properties == null)
-            properties=JChannel.DEFAULT_PROTOCOL_STACK;
+            properties=Global.DEFAULT_PROTOCOL_STACK;
 
         if(properties instanceof URL) {
             try {
@@ -200,7 +194,7 @@ public class ConfiguratorFactory {
      * @param properties a string representing a system resource containing a JGroups XML configuration, a string
      *                   representing a URL pointing to a JGroups ML configuration, or a string representing a file
      *                   name that contains a JGroups XML configuration.
-     * @return an XmlConfigurator instance based on the provided properties string; <code>null</code> if the provided
+     * @return an XmlConfigurator instance based on the provided properties string; {@code null} if the provided
      *         properties string does not point to an XML configuration.
      * @throws IOException  if the provided properties string appears to be a valid URL but is unreachable, or if the
      *                      JGroups XML configuration pointed to by the URL can not be parsed.
@@ -223,7 +217,7 @@ public class ConfiguratorFactory {
     /**
      * Check to see if the specified configuration properties are <code>null</null> which is not allowed.
      * @param properties the specified protocol stack configuration.
-     * @throws NullPointerException if the specified configuration properties are <code>null</code>.
+     * @throws NullPointerException if the specified configuration properties are {@code null}.
      */
     static void checkForNullConfiguration(Object properties) {
         if(properties == null)
@@ -253,18 +247,16 @@ public class ConfiguratorFactory {
      */
     public static void substituteVariables(ProtocolStackConfigurator configurator) {
         List<ProtocolConfiguration> protocols=configurator.getProtocolStack();
-        for(ProtocolConfiguration data: protocols) {
-            if(data != null) {
-                Map<String,String> parms=data.getProperties();
-                for(Map.Entry<String,String> entry:parms.entrySet()) {
-                    String val=entry.getValue();
-                    String replacement=Util.substituteVariable(val);
-                    if(!replacement.equals(val)) {
-                        entry.setValue(replacement);
-                    }
+        protocols.stream().filter(data -> data != null).forEach(data -> {
+            Map<String,String> parms=data.getProperties();
+            for(Map.Entry<String,String> entry : parms.entrySet()) {
+                String val=entry.getValue();
+                String replacement=Util.substituteVariable(val);
+                if(!replacement.equals(val)) {
+                    entry.setValue(replacement);
                 }
             }
-        }
+        });
     }          
 }
 

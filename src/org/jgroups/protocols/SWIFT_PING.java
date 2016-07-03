@@ -190,7 +190,7 @@ public class SWIFT_PING extends FILE_PING {
     /**
      * Supported Swift authentication providers
      */
-    private static enum AUTH_TYPE {
+    private enum AUTH_TYPE {
 
         KEYSTONE_V_2_0("keystone_v_2_0");
 
@@ -265,13 +265,13 @@ public class SWIFT_PING extends FILE_PING {
         private static Object scriptEngineLock = new Object();
         private static ScriptEngine scriptEngine;
         
-        private String tenant;
+        private final String tenant;
 
-        private URL authUrl;
+        private final URL authUrl;
 
-        private String username;
+        private final String username;
 
-        private String password;
+        private final String password;
 
         public Keystone_V_2_0_Auth(String tenant, URL authUrl, String username,
                                    String password) {
@@ -443,7 +443,7 @@ public class SWIFT_PING extends FILE_PING {
      */
     protected static class SwiftClient {
 
-        private Authenticator authenticator;
+        private final Authenticator authenticator;
 
         private volatile Credentials credentials = null;
 

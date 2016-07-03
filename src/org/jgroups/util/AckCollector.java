@@ -1,11 +1,11 @@
 package org.jgroups.util;
 
 import org.jgroups.Address;
-import org.jgroups.TimeoutException;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Collects acks from a number of nodes, waits for all acks. Can also be time bounded
@@ -118,9 +118,7 @@ public class AckCollector {
     protected synchronized void addAll(Collection<Address> members) {
         if(members == null)
             return;
-        for(Address member: members)
-            if(member != null && !missing_acks.contains(member))
-                missing_acks.add(member);
+        members.stream().filter(member -> member != null && !missing_acks.contains(member)).forEach(missing_acks::add);
         expected_acks=missing_acks.size();
     }
 }

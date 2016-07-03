@@ -2,10 +2,12 @@ package org.jgroups.tests;
 
 
 import org.jgroups.Global;
-import org.jgroups.TimeoutException;
 import org.jgroups.stack.Interval;
 import org.jgroups.stack.StaticInterval;
-import org.jgroups.util.*;
+import org.jgroups.util.Promise;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.TimeScheduler3;
+import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -14,6 +16,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -68,8 +71,7 @@ public class TimeSchedulerTest {
 
 
     /**
-     * Tests creating many tasks at the same time and then cancelling every second task. Asserts that not all tasks are cancelled;
-     * this was the case in an early implementation of {@link org.jgroups.util.TimeScheduler2}.
+     * Tests creating many tasks at the same time and then cancelling every second task. Asserts that not all tasks are cancelled
      * @param timer
      */
     @Test(dataProvider="createTimer")
@@ -120,10 +122,7 @@ public class TimeSchedulerTest {
             int num_executions=task.getNumExecutions();
             System.out.println("number of task executions=" + num_executions);
             assert num_executions ==0 : "task should never have executed as it was cancelled before execution";
-            if(timer instanceof DefaultTimeScheduler)
-                ((DefaultTimeScheduler)timer).purge(); // removes cancelled tasks
-            else
-                Util.sleep(1000);
+            Util.sleep(1000);
             assert timer.size() == 0;
         }
         finally {
@@ -148,10 +147,7 @@ public class TimeSchedulerTest {
             int num_executions=task.getNumExecutions();
             System.out.println("number of task executions=" + num_executions);
             assert num_executions >= 1 : "task should have executed at least 1 time, as it was cancelled after 500ms";
-            if(timer instanceof DefaultTimeScheduler)
-                ((DefaultTimeScheduler)timer).purge(); // removes cancelled tasks
-            else
-                Util.sleep(1000);
+            Util.sleep(1000);
             assert timer.size() == 0 : " timer size should be 0, but is " + size;
         }
         finally {
@@ -162,16 +158,8 @@ public class TimeSchedulerTest {
     @Test(dataProvider="createTimer")
     public void testShutdown(TimeScheduler timer) {
         for(int i=100; i <= 1000; i+=100) { // delays in ms
-            timer.schedule(new Runnable() {
-                public void run() {
-                    System.out.print(".");
-                }
-            }, i, TimeUnit.MILLISECONDS);
-            timer.scheduleWithFixedDelay(new Runnable() {
-                public void run() {
-                    System.out.print(".");
-                }
-            }, i, i, TimeUnit.MILLISECONDS);
+            timer.schedule(() -> System.out.print("."), i, TimeUnit.MILLISECONDS);
+            timer.scheduleWithFixedDelay(() -> System.out.print("."), i, i, TimeUnit.MILLISECONDS);
         }
 
         Util.sleep(400);
@@ -186,11 +174,7 @@ public class TimeSchedulerTest {
     public void testShutdown2(TimeScheduler timer) {
         timer.stop();
 
-        timer.schedule(new Runnable() {
-            public void run() {
-                System.out.print(".");
-            }
-        }, 500, TimeUnit.MILLISECONDS);
+        timer.schedule(() -> System.out.print("."), 500, TimeUnit.MILLISECONDS);
 
         int size=timer.size();
         assert size == 0;
@@ -224,15 +208,13 @@ public class TimeSchedulerTest {
     public void testRepeatingTaskWithException(TimeScheduler timer) throws InterruptedException {
         final AtomicInteger count=new AtomicInteger(0);
 
-        final Runnable task=new Runnable() {
-            public void run() {
-                if(count.get() == 10)
-                    return;
-                System.out.println("run #" + count);
-                count.incrementAndGet();
-                if(count.get() % 2 == 0)
-                    throw new RuntimeException("boooom");
-            }
+        final Runnable task=() -> {
+            if(count.get() == 10)
+                return;
+            System.out.println("run #" + count);
+            count.incrementAndGet();
+            if(count.get() % 2 == 0)
+                throw new RuntimeException("boooom");
         };
 
         try {
@@ -564,11 +546,9 @@ public class TimeSchedulerTest {
 
             for(int num: new Integer[]{1,2,3}) {
                 final int cnt=num;
-                timer.schedule(new Runnable() {
-                    public void run() {
-                        results.add(cnt);
-                        System.out.println("[" + (System.currentTimeMillis() - base) + "] " + cnt);
-                    }
+                timer.schedule(() -> {
+                    results.add(cnt);
+                    System.out.println("[" + (System.currentTimeMillis() - base) + "] " + cnt);
                 }, execution_time, TimeUnit.MILLISECONDS);
                 execution_time-=1300;
                 Util.sleep(300);
@@ -601,11 +581,7 @@ public class TimeSchedulerTest {
         final AtomicBoolean set=new AtomicBoolean(false);
 
         try {
-            Future<?> future=timer.scheduleWithFixedDelay(new Runnable() {
-                public void run() {
-                    set.set(true);
-                }
-            }, 0, 3000, TimeUnit.MILLISECONDS);
+            Future<?> future=timer.scheduleWithFixedDelay(() -> set.set(true), 0, 3000, TimeUnit.MILLISECONDS);
 
             Util.sleep(500);
             future.cancel(true);
@@ -613,11 +589,7 @@ public class TimeSchedulerTest {
             System.out.println("variable was set: " + set);
             assert set.get();
 
-            future=timer.scheduleWithFixedDelay(new Runnable() {
-                public void run() {
-                    set.set(true);
-                }
-            }, 300, 3000, TimeUnit.MILLISECONDS);
+            future=timer.scheduleWithFixedDelay(() -> set.set(true), 300, 3000, TimeUnit.MILLISECONDS);
 
             Util.sleep(1000);
             future.cancel(true);

@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
+import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
@@ -36,7 +37,8 @@ import java.util.concurrent.TimeUnit;
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class MFC extends FlowControl {
-
+    protected final static FcHeader MFC_REPLENISH_HDR      = new FcHeader(FcHeader.REPLENISH);
+    protected final static FcHeader MFC_CREDIT_REQUEST_HDR = new FcHeader(FcHeader.CREDIT_REQUEST);
     
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
@@ -79,9 +81,9 @@ public class MFC extends FlowControl {
         return credits.getAverageBlockTime();
     }
 
-    protected boolean handleMulticastMessage() {
-        return true;
-    }
+    protected boolean          handleMulticastMessage() {return true;}
+    @Override protected Header getReplenishHeader()     {return MFC_REPLENISH_HDR;}
+    @Override protected Header getCreditRequestHeader() {return MFC_CREDIT_REQUEST_HDR;}
 
    
     public void init() throws Exception {
@@ -137,12 +139,9 @@ public class MFC extends FlowControl {
 
     protected void handleCredit(Address sender, long increase) {
         credits.replenish(sender, increase);
-        if(log.isTraceEnabled()) {
-            StringBuilder sb=new StringBuilder();
-            sb.append("received " + increase + " credits from ").append(sender).append(", new credits for " + sender + " : ")
-                    .append(credits.get(sender) + ", min_credits=" + credits.getMinCredits());
-            log.trace(sb);
-        }
+        if(log.isTraceEnabled())
+            log.trace("received %d credits from %s, new credits for %s: %d, min_credits=%d",
+                      increase, sender, sender, credits.get(sender), credits.getMinCredits());
     }
 
 
@@ -150,13 +149,8 @@ public class MFC extends FlowControl {
         super.handleViewChange(mbrs);
 
         Set<Address> keys=new HashSet<>(credits.keys());
-        for(Address key: keys) {
-            if(!mbrs.contains(key))
-                credits.remove(key);
-        }
-
-        for(Address key: mbrs)
-            credits.putIfAbsent(key);
+        keys.stream().filter(key -> !mbrs.contains(key)).forEach(key -> credits.remove(key));
+        mbrs.forEach(key -> credits.putIfAbsent(key));
     }
 
 

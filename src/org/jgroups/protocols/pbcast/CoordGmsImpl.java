@@ -126,7 +126,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
                         suspected_mbrs.add(req.mbr);
                     else {
                         leaving_mbrs.add(req.mbr);
-                        if(gms.local_addr != null && gms.local_addr.equals(req.mbr))
+                        if(Objects.equals(gms.local_addr, req.mbr))
                             self_leaving=true;
                     }
                     break;

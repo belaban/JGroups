@@ -73,11 +73,11 @@ public class DiscardTest extends ChannelTestBase {
             Properties properties=new Properties();
             properties.setProperty("down", "0.1");
 
-            a.getProtocolStack().insertProtocol(discard_prot, ProtocolStack.BELOW, MERGE3.class);
+            a.getProtocolStack().insertProtocol(discard_prot, ProtocolStack.Position.BELOW, MERGE3.class);
             discard_prot=new DISCARD();
             properties=new Properties();
             properties.setProperty("down", "0.1");
-            b.getProtocolStack().insertProtocol(discard_prot, ProtocolStack.BELOW, MERGE3.class);
+            b.getProtocolStack().insertProtocol(discard_prot, ProtocolStack.Position.BELOW, MERGE3.class);
         }
 
         System.out.printf("sending %d %d-byte messages to all members (including myself)\n", NUM_MSGS, MSG_SIZE);

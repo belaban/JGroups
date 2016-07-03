@@ -3,8 +3,6 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.protocols.UNICAST;
-import org.jgroups.protocols.UNICAST2;
 import org.jgroups.protocols.UNICAST3;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
@@ -113,22 +111,14 @@ public class UnicastTest {
 
     protected void printConnections() {
         Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
-        if(prot instanceof UNICAST)
-            System.out.println(((UNICAST)prot).printConnections());
-        else if(prot instanceof UNICAST2)
-            System.out.println(((UNICAST2)prot).printConnections());
-        else if(prot instanceof UNICAST3)
+        if(prot instanceof UNICAST3)
             System.out.println(((UNICAST3)prot).printConnections());
     }
 
 
     protected void removeAllConnections() {
         Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
-        if(prot instanceof UNICAST)
-            ((UNICAST)prot).removeAllConnections();
-        else if(prot instanceof UNICAST2)
-            ((UNICAST2)prot).removeAllConnections();
-        else if(prot instanceof UNICAST3)
+        if(prot instanceof UNICAST3)
             ((UNICAST3)prot).removeAllConnections();
     }
 

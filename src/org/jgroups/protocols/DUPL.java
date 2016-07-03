@@ -14,7 +14,7 @@ import java.util.List;
  * @author Bela Ban
  */
 public class DUPL extends Protocol {
-    protected static enum Direction {UP,DOWN};
+    protected enum Direction {UP,DOWN};
 
     @Property(description="Number of copies of each incoming message (0=no copies)")
     protected int incoming_copies=1;
@@ -115,8 +115,7 @@ public class DUPL extends Protocol {
                         copies.add(msg.copy(true));
                 }
             }
-            for(Message copied_msg: copies)
-                batch.add(copied_msg);
+            copies.forEach(batch::add);
         }
 
         if(!batch.isEmpty())

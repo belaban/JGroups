@@ -23,12 +23,9 @@ import java.util.*;
  * locks) in B as well. When A crashes, everybody falls over to B for sending lock and unlock requests.
  * B in turn copies all existing locks over to C and - when locks are acquired or released - forwards this
  * information to C as well.
- * <p/>
- * An alternative is also the {@link org.jgroups.protocols.PEER_LOCK} protocol.
  * @author Bela Ban
  * @since 2.12
  * @see Locking
- * @see PEER_LOCK
  */
 public class CENTRAL_LOCK extends Locking implements LockNotification {
 

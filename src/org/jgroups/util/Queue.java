@@ -4,9 +4,12 @@ package org.jgroups.util;
 
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.TimeoutException;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 
 /**
@@ -178,10 +181,7 @@ public class Queue {
               throw new QueueClosedException("queue has been closed. You can not add more elements. " +
                                              "Waiting for removal of remaining elements.");
 
-            for(Object obj: list) {
-                if(obj != null)
-                    addInternal(obj);
-            }
+            list.stream().filter(obj -> obj != null).forEach(this::addInternal);
 
             /*wake up all the threads that are waiting for the lock to be released*/
             mutex.notifyAll();
@@ -438,7 +438,7 @@ public class Queue {
 
 
     /**
-     Marks the queues as closed. When an <code>add</code> or <code>remove</code> operation is
+     Marks the queues as closed. When an {@code add} or {@code remove} operation is
      attempted on a closed queue, an exception is thrown.
      @param flush_entries When true, a end-of-entries marker is added to the end of the queue.
      Entries may be added and removed, but when the end-of-entries marker

@@ -102,7 +102,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     return null;
                 }
 
-                if(local_addr != null && local_addr.equals(suspected_mbr)) {
+                if(Objects.equals(local_addr, suspected_mbr)) {
                     if(log.isTraceEnabled())
                         log.trace("I was suspected; ignoring SUSPECT message");
                     return null;
@@ -310,7 +310,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     }
     /* ----------------------------- End of Private Methods -------------------------------- */
 
-    protected class Entry implements Delayed {
+    protected static class Entry implements Delayed {
         protected final Address suspect;
         protected final long target_time;
 

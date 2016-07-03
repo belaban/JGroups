@@ -11,8 +11,7 @@ import java.util.concurrent.*;
 
 
 /**
- * Implementation of {@link TimeScheduler}. Based on the {@link TimeScheduler2} implementation
- * with various fixes and enhancements. Uses a {@link DelayQueue} to order tasks according to execution times
+ * Implementation of {@link TimeScheduler}. Uses a {@link DelayQueue} to order tasks according to execution times
  * @author Bela Ban
  * @since  3.3
  */
@@ -38,7 +37,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
      */
     public TimeScheduler3() {
         pool=new ThreadPoolExecutor(4, 10,
-                                    5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
+                                    30000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(100),
                                     Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
         start();
     }
@@ -48,7 +47,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
                           String rejection_policy) {
         timer_thread_factory=factory;
         pool=new ThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
-                                    new LinkedBlockingQueue<Runnable>(max_queue_size),
+                                    new ArrayBlockingQueue<>(max_queue_size),
                                     factory, Util.parseRejectionPolicy(rejection_policy));
         start();
     }
@@ -139,12 +138,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         queue.clear();
 
         List<Runnable> remaining_tasks=pool.shutdownNow();
-        for(Runnable task: remaining_tasks) {
-            if(task instanceof Future) {
-                Future future=(Future)task;
-                future.cancel(true);
-            }
-        }
+        remaining_tasks.stream().filter(task -> task instanceof Future).forEach(task -> ((Future)task).cancel(true));
         pool.getQueue().clear();
         try {
             pool.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);

@@ -8,6 +8,7 @@ import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
 import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.util.Buffer;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
@@ -24,16 +25,22 @@ import org.testng.annotations.Test;
  */
 @Test(groups=Global.STACK_DEPENDENT, singleThreaded=true)
 public class MessageDispatcherUnitTest extends ChannelTestBase {
-    MessageDispatcher d1, d2;
-    JChannel          a, b;
+    protected MessageDispatcher   d1, d2;
+    protected JChannel            a, b;
+    protected static final Buffer buf;
+
+    static {
+        byte[] data="bla".getBytes();
+        buf=new Buffer(data, 0, data.length);
+    }
 
     @BeforeClass
     protected void setUp() throws Exception {
         a=createChannel(true, 2, "A");
-        GMS gms=(GMS)a.getProtocolStack().findProtocol(GMS.class);
+        GMS gms=a.getProtocolStack().findProtocol(GMS.class);
         if(gms != null)
             gms.setPrintLocalAddress(false);
-        d1=new MessageDispatcher(a, null, null, null);
+        d1=new MessageDispatcher(a);
         a.connect("MessageDispatcherUnitTest");
     }
 
@@ -56,7 +63,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
     public void testNullMessageToSelf() throws Exception {
         MyHandler handler=new MyHandler(null);
         d1.setRequestHandler(handler);
-        RspList rsps=d1.castMessage(null, new Message(), new RequestOptions(ResponseMode.GET_ALL, 0));
+        RspList rsps=d1.castMessage(null, buf, new RequestOptions(ResponseMode.GET_ALL, 0));
         System.out.println("rsps:\n" + rsps);
         assertNotNull(rsps);
         Assert.assertEquals(1, rsps.size());
@@ -80,7 +87,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         d1.setRequestHandler(new MyHandler(null));
         b=createChannel(a, "B");
         long stop, start=System.currentTimeMillis();
-        d2=new MessageDispatcher(b, null, null, new MyHandler(null));
+        d2=new MessageDispatcher(b, new MyHandler(null));
         stop=System.currentTimeMillis();
         b.connect("MessageDispatcherUnitTest");
         Assert.assertEquals(2,b.getView().size());
@@ -88,7 +95,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
 
         System.out.println("casting message");
         start=System.currentTimeMillis();
-        RspList rsps=d1.castMessage(null, new Message(), new RequestOptions(ResponseMode.GET_ALL, 0));
+        RspList<Object> rsps=d1.castMessage(null, buf, new RequestOptions(ResponseMode.GET_ALL, 0));
         stop=System.currentTimeMillis();
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop - start) + " ms");
@@ -107,28 +114,6 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         Util.close(b);
     }
 
-    /**
-     * Tests MessageDispatcher.castMessageXX() with a message whose destination is not null:
-     * https://issues.jboss.org/browse/JGRP-1617
-     */
-    public void testCastMessageWithNonNullDest() throws Exception {
-        b=createChannel(a, "B");
-        d2=new MessageDispatcher(b, null, null, null);
-        b.connect("MessageDispatcherUnitTest");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
-
-        d1.setRequestHandler(new MyHandler(new byte[]{'d', '1'}));
-        d2.setRequestHandler(new MyHandler(new byte[]{'d', '2'}));
-
-        Message msg=new Message(a.getAddress()); // non-null message
-        try {
-            d1.castMessage(null,msg,RequestOptions.SYNC().setTimeout(3000));
-            assert false : " multicast RPC with a non-null dest for message";
-        }
-        catch(IllegalArgumentException ex) {
-            System.out.println("received exception as expected: " + ex);
-        }
-    }
 
     public void test200ByteMessageToAll() throws Exception {
         sendMessageToBothChannels(200);
@@ -147,15 +132,15 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         MyHandler handler=new MyHandler(new byte[size]);
         d1.setRequestHandler(handler);
         start=System.currentTimeMillis();
-        RspList rsps=d1.castMessage(null, new Message(), new RequestOptions(ResponseMode.GET_ALL, 0));
+        RspList rsps=d1.castMessage(null, buf, new RequestOptions(ResponseMode.GET_ALL, 0));
         stop=System.currentTimeMillis();
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop - start) + " ms");
         assertNotNull(rsps);
         Assert.assertEquals(1, rsps.size());
-        byte[] buf=(byte[])rsps.getFirst();
-        assertNotNull(buf);
-        Assert.assertEquals(size, buf.length);
+        byte[] tmp=(byte[])rsps.getFirst();
+        assertNotNull(tmp);
+        Assert.assertEquals(size, tmp.length);
     }
 
     private void sendMessageToBothChannels(int size) throws Exception {
@@ -164,13 +149,13 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
 
         b=createChannel(a);
         b.setName("B");
-        d2=new MessageDispatcher(b, null, null, new MyHandler(new byte[size]));
+        d2=new MessageDispatcher(b, new MyHandler(new byte[size]));
         b.connect("MessageDispatcherUnitTest");
         Assert.assertEquals(2,b.getView().size());
 
         System.out.println("casting message");
         start=System.currentTimeMillis();
-        RspList rsps=d1.castMessage(null, new Message(), new RequestOptions(ResponseMode.GET_ALL, 0));
+        RspList<Object> rsps=d1.castMessage(null, buf, new RequestOptions(ResponseMode.GET_ALL, 0));
         stop=System.currentTimeMillis();
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop - start) + " ms");

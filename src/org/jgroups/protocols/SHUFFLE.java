@@ -140,12 +140,7 @@ public class SHUFFLE extends Protocol {
 
     protected synchronized void startTask() {
         if(task == null || task.isDone() || task.isCancelled()) {
-            task=timer.schedule(new Runnable() {
-
-                public void run() {
-                    shuffleAndSendMessages();
-                }
-            }, max_time, TimeUnit.MILLISECONDS);
+            task=timer.schedule((Runnable)this::shuffleAndSendMessages, max_time, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -158,9 +153,7 @@ public class SHUFFLE extends Protocol {
         synchronized(up_msgs) {
             if(!up_msgs.isEmpty()) {
                 Collections.shuffle(up_msgs);
-                for(Message msg: up_msgs)
-                    if(up_prot != null)
-                        up_prot.up(new Event(Event.MSG, msg));
+                up_msgs.stream().filter(msg -> up_prot != null).forEach(msg -> up_prot.up(new Event(Event.MSG, msg)));
                 up_msgs.clear();
             }
         }

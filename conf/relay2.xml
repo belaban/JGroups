@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 
 <!--
-    Sample configuration of multipe sites, to be used in RELAY2
+    Sample configuration of multiple sites, to be used in RELAY2
 
     ****
     **** Note that the schema is still work-in-progress and might change between 3.2 and 3.3, as

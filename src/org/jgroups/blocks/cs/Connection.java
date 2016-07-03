@@ -9,14 +9,18 @@ import java.nio.ByteBuffer;
 /**
  * Represents a connection to a peer
  */
-public interface Connection extends Closeable {
-    boolean isOpen();
-    boolean isConnected();
-    Address localAddress();
-    Address peerAddress();
-    boolean isExpired(long millis);
-    void    connect(Address dest) throws Exception;
-    void    start() throws Exception;
-    void    send(byte[] buf, int offset, int length) throws Exception;
-    void    send(ByteBuffer buf) throws Exception;
+public abstract class Connection implements Closeable {
+    protected static final byte[] cookie= { 'b', 'e', 'l', 'a' };
+    protected Address             peer_addr;    // address of the 'other end' of the connection
+    protected long                last_access;  // timestamp of the last access to this connection (read or write)
+
+    abstract public boolean isOpen();
+    abstract public boolean isConnected();
+    abstract public Address localAddress();
+    abstract public Address peerAddress();
+    abstract public boolean isExpired(long millis);
+    abstract public void    connect(Address dest) throws Exception;
+    abstract public void    start() throws Exception;
+    abstract public void    send(byte[] buf, int offset, int length) throws Exception;
+    abstract public void    send(ByteBuffer buf) throws Exception;
 }

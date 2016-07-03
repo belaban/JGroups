@@ -5,6 +5,7 @@ import org.jgroups.util.Util;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Cache which doesn't remove elements on remove(), removeAll() or retainAll(), but only removes elements when a
@@ -73,7 +74,7 @@ public class LazyRemovalCache<K,V> {
         if(val == null) return null;
         for(Map.Entry<K,Entry<V>> entry: map.entrySet()) {
             Entry<V> v=entry.getValue();
-            if(v.val != null && v.val.equals(val))
+            if(Objects.equals(v.val, val))
                 return entry.getKey();
         }
         return null;
@@ -140,13 +141,11 @@ public class LazyRemovalCache<K,V> {
         if(force)
             map.keySet().retainAll(keys);
         else {
-            for(Map.Entry<K,Entry<V>> entry: map.entrySet()) {
-                if(!keys.contains(entry.getKey())) {
-                    Entry<V> val=entry.getValue();
-                    if(val != null)
-                        val.setRemovable(true);
-                }
-            }
+            map.entrySet().stream().filter(entry -> !keys.contains(entry.getKey())).forEach(entry -> {
+                Entry<V> val=entry.getValue();
+                if(val != null)
+                    val.setRemovable(true);
+            });
         }
 
         // now make sure that all elements in keys have removable=false
@@ -164,19 +163,11 @@ public class LazyRemovalCache<K,V> {
     }
 
     public Set<V> values() {
-        Set<V> retval=new HashSet<>();
-        for(Entry<V> entry: map.values()) {
-            retval.add(entry.val);
-        }
-        return retval;
+        return map.values().stream().map(entry -> entry.val).collect(Collectors.toSet());
     }
 
     public Iterable<Entry<V>> valuesIterator() {
-        return new Iterable<Entry<V>>() {
-            public Iterator<Entry<V>> iterator() {
-                return map.values().iterator();
-            }
-        };
+        return () -> map.values().iterator();
     }
 
     /**
@@ -184,12 +175,7 @@ public class LazyRemovalCache<K,V> {
      * @return
      */
     public Set<V> nonRemovedValues() {
-        Set<V> retval=new HashSet<>();
-        for(Entry<V> entry: map.values()) {
-            if(!entry.removable)
-                retval.add(entry.val);
-        }
-        return retval;
+        return map.values().stream().filter(entry -> !entry.removable).map(entry -> entry.val).collect(Collectors.toSet());
     }
 
     public Map<K,V> contents() {

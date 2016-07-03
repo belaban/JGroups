@@ -1,9 +1,14 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.*;
+import org.jgroups.protocols.BasicTCP;
+import org.jgroups.protocols.TCPPING;
+import org.jgroups.protocols.TP;
+import org.jgroups.protocols.UDP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ResourceManager;
@@ -11,13 +16,11 @@ import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 import org.testng.annotations.*;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.InetAddress;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Bela Ban
@@ -112,21 +115,16 @@ public class ChannelTestBase {
      * Creates a channel and modifies the configuration such that no other channel will able to join
      * this one even if they have the same cluster name (if unique = true). This is done by
      * modifying mcast_addr and mcast_port with UDP, and by changing TCP.start_port, TCP.port_range
-     * and TCPPING.initial_hosts with TCP. Mainly used to run TestNG tests concurrently. Note that
-     * MuxChannels are not currently supported.
+     * and TCPPING.initial_hosts with TCP. Mainly used to run TestNG tests concurrently.
      * 
-     * @param num
-     *            The number of channels we will create. Only important (for port_range) with TCP,
-     *            ignored by UDP
-     * @return
-     * @throws Exception
+     * @param num The number of channels we will create. Only important (for port_range) with TCP, ignored by UDP
      */
     protected JChannel createChannel(boolean unique, int num) throws Exception {
-        return (JChannel) new DefaultChannelTestFactory().createChannel(unique, num);
+        return new DefaultChannelTestFactory().createChannel(unique, num);
     }
 
     protected JChannel createChannel(boolean unique, int num, String name) throws Exception {
-        return (JChannel)new DefaultChannelTestFactory().createChannel(unique, num).name(name);
+        return new DefaultChannelTestFactory().createChannel(unique, num).name(name);
     }
 
     protected JChannel createChannel() throws Exception {
@@ -138,11 +136,11 @@ public class ChannelTestBase {
     }
 
     protected JChannel createChannel(JChannel ch) throws Exception {
-        return (JChannel) new DefaultChannelTestFactory().createChannel(ch);
+        return new DefaultChannelTestFactory().createChannel(ch);
     }
 
     protected JChannel createChannel(JChannel ch, String name) throws Exception {
-        return (JChannel) new DefaultChannelTestFactory().createChannel(ch).name(name);
+        return new DefaultChannelTestFactory().createChannel(ch).name(name);
     }
 
     protected static String getUniqueClusterName() {
@@ -162,19 +160,14 @@ public class ChannelTestBase {
             return createChannel(channel_conf);
         }
 
-        public Channel createChannel(boolean unique, int num) throws Exception {
+        public JChannel createChannel(boolean unique, int num) throws Exception {
             JChannel c = createChannel(channel_conf);
-            UNICAST2 uni=(UNICAST2)c.getProtocolStack().findProtocol(UNICAST2.class);
-            if(uni != null) {
-                uni.setValue("stable_interval", 5000);
-                uni.setValue("max_bytes", 1000000);
-            }
             if(unique)
                 makeUnique(c, num);
             return c;
         }
 
-        public Channel createChannel(final JChannel ch) throws Exception {
+        public JChannel createChannel(final JChannel ch) throws Exception {
             return new JChannel(ch);
         }
 
@@ -182,13 +175,13 @@ public class ChannelTestBase {
             return new JChannel(configFile);
         }
 
-        protected void makeUnique(Channel channel, int num) throws Exception {
+        protected void makeUnique(JChannel channel, int num) throws Exception {
             String str = Util.getProperty(new String[]{ Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup" },
                                           null, "mcast_addr", null);
             makeUnique(channel, num, str);
         }
 
-        protected void makeUnique(Channel channel, int num, String mcast_address) throws Exception {
+        protected void makeUnique(JChannel channel, int num, String mcast_address) throws Exception {
             ProtocolStack stack = channel.getProtocolStack();
             Protocol transport = stack.getTransport();
 
@@ -202,18 +195,16 @@ public class ChannelTestBase {
                     ((UDP) transport).setMulticastAddress(InetAddress.getByName(mcast_addr));
                 }
             } else if (transport instanceof BasicTCP) {
-                List<Short> ports = ResourceManager.getNextTcpPorts(InetAddress.getByName(bind_addr), num);
+                List<Integer> ports = ResourceManager.getNextTcpPorts(InetAddress.getByName(bind_addr), num);
                 ((TP) transport).setBindPort(ports.get(0));
-                ((TP) transport).setPortRange(num);
+                // ((TP) transport).setPortRange(num);
 
                 Protocol ping = stack.findProtocol(TCPPING.class);
                 if (ping == null)
                     throw new IllegalStateException("TCP stack must consist of TCP:TCPPING - other config are not supported");
 
-                List<String> initial_hosts = new LinkedList<>();
-                for (short port : ports) {
-                    initial_hosts.add(bind_addr + "[" + port + "]");
-                }
+                List<String> initial_hosts=ports.stream().map(port -> String.format("%s[%d]", bind_addr, port))
+                  .collect(Collectors.toList());
                 String tmp = Util.printListWithDelimiter(initial_hosts, ",", 2000, false);
                 List<PhysicalAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 0);
                 ((TCPPING)ping).setInitialHosts(init_hosts);
@@ -223,94 +214,6 @@ public class ChannelTestBase {
         }
     }
 
-  
 
-    interface EventSequence {
-        /** Return an event string. Events are translated as follows: get state='g', set state='s',
-         *  block='b', unlock='u', view='v' */
-        String getEventSequence();
-        String getName();
-    }
-
-    /**
-     * Base class for all aplications using channel
-     */
-    protected abstract class ChannelApplication extends ReceiverAdapter implements EventSequence, Runnable {
-        protected Channel channel;
-        protected Thread thread;
-        protected Throwable exception;
-        protected StringBuilder events;
-
-        public ChannelApplication(String name) throws Exception {
-            channel = createChannel(true, 4);
-            init(name);
-        }
-
-        public ChannelApplication(JChannel copySource, String name) throws Exception {
-            channel = createChannel(copySource);
-            init(name);
-        }
-
-        protected void init(String name) {
-            events = new StringBuilder();
-            channel.setName(name);
-            channel.setReceiver(this);
-        }
-
-        /**
-         * Method allowing implementation of specific test application level logic
-         * 
-         * @throws Exception
-         */
-        protected abstract void useChannel() throws Exception;
-
-        public void run() {
-            try {
-                useChannel();
-            } catch (Exception e) {
-                log.error(channel.getName() + ": " + e.getLocalizedMessage(), e);
-                exception = e; // Save it for the test to check
-            }
-        }
-
-        public List<Address> getMembers() {
-            List<Address> result = null;
-            View v = channel.getView();
-            if (v != null) {
-                result = v.getMembers();
-            }
-            return result;
-        }
-
-        public Address getLocalAddress() {
-            return channel.getAddress();
-        }
-
-        public void start() {
-            thread = new Thread(this, getName());
-            thread.start();
-        }
-
-        public Channel getChannel() {
-            return channel;
-        }
-
-        public String getName() {
-            return channel != null ? channel.getName() : "n/a";
-        }
-
-        public void cleanup() {
-            if (thread != null && thread.isAlive())
-                thread.interrupt();
-            Util.close(channel);
-        }
-
-        public String getEventSequence()                              {return events.toString();}
-        public void   block()                                         {events.append('b');}
-        public void   getState(OutputStream ostream) throws Exception {events.append('g');}
-        public void   setState(InputStream istream) throws Exception  {events.append('s');}
-        public void   unblock()                                       {events.append('u');}
-        public void   viewAccepted(View new_view)                     {events.append('v');}
-    }
 
 }

@@ -131,7 +131,7 @@ public class Krb5Token extends AuthToken {
      */
     
     private boolean isAuthenticated() {
-        return !(subject == null);
+        return (subject != null);
     }
     
     private void authenticateClientPrincipal() throws LoginException {
@@ -140,7 +140,7 @@ public class Krb5Token extends AuthToken {
     
     private void generateServiceTicket() throws IOException {
         try {
-            krbServiceTicket = kerb5Utils.initiateSecurityContext(subject,service_principal_name);
+            krbServiceTicket = Krb5TokenUtils.initiateSecurityContext(subject,service_principal_name);
         }
         catch(GSSException ge) {
             throw new IOException("Failed to generate serviceticket", ge);
@@ -148,9 +148,9 @@ public class Krb5Token extends AuthToken {
     }
     
     private void validateRemoteServiceTicket(Krb5Token remoteToken) throws Exception {
-        byte[] remoteKrbServiceTicket = remoteToken.remoteKrbServiceTicket;
+        byte[] remoteKrbServiceTicketLocal = remoteToken.remoteKrbServiceTicket;
         
-        String clientPrincipalName = kerb5Utils.validateSecurityContext(subject, remoteKrbServiceTicket);
+        String clientPrincipalName = Krb5TokenUtils.validateSecurityContext(subject, remoteKrbServiceTicketLocal);
         
         if (!clientPrincipalName.equals(this.client_principal_name))
             throw new Exception("Client Principal Names did not match");
@@ -158,7 +158,7 @@ public class Krb5Token extends AuthToken {
     
     private void writeServiceTicketToSream(DataOutput out) throws IOException {
         try {
-            kerb5Utils.encodeDataToStream(krbServiceTicket, out);
+            Krb5TokenUtils.encodeDataToStream(krbServiceTicket, out);
         } catch(IOException ioe) {
             throw ioe;
         } catch(Exception e) {
@@ -168,7 +168,7 @@ public class Krb5Token extends AuthToken {
     
     private void readRemoteServiceTicketFromStream(DataInput in) throws IOException {
         try {
-            remoteKrbServiceTicket = kerb5Utils.decodeDataFromStream(in);
+            remoteKrbServiceTicket = Krb5TokenUtils.decodeDataFromStream(in);
         } catch(IOException ioe) {
             throw ioe;
         } catch(Exception e) {

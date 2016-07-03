@@ -5,9 +5,11 @@ import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
@@ -41,27 +43,23 @@ public class FLUSH extends Protocol {
 
     private static final FlushStartResult SUCCESS_START_FLUSH = new FlushStartResult(Boolean.TRUE,null);
 
-    // flags for marshalling
-    protected static final short DIGEST_PRESENT     = 1 << 0;
-    protected static final short PARTICIPANTS_PRESENT   = 1 << 1;
-   
     /*
      * ------------------------------------------ Properties------------------------------------------
      */
     @Property(description = "Max time to keep channel blocked in flush. Default is 8000 msec")
-    private long timeout = 8000;
+    protected long timeout = 8000;
 
     @Property(description = "Timeout (per atttempt) to quiet the cluster during the first flush phase. Default is 2000 msec")
-    private long start_flush_timeout = 2000;
+    protected long start_flush_timeout = 2000;
     
     @Property(description = "Timeout to wait for UNBLOCK after STOP_FLUSH is issued. Default is 2000 msec")
-    private long end_flush_timeout = 2000;
+    protected long end_flush_timeout = 2000;
 
     @Property(description = "Retry timeout after an unsuccessful attempt to quiet the cluster (first flush phase). Default is 3000 msec")
-    private long retry_timeout = 2000;
+    protected long retry_timeout = 2000;
 
     @Property(description = "Reconciliation phase toggle. Default is true")
-    private boolean enable_reconciliation = true;
+    protected boolean enable_reconciliation = true;
 
     @Property(description="When set, FLUSH is bypassed, same effect as if FLUSH wasn't in the config at all")
     protected boolean bypass=false;
@@ -83,7 +81,7 @@ public class FLUSH extends Protocol {
      */
 
     @GuardedBy("sharedLock")
-    private View currentView=new View(new ViewId(), new ArrayList<Address>());
+    private View currentView=new View(new ViewId(), new ArrayList<>());
 
     private Address localAddress;
 
@@ -172,7 +170,7 @@ public class FLUSH extends Protocol {
 
     public void stop() {
         synchronized (sharedLock) {
-            currentView = new View(new ViewId(), new ArrayList<Address>());
+            currentView = new View(new ViewId(), new ArrayList<>());
             flushCompletedMap.clear();
             flushNotCompletedMap.clear();
             flushMembers.clear();
@@ -423,11 +421,7 @@ public class FLUSH extends Protocol {
 
                                // reject flush if we have at least one OK and at least one FAIL
                                if (flushCollision) {
-                                   Runnable r = new Runnable() {
-                                       public void run() {
-                                           rejectFlush(tuple.getVal1(), fh.viewID);
-                                       }
-                                   };
+                                   Runnable r =() -> rejectFlush(tuple.getVal1(), fh.viewID);
                                    new Thread(r).start();
                                }
                                // however, flush should fail/retry as soon as one FAIL is received
@@ -840,11 +834,7 @@ public class FLUSH extends Protocol {
                 log.debug(localAddress + ": all FLUSH_COMPLETED received");
         } else if (collision) {
             // reject flush if we have at least one OK and at least one FAIL
-            Runnable r = new Runnable() {
-                public void run() {                    
-                    rejectFlush(tuple.getVal1(), header.viewID);
-                }
-            };
+            Runnable r =() -> rejectFlush(tuple.getVal1(), header.viewID);
             new Thread(r).start();
         }
     }
@@ -879,8 +869,7 @@ public class FLUSH extends Protocol {
             return null;
 
         MutableDigest digest=new MutableDigest(view.getMembersRaw());
-        for(Digest dig: digests)
-            digest.merge(dig);
+        digests.forEach(digest::merge);
         return digest;
     }
 
@@ -892,7 +881,7 @@ public class FLUSH extends Protocol {
         boolean amINeighbourOfCrashedFlushCoordinator = false;
         ArrayList<Address> flushMembersCopy = null;
         synchronized (sharedLock) {
-            boolean flushCoordinatorSuspected = address != null && address.equals(flushCoordinator);
+            boolean flushCoordinatorSuspected =Objects.equals(address, flushCoordinator);
             if (flushCoordinatorSuspected) {
                 int indexOfCoordinator = flushMembers.indexOf(flushCoordinator);
                 int myIndex = flushMembers.indexOf(localAddress);
@@ -957,7 +946,7 @@ public class FLUSH extends Protocol {
             DataInput in=new ByteArrayDataInputStream(buffer, offset, length);
             Collection<? extends Address> participants=Util.readAddresses(in, ArrayList.class);
             Digest digest=(Digest)Util.readStreamable(Digest.class,in);
-            return new Tuple<Collection<? extends Address>,Digest>(participants, digest);
+            return new Tuple<>(participants, digest);
         }
         catch(Exception ex) {
             log.error("%s: failed reading particpants and digest from message: %s", localAddress, ex);
@@ -966,7 +955,7 @@ public class FLUSH extends Protocol {
     }
 
 
-    private static class FlushStartResult {
+    private static final class FlushStartResult {
         private final Boolean result;
         private final Exception failureCause;
       

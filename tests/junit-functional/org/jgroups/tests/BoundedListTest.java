@@ -14,31 +14,31 @@ public class BoundedListTest {
     public static void testAdd() throws Exception {
         BoundedList<Integer> list=new BoundedList<>(3);
         Assert.assertEquals(0, list.size());
-        list.add(new Integer(1));
+        list.add(1);
         System.out.println(list);
         Assert.assertEquals(1, list.size());
 
-        list.add(new Integer(2));
+        list.add(2);
         System.out.println(list);
 
-        list.add(new Integer(3));
+        list.add(3);
         System.out.println(list);
         Assert.assertEquals(3, list.size());
 
-        list.add(new Integer(4));
+        list.add(4);
         System.out.println(list);
         Assert.assertEquals(3, list.size());
 
 
         int tmp;
 
-        tmp=list.removeFromHead().intValue();
+        tmp=list.removeFromHead();
         Assert.assertEquals(2, tmp);
 
-        tmp=list.removeFromHead().intValue();
+        tmp=list.removeFromHead();
         Assert.assertEquals(3, tmp);
 
-        tmp=list.removeFromHead().intValue();
+        tmp=list.removeFromHead();
         Assert.assertEquals(4, tmp);
     }
 

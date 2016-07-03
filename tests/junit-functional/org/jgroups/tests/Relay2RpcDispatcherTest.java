@@ -49,15 +49,15 @@ public class Relay2RpcDispatcherTest {
     	b = createNode(LON, "B");
     	al=new MyReceiver("A");
     	bl=new MyReceiver("B");
-    	rpca = new RpcDispatcher(a, al, al, new ServerObject(a, 1));
-    	rpcb = new RpcDispatcher(b, bl, bl, new ServerObject(b, 1));
+    	rpca = new RpcDispatcher(a, new ServerObject(1)).setMembershipListener(al);
+    	rpcb = new RpcDispatcher(b, new ServerObject(1)).setMembershipListener(bl);
     	
     	x = createNode(SFO, "X");
     	y = createNode(SFO, "Y");
     	xl=new MyReceiver("X");
     	yl=new MyReceiver("Y");
-    	rpcx = new RpcDispatcher(x, xl, xl, new ServerObject(x, 1));
-    	rpcy = new RpcDispatcher(y, yl, yl, new ServerObject(y, 1));
+    	rpcx = new RpcDispatcher(x, new ServerObject(1)).setMembershipListener(xl);
+    	rpcy = new RpcDispatcher(y, new ServerObject(1)).setMembershipListener(yl);
     }
     @AfterMethod protected void destroy() {Util.close(y,x,b,a);}
 
@@ -119,13 +119,6 @@ public class Relay2RpcDispatcherTest {
 
         System.out.println("B: sending message 0 to the site master of SFO");
         Address sm_sfo=new SiteMaster(SFO);
-        b.send(sm_sfo, 0);
-        checkMsgDelivery(xl);
-        
-        System.out.println("B: sending message to all members in both sites");
-        b.send(null, 0);
-        checkMsgDelivery(xl, yl, al, bl);
-        
         MethodCall call=new MethodCall(ServerObject.class.getMethod("foo"));
         System.out.println("B: call foo method on A");
         Object rsp = rpcb.callRemoteMethod(a.getAddress(), call, new RequestOptions(ResponseMode.GET_ALL,5000));
@@ -178,21 +171,20 @@ public class Relay2RpcDispatcherTest {
     	return ch;
     }
     
-    public static class ServerObject {
-    	int i;
-    	Channel ch;
-    	public ServerObject(Channel ch, int i) {
-    		this.ch = ch;
+    protected static class ServerObject {
+    	protected int i;
+
+    	public ServerObject(int i) {
     		this.i=i;
     	}
     	public int foo() {
-    		return i;}
+            System.out.println("foo()");
+            return i;
+        }
     	
     	public static long sleep(long timeout) {
-    		// System.out.println("sleep()");
     		long start=System.currentTimeMillis();
     		Util.sleep(timeout);
-    		//throw new NullPointerException("boom");
     		return System.currentTimeMillis() - start;
     	}
     }

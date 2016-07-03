@@ -5,7 +5,6 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.blocks.MethodCall;
-import org.jgroups.blocks.MethodLookup;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -45,11 +44,6 @@ public class MethodCallTest {
         }
     }
 
-    public static final MethodLookup lookup=new MethodLookup() {
-        public Method findMethod(short id) {
-            return methods.get(id);
-        }
-    };
 
     public static class TargetClass {
         public static boolean foo(int a, String b) {
@@ -88,7 +82,7 @@ public class MethodCallTest {
 
 
     public void testMethod() throws Exception {
-        Method m=TargetClass.class.getMethod("foo", new Class[]{int.class, String.class});
+        Method m=TargetClass.class.getMethod("foo", int.class, String.class);
         MethodCall mc=new MethodCall(m,22, "Bela");
         Assert.assertEquals(mc.invoke(target),Boolean.TRUE);
     }
@@ -157,24 +151,14 @@ public class MethodCallTest {
         Assert.assertEquals(mc.invoke(target),Boolean.TRUE);
     }
 
-    public void testID() throws Exception {
-        MethodCall call=new MethodCall((short)1, true, Boolean.FALSE, 322649, 3.24, (float)54.345,
-                                       new byte[]{'b', 'e', 'l', 'a'}, new String[]{"Bela", "Michelle"})
-          .lookup(lookup);
-        call.invoke(this);
-
-        call=new MethodCall((short)2).lookup(lookup);
-        call.invoke(target);
-    }
-
 
     public static void testBufferSize() throws Exception {
         MethodCall m=new MethodCall("foo", new Object[]{10,"Bela"}, new Class[]{int.class, String.class});
         byte[] data=Util.objectToByteBuffer(m);
         
-        MethodCall m2=(MethodCall)Util.objectFromByteBuffer(data);
+        MethodCall m2=Util.objectFromByteBuffer(data);
         System.out.println(m2);
-        Object[] args=m2.getArgs();
+        Object[] args=m2.args();
         assert args.length == 2;
         assert args[0].equals(10);
         assert args[1].equals("Bela");
@@ -198,7 +182,7 @@ public class MethodCallTest {
 
 
     public static void testMETHOD() throws Exception {
-        Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
+        Method method = Target.class.getMethod("someMethod", String.class);
         MethodCall methodCall = new MethodCall(method, "abc");
         Target target = new Target();
         Object result = methodCall.invoke(target);
@@ -207,7 +191,7 @@ public class MethodCallTest {
 
 
     public static void testInheritanceMETHOD() throws Exception {
-        Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
+        Method method = Target.class.getMethod("someMethod", String.class);
         MethodCall methodCall = new MethodCall(method, "abc");
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
@@ -284,7 +268,7 @@ public class MethodCallTest {
     }
 
     public static void testMarshallingMETHOD() throws Exception {
-        Method m=TargetClass.class.getMethod("foo", new Class[]{int.class, String.class});
+        Method m=TargetClass.class.getMethod("foo", int.class, String.class);
         MethodCall mc=new MethodCall(m,22, "Bela");
         MethodCall call2=marshalAndUnmarshal(mc);
         System.out.println("call2 = " + call2);
@@ -305,7 +289,7 @@ public class MethodCallTest {
         System.out.println("call2 = " + call2);
     }
 
-    public static void testMarshallingID() throws Exception {
+    public void testMarshallingID() throws Exception {
         MethodCall mc=new MethodCall((short)1, true, Boolean.FALSE, 322649, 3.24, (float)54.345,
                                      new byte[]{'b', 'e', 'l', 'a'}, new String[]{"Bela", "Michelle"});
         MethodCall call2=marshalAndUnmarshal(mc);
@@ -317,7 +301,7 @@ public class MethodCallTest {
         System.out.println("call2 = " + call2);
 
 
-        mc=new MethodCall((short)2).lookup(lookup);
+        mc=new MethodCall((short)2);
         call2=marshalAndUnmarshal(mc);
         System.out.println("call2 = " + call2);
     }

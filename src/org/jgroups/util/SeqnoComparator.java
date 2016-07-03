@@ -1,11 +1,14 @@
 package org.jgroups.util;
 
+import java.io.Serializable;
 import java.util.Comparator;
 
 /**
  * @author Bela Ban
  */
-public class SeqnoComparator implements Comparator<Seqno> {
+public class SeqnoComparator implements Comparator<Seqno>, Serializable {
+    private static final long serialVersionUID = 1L;
+
     public int compare(Seqno o1, Seqno o2) {
 
         // o1 and o2 are either Seqnos or SeqnoRanges, so we just compare on 'low'

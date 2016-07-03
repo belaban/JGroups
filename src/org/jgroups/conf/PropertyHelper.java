@@ -14,10 +14,14 @@ import java.util.Map;
     /*
      * A class of static methods for performing commonly used functions with @Property annotations.
      */
-    public class PropertyHelper {
+    public final class PropertyHelper {
     	
         protected static final Log log=LogFactory.getLog(PropertyHelper.class);
     	
+    	private PropertyHelper() {
+    		throw new InstantiationError( "Must not instantiate this class" );
+    	}
+
     	public static String getPropertyName(Field field, Map<String,String> props) throws IllegalArgumentException {
     		if (field == null) {
     			throw new IllegalArgumentException("Cannot get property name: field is null") ;

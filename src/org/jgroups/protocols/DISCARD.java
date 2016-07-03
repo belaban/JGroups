@@ -40,10 +40,10 @@ public class DISCARD extends Protocol {
     @ManagedAttribute(description="Number of dropped up messages",name="dropped_up_messages")
     protected int                       num_up=0;
 
-    protected final Set<Address>        ignoredMembers = Collections.synchronizedSet(new HashSet<Address>());
+    protected final Set<Address>        ignoredMembers = Collections.synchronizedSet(new HashSet<>());
 
 
-    protected final Collection<Address> members = Collections.synchronizedList(new ArrayList<Address>());
+    protected final Collection<Address> members = Collections.synchronizedList(new ArrayList<>());
 
     @Property(description="drop all messages (up or down)",writable=true)
     protected boolean                   discard_all=false;
@@ -168,13 +168,13 @@ public class DISCARD extends Protocol {
 
     public Object up(Event evt) {
         if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
-            localAddress=(Address)evt.getArg();
+            localAddress=evt.getArg();
             if(discard_dialog != null)
                 discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
         }
 
         if(evt.getType() == Event.MSG) {
-            Message msg=(Message)evt.getArg();
+            Message msg=evt.getArg();
             if(shouldDropUpMessage(msg, msg.getSrc()))
                 return null;
         }
@@ -200,7 +200,7 @@ public class DISCARD extends Protocol {
 
         switch(evt.getType()) {
             case Event.MSG:
-                msg=(Message)evt.getArg();
+                msg=evt.getArg();
                 Address dest=msg.getDest();
                 boolean multicast=dest == null;
 
@@ -238,7 +238,7 @@ public class DISCARD extends Protocol {
                 }
                 break;
             case Event.VIEW_CHANGE:
-                View view=(View)evt.getArg();
+                View view=evt.getArg();
                 List<Address> mbrs=view.getMembers();
                 members.clear();
                 members.addAll(mbrs);
@@ -248,7 +248,7 @@ public class DISCARD extends Protocol {
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                localAddress=(Address)evt.getArg();
+                localAddress=evt.getArg();
                 if(discard_dialog != null)
                     discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
                 break;
@@ -263,7 +263,7 @@ public class DISCARD extends Protocol {
 
 
     /** Checks if a message should be passed up, or not */
-    protected boolean shouldDropUpMessage(Message msg, Address sender) {
+    protected boolean shouldDropUpMessage(@SuppressWarnings("UnusedParameters") Message msg, Address sender) {
         if(discard_all && !sender.equals(localAddress()))
             return true;
 
@@ -300,10 +300,8 @@ public class DISCARD extends Protocol {
             rsp.setSrc(localAddress());
 
         // pretty inefficient: creates one thread per message, okay for testing only
-        Thread thread=new Thread(new Runnable() {
-            public void run() {
-                up_prot.up(new Event(Event.MSG, rsp));
-            }
+        Thread thread=new Thread(() -> {
+            up_prot.up(new Event(Event.MSG, rsp));
         });
         thread.start();
     }
@@ -353,6 +351,7 @@ public class DISCARD extends Protocol {
                         ((JCheckBox)c).setSelected(false);
                     }
                 }
+                ignoredMembers.clear();
             }
         }
 
@@ -360,15 +359,11 @@ public class DISCARD extends Protocol {
             checkboxes.removeAll();
             for(final Address addr: mbrs) {
                 final MyCheckBox box=new MyCheckBox("discard traffic from " + addr, addr);
-                box.addActionListener(new ActionListener() {
-                    public void actionPerformed(ActionEvent e) {
-                        if(box.isSelected()) {
-                            ignoredMembers.add(addr);
-                        }
-                        else {
-                            ignoredMembers.remove(addr);
-                        }
-                    }
+                box.addActionListener(e -> {
+                    if(box.isSelected())
+                        ignoredMembers.add(addr);
+                    else
+                        ignoredMembers.remove(addr);
                 });
                 checkboxes.add(box);
             }

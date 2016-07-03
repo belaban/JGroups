@@ -15,6 +15,7 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.regex.Pattern;
 
 
 /**
@@ -26,15 +27,13 @@ import java.util.concurrent.Future;
  */
 public class FILE_PING extends Discovery {
     protected static final String SUFFIX=".list";
+    protected static final Pattern regexp=Pattern.compile("[\0<>:\"/\\|?*]");
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
 
     @Property(description="The absolute path of the shared file")
     protected String location=File.separator + "tmp" + File.separator + "jgroups";
-
-    @Deprecated @Property(description="Interval (in milliseconds) at which the own Address is written. 0 disables it.")
-    protected long interval=60000;
 
     @Property(description="If true, on a view change, the new coordinator removes files from old coordinators")
     protected boolean remove_old_coords_on_view_change=false;
@@ -58,9 +57,7 @@ public class FILE_PING extends Discovery {
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     protected File                        root_dir=null;
-    protected static final FilenameFilter filter=new FilenameFilter() {
-        public boolean accept(File dir, String name) {return name.endsWith(SUFFIX);}
-    };
+    protected static final FilenameFilter filter=(dir, name1) -> name1.endsWith(SUFFIX);
     protected Future<?>                   info_writer;
 
     public boolean isDynamic() {return true;}
@@ -74,11 +71,17 @@ public class FILE_PING extends Discovery {
     public void init() throws Exception {
         super.init();
         createRootDir();
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                remove(cluster_name, local_addr);
-            }
-        });
+        try {
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                public void run() {
+                    remove(cluster_name, local_addr);
+                }
+            });
+        }
+        // This can be thrown if the JVM is already in the process of shutting down
+        catch (IllegalStateException e) {
+            log.debug("Unable to add shutdown hook for " + this.getClass().getCanonicalName() + ". File " + cluster_name + "/" + addressToFilename(local_addr) + " may not be deleted.");
+        }
     }
 
 
@@ -136,7 +139,7 @@ public class FILE_PING extends Discovery {
     /** Only add the discovery response if the logical address is not present or the physical addrs are different */
     protected boolean addDiscoveryResponseToCaches(Address mbr, String logical_name, PhysicalAddress physical_addr) {
         PhysicalAddress phys_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, mbr));
-        boolean added=phys_addr == null || !phys_addr.equals(physical_addr);
+        boolean added=!Objects.equals(phys_addr, physical_addr);
         super.addDiscoveryResponseToCaches(mbr, logical_name, physical_addr);
         if(added && is_coord)
             writeAll();
@@ -145,8 +148,8 @@ public class FILE_PING extends Discovery {
 
     protected static String addressToFilename(Address mbr) {
         String logical_name=UUID.get(mbr);
-        return (addressAsString(mbr) + (logical_name != null? "." + logical_name + SUFFIX : SUFFIX))
-            .replace(File.separatorChar, '-');
+        String name=(addressAsString(mbr) + (logical_name != null? "." + logical_name + SUFFIX : SUFFIX));
+        return regexp.matcher(name).replaceAll("-");
     }
 
     protected void createRootDir() {

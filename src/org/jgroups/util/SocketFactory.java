@@ -1,7 +1,8 @@
 package org.jgroups.util;
 
-import java.net.*;
 import java.io.IOException;
+import java.net.*;
+import java.nio.channels.ServerSocketChannel;
 import java.util.Map;
 
 /**
@@ -11,7 +12,7 @@ import java.util.Map;
  * Ephemeral ports can be created by passing 0 as port, or (if the port is ignored), an implementation could pass in
  * a special service name (e.g. "EPHEMERAL"), this is implementation dependent.<p/>
  * The socket creation methods have the same parameter lists as the socket constructors, e.g.
- * {@link #createServerSocket(String, int, int)} is the same as {@link java.net.ServerSocket(int,int)}. 
+ * {@link #createServerSocket(String, int, int)} is the same as {@link java.net.ServerSocket#ServerSocket(int, int)}.
  * @author Bela Ban
  */
 public interface SocketFactory {
@@ -25,6 +26,23 @@ public interface SocketFactory {
     ServerSocket createServerSocket(String service_name, int port) throws IOException;
     ServerSocket createServerSocket(String service_name, int port, int backlog) throws IOException;
     ServerSocket createServerSocket(String service_name, int port, int backlog, InetAddress bindAddr) throws IOException;
+
+    @SuppressWarnings("UnusedParameters")
+    default ServerSocketChannel createServerSocketChannel(String service_name) throws IOException {
+        return ServerSocketChannel.open();
+    }
+
+    default ServerSocketChannel createServerSocketChannel(String service_name, int port) throws IOException {
+        return createServerSocketChannel(service_name).bind(new InetSocketAddress(port));
+    }
+
+    default ServerSocketChannel createServerSocketChannel(String service_name, int port, int backlog) throws IOException {
+        return createServerSocketChannel(service_name).bind(new InetSocketAddress(port), backlog);
+    }
+
+    default ServerSocketChannel createServerSocketChannel(String service_name, int port, int backlog, InetAddress bindAddr) throws IOException {
+        return createServerSocketChannel(service_name).bind(new InetSocketAddress(bindAddr, port), backlog);
+    }
 
     DatagramSocket createDatagramSocket(String service_name) throws SocketException;
     DatagramSocket createDatagramSocket(String service_name, SocketAddress bindaddr) throws SocketException;

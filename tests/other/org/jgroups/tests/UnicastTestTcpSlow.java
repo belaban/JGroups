@@ -47,7 +47,7 @@ public class UnicastTestTcpSlow {
     public void init(String local_addr, String remote_addr, int local_port, int remote_port) throws Exception {
         local=new InetSocketAddress(local_addr, local_port);
         remote=new InetSocketAddress(remote_addr, remote_port);
-        srv_sock=Util.createServerSocket(new DefaultSocketFactory(), "server", local.getAddress(), local.getPort());
+        srv_sock=Util.createServerSocket(new DefaultSocketFactory(), "server", local.getAddress(), local.getPort(), local.getPort());
         System.out.println("Listening on " + srv_sock.getLocalSocketAddress());
         acceptor=new Acceptor();
         acceptor.start();

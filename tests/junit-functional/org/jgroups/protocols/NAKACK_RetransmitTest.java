@@ -150,7 +150,7 @@ public class NAKACK_RetransmitTest {
     protected static void insertDiscardProtocol(JChannel ... channels) {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
-            stack.insertProtocolInStack(new DiscardEveryOtherMulticastMessage(), stack.getTransport(), ProtocolStack.ABOVE);
+            stack.insertProtocolInStack(new DiscardEveryOtherMulticastMessage(), stack.getTransport(), ProtocolStack.Position.ABOVE);
         }
     }
 

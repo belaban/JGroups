@@ -100,7 +100,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
                         break;
                     case ToaHeader.SINGLE_DESTINATION_MESSAGE:
                         if (log.isTraceEnabled()) {
-                            log.trace("Received message " + message + " with SINGLE_DESTINATION header. delivering...");
+                            log.trace("Received message %s with SINGLE_DESTINATION header. delivering...", message);
                         }
                         deliverManager.deliverSingleDestinationMessage(message, header.getMessageID());
                         break;
@@ -125,8 +125,8 @@ public class TOA extends Protocol implements DeliveryProtocol {
     public void deliver(Message message) {
         message.setDest(localAddress);
 
-        if (log.isDebugEnabled()) {
-            log.debug("Deliver message " + message + "(" + message.getHeader(id) + ") in total order");
+        if (log.isTraceEnabled()) {
+            log.trace("Deliver message %s (%d) in total order", message, message.getHeader(id));
         }
 
         up_prot.up(new Event(Event.MSG, message));
@@ -135,7 +135,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
 
     private void handleViewChange(View view) {
         if (log.isTraceEnabled()) {
-            log.trace("Handle view " + view);
+            log.trace("Handle view %s", view);
         }
         View oldView = currentView;
         currentView = view;
@@ -159,8 +159,8 @@ public class TOA extends Protocol implements DeliveryProtocol {
                 }
 
                 if (log.isTraceEnabled()) {
-                    log.trace("Message " + messageID + " is ready to be deliver. Final sequencer number is " +
-                            finalSequenceNumber);
+                    log.trace("Message %s is ready to be deliver. Final sequencer number is %d",
+                              messageID, finalSequenceNumber);
                 }
 
                 send(destinations, finalMessage, false);
@@ -204,8 +204,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
             message.setDest(destinations.get(0));
 
             if (trace) {
-                log.trace("Sending total order anycast message " + message +  " (" + message.getHeader(id) +
-                        ") to single destination");
+                log.trace("Sending total order anycast message %s (%s) to single destination", message, message.getHeader(id));
             }
 
             if (deliverToMySelf) {
@@ -227,8 +226,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
             }
 
             if (trace) {
-                log.trace("Sending total order anycast message " + message +  " (" + message.getHeader(id) +
-                        ") to " + destinations);
+                log.trace("Sending total order anycast message %s (%s) to %s", message, message.getHeader(id), destinations);
             }
 
             senderManager.addNewMessageToSend(messageID, destinations, sequenceNumber, deliverToMySelf);
@@ -247,8 +245,8 @@ public class TOA extends Protocol implements DeliveryProtocol {
     }
 
     private void send(Collection<Address> destinations, Message msg, boolean sendToMyself) {
-        if (log.isDebugEnabled()) {
-            log.debug("sending anycast total order message " + msg + " to " + destinations);
+        if (log.isTraceEnabled()) {
+            log.trace("sending anycast total order message %s to %s", msg, destinations);
         }
         for (Address address : destinations) {
             if (!sendToMyself && address.equals(localAddress)) {
@@ -272,8 +270,8 @@ public class TOA extends Protocol implements DeliveryProtocol {
                     header.getSequencerNumber());
 
             if (log.isTraceEnabled()) {
-                log.trace("Received the message with " + header + ". The proposed sequence number is " +
-                        myProposeSequenceNumber);
+                log.trace("Received the message with %s. The proposed sequence number is %d",
+                          header, myProposeSequenceNumber);
             }
 
             //create a new message and send it back
@@ -301,8 +299,8 @@ public class TOA extends Protocol implements DeliveryProtocol {
         try {
             MessageID messageID = header.getMessageID();
             if (trace) {
-                log.trace("Received the proposed sequence number message with " + header + " from " +
-                        from);
+                log.trace("Received the proposed sequence number message with %s from %s",
+                        header, from);
             }
 
             deliverManager.updateSequenceNumber(header.getSequencerNumber());
@@ -323,8 +321,8 @@ public class TOA extends Protocol implements DeliveryProtocol {
                 }
 
                 if (trace) {
-                    log.trace("Message " + messageID + " is ready to be deliver. Final sequencer number is " +
-                            finalSequenceNumber);
+                    log.trace("Message %s is ready to be deliver. Final sequencer number is %d" +
+                                messageID, finalSequenceNumber);
                 }
 
                 send(destinations, finalMessage, false);
@@ -349,7 +347,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
         try {
             MessageID messageID = header.getMessageID();
             if (log.isTraceEnabled()) {
-                log.trace("Received the final sequence number message with " + header);
+                log.trace("Received the final sequence number message with %s", header);
             }
 
             deliverManager.markReadyToDeliver(messageID, header.getSequencerNumber());
@@ -365,7 +363,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
         if (log.isDebugEnabled()) {
             log.debug(msg, e);
         } else if (log.isWarnEnabled()) {
-            log.warn(msg + ". Error is " + e.getLocalizedMessage());
+            log.warn("%s. Error is %s", msg, e.getLocalizedMessage());
         }
     }
 

@@ -14,6 +14,11 @@ import java.util.Properties;
  * @since 3.6
  */
 final class SecurityActions {
+	
+	private SecurityActions() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
+
    private static <T> T doPrivileged(PrivilegedAction<T> action) {
       if (System.getSecurityManager() != null) {
          return AccessController.doPrivileged(action);
@@ -23,20 +28,10 @@ final class SecurityActions {
    }
 
    static String getSystemProperty(final String name) {
-      return doPrivileged(new PrivilegedAction<String>() {
-         @Override
-         public String run() {
-            return System.getProperty(name);
-         }
-      });
+      return doPrivileged(() -> System.getProperty(name));
    }
 
    public static Properties getSystemProperties() {
-      return doPrivileged(new PrivilegedAction<Properties>() {
-         @Override
-         public Properties run() {
-            return System.getProperties();
-         }
-      });
+      return doPrivileged(System::getProperties);
    }
 }

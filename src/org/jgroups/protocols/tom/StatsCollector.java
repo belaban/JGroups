@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class StatsCollector {
 
-    private static enum Counter {
+    private enum Counter {
         PROPOSE_MESSAGE_RECEIVED,
         LAST_PROPOSE_MESSAGE_RECEIVED,
         FINAL_MESSAGE_RECEIVED,
@@ -22,7 +22,7 @@ public class StatsCollector {
         UNICAST_MESSAGE_SENT
     }
 
-    private static enum Duration {
+    private enum Duration {
         PROPOSE_MESSAGE,
         LAST_PROPOSE_MESSAGE,
         FINAL_MESSAGE,
@@ -32,8 +32,8 @@ public class StatsCollector {
 
     //from javadoc: Enum maps are represented internally as arrays. This representation is extremely compact and efficient. 
     //this way is simple to add new stats and avoids create N field with atomic long or atomic integer. 
-    private EnumMap<Counter, AtomicInteger> counters;
-    private EnumMap<Duration, AtomicLong> durations;
+    private final EnumMap<Counter, AtomicInteger> counters;
+    private final EnumMap<Duration, AtomicLong> durations;
 
     public StatsCollector() {
         counters = new EnumMap<>(Counter.class);

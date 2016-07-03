@@ -7,14 +7,8 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
 
 /**
@@ -64,7 +58,7 @@ public class COUNTER extends Protocol {
     protected static final byte RESPONSE = 2;
     
 
-    protected static enum RequestType {
+    protected enum RequestType {
         GET_OR_CREATE,
         DELETE,
         SET,
@@ -75,7 +69,7 @@ public class COUNTER extends Protocol {
         RESEND_PENDING_REQUESTS
     }
 
-    protected static enum ResponseType {
+    protected enum ResponseType {
         VOID,
         GET_OR_CREATE,
         BOOLEAN,
@@ -138,13 +132,19 @@ public class COUNTER extends Protocol {
         Owner owner=getOwner();
         GetOrCreateRequest req=new GetOrCreateRequest(owner, name, initial_value);
         Promise<long[]> promise=new Promise<>();
-        pending_requests.put(owner, new Tuple<Request,Promise>(req, promise));
+        pending_requests.put(owner, new Tuple<>(req, promise));
         sendRequest(coord, req);
-        long[] result=promise.getResultWithTimeout(timeout);
-        long value=result[0], version=result[1];
-        if(!coord.equals(local_addr))
-            counters.put(name, new VersionedValue(value, version));
-        return new CounterImpl(name);
+        long[] result=new long[0];
+        try {
+            result=promise.getResultWithTimeout(timeout);
+            long value=result[0], version=result[1];
+            if(!coord.equals(local_addr))
+                counters.put(name, new VersionedValue(value, version));
+            return new CounterImpl(name);
+        }
+        catch(TimeoutException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** Sent asynchronously - we don't wait for an ack */
@@ -290,10 +290,8 @@ public class COUNTER extends Protocol {
                         counter_name=reconcile_req.names[i];
                         long version=reconcile_req.versions[i];
                         VersionedValue my_value=map.get(counter_name);
-                        if(my_value != null) {
-                            if(my_value.version <= version)
-                                map.remove(counter_name);
-                        }
+                        if(my_value != null && my_value.version <= version)
+                            map.remove(counter_name);
                     }
                 }
 
@@ -401,7 +399,7 @@ public class COUNTER extends Protocol {
         if(!members.isEmpty())
             coord=members.get(0);
 
-        if(coord != null && coord.equals(local_addr)) {
+        if(Objects.equals(coord, local_addr)) {
             List<Address> old_backups=backup_coords != null? new ArrayList<>(backup_coords) : null;
             backup_coords=new CopyOnWriteArrayList<>(Util.pickNext(members, local_addr, num_backups));
 
@@ -651,15 +649,21 @@ public class COUNTER extends Protocol {
             Owner owner=getOwner();
             Request req=new SetRequest(owner, name, new_value);
             Promise<long[]> promise=new Promise<>();
-            pending_requests.put(owner, new Tuple<Request,Promise>(req, promise));
+            pending_requests.put(owner, new Tuple<>(req, promise));
             sendRequest(coord, req);
-            Object obj=promise.getResultWithTimeout(timeout);
-            if(obj instanceof Throwable)
-                throw new IllegalStateException((Throwable)obj);
-            long[] result=(long[])obj;
-            long value=result[0], version=result[1];
-            if(!coord.equals(local_addr))
-                counters.put(name, new VersionedValue(value, version));
+            Object obj=null;
+            try {
+                obj=promise.getResultWithTimeout(timeout);
+                if(obj instanceof Throwable)
+                    throw new IllegalStateException((Throwable)obj);
+                long[] result=(long[])obj;
+                long value=result[0], version=result[1];
+                if(!coord.equals(local_addr))
+                    counters.put(name, new VersionedValue(value, version));
+            }
+            catch(TimeoutException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
@@ -674,18 +678,24 @@ public class COUNTER extends Protocol {
             Owner owner=getOwner();
             Request req=new CompareAndSetRequest(owner, name, expect, update);
             Promise<long[]> promise=new Promise<>();
-            pending_requests.put(owner, new Tuple<Request,Promise>(req, promise));
+            pending_requests.put(owner, new Tuple<>(req, promise));
             sendRequest(coord, req);
-            Object obj=promise.getResultWithTimeout(timeout);
-            if(obj instanceof Throwable)
-                throw new IllegalStateException((Throwable)obj);
-            if(obj == null)
-                return false;
-            long[] result=(long[])obj;
-            long value=result[0], version=result[1];
-            if(!coord.equals(local_addr))
-                counters.put(name, new VersionedValue(value, version));
-            return true;
+            Object obj=null;
+            try {
+                obj=promise.getResultWithTimeout(timeout);
+                if(obj instanceof Throwable)
+                    throw new IllegalStateException((Throwable)obj);
+                if(obj == null)
+                    return false;
+                long[] result=(long[])obj;
+                long value=result[0], version=result[1];
+                if(!coord.equals(local_addr))
+                    counters.put(name, new VersionedValue(value, version));
+                return true;
+            }
+            catch(TimeoutException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
@@ -710,16 +720,22 @@ public class COUNTER extends Protocol {
             Owner owner=getOwner();
             Request req=new AddAndGetRequest(owner, name, delta);
             Promise<long[]> promise=new Promise<>();
-            pending_requests.put(owner, new Tuple<Request,Promise>(req, promise));
+            pending_requests.put(owner, new Tuple<>(req, promise));
             sendRequest(coord, req);
-            Object obj=promise.getResultWithTimeout(timeout);
-            if(obj instanceof Throwable)
-                throw new IllegalStateException((Throwable)obj);
-            long[] result=(long[])obj;
-            long value=result[0], version=result[1];
-            if(!coord.equals(local_addr))
-                counters.put(name, new VersionedValue(value, version));
-            return value;
+            Object obj=null;
+            try {
+                obj=promise.getResultWithTimeout(timeout);
+                if(obj instanceof Throwable)
+                    throw new IllegalStateException((Throwable)obj);
+                long[] result=(long[])obj;
+                long value=result[0], version=result[1];
+                if(!coord.equals(local_addr))
+                    counters.put(name, new VersionedValue(value, version));
+                return value;
+            }
+            catch(TimeoutException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
@@ -732,12 +748,12 @@ public class COUNTER extends Protocol {
 
 
 
-    protected abstract static class Request implements Streamable {
+    protected interface Request extends Streamable {
 
     }
 
 
-    protected static class SimpleRequest extends Request {
+    protected static class SimpleRequest implements Request {
         protected Owner   owner;
         protected String  name;
 
@@ -766,7 +782,7 @@ public class COUNTER extends Protocol {
         }
     }
 
-    protected static class ResendPendingRequests extends Request {
+    protected static class ResendPendingRequests implements Request {
         public void writeTo(DataOutput out) throws Exception {}
         public void readFrom(DataInput in) throws Exception {}
         public String toString() {return "ResendPendingRequests";}
@@ -869,7 +885,7 @@ public class COUNTER extends Protocol {
     }
 
 
-    protected static class ReconcileRequest extends Request {
+    protected static class ReconcileRequest implements Request {
         protected String[] names;
         protected long[]   values;
         protected long[]   versions;
@@ -898,7 +914,7 @@ public class COUNTER extends Protocol {
     }
 
 
-    protected static class UpdateRequest extends Request {
+    protected static class UpdateRequest implements Request {
         protected String name;
         protected long   value;
         protected long   version;
@@ -928,11 +944,11 @@ public class COUNTER extends Protocol {
 
 
 
-    protected static abstract class Response implements Streamable {}
+    protected interface Response extends Streamable {}
 
     
     /** Response without data */
-    protected static class SimpleResponse extends Response {
+    protected static class SimpleResponse implements Response {
         protected Owner owner;
         protected long  version;
 
@@ -1041,7 +1057,7 @@ public class COUNTER extends Protocol {
 
 
     
-    protected static class ReconcileResponse extends Response {
+    protected static class ReconcileResponse implements Response {
         protected String[] names;
         protected long[]   values;
         protected long[]   versions;

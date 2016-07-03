@@ -53,7 +53,6 @@ public class Message implements Streamable {
         OOB((short)            1),           // message is out-of-band
         DONT_BUNDLE(   (short)(1 <<  1)),    // don't bundle message at the transport
         NO_FC(         (short)(1 <<  2)),    // bypass flow control
-        SCOPED(        (short)(1 <<  3)),    // when a message has a scope
         NO_RELIABILITY((short)(1 <<  4)),    // bypass UNICAST(2) and NAKACK
         NO_TOTAL_ORDER((short)(1 <<  5)),    // bypass total order (e.g. SEQUENCER)
         NO_RELAY(      (short)(1 <<  6)),    // bypass relaying (RELAY)
@@ -69,15 +68,6 @@ public class Message implements Streamable {
         public short value() {return value;}
     }
 
-    @Deprecated public static final Flag OOB=Flag.OOB;
-    @Deprecated public static final Flag DONT_BUNDLE=Flag.DONT_BUNDLE;
-    @Deprecated public static final Flag NO_FC=Flag.NO_FC;
-    @Deprecated public static final Flag SCOPED=Flag.SCOPED;
-    @Deprecated public static final Flag NO_RELIABILITY=Flag.NO_RELIABILITY;
-    @Deprecated public static final Flag NO_TOTAL_ORDER=Flag.NO_TOTAL_ORDER;
-    @Deprecated public static final Flag NO_RELAY=Flag.NO_RELAY;
-    @Deprecated public static final Flag RSVP=Flag.RSVP;
-
 
 
     // =========================== Transient flags ==============================
@@ -91,18 +81,12 @@ public class Message implements Streamable {
         public short value() {return value;}
     }
 
-    @Deprecated
-    public static final TransientFlag OOB_DELIVERED=TransientFlag.OOB_DELIVERED; // OOB which has already been delivered up the stack
-
-
 
 
    /**
-    * Constructs a Message given a destination Address
-    *
-    * @param dest
-    *           Address of receiver. If it is <em>null</em> then the message sent to the group.
-    *           Otherwise, it contains a single destination and is sent to that member.
+    * Constructs a message given a destination address
+    * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
+    *             sent to a single member.
     */
     public Message(Address dest) {
         setDest(dest);
@@ -110,17 +94,12 @@ public class Message implements Streamable {
     }
 
    /**
-    * Constructs a Message given a destination Address, a source Address and the payload byte buffer
-    *
-    * @param dest
-    *           Address of receiver. If it is <em>null</em> then the message sent to the group.
-    *           Otherwise, it contains a single destination and is sent to that member.
-    *           <p>
-    * @param src
-    *           Address of sender
-    * @param buf
-    *           Message to be sent. Note that this buffer must not be modified (e.g. buf[0]=0 is not
-    *           allowed), since we don't copy the contents on clopy() or clone().
+    * Constructs a message given a destination and source address and the payload byte buffer
+    * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
+    *             sent to a single member.
+    * @param src The address of the sender. Can be null; in this case the transport will fill in the sender's address
+    * @param buf The payload. Note that this buffer must not be modified (e.g. buf[0]='x' is not
+    *           allowed) since we don't copy the contents.
     */
     public Message(Address dest, Address src, byte[] buf) {
         this(dest);
@@ -134,29 +113,22 @@ public class Message implements Streamable {
 
 
    /**
-    * Constructs a message. The index and length parameters allow to provide a <em>reference</em> to
-    * a byte buffer, rather than a copy, and refer to a subset of the buffer. This is important when
-    * we want to avoid copying. When the message is serialized, only the subset is serialized.<br/>
+    * Constructs a message. The index and length parameters provide a reference to a byte buffer, rather than a copy,
+    * and refer to a subset of the buffer. This is important when we want to avoid copying. When the message is
+    * serialized, only the subset is serialized.</p>
     * <em>
     * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
     * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
     * retransmit a changed byte[] buffer !
     * </em>
     *
-    * @param dest
-    *           Address of receiver. If it is <em>null</em> then the message sent to the group.
-    *           Otherwise, it contains a single destination and is sent to that member.
-    *           <p>
-    * @param src
-    *           Address of sender
-    * @param buf
-    *           A reference to a byte buffer
-    * @param offset
-    *           The index into the byte buffer
-    * @param length
-    *           The number of bytes to be used from <tt>buf</tt>. Both index and length are checked
-    *           for array index violations and an ArrayIndexOutOfBoundsException will be thrown if
-    *           invalid
+    * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
+    *             sent to a single member.
+    * @param src The address of the sender. Can be null; in this case the transport will fill in the sender's address
+    * @param buf A reference to a byte buffer
+    * @param offset The index into the byte buffer
+    * @param length The number of bytes to be used from <tt>buf</tt>. Both index and length are checked
+    *           for array index violations and an ArrayIndexOutOfBoundsException will be thrown if invalid
     */
     public Message(Address dest, Address src, byte[] buf, int offset, int length) {
         this(dest);
@@ -168,23 +140,19 @@ public class Message implements Streamable {
         this(dest, null, buf, offset, length);
     }
 
+    public Message(Address dest, Buffer buf) {
+        this(dest);
+        setBuffer(buf);
+    }
+
 
    /**
-    * Constructs a Message given a destination Address, a source Address and the payload Object
-    *
-    * @param dest
-    *           Address of receiver. If it is <em>null</em> then the message sent to the group.
-    *           Otherwise, it contains a single destination and is sent to that member.
-    *           <p>
-    * @param src
-    *           Address of sender
-    * @param obj
-    *           The object will be marshalled into the byte buffer.
-    *           <em>Obj has to be serializable (e.g. implementing
-    *              Serializable, Externalizable or Streamable, or be a basic type (e.g. Integer, Short etc)).</em>
-    *           ! The resulting buffer must not be modified (e.g. buf[0]=0 is not allowed), since we
-    *           don't copy the contents on clopy() or clone().
-    *           <p/>
+    * Constructs a message given a destination and source address and the payload object
+    * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
+    *             sent to a single member.
+    * @param src The address of the sender. Can be null; in this case the transport will fill in the sender's address
+    * @param obj The object that will be marshalled into the byte buffer. Has to be serializable (e.g. implementing
+    *            Serializable, Externalizable or Streamable, or be a basic type (e.g. Integer, Short etc)).
     */
     public Message(Address dest, Address src, Object obj) {
         this(dest);
@@ -231,7 +199,7 @@ public class Message implements Streamable {
     *
     * @return byte array with a copy of the buffer.
     */
-    final public byte[] getBuffer() {
+    public byte[] getBuffer() {
         if(buf == null)
             return null;
         if(offset == 0 && length == buf.length)
@@ -241,6 +209,12 @@ public class Message implements Streamable {
             System.arraycopy(buf, offset, retval, 0, length);
             return retval;
         }
+    }
+
+    public Buffer getBuffer2() {
+        if(buf == null)
+            return null;
+        return new Buffer(buf, offset, length);
     }
 
     /**
@@ -358,7 +332,7 @@ public class Message implements Streamable {
     }
 
 
-    final public Object getObject() {
+    final public <T extends Object> T getObject() {
         return getObject(null);
     }
 
@@ -374,7 +348,7 @@ public class Message implements Streamable {
      *
      * @return the object
      */
-    final public Object getObject(ClassLoader loader) {
+    final public <T extends Object> T getObject(ClassLoader loader) {
         try {
             return Util.objectFromByteBuffer(buf, offset, length, loader);
         }
@@ -508,15 +482,6 @@ public class Message implements Streamable {
     }
 
 
-    public Message setScope(short scope) {
-        Util.setScope(this, scope);
-        return this;
-    }
-
-    public short getScope() {
-        return Util.getScope(this);
-    }
-
     /*---------------------- Used by protocol layers ----------------------*/
 
     /** Puts a header given an ID into the hashmap. Overwrites potential existing entry. */
@@ -533,24 +498,9 @@ public class Message implements Streamable {
         return this;
     }
 
-   /**
-    * Puts a header given a key into the map, only if the key doesn't exist yet
-    */
-    public Message putHeaderIfAbsent(short id, Header hdr) {
-        if(id <= 0)
-            throw new IllegalArgumentException("An ID of " + id + " is invalid");
-        if(hdr != null)
-            hdr.setProtId(id);
-        synchronized(this) {
-            Header[] resized_array=Headers.putHeader(this.headers, id, hdr, false);
-            if(resized_array != null)
-                this.headers=resized_array;
-        }
-        return this;
-    }
 
 
-    public Header getHeader(short id) {
+    public <T extends Header> T getHeader(short id) {
         if(id <= 0)
             throw new IllegalArgumentException("An ID of " + id + " is invalid. Add the protocol which calls " +
                                                  "getHeader() to jg-protocol-ids.xml");
@@ -675,21 +625,6 @@ public class Message implements Streamable {
 
 
 
-
-    /** Tries to read an object from the message's buffer and prints it */
-    public String toStringAsObject() {
-        if(buf == null) return null;
-        try {
-            Object obj=getObject();
-            return obj != null ? obj.toString() : "";
-        }
-        catch(Exception e) {  // it is not an object
-            return "";
-        }
-    }
-
-
-
     public String printObjectHeaders() {
         return Headers.printObjectHeaders(this.headers);
     }
@@ -735,11 +670,13 @@ public class Message implements Streamable {
         Header[] hdrs=this.headers;
         int size=Headers.size(hdrs);
         out.writeShort(size);
-        for(Header hdr: hdrs) {
-            if(hdr == null)
-                break;
-            out.writeShort(hdr.getProtId());
-            writeHeader(hdr, out);
+        if(size > 0) {
+            for(Header hdr : hdrs) {
+                if(hdr == null)
+                    break;
+                out.writeShort(hdr.getProtId());
+                writeHeader(hdr, out);
+            }
         }
 
         // 6. buf
@@ -783,14 +720,16 @@ public class Message implements Streamable {
         Header[] hdrs=this.headers;
         int size=Headers.size(hdrs, excluded_headers);
         out.writeShort(size);
-        for(Header hdr: hdrs) {
-            if(hdr == null)
-                break;
-            short id=hdr.getProtId();
-            if(excluded_headers != null && Util.containsId(id, excluded_headers))
-                continue;
-            out.writeShort(id);
-            writeHeader(hdr, out);
+        if(size > 0) {
+            for(Header hdr : hdrs) {
+                if(hdr == null)
+                    break;
+                short id=hdr.getProtId();
+                if(excluded_headers != null && Util.containsId(id, excluded_headers))
+                    continue;
+                out.writeShort(id);
+                writeHeader(hdr, out);
+            }
         }
 
         // 6. buf
@@ -882,7 +821,7 @@ public class Message implements Streamable {
     * @return The number of bytes for the marshalled message
     */
     public long size() {
-        long retval=Global.BYTE_SIZE   // leading byte
+        long retval=(long)Global.BYTE_SIZE   // leading byte
                 + Global.SHORT_SIZE;   // flags
         if(dest_addr != null)
             retval+=Util.size(dest_addr);

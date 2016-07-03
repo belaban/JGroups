@@ -14,9 +14,10 @@ import java.util.concurrent.TimeUnit;
  * @since  3.6
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
-public class CondVarTest implements Condition {
+public class CondVarTest {
     protected CondVar          cond;
     protected volatile boolean done=false; // our condition
+    protected Condition        condition=() -> done;
 
     @BeforeMethod protected void setup() {
         cond=new CondVar();
@@ -25,59 +26,52 @@ public class CondVarTest implements Condition {
 
     public void testWaitFor() {
         done=true;
-        cond.waitFor(this); // needs to return immediately
+        cond.waitFor(condition); // needs to return immediately
     }
 
     public void testInterruptedWaitFor() {
         Thread.currentThread().interrupt();
         done=true;
-        cond.waitFor(this); // needs to return immediately
+        cond.waitFor(condition); // needs to return immediately
         assert Thread.currentThread().isInterrupted();
     }
 
     public void testWaitForWithSignal() {
         signal(1000, true, true);
-        cond.waitFor(this);
-        assert isMet();
+        cond.waitFor(condition);
     }
 
     public void testWaitForWithSignalAndInterrupt() {
         signal(2000, true, true);
         interrupt(Thread.currentThread(), 200);
-        cond.waitFor(this);
-        assert isMet();
+        cond.waitFor(condition);
     }
 
     public void testTimedWaitForWithNegativeTimeout() {
-        boolean result=cond.waitFor(this, 0, TimeUnit.SECONDS);
+        boolean result=cond.waitFor(() -> done, 0, TimeUnit.SECONDS);
         assert !done && !result;
-        result=cond.waitFor(this, -1, TimeUnit.SECONDS);
+        result=cond.waitFor(condition, -1, TimeUnit.SECONDS);
         assert !done && !result;
     }
 
     public void testTimedWaitFor() {
-        boolean result=cond.waitFor(this, 1, TimeUnit.SECONDS);
+        boolean result=cond.waitFor(condition, 1, TimeUnit.SECONDS);
         assert !done && !result;
         interrupt(Thread.currentThread(), 100);
-        result=cond.waitFor(this, 1, TimeUnit.SECONDS);
+        result=cond.waitFor(condition, 1, TimeUnit.SECONDS);
         assert !done && !result;
         signal(1000, true, true);
-        result=cond.waitFor(this, 5, TimeUnit.SECONDS);
+        result=cond.waitFor(condition, 5, TimeUnit.SECONDS);
         assert done && result;
 
         done=false;
         interrupt(Thread.currentThread(), 1);
         signal(1000, true, false);
-        result=cond.waitFor(this, 5, TimeUnit.SECONDS);
+        result=cond.waitFor(condition, 5, TimeUnit.SECONDS);
         assert result && done && Thread.currentThread().isInterrupted();
     }
 
 
-
-
-    public boolean isMet() {
-        return done;
-    }
 
     protected void signal(final long after_ms, final boolean flag, boolean signal_all) {
         new Thread() {

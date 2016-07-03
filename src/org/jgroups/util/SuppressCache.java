@@ -59,10 +59,7 @@ public class SuppressCache<T> {
     }
 
     public void removeExpired(long expiry_time) {
-        for(Map.Entry<T,Value> entry: map.entrySet()) {
-            if(entry.getValue().age() >= expiry_time)
-                map.remove(entry.getKey());
-        }
+        map.entrySet().stream().filter(entry -> entry.getValue().age() >= expiry_time).forEach(entry -> map.remove(entry.getKey()));
     }
 
     /** Returns the total count of all values */

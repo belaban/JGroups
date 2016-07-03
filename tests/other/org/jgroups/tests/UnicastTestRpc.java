@@ -6,14 +6,14 @@ import org.jgroups.blocks.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.SiteMaster;
-import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
 import java.io.BufferedReader;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,9 +32,9 @@ public class UnicastTestRpc extends ReceiverAdapter {
     private Address                   local_addr;
     private RpcDispatcher             disp;
     private String                    groupname="UTestRpc";
-    private boolean                   sync=false, oob=false, anycasting=false;
-    private int                       num_threads=1;
-    private int                       num_msgs=50000, msg_size=1000, print=num_msgs / 10;
+    private boolean                   sync=true, oob=true, anycasting=false;
+    private int                       num_threads=25;
+    private int                       num_msgs=100000, msg_size=1000, print=num_msgs / 10;
     private int                       anycast_count=1;
     private final Collection<Address> anycast_mbrs=new ArrayList<>();
     private Address                   destination=null;
@@ -63,13 +63,8 @@ public class UnicastTestRpc extends ReceiverAdapter {
         channel=new JChannel(props);
         if(name != null)
             channel.setName(name);
-        disp=new RpcDispatcher(channel, null, this, this);
-        disp.setMethodLookup(new MethodLookup() {
-            public Method findMethod(short id) {
-                return METHODS[id];
-            }
-        });
-        disp.setRequestMarshaller(new CustomMarshaller());
+        disp=new RpcDispatcher(channel, this).setMembershipListener(this)
+          .setMethodLookup(id -> METHODS[id]).setMarshaller(new CustomMarshaller());
         channel.connect(groupname);
         local_addr=channel.getAddress();
 
@@ -88,12 +83,14 @@ public class UnicastTestRpc extends ReceiverAdapter {
         Util.close(channel);
     }
 
-    public void viewAccepted(View new_view) {
-        System.out.println("** view: " + new_view);
+
+    @SuppressWarnings("UnusedParameters")
+    public static void receiveData(byte[] data) {
+        ;
     }
 
-
-    public void receiveData(byte[] buffer) {
+    public void viewAccepted(View new_view) {
+        System.out.println("** view: " + new_view);
     }
 
 
@@ -177,10 +174,10 @@ public class UnicastTestRpc extends ReceiverAdapter {
         
         // The first call needs to be synchronous with OOB !
         RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 15000, anycasting, null);
-        if(sync) options.setFlags(Message.Flag.DONT_BUNDLE);
-        if(oob) options.setFlags(Message.Flag.OOB);
+        if(sync) options.flags(Message.Flag.DONT_BUNDLE);
+        if(oob) options.flags(Message.Flag.OOB);
 
-        options.setMode(sync? ResponseMode.GET_ALL : ResponseMode.GET_NONE);
+        options.mode(sync? ResponseMode.GET_ALL : ResponseMode.GET_NONE);
 
         final CountDownLatch latch=new CountDownLatch(1);
         Invoker[] invokers=new Invoker[num_threads];
@@ -300,7 +297,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
 
     protected static List<String> getSites(JChannel channel) {
-        RELAY2 relay=(RELAY2)channel.getProtocolStack().findProtocol(RELAY2.class);
+        RELAY2 relay=channel.getProtocolStack().findProtocol(RELAY2.class);
         return relay != null? relay.siteNames() : Collections.<String>emptyList();
     }
 
@@ -359,33 +356,22 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
 
-    static class CustomMarshaller implements RpcDispatcher.Marshaller {
+    protected class CustomMarshaller implements Marshaller {
 
-        public Buffer objectToBuffer(Object obj) throws Exception {
-            MethodCall call=(MethodCall)obj;
-            if(call.getId() == 0) {
-                byte[] arg=(byte[])call.getArgs()[0];
-                ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE + arg.length);
-                buf.put((byte)0).putInt(arg.length).put(arg, 0, arg.length);
-                return new Buffer(buf.array());
-            }
-            else
-                throw new IllegalStateException("method " + call.getMethod() + " not known");
+        public int estimatedSize(Object arg) {
+            if(arg == null)
+                return 10;
+            if(arg instanceof byte[])
+                return UnicastTestRpc.this.msg_size;
+            return 50;
         }
 
-        public Object objectFromBuffer(byte[] buffer, int offset, int length) throws Exception {
-            ByteBuffer buf=ByteBuffer.wrap(buffer, offset, length);
+        public void objectToStream(Object obj, DataOutput out) throws Exception {
+            Util.objectToStream(obj, out);
+        }
 
-            byte type=buf.get();
-            switch(type) {
-                case 0:
-                    int len=buf.getInt();
-                    byte[] arg=new byte[len];
-                    buf.get(arg, 0, arg.length);
-                    return new MethodCall((short)0, arg);
-                default:
-                    throw new IllegalStateException("type " + type + " not known");
-            }
+        public Object objectFromStream(DataInput in) throws Exception {
+            return Util.objectFromStream(in);
         }
     }
 

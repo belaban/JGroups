@@ -3,6 +3,7 @@ package org.jgroups.blocks.cs;
 import org.jgroups.Address;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.util.SocketFactory;
 import org.jgroups.util.ThreadFactory;
 
 import java.nio.channels.*;
@@ -33,8 +34,8 @@ public abstract class NioBaseServer extends BaseServer {
 
 
 
-    protected NioBaseServer(ThreadFactory f) {
-        super(f);
+    protected NioBaseServer(ThreadFactory f, SocketFactory sf) {
+        super(f, sf);
     }
 
 

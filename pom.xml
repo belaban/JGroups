@@ -5,7 +5,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>bundle</packaging>
     <name>JGroups</name>
-    <version>3.6.7-SNAPSHOT</version>
+    <version>4.0.0-SNAPSHOT</version>
     <url>http://www.jgroups.org</url>
 
     <properties>
@@ -156,6 +156,7 @@
                 </includes>
                 <excludes>
                     <exclude>*-service.xml</exclude>
+                    <exclude>log4*.xml</exclude>
                 </excludes>
             </resource>
             <resource>
@@ -191,8 +192,8 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                     <excludes>
                         <exclude>org/jgroups/util/JUnitXMLReporter.java</exclude>
                         <!--<exclude>org/jgroups/demos/**</exclude>-->
@@ -214,8 +215,8 @@
                 <configuration>
                     <rules>
                         <requireJavaVersion>
-                            <!-- require JDK 1.7 to run the build -->
-                            <version>[1.7,)</version>
+                            <!-- require Java 8 or higher -->
+                            <version>[1.8,)</version>
                         </requireJavaVersion>
                         <requireMavenVersion>
                             <version>3.0.4</version>
@@ -285,7 +286,7 @@
                         </configuration>
                     </execution>
                     <!-- Run the tests via ant -->
-                    <execution>
+                    <!--<execution>
                         <phase>test</phase>
                         <configuration>
                             <tasks unless="maven.test.skip">
@@ -297,7 +298,7 @@
                         <goals>
                             <goal>run</goal>
                         </goals>
-                    </execution>
+                    </execution>-->
                 </executions>
             </plugin>
             <!-- Make sure we generate src jars too -->
@@ -348,6 +349,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <skipTests>true</skipTests>
                 </configuration>
                 <executions>
                     <execution>
@@ -371,7 +373,7 @@
                 <plugin>
                     <groupId>org.apache.felix</groupId>
                     <artifactId>maven-bundle-plugin</artifactId>
-                    <version>2.3.7</version>
+                    <version>3.0.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

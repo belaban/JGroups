@@ -11,10 +11,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -29,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * The major advantage of this approach is that transferring application state to a
  * joining member of a group does not entail loading of the complete application
  * state into memory. The application state, for example, might be located entirely
- * on some form of disk based storage. The default <code>STATE_TRANSFER</code> protocol
+ * on some form of disk based storage. The default {@code STATE_TRANSFER} protocol
  * requires this state to be loaded entirely into memory before being
  * transferred to a group member while the streaming state transfer protocols do not.
  * Thus the streaming state transfer protocols are able to
@@ -59,7 +56,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
     protected int                 max_pool=5;
 
     @Property(description="Keep alive for pool threads serving state requests")
-    protected long                pool_thread_keep_alive=20 * 1000;
+    protected long                pool_thread_keep_alive=(long) 20 * 1000;
 
 
 
@@ -152,7 +149,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
                 StateTransferInfo info=(StateTransferInfo)evt.getArg();
                 Address target=info.target;
 
-                if(target != null && target.equals(local_addr)) {
+                if(Objects.equals(target, local_addr)) {
                     log.error("%s: cannot fetch state from myself", local_addr);
                     target=null;
                 }
@@ -209,7 +206,12 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
                             handleEOF(sender);
                             break;
                         case StateHeader.STATE_EX:
-                            handleException((Throwable)msg.getObject());
+                            try {
+                                handleException(Util.exceptionFromBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
+                            }
+                            catch(Throwable t) {
+                                log.error("failed deserializaing state exception", t);
+                            }
                             break;
                         default:
                             log.error("%s: type %d not known in StateHeader", local_addr, hdr.type);
@@ -338,7 +340,8 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
     protected void sendException(Address requester, Throwable exception) {
         try {
-            Message ex_msg=new Message(requester, null, exception).putHeader(getId(), new StateHeader(StateHeader.STATE_EX));
+            Message ex_msg=new Message(requester).setBuffer(Util.exceptionToBuffer(exception))
+              .putHeader(getId(), new StateHeader(StateHeader.STATE_EX));
             down(new Event(Event.MSG, ex_msg));
         }
         catch(Throwable t) {
@@ -350,7 +353,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
     protected ThreadPoolExecutor createThreadPool() {
         ThreadPoolExecutor threadPool=new ThreadPoolExecutor(0, max_pool, pool_thread_keep_alive,
-                                                             TimeUnit.MILLISECONDS, new SynchronousQueue<Runnable>());
+                                                             TimeUnit.MILLISECONDS, new SynchronousQueue<>());
 
         ThreadFactory factory=new ThreadFactory() {
             private final AtomicInteger thread_id=new AtomicInteger(1);
@@ -484,11 +487,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
             final InputStream input=in;
             final Object res=resource;
             // use another thread to read state because the state requester has to receive state chunks from the state provider
-            Thread t=getThreadFactory().newThread(new Runnable() {
-                public void run() {
-                    setStateInApplication(input, res, provider);
-                }
-            }, "STATE state reader");
+            Thread t=getThreadFactory().newThread(() -> setStateInApplication(input, res, provider), "STATE state reader");
             t.start();
         }
         else
@@ -577,8 +576,8 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
-            digest=(Digest)Util.readStreamable(Digest.class, in);
-            bind_addr=(IpAddress)Util.readStreamable(IpAddress.class, in);
+            digest=Util.readStreamable(Digest.class, in);
+            bind_addr=Util.readStreamable(IpAddress.class, in);
         }
 
         public int size() {

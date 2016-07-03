@@ -6,8 +6,8 @@ import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.Version;
 import org.jgroups.protocols.TpHeader;
-import org.jgroups.protocols.UNICAST;
-import org.jgroups.protocols.pbcast.NakAckHeader;
+import org.jgroups.protocols.UNICAST3;
+import org.jgroups.protocols.pbcast.NakAckHeader2;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
@@ -50,8 +50,8 @@ public class MessageSizeTest {
         assert len <= MCAST_MAX_SIZE;
         if(len < MCAST_MAX_SIZE) {
             double percentage=compute(len, MCAST_MAX_SIZE);
-            System.out.println("multicast message (" + len + " bytes) is " + Util.format(percentage) +
-                    "% smaller than previous max size (" + MCAST_MAX_SIZE + " bytes)");
+            System.out.printf("multicast message (%d bytes) is %.2f %% smaller than previous max size (%d bytes)\n",
+                              len, percentage, MCAST_MAX_SIZE);
         }
     }
 
@@ -74,8 +74,8 @@ public class MessageSizeTest {
         assert len <= UNICAST_MAX_SIZE;
         if(len < UNICAST_MAX_SIZE) {
             double percentage=compute(len, UNICAST_MAX_SIZE);
-            System.out.println("multicast message (" + len + " bytes) is " + Util.format(percentage) +
-                    "% smaller than previous max size (" + UNICAST_MAX_SIZE + " bytes)");
+            System.out.printf("unicast message (%d bytes) is %.2f %% smaller than previous max size (%d bytes)\n",
+                              len, percentage, MCAST_MAX_SIZE);
         }
     }
 
@@ -107,8 +107,8 @@ public class MessageSizeTest {
 
     static Message createMessage(Address dest, Address src) {
         Message msg=new Message(dest, src, "hello world");
-        msg.putHeader(NAKACK_ID, NakAckHeader.createMessageHeader(322649));
-        msg.putHeader(UNICAST_ID, UNICAST.UnicastHeader.createDataHeader(465784, (short)23323, true));
+        msg.putHeader(NAKACK_ID, NakAckHeader2.createMessageHeader(322649));
+        msg.putHeader(UNICAST_ID, UNICAST3.Header.createDataHeader(465784, (short)23323, true));
         msg.putHeader(UDP_ID, new TpHeader("DrawDemo"));
         return msg;
     }

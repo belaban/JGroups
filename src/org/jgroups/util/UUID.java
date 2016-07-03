@@ -32,11 +32,7 @@ public class UUID implements Address {
     protected static final int SIZE=Global.LONG_SIZE * 2;
 
     protected static final LazyRemovalCache.Printable<Address,LazyRemovalCache.Entry<String>> print_function
-      =new LazyRemovalCache.Printable<Address,LazyRemovalCache.Entry<String>>() {
-        public java.lang.String print(Address key, LazyRemovalCache.Entry<String> entry) {
-            return entry.getVal() + ": " + (key instanceof UUID? ((UUID)key).toStringLong() : key) + "\n";
-        }
-    };
+      =(key, entry) -> entry.getVal() + ": " + (key instanceof UUID? ((UUID)key).toStringLong() : key) + "\n";
     
 
     static {

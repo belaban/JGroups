@@ -326,7 +326,7 @@ public class MPerf extends ReceiverAdapter {
                 break;
 
             case MPerfHeader.RESULT:
-                Result res=(Result)msg.getObject();
+                Result res=msg.getObject();
                 results.add(msg.getSrc(), res);
                 if(initiator && results.hasAllResponses()) {
                     initiator=false;
@@ -335,8 +335,7 @@ public class MPerf extends ReceiverAdapter {
                 break;
 
             case MPerfHeader.CLEAR_RESULTS:
-                for(Stats result: received_msgs.values())
-                    result.reset();
+                received_msgs.values().forEach(Stats::reset);
                 total_received_msgs.set(0);
                 last_interval=0;
 
@@ -350,7 +349,7 @@ public class MPerf extends ReceiverAdapter {
                 break;
 
             case MPerfHeader.CONFIG_CHANGE:
-                ConfigChange config_change=(ConfigChange)msg.getObject();
+                ConfigChange config_change=msg.getObject();
                 handleConfigChange(config_change);
                 break;
 
@@ -364,7 +363,7 @@ public class MPerf extends ReceiverAdapter {
                 break;
 
             case MPerfHeader.CONFIG_RSP:
-                handleConfigResponse((Configuration)msg.getObject());
+                handleConfigResponse(msg.getObject());
                 break;
 
             case MPerfHeader.EXIT:
@@ -481,8 +480,7 @@ public class MPerf extends ReceiverAdapter {
     }
 
     protected void handleConfigResponse(Configuration cfg) {
-        for(ConfigChange change: cfg.changes)
-            handleConfigChange(change);
+        cfg.changes.forEach(this::handleConfigChange);
     }
 
 

@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  * @since  3.5
  */
-public class Responses implements Iterable<PingData>, org.jgroups.util.Condition {
+public class Responses implements Iterable<PingData> {
     protected PingData[]        ping_rsps;
     protected int               index;
     protected final Lock        lock=new ReentrantLock();
@@ -38,11 +38,6 @@ public class Responses implements Iterable<PingData>, org.jgroups.util.Condition
         this.num_expected_rsps=num_expected_rsps;
         this.break_on_coord_rsp=break_on_coord_rsp;
         ping_rsps=new PingData[Math.max(5, initial_capacity)];
-    }
-
-
-    public boolean isMet() {
-        return isDone();
     }
 
     public boolean isDone() {
@@ -112,21 +107,9 @@ public class Responses implements Iterable<PingData>, org.jgroups.util.Condition
         return null;
     }
 
-    @Deprecated
-    public List<PingData> get(long timeout) throws InterruptedException {
-        lock.lock();
-        try {
-            waitFor(timeout);
-            return toList();
-        }
-        finally {
-            lock.unlock();
-        }
-    }
-
 
     public boolean waitFor(long timeout) {
-        return cond.waitFor(this, timeout, TimeUnit.MILLISECONDS);
+        return cond.waitFor(this::isDone, timeout, TimeUnit.MILLISECONDS);
     }
 
     public Iterator<PingData> iterator() {

@@ -28,12 +28,8 @@ public class SaslServerContext implements SaslContext {
         this.subject = subject;
         if (this.subject != null) {
             try {
-                server = Subject.doAs(this.subject, new PrivilegedExceptionAction<SaslServer>() {
-                    @Override
-                    public SaslServer run() throws Exception {
-                        return saslServerFactory.createSaslServer(mech, SASL.SASL_PROTOCOL_NAME, serverName, props, callback_handler);
-                    }
-                });
+                server = Subject.doAs(this.subject, (PrivilegedExceptionAction<SaslServer>)()
+                  -> saslServerFactory.createSaslServer(mech, SASL.SASL_PROTOCOL_NAME, serverName, props, callback_handler));
             } catch (PrivilegedActionException e) {
                 throw (SaslException)e.getCause(); // The createSaslServer will only throw this type of exception
             }

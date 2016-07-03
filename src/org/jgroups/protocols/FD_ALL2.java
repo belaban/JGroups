@@ -37,9 +37,6 @@ public class FD_ALL2 extends Protocol {
     @Property(description="Timeout after which a node P is suspected if neither a heartbeat nor data were received from P")
     protected long                             timeout=40000;
 
-    @Property(description="Interval at which the HEARTBEAT timeouts are checked",deprecatedMessage="ignored")
-    protected long                             timeout_check_interval=2000;
-
     @Property(description="Treat messages received from members as heartbeats. Note that this means we're updating " +
             "a value in a hashmap every time a message is passing up the stack through FD_ALL2, which is costly. Default is false")
     protected boolean                          msg_counts_as_heartbeat=false;
@@ -100,8 +97,6 @@ public class FD_ALL2 extends Protocol {
     public int getSuspectEventsSent() {return num_suspect_events;}
     public long getTimeout() {return timeout;}
     public void setTimeout(long timeout) {this.timeout=timeout;}
-    public long getTimeoutCheckInterval() {return timeout_check_interval;}
-    public void setTimeoutCheckInterval(long timeout_check_interval) {this.timeout_check_interval=timeout_check_interval;}
     public long getInterval() {return interval;}
     public void setInterval(long interval) {this.interval=interval;}
 
@@ -303,8 +298,7 @@ public class FD_ALL2 extends Protocol {
             timestamps.keySet().retainAll(mbrs);
         }
 
-        for(Address member: mbrs)
-            update(member);
+        mbrs.forEach(this::update);
 
         if(mbrs.size() > 1) {
             startHeartbeatSender();

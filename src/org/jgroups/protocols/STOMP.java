@@ -82,8 +82,8 @@ public class STOMP extends Protocol implements Runnable {
     // Subscriptions and connections which are subscribed
     protected final ConcurrentMap<String,Set<Connection>> subscriptions=Util.createConcurrentMap(20);
 
-    public static enum ClientVerb      {CONNECT, SEND, SUBSCRIBE, UNSUBSCRIBE, BEGIN, COMMIT, ABORT, ACK, DISCONNECT}
-    public static enum ServerVerb      {MESSAGE, RECEIPT, ERROR, CONNECTED, INFO}
+    public enum ClientVerb      {CONNECT, SEND, SUBSCRIBE, UNSUBSCRIBE, BEGIN, COMMIT, ABORT, ACK, DISCONNECT}
+    public enum ServerVerb      {MESSAGE, RECEIPT, ERROR, CONNECTED, INFO}
 
     public static final byte           NULL_BYTE=0;
 
@@ -123,8 +123,7 @@ public class STOMP extends Protocol implements Runnable {
             }
         }
         synchronized(connections) {
-            for(Connection conn: connections)
-                conn.stop();
+            connections.forEach(Connection::stop);
             connections.clear();
         }
         acceptor=null;
@@ -195,7 +194,7 @@ public class STOMP extends Protocol implements Runnable {
                             synchronized(endpoints) {
                                 endpoints.put(msg.getSrc(), tmp_endpoint);
                             }
-                            update_clients=old_endpoint == null || !old_endpoint.equals(tmp_endpoint);
+                            update_clients=!Objects.equals(old_endpoint, tmp_endpoint);
                             if(update_clients && this.send_info) {
                                 synchronized(connections) {
                                     for(Connection conn: connections) {
@@ -253,7 +252,7 @@ public class STOMP extends Protocol implements Runnable {
                 throw new EOFException("reading header");
             if(header.isEmpty())
                 break;
-            int index=header.indexOf(":");
+            int index=header.indexOf(':');
             if(index != -1)
                 headers.put(header.substring(0, index).trim(), header.substring(index+1).trim());
         }
@@ -309,8 +308,7 @@ public class STOMP extends Protocol implements Runnable {
         }
 
         synchronized(connections) {
-            for(Connection conn: connections)
-                conn.sendInfo();
+            connections.forEach(Connection::sendInfo);
         }
     }
 
@@ -386,10 +384,8 @@ public class STOMP extends Protocol implements Runnable {
         }
         else {
             if(!exact_destination_match) {
-                for(Map.Entry<String,Set<Connection>> entry: subscriptions.entrySet()) {
-                    if(entry.getKey().startsWith(destination))
-                        target_connections.addAll(entry.getValue());
-                }
+                subscriptions.entrySet().stream().filter(entry -> entry.getKey().startsWith(destination))
+                  .forEach(entry -> target_connections.addAll(entry.getValue()));
             }
             else {
                 Set<Connection> conns=subscriptions.get(destination);
@@ -501,10 +497,8 @@ public class STOMP extends Protocol implements Runnable {
                     destination=headers.get("destination");
                     if(destination != null) {
                         Set<Connection> conns=subscriptions.get(destination);
-                        if(conns != null) {
-                            if(conns.remove(this) && conns.isEmpty())
-                                subscriptions.remove(destination);
-                        }
+                        if(conns != null && conns.remove(this) && conns.isEmpty())
+                            subscriptions.remove(destination);
                     }
                     break;
                 case BEGIN:
@@ -613,7 +607,7 @@ public class STOMP extends Protocol implements Runnable {
 
 
     public static class StompHeader extends org.jgroups.Header {
-        public static enum Type {MESSAGE, ENDPOINT}
+        public enum Type {MESSAGE, ENDPOINT}
 
         protected Type                      type;
         protected final Map<String,String>  headers=new HashMap<>();

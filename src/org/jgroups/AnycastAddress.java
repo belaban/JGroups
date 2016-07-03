@@ -48,9 +48,7 @@ public class AnycastAddress implements Address {
             return;
         }
         initCollection(addresses.size());
-        for (Address address : addresses) {
-            internalAdd(address);
-        }
+        addresses.forEach(this::internalAdd);
     }
 
     public Collection<Address> getAddresses() {

@@ -91,11 +91,10 @@ public class DeliveryManagerImpl implements DeliveryManager {
         }
         List<MessageInfo> toRemove = new LinkedList<>();
         synchronized (deliverySet) {
-            for (MessageInfo messageInfo : deliverySet) {
-                if (leavers.contains(messageInfo.getMessage().getSrc()) && !messageInfo.isReadyToDeliver()) {
-                    toRemove.add(messageInfo);
-                }
-            }
+            deliverySet.stream()
+              .filter(messageInfo -> leavers.contains(messageInfo.getMessage().getSrc()) && !messageInfo.isReadyToDeliver())
+              .forEach(toRemove::add);
+
             deliverySet.removeAll(toRemove);
             if (!deliverySet.isEmpty() && deliverySet.first().isReadyToDeliver()) {
                 deliverySet.notify();
@@ -162,8 +161,8 @@ public class DeliveryManagerImpl implements DeliveryManager {
      */
     private static class MessageInfo implements Comparable<MessageInfo> {
 
-        private MessageID messageID;
-        private Message message;
+        private final MessageID messageID;
+        private final Message message;
         private volatile long sequenceNumber;
         private volatile boolean readyToDeliver;
 

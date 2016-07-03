@@ -45,7 +45,7 @@ public class STABLE extends Protocol {
 
     /**
      * delay before we send STABILITY msg (give others a change to send first).
-     * This should be set to a very small number (> 0 !) if <code>max_bytes</code> is used
+     * This should be set to a very small number (> 0 !) if {@code max_bytes} is used
      */
     @Property(description="Delay before stability message is sent")
     protected long   stability_delay=6000;
@@ -53,17 +53,12 @@ public class STABLE extends Protocol {
     /**
      * Total amount of bytes from incoming messages (default = 0 = disabled).
      * When exceeded, a STABLE message will be broadcast and
-     * <code>num_bytes_received</code> reset to 0 . If this is > 0, then
-     * ideally <code>stability_delay</code> should be set to a low number as
+     * {@code num_bytes_received} reset to 0 . If this is > 0, then
+     * ideally {@code stability_delay} should be set to a low number as
      * well
      */
     @Property(description="Maximum number of bytes received in all messages before sending a STABLE message is triggered")
     protected long   max_bytes=2000000;
-
-    @Property(description="Max percentage of the max heap (-Xmx) to be used for max_bytes. " +
-      "Only used if ergonomics is enabled. 0 disables setting max_bytes dynamically.",deprecatedMessage="will be ignored")
-    @Deprecated
-    protected double cap=0.10; // 10% of the max heap by default
 
 
     @Property(description="Wether or not to send the STABLE messages to all members of the cluster, or to the " +
@@ -178,7 +173,7 @@ public class STABLE extends Protocol {
 
 
     public List<Integer> requiredDownServices() {
-        return Arrays.asList(Event.GET_DIGEST);
+        return Collections.singletonList(Event.GET_DIGEST);
     }
 
     protected void suspend(long timeout) {
@@ -610,7 +605,7 @@ public class STABLE extends Protocol {
         }
 
         // received my own STABILITY message - no need to handle it as I already reset my digest before I sent the msg
-        if(local_addr != null && local_addr.equals(sender)) {
+        if(Objects.equals(local_addr, sender)) {
             num_stability_msgs_received++;
             return;
         }

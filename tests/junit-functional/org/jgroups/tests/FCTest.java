@@ -30,8 +30,7 @@ public class FCTest {
 
     @DataProvider
     static Object[][] configProvider() {
-        return new Object[][]{
-          {FC.class},
+        return new Object[][] {
           {MFC.class}
         };
     }

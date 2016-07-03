@@ -1,7 +1,5 @@
 package org.jgroups.conf;
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Util;
 import org.w3c.dom.Node;
 
@@ -20,7 +18,6 @@ public class ProtocolConfiguration {
     private final Map<String, String> properties=new HashMap<>();
     private List<Node>                subtrees; // roots to DOM elements, passed to protocol on creation
     public static final String        protocol_prefix="org.jgroups.protocols";
-    public static final Log           log=LogFactory.getLog(ProtocolConfiguration.class);
 
 
     /**
@@ -109,11 +106,8 @@ public class ProtocolConfiguration {
                 properties.put(key, tmp);
             }
             else {
-                if(tmp.contains("${")) {
-                    log.warn("variable \"" + val + "\" in " + protocol_name + " could not be substituted; " +
-                               key + " is removed from properties");
+                if(tmp.contains("${"))
                     it.remove();
-                }
             }
         }
         properties_str=propertiesToString();

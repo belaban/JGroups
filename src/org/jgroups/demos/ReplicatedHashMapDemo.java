@@ -144,46 +144,50 @@ public class ReplicatedHashMapDemo extends Frame implements WindowListener, Acti
     public void actionPerformed(ActionEvent e) {
         String command=e.getActionCommand();
         try {
-            if(command.equals("Get")) {
-                String stock_name=stock_field.getText();
-                if(stock_name == null || stock_name.length() == 0) {
-                    showMsg("Key is empty !");
-                    return;
+            switch(command) {
+                case "Get": {
+                    String stock_name=stock_field.getText();
+                    if(stock_name == null || stock_name.isEmpty()) {
+                        showMsg("Key is empty !");
+                        return;
+                    }
+                    showMsg("Looking up value for " + stock_name + ':');
+                    Float val=map.get(stock_name);
+                    if(val != null) {
+                        value_field.setText(val.toString());
+                        clearMsg();
+                    }
+                    else {
+                        value_field.setText("");
+                        showMsg("Value for " + stock_name + " not found");
+                    }
+                    break;
                 }
-                showMsg("Looking up value for " + stock_name + ':');
-                Float val=map.get(stock_name);
-                if(val != null) {
-                    value_field.setText(val.toString());
-                    clearMsg();
-                }
-                else {
-                    value_field.setText("");
-                    showMsg("Value for " + stock_name + " not found");
-                }
+                case "Set":
+                    String stock_name=stock_field.getText();
+                    String stock_val=value_field.getText();
+                    if(stock_name == null || stock_val == null || stock_name.isEmpty() ||
+                      stock_val.isEmpty()) {
+                        showMsg("Both key and value have to be present to create a new entry");
+                        return;
+                    }
+                    Float val=new Float(stock_val);
+                    map.put(stock_name, val);
+                    showMsg("Key " + stock_name + " set to " + val);
+                    break;
+                case "All":
+                    showAll();
+                    break;
+                case "Quit":
+                    setVisible(false);
+                    System.exit(0);
+                case "Delete":
+                    removeItem();
+                    break;
+                default:
+                    System.out.println("Unknown action");
+                    break;
             }
-            else if(command.equals("Set")) {
-                String stock_name=stock_field.getText();
-                String stock_val=value_field.getText();
-                if(stock_name == null || stock_val == null || stock_name.length() == 0 ||
-                   stock_val.length() == 0) {
-                    showMsg("Both key and value have to be present to create a new entry");
-                    return;
-                }
-                Float val=new Float(stock_val);
-                map.put(stock_name, val);
-                showMsg("Key " + stock_name + " set to " + val);
-            }
-            else if(command.equals("All")) {
-                showAll();
-            }
-            else if(command.equals("Quit")) {
-                setVisible(false);
-                System.exit(0);
-            }
-            else if(command.equals("Delete"))
-                removeItem();
-            else
-                System.out.println("Unknown action");
         }
         catch(Exception ex) {
             value_field.setText("");

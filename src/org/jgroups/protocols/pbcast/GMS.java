@@ -7,7 +7,6 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.logging.Log;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GmsImpl.Request;
 import org.jgroups.stack.DiagnosticsHandler;
@@ -23,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 
 /**
@@ -64,14 +64,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     @Property(description="Print physical address(es) on startup")
     protected boolean print_physical_addrs=true;
-
-    /**
-     * Setting this to false disables concurrent startups. This is only used by unit testing code for testing merging.
-     * To everybody else: don't change it to false !
-     */
-    @Property(description="Temporary switch. Default is true and should not be changed")
-    @Deprecated
-    protected boolean handle_concurrent_startup=true;
 
     /**
      * Whether view bundling (http://jira.jboss.com/jira/browse/JGRP-144) should be enabled or not. Setting this to
@@ -186,7 +178,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     /** Returns the current view and digest. Try to find a matching digest twice (if not found on the first try) */
     public Tuple<View,Digest> getViewAndDigest() {
         MutableDigest digest=new MutableDigest(view.getMembersRaw()).set(getDigest());
-        return digest.allSet() || digest.set(getDigest()).allSet()? new Tuple<View,Digest>(view, digest) : null;
+        return digest.allSet() || digest.set(getDigest()).allSet()? new Tuple<>(view, digest) : null;
     }
 
     @ManagedAttribute
@@ -309,9 +301,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         view_handler.resumeForce();
     }
 
-    Log getLog() {return log;}
 
-    ViewHandler getViewHandler() {return view_handler;}
+    protected ViewHandler getViewHandler() {return view_handler;}
 
     @ManagedOperation
     public String printPreviousViews() {
@@ -328,7 +319,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         Map<Address,String> contents=UUID.getContents();
         for(Map.Entry<Address,String> entry: contents.entrySet()) {
             String logical_name=entry.getValue();
-            if(logical_name != null && logical_name.equals(suspected_member)) {
+            if(Objects.equals(logical_name, suspected_member)) {
                 Address suspect=entry.getKey();
                 if(suspect != null)
                     up(new Event(Event.SUSPECT, suspect));
@@ -365,7 +356,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     public List<Integer> providedDownServices() {
-        return Arrays.asList(Event.IS_MERGE_IN_PROGRESS);
+        return Collections.singletonList(Event.IS_MERGE_IN_PROGRESS);
     }
 
     public void setImpl(GmsImpl new_impl) {
@@ -485,8 +476,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public boolean isMergeKillerRunning() {return merger.isMergeKillerTaskRunning();}
 
     /**
-     * Computes the next view. Returns a copy that has <code>leavers</code> and
-     * <code>suspected_mbrs</code> removed and <code>joiners</code> added.
+     * Computes the next view. Returns a copy that has {@code leavers} and
+     * {@code suspected_mbrs} removed and {@code joiners} added.
      */
     public View getNextView(Collection<Address> joiners, Collection<Address> leavers, Collection<Address> suspected_mbrs) {
         synchronized(members) {
@@ -507,20 +498,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
             // Update joining list (see DESIGN for explanation)
             if(joiners != null)
-                for(Address tmp_mbr: joiners)
-                    if(!joining.contains(tmp_mbr))
-                        joining.add(tmp_mbr);
+                joiners.stream().filter(tmp_mbr -> !joining.contains(tmp_mbr)).forEach(joining::add);
 
             // Update leaving list (see DESIGN for explanations)
             if(leavers != null)
-                for(Address addr: leavers)
-                    if(!leaving.contains(addr))
-                        leaving.add(addr);
+                leavers.stream().filter(addr -> !leaving.contains(addr)).forEach(leaving::add);
 
             if(suspected_mbrs != null)
-                for(Address addr:suspected_mbrs)
-                    if(!leaving.contains(addr))
-                        leaving.add(addr);
+                suspected_mbrs.stream().filter(addr -> !leaving.contains(addr)).forEach(leaving::add);
             return v;
         }
     }
@@ -635,8 +620,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         if(jr != null && newMembers != null && !newMembers.isEmpty()) {
             final ViewId view_id=jr.getView().getViewId();
             ack_collector.reset(new ArrayList<>(newMembers));
-            for(Address joiner: newMembers)
+            for(Address joiner: newMembers) {
+                log.trace("%s: sending join-rsp to %s: view=%s (%d mbrs)\n", local_addr, joiner, jr.getView(), jr.getView().size());
                 sendJoinResponse(jr, joiner);
+            }
             try {
                 ack_collector.waitForAllAcks(view_ack_collection_timeout);
                 log.trace("%s: got all ACKs (%d) from joiners for view %s", local_addr, ack_collector.expectedAcks(), view_id);
@@ -709,9 +696,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 tmp_members.remove(leaving); // remove members that haven't yet been removed from the membership
 
                 // add to prev_members
-                for(Address addr: mbrs)
-                    if(!prev_members.contains(addr))
-                        prev_members.add(addr);
+                mbrs.stream().filter(addr -> !prev_members.contains(addr)).forEach(addr -> prev_members.add(addr));
             }
 
             Address coord=determineCoordinator();
@@ -766,7 +751,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         synchronized(members) {
             if(members.size() < 2) return false;
             Address new_coord=members.elementAt(1);  // member at 2nd place
-            return new_coord != null && new_coord.equals(potential_new_coord);
+            return Objects.equals(new_coord, potential_new_coord);
         }
     }
 
@@ -864,8 +849,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         switch(evt.getType()) {
 
             case Event.MSG:
-                final Message msg=(Message)evt.getArg();
-                GmsHeader hdr=(GmsHeader)msg.getHeader(this.id);
+                final Message msg=evt.getArg();
+                GmsHeader hdr=msg.getHeader(this.id);
                 if(hdr == null)
                     break;
 
@@ -1023,18 +1008,18 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
             case Event.SUSPECT:
                 Object retval=up_prot.up(evt);
-                Address suspected=(Address)evt.getArg();
+                Address suspected=evt.getArg();
                 view_handler.add(new Request(Request.SUSPECT, suspected, true));
                 ack_collector.suspect(suspected);
                 merge_ack_collector.suspect(suspected);
                 return retval;
 
             case Event.UNSUSPECT:
-                impl.unsuspect((Address)evt.getArg());
+                impl.unsuspect(evt.getArg());
                 return null;                              // discard
 
             case Event.MERGE:
-                view_handler.add(new Request(Request.MERGE, null, false, (Map<Address,View>)evt.getArg()));
+                view_handler.add(new Request(Request.MERGE, null, false, evt.getArg()));
                 return null;                              // don't pass up
 
             case Event.IS_MERGE_IN_PROGRESS:
@@ -1086,7 +1071,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 return null;  // don't pass down: event has already been passed down
 
             case Event.DISCONNECT:
-                impl.leave((Address)evt.getArg());
+                impl.leave(evt.getArg());
                 if(!(impl instanceof CoordGmsImpl)) {
                     initState(); // in case connect() is called again
                 }
@@ -1094,14 +1079,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 return null;
 
             case Event.CONFIG :
-               Map<String,Object> config=(Map<String,Object>)evt.getArg();
+               Map<String,Object> config=evt.getArg();
                if((config != null && config.containsKey("flush_supported"))){
                  flushProtocolInStack=true;
                }
                break;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
             case Event.GET_VIEW_FROM_COORD:
                 Address coord=view != null? view.getCreator() : null;
@@ -1328,8 +1313,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
          */
         public static List<Address> getNewMembershipOld(final Collection<Collection<Address>> subviews) {
             Membership mbrs=new Membership();
-            for(Collection<Address> subview: subviews)
-                mbrs.add(subview);
+            subviews.forEach(mbrs::add);
             return mbrs.sort().getMembers();
         }
 
@@ -1343,23 +1327,16 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
          * @return The new membership. Needs to be non-null and cannot contain duplicates
          */
         public List<Address> getNewMembership(final Collection<Collection<Address>> subviews) {
-            Membership coords=new Membership();
-            Membership new_mbrs=new Membership();
-
             // add the coord of each subview
-            for(Collection<Address> subview: subviews)
-                if(!subview.isEmpty())
-                    coords.add(subview.iterator().next());
-
-            coords.sort();
+            Membership coords=new Membership();
+            subviews.stream().filter(subview -> !subview.isEmpty()).forEach(subview -> coords.add(subview.iterator().next()));
 
             // pick the first coord of the sorted list as the new coord
-            new_mbrs.add(coords.elementAt(0));
+            coords.sort();
+            Membership new_mbrs=new Membership().add(coords.elementAt(0));
 
             // add all other members in the order in which they occurred in their subviews - dupes are not added
-            for(Collection<Address> subview: subviews)
-                new_mbrs.add(subview);
-
+            subviews.forEach(new_mbrs::add);
             return new_mbrs.getMembers();
         }
     }
@@ -1383,7 +1360,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         public static final byte INSTALL_DIGEST               = 15;
         public static final byte GET_CURRENT_VIEW             = 16;
 
-        public static final short JOIN_RSP_PRESENT = 1 << 1;
         public static final short MERGE_ID_PRESENT = 1 << 2;
         public static final short USE_FLUSH        = 1 << 3;
         public static final short MERGE_REJECTED   = 1 << 4;
@@ -1423,7 +1399,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         public MergeId   getMergeId()                             {return merge_id;}
         public void      setMergeId(MergeId merge_id)             {this.merge_id=merge_id;}
         public boolean   isMergeRejected()                        {return merge_rejected;}
-        public void      setMergeRejected(boolean merge_rejected) {this.merge_rejected=merge_rejected;}
+        public GmsHeader setMergeRejected(boolean merge_rejected) {this.merge_rejected=merge_rejected; return this;}
 
 
 
@@ -1596,11 +1572,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 queue.clear();
                 waitUntilCompleted(MAX_COMPLETION_TIME);
                 queue.close(true);
-                resumer=timer.schedule(new Runnable() {
-                    public void run() {
-                        resume();
-                    }
-                }, resume_task_timeout, TimeUnit.MILLISECONDS);
+                resumer=timer.schedule(this::resume, resume_task_timeout, TimeUnit.MILLISECONDS);
             }
         }
 
@@ -1640,7 +1612,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                             wait_time=timeout - (System.nanoTime() - start_time);
                             if(wait_time > 0 && firstRequest.canBeProcessedTogether(firstRequest)) { // JGRP-1438
                                 long wait_time_ms=TimeUnit.MILLISECONDS.convert(wait_time, TimeUnit.NANOSECONDS);
-                                queue.waitUntilClosed(wait_time_ms); // misnomer: waits until element has been added or q closed
+                                if(wait_time_ms > 0)
+                                    queue.waitUntilClosed(wait_time_ms); // misnomer: waits until element has been added or q closed
                             }
                             keepGoing=queue.size() > 0 && firstRequest.canBeProcessedTogether((Request)queue.peek());
                         }

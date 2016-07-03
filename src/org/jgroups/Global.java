@@ -1,7 +1,6 @@
 package org.jgroups;
 
-import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.protocols.SCOPE;
+import org.jgroups.util.UUID;
 
 /**
  * Global is a JGroups internal class defining global variables.
@@ -9,7 +8,7 @@ import org.jgroups.protocols.SCOPE;
  * @since 2.0
  * @author Bela Ban 
  */
-public class Global {
+public final class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
     public static final int SHORT_SIZE  = Short.SIZE   / 8; // 2
     public static final int INT_SIZE    = Integer.SIZE / 8; // 4
@@ -18,8 +17,7 @@ public class Global {
     public static final int FLOAT_SIZE  = Float.SIZE   / 8; // 4;
 
     public static final int MAX_DATAGRAM_PACKET_SIZE=1 << 16;
-
-    public static final short SCOPE_ID=ClassConfigurator.getProtocolId(SCOPE.class);
+    public static final Address NULL_ADDRESS=new UUID(0,0);
 
     public static final String IPv4="java.net.preferIPv4Stack";
     public static final String IPv6="java.net.preferIPv6Addresses";
@@ -61,7 +59,6 @@ public class Global {
     public static final String TIMER_NUM_THREADS="jgroups.timer.num_threads";
 
     public static final String USE_JDK_LOGGER="jgroups.use.jdk_logger"; // forces use of the JDK logger
-    public static final String CUSTOM_LOG_FACTORY="jgroups.logging.log_factory_class";
     /** System prop for defining the default number of headers in a Message */
     public static final String DEFAULT_HEADERS="jgroups.msg.default_headers";
 
@@ -69,8 +66,6 @@ public class Global {
 
     /** First ID assigned for building blocks (defined in jg-protocols.xml) */
     public static final short  BLOCKS_START_ID=200;
-    
-    public static final String SINGLETON_NAME="singleton_name";
     
     public static final long   THREADPOOL_SHUTDOWN_WAIT_TIME=3000;
     public static final long   THREAD_SHUTDOWN_WAIT_TIME=300;
@@ -81,6 +76,7 @@ public class Global {
     public static final String MATCH_INTF="match-interface";
 
     public static final String PREFIX="org.jgroups.protocols.";
+    public static final String DEFAULT_PROTOCOL_STACK="udp.xml";
     
     public static final String XML_VALIDATION="jgroups.xml.validation";
 
@@ -107,6 +103,9 @@ public class Global {
     public static final int IPV4_SIZE=4;
     public static final int IPV6_SIZE=16;
 
+	private Global() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
 
     public static boolean getPropertyAsBoolean(String property, boolean defaultValue) {
         boolean result = defaultValue;

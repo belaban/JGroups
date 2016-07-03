@@ -97,12 +97,12 @@ public class SenderManager {
     /**
      * The state of a message (destination, proposes missing, the highest sequence number proposed, etc...)
      */
-    private static class MessageInfo {
-        private ArrayList<Address> destinations;
+    private static final class MessageInfo {
+        private final ArrayList<Address> destinations;
         private long highestSequenceNumberReceived;
         private BitSet receivedPropose;
         private boolean finalMessageSent = false;
-        private boolean toSelfDeliver = false;
+        private final boolean toSelfDeliver;
 
         private MessageInfo(Collection<Address> addresses, long sequenceNumber, boolean selfDeliver) {
             this.destinations = new ArrayList<>(addresses);

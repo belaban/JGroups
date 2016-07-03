@@ -9,6 +9,7 @@ import org.jgroups.stack.Protocol;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -210,7 +211,7 @@ public class ForwardQueue {
             ack_promise.reset();
             down_prot.down(new Event(Event.MSG, forward_msg));
             Long ack=ack_promise.getResult(500);
-            if((ack != null && ack.equals(key)) || !forward_table.containsKey(key))
+            if((Objects.equals(ack, key)) || !forward_table.containsKey(key))
                 break;
         }
 

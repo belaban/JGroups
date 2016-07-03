@@ -1,15 +1,15 @@
 package org.jgroups.protocols;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.jgroups.Global;
 import org.jgroups.protocols.S3_PING.PreSignedUrlParser;
 import org.jgroups.protocols.S3_PING.Utils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 @Test(groups={Global.STACK_INDEPENDENT})
 public class S3_PINGTest {
@@ -80,7 +80,7 @@ public class S3_PINGTest {
     
     @Test
     public void testGenerateQueryStringAuthenticationWithBasicGet() {
-        String expectedUrl = "http://test-bucket.s3.amazonaws.com/node1?AWSAccessKeyId=abcd&Expires=1234567890&Signature=Khyk4bU1A3vaed9woyp%2B5qepazQ%3D";
+        String expectedUrl = "https://test-bucket.s3.amazonaws.com/node1?AWSAccessKeyId=abcd&Expires=1234567890&Signature=Khyk4bU1A3vaed9woyp%2B5qepazQ%3D";
         String encodedUrl =
             Utils.generateQueryStringAuthentication("abcd", "efgh", "get",
                                                     "test-bucket", "node1",
@@ -91,7 +91,7 @@ public class S3_PINGTest {
     
     @Test
     public void testGenerateQueryStringAuthenticationWithBasicPost() {
-        String expectedUrl = "http://test-bucket.s3.amazonaws.com/node1?AWSAccessKeyId=abcd&Expires=1234567890&Signature=%2BsCW1Fc20UUvIqPjeGXkyN960sk%3D";
+        String expectedUrl = "https://test-bucket.s3.amazonaws.com/node1?AWSAccessKeyId=abcd&Expires=1234567890&Signature=%2BsCW1Fc20UUvIqPjeGXkyN960sk%3D";
         String encodedUrl =
             Utils.generateQueryStringAuthentication("abcd", "efgh", "POST",
                                                     "test-bucket", "node1",
@@ -104,7 +104,7 @@ public class S3_PINGTest {
     public void testGenerateQueryStringAuthenticationWithBasicPutAndHeaders() {
         Map headers = new HashMap();
         headers.put("x-amz-acl", Arrays.asList("public-read"));
-        String expectedUrl = "http://test-bucket.s3.amazonaws.com/subdir/node1?AWSAccessKeyId=abcd&Expires=1234567890&Signature=GWu2Mm5MysW83YDgS2R0Jakthes%3D";
+        String expectedUrl = "https://test-bucket.s3.amazonaws.com/subdir/node1?AWSAccessKeyId=abcd&Expires=1234567890&Signature=GWu2Mm5MysW83YDgS2R0Jakthes%3D";
         String encodedUrl =
             Utils.generateQueryStringAuthentication("abcd", "efgh", "put",
                                                     "test-bucket", "subdir/node1",
@@ -115,7 +115,7 @@ public class S3_PINGTest {
     
     @Test
     public void testGeneratePreSignedUrlForPut() {
-        String expectedUrl = "http://test-bucket.s3.amazonaws.com/subdir/node1?AWSAccessKeyId=abcd&Expires=1234567890&Signature=GWu2Mm5MysW83YDgS2R0Jakthes%3D";
+        String expectedUrl = "https://test-bucket.s3.amazonaws.com/subdir/node1?AWSAccessKeyId=abcd&Expires=1234567890&Signature=GWu2Mm5MysW83YDgS2R0Jakthes%3D";
         String preSignedUrl = S3_PING.generatePreSignedUrl("abcd", "efgh", "put",
                                                            "test-bucket", "subdir/node1",
                                                            1234567890);
@@ -124,7 +124,7 @@ public class S3_PINGTest {
     
     @Test
     public void testGeneratePreSignedUrlForDelete() {
-        String expectedUrl = "http://test-bucket.s3.amazonaws.com/subdir/node1?AWSAccessKeyId=abcd&Expires=1234567890&Signature=qbEMukqq0KIpZVjXaDi0VxepSVo%3D";
+        String expectedUrl = "https://test-bucket.s3.amazonaws.com/subdir/node1?AWSAccessKeyId=abcd&Expires=1234567890&Signature=qbEMukqq0KIpZVjXaDi0VxepSVo%3D";
         String preSignedUrl = S3_PING.generatePreSignedUrl("abcd", "efgh", "delete",
                                                            "test-bucket", "subdir/node1",
                                                            1234567890);

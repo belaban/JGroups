@@ -137,14 +137,14 @@ public class JoinTest extends ChannelTestBase {
         b.connect("JoinTest");
 
         ProtocolStack stack=b.getProtocolStack();
-        GMS gms=(GMS)stack.findProtocol(GMS.class);
+        GMS gms=stack.findProtocol(GMS.class);
         if(gms != null)
             gms.setJoinTimeout(join_timeout);
 
 
         stack=a.getProtocolStack();
         DELAY_JOIN_REQ delay=new DELAY_JOIN_REQ().delay(delay_join_req);
-        stack.insertProtocol(delay, ProtocolStack.BELOW, GMS.class);
+        stack.insertProtocol(delay, ProtocolStack.Position.BELOW, GMS.class);
 
         System.out.println(new Date() + ": joining c2");
         long start=System.currentTimeMillis(), stop;
@@ -164,7 +164,7 @@ public class JoinTest extends ChannelTestBase {
 
         public MyReceiver(String name) {
             this.name=name;
-            msgs = Collections.synchronizedList(new ArrayList<String>());
+            msgs = Collections.synchronizedList(new ArrayList<>());
         }
 
         public List<String> getMsgs() {
@@ -185,7 +185,7 @@ public class JoinTest extends ChannelTestBase {
     }
 
 
-    protected class DELAY_JOIN_REQ extends Protocol {
+    protected static class DELAY_JOIN_REQ extends Protocol {
         private long        delay=4000;
         private final short gms_id=ClassConfigurator.getProtocolId(GMS.class);
 
@@ -196,7 +196,7 @@ public class JoinTest extends ChannelTestBase {
             switch(evt.getType()) {
                 case Event.MSG:
                     Message msg=(Message)evt.getArg();
-                    final GMS.GmsHeader hdr=(GMS.GmsHeader)msg.getHeader(gms_id);
+                    final GMS.GmsHeader hdr=msg.getHeader(gms_id);
                     if(hdr != null) {
                         switch(hdr.getType()) {
                             case GMS.GmsHeader.JOIN_REQ:

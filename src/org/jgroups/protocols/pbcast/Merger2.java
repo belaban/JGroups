@@ -4,10 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.View;
 import org.jgroups.util.Util;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Implements different merge policy (https://issues.jboss.org/browse/JGRP-1910). Might get merged with Merger
@@ -43,15 +40,8 @@ public class Merger2 extends Merger {
         // membership list consists only of themselves
         Collection<Address> merge_participants=Util.determineMergeParticipants(views);
         merge_participants.removeAll(retval.keySet());
-        for(Address merge_participant: merge_participants) {
-            if(!retval.containsKey(merge_participant)) {
-                Collection<Address> tmp=new ArrayList<>();
-                tmp.add(merge_participant);
-                retval.put(merge_participant, tmp);
-            }
-        }
-
-
+        merge_participants.stream().filter(merge_participant -> !retval.containsKey(merge_participant))
+          .forEach(merge_participant -> retval.put(merge_participant, Collections.singletonList(merge_participant)));
         return retval;
     }
 }

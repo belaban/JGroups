@@ -129,7 +129,7 @@ public class StreamableTest {
           d=Util.createRandomAddress("D"), e=Util.createRandomAddress("E"), f=Util.createRandomAddress("F");
 
         View v1=View.create(a,1,a,b,c);
-        View v2=new MergeView(d, 2, Arrays.asList(d), new ArrayList<View>());
+        View v2=new MergeView(d, 2, Arrays.asList(d), new ArrayList<>());
         View v3=View.create(e, 3, e,f);
         View v4=new MergeView(e, 4, Arrays.asList(d), null);
         View v5=new View(e, 5, Arrays.asList(d));

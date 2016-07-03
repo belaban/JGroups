@@ -15,6 +15,7 @@ import org.testng.annotations.Test;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -39,7 +40,6 @@ public class NakackTest {
     final static int NUM_PEERS=3;
     final static int NUM_SENDERS=NUM_PEERS-1;
     final static int NUM_MSGS=1000;
-    final static int WAIT_TIMEOUT=10; // secs
     final static int MSGS_PER_STATUS_LINE=500;
     final static int TOT_MSGS_FOR_ALL_RECEIVERS=NUM_SENDERS * NUM_MSGS * NUM_PEERS;
 

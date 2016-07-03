@@ -13,13 +13,13 @@ public class SuppressLog<T> {
     protected final String           message_format;
     protected final String           suppress_format;
 
-    public static enum Level {error,warn,trace};
+    public enum Level {error,warn,trace};
 
     public SuppressLog(Log log, String message_key, String suppress_msg) {
         this.log=log;
         cache=new SuppressCache<>();
         message_format=Util.getMessage(message_key);
-        suppress_format=Util.getMessage(suppress_msg); // "(received {3} identical messages from {2} in the last {4} ms)"
+        suppress_format=Util.getMessage(suppress_msg); // "(received %d identical messages from %s in the last %d ms)"
     }
 
     public SuppressCache<T> getCache()               {return cache;}

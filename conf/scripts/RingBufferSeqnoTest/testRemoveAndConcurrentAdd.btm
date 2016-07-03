@@ -1,0 +1,35 @@
+
+## Changes thread interleaving such that a concurrent add() and remove(nullify) can add
+# an element more than once
+
+RULE Remove1
+CLASS RingBufferSeqnoLockless
+METHOD remove(boolean)
+AT WRITE hd
+IF true
+DO System.out.println("---> Remover: waiting on \"remove\"");
+   waitFor("remove");
+   System.out.println("---> Remover: was woken up");
+ENDRULE
+
+RULE Remove2
+CLASS RingBufferSeqnoLockless
+METHOD remove(boolean)
+AT EXIT
+IF true
+DO System.out.println("---> Remover: signalling \"add\"");
+   signalWake("add", true);
+ENDRULE
+
+RULE Add
+CLASS RingBufferSeqnoLockless
+METHOD add(long,java.lang.Object,boolean)
+AFTER INVOKE RingBuffer.index(long)
+IF !createCountDown("tmp", 4) && countDown("tmp")
+DO System.out.println("---> Adder: signaling \"remove\"");
+   signalWake("remove", true);
+   System.out.println("---> Adder: waiting for \"add\"");
+   waitFor("add");
+   System.out.println("---> Adder: awoken");
+ENDRULE
+

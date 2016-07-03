@@ -8,11 +8,10 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns="urn:org:jgroups"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
-    <UDP
+    <UDP bind_addr="127.0.0.1"
          mcast_port="${jgroups.udp.mcast_port:45588}"
          tos="8"
          max_bundle_size="64K"
-         max_bundle_timeout="30"
          enable_diagnostics="true"
          thread_naming_pattern="cl"
 
@@ -22,7 +21,6 @@
          timer.keep_alive_time="3000"
          timer.queue_max_size="500"
 
-         thread_pool.enabled="true"
          thread_pool.min_threads="2"
          thread_pool.max_threads="8"
          thread_pool.keep_alive_time="5000"
@@ -30,7 +28,6 @@
          thread_pool.queue_max_size="10000"
          thread_pool.rejection_policy="discard"
 
-         oob_thread_pool.enabled="true"
          oob_thread_pool.min_threads="1"
          oob_thread_pool.max_threads="8"
          oob_thread_pool.keep_alive_time="5000"

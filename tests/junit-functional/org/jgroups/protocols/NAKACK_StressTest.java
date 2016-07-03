@@ -137,7 +137,7 @@ public class NAKACK_StressTest {
 
         long time=System.currentTimeMillis() - start;
         double requests_sec=num_msgs / (time / 1000.0);
-        System.out.println("\nTime: " + time + " ms, " + Util.format(requests_sec) + " requests / sec\n");
+        System.out.printf("\nTime: %d ms, %.2f requests / sec\n", time, requests_sec);
         System.out.println("Delivered messages: " + delivered_msg_list.size());
         if(delivered_msg_list.size() < 100)
             System.out.println("Elements: " + delivered_msg_list);

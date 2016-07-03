@@ -1,0 +1,56 @@
+
+## Changes thread interleaving such that a concurrent add() and removeMany(nullify) can add
+# an element more than once
+
+#
+# Creates a rendezvous for 7 threads (6 Adders and 1 Remover)
+#
+RULE Create rendezvous
+CLASS RingBufferSeqnoLockless
+METHOD <init>
+IF TRUE
+DO createRendezvous($0,  7, true);
+ENDRULE
+
+#
+# Block the 1 Remover thread removeMany() before writing hd, so all 6 Adders can read hd; only when all Adders have
+# read hd, will they rendezvous, thus unblocking the Remover. The Remover will then go on, writing hd and nulling the
+# removed elements, and then rendezvous again, allowing the Adders to set the elements again
+#
+RULE Remove1
+CLASS RingBufferSeqnoLockless
+METHOD removeMany(java.util.concurrent.atomic.AtomicBoolean,boolean,int)
+AT WRITE hd
+IF $3 == 0
+DO rendezvous($0);
+ENDRULE
+
+#
+# All Adders block on the rendezvous, after reading hd, until the Remover is about to write hd. Then they block on
+# the rendezvous again, allowing the Remover to null all elements, before the Adders are unblocked again.
+#
+RULE Add
+CLASS RingBufferSeqnoLockless
+METHOD add(long,java.lang.Object,boolean)
+AFTER READ hd
+IF $3
+DO rendezvous($0);
+   rendezvous($0);
+ENDRULE
+
+#
+# The Remover unblocks (and deletes )the rendezvous when returning from removeMany(). This unblocks the Adders
+# which then are able to (incorrectly) set the elements again. The fix is described in doc/design/RingBuffer.txt
+# (scenario #1)
+#
+RULE Remove2
+CLASS RingBufferSeqnoLockless
+METHOD removeMany(boolean,int)
+AT EXIT
+IF $2 == 0
+DO rendezvous($0);
+   deleteRendezvous($0, 7);
+ENDRULE
+
+
+

@@ -89,7 +89,7 @@ public class Digest implements Streamable, Iterable<Digest.Entry> {
         if(mbr == null || members == null)
             return false;
         for(Address member: members)
-            if(member != null && member.equals(mbr))
+            if(Objects.equals(member, mbr))
                 return true;
         return false;
     }
@@ -217,7 +217,7 @@ public class Digest implements Streamable, Iterable<Digest.Entry> {
             return -1;
         for(int i=0; i < members.length; i++) {
             Address member=members[i];
-            if(member != null && member.equals(mbr))
+            if(Objects.equals(member, mbr))
                 return i;
         }
         return -1;

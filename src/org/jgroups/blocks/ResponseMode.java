@@ -12,9 +12,6 @@ public enum ResponseMode {
     /** return all responses */
     GET_ALL,
 
-    /** return majority (of all non-faulty members) */
-    GET_MAJORITY,
-
     /** return no response (async call) */
     GET_NONE
 }

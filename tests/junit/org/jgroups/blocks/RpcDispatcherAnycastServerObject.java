@@ -1,21 +1,24 @@
 package org.jgroups.blocks;
 
 import org.jgroups.Address;
-import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 public class RpcDispatcherAnycastServerObject extends ReceiverAdapter {
     int i=0;
-    private final Channel c;
+    private final JChannel c;
     private final RpcDispatcher d;
 
-    public RpcDispatcherAnycastServerObject(Channel channel) throws Exception {
+    public RpcDispatcherAnycastServerObject(JChannel channel) throws Exception {
         c=channel;
-        d=new RpcDispatcher(c, this, this, this);
+        d=new RpcDispatcher(c, this).setMembershipListener(this);
     }
 
     public void doSomething() {

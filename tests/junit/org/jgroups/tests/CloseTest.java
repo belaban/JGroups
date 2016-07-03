@@ -216,7 +216,7 @@ public class CloseTest extends ChannelTestBase {
     }
 
 
-    private static void assertView(Channel ch, int num) {
+    private static void assertView(JChannel ch, int num) {
         View view=ch.getView();
         String msg="view=" + view;
         assertNotNull(view);

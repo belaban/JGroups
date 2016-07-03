@@ -54,13 +54,8 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         if(no_channel)
             return;
 
-        channel=new JChannel(props);
-        if(gen != null)
-            channel.addAddressGenerator(gen);
-        if(name != null)
-            channel.setName(name);
-        channel.setReceiver(this);
-        channel.addChannelListener(this);
+        channel=new JChannel(props).addAddressGenerator(gen).setName(name);
+        channel.setReceiver(this).addChannelListener(this);
         this.send_own_state_on_merge=send_own_state_on_merge;
     }
 
@@ -184,9 +179,9 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
 
 
     private Color selectColor() {
-        int red=Math.abs(random.nextInt()) % 255;
-        int green=Math.abs(random.nextInt()) % 255;
-        int blue=Math.abs(random.nextInt()) % 255;
+        int red=Math.abs(random.nextInt() % 255);
+        int green=Math.abs(random.nextInt() % 255);
+        int blue=Math.abs(random.nextInt() % 255);
         return new Color(red, green, blue);
     }
 
@@ -253,13 +248,10 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         setTitle(null);
     }
 
-
-
     public void receive(Message msg) {
         byte[] buf=msg.getRawBuffer();
         if(buf == null) {
-            System.err.println("[" + channel.getAddress() + "] received null buffer from " + msg.getSrc() +
-                    ", headers: " + msg.printHeaders());
+            System.err.printf("%s: received null buffer from %s, headers: %s\n", channel.getAddress(), msg.src(), msg.printHeaders());
             return;
         }
 
@@ -411,13 +403,13 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
 
     /* ------------------------------ ChannelListener interface -------------------------- */
 
-    public void channelConnected(Channel channel) {
+    public void channelConnected(JChannel channel) {
         if(jmx) {
             Util.registerChannel((JChannel)channel, "jgroups");
         }
     }
 
-    public void channelDisconnected(Channel channel) {
+    public void channelDisconnected(JChannel channel) {
         if(jmx) {
             MBeanServer server=Util.getMBeanServer();
             if(server != null) {
@@ -431,7 +423,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         }
     }
 
-    public void channelClosed(Channel channel) {
+    public void channelClosed(JChannel channel) {
 
     }
 

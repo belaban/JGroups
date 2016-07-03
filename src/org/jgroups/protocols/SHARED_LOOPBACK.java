@@ -10,10 +10,7 @@ import org.jgroups.util.AsciiString;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -27,7 +24,7 @@ public class SHARED_LOOPBACK extends TP {
     protected PhysicalAddress  physical_addr;
 
     @ManagedAttribute(description="The current view",writable=false)
-    protected volatile View    view;
+    protected volatile View    curr_view;
 
     protected volatile boolean is_server=false, is_coord=false;
 
@@ -39,7 +36,7 @@ public class SHARED_LOOPBACK extends TP {
         return true; // kind of...
     }
 
-    public View    getView()  {return view;}
+    public View    getView()  {return curr_view;}
     public boolean isServer() {return is_server;}
     public boolean isCoord()  {return is_coord;}
 
@@ -59,17 +56,16 @@ public class SHARED_LOOPBACK extends TP {
     }
 
 
-    public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {
+    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
         Map<Address,SHARED_LOOPBACK> dests=routing_table.get(this.cluster_name);
         if(dests == null) {
-            if(log.isTraceEnabled())
-                log.trace("no destination found for " + this.cluster_name);
+            log.trace("no destination found for " + this.cluster_name);
             return;
         }
         for(Map.Entry<Address,SHARED_LOOPBACK> entry: dests.entrySet()) {
             Address dest=entry.getKey();
             SHARED_LOOPBACK target=entry.getValue();
-            if(local_addr != null && local_addr.equals(dest))
+            if(Objects.equals(local_addr, dest))
                 continue; // message was already looped back
             try {
                 target.receive(local_addr, data, offset, length);
@@ -146,7 +142,7 @@ public class SHARED_LOOPBACK extends TP {
                 break;
             case Event.VIEW_CHANGE:
             case Event.TMP_VIEW:
-                view=(View)evt.getArg();
+                curr_view=(View)evt.getArg();
                 Address[] mbrs=((View)evt.getArg()).getMembersRaw();
                 is_coord=local_addr != null && mbrs != null && mbrs.length > 0 && local_addr.equals(mbrs[0]);
                 break;

@@ -53,7 +53,7 @@ public class Relay2Test {
         relayToInject.handleView(a.getView());
 
         // 4- Check RELAY2 presence.
-        RELAY2 ar=(RELAY2)a.getProtocolStack().findProtocol(RELAY2.class);
+        RELAY2 ar=a.getProtocolStack().findProtocol(RELAY2.class);
         assert ar != null;
 
         waitUntilRoute(SFO, true, 10000, 500, a);
@@ -77,8 +77,8 @@ public class Relay2Test {
         x=createNode(SFO, "X", SFO_CLUSTER, null);
         assert x.getView().size() == 1;
 
-        RELAY2 ar=(RELAY2)a.getProtocolStack().findProtocol(RELAY2.class),
-          xr=(RELAY2)x.getProtocolStack().findProtocol(RELAY2.class);
+        RELAY2 ar=a.getProtocolStack().findProtocol(RELAY2.class),
+          xr=x.getProtocolStack().findProtocol(RELAY2.class);
 
         assert ar != null && xr != null;
 
@@ -120,9 +120,9 @@ public class Relay2Test {
         View merge_view=new MergeView(a.getAddress(), 10, Arrays.asList(a.getAddress(), b.getAddress()),
                                       Arrays.asList(View.create(a.getAddress(), 5, a.getAddress()),
                                                     View.create(b.getAddress(), 5, b.getAddress())));
-        GMS gms=(GMS)a.getProtocolStack().findProtocol(GMS.class);
+        GMS gms=a.getProtocolStack().findProtocol(GMS.class);
         gms.installView(merge_view, null);
-        gms=(GMS)b.getProtocolStack().findProtocol(GMS.class);
+        gms=b.getProtocolStack().findProtocol(GMS.class);
         gms.installView(merge_view, null);
 
         Util.waitUntilAllChannelsHaveSameSize(20000, 500, a, b);
@@ -206,7 +206,7 @@ public class Relay2Test {
         long time2=System.currentTimeMillis() - start2;
         System.out.println("B took " + time2 + " ms");
 
-        waitForBridgeView(1, 20000, 100, x);
+        waitForBridgeView(1, 40000, 500, x);
 
         Util.close(x,y);
     }
@@ -294,7 +294,7 @@ public class Relay2Test {
     protected static void createPartition(JChannel ... channels) {
         for(JChannel ch: channels) {
             View view=View.create(ch.getAddress(), 5, ch.getAddress());
-            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.installView(view);
         }
     }
@@ -306,7 +306,7 @@ public class Relay2Test {
         while(System.currentTimeMillis() < deadline) {
             boolean views_correct=true;
             for(JChannel ch: channels) {
-                RELAY2 relay=(RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class);
+                RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
                 View bridge_view=relay.getBridgeView(BRIDGE_CLUSTER);
                 if(bridge_view == null || bridge_view.size() != expected_size) {
                     views_correct=false;
@@ -320,13 +320,13 @@ public class Relay2Test {
 
         System.out.println("Bridge views:\n");
         for(JChannel ch: channels) {
-            RELAY2 relay=(RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class);
+            RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
             View bridge_view=relay.getBridgeView(BRIDGE_CLUSTER);
             System.out.println(ch.getAddress() + ": " + bridge_view);
         }
 
         for(JChannel ch: channels) {
-            RELAY2 relay=(RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class);
+            RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
             View bridge_view=relay.getBridgeView(BRIDGE_CLUSTER);
             assert bridge_view != null && bridge_view.size() == expected_size
               : ch.getAddress() + ": bridge view=" + bridge_view + ", expected=" + expected_size;
@@ -336,7 +336,7 @@ public class Relay2Test {
 
     protected void waitUntilRoute(String site_name, boolean present,
                                   long timeout, long interval, JChannel ch) throws Exception {
-        RELAY2 relay=(RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class);
+        RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
         if(relay == null)
             throw new IllegalArgumentException("Protocol RELAY2 not found");
         Relayer.Route route=null;
@@ -351,7 +351,7 @@ public class Relay2Test {
     }
 
     protected Relayer.Route getRoute(JChannel ch, String site_name) {
-        RELAY2 relay=(RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class);
+        RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
         return relay.getRoute(site_name);
     }
 

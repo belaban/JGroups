@@ -7,7 +7,6 @@ up correctly.
     
 
 === Using multiple channels
-
 When using a fully virtual synchronous protocol stack, the performance may not be great because of the
 larger number of protocols present. For certain applications, however, throughput is more important than
 ordering, e.g. for video/audio streams or airplane tracking. In the latter case, it is important that
@@ -880,7 +879,7 @@ Scoped messages apply only to _regular_ (non-OOB) messages, and are delivered
 
 This means that all updates to X are delivered in parallel to updates to Y and updates to Z. However, within
 a given scope, updates are delivered in the order in which they were performed, so X1 is delivered before
-X2, which is deliverd before X3 and so on.
+X2, which is delivered before X3 and so on.
             
 
 Taking the above example, using scoped messages, update Y1 does _not_ have to wait for
@@ -2582,7 +2581,101 @@ Operation invocation uses reflection, so any method defined in any protocol can 
         
 
 For further information, refer to the command line options of probe (`probe.sh -h`).
-        
+
+
+==== Looking at details of RPCs with probe
+Probe can also be used to inspect for every node P:
+
+* the number of unicast RPCs invoked (sync or async)
+* the number of multicast RPCs invoked (sync or async)
+* the number of anycast RPCs invoked (sync or async)
+
+For sync RPCs, it is also possible to get the min/max/avg times for RPCs to a given destination. Note that this
+doesn't currently apply to sync RPCs which return futures as timings are not taken for these.
+
+Since taking the times for all sync RPCs takes time (2x `System.nanoTime()` for each RPC), this is disabled by default
+and has to be enabled (assuming we have 4 nodes running):
+
+----
+probe.sh rpcs-enable-details
+----
+
+From now on, timings for sync RPCs will be taken (async RPCs or RPCs which return futures are not timed and therefore
+not affected by the timing costs). To disable this, `probe rpcs-disable-details` can be called.
+
+To get RPC stats, `rpcs` and `rpcs-details` can be used:
+
+----
+[belasmac] /Users/bela/JGroups$ probe.sh rpcs rpcs-details
+
+-- sending probe on /224.0.75.75:7500
+#1 (481 bytes):
+local_addr=C [ip=127.0.0.1:55535, version=3.6.8-SNAPSHOT, cluster=uperf, 4 mbr(s)]
+uperf: sync  multicast RPCs=0
+uperf: async unicast   RPCs=0
+uperf: async multicast RPCs=0
+uperf: sync  anycast   RPCs=67480
+uperf: async anycast   RPCs=0
+uperf: sync  unicast   RPCs=189064
+rpcs-details=
+D: async: 0, sync: 130434, min/max/avg (ms): 0.13/924.88/2.613
+A: async: 0, sync: 130243, min/max/avg (ms): 0.11/926.35/2.541
+B: async: 0, sync: 63346, min/max/avg (ms): 0.14/73.94/2.221
+
+#2 (547 bytes):
+local_addr=A [ip=127.0.0.1:65387, version=3.6.8-SNAPSHOT, cluster=uperf, 4 mbr(s)]
+uperf: sync  multicast RPCs=5
+uperf: async unicast   RPCs=0
+uperf: async multicast RPCs=0
+uperf: sync  anycast   RPCs=67528
+uperf: async anycast   RPCs=0
+uperf: sync  unicast   RPCs=189200
+rpcs-details=
+<all>: async: 0, sync: 5, min/max/avg (ms): 2.11/9255.10/4917.072
+C: async: 0, sync: 130387, min/max/avg (ms): 0.13/929.71/2.467
+D: async: 0, sync: 63340, min/max/avg (ms): 0.13/63.74/2.469
+B: async: 0, sync: 130529, min/max/avg (ms): 0.13/929.71/2.328
+
+#3 (481 bytes):
+local_addr=B [ip=127.0.0.1:51000, version=3.6.8-SNAPSHOT, cluster=uperf, 4 mbr(s)]
+uperf: sync  multicast RPCs=0
+uperf: async unicast   RPCs=0
+uperf: async multicast RPCs=0
+uperf: sync  anycast   RPCs=67255
+uperf: async anycast   RPCs=0
+uperf: sync  unicast   RPCs=189494
+rpcs-details=
+C: async: 0, sync: 130616, min/max/avg (ms): 0.13/863.93/2.494
+A: async: 0, sync: 63210, min/max/avg (ms): 0.14/54.35/2.066
+D: async: 0, sync: 130177, min/max/avg (ms): 0.13/863.93/2.569
+
+#4 (482 bytes):
+local_addr=D [ip=127.0.0.1:54944, version=3.6.8-SNAPSHOT, cluster=uperf, 4 mbr(s)]
+uperf: sync  multicast RPCs=0
+uperf: async unicast   RPCs=0
+uperf: async multicast RPCs=0
+uperf: sync  anycast   RPCs=67293
+uperf: async anycast   RPCs=0
+uperf: sync  unicast   RPCs=189353
+rpcs-details=
+C: async: 0, sync: 63172, min/max/avg (ms): 0.13/860.72/2.399
+A: async: 0, sync: 130342, min/max/avg (ms): 0.13/862.22/2.338
+B: async: 0, sync: 130424, min/max/avg (ms): 0.13/866.39/2.350
+----
+
+The example output shows stats for members C, A, B and D. When looking at the output of member A, we can see that A
+
+* invoked 5 sync multicast RPCs
+* invoked 67528 sync anycasts (RPCs to a subset of the cluster, sent as a number of unicasts)
+* invoked 189200 sync unicast RPCs
+* sent 5 sync multicast RPCs which took an average of 4.9 seconds and a max of 9 seconds. The reason is that these were
+  multicast RPCs in UPerf which started the test on each node and waited until it got results from all nodes. So these
+  times are essentially the times it took the individual tests to run
+* invoked 63340 sync unicast RPCs on D, which took a min of 0.13 ms, a max of 63.74 ms and an average of 2.469 ms per RPC.
+
+To reset the numbers, `probe.sh rpcs-reset` can be called.
+
+
 
 [[MembershipChangePolicy]]
 === Determining the coordinator and controlling view generation

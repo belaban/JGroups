@@ -5,7 +5,6 @@ import org.jgroups.annotations.*;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.protocols.FORWARD_TO_COORD;
 import org.jgroups.protocols.relay.config.RelayConfig;
-import org.jgroups.stack.AddressGenerator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
@@ -29,6 +28,9 @@ import java.util.concurrent.atomic.AtomicLong;
 @XmlElement(name="RelayConfiguration",type="relay:RelayConfigurationType")
 @MBean(description="RELAY2 protocol")
 public class RELAY2 extends Protocol {
+    // reserved flags
+    public static final short site_master_flag            = 1 << 0;
+    public static final short can_become_site_master_flag = 1 << 1;
 
     /* ------------------------------------------    Properties     ---------------------------------------------- */
     @Property(description="Name of the site (needs to be defined in the configuration)",writable=false)
@@ -219,7 +221,7 @@ public class RELAY2 extends Protocol {
     }
 
     public List<String> getSites() {
-        return sites.isEmpty()? Collections.<String>emptyList() : new ArrayList<>(sites.keySet());
+        return sites.isEmpty()? Collections.emptyList() : new ArrayList<>(sites.keySet());
     }
 
 
@@ -256,13 +258,11 @@ public class RELAY2 extends Protocol {
 
         if(enable_address_tagging) {
             JChannel ch=getProtocolStack().getChannel();
-            ch.addAddressGenerator(new AddressGenerator() {
-                public Address generateAddress() {
-                    ExtendedUUID retval=ExtendedUUID.randomUUID();
-                    if(can_become_site_master)
-                        retval.setFlag(ExtendedUUID.can_become_site_master);
-                    return retval;
-                }
+            ch.addAddressGenerator(() -> {
+                ExtendedUUID retval=ExtendedUUID.randomUUID();
+                if(can_become_site_master)
+                    retval.setFlag(can_become_site_master_flag);
+                return retval;
             });
         }
 
@@ -650,13 +650,8 @@ public class RELAY2 extends Protocol {
                 relayer.stop();
             relayer=new Relayer(this, log);
             final Relayer tmp=relayer;
-            if(async_relay_creation) {
-                timer.execute(new Runnable() {
-                    public void run() {
-                        startRelayer(tmp, bridge_name);
-                    }
-                });
-            }
+            if(async_relay_creation)
+                timer.execute(() -> startRelayer(tmp, bridge_name));
             else
                 startRelayer(relayer, bridge_name);
         }
@@ -693,7 +688,7 @@ public class RELAY2 extends Protocol {
         int selected=0;
 
         for(Address member: view) {
-            if(member instanceof ExtendedUUID && !((ExtendedUUID)member).isFlagSet(ExtendedUUID.can_become_site_master))
+            if(member instanceof ExtendedUUID && !((ExtendedUUID)member).isFlagSet(can_become_site_master_flag))
                 continue;
 
             if(selected++ < max_site_masters)

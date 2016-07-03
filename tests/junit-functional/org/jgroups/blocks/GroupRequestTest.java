@@ -1,11 +1,10 @@
 
 package org.jgroups.blocks;
 
-import org.jgroups.Address;
-import org.jgroups.Global;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.protocols.relay.SiteUUID;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.Buffer;
 import org.jgroups.util.RspList;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
@@ -26,8 +25,9 @@ import java.util.List;
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class GroupRequestTest {
-    Address a, b, c;
-    List<Address> dests=null;
+    protected Address a, b, c;
+    protected List<Address> dests;
+    protected static final byte[] buf="bla".getBytes();
 
     @BeforeClass
     void init() throws UnknownHostException {
@@ -76,7 +76,7 @@ public class GroupRequestTest {
           new Message(null,c, (long)3)};
         MyCorrelator corr=new MyCorrelator(true, responses, 500);
         dests.add(c);
-        GroupRequest<Long> req=new GroupRequest<>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_FIRST, 0));
+        GroupRequest<Long> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_FIRST, 0));
         req.setResponseFilter(new RspFilter() {
             int num_rsps=0;
 
@@ -93,11 +93,10 @@ public class GroupRequestTest {
             }
         });
         corr.setGroupRequest(req);
-        boolean rc=req.execute();
+
         System.out.println("group request is " + req);
-        assert rc;
+        RspList<Long> results=req.execute(new Buffer(buf, 0, buf.length), true);
         assert req.isDone();
-        RspList<Long> results=req.getResults();
         Assert.assertEquals(3, results.size());
         Assert.assertEquals(1, results.numReceived());
     }
@@ -109,7 +108,7 @@ public class GroupRequestTest {
           new Message(null,c, (long)3)};
         MyCorrelator corr=new MyCorrelator(true, responses, 500);
         dests.add(c);
-        GroupRequest<Long> req=new GroupRequest<>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
+        GroupRequest<Long> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         req.setResponseFilter(new RspFilter() {
             int num_rsps=0;
 
@@ -127,11 +126,9 @@ public class GroupRequestTest {
             }
         });
         corr.setGroupRequest(req);
-        boolean rc=req.execute();
         System.out.println("group request is " + req);
-        assert rc;
+        RspList<Long> results=req.execute(new Buffer(buf, 0, buf.length), true);
         assert req.isDone();
-        RspList<Long> results=req.getResults();
         Assert.assertEquals(3, results.size());
         Assert.assertEquals(2, results.numReceived());
     }
@@ -143,8 +140,7 @@ public class GroupRequestTest {
      */
     public void testAllNullResponsesWithFilter() {
         dests.add(c);
-        GroupRequest<Boolean> req=new GroupRequest<>(new Message(), null, dests,
-                                                            new RequestOptions(ResponseMode.GET_ALL, 10000));
+        GroupRequest<Boolean> req=new GroupRequest<>(null, dests, RequestOptions.SYNC());
         assert !req.isDone();
 
         req.setResponseFilter(new NonNullFilter());
@@ -158,12 +154,10 @@ public class GroupRequestTest {
 
     public void testAllNullResponsesWithFilterGetFirst() {
         dests.add(c);
-        GroupRequest<Boolean> req=new GroupRequest<>(new Message(), null, dests,
-                                                            new RequestOptions(ResponseMode.GET_FIRST, 10000));
+        GroupRequest<Boolean> req=new GroupRequest<>(null, dests, new RequestOptions(ResponseMode.GET_FIRST, 10000));
         assert !req.isDone();
 
         req.setResponseFilter(new NonNullFilter());
-
         req.receiveResponse(null, dests.get(0), false);
         assert !req.isDone();
 
@@ -176,7 +170,7 @@ public class GroupRequestTest {
      * a blocking RPC. https://issues.jboss.org/browse/JGRP-1505
      */
     public void testResponsesComplete() {
-        GroupRequest<Integer> req=new GroupRequest<>(null, null, Arrays.asList(a,b,c), RequestOptions.SYNC());
+        GroupRequest<Integer> req=new GroupRequest<>(null, Arrays.asList(a,b,c), RequestOptions.SYNC());
         checkComplete(req, false);
 
         req.receiveResponse(1, a, false);
@@ -190,68 +184,66 @@ public class GroupRequestTest {
         checkComplete(req, true);
 
 
-        req=new GroupRequest<>(null, null, Arrays.asList(a,b,c), RequestOptions.SYNC());
+        req=new GroupRequest<>(null, Arrays.asList(a,b,c), RequestOptions.SYNC());
         req.receiveResponse(1, a, false);
         checkComplete(req, false);
 
         req.receiveResponse(2, b, false);
         checkComplete(req, false);
 
-        req.suspect(b);
-        checkComplete(req, false);
-
         req.receiveResponse(3, c, false);
         checkComplete(req, true);
     }
 
-    /**
-     * Verifies that a received *and* suspected flag on a Rsp counts only once, to prevent premature termination of
-     * a blocking RPC. https://issues.jboss.org/browse/JGRP-1505
-     */
-    public void testResponsesComplete2() {
-        GroupRequest<Integer> req=new GroupRequest<>(null, null, Arrays.asList(a,b,c), RequestOptions.SYNC());
-        req.suspect(a);
-        checkComplete(req, false);
-        
-        req.receiveResponse(1, a, false);
-        checkComplete(req, false);
 
-        req.receiveResponse(2, b, false);
-        checkComplete(req, false);
-
-        req.suspect(b);
-        checkComplete(req, false);
-
-        req.receiveResponse(3, c, false);
-        req.suspect(c);
-        checkComplete(req, true);
-    }
 
     public void testResponsesComplete3() {
         Address one=new SiteUUID((UUID)Util.createRandomAddress("lon1"), "lon1", "LON");
         Address two=new SiteUUID((UUID)Util.createRandomAddress("sfo1"), "sfo1", "SFO");
         Address three=new SiteUUID((UUID)Util.createRandomAddress("nyc1"), "nyc1", "NYC");
 
-        GroupRequest<Integer> req=new GroupRequest<>(null, null, Arrays.asList(one, two, three), RequestOptions.SYNC());
-        req.suspect(one);
+        GroupRequest<Integer> req=new GroupRequest<>(null, Arrays.asList(one, two, three), RequestOptions.SYNC());
         req.receiveResponse(1, one, false);
         req.siteUnreachable("LON");
         checkComplete(req, false);
 
         req.siteUnreachable("SFO");
         req.receiveResponse(2, two, false);
-        req.suspect(two);
         checkComplete(req, false);
 
         req.siteUnreachable("NYC");
         checkComplete(req, true);
-        req.suspect(three);
         checkComplete(req, true);
         req.receiveResponse(3, three, false);
         checkComplete(req, true);
     }
 
-    protected static void checkComplete(Request req, boolean expect) {
+    public void testCancel() throws Exception {
+        MyCorrelator corr=new MyCorrelator(true, null, 0);
+        GroupRequest<Integer> req=new GroupRequest<>(corr, Arrays.asList(a, b, c), RequestOptions.SYNC());
+        corr.setGroupRequest(req);
+        req.cancel(true);
+        RspList<Integer> rsps=req.execute(new Buffer(buf, 0, buf.length), true);
+        System.out.println("rsps:\n" + rsps);
+        assert rsps.size() == 3;
+        long num_not_received=rsps.values().stream().filter(rsp -> !rsp.wasReceived()).count();
+        assert num_not_received == 3;
+        assert req.isCancelled();
+
+
+        final GroupRequest<Integer> req2=new GroupRequest<>(corr, Arrays.asList(a, b, c), RequestOptions.SYNC());
+        corr.setGroupRequest(req2);
+        new Thread(() -> {Util.sleep(1000); req2.cancel(true);}).start();
+        rsps=req2.execute(new Buffer(buf, 0, buf.length), true);
+        System.out.println("rsps:\n" + rsps);
+        assert rsps.size() == 3;
+        num_not_received=rsps.values().stream().filter(rsp -> !rsp.wasReceived()).count();
+        assert num_not_received == 3;
+        assert req2.isCancelled();
+    }
+
+
+    protected static void checkComplete(GroupRequest req, boolean expect) {
         System.out.println("req = " + req);
         assert req.getResponsesComplete() == expect;
     }
@@ -304,13 +296,11 @@ public class GroupRequestTest {
         MyCorrelator corr = new MyCorrelator(async, responses, delay);
         
         // instantiate request with dummy correlator
-        GroupRequest<Long> req=new GroupRequest<>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, timeout));
+        GroupRequest<Long> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, timeout));
         corr.setGroupRequest(req);
-        boolean rc = req.execute();
+        RspList<Long> results=req.execute(new Buffer(buf, 0, buf.length), true);
         System.out.println("group request is " + req);
-        assert rc;
         assert req.isDone();
-        RspList<Long> results = req.getResults();
         Assert.assertEquals(dests.size(), results.size());
     }
 
@@ -319,13 +309,11 @@ public class GroupRequestTest {
     private void _testMessageReception(boolean async) throws Exception {
         Object[] responses={new Message(null,a, (long)1),new Message(null,b, (long)2)};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
-        GroupRequest<Object> req=new GroupRequest<>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
+        GroupRequest<Object> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         corr.setGroupRequest(req);
-        boolean rc=req.execute();
+        RspList<Object> results=req.execute(new Buffer(buf, 0, buf.length), true);
         System.out.println("group request is " + req);
-        assert rc;
         assert req.isDone();
-        RspList<Object> results=req.getResults();
         Assert.assertEquals(2, results.size());
     }
 
@@ -340,13 +328,11 @@ public class GroupRequestTest {
           new View(Util.createRandomAddress(), 322649, new_dests),
           new Message(null,b, (long)2)};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
-        GroupRequest<Long> req=new GroupRequest<>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
+        GroupRequest<Long> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         corr.setGroupRequest(req);
-        boolean rc=req.execute();
+        RspList<Long> results=req.execute(new Buffer(buf, 0, buf.length), true);
         System.out.println("group request is " + req);
-        assert rc;
         assert req.isDone();
-        RspList<Long> results=req.getResults();
         Assert.assertEquals(2, results.size());
     }
 
@@ -357,15 +343,13 @@ public class GroupRequestTest {
         Object[] responses={new Message(null,b, (long)1),
           new View(Util.createRandomAddress(), 322649, new_dests)};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
-        GroupRequest<Object> req=new GroupRequest<>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
+        GroupRequest<Object> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
 
         corr.setGroupRequest(req);
         System.out.println("group request before execution: " + req);
-        boolean rc=req.execute();
+        RspList<Object> results=req.execute(new Buffer(buf, 0, buf.length), true);
         System.out.println("group request after execution: " + req);
-        assert rc;
         assert req.isDone();
-        RspList<Object> results=req.getResults();
         Assert.assertEquals(2, results.size());
     }
 
@@ -383,20 +367,22 @@ public class GroupRequestTest {
             this.async=async;
             this.responses=responses;
             this.delay=delay;
+            this.transport=new Protocol() {
+                public Object down(Event evt) {
+                    return null;
+                }
+            };
         }
 
         public void setGroupRequest(GroupRequest r) {
             request=r;
         }
 
-
-        public void sendRequest(long id, List<Address> dest_mbrs, Message msg, RspCollector coll) throws Exception {
+        @Override
+        public void sendRequest(Collection<Address> dest_mbrs, Buffer data, Request req, RequestOptions opts) throws Exception {
             send();
         }
 
-        public void sendRequest(long id, Collection<Address> dest_mbrs, Message msg, RspCollector coll, RequestOptions options) throws Exception {
-            send();
-        }
 
         protected void send() {
             if(async) {

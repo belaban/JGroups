@@ -184,7 +184,7 @@ public class ServerTest extends BMNGRunner {
 
     protected BaseServer create(boolean nio, int port) {
         try {
-            return nio? new NioServer(loopback, port) : new TcpServer(loopback, port).useSendQueues(false);
+            return nio? new NioServer(loopback, port) : new TcpServer(loopback, port);
         }
         catch(Exception ex) {
             return null;
