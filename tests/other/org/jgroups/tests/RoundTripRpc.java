@@ -4,7 +4,6 @@ import org.jgroups.*;
 import org.jgroups.blocks.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.AverageMinMax;
-import org.jgroups.util.DirectExecutor;
 import org.jgroups.util.Util;
 
 import java.lang.reflect.Method;
@@ -20,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RoundTripRpc extends ReceiverAdapter {
     protected JChannel            channel;
     protected RpcDispatcher       disp;
-    protected int                 num_msgs=20000;
+    protected int                 num_msgs=50000;
     protected int                 num_senders=1; // number of sender threads
     protected boolean             oob=true, dont_bundle, details;
     protected Invoker[]           invokers;
@@ -40,7 +39,7 @@ public class RoundTripRpc extends ReceiverAdapter {
         channel=new JChannel(props).name(name);
 
         TP transport=channel.getProtocolStack().getTransport();
-        transport.setOOBThreadPool(new DirectExecutor());
+        // transport.setOOBThreadPool(new DirectExecutor());
         //transport.setDefaultThreadPool(new DirectExecutor());
 
         //ThreadPoolExecutor thread_pool=new ThreadPoolExecutor(4, 4, 30000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(5000));
