@@ -298,11 +298,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(bundler instanceof TransferQueueBundler)
             return ((TransferQueueBundler)bundler).getBufferSize();
         if(bundler instanceof RingBufferBundler)
-            return ((RingBufferBundler)bundler).size();
+            return bundler.size();
         if(bundler instanceof RingBufferBundlerLockless)
-            return ((RingBufferBundlerLockless)bundler).size();
+            return bundler.size();
         if(bundler instanceof RingBufferBundlerLockless2)
-            return ((RingBufferBundlerLockless2)bundler).size();
+            return bundler.size();
         return 0;
     }
 
@@ -1274,7 +1274,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(evt.getType() != Event.MSG)  // unless it is a message handle it and respond
             return handleDownEvent(evt);
 
-        Message msg=(Message)evt.getArg();
+        Message msg=evt.getArg();
         if(header != null)
             msg.putHeader(this.id, header); // added patch by Roland Kurmann (March 20 2003)
 
@@ -1633,7 +1633,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     num_bytes_received+=msg.getLength();
                 }
 
-                TpHeader hdr=(TpHeader)msg.getHeader(id);
+                TpHeader hdr=msg.getHeader(id);
                 AsciiString cname=new AsciiString(hdr.cluster_name);
                 passMessageUp(msg, cname, true, multicast, true);
             }
@@ -1813,7 +1813,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             case Event.VIEW_CHANGE:
                 Collection<Address> old_members;
                 synchronized(members) {
-                    View v=(View)evt.getArg();
+                    View v=evt.getArg();
                     this.view=v;
                     old_members=new ArrayList<>(members);
                     members.clear();
@@ -1834,7 +1834,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 }
                 who_has_cache.removeExpiredElements();
                 if(bundler != null)
-                    bundler.viewChange((View)evt.getArg());
+                    bundler.viewChange(evt.getArg());
                 break;
 
             case Event.CONNECT:
@@ -1871,7 +1871,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 break;
 
             case Event.GET_PHYSICAL_ADDRESS:
-                Address addr=(Address)evt.getArg();
+                Address addr=evt.getArg();
                 PhysicalAddress physical_addr=getPhysicalAddressFromCache(addr);
                 if(physical_addr != null)
                     return physical_addr;
@@ -1891,16 +1891,16 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 return logical_addr_cache.contents(skip_removed_values);
 
             case Event.SET_PHYSICAL_ADDRESS:
-                Tuple<Address,PhysicalAddress> tuple=(Tuple<Address,PhysicalAddress>)evt.getArg();
+                Tuple<Address,PhysicalAddress> tuple=evt.getArg();
                 return addPhysicalAddressToCache(tuple.getVal1(), tuple.getVal2());
 
             case Event.REMOVE_ADDRESS:
-                removeLogicalAddressFromCache((Address)evt.getArg());
+                removeLogicalAddressFromCache(evt.getArg());
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
-                registerLocalAddress((Address)evt.getArg());
+                local_addr=evt.getArg();
+                registerLocalAddress(evt.getArg());
                 break;
         }
         return null;
