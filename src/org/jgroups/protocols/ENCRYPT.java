@@ -102,7 +102,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Steve Woodcock
  * @author Bela Ban
+ * @deprecated Use {@link ASYM_ENCRYPT} or {@link SYM_ENCRYPT} instead
  */
+@Deprecated
 @MBean(description="Protocol which encrypts and decrypts cluster traffic")
 public class ENCRYPT extends Protocol {
     private static final String DEFAULT_SYM_ALGO="AES";
