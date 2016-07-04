@@ -1,10 +1,5 @@
 package org.jgroups.protocols;
 
-/**
- * A bundler based on a lockless ring buffer
- * @author Bela Ban
- * @since  4.0
- */
 
 import org.jgroups.Address;
 import org.jgroups.Global;
@@ -18,11 +13,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
+
 /**
- * This bundler adds all (unicast or multicast) messages to a ring buffer until max size has been exceeded, but does
- * send messages immediately when no other messages are available. If no space is available, a message by a sender
- * thread is simply dropped, as it will get retransmitted anyway. This makes this implementation completely non-blocking.
- * https://issues.jboss.org/browse/JGRP-1540
+ * Bundler which doesn't use locks but relies on CAS. There is 1 reader thread which gets unparked by (exactly one) writer
+ * when the max size has been exceeded, or no other threads are sending messages.
+ * @author Bela Ban
+ * @since 4.0
  */
 public class RingBufferBundlerLockless extends BaseBundler {
     protected Message[]                   buf;
@@ -50,9 +46,9 @@ public class RingBufferBundlerLockless extends BaseBundler {
         this.write_permits=new AtomicInteger(buf.length);
     }
 
-    public int                       readIndex()     {return read_index;}
-    public int                       writeIndex()    {return write_index;}
-    public int                       size()          {return size.get();}
+    public int readIndex()     {return read_index;}
+    public int writeIndex()    {return write_index;}
+    public int size()          {return size.get();}
 
 
     public void init(TP transport) {
@@ -99,7 +95,6 @@ public class RingBufferBundlerLockless extends BaseBundler {
         // only 2 threads at a time should do this (1st cond and 2nd cond), so we have to reduce this to
         // 1 thread as advanceWriteIndex() is not thread safe
         if(unpark && unparking.compareAndSet(false, true)) {
-
             int num_advanced=advanceWriteIndex();
             size.addAndGet(num_advanced);
             if(num_advanced > 0) {
@@ -149,22 +144,15 @@ public class RingBufferBundlerLockless extends BaseBundler {
     }
 
 
-
     protected void readMessages() {
-        int available_msgs=size.get();
-        if(available_msgs > 0) {
-            int sent_msgs=sendBundledMessages(buf, read_index, available_msgs);
-            read_index=index(read_index + sent_msgs);
-            size.addAndGet(-sent_msgs);
-            write_permits.addAndGet(sent_msgs);
-        }
+        _readMessages();
         LockSupport.park();
     }
 
 
 
     /** Read and send messages in range [read-index .. read-index+available_msgs-1] */
-    public int sendBundledMessages(final Message[] buf, final int read_index, int available_msgs) {
+    protected int sendBundledMessages(final Message[] buf, final int read_index, int available_msgs) {
         int       max_bundle_size=transport.getMaxBundleSize();
         byte[]    cluster_name=transport.cluster_name.chars();
         int       start=read_index;
@@ -208,7 +196,7 @@ public class RingBufferBundlerLockless extends BaseBundler {
         return String.format("read-index=%d write-index=%d size=%d cap=%d", read_index, write_index, size.get(), buf.length);
     }
 
-    public int _readMessages() throws InterruptedException {
+    public int _readMessages() {
         int available_msgs=size.get();
         if(available_msgs > 0) {
             int sent_msgs=sendBundledMessages(buf, read_index, available_msgs);
