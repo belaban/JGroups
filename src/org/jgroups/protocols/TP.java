@@ -130,6 +130,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       "\"l\": includes the local address of the current member, e.g. \"192.168.5.1:5678\"")
     protected String thread_naming_pattern="cl";
 
+    @Property(name="oob_thread_pool.enabled",description="Enable or disable the OOB thread pool",writable=false)
+    protected boolean oob_thread_pool_enabled=true;
+
     @Property(name="oob_thread_pool.min_threads",description="Minimum thread pool size for the OOB thread pool")
     protected int oob_thread_pool_min_threads=2;
 
@@ -158,6 +161,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(name="thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle thread from regular pool")
     protected long thread_pool_keep_alive_time=30000;
 
+    @Property(name="thread_pool.enabled",description="Enable or disable the regular thread pool")
+    protected boolean thread_pool_enabled=true;
+
     @Property(name="thread_pool.queue_enabled", description="Queue to enqueue incoming regular messages")
     protected boolean thread_pool_queue_enabled=true;
 
@@ -167,6 +173,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(name="thread_pool.rejection_policy",
               description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
     protected String thread_pool_rejection_policy="abort";
+
+
+    @Property(name="internal_thread_pool.enabled",description="Enable or disable the internal thread pool",writable=false)
+    protected boolean internal_thread_pool_enabled=true;
 
     @Property(name="internal_thread_pool.min_threads",description="Minimum thread pool size for the internal thread pool")
     protected int internal_thread_pool_min_threads=2;
@@ -1046,24 +1056,32 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         if(oob_thread_pool == null
           || (oob_thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)oob_thread_pool).isShutdown())) {
-            if(oob_thread_pool_queue_enabled)
-                oob_thread_pool_queue=new ArrayBlockingQueue<>(oob_thread_pool_queue_max_size);
-            else
-                oob_thread_pool_queue=new SynchronousQueue<>();
-            oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
-                                             oob_thread_pool_rejection_policy, oob_thread_pool_queue, oob_thread_factory);
+            if(oob_thread_pool_enabled) {
+                if(oob_thread_pool_queue_enabled)
+                    oob_thread_pool_queue=new ArrayBlockingQueue<>(oob_thread_pool_queue_max_size);
+                else
+                    oob_thread_pool_queue=new SynchronousQueue<>();
+                oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
+                                                 oob_thread_pool_rejection_policy, oob_thread_pool_queue, oob_thread_factory);
+            }
+            else // otherwise use the caller's thread to unmarshal the byte buffer into a message
+                oob_thread_pool=new DirectExecutor();
         }
 
         // ====================================== Regular thread pool ===========================
 
         if(thread_pool == null
           || (thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)thread_pool).isShutdown())) {
-            if(thread_pool_queue_enabled)
-                thread_pool_queue=new ArrayBlockingQueue<>(thread_pool_queue_max_size);
-            else
-                thread_pool_queue=new SynchronousQueue<>();
-            thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
-                                         thread_pool_rejection_policy, thread_pool_queue, default_thread_factory);
+            if(thread_pool_enabled) {
+                if(thread_pool_queue_enabled)
+                    thread_pool_queue=new ArrayBlockingQueue<>(thread_pool_queue_max_size);
+                else
+                    thread_pool_queue=new SynchronousQueue<>();
+                thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
+                                             thread_pool_rejection_policy, thread_pool_queue, default_thread_factory);
+            }
+            else // otherwise use the caller's thread to unmarshal the byte buffer into a message
+                thread_pool=new DirectExecutor();
         }
 
 
@@ -1071,17 +1089,19 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         if(internal_thread_pool == null
           || (internal_thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)internal_thread_pool).isShutdown())) {
-            if(internal_thread_pool_queue_enabled)
-                internal_thread_pool_queue=new ArrayBlockingQueue<>(internal_thread_pool_queue_max_size);
-            else
-                internal_thread_pool_queue=new SynchronousQueue<>();
-            internal_thread_pool=createThreadPool(internal_thread_pool_min_threads, internal_thread_pool_max_threads, internal_thread_pool_keep_alive_time,
-                                                  internal_thread_pool_rejection_policy, internal_thread_pool_queue, internal_thread_factory);
-            if(internal_thread_pool_min_threads < 2)
-                log.warn("The internal thread pool was configured with only %d min_threads; this might lead to problems " +
-                           "when more than 1 thread is needed, e.g. when merging", internal_thread_pool_min_threads);
+            if(internal_thread_pool_enabled) {
+                if(internal_thread_pool_queue_enabled)
+                    internal_thread_pool_queue=new ArrayBlockingQueue<>(internal_thread_pool_queue_max_size);
+                else
+                    internal_thread_pool_queue=new SynchronousQueue<>();
+                internal_thread_pool=createThreadPool(internal_thread_pool_min_threads, internal_thread_pool_max_threads, internal_thread_pool_keep_alive_time,
+                                                      internal_thread_pool_rejection_policy, internal_thread_pool_queue, internal_thread_factory);
+                if(internal_thread_pool_min_threads < 2)
+                    log.warn("The internal thread pool was configured with only %d min_threads; this might lead to problems " +
+                               "when more than 1 thread is needed, e.g. when merging", internal_thread_pool_min_threads);
+            }
+            // if the internal thread pool is disabled, we won't create it (not even a DirectExecutor)
         }
-
 
         Map<String, Object> m=new HashMap<>(2);
         if(bind_addr != null)
