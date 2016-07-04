@@ -11,27 +11,20 @@ public class SenderSendsBundler extends BaseBundler {
     protected final AtomicInteger num_senders=new AtomicInteger(0); // current senders adding msgs to the bundler
 
     public void send(Message msg) throws Exception {
-        long size=msg.size();
         num_senders.incrementAndGet();
+        long size=msg.size();
 
         lock.lock();
         try {
-            num_senders.decrementAndGet();
-
             if(count + size >= transport.getMaxBundleSize())
                 sendBundledMessages();
 
+            addMessage(msg, size);
+
             // at this point, we haven't sent our message yet !
-            if(num_senders.get() == 0) { // no other sender threads present at this time
-                if(count == 0)
-                    sendSingleMessage(msg);
-                else {
-                    addMessage(msg,size);
-                    sendBundledMessages();
-                }
-            }
-            else  // there are other sender threads waiting, so our message will be sent by a different thread
-                addMessage(msg, size);
+            if(num_senders.decrementAndGet() == 0) // no other sender threads present at this time
+                sendBundledMessages();
+            // else there are other sender threads waiting, so our message will be sent by a different thread
         }
         finally {
             lock.unlock();

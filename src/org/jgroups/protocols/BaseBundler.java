@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.util.AsciiString;
@@ -17,6 +18,8 @@ import static org.jgroups.protocols.TP.BUNDLE_MSG;
 import static org.jgroups.protocols.TP.MSG_OVERHEAD;
 
 /**
+ * Implements storing of messages in a hashmap and sending of single messages and message batches. Most bundler
+ * implementations will want to extend this class
  * @author Bela Ban
  */
 public class BaseBundler implements Bundler {
@@ -38,21 +41,46 @@ public class BaseBundler implements Bundler {
     public void stop()  {}
     public void send(Message msg) throws Exception {}
 
+    public void viewChange(View view) {
+        lock.lock();
+        try {
+            for(Iterator<SingletonAddress> it=msgs.keySet().iterator(); it.hasNext();) {
+                Address mbr=it.next().getAddress();
+                if(mbr != null && !view.containsMember(mbr)) // skip dest == null
+                    it.remove();
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    public int size() {
+        int num=0;
+        Collection<List<Message>> values=msgs.values();
+        for(List<Message> list: values) {
+            if(list != null)
+                num+=list.size();
+        }
+        return num;
+    }
+
     /**
-     * Sends all messages in the map. Messages for the same destination are bundled into a message list. The map will
-     * be cleared when done
+     * Sends all messages in the map. Messages for the same destination are bundled into a message list.
+     * The map will be cleared when done.
      */
     protected void sendBundledMessages() {
         if(log.isTraceEnabled()) {
-            double percentage=100.0 / transport.getMaxBundleTimeout() * count;
-            log.trace(BUNDLE_MSG, transport.localAddress(), numMessages(), count, percentage, msgs.size(), msgs.keySet());
+            double percentage=100.0 / transport.getMaxBundleSize() * count;
+            log.trace(BUNDLE_MSG, transport.localAddress(), size(), count, percentage, msgs.size(), msgs.keySet());
         }
 
         for(Map.Entry<SingletonAddress,List<Message>> entry: msgs.entrySet()) {
             List<Message> list=entry.getValue();
-            if(list.isEmpty())
+            if(list == null || list.isEmpty())
                 continue;
 
+            output.position(0);
             if(list.size() == 1)
                 sendSingleMessage(list.get(0));
             else {
@@ -62,23 +90,21 @@ public class BaseBundler implements Bundler {
                     transport.incrBatchesSent();
             }
         }
-        msgs.clear();
+        clearMessages();
         count=0;
     }
 
-    protected int numMessages() {
-        int num=0;
-        Collection<List<Message>> values=msgs.values();
-        for(List<Message> list: values)
-            num+=list.size();
-        return num;
+    @GuardedBy("lock") protected void clearMessages() {
+        for(List<Message> l: msgs.values()) {
+            if(l != null)
+                l.clear();
+        }
     }
 
 
     protected void sendSingleMessage(final Message msg) {
         Address dest=msg.getDest();
         try {
-            output.position(0);
             Util.writeMessage(msg, output, dest == null);
             transport.doSend(transport.getClusterName(msg), output.buffer(), 0, output.position(), dest);
             if(transport.statsEnabled())
@@ -99,7 +125,6 @@ public class BaseBundler implements Bundler {
     protected void sendMessageList(final Address dest, final Address src, final byte[] cluster_name,
                                    final List<Message> list) {
         try {
-            output.position(0);
             Util.writeMessageList(dest, src, cluster_name, list, output, dest == null, transport.getId()); // flushes output stream when done
             transport.doSend(transport.isSingleton()? new AsciiString(cluster_name) : null, output.buffer(), 0, output.position(), dest);
         }
@@ -118,7 +143,7 @@ public class BaseBundler implements Bundler {
         SingletonAddress dest=new SingletonAddress(cname, msg.getDest());
         List<Message> tmp=msgs.get(dest);
         if(tmp == null) {
-            tmp=new LinkedList<>();
+            tmp=new ArrayList<>(5);
             msgs.put(dest, tmp);
         }
         tmp.add(msg);

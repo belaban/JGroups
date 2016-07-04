@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Message;
+import org.jgroups.View;
 
 /**
  * Pluggable way to collect messages and send them as batches
@@ -18,4 +19,8 @@ public interface Bundler {
     void start();
     void stop();
     void send(Message msg) throws Exception;
+    void viewChange(View view);
+
+    /** The number of unsent messages in the bundler */
+    int size();
 }

@@ -56,11 +56,21 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     }
 
     public synchronized void stop() {
-        _stop(true);
+        running=false;
+        Thread tmp=bundler_thread;
+        bundler_thread=null;
+        if(tmp != null) {
+            tmp.interrupt();
+            if(tmp.isAlive()) {
+                try {tmp.join(500);} catch(InterruptedException e) {}
+            }
+        }
+        queue.clear();
     }
 
-    public synchronized void stopAndFlush() {
-        _stop(false);
+
+    public int size() {
+        return super.size() + removeQueueSize() + getBufferSize();
     }
 
     public void send(Message msg) throws Exception {
@@ -97,20 +107,6 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
             catch(Throwable t) {
             }
         }
-    }
-
-    protected void _stop(boolean clear_queue) {
-        running=false;
-        Thread tmp=bundler_thread;
-        bundler_thread=null;
-        if(tmp != null) {
-            tmp.interrupt();
-            if(tmp.isAlive()) {
-                try {tmp.join(500);} catch(InterruptedException e) {}
-            }
-        }
-        if(clear_queue)
-            queue.clear();
     }
 
 

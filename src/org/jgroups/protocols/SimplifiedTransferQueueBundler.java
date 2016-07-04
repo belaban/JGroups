@@ -11,20 +11,25 @@ import java.net.SocketException;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 
-import static org.jgroups.protocols.TP.assertPositive;
-
 /**
- * This bundler uses the same logic as {@link TP.TransferQueueBundler} but does not allocate
+ * This bundler uses the same logic as {@link TransferQueueBundler} but does not allocate
  * memory except for the buffer itself and does not use complex data structures.
  * @author Radim Vansa
  */
 public class SimplifiedTransferQueueBundler extends TransferQueueBundler {
-    protected static final int          MSG_BUF_SIZE=512;
-    protected final Message[]           msg_queue=new Message[MSG_BUF_SIZE];
-    protected int                       curr;
+    protected static final int MSG_BUF_SIZE=512;
+    protected final Message[]  msg_queue=new Message[MSG_BUF_SIZE];
+    protected int              curr;
 
-    protected SimplifiedTransferQueueBundler(int capacity) {
+    public SimplifiedTransferQueueBundler() {
+    }
+
+    public SimplifiedTransferQueueBundler(int capacity) {
         super(new ArrayBlockingQueue<Message>(assertPositive(capacity, "bundler capacity cannot be " + capacity)));
+    }
+
+    public int size() {
+        return curr + removeQueueSize();
     }
 
     protected void addMessage(Message msg, long size) {
