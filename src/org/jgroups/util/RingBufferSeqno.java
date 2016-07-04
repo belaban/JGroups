@@ -35,7 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  * @since 3.1
  */
-public class RingBuffer<T> implements Iterable<T> {
+public class RingBufferSeqno<T> implements Iterable<T> {
     /** Atomic ref array so that elements can be checked for null and set atomically.  Should always be sized to a power of 2. */
     protected final T[]            buf;
 
@@ -65,7 +65,7 @@ public class RingBuffer<T> implements Iterable<T> {
      * @param capacity The number of elements the ring buffer's array should hold.
      * @param offset The offset. The first element to be added has to be offset +1.
      */
-    public RingBuffer(int capacity, long offset) {
+    public RingBufferSeqno(int capacity, long offset) {
         if(capacity < 1)
             throw new IllegalArgumentException("incorrect capacity of " + capacity);
         if(offset < 0)

@@ -6,7 +6,7 @@
 # Creates a rendezvous for 7 threads (6 Adders and 1 Remover)
 #
 RULE Create rendezvous
-CLASS RingBufferLockless
+CLASS RingBufferSeqnoLockless
 METHOD <init>
 IF TRUE
 DO createRendezvous($0,  7, true);
@@ -18,7 +18,7 @@ ENDRULE
 # removed elements, and then rendezvous again, allowing the Adders to set the elements again
 #
 RULE Remove1
-CLASS RingBufferLockless
+CLASS RingBufferSeqnoLockless
 METHOD removeMany(java.util.concurrent.atomic.AtomicBoolean,boolean,int)
 AT WRITE hd
 IF $3 == 0
@@ -30,7 +30,7 @@ ENDRULE
 # the rendezvous again, allowing the Remover to null all elements, before the Adders are unblocked again.
 #
 RULE Add
-CLASS RingBufferLockless
+CLASS RingBufferSeqnoLockless
 METHOD add(long,java.lang.Object,boolean)
 AFTER READ hd
 IF $3
@@ -44,7 +44,7 @@ ENDRULE
 # (scenario #1)
 #
 RULE Remove2
-CLASS RingBufferLockless
+CLASS RingBufferSeqnoLockless
 METHOD removeMany(boolean,int)
 AT EXIT
 IF $2 == 0

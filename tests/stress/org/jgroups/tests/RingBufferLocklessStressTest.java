@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Message;
-import org.jgroups.util.RingBufferLockless;
+import org.jgroups.util.RingBufferSeqnoLockless;
 import org.jgroups.util.Util;
 
 import java.util.List;
@@ -34,7 +34,7 @@ public class RingBufferLocklessStressTest {
             }
         }
 
-        RingBufferLockless<Message> buf=new RingBufferLockless<>(NUM_MSGS, 0);
+        RingBufferSeqnoLockless<Message> buf=new RingBufferSeqnoLockless<>(NUM_MSGS, 0);
 
         final CountDownLatch latch=new CountDownLatch(1);
 
@@ -64,11 +64,11 @@ public class RingBufferLocklessStressTest {
 
 
     protected static class Adder extends Thread {
-        protected final RingBufferLockless<Message> buf;
+        protected final RingBufferSeqnoLockless<Message> buf;
         protected final AtomicInteger num;
         protected final CountDownLatch latch;
 
-        public Adder(RingBufferLockless<Message> buf, CountDownLatch latch, AtomicInteger num) {
+        public Adder(RingBufferSeqnoLockless<Message> buf, CountDownLatch latch, AtomicInteger num) {
             this.buf=buf;
             this.num=num;
             this.latch=latch;
@@ -95,10 +95,10 @@ public class RingBufferLocklessStressTest {
     }
 
     protected static class Remover extends Thread {
-        protected final RingBufferLockless<Message> buf;
+        protected final RingBufferSeqnoLockless<Message> buf;
         protected final CountDownLatch latch;
 
-        public Remover(RingBufferLockless<Message> buf, CountDownLatch latch) {
+        public Remover(RingBufferSeqnoLockless<Message> buf, CountDownLatch latch) {
             this.buf=buf;
             this.latch=latch;
             setName("Remover");

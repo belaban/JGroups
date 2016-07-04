@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
-import org.jgroups.util.RingBuffer;
+import org.jgroups.util.RingBufferSeqno;
 import org.jgroups.util.SeqnoList;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
@@ -16,17 +16,17 @@ import java.util.concurrent.CountDownLatch;
  * @since 3.1
  */
 @Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED},description="Functional tests of RingBuffer")
-public class RingBufferTest {
+public class RingBufferSeqnoTest {
 
     public void testConstructor() {
-        RingBuffer buf=new RingBuffer(100, 1);
+        RingBufferSeqno buf=new RingBufferSeqno(100, 1);
         System.out.println("buf = " + buf);
         assert buf.capacity() == Util.getNextHigherPowerOfTwo(100);
         assert buf.size() == 0;
     }
 
     public void testIndex() {
-        RingBuffer<Integer> buf=new RingBuffer<>(10, 5);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 5);
         assert buf.getHighestDelivered() == 5;
         assert buf.getHighestReceived() == 5;
         buf.add(6,6); buf.add(7,7);
@@ -42,7 +42,7 @@ public class RingBufferTest {
     }
 
     public void testIndexWithRemoveMany() {
-        RingBuffer<Integer> buf=new RingBuffer<>(10, 5);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 5);
         assert buf.getHighestDelivered() == 5;
         assert buf.getHighestReceived() == 5;
         buf.add(6,6); buf.add(7,7);
@@ -55,14 +55,14 @@ public class RingBufferTest {
     }
 
     public void testAddWithInvalidSeqno() {
-        RingBuffer<Integer> buf=new RingBuffer<>(100, 20);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(100, 20);
         assert buf.add(10, 0) == false;
         assert buf.add(20, 0) == false;
         assert buf.size() == 0;
     }
 
     public void testAdd() {
-        RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         buf.add(1, 322649);
         buf.add(2, 100000);
         System.out.println("buf = " + buf);
@@ -70,7 +70,7 @@ public class RingBufferTest {
     }
 
     public void testSaturation() {
-        RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         for(int i: Arrays.asList(1,2,3,4,5,6,7,8))
             buf.add(i, i);
         System.out.println("buf = " + buf);
@@ -105,7 +105,7 @@ public class RingBufferTest {
     }
 
     public void testAddWithWrapAround() {
-        RingBuffer<Integer> buf=new RingBuffer<>(10, 5);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 5);
         for(int i=6; i <=15; i++)
             assert buf.add(i, i) : "addition of seqno " + i + " failed";
         System.out.println("buf = " + buf);
@@ -140,7 +140,7 @@ public class RingBufferTest {
     }
 
     public void testAddWithWrapAroundAndRemoveMany() {
-        RingBuffer<Integer> buf=new RingBuffer<>(10, 5);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 5);
         for(int i=6; i <=15; i++)
             assert buf.add(i, i) : "addition of seqno " + i + " failed";
         System.out.println("buf = " + buf);
@@ -168,14 +168,14 @@ public class RingBufferTest {
     }
 
     public void testAddBeyondCapacity() {
-        RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         for(int i=1; i <=10; i++)
             assert buf.add(i, i);
         System.out.println("buf = " + buf);
     }
 
     public void testAddMissing() {
-        RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         for(int i: Arrays.asList(1,2,4,5,6))
             buf.add(i, i);
         System.out.println("buf = " + buf);
@@ -204,7 +204,7 @@ public class RingBufferTest {
 
 
     public void testGetMissing() {
-        RingBuffer<Integer> buf=new RingBuffer<>(30, 0);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(30, 0);
         for(int i: Arrays.asList(2,5,10,11,12,13,15,20,28,30))
             buf.add(i, i);
         System.out.println("buf = " + buf);
@@ -216,25 +216,25 @@ public class RingBufferTest {
     }
 
     public void testGetMissing2() {
-        RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         buf.add(1,1);
         SeqnoList missing=buf.getMissing();
         System.out.println("missing = " + missing);
         assert missing == null && buf.missing() == 0;
 
-        buf=new RingBuffer<>(10, 0);
+        buf=new RingBufferSeqno<>(10, 0);
         buf.add(10,10);
         missing=buf.getMissing();
         System.out.println("missing = " + missing);
         assert buf.missing() == missing.size();
 
-        buf=new RingBuffer<>(10, 0);
+        buf=new RingBufferSeqno<>(10, 0);
         buf.add(5,5);
         missing=buf.getMissing();
         System.out.println("missing = " + missing);
         assert buf.missing() == missing.size();
 
-        buf=new RingBuffer<>(10, 0);
+        buf=new RingBufferSeqno<>(10, 0);
         buf.add(5,7);
         missing=buf.getMissing();
         System.out.println("missing = " + missing);
@@ -242,7 +242,7 @@ public class RingBufferTest {
     }
 
     public void testBlockingAddAndDestroy() {
-        final RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        final RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         for(int i=0; i <= 10; i++)
             buf.add(i, i, true);
         System.out.println("buf = " + buf);
@@ -261,7 +261,7 @@ public class RingBufferTest {
     }
 
     public void testBlockingAddAndStable() throws InterruptedException {
-        final RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        final RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         for(int i=0; i <= 10; i++)
             buf.add(i, i, true);
         System.out.println("buf = " + buf);
@@ -283,7 +283,7 @@ public class RingBufferTest {
     }
 
     public void testGet() {
-        final RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        final RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         for(int i: Arrays.asList(1,2,3,4,5))
             buf.add(i, i);
         assert buf.get(0) == null;
@@ -294,7 +294,7 @@ public class RingBufferTest {
     }
 
     public void testGetList() {
-        final RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        final RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         for(int i: Arrays.asList(1,2,3,4,5))
             buf.add(i, i);
         List<Integer> elements=buf.get(3,5);
@@ -312,7 +312,7 @@ public class RingBufferTest {
     }
 
     public void testRemove() {
-        final RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        final RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         for(int i: Arrays.asList(1,2,3,4,5))
             buf.add(i, i);
         System.out.println("buf = " + buf);
@@ -333,7 +333,7 @@ public class RingBufferTest {
     }
 
     public void testRemovedPastHighestReceived() {
-        RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         int highest=buf.capacity();
         for(int i=1; i <= 20; i++) {
             if(i > highest) {
@@ -353,7 +353,7 @@ public class RingBufferTest {
     }
 
     public void testRemoveMany() {
-        RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         for(int i: Arrays.asList(1,2,3,4,5,6,7,9,10))
             buf.add(i, i);
         List<Integer> list=buf.removeMany(false,3);
@@ -374,7 +374,7 @@ public class RingBufferTest {
     }
 
     public void testRemoveManyWithNulling() {
-        RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         for(int i: Arrays.asList(1,2,3,4,5,6,7,9,10))
             buf.add(i, i);
         List<Integer> list=buf.removeMany(true, 3);
@@ -406,7 +406,7 @@ public class RingBufferTest {
      */
     public void testConcurrentAdd() {
         final int NUM=100;
-        final RingBuffer<Integer> buf=new RingBuffer<>(NUM, 0);
+        final RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(NUM, 0);
 
         CountDownLatch latch=new CountDownLatch(1);
         Adder[] adders=new Adder[NUM];
@@ -439,7 +439,7 @@ public class RingBufferTest {
      */
     public void testConcurrentAddAndRemove() throws InterruptedException {
         final int NUM=5;
-        final RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        final RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         for(int i=1; i <= 10; i++)
             buf.add(i, i); // fill the buffer, add() will block now
 
@@ -489,7 +489,7 @@ public class RingBufferTest {
     }
 
     public void testStable() {
-        RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         for(int i=1; i <=7; i++) {
             buf.add(i, i);
             buf.remove();
@@ -528,7 +528,7 @@ public class RingBufferTest {
     
 
     public void testIterator() {
-        RingBuffer<Integer> buf=new RingBuffer<>(10, 0);
+        RingBufferSeqno<Integer> buf=new RingBufferSeqno<>(10, 0);
         for(int i: Arrays.asList(1,2,3,4,5,6,7,9,10))
             buf.add(i, i);
         int count=0;
@@ -551,7 +551,7 @@ public class RingBufferTest {
         assert count == 10 : "count=" + count;
     }
 
-    protected static <T> void assertIndices(RingBuffer<T> buf, long low, long hd, long hr) {
+    protected static <T> void assertIndices(RingBufferSeqno<T> buf, long low, long hd, long hr) {
         assert buf.getLow() == low : "expected low=" + low + " but was " + buf.getLow();
         assert buf.getHighestDelivered() == hd : "expected hd=" + hd + " but was " + buf.getHighestDelivered();
         assert buf.getHighestReceived()  == hr : "expected hr=" + hr + " but was " + buf.getHighestReceived();
@@ -560,9 +560,9 @@ public class RingBufferTest {
     protected static class Adder extends Thread {
         protected final CountDownLatch latch;
         protected final int seqno;
-        protected final RingBuffer<Integer> buf;
+        protected final RingBufferSeqno<Integer> buf;
 
-        public Adder(CountDownLatch latch, int seqno, RingBuffer<Integer> buf) {
+        public Adder(CountDownLatch latch, int seqno, RingBufferSeqno<Integer> buf) {
             this.latch=latch;
             this.seqno=seqno;
             this.buf=buf;
