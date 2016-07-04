@@ -1555,6 +1555,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             case "nb":
                 return new NoBundler().poolSize(no_bundler_pool_size).initialBufSize(no_bundler_initial_buf_size);
             case "sender-sends-with-timer":
+            case "sswt":
             case "old":
                 return new SenderSendsWithTimerBundler();
         }

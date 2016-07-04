@@ -5,4 +5,4 @@
 
 JG=$HOME/JGroups-3.6-branch
 
-jgroups.sh org.jgroups.tests.$*
+./jgroups.sh org.jgroups.tests.$*
