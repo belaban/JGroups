@@ -367,7 +367,19 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected String bundler_type="transfer-queue";
 
     @Property(description="The max number of elements in a bundler if the bundler supports size limitations")
-    protected int bundler_capacity=16384; // some bundler require this value to be a power of 2
+    protected int bundler_capacity=16384;
+
+    @Property(name="no_bundler.pool_size",description="Pool size of buffers for marshalling in NoBundler")
+    protected int no_bundler_pool_size=10;
+
+    @Property(name="no_bundler.initial_buf_size",description="The initial size of each buffer (in bytes)")
+    protected int no_bundler_initial_buf_size=512;
+
+    @Property(description="Number of spins before a real lock is acquired")
+    protected int bundler_num_spins=40;
+
+    @Property(description="The wait strategy for a RingBuffer")
+    protected String bundler_wait_strategy;
 
     @ManagedAttribute(description="Fully qualified classname of bundler")
     public String getBundlerClass() {
@@ -396,6 +408,34 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(bundler instanceof TransferQueueBundler)
             return ((TransferQueueBundler)bundler).getBufferSize();
         return 0;
+    }
+
+    @ManagedAttribute(description="The wait strategy for a RingBuffer")
+    public String bundlerWaitStrategy() {
+        return bundler instanceof RingBufferBundler? ((RingBufferBundler)bundler).waitStrategy() : bundler_wait_strategy;
+    }
+
+    @ManagedAttribute(description="Sets the wait strategy in the RingBufferBundler. Allowed values are \"spin\", " +
+      "\"yield\", \"park\", \"spin-park\" and \"spin-yield\" or a fully qualified classname")
+    public void bundlerWaitStrategy(String strategy) {
+        if(bundler instanceof RingBufferBundler) {
+            ((RingBufferBundler)bundler).waitStrategy(strategy);
+            this.bundler_wait_strategy=strategy;
+        }
+        else
+            this.bundler_wait_strategy=strategy;
+    }
+
+    @ManagedAttribute(description="Number of spins before a real lock is acquired")
+    public int bundlerNumSpins() {
+        return bundler instanceof RingBufferBundler? ((RingBufferBundler)bundler).numSpins() : bundler_num_spins;
+    }
+
+    @ManagedAttribute(description="Sets the number of times a thread spins until a real lock is acquired")
+    public void bundlerNumSpins(int spins) {
+        this.bundler_num_spins=spins;
+        if(bundler instanceof RingBufferBundler)
+            ((RingBufferBundler)bundler).numSpins(spins);
     }
 
     @ManagedAttribute(description="Is the logical_addr_cache reaper task running")
@@ -1168,7 +1208,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
           || (oob_thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)oob_thread_pool).isShutdown())) {
             if(oob_thread_pool_enabled) {
                 if(oob_thread_pool_queue_enabled)
-                    oob_thread_pool_queue=new LinkedBlockingQueue<>(oob_thread_pool_queue_max_size);
+                    oob_thread_pool_queue=new ArrayBlockingQueue<>(oob_thread_pool_queue_max_size);
                 else
                     oob_thread_pool_queue=new SynchronousQueue<>();
                 oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
@@ -1185,7 +1225,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
           || (thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)thread_pool).isShutdown())) {
             if(thread_pool_enabled) {
                 if(thread_pool_queue_enabled)
-                    thread_pool_queue=new LinkedBlockingQueue<>(thread_pool_queue_max_size);
+                    thread_pool_queue=new ArrayBlockingQueue<>(thread_pool_queue_max_size);
                 else
                     thread_pool_queue=new SynchronousQueue<>();
                 thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
@@ -1203,7 +1243,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
           || (internal_thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)internal_thread_pool).isShutdown())) {
             if(internal_thread_pool_enabled) {
                 if(internal_thread_pool_queue_enabled)
-                    internal_thread_pool_queue=new LinkedBlockingQueue<>(internal_thread_pool_queue_max_size);
+                    internal_thread_pool_queue=new ArrayBlockingQueue<>(internal_thread_pool_queue_max_size);
                 else
                     internal_thread_pool_queue=new SynchronousQueue<>();
                 internal_thread_pool=createThreadPool(internal_thread_pool_min_threads, internal_thread_pool_max_threads, internal_thread_pool_keep_alive_time,
@@ -1281,10 +1321,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(bundler == null) {
             bundler=createBundler(bundler_type);
             bundler.init(this);
-            // bundler.start();
+            bundler.start();
         }
-        bundler.start();
-
         // local_addr is null when shared transport
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
     }
@@ -1292,7 +1330,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedOperation(description="Creates and sets a new bundler. Type has to be either a bundler_type or the fully " +
       "qualified classname of a Bundler impl. Stops the current bundler (if running)")
     public void bundler(String type) {
-        org.jgroups.protocols.Bundler new_bundler=createBundler(type);
+        Bundler new_bundler=createBundler(type);
         String old_bundler_class=null;
         if(bundler != null) {
             bundler.stop();
@@ -1305,6 +1343,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(old_bundler_class != null)
             log.debug("%s: replaced bundler %s with %s", local_addr, old_bundler_class, bundler.getClass().getName());
     }
+
 
 
     public void stop() {
@@ -1489,21 +1528,36 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     /* ------------------------------ Private Methods -------------------------------- */
 
-    protected org.jgroups.protocols.Bundler createBundler(String type) {
+    protected Bundler createBundler(String type) {
         if(type == null)
-            throw new IllegalArgumentException("bunder type has to be non-null");
-        if(bundler_type.startsWith("sender-sends-with-timer") || bundler_type.startsWith("old")) {
-            if(bundler_type.startsWith("old"))
-                log.warn(Util.getMessage("OldBundlerType"), bundler_type, "sender-sends-with-timer");
-            return new SenderSendsWithTimerBundler();
+            throw new IllegalArgumentException("bundler type has to be non-null");
+
+        switch(type) {
+            case "transfer-queue":
+            case "tq":
+                return new TransferQueueBundler(bundler_capacity);
+            case "simplified-transfer-queue":
+            case "stq":
+                return new SimplifiedTransferQueueBundler(bundler_capacity);
+            case "sender-sends":
+            case "ss":
+                return new SenderSendsBundler();
+            case "ring-buffer":
+            case "rb":
+                return new RingBufferBundler(bundler_capacity).numSpins(bundler_num_spins).waitStrategy(bundler_wait_strategy);
+            case "ring-buffer-lockless":
+            case "rbl":
+                return new RingBufferBundlerLockless(bundler_capacity);
+            case "ring-buffer-lockless2":
+            case "rbl2":
+                return new RingBufferBundlerLockless2(bundler_capacity);
+            case "no-bundler":
+            case "nb":
+                return new NoBundler().poolSize(no_bundler_pool_size).initialBufSize(no_bundler_initial_buf_size);
+            case "sender-sends-with-timer":
+            case "old":
+                return new SenderSendsWithTimerBundler();
         }
-        if(type.startsWith("transfer-queue"))
-            return type.endsWith("simplified")? new org.jgroups.protocols.SimplifiedTransferQueueBundler(bundler_capacity) :
-              new TransferQueueBundler(bundler_capacity);
-        if(type.startsWith("sender-sends"))
-            return new SenderSendsBundler();
-        if(type.startsWith("no-bundler"))
-            return new NoBundler();
         try {
             Class<Bundler> clazz=Util.loadClass(type, getClass());
             return clazz.newInstance();

@@ -149,4 +149,10 @@ public class BaseBundler implements Bundler {
         tmp.add(msg);
         count+=size;
     }
+
+    protected void checkForSharedTransport(TP tp) {
+        if(tp.isSingleton())
+            throw new IllegalStateException(String.format("bundler %s cannot handle shared transports",
+                                                          getClass().getSimpleName()));
+    }
 }

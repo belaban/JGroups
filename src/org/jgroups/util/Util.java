@@ -38,6 +38,7 @@ import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.lang.System.nanoTime;
 import static org.jgroups.protocols.TP.MULTICAST;
 
 
@@ -1661,6 +1662,11 @@ public class Util {
         catch(IOException e) {
             return 0;
         }
+    }
+
+
+    public static long micros() {
+        return nanoTime() / 1000;
     }
 
 

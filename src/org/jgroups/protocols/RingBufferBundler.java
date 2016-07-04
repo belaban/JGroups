@@ -230,11 +230,6 @@ public class RingBufferBundler extends BaseBundler {
         }
     }
 
-    protected void checkForSharedTransport(TP tp) {
-        if(tp.isSingleton())
-            throw new IllegalStateException(String.format("bundler %s cannot handle shared transports",
-                                                          getClass().getSimpleName()));
-    }
 
     protected static int assertPositive(int value, String message) {
         if(value <= 0) throw new IllegalArgumentException(message);
