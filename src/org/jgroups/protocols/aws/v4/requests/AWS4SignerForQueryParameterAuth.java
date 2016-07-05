@@ -4,6 +4,16 @@ import java.net.URL;
 import java.util.Date;
 import java.util.Map;
 
+/**
+ * Computes the signature for Presigned URLS. 
+ * Note: A presigned URL can be valid for a maximum of seven days because
+ * the signing key you use in signature calculation is valid for up to
+ * seven days. The minimum value you can set is 1, and the maximum
+ * is 604800 (seven days).
+ *  
+ * @author Mark Morris
+ * 
+ */
 public class AWS4SignerForQueryParameterAuth extends AWS4Signer {
 
     public void init( String httpMethod, String regionName, URL endpointUrl ) 

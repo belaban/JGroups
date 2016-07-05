@@ -15,6 +15,14 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 
+/**
+ * Test AWS4Signer's Amazon Signature Version 4, 
+ * a protocol for authenticating inbound API requests for all AWS regions. 
+ * 
+ * @author Mark Morris
+ * 
+ */
+
 @Test
 public class AWS_AUTH4Test {
     

@@ -8,6 +8,7 @@
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+        
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
          ip_ttl="4"
@@ -39,7 +40,18 @@
          oob_thread_pool.queue_enabled="false"
          oob_thread_pool.queue_max_size="100"
          oob_thread_pool.rejection_policy="discard"/>
-
+    
+    
+    
+    <!--  S3_PING2 added by Mark Morris for AWS Signature v4 support -->
+    <aws.s3_ping2.S3_PING2
+    s3_ping2_debug="true"
+    region="eu-central-1"
+    location="eu-central-1-tti-bob-2"
+    />
+            
+    
+    
     <MERGE3 max_interval="30000"
             min_interval="10000"/>
     <FD_SOCK/>

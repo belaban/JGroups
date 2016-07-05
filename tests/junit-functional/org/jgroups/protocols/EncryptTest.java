@@ -13,12 +13,16 @@ import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import javax.crypto.SecretKey;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import static java.util.stream.Collectors.toList;
+
 
 /**
  * Base class for tests {@link SYM_ENCRYPT_Test} and {@link ASYM_ENCRYPT_Test}
@@ -65,8 +69,13 @@ public abstract class EncryptTest {
                 break;
             Util.sleep(500);
         }
-        Stream.of(ra, rb, rc).map(MyReceiver::list).map(l -> l.stream().map(msg -> (String)msg.getObject())
-          .collect(ArrayList::new, ArrayList::add, (x, y) -> {})).forEach(System.out::println);
+        Stream.of(ra, rb, rc)
+        .map(MyReceiver::list)
+        .map(l -> l.stream()
+        		.map(msg -> (String)msg.getObject())
+//-mm-        		.collect(ArrayList::new, ArrayList::add, (x, y) -> {})
+        		.collect(toList())
+        		).forEach(System.out::println);
         assertForEachReceiver(r -> r.size() == 3);
     }
 
@@ -81,8 +90,13 @@ public abstract class EncryptTest {
                 break;
             Util.sleep(500);
         }
-        Stream.of(ra, rb, rc).map(MyReceiver::list).map(l -> l.stream().map(msg -> (String)msg.getObject())
-          .collect(ArrayList::new, ArrayList::add, (x, y) -> {})).forEach(System.out::println);
+        Stream.of(ra, rb, rc)
+        .map(MyReceiver::list)
+        .map(l -> l.stream()
+        		.map(msg -> (String)msg.getObject())
+//-mm-          	.collect(ArrayList::new, ArrayList::add, (x, y) -> {})
+        		.collect(toList())
+        		).forEach(System.out::println);
         assertForEachReceiver(r -> r.size() == 3);
     }
 
@@ -256,9 +270,14 @@ public abstract class EncryptTest {
                 break; // this should NOT happen
             Util.sleep(500);
         }
-
-        Stream.of(ra, rb, rc).map(MyReceiver::list).map(l -> l.stream().map(msg -> (String)msg.getObject())
-          .collect(ArrayList::new, ArrayList::add, (x, y) -> {})).forEach(System.out::println);
+        Stream.of(ra, rb, rc)
+        .map(MyReceiver::list)
+        .map(l -> l.stream().map( msg -> (String)msg.getObject())
+//-mm-        		.collect(ArrayList::new, ArrayList::add, (x, y) -> {})
+        		.collect(toList())
+        		).forEach(System.out::println);
+        
+        
         assert ra.size() == 1 : String.format("received msgs from non-member: '%s'; this should not be the case", print(ra.list()));
         assert rb.size() == 1 : String.format("received msgs from non-member: '%s'; this should not be the case", print(rb.list()));
         assert rc.size() == 1 : String.format("received msgs from non-member: '%s'; this should not be the case", print(rc.list()));

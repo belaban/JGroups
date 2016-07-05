@@ -32,8 +32,12 @@ import static java.lang.String.valueOf;
 
 
 /**
- * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
- * @author Bela Ban
+ * S3_PING2 was copied from S3_PING, Discovery protocol using Amazon's S3 storage. 
+ * Added support for Amazon Signature Version 4, a protocol for authenticating 
+ * inbound API requests to AWS services, in all AWS regions.
+ *  
+ * @author Mark Morris
+ * 
  */
 public class S3_PING2 extends FILE_PING {
 
@@ -130,7 +134,6 @@ public class S3_PING2 extends FILE_PING {
         }
 
         if(!skip_bucket_existence_check && !conn.checkBucketExists(location)) {
-            //conn.createBucket(location, AWSAuthConnection.LOCATION_DEFAULT, null).connection.getResponseMessage();
             conn.createBucket(location, region, null).connection.getResponseMessage();
         }
         
@@ -237,7 +240,7 @@ public class S3_PING2 extends FILE_PING {
     protected void remove(String clustername, Address addr) {
         if(clustername == null || addr == null)
             return;
-        String filename=addressToFilename(addr);//  addr instanceof org.jgroups.util.UUID? ((org.jgroups.util.UUID)addr).toStringLong() : addr.toString();
+        String filename=addressToFilename(addr);
         String key=sanitize(clustername) + "/" + sanitize(filename);
         try {
             if (usingPreSignedUrls()) {

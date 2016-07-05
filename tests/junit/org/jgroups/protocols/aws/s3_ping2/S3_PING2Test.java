@@ -25,6 +25,14 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+/**
+ * Test AWSAuthConnection's Amazon Signature Version 4 methods,
+ * a protocol for authenticating API requests to all AWS regions.
+ *  
+ * @author Mark Morris
+ * 
+ */
+
 @Test(groups={Global.STACK_INDEPENDENT})
 public class S3_PING2Test {
 	

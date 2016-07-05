@@ -4,6 +4,15 @@ import java.net.URL;
 import java.util.Date;
 import java.util.Map;
 
+/**
+ * Computes the signature for Amazon S3 request 
+ * using the HTTP Authorization header. It is the most common 
+ * method of signing an Amazon S3 request.
+ *  
+ * @author Mark Morris
+ * 
+ */
+
 public class AWS4SignerForAuthorizationHeader extends AWS4Signer {
 
 	public void init( String httpMethod, String regionName, URL endpointUrl ) 

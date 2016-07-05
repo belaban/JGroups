@@ -26,6 +26,16 @@ import java.util.TreeMap;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+/**
+ * Encapsulates signature computation for Amazon S3 requests 
+ * using the HTTP Authorization header and Presigned URLs.
+ * Calls the following to do the actual computation and signing:
+ * AWS4SignerForAuthorizationHeader computes signatures for HTTP Authorization header
+ * AWS4SignerForQueryParameterAuth computes signatures for Query string parameters (presigned URLs)
+ *  
+ * @author Mark Morris
+ * 
+ */
 public class AWS4Signer {
 	
     /** SHA256 hash of an empty request body **/
