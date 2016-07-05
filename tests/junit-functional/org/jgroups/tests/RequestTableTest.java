@@ -17,7 +17,7 @@ import java.util.concurrent.CountDownLatch;
  * @author Bela Ban
  * @since  3.6.7
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=false)
+@Test(groups=Global.FUNCTIONAL)
 public class RequestTableTest {
 
     public void testSimpleCreation() {
@@ -178,7 +178,7 @@ public class RequestTableTest {
         Collections.shuffle(tmp);
         ConcurrentLinkedQueue<Integer> list=new ConcurrentLinkedQueue<>(tmp);
         Remover[] removers=new Remover[10];
-        final CountDownLatch latch=new CountDownLatch(removers.length+1);
+        final CountDownLatch latch=new CountDownLatch(1);
         for(int i=0; i < removers.length; i++) {
             removers[i]=new Remover(table, latch, list);
             removers[i].start();
@@ -451,7 +451,12 @@ public class RequestTableTest {
         }
 
         public void run() {
-            latch.countDown();
+            try {
+                latch.await();
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
             Integer seqno=null;
             while((seqno=list.poll()) != null) {
                 Integer el=table.remove(seqno);

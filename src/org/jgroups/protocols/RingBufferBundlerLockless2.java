@@ -1,11 +1,5 @@
 package org.jgroups.protocols;
 
-/**
- * A bundler based on a lockless ring buffer
- * @author Bela Ban
- * @since  4.0
- */
-
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
@@ -17,20 +11,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
+
 /**
- * This bundler adds all (unicast or multicast) messages to a ring buffer until max size has been exceeded, but does
- * send messages immediately when no other messages are available. If no space is available, a message by a sender
- * thread is simply dropped, as it will get retransmitted anyway. This makes this implementation completely non-blocking.
- * https://issues.jboss.org/browse/JGRP-1540
+ * Lockless bundler using a reader thread which is unparked by (exactly one) writer thread.
+ * @author Bela Ban
+ * @since 4.0
  */
 public class RingBufferBundlerLockless2 extends BaseBundler {
     protected Message[]             buf;
-    protected final AtomicInteger   read_index=new PaddedAtomicInteger(0); // shared by reader and writers (reader only writes it)
-    protected int                   ri=0; // only used by reader
-    protected final AtomicInteger   write_index=new PaddedAtomicInteger(1);
-    protected final AtomicLong      accumulated_bytes=new PaddedAtomicLong(0);
-    protected final AtomicInteger   num_threads=new PaddedAtomicInteger(0);
-    protected final AtomicBoolean   unparking=new PaddedAtomicBoolean(false);
+    protected final AtomicInteger   read_index; // shared by reader and writers (reader only writes it)
+    protected int                   ri=0;       // only used by reader
+    protected final AtomicInteger   write_index;
+    protected final AtomicLong      accumulated_bytes;
+    protected final AtomicInteger   num_threads;
+    protected final AtomicBoolean   unparking;
     protected Runner                bundler_thread;
     protected final Runnable        run_function=this::readMessages;
     protected static final String   THREAD_NAME=RingBufferBundlerLockless2.class.getSimpleName();
@@ -38,13 +32,19 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
 
 
 
-    public RingBufferBundlerLockless2() {
-        this(1024);
-    }
-
+    public RingBufferBundlerLockless2() {this(1024, true);}
 
     public RingBufferBundlerLockless2(int capacity) {
+        this(capacity, true);
+    }
+
+    public RingBufferBundlerLockless2(int capacity, boolean padded) {
         buf=new Message[Util.getNextHigherPowerOfTwo(capacity)]; // for efficient % (mod) op
+        read_index=padded? new PaddedAtomicInteger(0) : new AtomicInteger(0);
+        write_index=padded? new PaddedAtomicInteger(1) : new AtomicInteger(1);
+        accumulated_bytes=padded? new PaddedAtomicLong(0) : new AtomicLong(0);
+        num_threads=padded? new PaddedAtomicInteger(0) : new AtomicInteger(0);
+        unparking=padded? new PaddedAtomicBoolean(false) : new AtomicBoolean(false);
     }
 
     public int                        readIndex()     {return read_index.get();}
@@ -87,6 +87,12 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
         unparkIfNeeded(msg.size());
     }
 
+    public String toString() {
+        int tmp_ri=read_index.get(), tmp_wi=write_index.get(), size=_size(tmp_ri, tmp_wi);
+        return String.format("read-index=%d write-index=%d size=%d cap=%d\n", tmp_ri, tmp_wi, size, buf.length);
+    }
+
+
     protected void unparkIfNeeded(long size) {
         long acc_bytes=size > 0? accumulated_bytes.addAndGet(size) : accumulated_bytes.get();
         boolean size_exceeded=acc_bytes >= transport.getMaxBundleSize() && accumulated_bytes.compareAndSet(acc_bytes, 0);
@@ -116,8 +122,6 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
         }
     }
 
-
-
     public int _readMessages() {
         int wi=write_index.get();
         if(index(ri+1) == wi)
@@ -126,8 +130,6 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
         advanceReadIndex(wi); // publish read_index into main memory
         return sent_msgs;
     }
-
-
 
     protected boolean advanceReadIndex(final int wi) {
         boolean advanced=false;
@@ -151,7 +153,7 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
 
 
     /** Read and send messages in range [read-index+1 .. write_index-1] */
-    public int sendBundledMessages(final Message[] buf, final int read_index, final int write_index) {
+    protected int sendBundledMessages(final Message[] buf, final int read_index, final int write_index) {
         int       max_bundle_size=transport.getMaxBundleSize();
         byte[]    cluster_name=transport.cluster_name.chars();
         int       sent_msgs=0;
@@ -178,6 +180,8 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
                 output.writeInt(num_msgs);
                 output.position(current_pos);
                 transport.doSend(output.buffer(), 0, output.position(), dest);
+                if(transport.statsEnabled())
+                    transport.incrBatchesSent(num_msgs);
             }
             catch(Exception ex) {
                 log.error("failed to send message(s)", ex);
@@ -186,10 +190,7 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
         return sent_msgs;
     }
 
-    public String toString() {
-        int tmp_ri=read_index.get(), tmp_wi=write_index.get(), size=_size(tmp_ri, tmp_wi);
-        return String.format("read-index=%d write-index=%d size=%d cap=%d\n", tmp_ri, tmp_wi, size, buf.length);
-    }
+
 
 
 

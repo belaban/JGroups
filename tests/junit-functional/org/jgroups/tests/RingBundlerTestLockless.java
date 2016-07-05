@@ -2,19 +2,13 @@ package org.jgroups.tests;
 
 import org.jgroups.Address;
 import org.jgroups.Message;
-import org.jgroups.PhysicalAddress;
 import org.jgroups.protocols.Bundler;
 import org.jgroups.protocols.RingBufferBundlerLockless;
-import org.jgroups.protocols.TP;
-import org.jgroups.util.AsciiString;
-import org.jgroups.util.DefaultThreadFactory;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 
@@ -121,51 +115,4 @@ public class RingBundlerTestLockless {
         }
     }
 
-
-
-
-
-
-
-    protected static class MockTransport extends TP {
-        protected final Map<Address,Integer> map=new HashMap<>();
-
-        public MockTransport() {
-            this.cluster_name=new AsciiString("mock");
-            global_thread_factory=new DefaultThreadFactory("", false);
-        }
-
-        public boolean supportsMulticasting() {
-            return false;
-        }
-
-
-        public void sendMulticast(byte[] data, int offset, int length) throws Exception {
-            incrCount(null);
-        }
-
-        protected void sendToSingleMember(Address dest, byte[] buf, int offset, int length) throws Exception {
-            incrCount(dest);
-        }
-
-        public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
-
-        }
-
-        public String getInfo() {
-            return null;
-        }
-
-        protected PhysicalAddress getPhysicalAddress() {
-            return null;
-        }
-
-        protected void incrCount(Address dest) {
-            Integer count=map.get(dest);
-            if(count == null)
-                map.put(dest, 1);
-            else
-                map.put(dest, count+1);
-        }
-    }
 }

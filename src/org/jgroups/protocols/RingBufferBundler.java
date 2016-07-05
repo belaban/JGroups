@@ -18,8 +18,9 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
 
 /**
- * This bundler adds all (unicast or multicast) messages to a queue until max size has been exceeded, but does send
- * messages immediately when no other messages are available. https://issues.jboss.org/browse/JGRP-1540
+ * Bundler which uses {@link RingBuffer} to store messages. The difference to {@link TransferQueueBundler} is that
+ * RingBuffer uses a wait strategy (to for example spinning) before blocking. Also, the hashmap of the superclass is not
+ * used, but the array of the RingBuffer is used directly to bundle and send messages, minimizing memory allocation.
  */
 public class RingBufferBundler extends BaseBundler {
     protected RingBuffer<Message>         rb;
@@ -88,22 +89,6 @@ public class RingBufferBundler extends BaseBundler {
     }
 
 
-
-    protected void readMessages() {
-        try {
-            int available_msgs=rb.waitForMessages(num_spins, wait_strategy);
-            int read_index=rb.readIndexLockless();
-            Message[] buf=rb.buf();
-            sendBundledMessages(buf, read_index, available_msgs);
-            rb.publishReadIndex(available_msgs);
-        }
-        catch(Throwable t) {
-            ;
-        }
-    }
-
-
-
     /** Read and send messages in range [read-index .. read-index+available_msgs-1] */
     public void sendBundledMessages(final Message[] buf, final int read_index, final int available_msgs) {
         int       max_bundle_size=transport.getMaxBundleSize();
@@ -134,6 +119,8 @@ public class RingBufferBundler extends BaseBundler {
                 output.writeInt(num_msgs);
                 output.position(current_pos);
                 transport.doSend(output.buffer(), 0, output.position(), dest);
+                if(transport.statsEnabled())
+                    transport.incrBatchesSent(num_msgs);
             }
             catch(Exception ex) {
                 log.error("failed to send message(s)", ex);
@@ -166,6 +153,20 @@ public class RingBufferBundler extends BaseBundler {
         }
         return num_msgs;
     }
+
+    protected void readMessages() {
+        try {
+            int available_msgs=rb.waitForMessages(num_spins, wait_strategy);
+            int read_index=rb.readIndexLockless();
+            Message[] buf=rb.buf();
+            sendBundledMessages(buf, read_index, available_msgs);
+            rb.publishReadIndex(available_msgs);
+        }
+        catch(Throwable t) {
+            ;
+        }
+    }
+
 
     protected final int advance(int index) {return index+1 == capacity? 0 : index+1;}
     protected final int index(int idx)     {return idx & (capacity-1);}    // fast equivalent to %

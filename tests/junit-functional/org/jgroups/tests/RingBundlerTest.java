@@ -11,7 +11,6 @@ import org.jgroups.util.RingBuffer;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -71,9 +70,6 @@ public class RingBundlerTest {
         MockTransport transport=new MockTransport();
         bundler.init(transport);
         bundler.stop(); // stops the reader thread
-        Field running=Util.getField(RingBufferBundler.class, "running");
-        running.setAccessible(true);
-        Util.setField(running, bundler, true);
 
         for(int i=0; i < 16; i++)
             bundler.send(new Message(a)); // buffer is full now; reader is not running

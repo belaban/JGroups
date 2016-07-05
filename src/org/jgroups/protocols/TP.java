@@ -130,6 +130,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       "\"l\": includes the local address of the current member, e.g. \"192.168.5.1:5678\"")
     protected String thread_naming_pattern="cl";
 
+    @Property(name="oob_thread_pool.enabled",description="Enable or disable the OOB thread pool",writable=false)
+    protected boolean oob_thread_pool_enabled=true;
+
     @Property(name="oob_thread_pool.min_threads",description="Minimum thread pool size for the OOB thread pool")
     protected int oob_thread_pool_min_threads=2;
 
@@ -158,6 +161,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(name="thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle thread from regular pool")
     protected long thread_pool_keep_alive_time=30000;
 
+    @Property(name="thread_pool.enabled",description="Enable or disable the regular thread pool")
+    protected boolean thread_pool_enabled=true;
+
     @Property(name="thread_pool.queue_enabled", description="Queue to enqueue incoming regular messages")
     protected boolean thread_pool_queue_enabled=true;
 
@@ -167,6 +173,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(name="thread_pool.rejection_policy",
               description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
     protected String thread_pool_rejection_policy="abort";
+
+
+    @Property(name="internal_thread_pool.enabled",description="Enable or disable the internal thread pool",writable=false)
+    protected boolean internal_thread_pool_enabled=true;
 
     @Property(name="internal_thread_pool.min_threads",description="Minimum thread pool size for the internal thread pool")
     protected int internal_thread_pool_min_threads=2;
@@ -262,9 +272,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(name="max_bundle_size", description="Maximum number of bytes for messages to be queued until they are sent")
     protected int max_bundle_size=64000;
 
-    @Property(description="The type of bundler used (\"transfer-queue\" (default), \"sender-sends\" or \"no-bundler\") " +
-      "or the fully qualified classname of a Bundler implementation")
-    protected String bundler_type="transfer-queue";
+    @Property(description="The type of bundler used (\"ring-buffer\" (default), \"transfer-queue\", \"sender-sends\" or " +
+      "\"no-bundler\") or the fully qualified classname of a Bundler implementation")
+    protected String bundler_type="ring-buffer";
 
     @Property(description="The max number of elements in a bundler if the bundler supports size limitations")
     protected int bundler_capacity=20000;
@@ -298,11 +308,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(bundler instanceof TransferQueueBundler)
             return ((TransferQueueBundler)bundler).getBufferSize();
         if(bundler instanceof RingBufferBundler)
-            return ((RingBufferBundler)bundler).size();
+            return bundler.size();
         if(bundler instanceof RingBufferBundlerLockless)
-            return ((RingBufferBundlerLockless)bundler).size();
+            return bundler.size();
         if(bundler instanceof RingBufferBundlerLockless2)
-            return ((RingBufferBundlerLockless2)bundler).size();
+            return bundler.size();
         return 0;
     }
 
@@ -822,6 +832,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public long getNumBytesSent()                     {return num_bytes_sent;}
     public long getNumBytesReceived()                 {return num_bytes_received;}
     public void incrBatchesSent()                     {num_batches_sent++;}
+    public void incrBatchesSent(int delta)            {num_batches_sent+=delta;}
     public void incrSingleMsgsInsteadOfBatches()      {num_single_msgs_sent_instead_of_batch++;}
     public InetAddress getBindAddress()               {return bind_addr;}
     public void setBindAddress(InetAddress bind_addr) {this.bind_addr=bind_addr;}
@@ -1046,24 +1057,32 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         if(oob_thread_pool == null
           || (oob_thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)oob_thread_pool).isShutdown())) {
-            if(oob_thread_pool_queue_enabled)
-                oob_thread_pool_queue=new ArrayBlockingQueue<>(oob_thread_pool_queue_max_size);
-            else
-                oob_thread_pool_queue=new SynchronousQueue<>();
-            oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
-                                             oob_thread_pool_rejection_policy, oob_thread_pool_queue, oob_thread_factory);
+            if(oob_thread_pool_enabled) {
+                if(oob_thread_pool_queue_enabled)
+                    oob_thread_pool_queue=new ArrayBlockingQueue<>(oob_thread_pool_queue_max_size);
+                else
+                    oob_thread_pool_queue=new SynchronousQueue<>();
+                oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
+                                                 oob_thread_pool_rejection_policy, oob_thread_pool_queue, oob_thread_factory);
+            }
+            else // otherwise use the caller's thread to unmarshal the byte buffer into a message
+                oob_thread_pool=new DirectExecutor();
         }
 
         // ====================================== Regular thread pool ===========================
 
         if(thread_pool == null
           || (thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)thread_pool).isShutdown())) {
-            if(thread_pool_queue_enabled)
-                thread_pool_queue=new ArrayBlockingQueue<>(thread_pool_queue_max_size);
-            else
-                thread_pool_queue=new SynchronousQueue<>();
-            thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
-                                         thread_pool_rejection_policy, thread_pool_queue, default_thread_factory);
+            if(thread_pool_enabled) {
+                if(thread_pool_queue_enabled)
+                    thread_pool_queue=new ArrayBlockingQueue<>(thread_pool_queue_max_size);
+                else
+                    thread_pool_queue=new SynchronousQueue<>();
+                thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
+                                             thread_pool_rejection_policy, thread_pool_queue, default_thread_factory);
+            }
+            else // otherwise use the caller's thread to unmarshal the byte buffer into a message
+                thread_pool=new DirectExecutor();
         }
 
 
@@ -1071,17 +1090,19 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         if(internal_thread_pool == null
           || (internal_thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)internal_thread_pool).isShutdown())) {
-            if(internal_thread_pool_queue_enabled)
-                internal_thread_pool_queue=new ArrayBlockingQueue<>(internal_thread_pool_queue_max_size);
-            else
-                internal_thread_pool_queue=new SynchronousQueue<>();
-            internal_thread_pool=createThreadPool(internal_thread_pool_min_threads, internal_thread_pool_max_threads, internal_thread_pool_keep_alive_time,
-                                                  internal_thread_pool_rejection_policy, internal_thread_pool_queue, internal_thread_factory);
-            if(internal_thread_pool_min_threads < 2)
-                log.warn("The internal thread pool was configured with only %d min_threads; this might lead to problems " +
-                           "when more than 1 thread is needed, e.g. when merging", internal_thread_pool_min_threads);
+            if(internal_thread_pool_enabled) {
+                if(internal_thread_pool_queue_enabled)
+                    internal_thread_pool_queue=new ArrayBlockingQueue<>(internal_thread_pool_queue_max_size);
+                else
+                    internal_thread_pool_queue=new SynchronousQueue<>();
+                internal_thread_pool=createThreadPool(internal_thread_pool_min_threads, internal_thread_pool_max_threads, internal_thread_pool_keep_alive_time,
+                                                      internal_thread_pool_rejection_policy, internal_thread_pool_queue, internal_thread_factory);
+                if(internal_thread_pool_min_threads < 2)
+                    log.warn("The internal thread pool was configured with only %d min_threads; this might lead to problems " +
+                               "when more than 1 thread is needed, e.g. when merging", internal_thread_pool_min_threads);
+            }
+            // if the internal thread pool is disabled, we won't create it (not even a DirectExecutor)
         }
-
 
         Map<String, Object> m=new HashMap<>(2);
         if(bind_addr != null)
@@ -1274,7 +1295,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(evt.getType() != Event.MSG)  // unless it is a message handle it and respond
             return handleDownEvent(evt);
 
-        Message msg=(Message)evt.getArg();
+        Message msg=evt.getArg();
         if(header != null)
             msg.putHeader(this.id, header); // added patch by Roland Kurmann (March 20 2003)
 
@@ -1633,7 +1654,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     num_bytes_received+=msg.getLength();
                 }
 
-                TpHeader hdr=(TpHeader)msg.getHeader(id);
+                TpHeader hdr=msg.getHeader(id);
                 AsciiString cname=new AsciiString(hdr.cluster_name);
                 passMessageUp(msg, cname, true, multicast, true);
             }
@@ -1813,7 +1834,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             case Event.VIEW_CHANGE:
                 Collection<Address> old_members;
                 synchronized(members) {
-                    View v=(View)evt.getArg();
+                    View v=evt.getArg();
                     this.view=v;
                     old_members=new ArrayList<>(members);
                     members.clear();
@@ -1834,7 +1855,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 }
                 who_has_cache.removeExpiredElements();
                 if(bundler != null)
-                    bundler.viewChange((View)evt.getArg());
+                    bundler.viewChange(evt.getArg());
                 break;
 
             case Event.CONNECT:
@@ -1871,7 +1892,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 break;
 
             case Event.GET_PHYSICAL_ADDRESS:
-                Address addr=(Address)evt.getArg();
+                Address addr=evt.getArg();
                 PhysicalAddress physical_addr=getPhysicalAddressFromCache(addr);
                 if(physical_addr != null)
                     return physical_addr;
@@ -1891,16 +1912,16 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 return logical_addr_cache.contents(skip_removed_values);
 
             case Event.SET_PHYSICAL_ADDRESS:
-                Tuple<Address,PhysicalAddress> tuple=(Tuple<Address,PhysicalAddress>)evt.getArg();
+                Tuple<Address,PhysicalAddress> tuple=evt.getArg();
                 return addPhysicalAddressToCache(tuple.getVal1(), tuple.getVal2());
 
             case Event.REMOVE_ADDRESS:
-                removeLogicalAddressFromCache((Address)evt.getArg());
+                removeLogicalAddressFromCache(evt.getArg());
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
-                registerLocalAddress((Address)evt.getArg());
+                local_addr=evt.getArg();
+                registerLocalAddress(evt.getArg());
                 break;
         }
         return null;

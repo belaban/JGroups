@@ -31,7 +31,7 @@ public class NioServerTest {
     protected NioClient            client;
     protected final AtomicInteger  counter=new AtomicInteger(0);
     protected final Sender[]       senders=new Sender[NUM_SENDERS];
-    protected final CountDownLatch latch=new CountDownLatch(NUM_SENDERS+1);
+    protected final CountDownLatch latch=new CountDownLatch(1);
 
     @BeforeMethod protected void init() throws Exception {
         srv=new NioServer(Util.getLocalhost(), 0);
@@ -84,7 +84,12 @@ public class NioServerTest {
 
         public void run() {
             int num_sends=0;
-            latch.countDown();
+            try {
+                latch.await();
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
             while(cnt.incrementAndGet() <= NUM_MSGS) {
                 num_sends++;
                 try {

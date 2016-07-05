@@ -6,7 +6,6 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
-import org.jgroups.util.DirectExecutor;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
@@ -59,6 +58,7 @@ public class JGroupsTransport extends ReceiverAdapter implements RtTransport {
 
     public void start(String ... options) throws Exception {
         String props="udp.xml", name=null;
+        options(options);
         if(options !=null) {
             for(int i=0; i < options.length; i++) {
                 if(options[i].startsWith("-props")) {
