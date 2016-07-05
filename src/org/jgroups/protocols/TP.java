@@ -832,6 +832,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public long getNumBytesSent()                     {return num_bytes_sent;}
     public long getNumBytesReceived()                 {return num_bytes_received;}
     public void incrBatchesSent()                     {num_batches_sent++;}
+    public void incrBatchesSent(int delta)            {num_batches_sent+=delta;}
     public void incrSingleMsgsInsteadOfBatches()      {num_single_msgs_sent_instead_of_batch++;}
     public InetAddress getBindAddress()               {return bind_addr;}
     public void setBindAddress(InetAddress bind_addr) {this.bind_addr=bind_addr;}

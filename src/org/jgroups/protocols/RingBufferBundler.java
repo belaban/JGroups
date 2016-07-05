@@ -119,6 +119,8 @@ public class RingBufferBundler extends BaseBundler {
                 output.writeInt(num_msgs);
                 output.position(current_pos);
                 transport.doSend(output.buffer(), 0, output.position(), dest);
+                if(transport.statsEnabled())
+                    transport.incrBatchesSent(num_msgs);
             }
             catch(Exception ex) {
                 log.error("failed to send message(s)", ex);
