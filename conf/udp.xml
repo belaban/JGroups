@@ -1,4 +1,3 @@
-
 <!--
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
@@ -40,8 +39,7 @@
          oob_thread_pool.queue_max_size="100"
          oob_thread_pool.rejection_policy="discard"/>
 
-	<S3_PING/>
-	
+    <PING />
     <MERGE3 max_interval="30000"
             min_interval="10000"/>
     <FD_SOCK/>
@@ -74,3 +72,4 @@
     <pbcast.STATE_TRANSFER />
     <!-- pbcast.FLUSH  /-->
 </config>
+
