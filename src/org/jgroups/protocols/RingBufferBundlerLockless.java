@@ -176,10 +176,12 @@ public class RingBufferBundlerLockless extends BaseBundler {
                 int size_pos=output.position() - Global.INT_SIZE;
                 int num_msgs=marshalMessagesToSameDestination(dest, buf, start, available_msgs, max_bundle_size);
                 sent_msgs+=num_msgs;
-                int current_pos=output.position();
-                output.position(size_pos);
-                output.writeInt(num_msgs);
-                output.position(current_pos);
+                if(num_msgs > 1) {
+                    int current_pos=output.position();
+                    output.position(size_pos);
+                    output.writeInt(num_msgs);
+                    output.position(current_pos);
+                }
                 transport.doSend(output.buffer(), 0, output.position(), dest);
                 if(transport.statsEnabled())
                     transport.incrBatchesSent(num_msgs);

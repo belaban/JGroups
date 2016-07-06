@@ -114,10 +114,12 @@ public class RingBufferBundler extends BaseBundler {
                 // correct value (when we know the correct number of messages)
                 int size_pos=output.position() - Global.INT_SIZE;
                 int num_msgs=marshalMessagesToSameDestination(dest, buf, start, end, max_bundle_size);
-                int current_pos=output.position();
-                output.position(size_pos);
-                output.writeInt(num_msgs);
-                output.position(current_pos);
+                if(num_msgs > 1) {
+                    int current_pos=output.position();
+                    output.position(size_pos);
+                    output.writeInt(num_msgs);
+                    output.position(current_pos);
+                }
                 transport.doSend(output.buffer(), 0, output.position(), dest);
                 if(transport.statsEnabled())
                     transport.incrBatchesSent(num_msgs);
