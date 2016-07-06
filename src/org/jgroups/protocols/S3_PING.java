@@ -64,7 +64,6 @@ public class S3_PING extends FILE_PING {
     @Override
     public void init() throws Exception {
         super.init();
-        
         if(host == null)
             host=Utils.DEFAULT_HOST;
         validateProperties();
