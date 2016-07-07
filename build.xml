@@ -570,8 +570,7 @@
     </target>
 
 
-    <target name="make-keystore" unless="isKeyStoreGenerated"
-            depends="keyStoreGenerated, compile"
+    <target name="make-keystore" unless="isKeyStoreGenerated" depends="keyStoreGenerated"
             description="Generates a temp keystore in ./keystore (for unit tests)">
         <mkdir dir="${keystore.dir}"/>
         <java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
