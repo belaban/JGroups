@@ -12,8 +12,7 @@ import java.util.Map;
 /**
  * A Message encapsulates data sent to members of a group. It contains among other things the
  * address of the sender, the destination address, a payload (byte buffer) and a list of headers.
- * Headers are added by protocols on the sender side and removed by protocols on the receiver's
- * side.
+ * Headers are added by protocols on the sender side and removed by protocols on the receiver's side.
  * <p>
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
@@ -60,7 +59,6 @@ public class Message implements Streamable {
         RSVP_NB(       (short)(1 <<  8)),    // non blocking RSVP
         INTERNAL(      (short)(1 <<  9)),    // for internal use by JGroups only, don't use !
         SKIP_BARRIER(  (short)(1 << 10));    // passing messages through a closed BARRIER
-
 
         final short value;
         Flag(short value) {this.value=value;}
@@ -159,11 +157,11 @@ public class Message implements Streamable {
 
     public Address getDest()                 {return dest_addr;}
     public Address dest()                    {return dest_addr;}
-    public void    setDest(Address new_dest) {dest_addr=new_dest;}
+    public Message setDest(Address new_dest) {dest_addr=new_dest; return this;}
     public Message dest(Address new_dest)    {dest_addr=new_dest; return this;}
     public Address getSrc()                  {return src_addr;}
     public Address src()                     {return src_addr;}
-    public void    setSrc(Address new_src)   {src_addr=new_src;}
+    public Message setSrc(Address new_src)   {src_addr=new_src; return this;}
     public Message src(Address new_src)      {src_addr=new_src; return this;}
 
    /**
@@ -178,7 +176,6 @@ public class Message implements Streamable {
 
    /**
     * Returns a copy of the buffer if offset and length are used, otherwise a reference.
-    *
     * @return byte array with a copy of the buffer.
     */
     public byte[] getBuffer() {
@@ -200,13 +197,12 @@ public class Message implements Streamable {
     }
 
     /**
-     * <em>
+     * Sets the buffer.<p/>
      * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
      * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
      * retransmit a changed byte[] buffer !
-     * </em>
      */
-    final public Message setBuffer(byte[] b) {
+    public Message setBuffer(byte[] b) {
         buf=b;
         if(buf != null) {
             offset=0;
@@ -229,7 +225,7 @@ public class Message implements Streamable {
      * @param offset The initial position
      * @param length The number of bytes
      */
-    final public Message setBuffer(byte[] b, int offset, int length) {
+    public Message setBuffer(byte[] b, int offset, int length) {
         buf=b;
         if(buf != null) {
             if(offset < 0 || offset > buf.length)
@@ -245,13 +241,12 @@ public class Message implements Streamable {
     }
 
     /**
-     * <em>
+     * Sets the buffer<p/>
      * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
      * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
      * retransmit a changed byte[] buffer !
-     * </em>
      */
-    public final Message setBuffer(Buffer buf) {
+    public Message setBuffer(Buffer buf) {
         if(buf != null) {
             this.buf=buf.getBuf();
             this.offset=buf.getOffset();
@@ -260,20 +255,12 @@ public class Message implements Streamable {
         return this;
     }
 
-    /**
-     *
-     * Returns the offset into the buffer at which the data starts
-     *
-     */
+    /** Returns the offset into the buffer at which the data starts */
     public int getOffset() {
         return offset;
     }
 
-   /**
-    *
-    * Returns the number of bytes in the buffer
-    *
-    */
+   /** Returns the number of bytes in the buffer */
     public int getLength() {
         return length;
     }
@@ -299,7 +286,7 @@ public class Message implements Streamable {
      * message. Parameter 'obj' has to be serializable (e.g. implementing Serializable,
      * Externalizable or Streamable, or be a basic type (e.g. Integer, Short etc)).
      */
-    final public Message setObject(Object obj) {
+    public Message setObject(Object obj) {
         if(obj == null) return this;
         if(obj instanceof byte[])
             return setBuffer((byte[])obj);
@@ -314,23 +301,21 @@ public class Message implements Streamable {
     }
 
 
-    final public <T extends Object> T getObject() {
+    public <T extends Object> T getObject() {
         return getObject(null);
     }
 
     /**
-     * Uses custom serialization to create an object from the buffer of the message. Note that this
-     * is dangerous when using your own classloader, e.g. inside of an application server ! Most
-     * likely, JGroups will use the system classloader to deserialize the buffer into an object,
-     * whereas (for example) a web application will want to use the webapp's classloader, resulting
-     * in a ClassCastException. The recommended way is for the application to use their own
-     * serialization and only pass byte[] buffer to JGroups.<p/>
+     * Uses custom serialization to create an object from the buffer of the message. Note that this is dangerous when
+     * using your own classloader, e.g. inside of an application server ! Most likely, JGroups will use the system
+     * classloader to deserialize the buffer into an object, whereas (for example) a web application will want to use
+     * the webapp's classloader, resulting in a ClassCastException. The recommended way is for the application to use
+     * their own serialization and only pass byte[] buffer to JGroups.<p/>
      * As of 3.5, a classloader can be passed in. It will be used first to find a class, before contacting
      * the other classloaders in the list. If null, the default list of classloaders will be used.
-     *
      * @return the object
      */
-    final public <T extends Object> T getObject(ClassLoader loader) {
+    public <T extends Object> T getObject(ClassLoader loader) {
         try {
             return Util.objectFromByteBuffer(buf, offset, length, loader);
         }

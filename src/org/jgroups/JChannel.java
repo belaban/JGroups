@@ -652,7 +652,7 @@ public class JChannel implements Closeable {
         switch(evt.getType()) {
 
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
+                Message msg=evt.getArg();
                 if(stats) {
                     received_msgs++;
                     received_bytes+=msg.getLength();
@@ -664,7 +664,7 @@ public class JChannel implements Closeable {
                 break;
 
             case Event.VIEW_CHANGE:
-                View tmp=(View)evt.getArg();
+                View tmp=evt.getArg();
                 if(tmp instanceof MergeView)
                     view=new View(tmp.getViewId(), tmp.getMembers());
                 else
@@ -681,7 +681,7 @@ public class JChannel implements Closeable {
                 break;
 
             case Event.CONFIG:
-                Map<String,Object> cfg=(Map<String,Object>)evt.getArg();
+                Map<String,Object> cfg=evt.getArg();
                 if(cfg != null) {
                     if(cfg.containsKey("state_transfer")) {
                         state_transfer_supported=(Boolean)cfg.get("state_transfer");
@@ -693,7 +693,7 @@ public class JChannel implements Closeable {
                 break;
                 
             case Event.GET_STATE_OK:
-                StateTransferResult result=(StateTransferResult)evt.getArg();
+                StateTransferResult result=evt.getArg();
                 if(up_handler != null) {
                     try {
                         Object retval=up_handler.up(evt);
@@ -721,7 +721,7 @@ public class JChannel implements Closeable {
                 break;
 
             case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
-                state_promise.setResult((StateTransferResult)evt.getArg());
+                state_promise.setResult(evt.getArg());
                 break;
 
             case Event.STATE_TRANSFER_INPUTSTREAM:
@@ -731,7 +731,7 @@ public class JChannel implements Closeable {
                 if(up_handler != null)
                     return up_handler.up(evt);
 
-                InputStream is=(InputStream)evt.getArg();
+                InputStream is=evt.getArg();
                 if(is != null && receiver != null) {
                     try {
                         receiver.setState(is);
@@ -745,7 +745,7 @@ public class JChannel implements Closeable {
             case Event.STATE_TRANSFER_OUTPUTSTREAM:
                 if(receiver != null && evt.getArg() != null) {
                     try {
-                        receiver.getState((OutputStream)evt.getArg());
+                        receiver.getState(evt.getArg());
                     }
                     catch(Exception e) {
                         throw new RuntimeException("failed calling getState() in state provider", e);
@@ -1113,7 +1113,7 @@ public class JChannel implements Closeable {
     protected JChannel notifyListeners(Consumer<ChannelListener> func, String msg) {
         if(channel_listeners != null) {
             try {
-                channel_listeners.forEach(func::accept);
+                channel_listeners.forEach(func);
             }
             catch(Throwable t) {
                 log.error(Util.getMessage("CallbackException"), msg, t);
