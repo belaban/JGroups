@@ -29,7 +29,7 @@ public class ProgrammaticApiTest {
         ch.connect("demo");
 
         Protocol transport=ch.getProtocolStack().getTransport();
-        transport.up(new Event(Event.MSG, new Message(null, Util.createRandomAddress(), "hello world")));
+        transport.up(new Event(Event.MSG, new Message(null, "hello world").src(Util.createRandomAddress())));
         assert receiver.num_msgs_received == 1;
     }
 

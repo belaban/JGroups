@@ -289,7 +289,7 @@ public class OOBTest extends ChannelTestBase {
         for(int i=0; i < num_msgs; i++) {
             JChannel sender=Util.tossWeightedCoin(0.5) ? a : b;
             boolean oob=Util.tossWeightedCoin(oob_prob);
-            Message msg=new Message(dest, null, i);
+            Message msg=new Message(dest, i);
             if(oob)
                msg.setFlag(Message.Flag.OOB);
             sender.send(msg);            

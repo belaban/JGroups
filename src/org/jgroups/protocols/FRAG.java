@@ -98,7 +98,7 @@ public class FRAG extends Protocol {
         switch(evt.getType()) {
 
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
+                Message msg=evt.getArg();
                 long size=msg.size();
                 num_sent_msgs++;
                 if(size > frag_size) {
@@ -113,7 +113,7 @@ public class FRAG extends Protocol {
                 break;
 
             case Event.VIEW_CHANGE:
-                handleViewChange((View)evt.getArg());
+                handleViewChange(evt.getArg());
                 break;
         }
 
@@ -127,8 +127,8 @@ public class FRAG extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                FragHeader hdr=(FragHeader)msg.getHeader(this.id);
+                Message msg=evt.getArg();
+                FragHeader hdr=msg.getHeader(this.id);
                 if(hdr != null) { // needs to be defragmented
                     Message assembled_msg=unfragment(msg, hdr);
                     if(assembled_msg != null)
@@ -141,7 +141,7 @@ public class FRAG extends Protocol {
                 break;
 
             case Event.VIEW_CHANGE:
-                handleViewChange((View)evt.getArg());
+                handleViewChange(evt.getArg());
                 break;
         }
 
@@ -150,7 +150,7 @@ public class FRAG extends Protocol {
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
-            FragHeader hdr=(FragHeader)msg.getHeader(this.id);
+            FragHeader hdr=msg.getHeader(this.id);
             if(hdr != null) { // needs to be defragmented
                 Message assembled_msg=unfragment(msg,hdr);
                 if(assembled_msg != null)
@@ -216,7 +216,7 @@ public class FRAG extends Protocol {
             }
 
             for(int i=0; i < num_frags; i++) {
-                Message frag_msg=new Message(dest, src, fragments[i]);
+                Message frag_msg=new Message(dest, fragments[i]).src(src);
                 FragHeader hdr=new FragHeader(frag_id, i, num_frags);
                 frag_msg.putHeader(this.id, hdr);
                 Event evt=new Event(Event.MSG, frag_msg);

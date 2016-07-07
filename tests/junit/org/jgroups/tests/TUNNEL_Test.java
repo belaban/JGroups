@@ -127,7 +127,7 @@ public class TUNNEL_Test extends ChannelTestBase {
         channel.disconnect();
         channel.connect(GROUP);
 
-        channel.send(new Message(null, null, "payload"));
+        channel.send(new Message(null, "payload"));
 
         Message msg=msgPromise.getResult(20000);
         assert msg != null;
@@ -161,7 +161,7 @@ public class TUNNEL_Test extends ChannelTestBase {
          System.out.println("shutting down the participant channel");
          Util.shutdown(channel);
 
-         GMS coord_gms=(GMS)coordinator.getProtocolStack().findProtocol(GMS.class);
+         GMS coord_gms=coordinator.getProtocolStack().findProtocol(GMS.class);
          if(coord_gms != null)
              coord_gms.setLevel("trace");
 
@@ -239,7 +239,7 @@ public class TUNNEL_Test extends ChannelTestBase {
         channel.disconnect();
         channel.connect(GROUP);
 
-        channel.send(new Message(null, null, "payload"));
+        channel.send(new Message(null, "payload"));
 
         Message msg=msgPromise.getResult(20000);
         assert msg != null;

@@ -139,7 +139,7 @@ public class RELAY extends Protocol {
         switch(evt.getType()) {
 
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
+                Message msg=evt.getArg();
                 Address dest=msg.getDest();
                 if(dest == null)
                     break;
@@ -152,7 +152,7 @@ public class RELAY extends Protocol {
                 break;
 
             case Event.VIEW_CHANGE:
-                handleView((View)evt.getArg());
+                handleView(evt.getArg());
                 break;
 
             case Event.DISCONNECT:
@@ -160,7 +160,7 @@ public class RELAY extends Protocol {
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
 
             case Event.GET_PHYSICAL_ADDRESS:
@@ -179,9 +179,9 @@ public class RELAY extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
+                Message msg=evt.getArg();
                 Address dest=msg.getDest();
-                RelayHeader hdr=(RelayHeader)msg.getHeader(getId());
+                RelayHeader hdr=msg.getHeader(getId());
                 if(hdr != null)
                     return handleUpEvent(msg, hdr);
 
@@ -198,7 +198,7 @@ public class RELAY extends Protocol {
                 break;
 
             case Event.VIEW_CHANGE:
-                handleView((View)evt.getArg()); // already sends up new view if needed
+                handleView(evt.getArg()); // already sends up new view if needed
                 if(present_global_views)
                     return null;
                 else
@@ -210,7 +210,7 @@ public class RELAY extends Protocol {
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
-            RelayHeader hdr=(RelayHeader)msg.getHeader(getId());
+            RelayHeader hdr=msg.getHeader(getId());
             if(hdr != null) {
                 batch.remove(msg);
                 try {
@@ -323,7 +323,7 @@ public class RELAY extends Protocol {
 
     /** Forwards the message across the TCP link to the other local cluster */
     protected void forward(byte[] buffer, int offset, int length) {
-        Message msg=new Message(null, null, buffer, offset, length).putHeader(id, new RelayHeader(RelayHeader.Type.FORWARD));
+        Message msg=new Message(null, buffer, offset, length).putHeader(id, new RelayHeader(RelayHeader.Type.FORWARD));
         if(bridge != null) {
             try {
                 bridge.send(msg);
@@ -349,7 +349,7 @@ public class RELAY extends Protocol {
                     return;
                 }
 
-                tmp=new Message(coord, null, buf, 0, buf.length); // reusing tmp is OK here ...
+                tmp=new Message(coord, buf, 0, buf.length); // reusing tmp is OK here ...
                 tmp.putHeader(id, new RelayHeader(RelayHeader.Type.FORWARD));
                 down_prot.down(new Event(Event.MSG, tmp));
             }
@@ -530,7 +530,7 @@ public class RELAY extends Protocol {
             if(bridge.getAddress().equals(sender)) // discard my own messages
                 return;
 
-            RelayHeader hdr=(RelayHeader)msg.getHeader(id);
+            RelayHeader hdr=msg.getHeader(id);
             switch(hdr.type) {
                 case DISSEMINATE: // should not occur here, but we'll ignore it anyway
                     break;

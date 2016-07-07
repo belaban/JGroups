@@ -256,7 +256,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         }
 
         try {
-            DrawCommand comm=(DrawCommand)Util.streamableFromByteBuffer(DrawCommand.class, buf, msg.getOffset(), msg.getLength());
+            DrawCommand comm=Util.streamableFromByteBuffer(DrawCommand.class, buf, msg.getOffset(), msg.getLength());
             switch(comm.mode) {
                 case DrawCommand.DRAW:
                     if(panel != null)
@@ -340,7 +340,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
             if(use_unicasts)
                 sendToAll(buf);
             else
-                channel.send(new Message(null, null, buf));
+                channel.send(new Message(null, buf));
         }
         catch(Exception ex) {
             System.err.println(ex);
@@ -405,7 +405,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
 
     public void channelConnected(JChannel channel) {
         if(jmx) {
-            Util.registerChannel((JChannel)channel, "jgroups");
+            Util.registerChannel(channel, "jgroups");
         }
     }
 
@@ -414,7 +414,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
             MBeanServer server=Util.getMBeanServer();
             if(server != null) {
                 try {
-                    JmxConfigurator.unregisterChannel((JChannel)channel,server,cluster_name);
+                    JmxConfigurator.unregisterChannel(channel, server, cluster_name);
                 }
                 catch(Exception e) {
                     e.printStackTrace();
@@ -533,7 +533,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
                 if(use_unicasts)
                     sendToAll(buf);
                 else
-                    channel.send(new Message(null, null, buf));
+                    channel.send(new Message(null, buf));
             }
             catch(Exception ex) {
                 System.err.println(ex);

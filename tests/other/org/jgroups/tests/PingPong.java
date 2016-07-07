@@ -39,7 +39,7 @@ public class PingPong extends ReceiverAdapter {
             if(unicast)
                 dest=Util.pickRandomElement(members);
             
-            Message msg=new Message(dest, null, PING_REQ);
+            Message msg=new Message(dest, PING_REQ);
             msg.setFlag(Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
             start=System.nanoTime();
             ch.send(msg);
@@ -56,7 +56,7 @@ public class PingPong extends ReceiverAdapter {
         byte type=msg.getRawBuffer()[msg.getOffset()];
         switch(type) {
             case PING:
-                final Message rsp=new Message(msg.getSrc(), null, PONG_RSP);
+                final Message rsp=new Message(msg.getSrc(), PONG_RSP);
                 rsp.setFlag(Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
                 try {
                     ch.send(rsp);

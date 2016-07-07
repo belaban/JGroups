@@ -200,7 +200,7 @@ public class MergeTest4 {
         MERGE3 merge=a.getProtocolStack().findProtocol(MERGE3.class);
         for(View view: Arrays.asList(v1,v2,v4,v3)) {
             MERGE3.MergeHeader hdr=MERGE3.MergeHeader.createInfo(view.getViewId(), null, null);
-            Message msg=new Message(null, a.getAddress(), null).putHeader(merge.getId(), hdr);
+            Message msg=new Message(null).src(a.getAddress()).putHeader(merge.getId(), hdr);
             merge.up(new Event(Event.MSG, msg));
         }
 
@@ -242,12 +242,12 @@ public class MergeTest4 {
         List<Event> merge_events=new ArrayList<>();
         for(View view: Arrays.asList(a3,a4,a2,a1)) {
             MERGE3.MergeHeader hdr=MERGE3.MergeHeader.createInfo(view.getViewId(), null, null);
-            Message msg=new Message(null, a.getAddress(), null).putHeader(merge_id, hdr);
+            Message msg=new Message(null).src(a.getAddress()).putHeader(merge_id, hdr);
             merge_events.add(new Event(Event.MSG, msg));
         }
         for(View view: Arrays.asList(b2,b3,b1)) {
             MERGE3.MergeHeader hdr=MERGE3.MergeHeader.createInfo(view.getViewId(), null, null);
-            Message msg=new Message(null, b.getAddress(), null).putHeader(merge_id, hdr);
+            Message msg=new Message(null).src(b.getAddress()).putHeader(merge_id, hdr);
             merge_events.add(new Event(Event.MSG, msg));
         }
 
@@ -345,7 +345,7 @@ public class MergeTest4 {
             System.out.println(ch.getName() + ": " + ch.getView());
 
         MERGE3.MergeHeader hdr=MERGE3.MergeHeader.createInfo(one.getViewId(), null, null);
-        Message msg=new Message(null, b.getAddress(), null).putHeader(merge_id, hdr); // B sends the INFO message to C
+        Message msg=new Message(null).src(b.getAddress()).putHeader(merge_id, hdr); // B sends the INFO message to C
         Event merge_event=new Event(Event.MSG, msg);
         MERGE3 merge=c.getProtocolStack().findProtocol(MERGE3.class);
         merge.up(merge_event);

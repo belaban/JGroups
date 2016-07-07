@@ -329,7 +329,7 @@
 
     <target name="jgroups.jar"
             description="Creates the jgroups.jar (includes everything)"
-            depends="clean,compile-no-unittests,compile-essential-unittests,make-schema,make-keystore">
+            depends="clean,compile-no-unittests,compile-essential-unittests,make-schema,make-keystore-no-compile">
         <mkdir dir="${dist.dir}"/>
         <xmlproperty file="${ant.file}" collapseAttributes="true" prefix="bnd"/>
         <property name="bndclasspath" refid="jg.classpath"/>
@@ -570,7 +570,22 @@
     </target>
 
 
-    <target name="make-keystore" unless="isKeyStoreGenerated" depends="keyStoreGenerated"
+    <target name="make-keystore" unless="isKeyStoreGenerated" depends="keyStoreGenerated,compile"
+            description="Generates a temp keystore in ./keystore (for unit tests)">
+        <mkdir dir="${keystore.dir}"/>
+        <java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
+            <arg value="--storeName"/>
+            <arg value="keystore/defaultStore.keystore"/>
+            <classpath refid="jg.classpath"/>
+        </java>
+        <java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
+            <arg value="--storeName"/>
+            <arg value="keystore/defaultStore2.keystore"/>
+            <classpath refid="jg.classpath"/>
+        </java>
+    </target>
+
+    <target name="make-keystore-no-compile" unless="isKeyStoreGenerated" depends="keyStoreGenerated"
             description="Generates a temp keystore in ./keystore (for unit tests)">
         <mkdir dir="${keystore.dir}"/>
         <java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">

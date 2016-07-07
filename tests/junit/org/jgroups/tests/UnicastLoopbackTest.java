@@ -46,7 +46,7 @@ public class UnicastLoopbackTest extends ChannelTestBase {
 
         // send NUM UNICAST messages to ourself
         for(int i=1; i <= NUM; i++) {
-            channel.send(new Message(local_addr, null,i));
+            channel.send(new Message(local_addr, i));
             if(i % 100 == 0)
                 System.out.println("-- sent " + i);
         }

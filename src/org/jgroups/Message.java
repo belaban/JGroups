@@ -97,18 +97,11 @@ public class Message implements Streamable {
     * Constructs a message given a destination and source address and the payload byte buffer
     * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
     *             sent to a single member.
-    * @param src The address of the sender. Can be null; in this case the transport will fill in the sender's address
     * @param buf The payload. Note that this buffer must not be modified (e.g. buf[0]='x' is not
     *           allowed) since we don't copy the contents.
     */
-    public Message(Address dest, Address src, byte[] buf) {
-        this(dest);
-        setSrc(src);
-        setBuffer(buf);
-    }
-
     public Message(Address dest, byte[] buf) {
-        this(dest, null, buf);
+        this(dest, buf, 0, buf != null? buf.length : 0);
     }
 
 
@@ -124,21 +117,16 @@ public class Message implements Streamable {
     *
     * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
     *             sent to a single member.
-    * @param src The address of the sender. Can be null; in this case the transport will fill in the sender's address
     * @param buf A reference to a byte buffer
     * @param offset The index into the byte buffer
     * @param length The number of bytes to be used from <tt>buf</tt>. Both index and length are checked
     *           for array index violations and an ArrayIndexOutOfBoundsException will be thrown if invalid
     */
-    public Message(Address dest, Address src, byte[] buf, int offset, int length) {
+    public Message(Address dest, byte[] buf, int offset, int length) {
         this(dest);
-        setSrc(src);
         setBuffer(buf, offset, length);
     }
 
-    public Message(Address dest, byte[] buf, int offset, int length) {
-        this(dest, null, buf, offset, length);
-    }
 
     public Message(Address dest, Buffer buf) {
         this(dest);
@@ -150,23 +138,17 @@ public class Message implements Streamable {
     * Constructs a message given a destination and source address and the payload object
     * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
     *             sent to a single member.
-    * @param src The address of the sender. Can be null; in this case the transport will fill in the sender's address
     * @param obj The object that will be marshalled into the byte buffer. Has to be serializable (e.g. implementing
     *            Serializable, Externalizable or Streamable, or be a basic type (e.g. Integer, Short etc)).
     */
-    public Message(Address dest, Address src, Object obj) {
-        this(dest);
-        setSrc(src);
-        setObject(obj);
-    }
-
     public Message(Address dest, Object obj) {
-        this(dest, null, obj);
+        this(dest);
+        setObject(obj);
     }
 
 
     public Message() {
-        headers=createHeaders(Util.DEFAULT_HEADERS);
+        this(true);
     }
 
 

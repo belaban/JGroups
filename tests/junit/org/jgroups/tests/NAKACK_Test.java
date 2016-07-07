@@ -63,7 +63,7 @@ public class NAKACK_Test extends ChannelTestBase {
         assert c3.getView().getMembers().size() == 3 : "view is " + c3.getView() + ", expected view of 3 members";
 
         for(int i=1; i <=5; i++) {
-            Message msg=new Message(null, null,(long)i);
+            Message msg=new Message(null, (long)i);
             if(i == 4)
                 msg.setFlag(Message.Flag.OOB);
             System.out.println("-- sending message #" + i);

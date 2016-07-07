@@ -8,7 +8,6 @@ import org.jgroups.util.Util;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.List;
-import java.util.Vector;
 
 /**
  * Interactive test for MFC and UFC
@@ -42,7 +41,7 @@ public class FlowControlTest extends ReceiverAdapter {
                                     "[3] Set message size [4] Print credits MFC [5] Print credits UFC [q] quit");
             switch(key) {
                 case '1':
-                    Message msg=new Message(null, null, buf);
+                    Message msg=new Message(null, buf);
                     try {
                         ch.send(msg);
                     }
@@ -52,7 +51,7 @@ public class FlowControlTest extends ReceiverAdapter {
                     break;
                 case '2':
                     Address target=getReceiver();
-                    msg=new Message(target, null, buf);
+                    msg=new Message(target, buf);
                     try {
                         ch.send(msg);
                     }
@@ -70,7 +69,7 @@ public class FlowControlTest extends ReceiverAdapter {
                     }
                     break;
                 case '4':
-                    MFC mfc=(MFC)ch.getProtocolStack().findProtocol(MFC.class);
+                    MFC mfc=ch.getProtocolStack().findProtocol(MFC.class);
                     if(mfc == null) {
                         System.err.println("MFC not found");
                         break;
@@ -78,7 +77,7 @@ public class FlowControlTest extends ReceiverAdapter {
                     System.out.println(mfc.printCredits());
                     break;
                 case '5':
-                    UFC ufc=(UFC)ch.getProtocolStack().findProtocol(UFC.class);
+                    UFC ufc=ch.getProtocolStack().findProtocol(UFC.class);
                     if(ufc == null) {
                         System.err.println("UFC not found");
                         break;

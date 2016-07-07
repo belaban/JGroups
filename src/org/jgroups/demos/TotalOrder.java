@@ -94,7 +94,7 @@ public class TotalOrder extends Frame {
                 try {
                     req=createRandomRequest();
                     buf=req.toBuffer();
-                    channel.send(new Message(null, null, buf));
+                    channel.send(new Message(null, buf));
                     System.out.print("-- num requests sent: " + cnt + "\r");
                     if(timeout > 0)
                         Util.sleep(timeout);
@@ -162,7 +162,7 @@ public class TotalOrder extends Frame {
             try {
                 TotOrderRequest req=new TotOrderRequest(TotOrderRequest.STOP, 0, 0, 0);
                 byte[] buf=req.toBuffer();
-                channel.send(new Message(null,null,buf));
+                channel.send(new Message(null, buf));
             }
             catch(Exception ex) {
             }

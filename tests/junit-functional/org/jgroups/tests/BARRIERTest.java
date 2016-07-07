@@ -116,7 +116,7 @@ public class BARRIERTest {
 
 
     protected Event createMessage() {
-        Message msg=new Message(null, ch.getAddress(), null).putHeader(tp.getId(),new TpHeader("BARRIERTest"));
+        Message msg=new Message(null).src(ch.getAddress()).putHeader(tp.getId(),new TpHeader("BARRIERTest"));
         return new Event(Event.MSG, msg);
     }
 

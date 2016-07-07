@@ -93,7 +93,7 @@ public class NAKACK2_RetransmissionTest {
 
     /** Makes NAKACK2 receive a message with the given seqno */
     protected void injectMessage(long seqno) {
-        Message msg=new Message(null, B, null);
+        Message msg=new Message(null).src(B);
         NakAckHeader2 hdr=NakAckHeader2.createMessageHeader(seqno);
         msg.putHeader(ID, hdr);
         nak.up(new Event(Event.MSG, msg));
@@ -137,8 +137,8 @@ public class NAKACK2_RetransmissionTest {
         public Object down(Event evt) {
             switch(evt.getType()) {
                 case Event.MSG:
-                    Message msg=(Message)evt.getArg();
-                    NakAckHeader2 hdr=(NakAckHeader2)msg.getHeader(ID);
+                    Message msg=evt.getArg();
+                    NakAckHeader2 hdr=msg.getHeader(ID);
                     if(hdr == null)
                         break;
                     if(hdr.getType() == NakAckHeader2.XMIT_REQ) {
@@ -168,8 +168,8 @@ public class NAKACK2_RetransmissionTest {
         public Object up(Event evt) {
             switch(evt.getType()) {
                 case Event.MSG:
-                    Message msg=(Message)evt.getArg();
-                    NakAckHeader2 hdr=(NakAckHeader2)msg.getHeader(ID);
+                    Message msg=evt.getArg();
+                    NakAckHeader2 hdr=msg.getHeader(ID);
                     if(hdr != null && hdr.getType() == NakAckHeader2.MSG) {
                         long seqno=hdr.getSeqno();
                         msgs.add(seqno);
@@ -182,7 +182,7 @@ public class NAKACK2_RetransmissionTest {
 
         public void up(MessageBatch batch) {
             for(Message msg: batch) {
-                NakAckHeader2 hdr=(NakAckHeader2)msg.getHeader(ID);
+                NakAckHeader2 hdr=msg.getHeader(ID);
                 if(hdr != null && hdr.getType() == NakAckHeader2.MSG) {
                     long seqno=hdr.getSeqno();
                     msgs.add(seqno);

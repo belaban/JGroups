@@ -274,7 +274,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property(description="The type of bundler used (\"ring-buffer\" (default), \"transfer-queue\", \"sender-sends\" or " +
       "\"no-bundler\") or the fully qualified classname of a Bundler implementation")
-    protected String bundler_type="ring-buffer";
+    protected String bundler_type="transfer-queue";
 
     @Property(description="The max number of elements in a bundler if the bundler supports size limitations")
     protected int bundler_capacity=20000;

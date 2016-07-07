@@ -212,7 +212,7 @@ public class MPerf extends ReceiverAdapter {
 
 
     protected void send(Address target, Object payload, byte header, Message.Flag ... flags) throws Exception {
-        Message msg=new Message(target, null, payload);
+        Message msg=new Message(target, payload);
         if(flags != null)
             for(Message.Flag flag: flags)
                 msg.setFlag(flag);

@@ -71,9 +71,9 @@ public class GroupRequestTest {
 
 
     public void testGetFirstWithResponseFilter() throws Exception {
-        Object[] responses={new Message(null,a, (long)1),
-          new Message(null,b, (long)2),
-          new Message(null,c, (long)3)};
+        Object[] responses={new Message(null,(long)1).src(a),
+          new Message(null,(long)2).src(b),
+          new Message(null,(long)3).src(c)};
         MyCorrelator corr=new MyCorrelator(true, responses, 500);
         dests.add(c);
         GroupRequest<Long> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_FIRST, 0));
@@ -103,9 +103,9 @@ public class GroupRequestTest {
 
 
     public void testGetAllWithResponseFilter() throws Exception {
-        Object[] responses={new Message(null,a, (long)1),
-          new Message(null,b, (long)2),
-          new Message(null,c, (long)3)};
+        Object[] responses={new Message(null,(long)1).src(a),
+          new Message(null,(long)2).src(b),
+          new Message(null,(long)3).src(c)};
         MyCorrelator corr=new MyCorrelator(true, responses, 500);
         dests.add(c);
         GroupRequest<Long> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
@@ -290,7 +290,7 @@ public class GroupRequestTest {
             Address addr = Util.createRandomAddress();
             dests.add(addr);
             // how long does this simulated destination take to execute? the sum is just less than the total timeout
-            responses[i] = new Message(null, addr, (long)i);
+            responses[i] = new Message(null, (long)i).src(addr);
         }
         
         MyCorrelator corr = new MyCorrelator(async, responses, delay);
@@ -307,7 +307,7 @@ public class GroupRequestTest {
 
 
     private void _testMessageReception(boolean async) throws Exception {
-        Object[] responses={new Message(null,a, (long)1),new Message(null,b, (long)2)};
+        Object[] responses={new Message(null,(long)1).src(a),new Message(null,(long)2).src(b)};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
         GroupRequest<Object> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         corr.setGroupRequest(req);
@@ -324,9 +324,9 @@ public class GroupRequestTest {
         new_dests.add(a);
         new_dests.add(b);
         new_dests.add(a);
-        Object[] responses={new Message(null,a, (long)1),
+        Object[] responses={new Message(null,(long)1).src(a),
           new View(Util.createRandomAddress(), 322649, new_dests),
-          new Message(null,b, (long)2)};
+          new Message(null,(long)2).src(b)};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
         GroupRequest<Long> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         corr.setGroupRequest(req);
@@ -340,7 +340,7 @@ public class GroupRequestTest {
     private void _testMessageReceptionWithViewChangeMemberLeft(boolean async) throws Exception {
         List<Address> new_dests=new ArrayList<>();
         new_dests.add(b);
-        Object[] responses={new Message(null,b, (long)1),
+        Object[] responses={new Message(null,(long)1).src(b),
           new View(Util.createRandomAddress(), 322649, new_dests)};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
         GroupRequest<Object> req=new GroupRequest<>(corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));

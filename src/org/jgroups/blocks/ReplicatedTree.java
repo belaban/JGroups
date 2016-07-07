@@ -179,11 +179,7 @@ public class ReplicatedTree extends ReceiverAdapter {
                 return;
             }
             try {
-                channel.send(
-                        new Message(
-                                null,
-                                null,
-                                new Request(Request.PUT, fqn, data)));
+                channel.send(new Message(null, new Request(Request.PUT, fqn, data)));
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("failure bcasting PUT request: " + ex);
@@ -218,11 +214,7 @@ public class ReplicatedTree extends ReceiverAdapter {
                 return;
             }
             try {
-                channel.send(
-                        new Message(
-                                null,
-                                null,
-                                new Request(Request.PUT, fqn, key, value)));
+                channel.send(new Message(null, new Request(Request.PUT, fqn, key, value)));
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("failure bcasting PUT request: " + ex);
@@ -251,8 +243,7 @@ public class ReplicatedTree extends ReceiverAdapter {
                 return;
             }
             try {
-                channel.send(
-                        new Message(null, null, new Request(Request.REMOVE, fqn)));
+                channel.send(new Message(null, new Request(Request.REMOVE, fqn)));
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("failure bcasting REMOVE request: " + ex);
@@ -265,7 +256,7 @@ public class ReplicatedTree extends ReceiverAdapter {
 
 
     /**
-     * Removes <code>key</code> from the node's hashmap
+     * Removes {@code key} from the node's hashmap
      * @param fqn The fullly qualified name of the node
      * @param key The key to be removed
      */
@@ -282,11 +273,7 @@ public class ReplicatedTree extends ReceiverAdapter {
                 return;
             }
             try {
-                channel.send(
-                        new Message(
-                                null,
-                                null,
-                                new Request(Request.REMOVE, fqn, key)));
+                channel.send(new Message(null, new Request(Request.REMOVE, fqn, key)));
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("failure bcasting REMOVE request: " + ex);
@@ -304,13 +291,12 @@ public class ReplicatedTree extends ReceiverAdapter {
      * @return boolean Whether or not the node exists
      */
     public boolean exists(String fqn) {
-        if(fqn == null) return false;
-        return findNode(fqn) != null;
+        return fqn != null && findNode(fqn) != null;
     }
 
 
     /**
-     * Gets the keys of the <code>data</code> map. Returns all keys as Strings. Returns null if node
+     * Gets the keys of the {@code data} map. Returns all keys as Strings. Returns null if node
      * does not exist.
      * @param fqn The fully qualified name of the node
      * @return Set A set of keys (as Strings)
@@ -327,7 +313,7 @@ public class ReplicatedTree extends ReceiverAdapter {
 
 
     /**
-     * Finds a node given its name and returns the value associated with a given key in its <code>data</code>
+     * Finds a node given its name and returns the value associated with a given key in its {@code data}
      * map. Returns null if the node was not found in the tree or the key was not found in the hashmap.
      * @param fqn The fully qualified name of the node.
      * @param key The key.
@@ -356,7 +342,7 @@ public class ReplicatedTree extends ReceiverAdapter {
 
 
     /**
-     * Prints a representation of the node defined by <code>fqn</code>. Output includes name, fqn and
+     * Prints a representation of the node defined by {@code fqn}. Output includes name, fqn and
      * data.
      */
     public String print(String fqn) {
@@ -523,7 +509,7 @@ public class ReplicatedTree extends ReceiverAdapter {
         if(msg == null || msg.getLength() == 0)
             return;
         try {
-            req=(Request)msg.getObject();
+            req=msg.getObject();
 
             String fqn=req.fqn;
             switch(req.type) {
@@ -587,11 +573,11 @@ public class ReplicatedTree extends ReceiverAdapter {
 
 
     /**
-     * Find the node just <em>above</em> the one indicated by <code>fqn</code>. This is needed in many cases,
+     * Find the node just <em>above</em> the one indicated by {@code fqn}. This is needed in many cases,
      * e.g. to add a new node or remove an existing node.
      * @param fqn The fully qualified name of the node.
      * @param child_name Will be filled with the name of the child when this method returns. The child name
-     *                   is the last relative name of the <code>fqn</code>, e.g. in "/a/b/c" it would be "c".
+     *                   is the last relative name of the {@code fqn}, e.g. in "/a/b/c" it would be "c".
      * @param create_if_not_exists Create parent nodes along the way if they don't exist. Otherwise, this method
      *                             will return when a node cannot be found.
      */

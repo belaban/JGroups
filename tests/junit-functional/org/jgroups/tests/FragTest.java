@@ -82,7 +82,7 @@ public class FragTest {
         int offset=0;
 
         for(int i=1; i <= NUM_MSGS; i++) {
-            Message big_msg=new Message(null, null, big_buffer, offset, MSG_SIZE);
+            Message big_msg=new Message(null, big_buffer, offset, MSG_SIZE);
             ch.send(big_msg);
             offset+=MSG_SIZE;
         }
@@ -164,7 +164,7 @@ public class FragTest {
         public List<Integer> getList() {return list;}
 
         public void receive(Message msg) {
-            Payload payload=(Payload)msg.getObject();
+            Payload payload=msg.getObject();
             list.add(payload.seqno);
         }
     }

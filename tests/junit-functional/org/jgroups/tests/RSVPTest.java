@@ -120,7 +120,7 @@ public class RSVPTest {
 
         // test with a multicast message:
         short value=(short)Math.abs((short)Util.random(10000));
-        Message msg=new Message(null, null, value);
+        Message msg=new Message(null, value);
         msg.setFlag(Message.Flag.RSVP);
 
         DISCARD discard=(DISCARD)channels[0].getProtocolStack().findProtocol(DISCARD.class);
@@ -171,7 +171,7 @@ public class RSVPTest {
     public void testCancellationByClosingChannel() throws Exception {
         // test with a multicast message:
         short value=(short)Math.abs((short)Util.random(10000));
-        Message msg=new Message(null, null, value).setFlag(Message.Flag.RSVP);
+        Message msg=new Message(null, value).setFlag(Message.Flag.RSVP);
 
         DISCARD discard=(DISCARD)channels[0].getProtocolStack().findProtocol(DISCARD.class);
         discard.setDiscardAll(true);

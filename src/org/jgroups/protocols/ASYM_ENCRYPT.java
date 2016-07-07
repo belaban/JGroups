@@ -319,7 +319,7 @@ public class ASYM_ENCRYPT extends Encrypt {
 
     protected void sendSecretKey(SecretKey secret_key, PublicKey public_key, Address source) throws Exception {
         byte[] encryptedKey=encryptSecretKey(secret_key, public_key);
-        Message newMsg=new Message(source, local_addr, encryptedKey)
+        Message newMsg=new Message(source, encryptedKey).src(local_addr)
           .putHeader(this.id, new EncryptHeader(EncryptHeader.SECRET_KEY_RSP, symVersion()));
         log.debug("%s: sending secret key to %s", local_addr, source);
         down_prot.down(new Event(Event.MSG,newMsg));
@@ -341,7 +341,7 @@ public class ASYM_ENCRYPT extends Encrypt {
 
     /** send client's public key to server and request server's public key */
     protected void sendKeyRequest(Address key_server) {
-        Message newMsg=new Message(key_server, local_addr, key_pair.getPublic().getEncoded())
+        Message newMsg=new Message(key_server, key_pair.getPublic().getEncoded()).src(local_addr)
           .putHeader(this.id,new EncryptHeader(EncryptHeader.SECRET_KEY_REQ, sym_version));
         down_prot.down(new Event(Event.MSG,newMsg));
     }

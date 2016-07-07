@@ -104,7 +104,7 @@ public class ConnectTest extends ChannelTestBase {
         channel.connect("ConnectTest.testgroup-6");
         channel.disconnect();
         channel.connect("ConnectTest.testgroup-5");
-        channel.send(new Message(null, null, "payload"));
+        channel.send(new Message(null, "payload"));
         Message msg=msgPromise.getResult(20000);
         assert msg != null;
         assert msg.getObject().equals("payload");

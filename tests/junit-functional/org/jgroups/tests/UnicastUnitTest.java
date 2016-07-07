@@ -209,7 +209,7 @@ public class UnicastUnitTest {
             List<Address> members=new LinkedList<>(new_view.getMembers());
             assert 2 == members.size() : "members=" + members + ", local_addr=" + local_addr + ", view=" + new_view;
             Address dest=members.get(0);
-            Message unicast_msg=new Message(dest, null, null);
+            Message unicast_msg=new Message(dest);
             try {
                 channel.send(unicast_msg);
             }

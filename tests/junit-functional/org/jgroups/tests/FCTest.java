@@ -60,7 +60,7 @@ public class FCTest {
         setUp(flow_control_class);
         ch.setReceiver(r);
         for(int i=1; i <= NUM_MSGS; i++) {
-            Message msg=new Message(null, null, createPayload(SIZE));
+            Message msg=new Message(null, createPayload(SIZE));
             ch.send(msg);
             if(i % PRINT == 0)
                 System.out.println("==> " + i);

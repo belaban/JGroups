@@ -99,7 +99,7 @@ public class ENCRYPTKeystoreTest {
 
         byte[] symVersion=digest.digest();
 
-        Message msg=new Message(null, null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, symVersion));
+        Message msg=new Message(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, symVersion));
         encrypt.up(new Event(Event.MSG, msg));
         assert observer.getUpMessages().isEmpty();
     }

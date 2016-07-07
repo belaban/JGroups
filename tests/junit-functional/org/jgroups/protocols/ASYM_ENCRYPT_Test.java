@@ -104,7 +104,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
 
 
         // now fabricate a KEY_REQUEST message and send it to the key server (A)
-        Message newMsg=new Message(a.getAddress(), rogue.getAddress(), encrypt.keyPair().getPublic().getEncoded())
+        Message newMsg=new Message(a.getAddress(), encrypt.keyPair().getPublic().getEncoded()).src(rogue.getAddress())
           .putHeader(encrypt.getId(),new EncryptHeader(EncryptHeader.SECRET_KEY_REQ, encrypt.symVersion()));
 
         discard.setDiscardAll(false);

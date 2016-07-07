@@ -74,7 +74,7 @@ public class UNICAST_OOB_Test {
 
         Address dest=b.getAddress();
         for(int i=1; i <=5; i++) {
-            Message msg=new Message(dest, null,(long)i);
+            Message msg=new Message(dest,(long)i);
             if(i == 4 && oob)
                 msg.setFlag(Message.Flag.OOB);
             System.out.println("-- sending message #" + i);
@@ -141,7 +141,7 @@ public class UNICAST_OOB_Test {
 
         public void receive(Message msg) {
             if(msg != null) {
-                Long num=(Long)msg.getObject();
+                Long num=msg.getObject();
                 System.out.println(">> received " + num);
                 seqnos.add(num);
             }

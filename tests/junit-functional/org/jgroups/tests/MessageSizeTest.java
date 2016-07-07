@@ -106,7 +106,7 @@ public class MessageSizeTest {
 
 
     static Message createMessage(Address dest, Address src) {
-        Message msg=new Message(dest, src, "hello world");
+        Message msg=new Message(dest, "hello world").src(src);
         msg.putHeader(NAKACK_ID, NakAckHeader2.createMessageHeader(322649));
         msg.putHeader(UNICAST_ID, UNICAST3.Header.createDataHeader(465784, (short)23323, true));
         msg.putHeader(UDP_ID, new TpHeader("DrawDemo"));

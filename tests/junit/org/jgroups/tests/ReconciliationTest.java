@@ -348,7 +348,7 @@ public class ReconciliationTest {
         }
 
         protected void put(Object key, Object val) throws Exception {
-            ch.send(new Message(null, null, new Object[]{key,val}));
+            ch.send(new Message(null, new Object[]{key,val}));
         }
 
         protected int size() {

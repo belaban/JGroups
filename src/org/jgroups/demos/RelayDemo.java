@@ -35,7 +35,7 @@ public class RelayDemo {
                 System.out.println("<< " + msg.getObject() + " from " + sender);
                 Address dst=msg.getDest();
                 if(dst == null) {
-                    Message rsp=new Message(msg.getSrc(), null, "this is a response");
+                    Message rsp=new Message(msg.getSrc(), "this is a response");
                     try {
                         ch.send(rsp);
                     }

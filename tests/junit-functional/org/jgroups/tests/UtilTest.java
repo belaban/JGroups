@@ -358,10 +358,10 @@ public class UtilTest {
 
     public static void testMessageToByteBuffer() throws Exception {
         _testMessage(new Message());
-        _testMessage(new Message(null, null, "hello world"));
-        _testMessage(new Message(null, Util.createRandomAddress(), null));
-        _testMessage(new Message(null, Util.createRandomAddress(), null));
-        _testMessage(new Message(null, Util.createRandomAddress(), "bela"));
+        _testMessage(new Message(null, "hello world"));
+        _testMessage(new Message(null).src(Util.createRandomAddress()));
+        _testMessage(new Message(null).src(Util.createRandomAddress()));
+        _testMessage(new Message(null, "bela").src(Util.createRandomAddress()));
     }
 
     private static void _testMessage(Message msg) throws Exception {
@@ -495,7 +495,7 @@ public class UtilTest {
 
 
     public static void testWriteStreamable() throws Exception {
-        Message m=new Message(null, null, "Hello");
+        Message m=new Message(null, "Hello");
         ViewId vid2=new ViewId(Util.createRandomAddress(), 35623);
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
@@ -610,7 +610,8 @@ public class UtilTest {
         Message[] msgs={
           new Message(null, "hello world").setFlag(Message.Flag.OOB, Message.Flag.NO_RELIABILITY),
           new Message(Util.createRandomAddress("dest"), "bela ban"),
-          new Message(Util.createRandomAddress("dest"), Util.createRandomAddress("src"), "hello world again").setTransientFlag(Message.TransientFlag.DONT_LOOPBACK)
+          new Message(Util.createRandomAddress("dest"), "hello world again").src(Util.createRandomAddress("src"))
+            .setTransientFlag(Message.TransientFlag.DONT_LOOPBACK)
         };
 
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(256);

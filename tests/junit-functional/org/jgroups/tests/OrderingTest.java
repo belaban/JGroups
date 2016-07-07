@@ -172,7 +172,7 @@ public class OrderingTest {
         public void run() {
             for(int i=1; i <= NUM_MSGS; i++) {
                 try {
-                    Message msg=new Message(null, null, new Integer(i));
+                    Message msg=new Message(null, i);
                     ch.send(msg);
                     if(i % 100000 == 0)
                         System.out.println(Thread.currentThread().getId() + ": " + i + " sent");
