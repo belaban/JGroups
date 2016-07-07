@@ -816,10 +816,12 @@ public class Message implements Streamable {
      * Returns the exact size of the marshalled message. Uses method size() of each header to compute
      * the size, so if a Header subclass doesn't implement size() we will use an approximation.
      * However, most relevant header subclasses have size() implemented correctly. (See
-     * org.jgroups.tests.SizeTest).
-     *
-    * @return The number of bytes for the marshalled message
-    */
+     * org.jgroups.tests.SizeTest).<p/>
+     * The return type is a long as this is the length of the payload ({@link #getLength()}) plus metadata (e.g. flags,
+     * headers, source and dest addresses etc). Since the largest payload can be Integer.MAX_VALUE, adding the metadata
+     * might lead to an int overflow, that's why we use a long.
+     * @return The number of bytes for the marshalled message
+     */
     public long size() {
         long retval=(long)Global.BYTE_SIZE   // leading byte
                 + Global.SHORT_SIZE;   // flags
