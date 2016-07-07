@@ -514,9 +514,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected List<Address> computeNewMembership(final List<Address> current_members, final Collection<Address> joiners,
                                                  final Collection<Address> leavers, final Collection<Address> suspects) {
         List<Address> joiners_copy, leavers_copy, suspects_copy;
-        joiners_copy=joiners == null? Collections.<Address>emptyList() : new ArrayList<>(joiners);
-        leavers_copy=leavers == null? Collections.<Address>emptyList() : new ArrayList<>(leavers);
-        suspects_copy=suspects == null? Collections.<Address>emptyList() : new ArrayList<>(suspects);
+        joiners_copy=joiners == null? Collections.emptyList() : new ArrayList<>(joiners);
+        leavers_copy=leavers == null? Collections.emptyList() : new ArrayList<>(leavers);
+        suspects_copy=suspects == null? Collections.emptyList() : new ArrayList<>(suspects);
 
         try {
             List<Address> retval=membership_change_policy.getNewMembership(current_members,joiners_copy,leavers_copy,suspects_copy);
@@ -1146,7 +1146,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         List<Address> new_mbrs=Arrays.asList(delta_view.getNewMembers());
 
 
-        List<Address> new_mbrship=computeNewMembership(current_mbrs,new_mbrs,left_mbrs,Collections.<Address>emptyList());
+        List<Address> new_mbrship=computeNewMembership(current_mbrs,new_mbrs,left_mbrs,Collections.emptyList());
         return new View(delta_view_id, new_mbrship);
     }
 

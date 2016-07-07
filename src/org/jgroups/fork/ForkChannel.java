@@ -206,7 +206,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
     @Override
     public Object down(Event evt) {
         if(evt.getType() == Event.MSG)
-            setHeader((Message)evt.getArg());
+            setHeader(evt.getArg());
         return super.down(evt);
     }
 
