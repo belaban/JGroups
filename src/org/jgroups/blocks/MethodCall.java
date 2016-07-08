@@ -18,12 +18,13 @@ import java.util.List;
  * @author Bela Ban
  */
 public class MethodCall implements Streamable {
+    protected short              mode;
     protected String             method_name;
     protected short              method_id; // the ID of a method, maps to a java.lang.reflect.Method
     protected Object[]           args;      // the arguments to the call
     protected Class[]            types;     // the types of the arguments, e.g., new Class[]{String.class, int.class}
     protected Method             method;
-    protected short              mode;
+
 
     protected static final short METHOD = 1;
     protected static final short TYPES  = 2; // use types of all args to determine the method to be called
@@ -56,18 +57,28 @@ public class MethodCall implements Streamable {
         this.mode=TYPES;
     }
 
+    public int        getMode()                {return mode;}
+    public int        mode()                   {return mode;}
 
-    public int        mode()                {return mode;}
-    public String     methodName()          {return method_name;}
-    public MethodCall methodName(String n)  {method_name=n; return this;}
-    public short      methodId()            {return method_id;}
-    public MethodCall methodId(short id)    {this.method_id=id; return this;}
-    public Object[]   args()                {return args;}
-    public MethodCall args(Object...args)   {this.args=args; return this;}
-    public Method     method()              {return method;}
-    public MethodCall method(Method m)      {init(m); return this;}
+    public String     getMethodName()          {return method_name;}
+    public String     methodName()             {return method_name;}
+    public MethodCall setMethodName(String n)  {method_name=n; return this;}
+    public MethodCall methodName(String n)     {method_name=n; return this;}
 
+    public short      getMethodId()            {return method_id;}
+    public short      methodId()               {return method_id;}
+    public MethodCall setMethodId(short id)    {this.method_id=id; return this;}
+    public MethodCall methodId(short id)       {this.method_id=id; return this;}
 
+    public Object[]   getArgs()                {return args;}
+    public Object[]   args()                   {return args;}
+    public MethodCall args(Object...args)      {this.args=args; return this;}
+    public MethodCall setArgs(Object...args)   {this.args=args; return this;}
+
+    public Method     getMethod()              {return method;}
+    public Method     method()                 {return method;}
+    public MethodCall setMethod(Method m)      {init(m); return this;}
+    public MethodCall method(Method m)         {init(m); return this;}
 
 
 
@@ -379,15 +390,16 @@ public class MethodCall implements Streamable {
 
 
     protected static boolean isPrimitiveType(Class<?> type) {
-        return type == String.class ||
-          type == boolean.class     || type == Boolean.class   ||
-          type == char.class        || type == Character.class ||
-          type == byte.class        || type == Byte.class      ||
-          type == short.class       || type == Short.class     ||
-          type == int.class         || type == Integer.class   ||
-          type == long.class        || type == Long.class      ||
-          type == float.class       || type == Float.class     ||
-          type == double.class      || type == Double.class;
+        return type.isPrimitive()
+          || type == String.class
+          || type == Boolean.class
+          || type == Character.class
+          || type == Byte.class
+          || type == Short.class
+          || type == Integer.class
+          || type == Long.class
+          || type == Float.class
+          || type == Double.class;
     }
 }
 
