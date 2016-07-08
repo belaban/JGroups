@@ -16,7 +16,7 @@ import java.io.DataOutput;
  */
 public class ViewId implements Comparable<ViewId>, Streamable {
     protected Address creator;   // Address of the creator of this view
-    protected long    id=0;      // Lamport time of the view
+    protected long    id;        // Lamport time of the view
 
 
     public ViewId() { // used for externalization

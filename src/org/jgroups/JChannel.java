@@ -197,17 +197,23 @@ public class JChannel implements Closeable {
     public JChannel      setReceiver(Receiver r)             {receiver=r; return this;}
     public JChannel      receiver(Receiver r)                {return setReceiver(r);}
     public Address       getAddress()                        {return state == State.CLOSED ? null : local_addr;}
+    public Address       address()                           {return state == State.CLOSED ? null : local_addr;}
     public String        getName()                           {return name;}
     public String        name()                              {return name;}
     public JChannel      name(String name)                   {return setName(name);}
+    public String        clusterName()                       {return getClusterName();}
     public View          getView()                           {return state == State.CONNECTED ? view : null;}
+    public View          view()                              {return state == State.CONNECTED ? view : null;}
     public ProtocolStack getProtocolStack()                  {return prot_stack;}
+    public ProtocolStack stack()                             {return prot_stack;}
     public UpHandler     getUpHandler()                      {return up_handler;}
     public JChannel      setUpHandler(UpHandler h)           {this.up_handler=h; return this;}
-    public boolean       statsEnabled()                      {return stats;}
-    public JChannel      enableStats(boolean stats)          {this.stats=stats; return this;}
-    public JChannel      setDiscardOwnMessages(boolean flag) {discard_own_messages=flag; return this;}
+    public boolean       getStats()                          {return stats;}
+    public boolean       stats()                             {return stats;}
+    public JChannel      setStats(boolean stats)             {this.stats=stats; return this;}
+    public JChannel      stats(boolean stats)                {this.stats=stats; return this;}
     public boolean       getDiscardOwnMessages()             {return discard_own_messages;}
+    public JChannel      setDiscardOwnMessages(boolean flag) {discard_own_messages=flag; return this;}
     public boolean       flushSupported()                    {return flush_supported;}
 
 
