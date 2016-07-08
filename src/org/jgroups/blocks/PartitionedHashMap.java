@@ -208,10 +208,8 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         hash_function=new ConsistentHashFunction<>();
         addMembershipListener((MembershipListener)hash_function);
         ch=new JChannel(props);
-        Marshaller marshaller=new CustomMarshaller();
-        disp=new RpcDispatcher(ch, this).setMembershipListener(this)
-          .setMarshaller(marshaller).setMethodLookup(methods::get);
-
+        Marshaller m=new CustomMarshaller();
+        disp=new RpcDispatcher(ch, this).setMarshaller(m).setMethodLookup(methods::get).setMembershipListener(this);
         ch.connect(cluster_name);
         local_addr=ch.getAddress();
         view=ch.getView();

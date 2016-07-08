@@ -63,8 +63,8 @@ public class UnicastTestRpc extends ReceiverAdapter {
         channel=new JChannel(props);
         if(name != null)
             channel.setName(name);
-        disp=new RpcDispatcher(channel, this).setMembershipListener(this)
-          .setMethodLookup(id -> METHODS[id]).setMarshaller(new CustomMarshaller());
+        disp=new RpcDispatcher(channel, this).setMethodLookup(id -> METHODS[id]).setMarshaller(new CustomMarshaller())
+          .setMembershipListener(this);
         channel.connect(groupname);
         local_addr=channel.getAddress();
 

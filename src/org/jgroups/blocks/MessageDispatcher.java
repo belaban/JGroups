@@ -13,9 +13,7 @@ import org.jgroups.util.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 
@@ -38,7 +36,7 @@ import java.util.stream.Stream;
  *
  * @author Bela Ban
  */
-public class MessageDispatcher implements RequestHandler, ChannelListener, Closeable {
+public class MessageDispatcher implements RequestHandler, Closeable {
     protected JChannel                              channel;
     protected RequestCorrelator                     corr;
     protected MembershipListener                    membership_listener;
@@ -50,8 +48,6 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
     protected volatile Collection<Address>          members=new HashSet<>();
     protected Address                               local_addr;
     protected final Log                             log=LogFactory.getLog(MessageDispatcher.class);
-    protected boolean                               hardware_multicast_supported=false;
-    protected final Set<ChannelListener>            channel_listeners=new CopyOnWriteArraySet<>();
     protected final RpcStats                        rpc_stats=new RpcStats(false);
     protected static final RspList                  empty_rsplist=new RspList();
     protected static final GroupRequest             empty_group_request;
@@ -70,10 +66,8 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
         prot_adapter=new ProtocolAdapter();
         if(channel != null) {
             local_addr=channel.getAddress();
-            channel.addChannelListener(this);
-        }
-        if(channel != null)
             installUpHandler(prot_adapter, true);
+        }
         start();
     }
 
@@ -84,70 +78,83 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
     }
 
 
+    public JChannel          getChannel()                 {return channel;}
+    public RequestCorrelator getCorrelator()              {return corr;}
+    public RequestCorrelator correlator()                 {return corr;}
+    public boolean           getAsyncDispatching()        {return async_dispatching;}
+    public boolean           asyncDispatching()           {return async_dispatching;}
+    public boolean           getWrapExceptions()          {return wrap_exceptions;}
+    public boolean           wrapExceptions()             {return wrap_exceptions;}
+    public UpHandler         getProtocolAdapter()         {return prot_adapter;}
+    public UpHandler         protocolAdapter()            {return prot_adapter;}
+    public RpcStats          getRpcStats()                {return rpc_stats;}
+    public RpcStats          rpcStats()                   {return rpc_stats;}
+    public boolean           getExtendedStats()           {return rpc_stats.extendedStats();}
+    public boolean           extendedStats()              {return rpc_stats.extendedStats();}
+    public <X extends MessageDispatcher> X setExtendedStats(boolean fl) {return extendedStats(fl);}
+    public <X extends MessageDispatcher> X extendedStats(boolean fl)    {rpc_stats.extendedStats(fl); return (X)this;}
 
-    public RpcStats          rpcStats()                {return rpc_stats;}
-    public MessageDispatcher extendedStats(boolean fl) {rpc_stats.extendedStats(fl); return this;}
-    public boolean           extendedStats()           {return rpc_stats.extendedStats();}
-    public boolean           asyncDispatching()        {return async_dispatching;}
-
-    public MessageDispatcher asyncDispatching(boolean flag) {
-        async_dispatching=flag;
-        if(corr != null)
-            corr.asyncDispatching(flag);
-        return this;
+    public <X extends MessageDispatcher> X setChannel(JChannel ch) {
+        if(ch == null)
+            return (X)this;
+        this.channel=ch;
+        local_addr=channel.getAddress();
+        if(prot_adapter == null)
+            prot_adapter=new ProtocolAdapter();
+        // Don't force installing the UpHandler so subclasses can use this method
+        return installUpHandler(prot_adapter, false);
     }
 
-    public boolean                  wrapExceptions()               {return wrap_exceptions;}
-    public MessageDispatcher        wrapExceptions(boolean flag)   {
-        wrap_exceptions=flag;
-        if(corr != null)
-            corr.wrapExceptions(flag);
-        return this;}
-
-    public UpHandler getProtocolAdapter() {
-        return prot_adapter;
-    }
-
-    public RequestCorrelator               correlator() {return corr;}
-    public <T extends MessageDispatcher> T correlator(RequestCorrelator c) {
+    public <X extends MessageDispatcher> X setCorrelator(RequestCorrelator c) {return correlator(c);}
+    public <X extends MessageDispatcher> X correlator(RequestCorrelator c) {
         if(c == null)
-            return (T)this;
+            return (X)this;
         stop();
         this.corr=c;
         corr.asyncDispatching(this.async_dispatching).wrapExceptions(this.wrap_exceptions);
         start();
-        return (T)this;
+        return (X)this;
     }
 
+    public <X extends MessageDispatcher> X setMembershipListener(MembershipListener l) {
+        membership_listener=l;
+        return (X)this;
+    }
 
+    public <X extends MessageDispatcher> X setStateListener(StateListener sl) {
+        this.state_listener=sl;
+        return (X)this;
+    }
 
-    /**
-     * If this dispatcher is using a user-provided PullPushAdapter, then need to set the members from the adapter
-     * initially since viewChange has most likely already been called in PullPushAdapter.
-     */
-    protected void setMembers(List<Address> new_mbrs) {
+    public <X extends MessageDispatcher> X setRequestHandler(RequestHandler rh) {
+        req_handler=rh;
+        return (X)this;
+    }
+
+    public <X extends MessageDispatcher> X setAsynDispatching(boolean flag) {return asyncDispatching(flag);}
+    public <X extends MessageDispatcher> X asyncDispatching(boolean flag) {
+        async_dispatching=flag;
+        if(corr != null)
+            corr.asyncDispatching(flag);
+        return (X)this;
+    }
+
+    public <X extends MessageDispatcher> X setWrapExceptions(boolean flag) {return wrapExceptions(flag);}
+    public <X extends MessageDispatcher> X wrapExceptions(boolean flag) {
+        wrap_exceptions=flag;
+        if(corr != null)
+            corr.wrapExceptions(flag);
+        return (X)this;
+    }
+
+    protected <X extends MessageDispatcher> X setMembers(List<Address> new_mbrs) {
         if(new_mbrs != null)
             members=new HashSet<>(new_mbrs); // volatile write - seen by a subsequent read
+        return (X)this;
     }
 
 
-    /**
-     * Adds a new channel listener to be notified on the channel's state change.
-     */
-    public void addChannelListener(ChannelListener l) {
-        if(l != null)
-            channel_listeners.add(l);
-    }
-
-
-    public void removeChannelListener(ChannelListener l) {
-        if(l != null)
-            channel_listeners.remove(l);
-    }
-
-
-
-    public void start() {
+    public <X extends MessageDispatcher> X start() {
         if(corr == null)
             corr=createRequestCorrelator(prot_adapter, this, local_addr)
               .asyncDispatching(async_dispatching).wrapExceptions(this.wrap_exceptions);
@@ -161,10 +168,8 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
                 TP transport=channel.getProtocolStack().getTransport();
                 corr.registerProbeHandler(transport);
             }
-            TP transport=channel.getProtocolStack().getTransport();
-            hardware_multicast_supported=transport.supportsMulticasting();
-            // transport.registerProbeHandler(probe_handler);
         }
+        return (X)this;
     }
 
     protected static RequestCorrelator createRequestCorrelator(Protocol transport, RequestHandler handler, Address local_addr) {
@@ -177,7 +182,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
 
     @Override public void close() throws IOException {stop();}
 
-    public void stop() {
+    public <X extends MessageDispatcher> X stop() {
         if(corr != null) {
             corr.stop();
             if(channel instanceof JChannel) {
@@ -185,38 +190,9 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
                 corr.unregisterProbeHandler(transport);
             }
         }
+        return (X)this;
     }
 
-
-    public MessageDispatcher setMembershipListener(MembershipListener l) {
-        membership_listener=l;
-        return this;
-    }
-
-    public MessageDispatcher setStateListener(StateListener sl) {
-        this.state_listener=sl;
-        return this;
-    }
-
-    public MessageDispatcher setRequestHandler(RequestHandler rh) {
-        req_handler=rh;
-        return this;
-    }
-
-    public JChannel getChannel() {
-        return channel;
-    }
-
-    public void setChannel(JChannel ch) {
-        if(ch == null)
-            return;
-        this.channel=ch;
-        local_addr=channel.getAddress();
-        if(prot_adapter == null)
-            prot_adapter=new ProtocolAdapter();
-        // Don't force installing the UpHandler so subclasses can use this method
-        installUpHandler(prot_adapter, false);
-    }
 
     /**
      * Sets the given UpHandler as the UpHandler for the channel. If the relevant handler is already installed,
@@ -229,7 +205,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
      * @param canReplace {@code true} if an existing Channel upHandler can be replaced; {@code false}
      *              if this method shouldn't install
      */
-    protected void installUpHandler(UpHandler handler, boolean canReplace) {
+    protected <X extends MessageDispatcher> X installUpHandler(UpHandler handler, boolean canReplace) {
         UpHandler existing = channel.getUpHandler();
         if (existing == null)
             channel.setUpHandler(handler);
@@ -237,6 +213,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
             log.warn("Channel already has an up handler installed (%s) but now it is being overridden", existing);
             channel.setUpHandler(handler);
         }
+        return (X)this;
     }
 
 
@@ -481,35 +458,6 @@ public class MessageDispatcher implements RequestHandler, ChannelListener, Close
 
 
 
-    /* --------------------- Interface ChannelListener ---------------------- */
-
-    @Override
-    public void channelConnected(JChannel channel) {
-        notifyListener(false, channel, this::channelConnected);
-    }
-
-    @Override
-    public void channelDisconnected(JChannel channel) {
-        notifyListener(true, channel, this::channelDisconnected);
-    }
-
-    @Override
-    public void channelClosed(JChannel channel) {
-        notifyListener(true, channel, this::channelClosed);
-    }
-
-    protected void notifyListener(boolean stop, JChannel ch, Consumer<JChannel> cons) {
-        if(stop)
-            stop();
-        channel_listeners.forEach(l -> {
-            try {cons.accept(ch);}
-            catch(Throwable t) {
-                log.warn("notifying channel listener " + l + " failed", t);
-            }
-        });
-    }
-
-    /* ----------------------------------------------------------------------- */
 
     protected void updateStats(Collection<Address> dests, boolean anycast, boolean sync, long time) {
         if(anycast)

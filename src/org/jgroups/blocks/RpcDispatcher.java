@@ -41,7 +41,6 @@ public class RpcDispatcher extends MessageDispatcher {
     }
 
 
-    public static String getName()                                   {return RpcDispatcher.class.getSimpleName();}
     public Marshaller    getMarshaller()                             {return marshaller;}
     public RpcDispatcher setMarshaller(Marshaller m)                 {marshaller=m; if(corr != null)
                                                                                     corr.setMarshaller(m); return this;}
