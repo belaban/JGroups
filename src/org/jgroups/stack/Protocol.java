@@ -47,7 +47,7 @@ public abstract class Protocol {
     protected Protocol         up_prot, down_prot;
     protected ProtocolStack    stack;
     
-    @Property(description="Determines whether to collect statistics (and expose them via JMX). Default is true",writable=true)
+    @Property(description="Determines whether to collect statistics (and expose them via JMX). Default is true")
     protected boolean          stats=true;
 
     @Property(description="Enables ergonomics: dynamically find the best values for properties at runtime")
@@ -78,25 +78,25 @@ public abstract class Protocol {
      * @param level The new level. Valid values are "fatal", "error", "warn", "info", "debug", "trace"
      * (capitalization not relevant)
      */
-    public Log           getLog()                          {return log;}
-    public Protocol      setLevel(String level)            {log.setLevel(level); return this;}
+    public <T extends Protocol> T  setLevel(String level)            {log.setLevel(level); return (T)this;}
     @Property(name="level", description="logger level (see javadocs)")
-    public String        getLevel()                        {return log.getLevel();}
-    public Protocol      level(String level)               {this.log.setLevel(level); return this;}
-    public boolean       isErgonomics()                    {return ergonomics;}
-    public Protocol      setErgonomics(boolean ergonomics) {this.ergonomics=ergonomics; return this;}
-    public ProtocolStack getProtocolStack()                {return stack;}
-    public boolean       statsEnabled()                    {return stats;}
-    public void          enableStats(boolean flag)         {stats=flag;}
-    public String        getName()                         {return name;}
-    public short         getId()                           {return id;}
-    public Protocol      setId(short id)                   {this.id=id; return this;}
-    public Protocol      getUpProtocol()                   {return up_prot;}
-    public Protocol      getDownProtocol()                 {return down_prot;}
-    public Protocol      setUpProtocol(Protocol prot)      {this.up_prot=prot; return this;}
-    public Protocol      setDownProtocol(Protocol prot)    {this.down_prot=prot; return this;}
-    public Protocol      setProtocolStack(ProtocolStack s) {this.stack=s; return this;}
-    public String        afterCreationHook()               {return after_creation_hook;}
+    public String                  getLevel()                        {return log.getLevel();}
+    public <T extends Protocol> T  level(String level)               {this.log.setLevel(level); return (T)this;}
+    public boolean                 isErgonomics()                    {return ergonomics;}
+    public <T extends Protocol> T  setErgonomics(boolean ergonomics) {this.ergonomics=ergonomics; return (T)this;}
+    public ProtocolStack           getProtocolStack()                {return stack;}
+    public boolean                 statsEnabled()                    {return stats;}
+    public void                    enableStats(boolean flag)         {stats=flag;}
+    public String                  getName()                         {return name;}
+    public short                   getId()                           {return id;}
+    public <T extends Protocol> T  setId(short id)                   {this.id=id; return (T)this;}
+    public <T extends Protocol> T  getUpProtocol()                   {return (T)up_prot;}
+    public <T extends Protocol> T  getDownProtocol()                 {return (T)down_prot;}
+    public <T extends Protocol> T  setUpProtocol(Protocol prot)      {this.up_prot=prot; return (T)this;}
+    public <T extends Protocol> T  setDownProtocol(Protocol prot)    {this.down_prot=prot; return (T)this;}
+    public <T extends Protocol> T  setProtocolStack(ProtocolStack s) {this.stack=s; return (T)this;}
+    public String                  afterCreationHook()               {return after_creation_hook;}
+    public Log                     getLog()                          {return log;}
 
 
     public Object getValue(String name) {
@@ -107,9 +107,9 @@ public abstract class Protocol {
         return Util.getField(field, this);
     }
 
-    public Protocol setValues(Map<String,Object> values) {
+    public <T extends Protocol> T setValues(Map<String,Object> values) {
         if(values == null)
-            return this;
+            return (T)this;
         for(Map.Entry<String,Object> entry: values.entrySet()) {
             String attrname=entry.getKey();
             Object value=entry.getValue();
@@ -118,13 +118,13 @@ public abstract class Protocol {
                 Util.setField(field, this, value);
             }
         }
-        return this;
+        return (T)this;
     }
 
 
-    public Protocol setValue(String name, Object value) {
+    public <T extends Protocol> T setValue(String name, Object value) {
         if(name == null || value == null)
-            return this;
+            return (T)this;
         Field field=Util.getField(getClass(), name);
         if(field == null)
             throw new IllegalArgumentException("field " + name + " not found");
@@ -135,7 +135,7 @@ public abstract class Protocol {
                 log.warn("Field " + getName() + "." + name + " is deprecated: " + deprecated_msg);
         }
         Util.setField(field, this, value);
-        return this;
+        return (T)this;
     }
 
 
