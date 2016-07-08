@@ -75,65 +75,48 @@ public class RequestOptions {
     }
 
 
-    public static RequestOptions SYNC() {return new RequestOptions(ResponseMode.GET_ALL, 10000);}
+    public static RequestOptions SYNC()  {return new RequestOptions(ResponseMode.GET_ALL, 10000);}
     public static RequestOptions ASYNC() {return new RequestOptions(ResponseMode.GET_NONE, 10000);}
 
+    public ResponseMode   getMode()                         {return mode;}
+    public ResponseMode   mode()                            {return mode;}
+    public RequestOptions setMode(ResponseMode mode)        {this.mode=mode; return this;}
+    public RequestOptions mode(ResponseMode mode)           {this.mode=mode; return this;}
 
-    public ResponseMode mode() {
-        return mode;
+    public long           getTimeout()                      {return timeout;}
+    public long           timeout()                         {return timeout;}
+    public RequestOptions setTimeout(long timeout)          {this.timeout=timeout; return this;}
+    public RequestOptions timeout(long timeout)             {this.timeout=timeout; return this;}
+
+    public boolean        getAnycasting()                   {return use_anycasting;}
+    public boolean        anycasting()                      {return use_anycasting;}
+    public RequestOptions setAnycasting(boolean a)          {this.use_anycasting=a; return this;}
+    public RequestOptions anycasting(boolean a)             {this.use_anycasting=a; return this;}
+
+    public boolean        isUseAnycastAddresses()           {return use_anycast_addresses;}
+    public boolean        useAnycastAddresses()             {return use_anycast_addresses;}
+    public RequestOptions setUseAnycastAddresses(boolean f) {use_anycast_addresses=f; return this;}
+    public RequestOptions useAnycastAddresses(boolean f)    {use_anycast_addresses=f; return this;}
+
+    public RspFilter      getRspFilter()                    {return rsp_filter;}
+    public RspFilter      rspFilter()                       {return rsp_filter;}
+    public RequestOptions setRspFilter(RspFilter filter)    {this.rsp_filter=filter; return this;}
+    public RequestOptions rspFilter(RspFilter filter)       {this.rsp_filter=filter; return this;}
+
+    public short          getFlags()                        {return flags;}
+    public short          flags()                           {return flags;}
+    public short          getTransientFlags()               {return transient_flags;}
+    public short          transientFlags()                  {return transient_flags;}
+
+    public Address[]      getExclusionList()                {return exclusion_list;}
+    public Address[]      exclusionList()                   {return exclusion_list;}
+    public boolean        hasExclusionList()                {return exclusion_list != null;}
+
+    public boolean        isFlagSet(Message.Flag flag)      {return flagSet(flag);}
+    public boolean        flagSet(Message.Flag flag)        {return flag != null && ((flags & flag.value()) == flag.value());}
+    public boolean        transientFlagSet(Message.TransientFlag flag) {
+        return flag != null && ((transient_flags & flag.value()) == flag.value());
     }
-
-    public RequestOptions mode(ResponseMode mode) {
-        this.mode=mode;
-        return this;
-    }
-
-    public long timeout() {
-        return timeout;
-    }
-
-    public RequestOptions timeout(long timeout) {
-        this.timeout=timeout;
-        return this;
-    }
-
-    public boolean anycasting() {
-        return use_anycasting;
-    }
-
-    public RequestOptions anycasting(boolean use_anycasting) {
-        this.use_anycasting=use_anycasting;
-        return this;
-    }
-
-
-    public boolean useAnycastAddresses() {return use_anycast_addresses;}
-
-    public RequestOptions useAnycastAddresses(boolean flag) {
-        use_anycast_addresses=flag;
-        return this;
-    }
-
-    public RspFilter rspFilter() {
-        return rsp_filter;
-    }
-
-    public RequestOptions rspFilter(RspFilter rsp_filter) {
-        this.rsp_filter=rsp_filter;
-        return this;
-    }
-
-    public short flags() {
-        return flags;
-    }
-
-    public short transientFlags() {return transient_flags;}
-
-    public boolean flagSet(Message.Flag flag) {
-        return flag != null && ((flags & flag.value()) == flag.value());
-    }
-
-    public boolean transientFlagSet(Message.TransientFlag flag) {return flag != null && ((transient_flags & flag.value()) == flag.value());}
 
     public RequestOptions flags(Message.Flag ... flags) {
         if(flags != null)
@@ -165,15 +148,6 @@ public class RequestOptions {
                 if(flag != null)
                     this.transient_flags &= ~flag.value();
         return this;
-    }
-
-    public boolean hasExclusionList() {
-        return exclusion_list != null;
-    }
-
-
-    public Address[] exclusionList() {
-        return exclusion_list;
     }
 
     public RequestOptions exclusionList(Address ... mbrs) {
