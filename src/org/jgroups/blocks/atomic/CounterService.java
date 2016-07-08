@@ -18,7 +18,7 @@ public class CounterService {
 
     public void setChannel(JChannel ch) {
         this.ch=ch;
-        counter_prot=(COUNTER)ch.getProtocolStack().findProtocol(COUNTER.class);
+        counter_prot=ch.getProtocolStack().findProtocol(COUNTER.class);
         if(counter_prot == null)
             throw new IllegalStateException("channel configuration must include the COUNTER protocol");
     }

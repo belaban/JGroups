@@ -2,8 +2,6 @@ package org.jgroups.tests;
 
 
 import org.jgroups.Global;
-import org.jgroups.stack.Interval;
-import org.jgroups.stack.StaticInterval;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.TimeScheduler3;
@@ -774,7 +772,7 @@ public class TimeSchedulerTest {
         long second_xmit=0; // time between first_xmit and second_xmit should be ca. 2000ms
         long third_xmit=0;  // time between third_xmit and second_xmit should be ca. 4000ms
         long fourth_xmit=0; // time between third_xmit and second_xmit should be ca. 8000ms
-        Interval interval=new StaticInterval(xmit_timeouts);
+        StaticInterval interval=new StaticInterval(xmit_timeouts);
         long seqno=0;
 
 
@@ -850,6 +848,23 @@ public class TimeSchedulerTest {
         }
     }
 
+    public static class StaticInterval {
+        private int          next=0;
+        private final int [] values;
+
+        public StaticInterval(int ... vals) {
+            if(vals.length == 0)
+                throw new IllegalArgumentException("zero length array passed as argument");
+            values=vals;
+        }
+
+        public long next() {
+            if(next >= values.length)
+                return(values[values.length-1]);
+            else
+                return(values[next++]);
+        }
+    }
 
 
 }

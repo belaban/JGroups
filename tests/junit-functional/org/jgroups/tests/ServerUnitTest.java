@@ -289,7 +289,7 @@ public class ServerUnitTest {
             }
             if(all_ok)
                 return;
-            Util.sleep(500);
+            Util.sleep(1000);
         }
     }
 
