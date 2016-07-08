@@ -82,16 +82,26 @@ public class MessageBatch implements Iterable<Message> {
         this.mode=mode;
     }
 
-    public Address      dest()                        {return dest;}
-    public MessageBatch dest(Address dest)            {this.dest=dest; return this;}
-    public Address      sender()                      {return sender;}
-    public MessageBatch sender(Address sender)        {this.sender=sender; return this;}
-    public AsciiString  clusterName()                 {return cluster_name;}
-    public MessageBatch clusterName(AsciiString name) {this.cluster_name=name; return this;}
-    public boolean      multicast()                   {return multicast;}
-    public Mode         mode()                        {return mode;}
-    public MessageBatch mode(Mode mode)               {this.mode=mode; return this;}
-    public int          capacity()                    {return messages.length;}
+    public Address      getDest()                        {return dest;}
+    public Address      dest()                           {return dest;}
+    public MessageBatch setDest(Address dest)            {this.dest=dest; return this;}
+    public MessageBatch dest(Address dest)               {this.dest=dest; return this;}
+    public Address      getSender()                      {return sender;}
+    public Address      sender()                         {return sender;}
+    public MessageBatch setSender(Address sender)        {this.sender=sender; return this;}
+    public MessageBatch sender(Address sender)           {this.sender=sender; return this;}
+    public AsciiString  getClusterName()                 {return cluster_name;}
+    public AsciiString  clusterName()                    {return cluster_name;}
+    public MessageBatch setClusterName(AsciiString name) {this.cluster_name=name; return this;}
+    public MessageBatch clusterName(AsciiString name)    {this.cluster_name=name; return this;}
+    public boolean      isMulticast()                    {return multicast;}
+    public boolean      multicast()                      {return multicast;}
+    public Mode         getMode()                        {return mode;}
+    public Mode         mode()                           {return mode;}
+    public MessageBatch setMode(Mode mode)               {this.mode=mode; return this;}
+    public MessageBatch mode(Mode mode)                  {this.mode=mode; return this;}
+    public int          getCapacity()                    {return messages.length;}
+    public int          capacity()                       {return messages.length;}
 
 
     /** Returns the underlying message array. This is only intended for testing ! */
