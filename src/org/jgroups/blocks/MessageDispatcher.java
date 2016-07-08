@@ -36,7 +36,7 @@ import java.util.stream.Stream;
  *
  * @author Bela Ban
  */
-public class MessageDispatcher implements RequestHandler, Closeable {
+public class MessageDispatcher implements RequestHandler, Closeable, ChannelListener {
     protected JChannel                              channel;
     protected RequestCorrelator                     corr;
     protected MembershipListener                    membership_listener;
@@ -65,6 +65,7 @@ public class MessageDispatcher implements RequestHandler, Closeable {
         this.channel=channel;
         prot_adapter=new ProtocolAdapter();
         if(channel != null) {
+            channel.addChannelListener(this);
             local_addr=channel.getAddress();
             installUpHandler(prot_adapter, true);
         }
@@ -98,7 +99,10 @@ public class MessageDispatcher implements RequestHandler, Closeable {
         if(ch == null)
             return (X)this;
         this.channel=ch;
-        local_addr=channel.getAddress();
+        if(ch != null) {
+            local_addr=channel.getAddress();
+            ch.addChannelListener(this);
+        }
         if(prot_adapter == null)
             prot_adapter=new ProtocolAdapter();
         // Don't force installing the UpHandler so subclasses can use this method
@@ -530,7 +534,17 @@ public class MessageDispatcher implements RequestHandler, Closeable {
         return null;
     }
 
+    public void channelConnected(JChannel channel) {
+        ;
+    }
 
+    public void channelDisconnected(JChannel channel) {
+        stop();
+    }
+
+    public void channelClosed(JChannel channel) {
+        stop();
+    }
 
 
     class ProtocolAdapter extends Protocol implements UpHandler {
