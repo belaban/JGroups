@@ -163,16 +163,27 @@ public class Message implements Streamable {
     public Address src()                     {return src_addr;}
     public Message setSrc(Address new_src)   {src_addr=new_src; return this;}
     public Message src(Address new_src)      {src_addr=new_src; return this;}
+    public int     getOffset()               {return offset;}
+    public int     offset()                  {return offset;}
+    public int     getLength()               {return length;}
+    public int     length()                  {return length;}
 
-   /**
-    * Returns a <em>reference</em> to the payload (byte buffer). Note that this buffer should not be
-    * modified as we do not copy the buffer on copy() or clone(): the buffer of the copied message
-    * is simply a reference to the old buffer.<br/>
-    * Even if offset and length are used: we return the <em>entire</em> buffer, not a subset.
-    */
-   public byte[] getRawBuffer() {
-        return buf;
-    }
+
+    /**
+     * Returns a <em>reference</em> to the payload (byte buffer). Note that this buffer should not be
+     * modified as we do not copy the buffer on copy() or clone(): the buffer of the copied message
+     * is simply a reference to the old buffer.<br/>
+     * Even if offset and length are used: we return the <em>entire</em> buffer, not a subset.
+     */
+    public byte[]  getRawBuffer()            {return buf;}
+    public byte[]  rawBuffer()               {return buf;}
+    public byte[]  buffer()                  {return getBuffer();}
+    public Buffer  buffer2()                 {return getBuffer2();}
+    public Message buffer(byte[] b)          {return setBuffer(b);}
+    public Message buffer(Buffer b)          {return setBuffer(b);}
+    public int     getNumHeaders()           {return Headers.size(this.headers);}
+    public int     numHeaders()              {return Headers.size(this.headers);}
+
 
    /**
     * Returns a copy of the buffer if offset and length are used, otherwise a reference.
@@ -255,15 +266,6 @@ public class Message implements Streamable {
         return this;
     }
 
-    /** Returns the offset into the buffer at which the data starts */
-    public int getOffset() {
-        return offset;
-    }
-
-   /** Returns the number of bytes in the buffer */
-    public int getLength() {
-        return length;
-    }
 
    /**
     * Returns a reference to the headers hashmap, which is <em>immutable</em>. Any attempt to modify
@@ -277,9 +279,6 @@ public class Message implements Streamable {
         return Headers.printHeaders(this.headers);
     }
 
-    public int getNumHeaders() {
-        return Headers.size(this.headers);
-    }
 
     /**
      * Takes an object and uses Java serialization to generate the byte[] buffer which is set in the
