@@ -20,10 +20,10 @@ import java.util.*;
  * This class will be replaced with the class that read info
  * from the magic number configurator that reads info from the xml file.
  * The name and the relative path of the magic number map file can be specified
- * as value of the property <code>org.jgroups.conf.magicNumberFile</code>.
+ * as value of the property {@code org.jgroups.conf.magicNumberFile}.
  * It must be relative to one of the classpath elements, to allow the
  * classloader to locate the file. If a value is not specified,
- * <code>MagicNumberReader.MAGIC_NUMBER_FILE</code> is used, which defaults
+ * {@code MagicNumberReader.MAGIC_NUMBER_FILE} is used, which defaults
  * to "jg-magic-map.xml".
  *
  * @author Filip Hanik
