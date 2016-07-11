@@ -305,6 +305,15 @@ public class RpcDispatcherTest {
         rsps.values().stream().allMatch(rsp -> !rsp.wasReceived());
     }
 
+    public void testMulticastInvocationWithFutureAndTimeout() throws Exception {
+        RequestOptions opts=RequestOptions.SYNC().timeout(1000);
+        Method meth=ServerObject.class.getDeclaredMethod("sleep", long.class);
+        CompletableFuture<RspList<Long>> future=da.callRemoteMethodsWithFuture(null, new MethodCall(meth, 5000), opts);
+        RspList<Long> rsps=future.get(100, TimeUnit.MILLISECONDS);
+        System.out.printf("rsps:\n%s\n", rsps);
+        assert rsps != null;
+        assert !rsps.values().stream().anyMatch(Rsp::wasReceived);
+    }
 
     /**
      * Test the response filter mechanism which can be used to filter responses received with
