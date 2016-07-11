@@ -162,12 +162,30 @@ public class RpcDispatcherTest {
     public void testUnicastInvocationWithTimeout() throws Exception {
         RequestOptions opts=RequestOptions.SYNC().timeout(1000);
         Method meth=ServerObject.class.getDeclaredMethod("sleep", long.class);
+        long start=System.currentTimeMillis();
         try {
             da.callRemoteMethod(b.getAddress(), new MethodCall(meth, 5000), opts);
             assert false: "should have thrown a TimeoutException";
         }
         catch(TimeoutException ex) {
-            System.out.printf("received %s as expected\n", ex);
+            long time=System.currentTimeMillis()-start;
+            System.out.printf("received %s as expected; call took ~%d ms\n", ex, time);
+        }
+    }
+
+    public void testUnicastInvocationWithFutureAndTimeout() throws Exception {
+        RequestOptions opts=RequestOptions.SYNC().timeout(6000);
+        Method meth=ServerObject.class.getDeclaredMethod("sleep", long.class);
+        CompletableFuture<Long> future;
+        long start=System.currentTimeMillis();
+        future=da.callRemoteMethodWithFuture(b.getAddress(), new MethodCall(meth, 5000), opts);
+        try {
+            future.get(1000, TimeUnit.MILLISECONDS);
+            assert false : "should have thrown a TimeoutException";
+        }
+        catch(TimeoutException ex) {
+            long time=System.currentTimeMillis()-start;
+            System.out.printf("received %s as expected; call took ~%d ms\n", ex, time);
         }
     }
 
@@ -277,6 +295,15 @@ public class RpcDispatcherTest {
             assert rsp.getValue() != null && rsp.getValue().equals(7);
     }
 
+    public void testMulticastInvocationWithTimeout() throws Exception {
+        RequestOptions opts=RequestOptions.SYNC().timeout(1000);
+        Method meth=ServerObject.class.getDeclaredMethod("sleep", long.class);
+        long start=System.currentTimeMillis();
+        RspList<Long> rsps=da.callRemoteMethods(null, new MethodCall(meth, 5000), opts);
+        long time=System.currentTimeMillis()-start;
+        System.out.printf("responses:\n%s\ncall took ~%d ms\n", rsps, time);
+        rsps.values().stream().allMatch(rsp -> !rsp.wasReceived());
+    }
 
 
     /**
@@ -403,7 +430,7 @@ public class RpcDispatcherTest {
         assert future.isDone();
 
         RspList<Long> result2=future.get();
-        System.out.println("result2 = " + result2);
+        System.out.println("result2:\n" + result2);
         assert result2 != null;
         assert result2.size() == 3;
         assert future.isDone();
@@ -424,32 +451,38 @@ public class RpcDispatcherTest {
     }
 
 
+    /**
+     * Invoke a call which sleeps for 5s 5 times. Since the sleep should be done in parallel (OOB msgs), all 5 futures
+     * should be done in roughly 5s. JIRA: https://issues.jboss.org/browse/JGRP-2039
+     */
     public void testMultipleFutures() throws Exception {
-        MethodCall sleep=new MethodCall("sleep", new Object[]{100L}, new Class[]{long.class});
+        final int NUM_CALLS=5, MAX_SLEEP=10000; // should be done in ~5s, make it 10 to be on the safe side
+        MethodCall sleep=new MethodCall("sleep", new Object[]{5000L}, new Class[]{long.class});
         List<Future<RspList<Long>>> futures=new ArrayList<>();
-        long target=System.currentTimeMillis() + 30000L;
+        long target=System.currentTimeMillis() + MAX_SLEEP;
 
-        Future<RspList<Long>> future;
-        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 30000L);
-        for(int i=0; i < 10; i++) {
-            future=da.callRemoteMethodsWithFuture(null, sleep, options);
+        // if we didn't use DONT_BUNDLE, all OOB msgs from the same sender in a batch would be delivered sequentially!
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 30000L)
+          .flags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE);
+        for(int i=0; i < NUM_CALLS; i++) {
+            Future<RspList<Long>> future=da.callRemoteMethodsWithFuture(null, sleep, options);
             futures.add(future);
         }
 
         List<Future<RspList<Long>>> rsps=new ArrayList<>();
         while(!futures.isEmpty() && System.currentTimeMillis() < target) {
             for(Iterator<Future<RspList<Long>>> it=futures.iterator(); it.hasNext();) {
-                future=it.next();
+                Future<RspList<Long>> future=it.next();
                 if(future.isDone()) {
                     it.remove();
                     rsps.add(future);
                 }
             }
-            System.out.println("pending responses: " + futures.size());
-            Util.sleep(200);
+            Util.sleep(500);
         }
         System.out.println("\n" + rsps.size() + " responses:\n");
         rsps.forEach(System.out::println);
+        assert rsps.size() == NUM_CALLS;
     }
 
     public void testMultipleNotifyingFutures() throws Exception {
@@ -865,7 +898,7 @@ public class RpcDispatcherTest {
             return new byte[size];
         }
 
-        public int add(int a, int b) {return a+b;}
+        public static int add(int a, int b) {return a+b;}
 
         public static void throwExceptionNested() throws Exception {
             Exception ex=new IllegalArgumentException("illegal argument - see cause for details");
