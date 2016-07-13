@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 /**
  * Failure detection based on simple heartbeat protocol. Every member periodically (interval ms) multicasts a heartbeat.
@@ -375,6 +376,7 @@ public class FD_ALL2 extends Protocol {
 
     public static class HeartbeatHeader extends Header {
         public HeartbeatHeader() {}
+        public Supplier<? extends Header> create() {return HeartbeatHeader::new;}
         public String toString() {return "heartbeat";}
         public int size() {return 0;}
         public void writeTo(DataOutput out) throws Exception {}

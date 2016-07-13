@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 /**
  * Flush, as it name implies, forces group members to flush their pending messages while blocking
@@ -1005,7 +1006,7 @@ public class FLUSH extends Protocol {
             this.viewID=viewID;
         }
 
-
+        public Supplier<? extends Header> create() {return FlushHeader::new;}
         public byte getType()                             {return type;}
         public long getViewID()                           {return viewID;}
 

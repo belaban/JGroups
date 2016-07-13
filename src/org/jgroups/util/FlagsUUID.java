@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import java.io.*;
+import java.util.function.Supplier;
 
 /**
  * Subclass of {@link UUID} accommodating additional data such as a flag. There may be many instances
@@ -28,6 +29,10 @@ public class FlagsUUID extends UUID {
     public <T extends FlagsUUID> FlagsUUID(T other) {
         super(other.mostSigBits, other.leastSigBits);
         flags=other.flags;
+    }
+
+    public Supplier<? extends UUID> create() {
+        return FlagsUUID::new;
     }
 
     public  static FlagsUUID randomUUID() {return new FlagsUUID(generateRandomBytes());}

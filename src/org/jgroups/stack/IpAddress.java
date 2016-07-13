@@ -2,12 +2,14 @@
 package org.jgroups.stack;
 
 import org.jgroups.Address;
+import org.jgroups.Constructable;
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.util.Util;
 
 import java.io.*;
 import java.net.*;
+import java.util.function.Supplier;
 
 
 /**
@@ -15,7 +17,7 @@ import java.net.*;
  * stack (UDP). Contains an InetAddress and port.
  * @author Bela Ban
  */
-public class IpAddress implements PhysicalAddress {
+public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
     private static final long       serialVersionUID=-1818672332115113291L;
     private InetAddress             ip_addr;
     private int                     port;
@@ -63,6 +65,9 @@ public class IpAddress implements PhysicalAddress {
             setAddressToLocalHost();
     }
 
+    public Supplier<? extends IpAddress> create() {
+        return IpAddress::new;
+    }
 
     private void setAddressToLocalHost() {
         try {

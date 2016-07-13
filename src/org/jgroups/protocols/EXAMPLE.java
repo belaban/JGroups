@@ -11,9 +11,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.ArrayList;
 import java.util.List;
-
-
-
+import java.util.function.Supplier;
 
 
 /**
@@ -80,6 +78,9 @@ public class EXAMPLE extends Protocol {
 
     public static class ExampleHeader extends Header {
         // your variables
+
+
+        public Supplier<? extends Header> create() {return ExampleHeader::new;}
 
         public int size() {
             return 0; // return serialized size of all variables sent across the wire

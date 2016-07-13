@@ -5,6 +5,7 @@ import org.jgroups.Header;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.util.function.Supplier;
 
 /**
  * Header used by various flow control protocols
@@ -22,6 +23,10 @@ public class FcHeader extends Header {
 
     public FcHeader(byte type) {
         this.type=type;
+    }
+
+    public Supplier<? extends Header> create() {
+        return FcHeader::new;
     }
 
     public int size() {

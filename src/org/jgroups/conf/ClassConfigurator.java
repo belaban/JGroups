@@ -2,6 +2,7 @@
 package org.jgroups.conf;
 
 
+import org.jgroups.Constructable;
 import org.jgroups.Global;
 import org.jgroups.util.Triple;
 import org.jgroups.util.Util;
@@ -15,6 +16,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * This class will be replaced with the class that read info
@@ -40,8 +42,8 @@ public class ClassConfigurator {
     private static final Map<Class,Short> classMap=new IdentityHashMap<>(MAX_MAGIC_VALUE);
 
 
-    // Magic map for all values defined in jg-magic-map.xml
-    private static final Class[] magicMap=new Class[MAX_MAGIC_VALUE]; /// simple array, IDs are the indices
+    // Magic map for all values defined in jg-magic-map.xml; elements are supplier functions which create instances
+    private static final Supplier<? extends Object>[] magicMap=new Supplier[MAX_MAGIC_VALUE]; /// simple array, IDs are the indices
 
     // Magic map for user-defined IDs / classes
     private static final Map<Short,Class> magicMapUser=new HashMap<>(); // key=magic number, value=Class
@@ -49,7 +51,6 @@ public class ClassConfigurator {
     /** Contains data read from jg-protocol-ids.xml */
     private static final Map<Class,Short> protocol_ids=new HashMap<>(MAX_MAGIC_VALUE);
     private static final Map<Short,Class> protocol_names=new HashMap<>(MAX_MAGIC_VALUE);
-
 
     static {
         try {
@@ -95,7 +96,28 @@ public class ClassConfigurator {
             if(magicMap[m] != null)
                 throw new Exception("key " + m + " (" + clazz.getName() + ')' +
                                       " is already in magic map; please make sure that all keys are unique");
-            magicMap[m]=clazz;
+
+            if(Constructable.class.isAssignableFrom(clazz)) {
+                Constructable obj=(Constructable)clazz.newInstance();
+                magicMap[m]=obj.create();
+            }
+            else {
+                Supplier<? extends Object> supplier=(Supplier<Object>)() -> {
+                    try {
+                        return clazz.newInstance();
+                    }
+                    catch(Throwable throwable) {
+                        return null;
+                    }
+                };
+                magicMap[m]=supplier;
+            }
+
+            Object inst=magicMap[m].get();
+            // test to confirm that the Constructable impl returns an instance of the correct type
+            if(!inst.getClass().equals(clazz))
+                throw new IllegalStateException(String.format("%s.create() returned the wrong class: %s\n",
+                                                              clazz.getSimpleName(), inst.getClass().getSimpleName()));
             classMap.put(clazz, m);
         }
 
@@ -118,7 +140,6 @@ public class ClassConfigurator {
             protocol_names.put(m, clazz);
         }
     }
-
 
 
     /**
@@ -150,16 +171,18 @@ public class ClassConfigurator {
     }
 
 
-    /**
-     * Returns a class for a magic number.
-     * Returns null if no class is found
-     *
-     * @param magic the magic number that maps to the class
-     * @return a Class object that represents a class that implements java.io.Externalizable
-     */
-    public static Class<?> get(short magic) {
-        return magic < MIN_CUSTOM_MAGIC_NUMBER? magicMap[magic] : magicMapUser.get(magic);
+    public static <T extends Object> T create(short id) throws Exception {
+        if(id >= MIN_CUSTOM_MAGIC_NUMBER) {
+            Class<?> clazz=magicMapUser.get(id);
+            if(clazz != null)
+                return (T)clazz.newInstance();
+        }
+        Supplier<?> supplier=magicMap[id];
+        if(supplier == null)
+            throw new ClassNotFoundException("Class for magic number " + id + " cannot be found");
+        return (T)supplier.get();
     }
+
 
     /**
      * Loads and returns the class from the class name

@@ -27,6 +27,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 
 /**
@@ -1390,6 +1391,10 @@ abstract public class Locking extends Protocol {
     public static class LockingHeader extends Header {
 
         public LockingHeader() {
+        }
+
+        public Supplier<? extends Header> create() {
+            return LockingHeader::new;
         }
 
         public int size() {

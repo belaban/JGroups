@@ -4,6 +4,7 @@ import org.jgroups.Global;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 /**
  * Subclass of {@link UUID} accommodating additional data such as a flag and a small hashmap. There may be many instances
@@ -41,6 +42,9 @@ public class ExtendedUUID extends FlagsUUID {
         }
     }
 
+    public Supplier<? extends UUID> create() {
+        return ExtendedUUID::new;
+    }
 
     public static ExtendedUUID randomUUID() {return new ExtendedUUID(generateRandomBytes());}
 

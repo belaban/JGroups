@@ -5,6 +5,7 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.function.Supplier;
 
 /**
  * This type of address represents a subset of the cluster members in which the total order properties must be applied,
@@ -13,7 +14,7 @@ import java.util.Collection;
  * @author Pedro Ruivo
  * @since 3.1
  */
-public class AnycastAddress implements Address {
+public class AnycastAddress implements Address, Constructable<AnycastAddress> {
     protected Collection<Address> destinations;
     private static final long serialVersionUID = -3133792315497822421L;
 
@@ -26,6 +27,10 @@ public class AnycastAddress implements Address {
 
     public AnycastAddress(Address... addresses) {
         add(addresses);
+    }
+
+    public Supplier<? extends AnycastAddress> create() {
+        return AnycastAddress::new;
     }
 
     public void add(Address... addresses) {

@@ -16,6 +16,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * Alternating Bit Protocol. Use without any UNICASTX protocol. Place it somewhere below NAKACKX. Provides reliable
@@ -43,7 +44,7 @@ public class ABP extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
+                Message msg=evt.getArg();
                 Address dest;
                 if((dest=msg.dest()) == null) // we only handle unicast messages
                     break;
@@ -52,12 +53,12 @@ public class ABP extends Protocol {
                 entry.send(msg);
                 return null;
             case Event.VIEW_CHANGE:
-                View view=(View)evt.getArg();
+                View view=evt.getArg();
                 send_map.keySet().retainAll(view.getMembers());
                 recv_map.keySet().retainAll(view.getMembers());
                 break;
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);
@@ -67,12 +68,12 @@ public class ABP extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
+                Message msg=evt.getArg();
                 Address dest=msg.dest(), sender=msg.src();
                 if(dest == null) // we don't handle multicast messages
                     break;
 
-                ABPHeader hdr=(ABPHeader)msg.getHeader(id);
+                ABPHeader hdr=msg.getHeader(id);
                 if(hdr == null)
                     break;
                 switch(hdr.type) {
@@ -183,6 +184,9 @@ public class ABP extends Protocol {
             this.type=type;
             this.bit=bit;
         }
+
+        @Override
+        public Supplier<? extends Header> create() {return ABPHeader::new;}
 
         @Override
         public int size() {

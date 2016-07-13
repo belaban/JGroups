@@ -47,7 +47,7 @@ public abstract class Discovery extends Protocol {
       "discovery response at the same time")
     protected long                       stagger_timeout;
 
-    @Property(description="Always sends a discovery response, no matter what",writable=true)
+    @Property(description="Always sends a discovery response, no matter what")
     protected boolean                    force_sending_discovery_rsps=true;
 
 
@@ -257,8 +257,8 @@ public abstract class Discovery extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                PingHeader hdr=(PingHeader)msg.getHeader(this.id);
+                Message msg=evt.getArg();
+                PingHeader hdr=msg.getHeader(this.id);
                 if(hdr == null)
                     return up_prot.up(evt);
 
@@ -329,7 +329,7 @@ public abstract class Discovery extends Protocol {
                 }
 
             case Event.FIND_MBRS:
-                return findMembers((List<Address>)evt.getArg(), false, true); // this is done asynchronously
+                return findMembers(evt.getArg(), false, true); // this is done asynchronously
         }
 
         return up_prot.up(evt);
@@ -352,13 +352,13 @@ public abstract class Discovery extends Protocol {
                 return findMembers(null, true, false); // triggered by JOIN process (ClientGmsImpl)
 
             case Event.FIND_MBRS:
-                return findMembers((List<Address>)evt.getArg(), false, false); // triggered by MERGE2/MERGE3
+                return findMembers(evt.getArg(), false, false); // triggered by MERGE2/MERGE3
 
             // case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
                 List<Address> tmp;
                 View old_view=view;
-                view=(View)evt.getArg();
+                view=evt.getArg();
                 if((tmp=view.getMembers()) != null) {
                     synchronized(members) {
                         members.clear();
@@ -385,7 +385,7 @@ public abstract class Discovery extends Protocol {
                 return null;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 return down_prot.down(evt);
 
             case Event.CONNECT:
@@ -393,7 +393,7 @@ public abstract class Discovery extends Protocol {
             case Event.CONNECT_USE_FLUSH:
             case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                 is_leaving=false;
-                cluster_name=(String)evt.getArg();
+                cluster_name=evt.getArg();
                 Object ret=down_prot.down(evt);
                 handleConnect();
                 return ret;
@@ -568,7 +568,7 @@ public abstract class Discovery extends Protocol {
             int rank=Util.getRank(view, local_addr); // returns 0 if view or local_addr are null
             long sleep_time=rank == 0? Util.random(stagger_timeout)
               : stagger_timeout * rank / view_size - (stagger_timeout / view_size);
-            timer.schedule((Runnable)() -> {
+            timer.schedule(() -> {
                 log.trace("%s: received GET_MBRS_REQ from %s, sending staggered response %s", local_addr, sender, data);
                 down_prot.down(new Event(Event.MSG, rsp_msg));
             }, sleep_time, TimeUnit.MILLISECONDS);

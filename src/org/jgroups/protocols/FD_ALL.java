@@ -14,6 +14,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 /**
  * Failure detection based on simple heartbeat protocol. Every member periodically multicasts a heartbeat.
@@ -397,6 +398,7 @@ public class FD_ALL extends Protocol {
     public static class HeartbeatHeader extends Header {
         public HeartbeatHeader() {}
         public String toString() {return "heartbeat";}
+        public Supplier<? extends Header> create() {return HeartbeatHeader::new;}
         public int size() {return 0;}
         public void writeTo(DataOutput out) throws Exception {}
         public void readFrom(DataInput in) throws Exception {}

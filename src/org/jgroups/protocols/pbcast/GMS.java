@@ -23,6 +23,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 
 /**
@@ -1401,7 +1402,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         public boolean   isMergeRejected()                        {return merge_rejected;}
         public GmsHeader setMergeRejected(boolean merge_rejected) {this.merge_rejected=merge_rejected; return this;}
 
-
+        public Supplier<? extends Header> create() {return GmsHeader::new;}
 
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);

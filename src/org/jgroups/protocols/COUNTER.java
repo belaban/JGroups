@@ -9,6 +9,7 @@ import org.jgroups.util.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Supplier;
 
 
 /**
@@ -1091,6 +1092,7 @@ public class COUNTER extends Protocol {
 
 
     public static class CounterHeader extends Header {
+        public Supplier<? extends Header> create() {return CounterHeader::new;}
         public int size() {return 0;}
         public void writeTo(DataOutput out) throws Exception {}
         public void readFrom(DataInput in) throws Exception {}

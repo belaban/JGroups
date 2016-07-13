@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 
 import java.io.*;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Tests the functionality of the Headers class
@@ -136,12 +137,19 @@ public class HeadersTest {
 
     public static class MyHeader extends Header {
 
+        public MyHeader() {
+        }
+
         public MyHeader(short prot_id) {
             this.prot_id=prot_id;
         }
 
         public String toString() {
             return "MyHeader";
+        }
+
+        public Supplier<? extends Header> create() {
+            return MyHeader::new;
         }
 
         public void writeTo(DataOutput out) throws Exception {

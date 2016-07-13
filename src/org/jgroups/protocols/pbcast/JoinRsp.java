@@ -2,6 +2,7 @@
 package org.jgroups.protocols.pbcast;
 
 
+import org.jgroups.Constructable;
 import org.jgroups.Global;
 import org.jgroups.View;
 import org.jgroups.util.Digest;
@@ -9,12 +10,13 @@ import org.jgroups.util.Streamable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.util.function.Supplier;
 
 
 /**
  * Result of a JOIN request (sent by the GMS client). Instances of this class are immutable.
  */
-public class JoinRsp implements Streamable {
+public class JoinRsp implements Streamable, Constructable<JoinRsp> {
     protected View    view;
     protected Digest  digest;
     protected String  fail_reason; /** only set if JOIN failed, e.g. in AUTH */
@@ -33,6 +35,10 @@ public class JoinRsp implements Streamable {
     }
 
     public JoinRsp(String fail_reason) {this.fail_reason=fail_reason;}
+
+    public Supplier<? extends JoinRsp> create() {
+        return JoinRsp::new;
+    }
 
     public View    getView()               {return view;}
     public Digest  getDigest()             {return digest;}

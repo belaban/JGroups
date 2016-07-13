@@ -1,12 +1,14 @@
 package org.jgroups.util;
 
 import org.jgroups.Address;
+import org.jgroups.Constructable;
 import org.jgroups.Global;
 import org.jgroups.annotations.Immutable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.*;
+import java.util.function.Supplier;
 
 import static java.lang.Math.max;
 
@@ -25,7 +27,7 @@ import static java.lang.Math.max;
  * @author Bela Ban
  */
 @Immutable
-public class Digest implements Streamable, Iterable<Digest.Entry> {
+public class Digest implements Streamable, Iterable<Digest.Entry>, Constructable<Digest> {
 
     // Stores the members corresponding to the seqnos. Example: members[2] --> hd=seqnos[4], hr=seqnos[5]
     protected Address[] members;
@@ -73,6 +75,10 @@ public class Digest implements Streamable, Iterable<Digest.Entry> {
     public Digest(Address sender, long highest_delivered, long highest_received) {
         members=new Address[]{sender};
         seqnos=new long[]{highest_delivered,highest_received};
+    }
+
+    public Supplier<? extends Digest> create() {
+        return Digest::new;
     }
 
     /** Don't use, this method is reserved for Bela ! :-) */

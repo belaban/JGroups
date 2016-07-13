@@ -14,6 +14,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.function.Supplier;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
@@ -77,7 +78,7 @@ public class COMPRESS extends Protocol {
      */
     public Object down(Event evt) {
         if(evt.getType() == Event.MSG) {
-            Message msg=(Message)evt.getArg();
+            Message msg=evt.getArg();
             int length=msg.getLength(); // takes offset/length (if set) into account
             if(length >= min_size) {
                 byte[] payload=msg.getRawBuffer(); // here we get the ref so we can avoid copying
@@ -125,8 +126,8 @@ public class COMPRESS extends Protocol {
      */
     public Object up(Event evt) {
         if(evt.getType() == Event.MSG) {
-            Message msg=(Message)evt.getArg();
-            CompressHeader hdr=(CompressHeader)msg.getHeader(this.id);
+            Message msg=evt.getArg();
+            CompressHeader hdr=msg.getHeader(this.id);
             if(hdr != null) {
                 Message uncompressed_msg=uncompress(msg, hdr.original_size);
                 if(uncompressed_msg != null) {
@@ -141,7 +142,7 @@ public class COMPRESS extends Protocol {
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
-            CompressHeader hdr=(CompressHeader)msg.getHeader(this.id);
+            CompressHeader hdr=msg.getHeader(this.id);
             if(hdr != null) {
                 Message uncompressed_msg=uncompress(msg, hdr.original_size);
                 if(uncompressed_msg != null) {
@@ -197,6 +198,10 @@ public class COMPRESS extends Protocol {
 
         public CompressHeader(int s) {
             original_size=s;
+        }
+
+        public Supplier<? extends Header> create() {
+            return CompressHeader::new;
         }
 
         public int size() {

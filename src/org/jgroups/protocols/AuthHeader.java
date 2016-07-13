@@ -7,6 +7,8 @@ import org.jgroups.conf.ClassConfigurator;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.util.function.Supplier;
+
 /**
  * AuthHeader is a holder object for the token that is passed from the joiner to the coordinator
  * @author Chris Mills
@@ -23,6 +25,7 @@ public class AuthHeader extends Header {
         this.token=token;
     }
 
+    public Supplier<? extends Header> create() {return AuthHeader::new;}
 
     public void       setToken(AuthToken token) {this.token = token;}
     public AuthToken  getToken()                {return this.token;}
@@ -62,15 +65,14 @@ public class AuthHeader extends Header {
     protected static AuthToken readAuthToken(DataInput in) throws Exception {
         if(in.readByte() == 0) return null;
         short id=in.readShort();
-        Class<?> clazz;
-        if(id >= 0) {
-            clazz=ClassConfigurator.get(id);
-        }
+        AuthToken retval=null;
+        if(id >= 0)
+            retval=ClassConfigurator.create(id);
         else {
             String classname=in.readUTF();
-            clazz=Class.forName(classname);
+            Class<?> clazz=Class.forName(classname);
+            retval=(AuthToken)clazz.newInstance();
         }
-        AuthToken retval=(AuthToken)clazz.newInstance();
         retval.readFrom(in);
         return retval;
     }

@@ -2,7 +2,6 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
-import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -12,6 +11,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Supplier;
 
 
 /**
@@ -54,10 +54,6 @@ public class FD_SOCK extends Protocol implements Runnable {
     @Property(description="Used to map the internal port (bind_port) to an external port. Only used if > 0",
               systemProperty=Global.EXTERNAL_PORT,writable=false)
     protected int         external_port=0;
-
-    @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,
-        description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr")
-    protected String      bind_interface_str=null;
 
     @Property(description="Timeout for getting socket cache from coordinator. Default is 1000 msec")
     protected long        get_cache_timeout=1000;
@@ -145,7 +141,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     public String getPingDest() {return ping_dest != null? ping_dest.toString() : "null";}
     @ManagedAttribute(description="Number of suspect event generated")
     public int getNumSuspectEventsGenerated() {return num_suspect_events;}
-    @ManagedAttribute(description="Whether the node crash detection monitor is running",writable=false)
+    @ManagedAttribute(description="Whether the node crash detection monitor is running")
     public boolean isNodeCrashMonitorRunning() {return isPingerThreadRunning(); }
 
     public boolean isLogSuspectedMessages() {
@@ -220,8 +216,8 @@ public class FD_SOCK extends Protocol implements Runnable {
         switch(evt.getType()) {
 
             case Event.MSG:
-                Message msg=(Message) evt.getArg();
-                FdHeader hdr=(FdHeader)msg.getHeader(this.id);
+                Message msg=evt.getArg();
+                FdHeader hdr=msg.getHeader(this.id);
                 if(hdr == null)
                     break;  // message did not originate from FD_SOCK layer, just pass up
 
@@ -293,7 +289,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 return null;
 
             case Event.CONFIG:
-                Map<String,Object> config=(Map<String,Object>)evt.getArg();
+                Map<String,Object> config=evt.getArg();
                 if(bind_addr == null)
                     bind_addr=(InetAddress)config.get("bind_addr");
                 if(external_addr == null)
@@ -314,7 +310,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         switch(evt.getType()) {
 
             case Event.UNSUSPECT:
-                broadcastUnuspectMessage((Address)evt.getArg());
+                broadcastUnuspectMessage(evt.getArg());
                 break;
 
             case Event.CONNECT:
@@ -337,11 +333,11 @@ public class FD_SOCK extends Protocol implements Runnable {
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address) evt.getArg();
+                local_addr=evt.getArg();
                 break;
 
             case Event.VIEW_CHANGE:
-                View v=(View) evt.getArg();
+                View v=evt.getArg();
                 final List<Address> new_mbrs=v.getMembers();
 
                 members=new_mbrs;  // volatile write will ensure all reads after this see the new membership
@@ -859,7 +855,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 addrs=new HashMap<>(size);
                 for(int i=0; i < size; i++) {
                     Address key=Util.readAddress(in);
-                    IpAddress val=(IpAddress)Util.readStreamable(IpAddress.class, in);
+                    IpAddress val=Util.readStreamable(IpAddress.class, in);
                     addrs.put(key, val);
                 }
             }
@@ -931,6 +927,9 @@ public class FD_SOCK extends Protocol implements Runnable {
             this.mbrs=mbrs;
         }
 
+        public Supplier<? extends Header> create() {
+            return FdHeader::new;
+        }
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
@@ -992,7 +991,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
             mbr=Util.readAddress(in);
-            sock_addr=(IpAddress)Util.readStreamable(IpAddress.class, in);
+            sock_addr=Util.readStreamable(IpAddress.class, in);
             int size=in.readInt();
             if(size > 0) {
                 if(mbrs == null)

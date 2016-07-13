@@ -13,12 +13,10 @@
     <class id="30"  name="org.jgroups.Message"/>
     <class id="31"  name="org.jgroups.View"/>
     <class id="32"  name="org.jgroups.ViewId"/>
-    <class id="34"  name="org.jgroups.Address"/>
+    <class id="33"  name="org.jgroups.MergeView"/>
     <class id="36"  name="org.jgroups.protocols.PingData"/>
-    <class id="38"  name="java.util.Vector"/>
     <class id="39"  name="org.jgroups.protocols.pbcast.JoinRsp"/>
     <class id="40"  name="org.jgroups.util.Digest"/>
-    <class id="41"  name="java.util.Hashtable"/>
     <class id="53"  name="org.jgroups.protocols.COMPRESS$CompressHeader"/>
     <class id="54"  name="org.jgroups.protocols.FcHeader"/>
     <class id="56"  name="org.jgroups.protocols.TpHeader"/>

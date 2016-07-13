@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * AuthToken implementation which shows how to send messages back and forth in order to perform authentication. Could
@@ -160,6 +161,10 @@ public class DemoToken extends AuthToken implements AUTH.UpHandler {
         public DemoHeader(long hash) {
             type=RESPONSE;
             this.hash=hash;
+        }
+
+        public Supplier<? extends Header> create() {
+            return DemoHeader::new;
         }
 
         public void writeTo(DataOutput out) throws Exception {

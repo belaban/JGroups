@@ -1,5 +1,6 @@
 package org.jgroups.blocks.executor;
 
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -135,7 +136,7 @@ public final class Executions {
 
         @Override
         public void writeTo(DataOutput out) throws Exception {
-            Util.writeClass(_classCallable, out);
+            out.writeUTF(_classCallable.getName());
             out.writeByte(_constructorNumber);
             out.writeByte(_args.length);
             for (Object arg : _args) {
@@ -152,7 +153,8 @@ public final class Executions {
         @Override
         public void readFrom(DataInput in) throws Exception {
             try {
-                _classCallable = (Class<? extends Callable<?>>)Util.readClass(in);
+                String classname=in.readUTF();
+                _classCallable=ClassConfigurator.get(classname);
             }
             catch (ClassNotFoundException e) {
                 throw new IOException("failed to read class from classname", e);

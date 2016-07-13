@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 
 /**
@@ -198,7 +199,7 @@ public class FD extends Protocol {
         }
     }
 
-    @ManagedAttribute(description="Whether the failure detection monitor is running",writable=false)
+    @ManagedAttribute(description="Whether the failure detection monitor is running")
     public boolean isMonitorRunning() {return monitor_future != null && !monitor_future.isDone();}
 
 
@@ -206,8 +207,8 @@ public class FD extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                FdHeader hdr=(FdHeader)msg.getHeader(this.id);
+                Message msg=evt.getArg();
+                FdHeader hdr=msg.getHeader(this.id);
                 if(hdr == null) {
                     if(msg_counts_as_heartbeat)
                         updateTimestamp(msg.getSrc());
@@ -265,7 +266,7 @@ public class FD extends Protocol {
         boolean updated=false;
         if(msgs != null) {
             for(Message msg: msgs) {
-                FdHeader hdr=(FdHeader)msg.getHeader(id); // header is not null at this point
+                FdHeader hdr=msg.getHeader(id); // header is not null at this point
                 if(hdr.type == FdHeader.HEARTBEAT_ACK)
                     updated=true;
                 else
@@ -282,7 +283,7 @@ public class FD extends Protocol {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
                 Object retval=down_prot.down(evt);
-                View view=(View)evt.getArg();
+                View view=evt.getArg();
 
                 lock.lock();
                 try {
@@ -303,7 +304,7 @@ public class FD extends Protocol {
             case Event.UNSUSPECT:
                 FdHeader hdr=new FdHeader(FdHeader.UNSUSPECT);
                 hdr.mbrs=new ArrayList<>();
-                hdr.mbrs.add((Address)evt.getArg());
+                hdr.mbrs.add(evt.getArg());
                 hdr.from=local_addr;
                 Message unsuspect_msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(id, hdr);
                 log.trace("%s: broadcasting UNSUSPECT message (mbrs=%s)", local_addr, hdr.mbrs);
@@ -311,7 +312,7 @@ public class FD extends Protocol {
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);
@@ -395,6 +396,9 @@ public class FD extends Protocol {
             this.from=from;
         }
 
+        public Supplier<? extends Header> create() {
+            return FdHeader::new;
+        }
 
         public String toString() {
             switch(type) {

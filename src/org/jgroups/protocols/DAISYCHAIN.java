@@ -12,6 +12,7 @@ import org.jgroups.util.Util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 
 /**
  * Implementation of daisy chaining. Multicast messages are sent to our neighbor, which sends them to its neighbor etc.
@@ -71,7 +72,7 @@ public class DAISYCHAIN extends Protocol {
     public Object down(final Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                final Message msg=(Message)evt.getArg();
+                final Message msg=evt.getArg();
                 if(msg.getDest() != null)
                     break; // only process multicast messages
 
@@ -100,7 +101,7 @@ public class DAISYCHAIN extends Protocol {
 
 
             case Event.VIEW_CHANGE:
-                handleView((View)evt.getArg());
+                handleView(evt.getArg());
                 break;
 
             case Event.TMP_VIEW:
@@ -108,7 +109,7 @@ public class DAISYCHAIN extends Protocol {
                 break;
             
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);
@@ -118,8 +119,8 @@ public class DAISYCHAIN extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                DaisyHeader hdr=(DaisyHeader)msg.getHeader(getId());
+                Message msg=evt.getArg();
+                DaisyHeader hdr=msg.getHeader(getId());
                 if(hdr == null)
                     break;
 
@@ -146,7 +147,7 @@ public class DAISYCHAIN extends Protocol {
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
-            DaisyHeader hdr=(DaisyHeader)msg.getHeader(getId());
+            DaisyHeader hdr=msg.getHeader(getId());
             if(hdr != null) {
                 // 1. forward the message to the next in line if ttl > 0
                 short ttl=hdr.getTTL();
@@ -197,6 +198,8 @@ public class DAISYCHAIN extends Protocol {
         public void setTTL(short ttl) {
             this.ttl=ttl;
         }
+
+        public Supplier<? extends Header> create() {return DaisyHeader::new;}
 
         public int size() {
             return Global.SHORT_SIZE;

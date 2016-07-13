@@ -5,6 +5,7 @@ import org.jgroups.util.Bits;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.util.function.Supplier;
 
 
 /**
@@ -23,6 +24,10 @@ public class FragHeader extends Header {
         this.id=id;
         this.frag_id=frag_id;
         this.num_frags=num_frags;
+    }
+
+    public Supplier<? extends Header> create() {
+        return FragHeader::new;
     }
 
     public String toString() {

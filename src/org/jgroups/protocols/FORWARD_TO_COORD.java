@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * Forwards a message to the current coordinator. When the coordinator changes, forwards all pending messages to
@@ -198,6 +199,8 @@ public class FORWARD_TO_COORD extends Protocol {
             this.type=type;
             this.id=id;
         }
+
+        public Supplier<? extends Header> create() {return ForwardHeader::new;}
 
         public long getId()   {return id;}
         public byte getType() {return type;}

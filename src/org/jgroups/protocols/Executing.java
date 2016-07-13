@@ -20,6 +20,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 /**
  * This is the base protocol used for executions.
@@ -171,7 +172,7 @@ abstract public class Executing extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case ExecutorEvent.TASK_SUBMIT:
-                Runnable runnable = (Runnable)evt.getArg();
+                Runnable runnable =evt.getArg();
                 // We are limited to a number of concurrent request id's
                 // equal to 2^63-1.  This is quite large and if it 
                 // overflows it will still be positive
@@ -345,7 +346,7 @@ abstract public class Executing extends Protocol {
                 }
                 break;
             case ExecutorEvent.TASK_CANCEL:
-                Object[] array = (Object[])evt.getArg();
+                Object[] array =evt.getArg();
                 runnable = (Runnable)array[0];
                 
                 if (_awaitingConsumer.remove(runnable)) {
@@ -389,7 +390,7 @@ abstract public class Executing extends Protocol {
                     return Boolean.FALSE;
                 }
             case ExecutorEvent.ALL_TASK_CANCEL:
-                array = (Object[])evt.getArg();
+                array =evt.getArg();
                 
                 // This is a RunnableFuture<?> so this cast is okay
                 @SuppressWarnings("unchecked")
@@ -426,11 +427,11 @@ abstract public class Executing extends Protocol {
                 }
                 return notRan;
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
 
             case Event.VIEW_CHANGE:
-                handleView((View)evt.getArg());
+                handleView(evt.getArg());
                 break;
         }
         return down_prot.down(evt);
@@ -455,12 +456,12 @@ abstract public class Executing extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                ExecutorHeader hdr=(ExecutorHeader)msg.getHeader(id);
+                Message msg=evt.getArg();
+                ExecutorHeader hdr=msg.getHeader(id);
                 if(hdr == null)
                     break;
 
-                Request req=(Request)msg.getObject();
+                Request req=msg.getObject();
                 if(log.isTraceEnabled())
                     log.trace("[" + local_addr + "] <-- [" + msg.getSrc() + "] " + req);
                 switch(req.type) {
@@ -535,7 +536,7 @@ abstract public class Executing extends Protocol {
                 return null;
 
             case Event.VIEW_CHANGE:
-                handleView((View)evt.getArg());
+                handleView(evt.getArg());
                 break;
         }
         return up_prot.up(evt);
@@ -930,7 +931,7 @@ abstract public class Executing extends Protocol {
      */
     protected static final Object PRESENT = new Object();
 
-    protected static class Request implements Streamable {
+    protected static class Request implements Streamable, Constructable<Request> {
         protected Type    type;
         protected Object  object;
         protected long   request;
@@ -942,6 +943,10 @@ abstract public class Executing extends Protocol {
             this.type=type;
             this.object=object;
             this.request=request;
+        }
+
+        public Supplier<? extends Request> create() {
+            return Request::new;
         }
 
         public void writeTo(DataOutput out) throws Exception {
@@ -1011,7 +1016,11 @@ abstract public class Executing extends Protocol {
             super(type, object, request);
             this.threadId = threadId;
         }
-        
+
+        public Supplier<? extends Request> create() {
+            return RequestWithThread::new;
+        }
+
         @Override
         public void readFrom(DataInput in) throws Exception {
             super.readFrom(in);
@@ -1039,6 +1048,8 @@ abstract public class Executing extends Protocol {
         public int size() {
             return 0;
         }
+
+        public Supplier<? extends Header> create() {return ExecutorHeader::new;}
 
         public void writeTo(DataOutput out) throws Exception {
         }

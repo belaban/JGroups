@@ -6,6 +6,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.util.function.Supplier;
 
 /**
  * @author Bela Ban
@@ -33,6 +34,10 @@ public class EncryptHeader extends Header {
     public byte[]        version()           {return version;}
     public byte[]        signature()         {return signature;}
     public EncryptHeader signature(byte[] s) {this.signature=s; return this;}
+
+    public Supplier<? extends Header> create() {
+        return EncryptHeader::new;
+    }
 
     public void writeTo(DataOutput out) throws Exception {
         out.writeByte(type);

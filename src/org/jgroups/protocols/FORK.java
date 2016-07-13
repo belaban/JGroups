@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 
 /**
  * The FORK protocol; multiplexes messages to different forks in a stack (https://issues.jboss.org/browse/JGRP-1613).
@@ -95,7 +96,7 @@ public class FORK extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);
@@ -104,8 +105,8 @@ public class FORK extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                ForkHeader hdr=(ForkHeader)msg.getHeader(id);
+                Message msg=evt.getArg();
+                ForkHeader hdr=msg.getHeader(id);
                 if(hdr == null)
                     break;
                 if(hdr.fork_stack_id == null)
@@ -127,7 +128,7 @@ public class FORK extends Protocol {
             case Event.STATE_TRANSFER_INPUTSTREAM:
                 if(!process_state_events)
                     break;
-                setStateInMainAndForkChannels((InputStream)evt.getArg());
+                setStateInMainAndForkChannels(evt.getArg());
                 return null;
         }
         return up_prot.up(evt);
@@ -137,7 +138,7 @@ public class FORK extends Protocol {
         // Sort fork messages by fork-stack-id
         Map<String,List<Message>> map=new HashMap<>();
         for(Message msg: batch) {
-            ForkHeader hdr=(ForkHeader)msg.getHeader(id);
+            ForkHeader hdr=msg.getHeader(id);
             if(hdr != null) {
                 batch.remove(msg);
                 List<Message> list=map.get(hdr.fork_stack_id);
@@ -171,7 +172,7 @@ public class FORK extends Protocol {
 
 
     protected void getStateFromMainAndForkChannels(Event evt) {
-        final OutputStream out=(OutputStream)evt.getArg();
+        final OutputStream out=evt.getArg();
 
         try(DataOutputStream dos=new DataOutputStream(out)) {
             getStateFrom(null, up_prot, null, null, dos);
@@ -350,6 +351,8 @@ public class FORK extends Protocol {
             this.fork_stack_id=fork_stack_id;
             this.fork_channel_id=fork_channel_id;
         }
+
+        public Supplier<? extends Header> create() {return ForkHeader::new;}
 
         public String getForkStackId() {
             return fork_stack_id;
