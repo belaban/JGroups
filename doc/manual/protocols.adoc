@@ -576,6 +576,14 @@ Currently only Openstack Keystone authentication is supported. Here is a sample 
 ${SWIFT_PING}
 
 
+==== KUBE_PING
+This discovery protocol can be used with OpenShift [2] and uses an OpenShift internal mechanism to discover cluster
+members. `KUBE_PING` is hosted on jgroups-extras; refer to [1] for details.
+
+
+[1] https://github.com/jgroups-extras/jgroups-kubernetes
+
+[2] https://www.openshift.com
 
 
 
