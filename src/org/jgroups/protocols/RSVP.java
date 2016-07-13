@@ -14,6 +14,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Supplier;
 
 /**
  * Protocol which implements synchronous messages (https://issues.jboss.org/browse/JGRP-1389). A send of a message M
@@ -56,7 +57,7 @@ public class RSVP extends Protocol {
     protected Future<?>                        resend_task;
 
     @ManagedAttribute(description="If we have UNICAST or UNICAST3 in the stack, we don't need to handle unicast messages " +
-      "as they're retransmitted anyway",writable=false)
+      "as they're retransmitted anyway")
     protected boolean                          handle_unicasts=true;
 
 
@@ -91,7 +92,7 @@ public class RSVP extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
+                Message msg=evt.getArg();
                 Address target=msg.getDest();
                 if((target != null && !handle_unicasts) || !(msg.isFlagSet(Message.Flag.RSVP) || msg.isFlagSet(Message.Flag.RSVP_NB)))
                     break;
@@ -139,11 +140,11 @@ public class RSVP extends Protocol {
                 return retval;
 
             case Event.VIEW_CHANGE:
-                handleView((View)evt.getArg());
+                handleView(evt.getArg());
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);
@@ -153,12 +154,12 @@ public class RSVP extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
+                Message msg=evt.getArg();
                 if(!(msg.isFlagSet(Message.Flag.RSVP) || msg.isFlagSet(Message.Flag.RSVP_NB)))
                     break;
 
                 Address dest=msg.getDest();
-                RsvpHeader hdr=(RsvpHeader)msg.getHeader(id);
+                RsvpHeader hdr=msg.getHeader(id);
                 if(hdr == null) {
                     if(dest == null || handle_unicasts)
                         log.error(Util.getMessage("MessageWithRSVPFlagNeedsToHaveAnRsvpHeader"));
@@ -191,7 +192,7 @@ public class RSVP extends Protocol {
                 }
                 break;
             case Event.VIEW_CHANGE:
-                handleView((View)evt.getArg());
+                handleView(evt.getArg());
                 break;
         }
         return up_prot.up(evt);
@@ -203,7 +204,7 @@ public class RSVP extends Protocol {
         for(Message msg: batch) {
             if(!(msg.isFlagSet(Message.Flag.RSVP) || msg.isFlagSet(Message.Flag.RSVP_NB)))
                 continue;
-            RsvpHeader hdr=(RsvpHeader)msg.getHeader(id);
+            RsvpHeader hdr=msg.getHeader(id);
             if(hdr == null) {
                 if(dest == null || handle_unicasts)
                     log.error(Util.getMessage("MessageWithRSVPFlagNeedsToHaveAnRsvpHeader"));
@@ -380,6 +381,8 @@ public class RSVP extends Protocol {
             this.type=type;
             this.id=id;
         }
+
+        public Supplier<? extends Header> create() {return RsvpHeader::new;}
 
         public int size() {
             return Global.BYTE_SIZE + Global.SHORT_SIZE;

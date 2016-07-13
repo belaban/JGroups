@@ -13,6 +13,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 
 /**
@@ -222,8 +223,8 @@ public class STABLE extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                StableHeader hdr=(StableHeader)msg.getHeader(this.id);
+                Message msg=evt.getArg();
+                StableHeader hdr=msg.getHeader(this.id);
                 if(hdr == null) {
                     handleRegularMessage(msg);
                     return up_prot.up(evt);
@@ -234,7 +235,7 @@ public class STABLE extends Protocol {
 
             case Event.VIEW_CHANGE:
                 Object retval=up_prot.up(evt);
-                handleViewChange((View)evt.getArg());
+                handleViewChange(evt.getArg());
                 return retval;
         }
         return up_prot.up(evt);
@@ -258,7 +259,7 @@ public class STABLE extends Protocol {
         StableHeader hdr;
 
         for(Message msg: batch) { // remove and handle messages with flow control headers (STABLE_GOSSIP, STABILITY)
-            if((hdr=(StableHeader)msg.getHeader(id)) != null) {
+            if((hdr=msg.getHeader(id)) != null) {
                 batch.remove(msg);
                 handleUpEvent(hdr, batch.sender(), readDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
             }
@@ -320,7 +321,7 @@ public class STABLE extends Protocol {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
                 Object retval=down_prot.down(evt);
-                handleViewChange((View)evt.getArg());
+                handleViewChange(evt.getArg());
                 return retval;
 
             case Event.SUSPEND_STABLE:
@@ -336,7 +337,7 @@ public class STABLE extends Protocol {
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);
@@ -745,6 +746,8 @@ public class STABLE extends Protocol {
             this.type=type;
             this.view_id=view_id;
         }
+
+        public Supplier<? extends Header> create() {return StableHeader::new;}
 
         static String type2String(byte t) {
             switch(t) {

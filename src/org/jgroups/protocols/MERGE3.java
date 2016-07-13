@@ -15,6 +15,7 @@ import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 
@@ -211,7 +212,7 @@ public class MERGE3 extends Protocol {
             case Event.CONNECT_USE_FLUSH:
             case Event.CONNECT_WITH_STATE_TRANSFER:
             case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
-                cluster_name=(String)evt.getArg();
+                cluster_name=evt.getArg();
                 break;
 
             case Event.DISCONNECT:
@@ -228,7 +229,7 @@ public class MERGE3 extends Protocol {
                 stopViewConsistencyChecker(); // should already be stopped
                 stopInfoSender();             // should already be stopped
                 Object ret=down_prot.down(evt);
-                view=(View)evt.getArg();
+                view=evt.getArg();
                 clearViews();
 
                 if(ergonomics && max_participants_in_merge > 0)
@@ -251,7 +252,7 @@ public class MERGE3 extends Protocol {
                 return ret;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);
@@ -261,8 +262,8 @@ public class MERGE3 extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                MergeHeader hdr=(MergeHeader)msg.getHeader(getId());
+                Message msg=evt.getArg();
+                MergeHeader hdr=msg.getHeader(getId());
                 if(hdr == null)
                     break;
                 Address sender=msg.getSrc();
@@ -538,6 +539,8 @@ public class MERGE3 extends Protocol {
             this.logical_name=logical_name;
             this.physical_addr=physical_addr;
         }
+
+        public Supplier<? extends Header> create() {return MergeHeader::new;}
 
         public int size() {
             int retval=Global.BYTE_SIZE; // for the type

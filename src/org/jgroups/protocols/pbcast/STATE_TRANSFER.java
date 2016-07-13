@@ -17,6 +17,7 @@ import java.io.EOFException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * STATE_TRANSFER protocol based on byte array transfer. A state request is sent
@@ -408,6 +409,10 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
         public StateHeader(byte type, Digest digest) {
             this.type=type;
             this.my_digest=digest;
+        }
+
+        public Supplier<? extends Header> create() {
+            return StateHeader::new;
         }
 
         public int getType() {

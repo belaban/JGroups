@@ -1,6 +1,7 @@
 package org.jgroups.blocks;
 
 
+import org.jgroups.Constructable;
 import org.jgroups.util.*;
 
 import java.io.*;
@@ -9,6 +10,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Supplier;
 
 
 /**
@@ -17,7 +19,7 @@ import java.util.List;
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
  */
-public class MethodCall implements Streamable {
+public class MethodCall implements Streamable, Constructable<MethodCall> {
     protected short              mode;
     protected String             method_name;
     protected short              method_id; // the ID of a method, maps to a java.lang.reflect.Method
@@ -55,6 +57,10 @@ public class MethodCall implements Streamable {
         this.args=args;
         this.types=types;
         this.mode=TYPES;
+    }
+
+    public Supplier<? extends MethodCall> create() {
+        return MethodCall::new;
     }
 
     public int        getMode()                {return mode;}

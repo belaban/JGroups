@@ -18,6 +18,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * Dynamic tool to measure multicast performance of JGroups; every member sends N messages and we measure how long it
@@ -746,6 +747,11 @@ public class MPerf extends ReceiverAdapter {
         public MPerfHeader() {}
         public MPerfHeader(byte type) {this.type=type;}
         public MPerfHeader(byte type, long seqno) {this(type); this.seqno=seqno;}
+
+        public Supplier<? extends Header> create() {
+            return MPerfHeader::new;
+        }
+
         public int size() {
             int retval=Global.BYTE_SIZE;
             if(type == DATA)

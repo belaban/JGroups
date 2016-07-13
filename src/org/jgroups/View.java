@@ -10,6 +10,7 @@ import org.jgroups.util.Util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * A view is a local representation of the current membership of a group. Only one view is installed
@@ -22,7 +23,7 @@ import java.util.*;
  * @author Bela Ban
  */
 @Immutable
-public class View implements Comparable<View>, Streamable, Iterable<Address> {
+public class View implements Comparable<View>, Streamable, Iterable<Address>, Constructable<View> {
 
    /**
     * A view is uniquely identified by its ViewID. The view id contains the creator address and a
@@ -91,6 +92,9 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
         return new View(new ViewId(coord, id), members);
     }
 
+    public Supplier<? extends View> create() {
+        return View::new;
+    }
 
     /**
      * Returns the view ID of this view

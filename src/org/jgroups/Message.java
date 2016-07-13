@@ -8,6 +8,7 @@ import org.jgroups.util.*;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * A Message encapsulates data sent to members of a group. It contains among other things the
@@ -20,7 +21,7 @@ import java.util.Map;
  * @since 2.0
  * @author Bela Ban
  */
-public class Message implements Streamable {
+public class Message implements Streamable, Constructable<Message> {
     protected Address           dest_addr;
     protected Address           src_addr;
 
@@ -153,6 +154,10 @@ public class Message implements Streamable {
     public Message(boolean create_headers) {
         if(create_headers)
             headers=createHeaders(Util.DEFAULT_HEADERS);
+    }
+
+    public Supplier<? extends Message> create() {
+        return Message::new;
     }
 
     public Address getDest()                 {return dest_addr;}
@@ -854,11 +859,7 @@ public class Message implements Streamable {
 
     protected static Header readHeader(DataInput in) throws Exception {
         short magic_number=in.readShort();
-        Class clazz=ClassConfigurator.get(magic_number);
-        if(clazz == null)
-            throw new IllegalArgumentException("magic number " + magic_number + " is not available in magic map");
-
-        Header hdr=(Header)clazz.newInstance();
+        Header hdr=ClassConfigurator.create(magic_number);
         hdr.readFrom(in);
         return hdr;
     }

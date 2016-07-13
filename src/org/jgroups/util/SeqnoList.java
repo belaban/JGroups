@@ -1,18 +1,20 @@
 package org.jgroups.util;
 
+import org.jgroups.Constructable;
 import org.jgroups.Global;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.function.Supplier;
 
 /**
  * A bitset of missing messages with a fixed size. The index (in the bit set) of a seqno is computed as seqno - offset.
  * @author Bela Ban
  * @since  3.1
  */
-public class SeqnoList extends FixedSizeBitSet implements Streamable, Iterable<Long> {
+public class SeqnoList extends FixedSizeBitSet implements Streamable, Iterable<Long>, Constructable<SeqnoList> {
     protected long offset; // first seqno
 
     /** Only to be used by serialization */
@@ -27,6 +29,10 @@ public class SeqnoList extends FixedSizeBitSet implements Streamable, Iterable<L
     public SeqnoList(int size, long offset) {
         super(size);
         this.offset=offset;
+    }
+
+    public Supplier<? extends SeqnoList> create() {
+        return SeqnoList::new;
     }
 
     public SeqnoList(int size) {

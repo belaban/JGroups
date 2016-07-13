@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 
 /**
@@ -643,6 +644,8 @@ public class SEQUENCER extends Protocol {
         public long getSeqno() {
             return seqno;
         }
+
+        public Supplier<? extends Header> create() {return SequencerHeader::new;}
 
         public String toString() {
             StringBuilder sb=new StringBuilder(64);

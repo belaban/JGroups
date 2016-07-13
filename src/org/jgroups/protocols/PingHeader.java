@@ -7,6 +7,7 @@ import org.jgroups.util.Bits;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.util.function.Supplier;
 
 
 /**
@@ -26,6 +27,8 @@ public class PingHeader extends Header {
     public PingHeader(byte type)                               {this.type=type;}
     public byte type()                                         {return type;}
     public PingHeader clusterName(String name)                 {this.cluster_name=name; return this;}
+
+    public Supplier<? extends Header> create() {return PingHeader::new;}
 
     public int size() {
         int retval=Global.BYTE_SIZE *2; // type and cluster_name presence

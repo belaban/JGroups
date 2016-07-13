@@ -18,6 +18,7 @@ import org.testng.annotations.Test;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * @author Bela Ban
@@ -478,10 +479,17 @@ public class MessageTest {
 
 
     protected static class DummyHeader extends Header {
-        protected final short num;
+        protected short num;
+
+        public DummyHeader() {
+        }
 
         public DummyHeader(short num) {
             this.num=num;
+        }
+
+        public Supplier<? extends Header> create() {
+            return DummyHeader::new;
         }
 
         public short getNum() {

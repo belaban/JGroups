@@ -10,6 +10,7 @@ import java.io.DataOutput;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * A view that is sent as a result of a cluster merge. Whenever a group splits into subgroups, e.g., due to
@@ -62,6 +63,9 @@ public class MergeView extends View {
         this.subgroups=listToArray(subgroups);
     }
 
+    public Supplier<? extends MergeView> create() {
+        return MergeView::new;
+    }
 
     public List<View> getSubgroups() {
         return Collections.unmodifiableList(Arrays.asList(subgroups));

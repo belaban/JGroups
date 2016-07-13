@@ -1341,10 +1341,7 @@ public class Util {
 
     private static Address readOtherAddress(DataInput in) throws Exception {
         short magic_number=in.readShort();
-        Class<?> cl=ClassConfigurator.get(magic_number);
-        if(cl == null)
-            throw new RuntimeException("class for magic number " + magic_number + " not found");
-        Address addr=(Address)cl.newInstance();
+        Address addr=ClassConfigurator.create(magic_number);
         addr.readFrom(in);
         return addr;
     }
@@ -1495,16 +1492,14 @@ public class Util {
 
         Class<?> clazz;
         if(magic_number != -1) {
-            clazz=ClassConfigurator.get(magic_number);
-            if(clazz == null)
-                throw new ClassNotFoundException("Class for magic number " + magic_number + " cannot be found.");
+            retval=ClassConfigurator.create(magic_number);
         }
         else {
             String classname=in.readUTF();
             clazz=ClassConfigurator.get(classname, loader);
+            retval=(T)clazz.newInstance();
         }
 
-        retval=(T)clazz.newInstance();
         retval.readFrom(in);
         return retval;
     }
@@ -1531,35 +1526,7 @@ public class Util {
         return retval;
     }
 
-    public static void writeClass(Class<?> classObject,DataOutput out) throws Exception {
-        short magic_number=ClassConfigurator.getMagicNumber(classObject);
-        // write the magic number or the class name
-        if(magic_number == -1) {
-            out.writeBoolean(false);
-            out.writeUTF(classObject.getName());
-        }
-        else {
-            out.writeBoolean(true);
-            out.writeShort(magic_number);
-        }
-    }
 
-    public static Class<?> readClass(DataInput in) throws Exception {
-        Class<?> clazz;
-        boolean use_magic_number=in.readBoolean();
-        if(use_magic_number) {
-            short magic_number=in.readShort();
-            clazz=ClassConfigurator.get(magic_number);
-            if(clazz == null)
-                throw new ClassNotFoundException("Class for magic number " + magic_number + " cannot be found.");
-        }
-        else {
-            String classname=in.readUTF();
-            clazz=ClassConfigurator.get(classname);
-        }
-
-        return clazz;
-    }
 
     public static void writeObject(Object obj,DataOutput out) throws Exception {
         if(obj instanceof Streamable) {

@@ -11,6 +11,7 @@ import java.io.DataOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.function.Supplier;
 
 /**
  * The header for the Total Order Anycast (TOA) protocol
@@ -38,6 +39,8 @@ public class ToaHeader extends Header {
         this.messageID = messageID;
         this.type = type;
     }
+
+    public Supplier<? extends Header> create() {return ToaHeader::new;}
 
     public MessageID getMessageID() {
         return messageID;

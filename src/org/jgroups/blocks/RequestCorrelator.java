@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 
 /**
@@ -530,6 +531,9 @@ public class RequestCorrelator {
             this.req_id=req_id;
             return this;
         }
+
+        public Supplier<? extends org.jgroups.Header> create() {return Header::new;}
+
         public long    requestId()   {return req_id;}
         public boolean rspExpected() {return req_id > 0;}
         public short   corrId()      {return corrId;}
@@ -582,6 +586,10 @@ public class RequestCorrelator {
         public MultiDestinationHeader(byte type, long id, short corr_id, Address[] exclusion_list) {
             super(type, id, corr_id);
             this.exclusion_list=exclusion_list;
+        }
+
+        public Supplier<? extends org.jgroups.Header> create() {
+            return MultiDestinationHeader::new;
         }
 
         public void writeTo(DataOutput out) throws Exception {

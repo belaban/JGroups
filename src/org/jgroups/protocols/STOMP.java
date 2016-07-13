@@ -12,6 +12,7 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 
 /**
  * Protocol which provides STOMP (http://stomp.codehaus.org/) support. Very simple implementation, with a
@@ -56,13 +57,13 @@ public class STOMP extends Protocol implements Runnable {
     protected boolean forward_non_client_generated_msgs=false;
 
     /* ---------------------------------------------   JMX      ---------------------------------------------------*/
-    @ManagedAttribute(description="Number of client connections",writable=false)
+    @ManagedAttribute(description="Number of client connections")
     public int getNumConnections() {return connections.size();}
 
-    @ManagedAttribute(description="Number of subscriptions",writable=false)
+    @ManagedAttribute(description="Number of subscriptions")
     public int getNumSubscriptions() {return subscriptions.size();}
 
-    @ManagedAttribute(description="Print subscriptions",writable=false)
+    @ManagedAttribute(description="Print subscriptions")
     public String getSubscriptions() {return subscriptions.keySet().toString();}
 
     @ManagedAttribute
@@ -71,7 +72,7 @@ public class STOMP extends Protocol implements Runnable {
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     protected Address                   local_addr;
     protected ServerSocket              srv_sock;
-    @ManagedAttribute(writable=false)
+    @ManagedAttribute
     protected String                    endpoint;
     protected Thread                    acceptor;
     protected final List<Connection>    connections=new LinkedList<>();
@@ -159,10 +160,10 @@ public class STOMP extends Protocol implements Runnable {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
-                handleView((View)evt.getArg());
+                handleView(evt.getArg());
                 break;
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);
@@ -171,8 +172,8 @@ public class STOMP extends Protocol implements Runnable {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                StompHeader hdr=(StompHeader)msg.getHeader(id);
+                Message msg=evt.getArg();
+                StompHeader hdr=msg.getHeader(id);
                 if(hdr == null) {
                     if(forward_non_client_generated_msgs) {
                         HashMap<String, String> hdrs=new HashMap<>();
@@ -210,7 +211,7 @@ public class STOMP extends Protocol implements Runnable {
                 break;
 
             case Event.VIEW_CHANGE:
-                handleView((View)evt.getArg());
+                handleView(evt.getArg());
                 break;
         }
 
@@ -219,7 +220,7 @@ public class STOMP extends Protocol implements Runnable {
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
-            StompHeader hdr=(StompHeader)msg.getHeader(id);
+            StompHeader hdr=msg.getHeader(id);
             if(hdr != null || forward_non_client_generated_msgs) {
                 try {
                     batch.remove(msg);
@@ -615,6 +616,8 @@ public class STOMP extends Protocol implements Runnable {
 
         public StompHeader() {
         }
+
+        public Supplier<? extends Header> create() {return StompHeader::new;}
 
         private StompHeader(Type type) {
             this.type=type;

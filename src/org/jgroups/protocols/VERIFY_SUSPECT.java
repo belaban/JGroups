@@ -6,18 +6,22 @@ import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
-import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 
 /**
@@ -50,11 +54,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
               systemProperty={Global.BIND_ADDR})
     protected InetAddress bind_addr; // interface for ICMP pings
     
-    @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class, 
-    		description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr")
-    protected String    bind_interface_str=null;
-     
-    /* --------------------------------------------- Fields ------------------------------------------------ */   
+    /* --------------------------------------------- Fields ------------------------------------------------ */
     
     
     /** network interface to be used to send the ICMP packets */
@@ -82,10 +82,10 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
             case Event.VIEW_CHANGE:
-                View v=(View)evt.getArg();
+                View v=evt.getArg();
                 adjustSuspectedMembers(v.getMembers());
                 break;
         }
@@ -96,7 +96,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         switch(evt.getType()) {
 
             case Event.SUSPECT:  // it all starts here ...
-                Address suspected_mbr=(Address)evt.getArg();
+                Address suspected_mbr=evt.getArg();
                 if(suspected_mbr == null) {
                     if(log.isErrorEnabled()) log.error(Util.getMessage("SuspectedMemberIsNull"));
                     return null;
@@ -116,8 +116,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                VerifyHeader hdr=(VerifyHeader)msg.getHeader(this.id);
+                Message msg=evt.getArg();
+                VerifyHeader hdr=msg.getHeader(this.id);
                 if(hdr == null)
                     break;
                 switch(hdr.type) {
@@ -148,7 +148,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
             case Event.CONFIG:
                 if(bind_addr == null) {
-                    Map<String,Object> config=(Map<String,Object>)evt.getArg();
+                    Map<String,Object> config=evt.getArg();
                     bind_addr=(InetAddress)config.get("bind_addr");
                 }
         }
@@ -357,6 +357,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             this.from=from;
         }
 
+        public Supplier<? extends Header> create() {return VerifyHeader::new;}
 
         public String toString() {
             switch(type) {

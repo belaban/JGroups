@@ -7,7 +7,7 @@ import org.jgroups.util.AsciiString;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-
+import java.util.function.Supplier;
 
 
 /**
@@ -34,6 +34,8 @@ public class TpHeader extends Header {
     public TpHeader(byte[] n) {
         cluster_name=n;
     }
+
+    public Supplier<? extends Header> create() {return TpHeader::new;}
 
     public String toString() {
         return String.format("[cluster_name=%s]", new String(cluster_name));

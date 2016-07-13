@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 
 /**
@@ -1259,6 +1260,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             this.conn_id=conn_id;
             this.first=first;
         }
+
+        public Supplier<? extends org.jgroups.Header> create() {return Header::new;}
 
         public static Header createDataHeader(long seqno, short conn_id, boolean first) {
             return new Header(DATA, seqno, conn_id, first);

@@ -2,6 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
+import org.jgroups.Constructable;
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.util.Bits;
@@ -13,13 +14,14 @@ import java.io.DataOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * Encapsulates information about a cluster node, e.g. local address, coordinator's address, logical name and
  * physical address(es)
  * @author Bela Ban
  */
-public class PingData implements SizeStreamable {
+public class PingData implements SizeStreamable, Constructable<PingData> {
     protected Address                       sender;  // the sender of this PingData
     protected byte                          flags;   // used to mark as server and/or coordinator
     protected String                        logical_name;
@@ -45,6 +47,9 @@ public class PingData implements SizeStreamable {
         this.physical_addr=physical_addr;
     }
 
+    public Supplier<? extends PingData> create() {
+        return PingData::new;
+    }
 
     public PingData coord(boolean c) {
         if(c) {

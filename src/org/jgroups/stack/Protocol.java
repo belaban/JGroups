@@ -107,9 +107,9 @@ public abstract class Protocol {
         return Util.getField(field, this);
     }
 
-    public <T extends Protocol> T setValues(Map<String,Object> values) {
+    public Protocol setValues(Map<String,Object> values) {
         if(values == null)
-            return (T)this;
+            return this;
         for(Map.Entry<String,Object> entry: values.entrySet()) {
             String attrname=entry.getKey();
             Object value=entry.getValue();
@@ -118,13 +118,13 @@ public abstract class Protocol {
                 Util.setField(field, this, value);
             }
         }
-        return (T)this;
+        return this;
     }
 
 
-    public <T extends Protocol> T setValue(String name, Object value) {
+    public Protocol setValue(String name, Object value) {
         if(name == null || value == null)
-            return (T)this;
+            return this;
         Field field=Util.getField(getClass(), name);
         if(field == null)
             throw new IllegalArgumentException("field " + name + " not found");
@@ -135,7 +135,7 @@ public abstract class Protocol {
                 log.warn("Field " + getName() + "." + name + " is deprecated: " + deprecated_msg);
         }
         Util.setField(field, this, value);
-        return (T)this;
+        return this;
     }
 
 

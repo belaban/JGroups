@@ -22,6 +22,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 
 /**
@@ -473,7 +474,11 @@ public class SEQUENCER2 extends Protocol {
             this.seqno=seqno;
             this.num_seqnos=num_seqnos;
         }
-        
+
+        public Supplier<? extends Header> create() {
+            return SequencerHeader::new;
+        }
+
         public long getSeqno() {return seqno;}
         
         public String toString() {

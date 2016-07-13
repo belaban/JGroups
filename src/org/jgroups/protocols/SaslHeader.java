@@ -1,10 +1,11 @@
 package org.jgroups.protocols;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-
 import org.jgroups.Header;
 import org.jgroups.util.Util;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.util.function.Supplier;
 
 public class SaslHeader extends Header {
     public enum Type {
@@ -50,6 +51,10 @@ public class SaslHeader extends Header {
     public SaslHeader type(Type type) {
         this.type = type;
         return this;
+    }
+
+    public Supplier<? extends Header> create() {
+        return SaslHeader::new;
     }
 
     @Override

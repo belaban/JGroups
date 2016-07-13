@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import org.jgroups.Address;
+import org.jgroups.Constructable;
 import org.jgroups.Global;
 import org.jgroups.blocks.LazyRemovalCache;
 
@@ -8,6 +9,7 @@ import java.io.*;
 import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Logical address which is unique over space and time. <br/>
@@ -16,7 +18,7 @@ import java.util.Map;
  * 
  * @author Bela Ban
  */
-public class UUID implements Address {
+public class UUID implements Address, Constructable<UUID> {
     private static final long serialVersionUID=-6194072960039354716L;
     protected long   mostSigBits;
     protected long   leastSigBits;
@@ -94,6 +96,9 @@ public class UUID implements Address {
         this.leastSigBits = lsb;
     }
 
+    public Supplier<? extends UUID> create() {
+        return UUID::new;
+    }
 
     public static void add(Address uuid, String logical_name) {
         cache.add(uuid, logical_name); // overwrite existing entry

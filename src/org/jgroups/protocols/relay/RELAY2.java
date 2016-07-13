@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  *
@@ -728,6 +729,8 @@ public class RELAY2 extends Protocol {
             this.final_dest=final_dest;
             this.original_sender=original_sender;
         }
+
+        public Supplier<? extends Header> create() {return Relay2Header::new;}
 
         public int size() {
             return Global.BYTE_SIZE + Util.size(final_dest) + Util.size(original_sender);

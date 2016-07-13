@@ -18,6 +18,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * Base class for state transfer protocols which use streaming (or chunking) to transfer state between two members.
@@ -535,6 +536,10 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
             this.type=type;
             this.digest=digest;
             this.bind_addr=bind_addr;
+        }
+
+        public Supplier<? extends Header> create() {
+            return StateHeader::new;
         }
 
         public int getType() {

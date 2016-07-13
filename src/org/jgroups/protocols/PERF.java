@@ -10,6 +10,7 @@ import org.jgroups.util.MessageBatch;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.util.function.Supplier;
 
 /**
  * Protocol measuring latency between stacks. On {@link Protocol#down(org.jgroups.Event)}, a header is added to the
@@ -100,6 +101,10 @@ public class PERF extends Protocol {
 
         public PerfHeader(long start_time) {
             this.start_time=start_time;
+        }
+
+        public Supplier<? extends Header> create() {
+            return PerfHeader::new;
         }
 
         public int size() {

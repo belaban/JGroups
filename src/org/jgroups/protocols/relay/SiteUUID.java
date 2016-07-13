@@ -7,6 +7,7 @@ import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 /**
  * Implementation of SiteAddress
@@ -41,6 +42,10 @@ public class SiteUUID extends ExtendedUUID implements SiteAddress {
         if(name != null)
             put(NAME, Util.stringToBytes(name));
         put(SITE_NAME, Util.stringToBytes(site));
+    }
+
+    public Supplier<? extends UUID> create() {
+        return SiteUUID::new;
     }
 
     public String getName() {

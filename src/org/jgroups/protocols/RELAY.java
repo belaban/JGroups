@@ -15,6 +15,7 @@ import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -629,6 +630,9 @@ public class RELAY extends Protocol {
             return retval;
         }
 
+        public Supplier<? extends Header> create() {
+            return RelayHeader::new;
+        }
 
         public int size() {
             int retval=Global.BYTE_SIZE; // type
