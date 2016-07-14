@@ -531,7 +531,7 @@ public class RequestCorrelator {
             this.req_id=req_id;
             return this;
         }
-
+        public short getMagicId() {return 67;}
         public Supplier<? extends org.jgroups.Header> create() {return Header::new;}
 
         public long    requestId()   {return req_id;}
@@ -587,7 +587,7 @@ public class RequestCorrelator {
             super(type, id, corr_id);
             this.exclusion_list=exclusion_list;
         }
-
+        public short getMagicId() {return 68;}
         public Supplier<? extends org.jgroups.Header> create() {
             return MultiDestinationHeader::new;
         }

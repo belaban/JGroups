@@ -34,7 +34,7 @@ public class EncryptHeader extends Header {
     public byte[]        version()           {return version;}
     public byte[]        signature()         {return signature;}
     public EncryptHeader signature(byte[] s) {this.signature=s; return this;}
-
+    public short getMagicId() {return 88;}
     public Supplier<? extends Header> create() {
         return EncryptHeader::new;
     }

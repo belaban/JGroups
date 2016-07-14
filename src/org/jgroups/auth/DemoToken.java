@@ -162,7 +162,7 @@ public class DemoToken extends AuthToken implements AUTH.UpHandler {
             type=RESPONSE;
             this.hash=hash;
         }
-
+        public short getMagicId() {return 20000;}
         public Supplier<? extends Header> create() {
             return DemoHeader::new;
         }

@@ -184,7 +184,7 @@ public class ABP extends Protocol {
             this.type=type;
             this.bit=bit;
         }
-
+        public short getMagicId() {return 87;}
         @Override
         public Supplier<? extends Header> create() {return ABPHeader::new;}
 

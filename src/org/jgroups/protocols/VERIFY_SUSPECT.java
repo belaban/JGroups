@@ -357,6 +357,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             this.from=from;
         }
 
+        public short getMagicId() {return 54;}
+
         public Supplier<? extends Header> create() {return VerifyHeader::new;}
 
         public String toString() {

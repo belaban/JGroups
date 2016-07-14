@@ -29,6 +29,8 @@ public class FcHeader extends Header {
         return FcHeader::new;
     }
 
+    public short getMagicId() {return 59;}
+
     public int size() {
         return Global.BYTE_SIZE;
     }

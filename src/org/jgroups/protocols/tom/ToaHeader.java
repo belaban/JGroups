@@ -39,7 +39,7 @@ public class ToaHeader extends Header {
         this.messageID = messageID;
         this.type = type;
     }
-
+    public short getMagicId() {return 79;}
     public Supplier<? extends Header> create() {return ToaHeader::new;}
 
     public MessageID getMessageID() {

@@ -487,7 +487,7 @@ public class MessageTest {
         public DummyHeader(short num) {
             this.num=num;
         }
-
+        public short getMagicId() {return 1600;}
         public Supplier<? extends Header> create() {
             return DummyHeader::new;
         }

@@ -396,6 +396,8 @@ public class FD extends Protocol {
             this.from=from;
         }
 
+        public short getMagicId() {return 50;}
+
         public Supplier<? extends Header> create() {
             return FdHeader::new;
         }

@@ -1391,6 +1391,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             this(type,mbr,true);
         }
 
+        public short getMagicId() {return 55;}
 
         public byte      getType()                                {return type;}
         public GmsHeader mbr(Address mbr)                         {this.mbr=mbr; return this;}

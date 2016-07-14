@@ -30,8 +30,6 @@ public final class Global {
     public static final String EXTERNAL_PORT="jgroups.external_port";
     public static final String TCP_CLIENT_BIND_ADDR="jgroups.tcp.client_bind_addr";
 
-    public static final String BIND_INTERFACE="jgroups.bind_interface";
-
     public static final String TCPPING_INITIAL_HOSTS="jgroups.tcpping.initial_hosts";
 
     public static final String UDP_MCAST_ADDR="jgroups.udp.mcast_addr";
@@ -56,8 +54,6 @@ public final class Global {
 
     public static final String IPV6_MCAST_PREFIX="jgroups.ipmcast.prefix";
 
-    public static final String TIMER_NUM_THREADS="jgroups.timer.num_threads";
-
     public static final String USE_JDK_LOGGER="jgroups.use.jdk_logger"; // forces use of the JDK logger
     /** System prop for defining the default number of headers in a Message */
     public static final String DEFAULT_HEADERS="jgroups.msg.default_headers";
@@ -69,7 +65,6 @@ public final class Global {
     
     public static final long   THREADPOOL_SHUTDOWN_WAIT_TIME=3000;
     public static final long   THREAD_SHUTDOWN_WAIT_TIME=300;
-    public static final String DUMMY="dummy-";
 
     public static final String MATCH_ADDR="match-address";
     public static final String MATCH_HOST="match-host";

@@ -747,6 +747,8 @@ public class STABLE extends Protocol {
             this.view_id=view_id;
         }
 
+        public short getMagicId() {return 56;}
+
         public Supplier<? extends Header> create() {return StableHeader::new;}
 
         static String type2String(byte t) {

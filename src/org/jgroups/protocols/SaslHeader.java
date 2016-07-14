@@ -22,7 +22,7 @@ public class SaslHeader extends Header {
         this.type = type;
         this.payload = payload;
     }
-
+    public short getMagicId() {return 85;}
     public byte[] getPayload() {
         return payload;
     }

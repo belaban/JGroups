@@ -81,7 +81,7 @@ public class FORWARD_TO_COORD extends Protocol {
                 Address target=coord;
                 if(target == null)
                     throw new IllegalStateException("coord is null; dropping message");
-                Message msg=(Message)evt.getArg();
+                Message msg=evt.getArg();
                 long msg_id=getNextId();
                 ForwardHeader hdr=new ForwardHeader(ForwardHeader.MSG, msg_id);
                 msg.putHeader(id, hdr);
@@ -92,11 +92,11 @@ public class FORWARD_TO_COORD extends Protocol {
                 return null; // FORWARD_TO_COORD is not passed down any further
 
             case Event.VIEW_CHANGE:
-                handleViewChange((View)evt.getArg());
+                handleViewChange(evt.getArg());
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 fwd_queue.setLocalAddr(local_addr);
                 break;
         }
@@ -106,8 +106,8 @@ public class FORWARD_TO_COORD extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                ForwardHeader hdr=(ForwardHeader)msg.getHeader(id);
+                Message msg=evt.getArg();
+                ForwardHeader hdr=msg.getHeader(id);
                 if(hdr == null)
                     break;
                 long msg_id=hdr.getId();
@@ -143,7 +143,7 @@ public class FORWARD_TO_COORD extends Protocol {
                 }
                 break;
             case Event.VIEW_CHANGE:
-                handleViewChange((View)evt.getArg());
+                handleViewChange(evt.getArg());
                 break;
         }
         return up_prot.up(evt);
@@ -201,7 +201,7 @@ public class FORWARD_TO_COORD extends Protocol {
         }
 
         public Supplier<? extends Header> create() {return ForwardHeader::new;}
-
+        public short getMagicId() {return 81;}
         public long getId()   {return id;}
         public byte getType() {return type;}
         public int  size()    {return Global.BYTE_SIZE + Bits.size(id);}

@@ -31,7 +31,7 @@ public class AuthHeader extends Header {
     public AuthToken  getToken()                {return this.token;}
     public AuthHeader token(AuthToken token)    {this.token=token; return this;}
     public AuthToken  token()                   {return this.token;}
-
+    public short getMagicId() {return 66;}
 
     public void writeTo(DataOutput out) throws Exception {
         writeAuthToken(out, token);

@@ -641,6 +641,8 @@ public class SEQUENCER extends Protocol {
             this.seqno=seqno;
         }
 
+        public short getMagicId() {return 61;}
+
         public long getSeqno() {
             return seqno;
         }

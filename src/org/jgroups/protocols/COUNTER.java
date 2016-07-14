@@ -1093,6 +1093,7 @@ public class COUNTER extends Protocol {
 
     public static class CounterHeader extends Header {
         public Supplier<? extends Header> create() {return CounterHeader::new;}
+        public short getMagicId() {return 74;}
         public int size() {return 0;}
         public void writeTo(DataOutput out) throws Exception {}
         public void readFrom(DataInput in) throws Exception {}

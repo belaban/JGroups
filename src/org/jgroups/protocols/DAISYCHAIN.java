@@ -193,6 +193,8 @@ public class DAISYCHAIN extends Protocol {
             this.ttl=ttl;
         }
 
+        public short getMagicId() {return 69;}
+
         public short getTTL() {return ttl;}
 
         public void setTTL(short ttl) {

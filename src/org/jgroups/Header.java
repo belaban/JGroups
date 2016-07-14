@@ -17,6 +17,9 @@ public abstract class Header implements Streamable, Constructable<Header> {
     public short  getProtId()         {return prot_id;}
     public Header setProtId(short id) {this.prot_id=id; return this;}
 
+    /** Returns the magic-ID. If defined in jg-magic-map.xml, the IDs need to be the same */
+    public abstract short getMagicId();
+
 
     /**
      * To be implemented by subclasses. Return the size of this object for the serialized version of it.

@@ -1260,7 +1260,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             this.conn_id=conn_id;
             this.first=first;
         }
-
+        public short getMagicId() {return 82;}
         public Supplier<? extends org.jgroups.Header> create() {return Header::new;}
 
         public static Header createDataHeader(long seqno, short conn_id, boolean first) {

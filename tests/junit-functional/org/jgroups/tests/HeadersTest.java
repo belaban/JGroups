@@ -143,7 +143,7 @@ public class HeadersTest {
         public MyHeader(short prot_id) {
             this.prot_id=prot_id;
         }
-
+        public short getMagicId() {return 1500;}
         public String toString() {
             return "MyHeader";
         }

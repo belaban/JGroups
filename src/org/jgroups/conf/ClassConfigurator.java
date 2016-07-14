@@ -4,6 +4,7 @@ package org.jgroups.conf;
 
 import org.jgroups.Constructable;
 import org.jgroups.Global;
+import org.jgroups.Header;
 import org.jgroups.util.Triple;
 import org.jgroups.util.Util;
 import org.w3c.dom.Document;
@@ -19,14 +20,9 @@ import java.util.*;
 import java.util.function.Supplier;
 
 /**
- * This class will be replaced with the class that read info
- * from the magic number configurator that reads info from the xml file.
- * The name and the relative path of the magic number map file can be specified
- * as value of the property {@code org.jgroups.conf.magicNumberFile}.
- * It must be relative to one of the classpath elements, to allow the
- * classloader to locate the file. If a value is not specified,
- * {@code MagicNumberReader.MAGIC_NUMBER_FILE} is used, which defaults
- * to "jg-magic-map.xml".
+ * Maintains a mapping between magic IDs and classes (defined in jg-magic-map.xml), and between protocol IDs and
+ * protocol classes (defined in jg-protocol-ids.xml). The first mapping is used to for fast serialization, whereas
+ * the second is used to assign protocol IDs to protocols at startup time.
  *
  * @author Filip Hanik
  * @author Bela Ban
@@ -34,7 +30,7 @@ import java.util.function.Supplier;
 public class ClassConfigurator {
     public static final String MAGIC_NUMBER_FILE = "jg-magic-map.xml";
     public static final String PROTOCOL_ID_FILE  = "jg-protocol-ids.xml";
-    private static final int   MAX_MAGIC_VALUE=150;
+    private static final int   MAX_MAGIC_VALUE=100;
     private static final short MIN_CUSTOM_MAGIC_NUMBER=1024;
     private static final short MIN_CUSTOM_PROTOCOL_ID=512;
 
@@ -43,10 +39,10 @@ public class ClassConfigurator {
 
 
     // Magic map for all values defined in jg-magic-map.xml; elements are supplier functions which create instances
-    private static final Supplier<? extends Object>[] magicMap=new Supplier[MAX_MAGIC_VALUE]; /// simple array, IDs are the indices
+    private static final Supplier<? extends Object>[] magicMap=new Supplier[MAX_MAGIC_VALUE];
 
-    // Magic map for user-defined IDs / classes
-    private static final Map<Short,Class> magicMapUser=new HashMap<>(); // key=magic number, value=Class
+    // Magic map for user-defined IDs / classes or suppliers
+    private static final Map<Short,Object> magicMapUser=new HashMap<>(); // key=magic number, value=Class or Supplier<Header>
 
     /** Contains data read from jg-protocol-ids.xml */
     private static final Map<Class,Short> protocol_ids=new HashMap<>(MAX_MAGIC_VALUE);
@@ -64,82 +60,6 @@ public class ClassConfigurator {
     public ClassConfigurator() {
     }
 
-    protected static void init() throws Exception {
-        // make sure we have a class for DocumentBuilderFactory
-        Util.loadClass("javax.xml.parsers.DocumentBuilderFactory", ClassConfigurator.class);
-
-        String magic_number_file=null, protocol_id_file=null;
-        try { // PropertyPermission not granted if running in an untrusted environment with JNLP
-            magic_number_file=Util.getProperty(new String[]{Global.MAGIC_NUMBER_FILE, "org.jgroups.conf.magicNumberFile"},
-                                               null, null,  MAGIC_NUMBER_FILE);
-            protocol_id_file=Util.getProperty(new String[]{Global.PROTOCOL_ID_FILE, "org.jgroups.conf.protocolIDFile"},
-                                              null, null, PROTOCOL_ID_FILE);
-        }
-        catch (SecurityException ex){
-        }
-
-        // Read jg-magic-map.xml
-        List<Triple<Short,String,Boolean>> mapping=readMappings(magic_number_file);
-        for(Triple<Short,String,Boolean> tuple: mapping) {
-            short m=tuple.getVal1();
-            if(m >= MAX_MAGIC_VALUE)
-                throw new IllegalArgumentException("ID " + m + " is bigger than MAX_MAGIC_VALUE (" +
-                                                     MAX_MAGIC_VALUE + "); increase MAX_MAGIC_VALUE");
-            boolean external=tuple.getVal3();
-            if(external) {
-                if(magicMap[m] != null)
-                    throw new Exception("ID " + m + " (" + tuple.getVal2() + ')' +
-                                          " is already in magic map; make sure that all keys are unique");
-                continue;
-            }
-            Class clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
-            if(magicMap[m] != null)
-                throw new Exception("key " + m + " (" + clazz.getName() + ')' +
-                                      " is already in magic map; please make sure that all keys are unique");
-
-            if(Constructable.class.isAssignableFrom(clazz)) {
-                Constructable obj=(Constructable)clazz.newInstance();
-                magicMap[m]=obj.create();
-            }
-            else {
-                Supplier<? extends Object> supplier=(Supplier<Object>)() -> {
-                    try {
-                        return clazz.newInstance();
-                    }
-                    catch(Throwable throwable) {
-                        return null;
-                    }
-                };
-                magicMap[m]=supplier;
-            }
-
-            Object inst=magicMap[m].get();
-            // test to confirm that the Constructable impl returns an instance of the correct type
-            if(!inst.getClass().equals(clazz))
-                throw new IllegalStateException(String.format("%s.create() returned the wrong class: %s\n",
-                                                              clazz.getSimpleName(), inst.getClass().getSimpleName()));
-            classMap.put(clazz, m);
-        }
-
-        mapping=readMappings(protocol_id_file); // Read jg-protocol-ids.xml
-        for(Triple<Short,String,Boolean> tuple: mapping) {
-            short m=tuple.getVal1();
-            boolean external=tuple.getVal3();
-            if(external) {
-                if(protocol_names.containsKey(m))
-                    throw new Exception("ID " + m + " (" + tuple.getVal2() + ')' +
-                                          " is already in protocol-ids map; make sure that all protocol IDs are unique");
-                continue;
-            }
-
-            Class clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
-            if(protocol_ids.containsKey(clazz))
-                throw new Exception("ID " + m + " (" + clazz.getName() + ')' +
-                                      " is already in protocol-ids map; make sure that all protocol IDs are unique");
-            protocol_ids.put(clazz, m);
-            protocol_names.put(m, clazz);
-        }
-    }
 
 
     /**
@@ -148,16 +68,35 @@ public class ClassConfigurator {
      * @param clazz The class. Usually a subclass of Header
      * @throws IllegalArgumentException If the magic number is already taken, or the magic number is <= 1024
      */
-    public static void add(short magic, Class clazz) throws IllegalArgumentException {
+    public static void add(short magic, Class clazz) {
         if(magic < MIN_CUSTOM_MAGIC_NUMBER)
-            throw new IllegalArgumentException("magic number (" + magic + ") needs to be greater than " +
-                                                 MIN_CUSTOM_MAGIC_NUMBER);
-        if(magicMapUser.containsKey(magic))
-            throw new IllegalArgumentException("magic number " + magic + " for class " + clazz.getName() +
-                                                 " is already present");
-        if(classMap.containsKey(clazz))
-            throw new IllegalArgumentException("class " + clazz.getName() + " is already present");
-        magicMapUser.put(magic, clazz);
+            throw new IllegalArgumentException("magic ID (" + magic + ") must be >= " + MIN_CUSTOM_MAGIC_NUMBER);
+        if(magicMapUser.containsKey(magic) || classMap.containsKey(clazz))
+            alreadyInMagicMap(magic, clazz.getName());
+
+        Object inst=null;
+        try {
+            inst=clazz.newInstance();
+        }
+        catch(Exception e) {
+            throw new IllegalStateException("failed creating instance " + clazz, e);
+        }
+
+        Object val=clazz;
+        if(Header.class.isAssignableFrom(clazz)) { // class is a header
+            checkSameId((Header)inst, magic);
+            val=((Header)inst).create();
+        }
+
+        if(Constructable.class.isAssignableFrom(clazz)) {
+            val=((Constructable)inst).create();
+            inst=((Supplier<?>)val).get();
+            if(!inst.getClass().equals(clazz))
+                throw new IllegalStateException(String.format("%s.create() returned the wrong class: %s\n",
+                                                              clazz.getSimpleName(), inst.getClass().getSimpleName()));
+        }
+
+        magicMapUser.put(magic, val);
         classMap.put(clazz, magic);
     }
 
@@ -166,16 +105,17 @@ public class ClassConfigurator {
         if(id < MIN_CUSTOM_PROTOCOL_ID)
             throw new IllegalArgumentException("protocol ID (" + id + ") needs to be greater than or equal to " + MIN_CUSTOM_PROTOCOL_ID);
         if(protocol_ids.containsKey(protocol))
-            throw new IllegalArgumentException("Protocol " + protocol + " is already present");
+            alreadyInProtocolsMap(id, protocol.getName());
         protocol_ids.put(protocol, id);
     }
 
 
     public static <T extends Object> T create(short id) throws Exception {
         if(id >= MIN_CUSTOM_MAGIC_NUMBER) {
-            Class<?> clazz=magicMapUser.get(id);
-            if(clazz != null)
-                return (T)clazz.newInstance();
+            Object val=magicMapUser.get(id);
+            if(val == null)
+                throw new ClassNotFoundException("Class for magic number " + id + " cannot be found");
+            return (T) ((val instanceof Supplier)? ((Supplier)val).get() : ((Class)val).newInstance());
         }
         Supplier<?> supplier=magicMap[id];
         if(supplier == null)
@@ -224,23 +164,6 @@ public class ClassConfigurator {
     }
 
 
-    public String toString() {
-        return printMagicMap();
-    }
-
-    public static String printMagicMap() {
-        StringBuilder sb=new StringBuilder();
-        SortedSet<Short> keys=new TreeSet<>(magicMapUser.keySet());
-        for(short i=0; i < magicMap.length; i++) {
-            if(magicMap[i] != null)
-                keys.add(i);
-        }
-
-        for(Short key: keys) {
-            sb.append(key).append(":\t").append(key < MIN_CUSTOM_MAGIC_NUMBER? magicMap[key] : magicMapUser.get(key)).append('\n');
-        }
-        return sb.toString();
-    }
 
     public static String printClassMap() {
         StringBuilder sb=new StringBuilder();
@@ -251,6 +174,100 @@ public class ClassConfigurator {
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
         }
         return sb.toString();
+    }
+
+
+    protected static void init() throws Exception {
+        // make sure we have a class for DocumentBuilderFactory
+        Util.loadClass("javax.xml.parsers.DocumentBuilderFactory", ClassConfigurator.class);
+
+        String magic_number_file=null, protocol_id_file=null;
+        try { // PropertyPermission not granted if running in an untrusted environment with JNLP
+            magic_number_file=Util.getProperty(new String[]{Global.MAGIC_NUMBER_FILE, "org.jgroups.conf.magicNumberFile"},
+                                               null, null,  MAGIC_NUMBER_FILE);
+            protocol_id_file=Util.getProperty(new String[]{Global.PROTOCOL_ID_FILE, "org.jgroups.conf.protocolIDFile"},
+                                              null, null, PROTOCOL_ID_FILE);
+        }
+        catch (SecurityException ex){
+        }
+
+        // Read jg-magic-map.xml
+        List<Triple<Short,String,Boolean>> mapping=readMappings(magic_number_file);
+        for(Triple<Short,String,Boolean> tuple: mapping) {
+            short m=tuple.getVal1();
+            if(m >= MAX_MAGIC_VALUE)
+                throw new IllegalArgumentException("ID " + m + " is bigger than MAX_MAGIC_VALUE (" +
+                                                     MAX_MAGIC_VALUE + "); increase MAX_MAGIC_VALUE");
+            boolean external=tuple.getVal3();
+            if(external) {
+                if(magicMap[m] != null)
+                    alreadyInMagicMap(m, tuple.getVal2());
+                continue;
+            }
+            Class clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
+            if(magicMap[m] != null)
+                alreadyInMagicMap(m, clazz.getName());
+
+            if(Constructable.class.isAssignableFrom(clazz)) {
+                Constructable obj=(Constructable)clazz.newInstance();
+                magicMap[m]=obj.create();
+            }
+            else {
+                Supplier<? extends Object> supplier=(Supplier<Object>)() -> {
+                    try {
+                        return clazz.newInstance();
+                    }
+                    catch(Throwable throwable) {
+                        return null;
+                    }
+                };
+                magicMap[m]=supplier;
+            }
+
+            Object inst=magicMap[m].get();
+            // test to confirm that the Constructable impl returns an instance of the correct type
+            if(!inst.getClass().equals(clazz))
+                throw new IllegalStateException(String.format("%s.create() returned the wrong class: %s\n",
+                                                              clazz.getSimpleName(), inst.getClass().getSimpleName()));
+            // check that the IDs are the same
+            if(inst instanceof Header)
+                checkSameId((Header)inst, m);
+            classMap.put(clazz, m);
+        }
+
+        mapping=readMappings(protocol_id_file); // Read jg-protocol-ids.xml
+        for(Triple<Short,String,Boolean> tuple: mapping) {
+            short m=tuple.getVal1();
+            boolean external=tuple.getVal3();
+            if(external) {
+                if(protocol_names.containsKey(m))
+                    alreadyInProtocolsMap(m, tuple.getVal2());
+                continue;
+            }
+
+            Class clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
+            if(protocol_ids.containsKey(clazz))
+                alreadyInProtocolsMap(m, clazz.getName());
+            protocol_ids.put(clazz, m);
+            protocol_names.put(m, clazz);
+        }
+    }
+
+    protected static void checkSameId(Header hdr, short magic) {
+        short tmp_id=hdr.getMagicId();
+        if(tmp_id != magic)
+            throw new IllegalStateException(String.format("mismatch between %s.getId() (%d) and the defined ID (%d)",
+                                                          hdr.getClass().getSimpleName(), magic, tmp_id));
+    }
+
+    protected static void alreadyInMagicMap(short magic, String classname) {
+        throw new IllegalArgumentException("key " + magic + " (" + classname + ')' +
+                                             " is already in magic map; make sure that all keys are unique");
+    }
+
+    protected static void alreadyInProtocolsMap(short prot_id, String classname) {
+        throw new IllegalArgumentException("ID " + prot_id + " (" + classname + ')' +
+                                             " is already in protocol-ids map; make sure that all protocol IDs are unique");
     }
 
 
@@ -287,12 +304,10 @@ public class ClassConfigurator {
     protected static Triple<Short,String,Boolean> parseClassData(Node protocol) {
         protocol.normalize();
         NamedNodeMap attrs=protocol.getAttributes();
-        String  clazzname;
-        String  magicnumber;
         boolean external=false;
 
-        magicnumber=attrs.getNamedItem("id").getNodeValue();
-        clazzname=attrs.getNamedItem("name").getNodeValue();
+        String magicnumber=attrs.getNamedItem("id").getNodeValue();
+        String clazzname=attrs.getNamedItem("name").getNodeValue();
 
         Node tmp=attrs.getNamedItem("external");
         if(tmp != null)

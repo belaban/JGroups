@@ -1392,7 +1392,7 @@ abstract public class Locking extends Protocol {
 
         public LockingHeader() {
         }
-
+        public short getMagicId() {return 72;}
         public Supplier<? extends Header> create() {
             return LockingHeader::new;
         }

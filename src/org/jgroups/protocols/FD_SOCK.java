@@ -927,6 +927,10 @@ public class FD_SOCK extends Protocol implements Runnable {
             this.mbrs=mbrs;
         }
 
+        public short getMagicId() {
+            return 51;
+        }
+
         public Supplier<? extends Header> create() {
             return FdHeader::new;
         }

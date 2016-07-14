@@ -474,7 +474,7 @@ public class SEQUENCER2 extends Protocol {
             this.seqno=seqno;
             this.num_seqnos=num_seqnos;
         }
-
+        public short getMagicId() {return 86;}
         public Supplier<? extends Header> create() {
             return SequencerHeader::new;
         }

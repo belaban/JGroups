@@ -29,7 +29,7 @@ public class NakAckHeader2 extends Header {
 
     public NakAckHeader2() {
     }
-
+    public short getMagicId() {return 78;}
     @Override public Supplier<? extends Header> create() {
         return NakAckHeader2::new;
     }

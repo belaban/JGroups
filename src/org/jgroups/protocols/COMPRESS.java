@@ -200,6 +200,8 @@ public class COMPRESS extends Protocol {
             original_size=s;
         }
 
+        public short getMagicId() {return 58;}
+
         public Supplier<? extends Header> create() {
             return CompressHeader::new;
         }

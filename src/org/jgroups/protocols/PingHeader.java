@@ -17,8 +17,8 @@ public class PingHeader extends Header {
     public static final byte GET_MBRS_REQ=1;
     public static final byte GET_MBRS_RSP=2;
 
-    protected byte                          type=0;
-    protected String                        cluster_name;
+    protected byte   type=0;
+    protected String cluster_name;
 
 
     public PingHeader() {
@@ -27,6 +27,8 @@ public class PingHeader extends Header {
     public PingHeader(byte type)                               {this.type=type;}
     public byte type()                                         {return type;}
     public PingHeader clusterName(String name)                 {this.cluster_name=name; return this;}
+
+    public short getMagicId() {return 53;}
 
     public Supplier<? extends Header> create() {return PingHeader::new;}
 

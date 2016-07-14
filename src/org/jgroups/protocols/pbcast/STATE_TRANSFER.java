@@ -411,6 +411,8 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
             this.my_digest=digest;
         }
 
+        public short getMagicId() {return 57;}
+
         public Supplier<? extends Header> create() {
             return StateHeader::new;
         }

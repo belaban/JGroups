@@ -1006,6 +1006,7 @@ public class FLUSH extends Protocol {
             this.viewID=viewID;
         }
 
+        public short getMagicId() {return 64;}
         public Supplier<? extends Header> create() {return FlushHeader::new;}
         public byte getType()                             {return type;}
         public long getViewID()                           {return viewID;}

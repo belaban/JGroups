@@ -618,7 +618,7 @@ public class STOMP extends Protocol implements Runnable {
         }
 
         public Supplier<? extends Header> create() {return StompHeader::new;}
-
+        public short getMagicId() {return 71;}
         private StompHeader(Type type) {
             this.type=type;
         }

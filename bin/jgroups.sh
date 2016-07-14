@@ -41,5 +41,5 @@ JMX="-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxr
 
 #DEBUG="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5000"
 
-java -verbose:gc -cp $CP $DEBUG $LOG $GC $JG_FLAGS $FLAGS $JMX $JMC  $*
+java -cp $CP $DEBUG $LOG $GC $JG_FLAGS $FLAGS $JMX $JMC  $*
 

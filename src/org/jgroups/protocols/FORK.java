@@ -351,7 +351,7 @@ public class FORK extends Protocol {
             this.fork_stack_id=fork_stack_id;
             this.fork_channel_id=fork_channel_id;
         }
-
+        public short getMagicId() {return 83;}
         public Supplier<? extends Header> create() {return ForkHeader::new;}
 
         public String getForkStackId() {

@@ -1044,7 +1044,7 @@ abstract public class Executing extends Protocol {
 
         public ExecutorHeader() {
         }
-
+        public short getMagicId() {return 73;}
         public int size() {
             return 0;
         }

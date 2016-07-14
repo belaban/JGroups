@@ -37,6 +37,8 @@ public class TpHeader extends Header {
 
     public Supplier<? extends Header> create() {return TpHeader::new;}
 
+    public short getMagicId() {return 60;}
+
     public String toString() {
         return String.format("[cluster_name=%s]", new String(cluster_name));
     }

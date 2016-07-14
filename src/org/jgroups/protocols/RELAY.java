@@ -629,7 +629,7 @@ public class RELAY extends Protocol {
             retval.original_sender=original_sender;
             return retval;
         }
-
+        public short getMagicId() {return 70;}
         public Supplier<? extends Header> create() {
             return RelayHeader::new;
         }

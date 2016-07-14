@@ -729,7 +729,7 @@ public class RELAY2 extends Protocol {
             this.final_dest=final_dest;
             this.original_sender=original_sender;
         }
-
+        public short getMagicId() {return 80;}
         public Supplier<? extends Header> create() {return Relay2Header::new;}
 
         public int size() {

@@ -537,7 +537,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
             this.digest=digest;
             this.bind_addr=bind_addr;
         }
-
+        public short getMagicId() {return 65;}
         public Supplier<? extends Header> create() {
             return StateHeader::new;
         }

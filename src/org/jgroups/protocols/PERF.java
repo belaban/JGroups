@@ -102,7 +102,7 @@ public class PERF extends Protocol {
         public PerfHeader(long start_time) {
             this.start_time=start_time;
         }
-
+        public short getMagicId() {return 84;}
         public Supplier<? extends Header> create() {
             return PerfHeader::new;
         }

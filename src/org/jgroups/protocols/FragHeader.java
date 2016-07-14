@@ -26,6 +26,8 @@ public class FragHeader extends Header {
         this.num_frags=num_frags;
     }
 
+    public short getMagicId() {return 52;}
+
     public Supplier<? extends Header> create() {
         return FragHeader::new;
     }

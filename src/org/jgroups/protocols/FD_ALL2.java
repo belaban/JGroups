@@ -376,6 +376,7 @@ public class FD_ALL2 extends Protocol {
 
     public static class HeartbeatHeader extends Header {
         public HeartbeatHeader() {}
+        public short getMagicId() {return 63;}
         public Supplier<? extends Header> create() {return HeartbeatHeader::new;}
         public String toString() {return "heartbeat";}
         public int size() {return 0;}

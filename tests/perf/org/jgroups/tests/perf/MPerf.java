@@ -747,7 +747,7 @@ public class MPerf extends ReceiverAdapter {
         public MPerfHeader() {}
         public MPerfHeader(byte type) {this.type=type;}
         public MPerfHeader(byte type, long seqno) {this(type); this.seqno=seqno;}
-
+        public short getMagicId() {return 77;}
         public Supplier<? extends Header> create() {
             return MPerfHeader::new;
         }

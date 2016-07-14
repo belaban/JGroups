@@ -539,7 +539,7 @@ public class MERGE3 extends Protocol {
             this.logical_name=logical_name;
             this.physical_addr=physical_addr;
         }
-
+        public short getMagicId() {return 75;}
         public Supplier<? extends Header> create() {return MergeHeader::new;}
 
         public int size() {

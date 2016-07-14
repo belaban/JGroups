@@ -850,7 +850,7 @@ public class Message implements Streamable, Constructable<Message> {
     }
 
     protected static void writeHeader(Header hdr, DataOutput out) throws Exception {
-        short magic_number=ClassConfigurator.getMagicNumber(hdr.getClass());
+        short magic_number=hdr.getMagicId();
         out.writeShort(magic_number);
         hdr.writeTo(out);
     }

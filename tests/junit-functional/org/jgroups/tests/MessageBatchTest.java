@@ -321,7 +321,7 @@ public class MessageBatchTest {
         List<Message> msgs=createMessages();
         MessageBatch batch=new MessageBatch(msgs);
         long num_msgs=batch.stream()
-          .filter(msg -> msg.getHeader((short)64) != null)
+          .filter(msg -> msg.getHeader(UNICAST3_ID) != null)
           .peek(msg -> System.out.printf("msg = %s, hdrs=%s\n", msg, msg.printHeaders()))
           .count();
         System.out.println("num_msgs = " + num_msgs);
