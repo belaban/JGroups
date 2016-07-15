@@ -276,11 +276,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
             generateReport(out, classname, test_cases, stdout_reader, stderr_reader);
         }
         finally {
-            out.close();
-            if(stdout_reader != null)
-                stdout_reader.close();
-            if(stderr_reader != null)
-                stderr_reader.close();
+            Util.close(out, stdout_reader, stderr_reader);
         }
     }
 
