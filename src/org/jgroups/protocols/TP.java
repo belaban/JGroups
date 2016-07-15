@@ -202,17 +202,23 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="Type of timer to be used. The only valid value is \"new3\" (TimeScheduler3).")
     protected String timer_type="new3";
 
+    @Property(name="timer_thread_pool.enabled",description="Enable or disable the thread pool inside the timer")
+    protected boolean timer_thread_pool_enabled=true;
+
     @Property(name="timer.min_threads",description="Minimum thread pool size for the timer thread pool")
-    protected int timer_min_threads=2;
+    protected int timer_min_threads=1;
 
     @Property(name="timer.max_threads",description="Max thread pool size for the timer thread pool")
-    protected int timer_max_threads=4;
+    protected int timer_max_threads=5;
 
     @Property(name="timer.keep_alive_time", description="Timeout in ms to remove idle threads from the timer pool")
     protected long timer_keep_alive_time=30000;
 
     @Property(name="timer.queue_max_size", description="Max number of elements on a timer queue")
     protected int timer_queue_max_size=100;
+
+    @Property(name="timer.queue_enabled", description="Use queue to for the timer thread pool")
+    protected boolean timer_queue_enabled=false;
 
     @Property(name="timer.rejection_policy",description="Timer rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
     protected String timer_rejection_policy="abort"; // abort will spawn a new thread if the timer thread pool is full
@@ -1036,9 +1042,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
               .transport(this);
 
         if(timer == null) {
-            if(timer_type.equalsIgnoreCase("new3"))
+            if(timer_type.equalsIgnoreCase("new3")) {
+                BlockingQueue<Runnable> queue=timer_queue_enabled? new ArrayBlockingQueue<>(timer_queue_max_size) :
+                  new SynchronousQueue<>();
                 timer=new TimeScheduler3(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
-                                         timer_queue_max_size, timer_rejection_policy);
+                                         queue, timer_rejection_policy, timer_thread_pool_enabled);
+            }
             else
                 throw new Exception("timer_type has to be \"new3\"");
         }

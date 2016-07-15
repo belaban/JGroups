@@ -8,6 +8,8 @@ import org.jgroups.logging.LogFactory;
 
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 
 /**
@@ -17,19 +19,19 @@ import java.util.concurrent.*;
  */
 public class TimeScheduler3 implements TimeScheduler, Runnable {
     /** Thread pool used to execute the tasks */
-    protected final ThreadPoolExecutor                pool;
+    protected final Executor              pool;
 
     /** DelayQueue with tasks being sorted according to execution times (next execution first) */
-    protected final BlockingQueue<Task>               queue=new DelayQueue<>();
+    protected final BlockingQueue<Task>   queue=new DelayQueue<>();
 
     /** Thread which removes tasks ready to be executed from the queue and submits them to the pool for execution */
-    protected volatile Thread                         runner;
+    protected volatile Thread             runner;
 
-    protected static final Log                        log=LogFactory.getLog(TimeScheduler3.class);
+    protected static final Log            log=LogFactory.getLog(TimeScheduler3.class);
 
-    protected ThreadFactory                           timer_thread_factory;
+    protected ThreadFactory               timer_thread_factory;
 
-    protected enum TaskType                           {dynamic, fixed_rate, fixed_delay}
+    protected enum TaskType               {dynamic, fixed_rate, fixed_delay}
 
 
     /**
@@ -45,27 +47,32 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
 
     public TimeScheduler3(ThreadFactory factory, int min_threads, int max_threads, long keep_alive_time, int max_queue_size,
                           String rejection_policy) {
+        this(factory, min_threads, max_threads, keep_alive_time, new ArrayBlockingQueue<>(max_queue_size), rejection_policy, true);
+    }
+
+    public TimeScheduler3(ThreadFactory factory, int min_threads, int max_threads, long keep_alive_time,
+                          BlockingQueue<Runnable> queue, String rejection_policy, boolean thread_pool_enabled) {
         timer_thread_factory=factory;
-        pool=new ThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
-                                    new ArrayBlockingQueue<>(max_queue_size),
-                                    factory, Util.parseRejectionPolicy(rejection_policy));
+        pool=thread_pool_enabled?
+          new ThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
+                                 queue, factory, Util.parseRejectionPolicy(rejection_policy))
+          : new DirectExecutor();
         start();
     }
 
 
-
-    public void    setThreadFactory(ThreadFactory f) {pool.setThreadFactory(f);}
-    public int     getMinThreads()                   {return pool.getCorePoolSize();}
-    public void    setMinThreads(int size)           {pool.setCorePoolSize(size);}
-    public int     getMaxThreads()                   {return pool.getMaximumPoolSize();}
-    public void    setMaxThreads(int size)           {pool.setMaximumPoolSize(size);}
-    public long    getKeepAliveTime()                {return pool.getKeepAliveTime(TimeUnit.MILLISECONDS);}
-    public void    setKeepAliveTime(long time)       {pool.setKeepAliveTime(time, TimeUnit.MILLISECONDS);}
-    public int     getCurrentThreads()               {return pool.getPoolSize();}
-    public int     getQueueSize()                    {return pool.getQueue().size();}
+    public void    setThreadFactory(ThreadFactory f) {condSet((p) -> p.setThreadFactory(f));}
+    public int     getMinThreads()                   {return condGet(ThreadPoolExecutor::getCorePoolSize, 0);}
+    public void    setMinThreads(int size)           {condSet(p -> p.setCorePoolSize(size));}
+    public int     getMaxThreads()                   {return condGet(ThreadPoolExecutor::getMaximumPoolSize, 0);}
+    public void    setMaxThreads(int size)           {condSet(p -> p.setMaximumPoolSize(size));}
+    public long    getKeepAliveTime()                {return condGet(p -> p.getKeepAliveTime(TimeUnit.MILLISECONDS), 0L);}
+    public void    setKeepAliveTime(long time)       {condSet(p -> p.setKeepAliveTime(time, TimeUnit.MILLISECONDS));}
+    public int     getCurrentThreads()               {return condGet(ThreadPoolExecutor::getPoolSize, 0);}
+    public int     getQueueSize()                    {return condGet(p -> p.getQueue().size(), 0);}
     public int     size()                            {return queue.size();}
     public String  toString()                        {return getClass().getSimpleName();}
-    public boolean isShutdown()                      {return pool.isShutdown();}
+    public boolean isShutdown()                      {return condGet(ThreadPoolExecutor::isShutdown, false);}
 
 
     public String dumpTimerTasks() {
@@ -137,13 +144,16 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
             }
         queue.clear();
 
-        List<Runnable> remaining_tasks=pool.shutdownNow();
-        remaining_tasks.stream().filter(task -> task instanceof Future).forEach(task -> ((Future)task).cancel(true));
-        pool.getQueue().clear();
-        try {
-            pool.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
-        }
-        catch(InterruptedException e) {
+        if(pool instanceof ThreadPoolExecutor) {
+            ThreadPoolExecutor p=(ThreadPoolExecutor)pool;
+            List<Runnable> remaining_tasks=p.shutdownNow();
+            remaining_tasks.stream().filter(task -> task instanceof Future).forEach(task -> ((Future)task).cancel(true));
+            p.getQueue().clear();
+            try {
+                p.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
+            }
+            catch(InterruptedException e) {
+            }
         }
 
         // clears the threads list (https://issues.jboss.org/browse/JGRP-1971)
@@ -188,7 +198,16 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         return add(task);
     }
 
+    protected void condSet(Consumer<ThreadPoolExecutor> setter) {
+        if(pool instanceof ThreadPoolExecutor)
+            setter.accept((ThreadPoolExecutor)pool);
+    }
 
+    protected <T> T condGet(Function<ThreadPoolExecutor,T> getter, T default_value) {
+        if(pool instanceof ThreadPoolExecutor)
+            return getter.apply((ThreadPoolExecutor)pool);
+        return default_value;
+    }
 
 
     protected void submitToPool(final Task entry) {
