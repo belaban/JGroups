@@ -456,7 +456,7 @@ public class UPerf extends ReceiverAdapter {
             if(arg == null)
                 return 2;
             if(arg instanceof byte[])
-                return msg_size;
+                return msg_size + 24;
             if(arg instanceof Long)
                 return 10;
             return 50;
