@@ -219,6 +219,11 @@ abstract public class Locking extends Protocol {
                 if(hdr == null)
                     break;
 
+                if(null != view && !view.containsMember(msg.getSrc())) {
+                    log.error("Received locking event from '%s' but member is not present in the current view - ignoring request", msg.getSrc());
+                    return null;
+                }
+
                 Request req=null;
                 try {
                     req=Util.streamableFromBuffer(Request.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
