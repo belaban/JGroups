@@ -60,15 +60,12 @@ public class TOA extends Protocol implements DeliveryProtocol {
     @Override
     public Object down(Event evt) {
         switch (evt.getType()) {
-            case Event.MSG:
-                handleDownMessage(evt);
-                return null;
             case Event.SET_LOCAL_ADDRESS:
-                this.localAddress = (Address) evt.getArg();
+                this.localAddress =evt.getArg();
                 this.deliverThread.setLocalAddress(localAddress.toString());
                 break;
             case Event.VIEW_CHANGE:
-                handleViewChange((View) evt.getArg());
+                handleViewChange(evt.getArg());
                 break;
             default:
                 break;
@@ -76,49 +73,64 @@ public class TOA extends Protocol implements DeliveryProtocol {
         return down_prot.down(evt);
     }
 
+    public Object down(Message message) {
+        Address dest = message.getDest();
+
+        if (dest != null && dest instanceof AnycastAddress && !message.isFlagSet(Message.Flag.NO_TOTAL_ORDER)) {
+            // anycast message
+            sendTotalOrderAnycastMessage(extract((AnycastAddress) dest), message);
+        } else if (dest != null && dest instanceof AnycastAddress) {
+            //anycast address with NO_TOTAL_ORDER flag (should no be possible, but...)
+            send(extract((AnycastAddress) dest), message, true);
+        } else {
+            //normal message
+            down_prot.down(message);
+        }
+        return null;
+    }
+
     @Override
     public Object up(Event evt) {
         switch (evt.getType()) {
-            case Event.MSG:
-                Message message = (Message) evt.getArg();
-
-                ToaHeader header = (ToaHeader) message.getHeader(this.id);
-
-                if (header == null) {
-                    break;
-                }
-
-                switch (header.getType()) {
-                    case ToaHeader.DATA_MESSAGE:
-                        handleDataMessage(message, header);
-                        break;
-                    case ToaHeader.PROPOSE_MESSAGE:
-                        handleSequenceNumberPropose(message.getSrc(), header);
-                        break;
-                    case ToaHeader.FINAL_MESSAGE:
-                        handleFinalSequenceNumber(header);
-                        break;
-                    case ToaHeader.SINGLE_DESTINATION_MESSAGE:
-                        if (log.isTraceEnabled()) {
-                            log.trace("Received message %s with SINGLE_DESTINATION header. delivering...", message);
-                        }
-                        deliverManager.deliverSingleDestinationMessage(message, header.getMessageID());
-                        break;
-                    default:
-                        throw new IllegalStateException("Unknown header type received " + header);
-                }
-                return null;
             case Event.VIEW_CHANGE:
-                handleViewChange((View) evt.getArg());
+                handleViewChange(evt.getArg());
                 break;
             case Event.SET_LOCAL_ADDRESS:
-                this.localAddress = (Address) evt.getArg();
+                this.localAddress =evt.getArg();
                 this.deliverThread.setLocalAddress(localAddress.toString());
                 break;
             default:
                 break;
         }
         return up_prot.up(evt);
+    }
+
+    public Object up(Message message) {
+        ToaHeader header=message.getHeader(this.id);
+
+        if (header == null)
+            return up_prot.up(message);
+
+        switch (header.getType()) {
+            case ToaHeader.DATA_MESSAGE:
+                handleDataMessage(message, header);
+                break;
+            case ToaHeader.PROPOSE_MESSAGE:
+                handleSequenceNumberPropose(message.getSrc(), header);
+                break;
+            case ToaHeader.FINAL_MESSAGE:
+                handleFinalSequenceNumber(header);
+                break;
+            case ToaHeader.SINGLE_DESTINATION_MESSAGE:
+                if (log.isTraceEnabled()) {
+                    log.trace("Received message %s with SINGLE_DESTINATION header. delivering...", message);
+                }
+                deliverManager.deliverSingleDestinationMessage(message, header.getMessageID());
+                break;
+            default:
+                throw new IllegalStateException("Unknown header type received " + header);
+        }
+        return null;
     }
 
     @Override
@@ -129,7 +141,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
             log.trace("Deliver message %s (%d) in total order", message, message.getHeader(id));
         }
 
-        up_prot.up(new Event(Event.MSG, message));
+        up_prot.up(message);
         statsCollector.incrementMessageDeliver();
     }
 
@@ -173,22 +185,6 @@ public class TOA extends Protocol implements DeliveryProtocol {
         // TODO: Future work: How to add fault tolerance? (simple and efficient)
     }
 
-    private void handleDownMessage(Event evt) {
-        Message message = (Message) evt.getArg();
-        Address dest = message.getDest();
-
-        if (dest != null && dest instanceof AnycastAddress && !message.isFlagSet(Message.Flag.NO_TOTAL_ORDER)) {
-            //anycast message
-            sendTotalOrderAnycastMessage(extract((AnycastAddress) dest), message);
-        } else if (dest != null && dest instanceof AnycastAddress) {
-            //anycast address with NO_TOTAL_ORDER flag (should no be possible, but...)
-            send(extract((AnycastAddress) dest), message, true);
-        } else {
-            //normal message
-            down_prot.down(evt);
-        }
-    }
-
 
     private void sendTotalOrderAnycastMessage(List<Address> destinations, Message message) {
         boolean trace = log.isTraceEnabled();
@@ -210,7 +206,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
             if (deliverToMySelf) {
                 deliverManager.deliverSingleDestinationMessage(message, messageID);
             } else {
-                down_prot.down(new Event(Event.MSG, message));
+                down_prot.down(message);
             }
             return;
         }
@@ -254,7 +250,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
             }
             Message cpy = msg.copy();
             cpy.setDest(address);
-            down_prot.down(new Event(Event.MSG, cpy));
+            down_prot.down(cpy);
         }
     }
 
@@ -281,7 +277,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
                     .putHeader(this.id, newHeader).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE);
 
             //multicastSenderThread.addUnicastMessage(proposeMessage);
-            down_prot.down(new Event(Event.MSG, proposeMessage));
+            down_prot.down(proposeMessage);
             duration = statsCollector.now() - startTime;
         } catch (Exception e) {
             logException("Exception caught while processing the data message " + header.getMessageID(), e);
@@ -394,72 +390,69 @@ public class TOA extends Protocol implements DeliveryProtocol {
     }
 
     @ManagedAttribute(description = "The average duration (in milliseconds) in processing and sending the anycast " +
-            "message to all the recipients", writable = false)
+            "message to all the recipients")
     public double getAvgToaSendDuration() {
         return statsCollector.getAvgAnycastSentDuration();
     }
 
-    @ManagedAttribute(description = "The average duration (in milliseconds) in processing a data message received",
-            writable = false)
+    @ManagedAttribute(description = "The average duration (in milliseconds) in processing a data message received")
     public double getAvgDataMessageReceivedDuration() {
         return statsCollector.getAvgDataMessageReceivedDuration();
     }
 
     @ManagedAttribute(description = "The average duration (in milliseconds) in processing a propose message received" +
-            "(not the last one", writable = false)
+            "(not the last one")
     public double getAvgProposeMessageReceivedDuration() {
         return statsCollector.getAvgProposeMesageReceivedDuration();
     }
 
     @ManagedAttribute(description = "The average duration (in milliseconds) in processing the last propose message " +
-            "received. This last propose message will originate the sending of the final message", writable = false)
+            "received. This last propose message will originate the sending of the final message")
     public double getAvgLastProposeMessageReceivedDuration() {
         return statsCollector.getAvgLastProposeMessageReceivedDuration();
     }
 
-    @ManagedAttribute(description = "The average duration (in milliseconds) in processing a final message received",
-            writable = false)
+    @ManagedAttribute(description = "The average duration (in milliseconds) in processing a final message received")
     public double getAvgFinalMessageReceivedDuration() {
         return statsCollector.getAvgFinalMessageReceivedDuration();
     }
 
-    @ManagedAttribute(description = "The number of anycast messages sent", writable = false)
+    @ManagedAttribute(description = "The number of anycast messages sent")
     public int getNumberOfAnycastMessagesSent() {
         return statsCollector.getNumberOfAnycastMessagesSent();
     }
 
-    @ManagedAttribute(description = "The number of final anycast sent", writable = false)
+    @ManagedAttribute(description = "The number of final anycast sent")
     public int getNumberOfFinalAnycastSent() {
         return statsCollector.getNumberOfFinalAnycastsSent();
     }
 
-    @ManagedAttribute(description = "The number of anycast messages delivered", writable = false)
+    @ManagedAttribute(description = "The number of anycast messages delivered")
     public int getNumberOfAnycastMessagesDelivered() {
         return statsCollector.getAnycastDelivered();
     }
 
-    @ManagedAttribute(description = "The number of propose messages sent", writable = false)
+    @ManagedAttribute(description = "The number of propose messages sent")
     public int getNumberOfProposeMessageSent() {
         return statsCollector.getNumberOfProposeMessagesSent();
     }
 
-    @ManagedAttribute(description = "The number of final messages delivered", writable = false)
+    @ManagedAttribute(description = "The number of final messages delivered")
     public int getNumberOfFinalMessagesDelivered() {
         return statsCollector.getNumberOfFinalMessagesDelivered();
     }
 
-    @ManagedAttribute(description = "The number of data messages delivered", writable = false)
+    @ManagedAttribute(description = "The number of data messages delivered")
     public int getNumberOfDataMessagesDelivered() {
         return statsCollector.getNumberOfProposeMessagesSent();
     }
 
-    @ManagedAttribute(description = "The number of propose messages received", writable = false)
+    @ManagedAttribute(description = "The number of propose messages received")
     public int getNumberOfProposeMessageReceived() {
         return statsCollector.getNumberOfProposeMessagesReceived();
     }
 
-    @ManagedAttribute(description = "The average number of unicasts messages created per anycast message",
-            writable = false)
+    @ManagedAttribute(description = "The average number of unicasts messages created per anycast message")
     public double getAvgNumberOfUnicastSentPerAnycast() {
         return statsCollector.getAvgNumberOfUnicastSentPerAnycast();
     }

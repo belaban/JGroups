@@ -43,6 +43,7 @@ public class NAKACK_SET_DIGEST_Test {
             public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
             public String getInfo() {return null;}
             public Object down(Event evt) {return null;}
+            public Object down(Message msg) {return null;}
             protected PhysicalAddress getPhysicalAddress() {return null;}
             public TimeScheduler getTimer() {return new TimeScheduler3();}
         };

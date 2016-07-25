@@ -27,14 +27,6 @@ public class ForkProtocol extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                FORK.ForkHeader hdr=(FORK.ForkHeader)msg.getHeader(FORK.ID);
-                if(hdr == null)
-                    msg.putHeader(FORK.ID, hdr=new FORK.ForkHeader(fork_stack_id, null));
-                else
-                    hdr.setForkStackId(fork_stack_id);
-                break;
             case Event.SET_LOCAL_ADDRESS:
             case Event.VIEW_CHANGE:
             case Event.CONNECT:
@@ -45,5 +37,14 @@ public class ForkProtocol extends Protocol {
                 return null; // don't propagate further down, this is only important for the main stack
         }
         return down_prot.down(evt);
+    }
+
+    public Object down(Message msg) {
+        FORK.ForkHeader hdr=msg.getHeader(FORK.ID);
+        if(hdr == null)
+            msg.putHeader(FORK.ID, hdr=new FORK.ForkHeader(fork_stack_id, null));
+        else
+            hdr.setForkStackId(fork_stack_id);
+        return down_prot.down(msg);
     }
 }

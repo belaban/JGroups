@@ -118,7 +118,7 @@ public class GMS_MergeTest {
             MergeId merge_id=gms._getMergeId();
             assert merge_id == null;
             System.out.println("starting merge");
-            gms.up(new Event(Event.MSG, merge_request));
+            gms.up(merge_request);
 
             long timeout=gms.getMergeTimeout() * 10;
             System.out.println("sleeping for " + timeout + " ms, then fetching merge_id: should be null (cancelled by the MergeCanceller)");

@@ -1,6 +1,5 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
@@ -21,20 +20,16 @@ public class SNIFF extends Protocol {
     protected boolean down;
 
 
-    public Object down(Event evt) {
-        if(down && evt.getType() == Event.MSG) {
-            Message msg=(Message)evt.getArg();
+    public Object down(Message msg) {
+        if(down)
             dump("down msg", msg);
-        }
-        return down_prot.down(evt);
+        return down_prot.down(msg);
     }
 
-    public Object up(Event evt) {
-        if(up && evt.getType() == Event.MSG) {
-            Message msg=(Message)evt.getArg();
+    public Object up(Message msg) {
+        if(up)
             dump("up msg", msg);
-        }
-        return up_prot.up(evt);
+        return up_prot.up(msg);
     }
 
     public void up(MessageBatch batch) {

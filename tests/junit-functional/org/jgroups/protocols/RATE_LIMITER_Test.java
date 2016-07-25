@@ -1,6 +1,5 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
@@ -106,7 +105,7 @@ public class RATE_LIMITER_Test {
             for(;;) {
                 Message msg=new Message(false);
                 msg.setBuffer(buffer);
-                limiter.down(new Event(Event.MSG,msg));
+                limiter.down(msg);
                 if(System.nanoTime() > target_time)
                     break;
             }
@@ -132,13 +131,10 @@ public class RATE_LIMITER_Test {
             return measurements;
         }
 
-        public Object down(Event evt) {
-            if(evt.getType() == Event.MSG) {
-                Message msg=(Message)evt.getArg();
-                int length=msg.getLength();
-                num_msgs_in_period.incrementAndGet();
-                bytes_in_period.addAndGet(length);
-            }
+        public Object down(Message msg) {
+            int length=msg.getLength();
+            num_msgs_in_period.incrementAndGet();
+            bytes_in_period.addAndGet(length);
             return null;
         }
 

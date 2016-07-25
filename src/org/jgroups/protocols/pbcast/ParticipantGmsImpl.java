@@ -158,7 +158,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
     void sendLeaveMessage(Address coord, Address mbr) {
         Message msg=new Message(coord).setFlag(Message.Flag.OOB)
           .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.LEAVE_REQ, mbr));
-        gms.getDownProtocol().down(new Event(Event.MSG, msg));
+        gms.getDownProtocol().down(msg);
     }
 
 

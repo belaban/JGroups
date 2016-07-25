@@ -52,7 +52,7 @@ public class DemoToken extends AuthToken implements AUTH.UpHandler {
         pending_requests.put(sender, entry); // here we'd have to check if a latch already exists...
         if(log.isTraceEnabled())
             log.trace(auth.getAddress() + ": sending challenge to " + sender);
-        auth.getDownProtocol().down(new Event(Event.MSG, challenge));
+        auth.getDownProtocol().down(challenge);
         try {
             entry.latch.await(block_time, TimeUnit.MILLISECONDS);
             pending_requests.remove(sender);
@@ -71,38 +71,33 @@ public class DemoToken extends AuthToken implements AUTH.UpHandler {
     public int  size() {return 0;}
 
 
-    public boolean handleUpEvent(Event evt) {
-        switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                DemoHeader hdr=(DemoHeader)msg.getHeader(ID);
-                if(hdr == null)
+    public boolean handleUpMessage(Message msg) {
+        DemoHeader hdr=msg.getHeader(ID);
+        if(hdr == null)
+            return true;
+        switch(hdr.type) {
+            case DemoHeader.CHALLENGE:
+                if(log.isTraceEnabled())
+                    log.trace(auth.getAddress() + ": received CHALLENGE from " + msg.getSrc());
+                long hash=hash(encrypt(hdr.payload));
+                Message response=new Message(msg.getSrc()).setFlag(Message.Flag.OOB);
+                response.putHeader(ID, new DemoHeader(hash));
+                if(log.isTraceEnabled())
+                    log.trace(auth.getAddress() + ": sending RESPONSE to " + msg.getSrc());
+                auth.getDownProtocol().down(response);
+                break;
+            case DemoHeader.RESPONSE:
+                if(log.isTraceEnabled())
+                    log.trace(auth.getAddress() + ": received RESPONSE from " + msg.getSrc());
+                Entry entry=pending_requests.get(msg.getSrc());
+                if(entry == null) {
+                    // error message
                     break;
-                switch(hdr.type) {
-                    case DemoHeader.CHALLENGE:
-                        if(log.isTraceEnabled())
-                            log.trace(auth.getAddress() + ": received CHALLENGE from " + msg.getSrc());
-                        long hash=hash(encrypt(hdr.payload));
-                        Message response=new Message(msg.getSrc()).setFlag(Message.Flag.OOB);
-                        response.putHeader(ID, new DemoHeader(hash));
-                        if(log.isTraceEnabled())
-                            log.trace(auth.getAddress() + ": sending RESPONSE to " + msg.getSrc());
-                        auth.getDownProtocol().down(new Event(Event.MSG, response));
-                        break;
-                    case DemoHeader.RESPONSE:
-                        if(log.isTraceEnabled())
-                            log.trace(auth.getAddress() + ": received RESPONSE from " + msg.getSrc());
-                        Entry entry=pending_requests.get(msg.getSrc());
-                        if(entry == null) {
-                            // error message
-                            break;
-                        }
-                        entry.setResponse(hdr.hash);
-                        break;
                 }
-                return false; // don't pass up
+                entry.setResponse(hdr.hash);
+                break;
         }
-        return true;
+        return false; // don't pass up
     }
 
 

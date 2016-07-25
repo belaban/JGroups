@@ -259,34 +259,29 @@ public class MERGE3 extends Protocol {
     }
 
 
-    public Object up(Event evt) {
-        switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                MergeHeader hdr=msg.getHeader(getId());
-                if(hdr == null)
-                    break;
-                Address sender=msg.getSrc();
-                switch(hdr.type) {
-                    case INFO:
-                        addInfo(sender, hdr.view_id, hdr.logical_name, hdr.physical_addr);
-                        break;
-                    case VIEW_REQ:
-                        Message view_rsp=new Message(sender).setFlag(Message.Flag.INTERNAL)
-                          .putHeader(getId(), MergeHeader.createViewResponse()).setBuffer(marshal(view));
-                        down_prot.down(new Event(Event.MSG, view_rsp));
-                        break;
-                    case VIEW_RSP:
-                        View tmp_view=readView(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                        if(tmp_view != null)
-                            view_rsps.add(sender, tmp_view);
-                        break;
-                    default:
-                        log.error("Type %s not known", hdr.type);
-                }
-                return null;
+    public Object up(Message msg) {
+        MergeHeader hdr=msg.getHeader(getId());
+        if(hdr == null)
+            return up_prot.up(msg);
+        Address sender=msg.getSrc();
+        switch(hdr.type) {
+            case INFO:
+                addInfo(sender, hdr.view_id, hdr.logical_name, hdr.physical_addr);
+                break;
+            case VIEW_REQ:
+                Message view_rsp=new Message(sender).setFlag(Message.Flag.INTERNAL)
+                  .putHeader(getId(), MergeHeader.createViewResponse()).setBuffer(marshal(view));
+                down_prot.down(view_rsp);
+                break;
+            case VIEW_RSP:
+                View tmp_view=readView(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                if(tmp_view != null)
+                    view_rsps.add(sender, tmp_view);
+                break;
+            default:
+                log.error("Type %s not known", hdr.type);
         }
-        return up_prot.up(evt);
+        return null;
     }
 
 
@@ -378,7 +373,7 @@ public class MERGE3 extends Protocol {
             if(transport_supports_multicasting) { // mcast the discovery request to all but self
                 Message msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr)
                   .setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
-                down_prot.down(new Event(Event.MSG, msg));
+                down_prot.down(msg);
                 return;
             }
 
@@ -396,7 +391,7 @@ public class MERGE3 extends Protocol {
                 Address dest=rsp.getPhysicalAddr();
                 if(dest == null) continue;
                 Message info=new Message(dest).setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr);
-                down_prot.down(new Event(Event.MSG, info));
+                down_prot.down(info);
             }
         }
 
@@ -480,7 +475,7 @@ public class MERGE3 extends Protocol {
                 }
                 Message view_req=new Message(target).setFlag(Message.Flag.INTERNAL)
                   .putHeader(getId(), MergeHeader.createViewRequest());
-                down_prot.down(new Event(Event.MSG, view_req));
+                down_prot.down(view_req);
             }
             view_rsps.waitForAllResponses(check_interval / 10);
             Map<Address,View> results=view_rsps.getResults();

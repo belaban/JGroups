@@ -1,7 +1,6 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
-import org.jgroups.Event;
 import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
@@ -110,15 +109,16 @@ public class UFC extends FlowControl {
         sent.values().forEach(Credit::reset);
     }
 
-    protected Object handleDownMessage(final Event evt, final Message msg, Address dest, int length) {
+    @Override
+    protected Object handleDownMessage(final Message msg, Address dest, int length) {
         if(dest == null) { // 2nd line of defense, not really needed
             log.error("%s doesn't handle multicast messages; passing message down", getClass().getSimpleName());
-            return down_prot.down(evt);
+            return down_prot.down(msg);
         }
 
         Credit cred=sent.get(dest);
         if(cred == null)
-            return down_prot.down(evt);
+            return down_prot.down(msg);
 
         long block_time=max_block_times != null? getMaxBlockTime(length) : max_block_time;
         
@@ -132,7 +132,7 @@ public class UFC extends FlowControl {
         }
 
         // send message - either after regular processing, or after blocking (when enough credits available again)
-        return down_prot.down(evt);
+        return down_prot.down(msg);
     }
 
 

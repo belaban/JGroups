@@ -72,24 +72,21 @@ public class MAKE_BATCH extends Protocol {
                 cluster_name=new AsciiString((String)evt.getArg());
                 break;
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);
     }
 
-    public Object up(Event evt) {
-        if(evt.getType() == Event.MSG) {
-            Message msg=(Message)evt.getArg();
-            if(msg.isFlagSet(Message.Flag.OOB) && msg.isFlagSet(Message.Flag.INTERNAL))
-                return up_prot.up(evt);
+    public Object up(Message msg) {
+        if(msg.isFlagSet(Message.Flag.OOB) && msg.isFlagSet(Message.Flag.INTERNAL))
+            return up_prot.up(msg);
 
-            if((msg.dest() == null && multicasts) || (msg.dest() != null && unicasts)) {
-                queue(msg);
-                return null;
-            }
+        if((msg.dest() == null && multicasts) || (msg.dest() != null && unicasts)) {
+            queue(msg);
+            return null;
         }
-        return up_prot.up(evt);
+        return up_prot.up(msg);
     }
 
     protected void queue(Message msg) {

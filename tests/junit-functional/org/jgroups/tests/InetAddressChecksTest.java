@@ -1,20 +1,18 @@
 package org.jgroups.tests;
 
-import org.jgroups.Event;
-import org.jgroups.Global ;
+import org.jgroups.Global;
+import org.jgroups.annotations.Property;
 import org.jgroups.conf.ProtocolConfiguration;
+import org.jgroups.stack.Configurator;
+import org.jgroups.stack.Configurator.InetAddressInfo;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.stack.Configurator ;
-import org.jgroups.stack.Configurator.InetAddressInfo;
-import org.jgroups.annotations.Property;
-import org.jgroups.util.Util ;
-
+import org.jgroups.util.Util;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
 import java.util.*;
-import java.net.InetAddress ;
 
 /**
  * Tests checks made on InetAddress and related addresses in Configurator.
@@ -121,33 +119,27 @@ public class InetAddressChecksTest {
 	public static class IPCHECK extends Protocol {
 
 		@Property(name="inetAddress1")
-		InetAddress inetAddress1 ;
+		InetAddress inetAddress1;
 
-        public InetAddress getInetAddress1() {
-			return inetAddress1 ;
+		public InetAddress getInetAddress1() {
+			return inetAddress1;
 		}
+
 		@Property(name="inetAddress2")
-		InetAddress inetAddress2 ;	
+		InetAddress inetAddress2;
+
 		public InetAddress getInetAddress2() {
-			return inetAddress2 ;
+			return inetAddress2;
 		}
+
 		@Property(name="inetAddress3")
-		InetAddress inetAddress3 ;	
+		InetAddress inetAddress3;
+
 		public InetAddress getInetAddress3() {
-			return inetAddress3 ;
+			return inetAddress3;
 		}
-		
-		@Property(description="wilma") 
-		int i = 0 ;
-		
-		// do nothing
-		public Object down(Event evt) {
-			return down_prot.down(evt);
-		}
-		// do nothing
-		public Object up(Event evt) {
-			return up_prot.up(evt);
-		}
+
+		@Property(description="wilma")
+		int i=0;
 	}
-	
 }        

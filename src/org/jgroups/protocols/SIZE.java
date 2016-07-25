@@ -30,23 +30,18 @@ public class SIZE extends Protocol {
     protected Address             local_addr;
 
 
-    public Object up(Event evt) {
-        switch(evt.getType()) {
-            case Event.MSG:
-                if(log.isTraceEnabled()) {
-                    Message msg=(Message)evt.getArg();
-                    long size=raw_buffer? msg.getLength() : msg.size();
-                    if(size >= min_size) {
-                        StringBuilder sb=new StringBuilder(local_addr + ".up(): size of message buffer=");
-                        sb.append(Util.printBytes(size)).append(", " + numHeaders(msg) + " headers");
-                        if(print_msg)
-                            sb.append(", headers=" + msg.printHeaders());
-                        log.trace(sb);
-                    }
-                }
-                break;
+    public Object up(Message msg) {
+        if(log.isTraceEnabled()) {
+            long size=raw_buffer? msg.getLength() : msg.size();
+            if(size >= min_size) {
+                StringBuilder sb=new StringBuilder(local_addr + ".up(): size of message buffer=");
+                sb.append(Util.printBytes(size)).append(", " + numHeaders(msg) + " headers");
+                if(print_msg)
+                    sb.append(", headers=" + msg.printHeaders());
+                log.trace(sb);
+            }
         }
-        return up_prot.up(evt);            // pass up to the layer above us
+        return up_prot.up(msg);
     }
 
 
@@ -64,28 +59,26 @@ public class SIZE extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                if(log.isTraceEnabled()) {
-                    Message msg=(Message)evt.getArg();
-                    long size=raw_buffer? msg.getLength() : msg.size();
-                    if(size >= min_size) {
-                        StringBuilder sb=new StringBuilder(local_addr + ".down(): size of message buffer=");
-                        sb.append(Util.printBytes(size)).append(", " + numHeaders(msg) + " headers");
-                        if(print_msg)
-                            sb.append(", headers=" + msg.printHeaders());
-                        log.trace(sb);
-                    }
-                }
-                break;
-
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
         }
-
         return down_prot.down(evt);          // Pass on to the layer below us
     }
 
+    public Object down(Message msg) {
+        if(log.isTraceEnabled()) {
+            long size=raw_buffer? msg.getLength() : msg.size();
+            if(size >= min_size) {
+                StringBuilder sb=new StringBuilder(local_addr + ".down(): size of message buffer=");
+                sb.append(Util.printBytes(size)).append(", " + numHeaders(msg) + " headers");
+                if(print_msg)
+                    sb.append(", headers=" + msg.printHeaders());
+                log.trace(sb);
+            }
+        }
+        return down_prot.down(msg);
+    }
 
     protected static int numHeaders(Message msg) {
         return msg == null? 0 : msg.getNumHeaders();

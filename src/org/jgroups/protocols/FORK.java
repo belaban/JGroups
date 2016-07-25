@@ -104,16 +104,6 @@ public class FORK extends Protocol {
 
     public Object up(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                ForkHeader hdr=msg.getHeader(id);
-                if(hdr == null)
-                    break;
-                if(hdr.fork_stack_id == null)
-                    throw new IllegalArgumentException("header has a null fork_stack_id");
-                Protocol bottom_prot=get(hdr.fork_stack_id);
-                return bottom_prot != null? bottom_prot.up(evt) : this.unknownForkHandler.handleUnknownForkStack(msg, hdr.fork_stack_id);
-
             case Event.VIEW_CHANGE:
                 for(Protocol bottom: fork_stacks.values())
                     bottom.up(evt);
@@ -132,6 +122,16 @@ public class FORK extends Protocol {
                 return null;
         }
         return up_prot.up(evt);
+    }
+
+    public Object up(Message msg) {
+        ForkHeader hdr=msg.getHeader(id);
+        if(hdr == null)
+            return up_prot.up(msg);
+        if(hdr.fork_stack_id == null)
+            throw new IllegalArgumentException("header has a null fork_stack_id");
+        Protocol bottom_prot=get(hdr.fork_stack_id);
+        return bottom_prot != null? bottom_prot.up(msg) : this.unknownForkHandler.handleUnknownForkStack(msg, hdr.fork_stack_id);
     }
 
     public void up(MessageBatch batch) {

@@ -135,19 +135,19 @@ public class SHARED_LOOPBACK extends TP {
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
             case Event.BECOME_SERVER: // called after client has joined and is fully working group member
                 is_server=true;
                 break;
             case Event.VIEW_CHANGE:
             case Event.TMP_VIEW:
-                curr_view=(View)evt.getArg();
+                curr_view=evt.getArg();
                 Address[] mbrs=((View)evt.getArg()).getMembersRaw();
                 is_coord=local_addr != null && mbrs != null && mbrs.length > 0 && local_addr.equals(mbrs[0]);
                 break;
             case Event.GET_PING_DATA:
-                return getDiscoveryResponsesFor((String)evt.getArg()); // don't pass further down
+                return getDiscoveryResponsesFor(evt.getArg()); // don't pass further down
         }
 
         return retval;

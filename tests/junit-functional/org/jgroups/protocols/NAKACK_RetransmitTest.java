@@ -170,16 +170,13 @@ public class NAKACK_RetransmitTest {
     protected static class DiscardEveryOtherMulticastMessage extends Protocol {
         protected boolean discard=false;
 
-        public Object down(Event evt) {
-            if(evt.getType() == Event.MSG) {
-                Message msg=(Message)evt.getArg();
-                if(msg.dest() == null) {
-                    discard=!discard;
-                    if(discard)
-                        return null;
-                }
+        public Object down(Message msg) {
+            if(msg.dest() == null) {
+                discard=!discard;
+                if(discard)
+                    return null;
             }
-            return down_prot.down(evt);
+            return down_prot.down(msg);
         }
     }
 

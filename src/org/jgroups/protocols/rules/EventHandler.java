@@ -1,6 +1,7 @@
 package org.jgroups.protocols.rules;
 
 import org.jgroups.Event;
+import org.jgroups.Message;
 
 /**
  * Interface which defines 2 callbacks: up() and down(). An EventHandler can be installed in SUPERVISOR by a rule which
@@ -15,6 +16,7 @@ public interface EventHandler {
      * @return Ignored
      */
     Object up(Event evt) throws Throwable;
+    Object up(Message msg) throws Throwable;
 
     /**
      * Called when a down event is received
@@ -22,4 +24,6 @@ public interface EventHandler {
      * @return Ignored
      */
     Object down(Event evt) throws Throwable;
+
+    Object down(Message msg) throws Throwable;
 }

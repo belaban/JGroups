@@ -204,7 +204,7 @@ public class UNICAST_ConnectionTests {
                 public void run() {
                     try {
                         barrier.await();
-                        ucast.up(new Event(Event.MSG,msgs.get(index)));
+                        ucast.up(msgs.get(index));
                     }
                     catch(Exception e) {
                         e.printStackTrace();
@@ -351,12 +351,12 @@ public class UNICAST_ConnectionTests {
             drop_next=true;
         }
 
-        public Object down(Event evt) {
-            if(drop_next && evt.getType() == Event.MSG) {
+        public Object down(Message msg) {
+            if(drop_next) {
                 drop_next=false;
                 return null;
             }
-            return super.down(evt);
+            return super.down(msg);
         }
     }
 }

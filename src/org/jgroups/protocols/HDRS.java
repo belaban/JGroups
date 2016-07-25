@@ -1,7 +1,6 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
@@ -21,12 +20,16 @@ public class HDRS extends Protocol {
     protected volatile boolean print_up=true;
 
 
-    public Object up(Event evt) {
-        if(print_up && evt.getType() == Event.MSG) {
-            Message msg=(Message)evt.getArg();
+    public Object down(Message msg) {
+        if(print_down)
+            System.out.printf("-- to %s (%d bytes): %s\n", msg.dest(), msg.getLength(), msg.printHeaders());
+        return down_prot.down(msg);  // Pass on to the layer below us
+    }
+
+    public Object up(Message msg) {
+        if(print_up)
             System.out.printf("-- [s] from %s (%d bytes): %s\n", msg.src(), msg.getLength(), msg.printHeaders());
-        }
-        return up_prot.up(evt); // Pass up to the layer above us
+        return up_prot.up(msg); // Pass up to the layer above us
     }
 
     public void up(MessageBatch batch) {
@@ -38,14 +41,7 @@ public class HDRS extends Protocol {
             up_prot.up(batch);
     }
 
-    public Object down(Event evt) {
-        if(print_down && evt.getType() == Event.MSG) {
-            Message msg=(Message)evt.getArg();
-            System.out.printf("-- to %s (%d bytes): %s\n", msg.dest(), msg.getLength(), msg.printHeaders());
-        }
 
-        return down_prot.down(evt);  // Pass on to the layer below us
-    }
 
 
 }

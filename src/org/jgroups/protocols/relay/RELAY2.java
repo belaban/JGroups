@@ -329,98 +329,99 @@ public class RELAY2 extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                Address dest=msg.getDest();
-                if(dest == null || !(dest instanceof SiteAddress))
-                    break;
-
-                SiteAddress target=(SiteAddress)dest;
-                Address src=msg.getSrc();
-                SiteAddress sender=src instanceof SiteMaster? new SiteMaster(((SiteMaster)src).getSite())
-                  : new SiteUUID((UUID)local_addr, UUID.get(local_addr), site);
-                if(local_addr instanceof ExtendedUUID)
-                    ((ExtendedUUID)sender).addContents((ExtendedUUID)local_addr);
-
-                // target is in the same site; we can deliver the message in our local cluster
-                if(target.getSite().equals(site)) {
-                    if(local_addr.equals(target) || (target instanceof SiteMaster && is_site_master)) {
-                        // we cannot simply pass msg down, as the transport doesn't know how to send a message to a (e.g.) SiteMaster
-                        long start=stats? System.nanoTime() : 0;
-                        forwardTo(local_addr, target, sender, msg, false);
-                        if(stats) {
-                            local_delivery_time.addAndGet(System.nanoTime() - start);
-                            local_deliveries.incrementAndGet();
-                        }
-                    }
-                    else
-                        deliverLocally(target, sender, msg);
-                    return null;
-                }
-
-                // forward to the coordinator unless we're the coord (then route the message directly)
-                if(!is_site_master) {
-                    long start=stats? System.nanoTime() : 0;
-                    Address site_master=pickSiteMaster();
-                    if(site_master == null)
-                        throw new IllegalStateException("site master is null");
-                    forwardTo(site_master, target, sender, msg, max_site_masters == 1);
-                    if(stats) {
-                        forward_sm_time.addAndGet(System.nanoTime() - start);
-                        forward_to_site_master.incrementAndGet();
-                    }
-                }
-                else
-                    route(target, sender, msg);
-                return null;
-
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
             case Event.VIEW_CHANGE:
-                handleView((View)evt.getArg());
+                handleView(evt.getArg());
                 break;
         }
         return down_prot.down(evt);
     }
 
 
+    public Object down(Message msg) {
+        Address dest=msg.getDest();
+        if(dest == null || !(dest instanceof SiteAddress))
+            return down_prot.down(msg);
+
+        SiteAddress target=(SiteAddress)dest;
+        Address src=msg.getSrc();
+        SiteAddress sender=src instanceof SiteMaster? new SiteMaster(((SiteMaster)src).getSite())
+          : new SiteUUID((UUID)local_addr, UUID.get(local_addr), site);
+        if(local_addr instanceof ExtendedUUID)
+            ((ExtendedUUID)sender).addContents((ExtendedUUID)local_addr);
+
+        // target is in the same site; we can deliver the message in our local cluster
+        if(target.getSite().equals(site)) {
+            if(local_addr.equals(target) || (target instanceof SiteMaster && is_site_master)) {
+                // we cannot simply pass msg down, as the transport doesn't know how to send a message to a (e.g.) SiteMaster
+                long start=stats? System.nanoTime() : 0;
+                forwardTo(local_addr, target, sender, msg, false);
+                if(stats) {
+                    local_delivery_time.addAndGet(System.nanoTime() - start);
+                    local_deliveries.incrementAndGet();
+                }
+            }
+            else
+                deliverLocally(target, sender, msg);
+            return null;
+        }
+
+        // forward to the coordinator unless we're the coord (then route the message directly)
+        if(!is_site_master) {
+            long start=stats? System.nanoTime() : 0;
+            Address site_master=pickSiteMaster();
+            if(site_master == null)
+                throw new IllegalStateException("site master is null");
+            forwardTo(site_master, target, sender, msg, max_site_masters == 1);
+            if(stats) {
+                forward_sm_time.addAndGet(System.nanoTime() - start);
+                forward_to_site_master.incrementAndGet();
+            }
+        }
+        else
+            route(target, sender, msg);
+        return null;
+    }
+
+
     public Object up(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                Relay2Header hdr=(Relay2Header)msg.getHeader(id);
-                Address dest=msg.getDest();
-
-                if(hdr == null) {
-                    // forward a multicast message to all bridges except myself, then pass up
-                    if(dest == null && is_site_master && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
-                        Address src=msg.getSrc();
-                        Address sender=new SiteUUID((UUID)msg.getSrc(), UUID.get(msg.getSrc()), site);
-                        if(src instanceof ExtendedUUID)
-                            ((SiteUUID)sender).addContents((ExtendedUUID)src);
-                        sendToBridges(sender, msg, site);
-                    }
-                    break; // pass up
-                }
-                else { // header is not null
-                    if(dest != null)
-                        handleMessage(hdr, msg);
-                    else
-                        deliver(null, hdr.original_sender, msg);
-                }
-                return null;
-
             case Event.VIEW_CHANGE:
-                handleView((View)evt.getArg());
+                handleView(evt.getArg());
                 break;
         }
         return up_prot.up(evt);
     }
 
+    public Object up(Message msg) {
+        Relay2Header hdr=msg.getHeader(id);
+        Address dest=msg.getDest();
+
+        if(hdr == null) {
+            // forward a multicast message to all bridges except myself, then pass up
+            if(dest == null && is_site_master && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
+                Address src=msg.getSrc();
+                Address sender=new SiteUUID((UUID)msg.getSrc(), UUID.get(msg.getSrc()), site);
+                if(src instanceof ExtendedUUID)
+                    ((SiteUUID)sender).addContents((ExtendedUUID)src);
+                sendToBridges(sender, msg, site);
+            }
+            return up_prot.up(msg); // pass up
+        }
+        else { // header is not null
+            if(dest != null)
+                handleMessage(hdr, msg);
+            else
+                deliver(null, hdr.original_sender, msg);
+        }
+        return null;
+    }
+
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
-            Relay2Header hdr=(Relay2Header)msg.getHeader(id);
+            Relay2Header hdr=msg.getHeader(id);
             Address dest=msg.getDest();
 
             if(hdr == null) {
@@ -470,7 +471,7 @@ public class RELAY2 extends Protocol {
         }
         else {
             Message copy=copy(msg).dest(null).src(null).putHeader(id, hdr);
-            down_prot.down(new Event(Event.MSG, copy)); // multicast locally
+            down_prot.down(copy); // multicast locally
 
             // Don't forward: https://issues.jboss.org/browse/JGRP-1519
             // sendToBridges(msg.getSrc(), buf, from_site, site_id);  // forward to all bridges except self and from
@@ -561,7 +562,7 @@ public class RELAY2 extends Protocol {
         Message msg=new Message(dest).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .src(new SiteUUID((UUID)local_addr, UUID.get(local_addr), site))
           .putHeader(id,new Relay2Header(Relay2Header.SITE_UNREACHABLE,new SiteMaster(target_site),null));
-        down_prot.down(new Event(Event.MSG, msg));
+        down_prot.down(msg);
     }
 
     protected void forwardTo(Address next_dest, SiteAddress final_dest, Address original_sender, final Message msg,
@@ -575,7 +576,7 @@ public class RELAY2 extends Protocol {
         if(forward_to_current_coord && forwarding_protocol_present)
             down_prot.down(new Event(Event.FORWARD_TO_COORD, copy));
         else
-            down_prot.down(new Event(Event.MSG, copy));
+            down_prot.down(copy);
     }
 
 
@@ -614,7 +615,7 @@ public class RELAY2 extends Protocol {
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": delivering message from " + sender);
             long start=stats? System.nanoTime() : 0;
-            up_prot.up(new Event(Event.MSG, copy));
+            up_prot.up(copy);
             if(stats) {
                 local_delivery_time.addAndGet(System.nanoTime() - start);
                 local_deliveries.incrementAndGet();

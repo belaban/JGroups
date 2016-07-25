@@ -41,11 +41,11 @@ public class AUTH extends Protocol {
     /** Interface to provide callbacks for handling up events */
     public interface UpHandler {
         /**
-         * Called when an up event has been received
-         * @param evt the event
-         * @return true if the event should be passed up, else false
+         * Called when a message has been received
+         * @param msg the message
+         * @return true if the message should be passed up, else false
          */
-        boolean handleUpEvent(Event evt);
+        boolean handleUpMessage(Message msg);
     }
 
 
@@ -128,26 +128,20 @@ public class AUTH extends Protocol {
      * Finally the event is either a) discarded, or b) an event is sent down the stack using {@code down_prot.down()}
      * or c) the event (or another event) is sent up the stack using {@code up_prot.up()}.
      */
-    public Object up(Event evt) {
-        switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-
-                // If we have a join or merge request --> authenticate, else pass up
-                GMS.GmsHeader gms_hdr=getGMSHeader(evt);
-                if(gms_hdr != null && needsAuthentication(gms_hdr)) {
-                    AuthHeader auth_hdr=msg.getHeader(id);
-                    if(auth_hdr == null)
-                        throw new IllegalStateException(String.format("found %s from %s but no AUTH header", gms_hdr, msg.src()));
-                    if(!handleAuthHeader(gms_hdr, auth_hdr, msg)) // authentication failed
-                        return null;    // don't pass up
-                }
-                break;
+    public Object up(Message msg) {
+        // If we have a join or merge request --> authenticate, else pass up
+        GMS.GmsHeader gms_hdr=getGMSHeader(msg);
+        if(gms_hdr != null && needsAuthentication(gms_hdr)) {
+            AuthHeader auth_hdr=msg.getHeader(id);
+            if(auth_hdr == null)
+                throw new IllegalStateException(String.format("found %s from %s but no AUTH header", gms_hdr, msg.src()));
+            if(!handleAuthHeader(gms_hdr, auth_hdr, msg)) // authentication failed
+                return null;    // don't pass up
         }
-        if(!callUpHandlers(evt))
+        if(!callUpHandlers(msg))
             return null;
 
-        return up_prot.up(evt);
+        return up_prot.up(msg);
     }
 
     public void up(MessageBatch batch) {
@@ -179,20 +173,20 @@ public class AUTH extends Protocol {
      * a new response event back up the stack using {@code up_prot.up()}.
      */
     public Object down(Event evt) {
-        GMS.GmsHeader hdr = getGMSHeader(evt);
-        if(hdr != null && needsAuthentication(hdr)) {
-            // we found a join request message - now add an AUTH Header
-            Message msg=evt.getArg();
-            msg.putHeader(this.id, new AuthHeader(this.auth_token));
-        }
-
         if(evt.getType() == Event.SET_LOCAL_ADDRESS)
             local_addr=evt.getArg();
-
         return down_prot.down(evt);
     }
 
 
+    public Object down(Message msg) {
+        GMS.GmsHeader hdr = getGMSHeader(msg);
+        if(hdr != null && needsAuthentication(hdr)) {
+            // we found a join request message - now add an AUTH Header
+            msg.putHeader(this.id, new AuthHeader(this.auth_token));
+        }
+        return down_prot.down(msg);
+    }
 
     protected boolean needsAuthentication(GMS.GmsHeader hdr) {
         switch(hdr.getType()) {
@@ -252,7 +246,7 @@ public class AUTH extends Protocol {
           .setBuffer(GMS.marshal(joinRes));
         if(this.authenticate_coord)
             msg.putHeader(this.id, new AuthHeader(this.auth_token));
-        down_prot.down(new Event(Event.MSG, msg));
+        down_prot.down(msg);
     }
 
     protected void sendMergeRejectionMessage(Address dest) {
@@ -261,28 +255,20 @@ public class AUTH extends Protocol {
         if(this.authenticate_coord)
             msg.putHeader(this.id, new AuthHeader(this.auth_token));
         log.debug("merge response=%s", hdr);
-        down_prot.down(new Event(Event.MSG, msg));
+        down_prot.down(msg);
     }
 
-    protected boolean callUpHandlers(Event evt) {
+    protected boolean callUpHandlers(Message msg) {
         boolean pass_up=true;
         for(UpHandler handler: up_handlers) {
-            if(!handler.handleUpEvent(evt))
+            if(!handler.handleUpMessage(msg))
                 pass_up=false;
         }
         return pass_up;
     }
 
-    /**
-     * Get the header from a GMS message
-     * @param evt The event object passed in to AUTH
-     * @return A GmsHeader object or null if the event contains a message of a different type
-     */
-    protected static GMS.GmsHeader getGMSHeader(Event evt){
-        return evt.getType() == Event.MSG? getGMSHeader((Message)evt.getArg()) : null;
-    }
 
-    protected static GMS.GmsHeader getGMSHeader(Message msg){
+    protected static GMS.GmsHeader getGMSHeader(Message msg) {
         Header hdr = msg.getHeader(GMS_ID);
         if(hdr instanceof GMS.GmsHeader)
             return (GMS.GmsHeader)hdr;

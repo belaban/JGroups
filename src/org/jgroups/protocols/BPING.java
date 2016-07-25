@@ -1,6 +1,5 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
@@ -129,7 +128,7 @@ public class BPING extends PING implements Runnable {
                 inp=new ByteArrayDataInputStream(packet.getData(), packet.getOffset(), packet.getLength());
                 Message msg=new Message();
                 msg.readFrom(inp);
-                up(new Event(Event.MSG, msg));
+                up(msg);
             }
             catch(SocketException socketEx) {
                 break;

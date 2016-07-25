@@ -43,15 +43,6 @@ public class ABP extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                Address dest;
-                if((dest=msg.dest()) == null) // we only handle unicast messages
-                    break;
-
-                Entry entry=getEntry(send_map, dest);
-                entry.send(msg);
-                return null;
             case Event.VIEW_CHANGE:
                 View view=evt.getArg();
                 send_map.keySet().retainAll(view.getMembers());
@@ -64,36 +55,39 @@ public class ABP extends Protocol {
         return down_prot.down(evt);
     }
 
+    public Object down(Message msg) {
+        Address dest;
+        if((dest=msg.dest()) == null) // we only handle unicast messages
+            return down_prot.down(msg);
+        Entry entry=getEntry(send_map, dest);
+        entry.send(msg);
+        return null;
+    }
 
-    public Object up(Event evt) {
-        switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                Address dest=msg.dest(), sender=msg.src();
-                if(dest == null) // we don't handle multicast messages
-                    break;
+    public Object up(Message msg) {
+        Address dest=msg.dest(), sender=msg.src();
+        if(dest == null) // we don't handle multicast messages
+            return up_prot.up(msg);
 
-                ABPHeader hdr=msg.getHeader(id);
-                if(hdr == null)
-                    break;
-                switch(hdr.type) {
-                    case data:
-                        Entry entry=getEntry(recv_map, sender);
-                        log.trace("%s: <-- %s.msg(%d)", local_addr, sender, hdr.bit);
-                        if(entry.handleMessage(sender, hdr.bit)) {
-                            // deliver
-                            return up_prot.up(evt);
-                        }
-                        break;
-                    case ack:
-                        log.trace("%s: <-- %s.ack(%d)", local_addr, sender, hdr.bit);
-                        entry=getEntry(send_map, sender);
-                        entry.handleAck(hdr.bit);
-                        break;
+        ABPHeader hdr=msg.getHeader(id);
+        if(hdr == null)
+            return up_prot.up(msg);
+        switch(hdr.type) {
+            case data:
+                Entry entry=getEntry(recv_map, sender);
+                log.trace("%s: <-- %s.msg(%d)", local_addr, sender, hdr.bit);
+                if(entry.handleMessage(sender, hdr.bit)) {
+                    // deliver
+                    return up_prot.up(msg);
                 }
-                return null;
+                break;
+            case ack:
+                log.trace("%s: <-- %s.ack(%d)", local_addr, sender, hdr.bit);
+                entry=getEntry(send_map, sender);
+                entry.handleAck(hdr.bit);
+                break;
         }
-        return up_prot.up(evt);
+        return null;
     }
 
     protected Entry getEntry(ConcurrentMap<Address,Entry> map, Address dest) {
@@ -130,7 +124,7 @@ public class ABP extends Protocol {
             byte ack_bit=(byte)(this.bit ^ 1);
             Message ack=new Message(sender).putHeader(id, new ABPHeader(Type.ack, ack_bit));
             log.trace("%s: --> %s.ack(%d)", local_addr, sender, ack_bit);
-            down_prot.down(new Event(Event.MSG, ack));
+            down_prot.down(ack);
             return retval;
         }
 
@@ -169,7 +163,7 @@ public class ABP extends Protocol {
                     copy=msg.copy().putHeader(id, new ABPHeader(Type.data, bit));
                 }
                 log.trace("%s: --> %s.msg(%d). Msg: %s", local_addr, copy.dest(), bit, copy.printHeaders());
-                down_prot.down(new Event(Event.MSG, copy));
+                down_prot.down(copy);
             }
         }
     }

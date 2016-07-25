@@ -201,7 +201,7 @@ public class MergeTest4 {
         for(View view: Arrays.asList(v1,v2,v4,v3)) {
             MERGE3.MergeHeader hdr=MERGE3.MergeHeader.createInfo(view.getViewId(), null, null);
             Message msg=new Message(null).src(a.getAddress()).putHeader(merge.getId(), hdr);
-            merge.up(new Event(Event.MSG, msg));
+            merge.up(msg);
         }
 
         merge.checkInconsistencies(); // no merge will happen
@@ -239,22 +239,22 @@ public class MergeTest4 {
         assert a.getView().equals(a4);
         assert b.getView().equals(b3);
 
-        List<Event> merge_events=new ArrayList<>();
+        List<Message> merge_msgs=new ArrayList<>();
         for(View view: Arrays.asList(a3,a4,a2,a1)) {
             MERGE3.MergeHeader hdr=MERGE3.MergeHeader.createInfo(view.getViewId(), null, null);
             Message msg=new Message(null).src(a.getAddress()).putHeader(merge_id, hdr);
-            merge_events.add(new Event(Event.MSG, msg));
+            merge_msgs.add(msg);
         }
         for(View view: Arrays.asList(b2,b3,b1)) {
             MERGE3.MergeHeader hdr=MERGE3.MergeHeader.createInfo(view.getViewId(), null, null);
             Message msg=new Message(null).src(b.getAddress()).putHeader(merge_id, hdr);
-            merge_events.add(new Event(Event.MSG, msg));
+            merge_msgs.add(msg);
         }
 
         // A and B can communicate again
         discard(false, a,b);
 
-        injectMergeEvents(merge_events, a,b);
+        injectMergeEvents(merge_msgs, a,b);
         checkInconsistencies(a,b); // merge will happen between A and B
         Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b);
         System.out.println("A's view: " + a.getView() + "\nB's view: " + b.getView());
@@ -346,9 +346,8 @@ public class MergeTest4 {
 
         MERGE3.MergeHeader hdr=MERGE3.MergeHeader.createInfo(one.getViewId(), null, null);
         Message msg=new Message(null).src(b.getAddress()).putHeader(merge_id, hdr); // B sends the INFO message to C
-        Event merge_event=new Event(Event.MSG, msg);
         MERGE3 merge=c.getProtocolStack().findProtocol(MERGE3.class);
-        merge.up(merge_event);
+        merge.up(msg);
         enableInfoSender(true,a,b,c);
         System.out.println("\nEnabling INFO sending in merge protocols to merge subclusters");
 
@@ -615,10 +614,10 @@ public class MergeTest4 {
     }
 
 
-    protected void injectMergeEvents(List<Event> events, JChannel ... channels) {
+    protected void injectMergeEvents(List<Message> msgs, JChannel ... channels) {
         for(JChannel ch: channels) {
             MERGE3 merge=ch.getProtocolStack().findProtocol(MERGE3.class);
-            events.forEach(merge::up);
+            msgs.forEach(merge::up);
         }
     }
 

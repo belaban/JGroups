@@ -160,28 +160,22 @@ public class FD_ALL2 extends Protocol {
     }
 
 
-    public Object up(Event evt) {
-        switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                Address sender=msg.getSrc();
-
-                Header hdr=msg.getHeader(this.id);
-                if(hdr != null) {
-                    update(sender); // updates the heartbeat entry for 'sender'
-                    num_heartbeats_received++;
-                    unsuspect(sender);
-                    return null; // consume heartbeat message, do not pass to the layer above
-                }
-                else if(msg_counts_as_heartbeat) {
-                    // message did not originate from FD_ALL2 layer, but still count as heartbeat
-                    update(sender); // update when data is received too ? maybe a bit costly
-                    if(has_suspected_mbrs)
-                        unsuspect(sender);
-                }
-                break; // pass message to the layer above
+    public Object up(Message msg) {
+        Address sender=msg.getSrc();
+        Header hdr=msg.getHeader(this.id);
+        if(hdr != null) {
+            update(sender); // updates the heartbeat entry for 'sender'
+            num_heartbeats_received++;
+            unsuspect(sender);
+            return null; // consume heartbeat message, do not pass to the layer above
         }
-        return up_prot.up(evt); // pass up to the layer above us
+        else if(msg_counts_as_heartbeat) {
+            // message did not originate from FD_ALL2 layer, but still count as heartbeat
+            update(sender); // update when data is received too ? maybe a bit costly
+            if(has_suspected_mbrs)
+                unsuspect(sender);
+        }
+        return up_prot.up(msg); // pass up to the layer above us
     }
 
 
@@ -202,14 +196,14 @@ public class FD_ALL2 extends Protocol {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
                 down_prot.down(evt);
-                View v=(View)evt.getArg();
+                View v=evt.getArg();
                 handleViewChange(v);
                 return null;
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
             case Event.UNSUSPECT:
-                Address mbr=(Address)evt.getArg();
+                Address mbr=evt.getArg();
                 unsuspect(mbr);
                 update(mbr);
                 break;
@@ -391,7 +385,7 @@ public class FD_ALL2 extends Protocol {
     class HeartbeatSender implements Runnable {
         public void run() {
             Message heartbeat=new Message().setFlag(Message.Flag.INTERNAL).putHeader(id, new HeartbeatHeader());
-            down_prot.down(new Event(Event.MSG, heartbeat));
+            down_prot.down(heartbeat);
             num_heartbeats_sent++;
         }
 

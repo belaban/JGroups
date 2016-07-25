@@ -105,48 +105,49 @@ public class FORWARD_TO_COORD extends Protocol {
 
     public Object up(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                ForwardHeader hdr=msg.getHeader(id);
-                if(hdr == null)
-                    break;
-                long msg_id=hdr.getId();
-                Address sender=msg.getSrc();
-                switch(hdr.getType()) {
-                    case ForwardHeader.MSG:
-                        if(local_addr != null && !local_addr.equals(coord)) {
-                            // I'm not the coord
-                            if(log.isWarnEnabled())
-                                log.warn(local_addr + ": received a message with id=" + msg_id + " from " + sender +
-                                           ", but I'm not coordinator (" + coord + " is); dropping the message");
-                            sendNotCoord(sender, msg_id);
-                            return null;
-                        }
-                        try {
-                            if(log.isTraceEnabled())
-                                log.trace(local_addr + ": received a message with id=" + msg_id + " from " + sender);
-                            fwd_queue.receive(msg_id, msg);
-                            return null;
-                        }
-                        finally {
-                            sendAck(sender, msg_id);
-                        }
-                    case ForwardHeader.ACK:
-                        fwd_queue.ack(msg_id);
-                        if(log.isTraceEnabled())
-                            log.trace(local_addr + ": received an ack from " + sender + " for " + msg_id);
-                        return null;
-                    case ForwardHeader.NOT_COORD:
-                        if(!received_not_coord)
-                            received_not_coord=true;
-                        return null;
-                }
-                break;
             case Event.VIEW_CHANGE:
                 handleViewChange(evt.getArg());
                 break;
         }
         return up_prot.up(evt);
+    }
+
+
+    public Object up(Message msg) {
+        ForwardHeader hdr=msg.getHeader(id);
+        if(hdr == null)
+            return up_prot.up(msg);
+        long msg_id=hdr.getId();
+        Address sender=msg.getSrc();
+        switch(hdr.getType()) {
+            case ForwardHeader.MSG:
+                if(local_addr != null && !local_addr.equals(coord)) {
+                    // I'm not the coord
+                    log.warn(local_addr + ": received a message with id=" + msg_id + " from " + sender +
+                               ", but I'm not coordinator (" + coord + " is); dropping the message");
+                    sendNotCoord(sender, msg_id);
+                    return null;
+                }
+                try {
+                    if(log.isTraceEnabled())
+                        log.trace(local_addr + ": received a message with id=" + msg_id + " from " + sender);
+                    fwd_queue.receive(msg_id, msg);
+                    return null;
+                }
+                finally {
+                    sendAck(sender, msg_id);
+                }
+            case ForwardHeader.ACK:
+                fwd_queue.ack(msg_id);
+                if(log.isTraceEnabled())
+                    log.trace(local_addr + ": received an ack from " + sender + " for " + msg_id);
+                return null;
+            case ForwardHeader.NOT_COORD:
+                if(!received_not_coord)
+                    received_not_coord=true;
+                return null;
+        }
+        return null;
     }
 
 
@@ -176,7 +177,7 @@ public class FORWARD_TO_COORD extends Protocol {
     }
 
     protected void send(Address target, long ack_id, byte type) {
-        down_prot.down(new Event(Event.MSG, new Message(target).putHeader(id, new ForwardHeader(type, ack_id))));
+        down_prot.down(new Message(target).putHeader(id, new ForwardHeader(type, ack_id)));
     }
 
 

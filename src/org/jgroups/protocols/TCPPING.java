@@ -158,12 +158,12 @@ public class TCPPING extends Discovery {
             if(async_discovery_use_separate_thread_per_request) {
                 timer.execute(() -> {
                     log.trace("%s: sending discovery request to %s", local_addr, msg.getDest());
-                    down_prot.down(new Event(Event.MSG, msg));
+                    down_prot.down(msg);
                 });
             }
             else {
                 log.trace("%s: sending discovery request to %s", local_addr, msg.getDest());
-                down_prot.down(new Event(Event.MSG, msg));
+                down_prot.down(msg);
             }
         }
     }

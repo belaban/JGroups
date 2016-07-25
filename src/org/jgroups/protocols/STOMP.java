@@ -171,51 +171,50 @@ public class STOMP extends Protocol implements Runnable {
 
     public Object up(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                StompHeader hdr=msg.getHeader(id);
-                if(hdr == null) {
-                    if(forward_non_client_generated_msgs) {
-                        HashMap<String, String> hdrs=new HashMap<>();
-                        hdrs.put("sender", msg.getSrc().toString());
-                        sendToClients(hdrs, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                    }
-                    break;
-                }
-
-                switch(hdr.type) {
-                    case MESSAGE:
-                        sendToClients(hdr.headers, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                        break;
-                    case ENDPOINT:
-                        String tmp_endpoint=hdr.headers.get("endpoint");
-                        if(tmp_endpoint != null) {
-                            boolean update_clients;
-                            String old_endpoint=null;
-                            synchronized(endpoints) {
-                                endpoints.put(msg.getSrc(), tmp_endpoint);
-                            }
-                            update_clients=!Objects.equals(old_endpoint, tmp_endpoint);
-                            if(update_clients && this.send_info) {
-                                synchronized(connections) {
-                                    for(Connection conn: connections) {
-                                        conn.writeResponse(ServerVerb.INFO, "endpoints", getAllEndpoints());
-                                    }
-                                }
-                            }
-                        }
-                        return null;
-                    default:
-                        throw new IllegalArgumentException("type " + hdr.type + " is not known");
-                }
-                break;
-
             case Event.VIEW_CHANGE:
                 handleView(evt.getArg());
                 break;
         }
-
         return up_prot.up(evt);
+    }
+
+    public Object up(Message msg) {
+        StompHeader hdr=msg.getHeader(id);
+        if(hdr == null) {
+            if(forward_non_client_generated_msgs) {
+                HashMap<String, String> hdrs=new HashMap<>();
+                hdrs.put("sender", msg.getSrc().toString());
+                sendToClients(hdrs, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+            }
+            return up_prot.up(msg);
+        }
+
+        switch(hdr.type) {
+            case MESSAGE:
+                sendToClients(hdr.headers, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                break;
+            case ENDPOINT:
+                String tmp_endpoint=hdr.headers.get("endpoint");
+                if(tmp_endpoint != null) {
+                    boolean update_clients;
+                    String old_endpoint=null;
+                    synchronized(endpoints) {
+                        endpoints.put(msg.getSrc(), tmp_endpoint);
+                    }
+                    update_clients=!Objects.equals(old_endpoint, tmp_endpoint);
+                    if(update_clients && this.send_info) {
+                        synchronized(connections) {
+                            for(Connection conn: connections) {
+                                conn.writeResponse(ServerVerb.INFO, "endpoints", getAllEndpoints());
+                            }
+                        }
+                    }
+                }
+                return null;
+            default:
+                throw new IllegalArgumentException("type " + hdr.type + " is not known");
+        }
+        return up_prot.up(msg);
     }
 
     public void up(MessageBatch batch) {
@@ -224,7 +223,7 @@ public class STOMP extends Protocol implements Runnable {
             if(hdr != null || forward_non_client_generated_msgs) {
                 try {
                     batch.remove(msg);
-                    up(new Event(Event.MSG, msg));
+                    up(msg);
                 }
                 catch(Throwable t) {
                     log.error(Util.getMessage("FailedPassingUpMessage"), t);
@@ -340,7 +339,7 @@ public class STOMP extends Protocol implements Runnable {
     protected void broadcastEndpoint() {
         if(endpoint != null) {
             Message msg=new Message().putHeader(id, StompHeader.createHeader(StompHeader.Type.ENDPOINT, "endpoint", endpoint));
-            down_prot.down(new Event(Event.MSG, msg));
+            down_prot.down(msg);
         }
     }
 
@@ -476,7 +475,7 @@ public class STOMP extends Protocol implements Runnable {
                     Message msg=new Message(null, frame.getBody());
                     Header hdr=StompHeader.createHeader(StompHeader.Type.MESSAGE, headers);
                     msg.putHeader(id, hdr);
-                    down_prot.down(new Event(Event.MSG, msg));
+                    down_prot.down(msg);
                     String receipt=headers.get("receipt");
                     if(receipt != null)
                         writeResponse(ServerVerb.RECEIPT, "receipt-id", receipt);

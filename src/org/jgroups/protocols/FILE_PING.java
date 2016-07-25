@@ -96,7 +96,7 @@ public class FILE_PING extends Discovery {
                 View old_view=view;
                 boolean previous_coord=is_coord;
                 Object retval=super.down(evt);
-                View new_view=(View)evt.getArg();
+                View new_view=evt.getArg();
                 handleView(new_view, old_view, previous_coord != is_coord);
                 return retval;
             case Event.DISCONNECT:

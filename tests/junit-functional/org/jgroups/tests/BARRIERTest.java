@@ -115,9 +115,8 @@ public class BARRIERTest {
     }
 
 
-    protected Event createMessage() {
-        Message msg=new Message(null).src(ch.getAddress()).putHeader(tp.getId(),new TpHeader("BARRIERTest"));
-        return new Event(Event.MSG, msg);
+    protected Message createMessage() {
+        return new Message(null).src(ch.getAddress()).putHeader(tp.getId(),new TpHeader("BARRIERTest"));
     }
 
     protected void waitUntilNumThreadsAreBlocked(int expected, long timeout, long interval) {

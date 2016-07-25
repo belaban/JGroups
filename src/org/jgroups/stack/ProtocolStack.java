@@ -3,6 +3,7 @@ package org.jgroups.stack;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
+import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverter;
@@ -624,7 +625,7 @@ public class ProtocolStack extends Protocol {
      */
     public <T extends Protocol> T removeProtocol(String prot_name) {
         if(prot_name == null) return null;
-        return removeProtocol((T)findProtocol(prot_name));
+        return removeProtocol(findProtocol(prot_name));
     }
 
     public ProtocolStack removeProtocols(String ... protocols) {
@@ -648,7 +649,7 @@ public class ProtocolStack extends Protocol {
     public <T extends Protocol> T removeProtocol(Class<? extends Protocol> prot) {
         if(prot == null)
             return null;
-        return removeProtocol((T)findProtocol(prot));
+        return removeProtocol(findProtocol(prot));
     }
 
     public <T extends Protocol> T removeProtocol(T prot) {
@@ -685,7 +686,7 @@ public class ProtocolStack extends Protocol {
             prot_name=tmp.getName();
             if(Objects.equals(prot_name, name))
                 return tmp;
-            tmp=(T)tmp.getDownProtocol();
+            tmp=tmp.getDownProtocol();
         }
         return null;
     }
@@ -693,7 +694,7 @@ public class ProtocolStack extends Protocol {
     public <T extends Protocol> T getBottomProtocol() {
         T curr_prot=(T)this;
         while(curr_prot != null && curr_prot.getDownProtocol() !=null)
-            curr_prot=(T)curr_prot.getDownProtocol();
+            curr_prot=curr_prot.getDownProtocol();
         return curr_prot;
     }
 
@@ -855,6 +856,7 @@ public class ProtocolStack extends Protocol {
     public Object up(Event evt) {
         return channel.up(evt);
     }
+    public Object up(Message msg) {return channel.up(msg);}
 
     public void up(MessageBatch batch) {
         channel.up(batch);
@@ -866,6 +868,11 @@ public class ProtocolStack extends Protocol {
         return null;
     }
 
+    public Object down(Message msg) {
+        if(top_prot != null)
+            return top_prot.down(msg);
+        return null;
+    }
 
 
 

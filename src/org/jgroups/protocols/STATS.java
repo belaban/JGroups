@@ -65,16 +65,15 @@ public class STATS extends Protocol {
 
 
     public Object up(Event evt) {
-        if(evt.getType() == Event.MSG) {
-            Message msg=(Message)evt.getArg();
-            updateStats(msg, UP);
-        }
-        else if(evt.getType() == Event.VIEW_CHANGE) {
-            handleViewChange((View)evt.getArg());
-        }
+        if(evt.getType() == Event.VIEW_CHANGE)
+            handleViewChange(evt.getArg());
         return up_prot.up(evt);
     }
 
+    public Object up(Message msg) {
+        updateStats(msg, UP);
+        return up_prot.up(msg);
+    }
 
     public void up(MessageBatch batch) {
         for(Message msg: batch)
@@ -83,16 +82,15 @@ public class STATS extends Protocol {
     }
 
     public Object down(Event evt) {
-        if(evt.getType() == Event.MSG) {
-            Message msg=(Message)evt.getArg();
-            updateStats(msg, DOWN);
-        }
-        else if(evt.getType() == Event.VIEW_CHANGE) {
-            handleViewChange((View)evt.getArg());
-        }
+        if(evt.getType() == Event.VIEW_CHANGE)
+            handleViewChange(evt.getArg());
         return down_prot.down(evt);
     }
 
+    public Object down(Message msg) {
+        updateStats(msg, DOWN);
+        return down_prot.down(msg);
+    }
 
     public String printStats() {
         Map.Entry entry;

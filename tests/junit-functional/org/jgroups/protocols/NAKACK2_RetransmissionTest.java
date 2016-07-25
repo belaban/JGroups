@@ -96,7 +96,7 @@ public class NAKACK2_RetransmissionTest {
         Message msg=new Message(null).src(B);
         NakAckHeader2 hdr=NakAckHeader2.createMessageHeader(seqno);
         msg.putHeader(ID, hdr);
-        nak.up(new Event(Event.MSG, msg));
+        nak.up(msg);
     }
 
     /** Asserts that the delivered messages are in the same order than the expected seqnos and then clears the list */
@@ -134,26 +134,22 @@ public class NAKACK2_RetransmissionTest {
         public String             getInfo() {return null;}
         protected PhysicalAddress getPhysicalAddress() {return null;}
 
-        public Object down(Event evt) {
-            switch(evt.getType()) {
-                case Event.MSG:
-                    Message msg=evt.getArg();
-                    NakAckHeader2 hdr=msg.getHeader(ID);
-                    if(hdr == null)
-                        break;
-                    if(hdr.getType() == NakAckHeader2.XMIT_REQ) {
-                        SeqnoList seqnos=null;
-                        try {
-                            seqnos=Util.streamableFromBuffer(SeqnoList.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                            System.out.println("-- XMIT-REQ: request retransmission for " + seqnos);
-                            for(Long seqno: seqnos)
-                                xmit_requests.add(seqno);
-                        }
-                        catch(Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    break;
+
+        public Object down(Message msg) {
+            NakAckHeader2 hdr=msg.getHeader(ID);
+            if(hdr == null)
+                return null;
+            if(hdr.getType() == NakAckHeader2.XMIT_REQ) {
+                SeqnoList seqnos=null;
+                try {
+                    seqnos=Util.streamableFromBuffer(SeqnoList.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    System.out.println("-- XMIT-REQ: request retransmission for " + seqnos);
+                    for(Long seqno: seqnos)
+                        xmit_requests.add(seqno);
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
             }
             return null;
         }
@@ -165,17 +161,12 @@ public class NAKACK2_RetransmissionTest {
         public List<Long> getMsgs() {return msgs;}
         public void       clear()   {msgs.clear();}
 
-        public Object up(Event evt) {
-            switch(evt.getType()) {
-                case Event.MSG:
-                    Message msg=evt.getArg();
-                    NakAckHeader2 hdr=msg.getHeader(ID);
-                    if(hdr != null && hdr.getType() == NakAckHeader2.MSG) {
-                        long seqno=hdr.getSeqno();
-                        msgs.add(seqno);
-                        System.out.println("-- received message #" + seqno + " from " + msg.getSrc());
-                    }
-                    break;
+        public Object up(Message msg) {
+            NakAckHeader2 hdr=msg.getHeader(ID);
+            if(hdr != null && hdr.getType() == NakAckHeader2.MSG) {
+                long seqno=hdr.getSeqno();
+                msgs.add(seqno);
+                System.out.println("-- received message #" + seqno + " from " + msg.getSrc());
             }
             return null;
         }

@@ -175,7 +175,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
             final Message msg=new Message(physical_addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
               .putHeader(this.id, hdr).setBuffer(marshal(data));
             log.trace("%s: sending discovery request to %s", local_addr, msg.getDest());
-            down_prot.down(new Event(Event.MSG, msg));
+            down_prot.down(msg);
         }
     }
 

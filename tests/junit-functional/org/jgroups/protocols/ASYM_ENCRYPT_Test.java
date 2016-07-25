@@ -109,7 +109,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
 
         discard.setDiscardAll(false);
         System.out.printf("-- sending KEY_REQUEST to key server %s\n", a.getAddress());
-        encrypt.getDownProtocol().down(new Event(Event.MSG, newMsg));
+        encrypt.getDownProtocol().down(newMsg);
         for(int i=0; i < 10; i++) {
             SecretKey secret_key=encrypt.key;
             if(secret_key != null)
@@ -147,7 +147,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         GMS.GmsHeader gms_hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP);
         Message rogue_join_rsp=new Message(b.getAddress(), rogue.getAddress()).putHeader(GMS_ID, gms_hdr)
           .setBuffer(GMS.marshal(join_rsp)).setFlag(Message.Flag.NO_RELIABILITY); // bypasses NAKACK2 / UNICAST3
-        rogue.down(new Event(Event.MSG, rogue_join_rsp));
+        rogue.down(rogue_join_rsp);
         for(int i=0; i < 10; i++) {
             if(b.getView().size() > 3)
                 break;
@@ -187,7 +187,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         Message merge_view_msg=new Message(null, marshalView(merge_view)).putHeader(GMS_ID, hdr)
           .setFlag(Message.Flag.NO_RELIABILITY);
         System.out.printf("** %s: trying to install MergeView %s in all members\n", rogue.getAddress(), merge_view);
-        rogue.down(new Event(Event.MSG, merge_view_msg));
+        rogue.down(merge_view_msg);
 
         // check if A, B or C installed the MergeView sent by rogue:
         for(int i=0; i < 10; i++) {

@@ -1293,18 +1293,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-
-    /**
-     * Caller by the layer above this layer. Usually we just put this Message
-     * into the send queue and let one or more worker threads handle it. A worker thread
-     * then removes the Message from the send queue, performs a conversion and adds the
-     * modified Message to the send queue of the layer below it, by calling down()).
-     */
     public Object down(Event evt) {
-        if(evt.getType() != Event.MSG)  // unless it is a message handle it and respond
-            return handleDownEvent(evt);
+        return handleDownEvent(evt);
+    }
 
-        Message msg=evt.getArg();
+    /** A message needs to be sent to a single member or all members */
+    public Object down(Message msg) {
         if(header != null)
             msg.putHeader(this.id, header); // added patch by Roland Kurmann (March 20 2003)
 
@@ -1404,7 +1398,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
         Executor pool=internal && internal_thread_pool != null? internal_thread_pool
           : internal || msg.isFlagSet(Message.Flag.OOB)? oob_thread_pool : thread_pool;
-        pool.execute(() -> passMessageUp(copy, null, false, multicast, false));
+        submitToThreadPool(pool, () -> passMessageUp(copy, null, false, multicast, false));
     }
 
     protected void _send(Message msg, Address dest) {
@@ -1463,7 +1457,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         if(multicast && discard_own_mcast && local_addr != null && local_addr.equals(msg.getSrc()))
             return;
-        up_prot.up(new Event(Event.MSG, msg));
+        up_prot.up(msg);
     }
 
 
@@ -1616,7 +1610,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             num_rejected_msgs++;
         }
         catch(Throwable t) {
-            log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
+            log.error("failure submitting task to thread pool", t);
         }
     }
 

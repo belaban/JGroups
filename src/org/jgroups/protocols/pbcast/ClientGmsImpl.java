@@ -242,13 +242,13 @@ public class ClientGmsImpl extends GmsImpl {
         GMS.GmsHeader hdr=joinWithTransfer? new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER, mbr,useFlushIfPresent)
           : new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, mbr,useFlushIfPresent);
         msg.putHeader(gms.getId(), hdr);
-        gms.getDownProtocol().down(new Event(Event.MSG, msg));
+        gms.getDownProtocol().down(msg);
     }
 
     void sendViewAck(Address coord) {
         Message view_ack=new Message(coord).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK));
-        gms.getDownProtocol().down(new Event(Event.MSG, view_ack)); // send VIEW_ACK to sender of view
+        gms.getDownProtocol().down(view_ack); // send VIEW_ACK to sender of view
     }
 
     /** Returns all members whose PingData is flagged as coordinator */

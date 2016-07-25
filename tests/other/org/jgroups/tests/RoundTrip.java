@@ -4,7 +4,10 @@ import org.jgroups.Global;
 import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
 import org.jgroups.tests.rt.transports.*;
-import org.jgroups.util.*;
+import org.jgroups.util.AverageMinMax;
+import org.jgroups.util.Bits;
+import org.jgroups.util.Promise;
+import org.jgroups.util.Util;
 
 import java.util.HashMap;
 import java.util.List;

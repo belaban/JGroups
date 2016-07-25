@@ -138,20 +138,6 @@ public class RELAY extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-
-            case Event.MSG:
-                Message msg=evt.getArg();
-                Address dest=msg.getDest();
-                if(dest == null)
-                    break;
-
-                // forward non local destinations to the coordinator, to relay to the remote cluster
-                if(!isLocal(dest)) {
-                    forwardToCoord(msg);
-                    return null;
-                }
-                break;
-
             case Event.VIEW_CHANGE:
                 handleView(evt.getArg());
                 break;
@@ -176,28 +162,21 @@ public class RELAY extends Protocol {
         return down_prot.down(evt);
     }
 
+    public Object down(Message msg) {
+        Address dest=msg.getDest();
+        if(dest == null)
+            return down_prot.down(msg);
+
+        // forward non local destinations to the coordinator, to relay to the remote cluster
+        if(!isLocal(dest)) {
+            forwardToCoord(msg);
+            return null;
+        }
+        return down_prot.down(msg);
+    }
 
     public Object up(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                Address dest=msg.getDest();
-                RelayHeader hdr=msg.getHeader(getId());
-                if(hdr != null)
-                    return handleUpEvent(msg, hdr);
-
-                if(is_coord && relay && dest == null && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
-                    Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // we only copy headers from building blocks
-                    try {
-                        byte[] buf=Util.streamableToByteBuffer(tmp);
-                        forward(buf, 0, buf.length);
-                    }
-                    catch(Exception e) {
-                        log.warn("failed relaying message", e);
-                    }
-                }
-                break;
-
             case Event.VIEW_CHANGE:
                 handleView(evt.getArg()); // already sends up new view if needed
                 if(present_global_views)
@@ -208,6 +187,25 @@ public class RELAY extends Protocol {
         return up_prot.up(evt);
     }
 
+
+    public Object up(Message msg) {
+        Address dest=msg.getDest();
+        RelayHeader hdr=msg.getHeader(getId());
+        if(hdr != null)
+            return handleUpEvent(msg, hdr);
+
+        if(is_coord && relay && dest == null && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
+            Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // we only copy headers from building blocks
+            try {
+                byte[] buf=Util.streamableToByteBuffer(tmp);
+                forward(buf, 0, buf.length);
+            }
+            catch(Exception e) {
+                log.warn("failed relaying message", e);
+            }
+        }
+        return up_prot.up(msg);
+    }
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
@@ -245,7 +243,7 @@ public class RELAY extends Protocol {
                 Message copy=msg.copy();
                 if(hdr.original_sender != null)
                     copy.setSrc(hdr.original_sender);
-                return up_prot.up(new Event(Event.MSG, copy));
+                return up_prot.up(copy);
 
             case FORWARD:
                 if(is_coord)
@@ -350,9 +348,9 @@ public class RELAY extends Protocol {
                     return;
                 }
 
-                tmp=new Message(coord, buf, 0, buf.length); // reusing tmp is OK here ...
-                tmp.putHeader(id, new RelayHeader(RelayHeader.Type.FORWARD));
-                down_prot.down(new Event(Event.MSG, tmp));
+                tmp=new Message(coord, buf, 0, buf.length) // reusing tmp is OK here ...
+                  .putHeader(id, new RelayHeader(RelayHeader.Type.FORWARD));
+                down_prot.down(tmp);
             }
         }
         catch(Exception e) {
@@ -457,7 +455,7 @@ public class RELAY extends Protocol {
             if(log.isTraceEnabled())
                 log.trace("received msg from " + sender + ", passing down the stack with dest=" +
                             msg.getDest() + " and src=" + msg.getSrc());
-            down_prot.down(new Event(Event.MSG, msg));
+            down_prot.down(msg);
         }
         catch(Exception e) {
             log.error(Util.getMessage("FailedSendingOnLocalCluster"), e);
@@ -494,7 +492,7 @@ public class RELAY extends Protocol {
     protected void sendViewOnLocalCluster(final List<Address> destinations, final byte[] buffer) {
         for(Address dest: destinations) {
             Message view_msg=new Message(dest, buffer).putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
-            down_prot.down(new Event(Event.MSG, view_msg));
+            down_prot.down(view_msg);
         }
     }
 

@@ -35,6 +35,7 @@ public class NAKACK_REBROADCAST_Test {
             public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
             public String getInfo() {return null;}
             public Object down(Event evt) {return null;}
+            public Object down(Message msg) {return null;}
             protected PhysicalAddress getPhysicalAddress() {return null;}
             public TimeScheduler getTimer() {return new TimeScheduler3();}
         };
@@ -83,26 +84,19 @@ public class NAKACK_REBROADCAST_Test {
             return "MessageInterceptor";
         }
 
-        public Object down(Event evt) {
-            if(evt.getType() == Event.MSG) {
-                Message msg=(Message)evt.getArg();
-                NakAckHeader2 hdr=(NakAckHeader2)msg.getHeader(NAKACK_ID);
-                if(hdr != null && hdr.getType() == NakAckHeader2.XMIT_REQ) {
-                    try {
-                        this.range=Util.streamableFromBuffer(SeqnoList.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                    }
-                    catch(Exception e) {
-                        e.printStackTrace();
-                    }
+        public Object down(Message msg) {
+            NakAckHeader2 hdr=msg.getHeader(NAKACK_ID);
+            if(hdr != null && hdr.getType() == NakAckHeader2.XMIT_REQ) {
+                try {
+                    this.range=Util.streamableFromBuffer(SeqnoList.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
                 }
             }
-
-            return super.down(evt);
+            return super.down(msg);
         }
 
-        public SeqnoList getRange ()
-        {
-            return this.range;
-        }
+        public SeqnoList getRange() {return this.range;}
     }
 }

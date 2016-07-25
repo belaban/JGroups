@@ -197,17 +197,16 @@ public class ForkChannel extends JChannel implements ChannelListener {
         ((ForkProtocolStack)prot_stack).remove(fork_channel_id);
         if(state == State.CLOSED)
             return;
-        disconnect();                     // leave group if connected
+        disconnect();  // leave cluster if connected
         prot_stack.destroy();
         state=State.CLOSED;
         notifyChannelClosed(this);
     }
 
     @Override
-    public Object down(Event evt) {
-        if(evt.getType() == Event.MSG)
-            setHeader(evt.getArg());
-        return super.down(evt);
+    public Object down(Message msg) {
+        setHeader(msg);
+        return super.down(msg);
     }
 
     @Override
@@ -220,7 +219,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
             hdr=new FORK.ForkHeader(null, fork_channel_id);
             msg.putHeader(FORK.ID, hdr);
         }
-        prot_stack.down(new Event(Event.MSG, msg));
+        prot_stack.down(msg);
         return this;
     }
 

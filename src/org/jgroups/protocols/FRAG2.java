@@ -114,60 +114,54 @@ public class FRAG2 extends Protocol {
      */
     public Object down(Event evt) {
         switch(evt.getType()) {
-
-            case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                long size=msg.getLength();
-                if(size > frag_size) {
-                    fragment(msg);  // Fragment and pass down
-                    return null;
-                }
-                break;
-
             case Event.VIEW_CHANGE:
-                handleViewChange((View)evt.getArg());
+                handleViewChange(evt.getArg());
                 break;
-
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
         }
-
         return down_prot.down(evt);  // Pass on to the layer below us
     }
 
+    public Object down(Message msg) {
+        long size=msg.getLength();
+        if(size > frag_size) {
+            fragment(msg);  // Fragment and pass down
+            return null;
+        }
+        return down_prot.down(msg);
+    }
 
     /**
      * If event is a message, if it is fragmented, re-assemble fragments into big message and pass up the stack.
      */
     public Object up(Event evt) {
         switch(evt.getType()) {
-
-            case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                FragHeader hdr=(FragHeader)msg.getHeader(this.id);
-                if(hdr != null) { // needs to be defragmented
-                    Message assembled_msg=unfragment(msg, hdr);
-                    if(assembled_msg != null) {
-                        if(log.isTraceEnabled()) log.trace("%s: assembled_msg is %s", local_addr, assembled_msg);
-                        assembled_msg.setSrc(msg.getSrc()); // needed ? YES, because fragments have a null src !!
-                        up_prot.up(new Event(Event.MSG, assembled_msg));
-                    }
-                    return null;
-                }
-                break;
-
             case Event.VIEW_CHANGE:
-                handleViewChange((View)evt.getArg());
+                handleViewChange(evt.getArg());
                 break;
         }
-
         return up_prot.up(evt); // Pass up to the layer above us by default
+    }
+
+    public Object up(Message msg) {
+        FragHeader hdr=msg.getHeader(this.id);
+        if(hdr != null) { // needs to be defragmented
+            Message assembled_msg=unfragment(msg, hdr);
+            if(assembled_msg != null) {
+                if(log.isTraceEnabled()) log.trace("%s: assembled_msg is %s", local_addr, assembled_msg);
+                assembled_msg.setSrc(msg.getSrc()); // needed ? YES, because fragments have a null src !!
+                up_prot.up(assembled_msg);
+            }
+            return null;
+        }
+        return up_prot.up(msg);
     }
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
-            FragHeader hdr=(FragHeader)msg.getHeader(this.id);
+            FragHeader hdr=msg.getHeader(this.id);
             if(hdr != null) { // needs to be defragmented
                 Message assembled_msg=unfragment(msg,hdr);
                 if(assembled_msg != null)
@@ -240,7 +234,7 @@ public class FRAG2 extends Protocol {
                 frag_msg.setBuffer(buffer, (int)r.low, (int)r.high);
                 FragHeader hdr=new FragHeader(frag_id, i, num_frags);
                 frag_msg.putHeader(this.id, hdr);
-                down_prot.down(new Event(Event.MSG, frag_msg));
+                down_prot.down(frag_msg);
             }
         }
         catch(Exception e) {

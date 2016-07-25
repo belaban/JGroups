@@ -489,7 +489,7 @@ public class JChannel implements Closeable {
         if(msg == null)
             throw new NullPointerException("msg is null");
         checkClosedOrNotConnected();
-        down(new Event(Event.MSG, msg));
+        down(msg);
         return this;
     }
 
@@ -641,11 +641,16 @@ public class JChannel implements Closeable {
      */
     public Object down(Event evt) {
         if(evt == null) return null;
-        if(stats && evt.getType() == Event.MSG) {
-            sent_msgs++;
-            sent_bytes+=((Message)evt.getArg()).getLength();
-        }
         return prot_stack.down(evt);
+    }
+
+    public Object down(Message msg) {
+        if(msg == null) return null;
+        if(stats) {
+            sent_msgs++;
+            sent_bytes+=msg.getLength();
+        }
+        return prot_stack.down(msg);
     }
 
 
@@ -656,19 +661,6 @@ public class JChannel implements Closeable {
      */
     public Object up(Event evt) {
         switch(evt.getType()) {
-
-            case Event.MSG:
-                Message msg=evt.getArg();
-                if(stats) {
-                    received_msgs++;
-                    received_bytes+=msg.getLength();
-                }
-
-                // discard local messages (sent by myself to me)
-                if(discard_own_messages && local_addr != null && msg.getSrc() != null && local_addr.equals(msg.getSrc()))
-                    return null;
-                break;
-
             case Event.VIEW_CHANGE:
                 View tmp=evt.getArg();
                 if(tmp instanceof MergeView)
@@ -773,6 +765,25 @@ public class JChannel implements Closeable {
 
         if(receiver != null)
             return invokeCallback(evt.getType(), evt.getArg());
+        return null;
+    }
+
+    public Object up(Message msg) {
+        if(stats) {
+            received_msgs++;
+            received_bytes+=msg.getLength();
+        }
+
+        // discard local messages (sent by myself to me)
+        if(discard_own_messages && local_addr != null && msg.getSrc() != null && local_addr.equals(msg.getSrc()))
+            return null;
+
+        // If UpHandler is installed, pass all events to it and return (UpHandler is e.g. a building block)
+        if(up_handler != null)
+            return up_handler.up(msg);
+
+        if(receiver != null)
+            receiver.receive(msg);
         return null;
     }
 
@@ -908,9 +919,6 @@ public class JChannel implements Closeable {
 
     protected Object invokeCallback(int type, Object arg) {
         switch(type) {
-            case Event.MSG:
-                receiver.receive((Message)arg);
-                break;
             case Event.VIEW_CHANGE:
                 receiver.viewAccepted((View)arg);
                 break;

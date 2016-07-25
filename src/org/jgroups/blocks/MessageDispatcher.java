@@ -574,6 +574,12 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
             return null;
         }
 
+        public Object up(Message msg) {
+            if(corr != null)
+                corr.receiveMessage(msg);
+            return null;
+        }
+
         public void up(MessageBatch batch) {
             if(corr == null)
                 return;
@@ -582,16 +588,19 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
 
         @Override
         public Object down(Event evt) {
+            return channel != null? channel.down(evt) : null;
+        }
+
+        public Object down(Message msg) {
             if(channel != null) {
-                if(evt.getType() == Event.MSG && !(channel.isConnected() || channel.isConnecting())) {
+                if(!(channel.isConnected() || channel.isConnecting())) {
                     // return null;
                     throw new IllegalStateException("channel is not connected");
                 }
-                return channel.down(evt);
+                return channel.down(msg);
             }
             return null;
         }
-
 
         /* ----------------------- End of Protocol Interface ------------------------ */
 

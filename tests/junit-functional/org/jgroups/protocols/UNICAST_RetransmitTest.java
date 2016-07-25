@@ -91,7 +91,7 @@ public class UNICAST_RetransmitTest {
         protected final List<Integer> list=new ArrayList<>();
 
         public void receive(Message msg) {
-            Integer num=(Integer)msg.getObject();
+            Integer num=msg.getObject();
             list.add(num);
         }
 
@@ -133,16 +133,13 @@ public class UNICAST_RetransmitTest {
     protected static class DiscardEveryOtherUnicastMessage extends Protocol {
         protected boolean discard=false;
 
-        public Object down(Event evt) {
-            if(evt.getType() == Event.MSG) {
-                Message msg=(Message)evt.getArg();
-                if(msg.dest() != null) {
-                    discard=!discard;
-                    if(discard)
-                        return null;
-                }
+        public Object down(Message msg) {
+            if(msg.dest() != null) {
+                discard=!discard;
+                if(discard)
+                    return null;
             }
-            return down_prot.down(evt);
+            return down_prot.down(msg);
         }
     }
 

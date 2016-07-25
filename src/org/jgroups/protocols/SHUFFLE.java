@@ -86,12 +86,9 @@ public class SHUFFLE extends Protocol {
         stopTask();
     }
 
-    public Object up(Event evt) {
+    public Object up(Message msg) {
         if(!up)
-            return up_prot.up(evt);
-        if(evt.getType() != Event.MSG)
-            return up_prot.up(evt);
-        Message msg=(Message)evt.getArg();
+            return up_prot.up(msg);
         synchronized(up_msgs) {
             up_msgs.add(msg);
         }
@@ -124,9 +121,21 @@ public class SHUFFLE extends Protocol {
     public Object down(Event evt) {
         if(!down)
             return down_prot.down(evt);
-        if(evt.getType() != Event.MSG)
-            return down_prot.down(evt);
-        Message msg=(Message)evt.getArg();
+        Message msg=evt.getArg();
+        synchronized(down_msgs) {
+            down_msgs.add(msg);
+        }
+        if(down_msgs.size() >= max_size) {
+            shuffleAndSendMessages();
+        }
+        else
+            startTask();
+        return null;
+    }
+
+    public Object down(Message msg) {
+        if(!down)
+            return down_prot.down(msg);
         synchronized(down_msgs) {
             down_msgs.add(msg);
         }
@@ -140,7 +149,7 @@ public class SHUFFLE extends Protocol {
 
     protected synchronized void startTask() {
         if(task == null || task.isDone() || task.isCancelled()) {
-            task=timer.schedule((Runnable)this::shuffleAndSendMessages, max_time, TimeUnit.MILLISECONDS);
+            task=timer.schedule(this::shuffleAndSendMessages, max_time, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -153,7 +162,7 @@ public class SHUFFLE extends Protocol {
         synchronized(up_msgs) {
             if(!up_msgs.isEmpty()) {
                 Collections.shuffle(up_msgs);
-                up_msgs.stream().filter(msg -> up_prot != null).forEach(msg -> up_prot.up(new Event(Event.MSG, msg)));
+                up_msgs.stream().filter(msg -> up_prot != null).forEach(msg -> up_prot.up(msg));
                 up_msgs.clear();
             }
         }
@@ -162,7 +171,7 @@ public class SHUFFLE extends Protocol {
             if(!down_msgs.isEmpty()) {
                 Collections.shuffle(down_msgs);
                 for(Message msg: down_msgs)
-                    down_prot.down(new Event(Event.MSG, msg));
+                    down_prot.down(msg);
                 down_msgs.clear();
             }
         }

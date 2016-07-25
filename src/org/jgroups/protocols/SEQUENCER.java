@@ -140,40 +140,6 @@ public class SEQUENCER extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                if(msg.getDest() != null || msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
-                    break;
-
-                if(msg.getSrc() == null)
-                    msg.setSrc(local_addr);
-
-                if(flushing)
-                    block();
-
-                // A seqno is not used to establish ordering, but only to weed out duplicates; next_seqno doesn't need
-                // to increase monotonically, but only to be unique (https://issues.jboss.org/browse/JGRP-1461) !
-                long next_seqno=seqno.incrementAndGet();
-                in_flight_sends.incrementAndGet();
-                try {
-                    SequencerHeader hdr=new SequencerHeader(is_coord? SequencerHeader.BCAST : SequencerHeader.WRAPPED_BCAST, next_seqno);
-                    msg.putHeader(this.id, hdr);
-                    if(log.isTraceEnabled())
-                        log.trace("[" + local_addr + "]: forwarding " + local_addr + "::" + seqno + " to coord " + coord);
-
-                    // We always forward messages to the coordinator, even if we're the coordinator. Having the coord
-                    // send its messages directly led to starvation of messages from other members. MPerf perf went up
-                    // from 20MB/sec/node to 50MB/sec/node with this change !
-                    forwardToCoord(next_seqno, msg);
-                }
-                catch(Exception ex) {
-                    log.error(Util.getMessage("FailedSendingMessage"), ex);
-                }
-                finally {
-                    in_flight_sends.decrementAndGet();
-                }
-                return null; // don't pass down
-
             case Event.VIEW_CHANGE:
                 handleViewChange(evt.getArg());
                 break;
@@ -190,53 +156,42 @@ public class SEQUENCER extends Protocol {
     }
 
 
+    public Object down(Message msg) {
+        if(msg.getDest() != null || msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
+            return down_prot.down(msg);
 
+        if(msg.getSrc() == null)
+            msg.setSrc(local_addr);
+
+        if(flushing)
+            block();
+
+        // A seqno is not used to establish ordering, but only to weed out duplicates; next_seqno doesn't need
+        // to increase monotonically, but only to be unique (https://issues.jboss.org/browse/JGRP-1461) !
+        long next_seqno=seqno.incrementAndGet();
+        in_flight_sends.incrementAndGet();
+        try {
+            SequencerHeader hdr=new SequencerHeader(is_coord? SequencerHeader.BCAST : SequencerHeader.WRAPPED_BCAST, next_seqno);
+            msg.putHeader(this.id, hdr);
+            if(log.isTraceEnabled())
+                log.trace("[" + local_addr + "]: forwarding " + local_addr + "::" + seqno + " to coord " + coord);
+
+            // We always forward messages to the coordinator, even if we're the coordinator. Having the coord
+            // send its messages directly led to starvation of messages from other members. MPerf perf went up
+            // from 20MB/sec/node to 50MB/sec/node with this change !
+            forwardToCoord(next_seqno, msg);
+        }
+        catch(Exception ex) {
+            log.error(Util.getMessage("FailedSendingMessage"), ex);
+        }
+        finally {
+            in_flight_sends.decrementAndGet();
+        }
+        return null; // don't pass down
+    }
 
     public Object up(Event evt) {
-        Message msg;
-        SequencerHeader hdr;
-
         switch(evt.getType()) {
-            case Event.MSG:
-                msg=evt.getArg();
-                if(msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
-                    break;
-                hdr=msg.getHeader(this.id);
-                if(hdr == null)
-                    break; // pass up
-
-                switch(hdr.type) {
-                    case SequencerHeader.FORWARD:
-                    case SequencerHeader.FLUSH:
-                        if(!is_coord) {
-                            if(log.isErrorEnabled())
-                                log.error(local_addr + ": non-coord; dropping FORWARD request from " + msg.getSrc());
-                            return null;
-                        }
-                        Address sender=msg.getSrc();
-                        if(view != null && !view.containsMember(sender)) {
-                            if(log.isErrorEnabled())
-                                log.error(local_addr + ": dropping FORWARD request from non-member " + sender +
-                                            "; view=" + view);
-                            return null;
-                        }
-
-                        broadcast(msg, true, msg.getSrc(), hdr.seqno, hdr.type == SequencerHeader.FLUSH); // do copy the message
-                        received_forwards++;
-                        break;
-
-                    case SequencerHeader.BCAST:
-                        deliver(msg, evt, hdr);
-                        received_bcasts++;
-                        break;
-
-                    case SequencerHeader.WRAPPED_BCAST:
-                        unwrapAndDeliver(msg, hdr.flush_ack);  // unwrap the original message (in the payload) and deliver it
-                        received_bcasts++;
-                        break;
-                }
-                return null;
-
             case Event.VIEW_CHANGE:
                 Object retval=up_prot.up(evt);
                 handleViewChange(evt.getArg());
@@ -246,8 +201,48 @@ public class SEQUENCER extends Protocol {
                 handleTmpView(evt.getArg());
                 break;
         }
-
         return up_prot.up(evt);
+    }
+
+    public Object up(Message msg) {
+        SequencerHeader hdr;
+        if(msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
+            return up_prot.up(msg);
+        hdr=msg.getHeader(this.id);
+        if(hdr == null)
+            return up_prot.up(msg); // pass up
+
+        switch(hdr.type) {
+            case SequencerHeader.FORWARD:
+            case SequencerHeader.FLUSH:
+                if(!is_coord) {
+                    if(log.isErrorEnabled())
+                        log.error(local_addr + ": non-coord; dropping FORWARD request from " + msg.getSrc());
+                    return null;
+                }
+                Address sender=msg.getSrc();
+                if(view != null && !view.containsMember(sender)) {
+                    if(log.isErrorEnabled())
+                        log.error(local_addr + ": dropping FORWARD request from non-member " + sender +
+                                    "; view=" + view);
+                    return null;
+                }
+
+                broadcast(msg, true, msg.getSrc(), hdr.seqno, hdr.type == SequencerHeader.FLUSH); // do copy the message
+                received_forwards++;
+                break;
+
+            case SequencerHeader.BCAST:
+                deliver(msg, hdr);
+                received_bcasts++;
+                break;
+
+            case SequencerHeader.WRAPPED_BCAST:
+                unwrapAndDeliver(msg, hdr.flush_ack);  // unwrap the original message (in the payload) and deliver it
+                received_bcasts++;
+                break;
+        }
+        return null;
     }
 
     public void up(MessageBatch batch) {
@@ -258,7 +253,7 @@ public class SEQUENCER extends Protocol {
 
             // simplistic implementation
             try {
-                up(new Event(Event.MSG, msg));
+                up(msg);
             }
             catch(Throwable t) {
                 log.error(Util.getMessage("FailedPassingUpMessage"), t);
@@ -358,7 +353,7 @@ public class SEQUENCER extends Protocol {
                 Message forward_msg=new Message(null, buf).putHeader(this.id, hdr);
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": flushing (broadcasting) " + local_addr + "::" + key);
-                down_prot.down(new Event(Event.MSG, forward_msg));
+                down_prot.down(forward_msg);
             }
             return;
         }
@@ -394,7 +389,7 @@ public class SEQUENCER extends Protocol {
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": flushing (forwarding) " + local_addr + "::" + key + " to coord " + coord);
                 ack_promise.reset();
-                down_prot.down(new Event(Event.MSG, forward_msg));
+                down_prot.down(forward_msg);
                 Long ack=ack_promise.getResult(500);
                 if((Objects.equals(ack, key)) || !forward_table.containsKey(key))
                     break;
@@ -446,7 +441,7 @@ public class SEQUENCER extends Protocol {
         try {
             SequencerHeader hdr=new SequencerHeader(type, seqno);
             Message forward_msg=new Message(target, Util.streamableToBuffer(msg)).putHeader(this.id,hdr);
-            down_prot.down(new Event(Event.MSG, forward_msg));
+            down_prot.down(forward_msg);
             forwarded_msgs++;
         }
         catch(Exception ex) {
@@ -472,7 +467,7 @@ public class SEQUENCER extends Protocol {
         if(log.isTraceEnabled())
             log.trace(local_addr + ": broadcasting " + original_sender + "::" + seqno);
 
-        down_prot.down(new Event(Event.MSG,bcast_msg));
+        down_prot.down(bcast_msg);
         bcast_msgs++;
     }
 
@@ -488,7 +483,7 @@ public class SEQUENCER extends Protocol {
             SequencerHeader hdr=msg_to_deliver.getHeader(this.id);
             if(flush_ack)
                 hdr.flush_ack=true;
-            deliver(msg_to_deliver, new Event(Event.MSG, msg_to_deliver), hdr);
+            deliver(msg_to_deliver, hdr);
         }
         catch(Exception ex) {
             log.error(Util.getMessage("FailureUnmarshallingBuffer"), ex);
@@ -496,7 +491,7 @@ public class SEQUENCER extends Protocol {
     }
 
 
-    protected void deliver(Message msg, Event evt, SequencerHeader hdr) {
+    protected void deliver(Message msg, SequencerHeader hdr) {
         Address sender=msg.getSrc();
         if(sender == null) {
             if(log.isErrorEnabled())
@@ -521,7 +516,7 @@ public class SEQUENCER extends Protocol {
         }
         if(log.isTraceEnabled())
             log.trace(local_addr + ": delivering " + sender + "::" + msg_seqno);
-        up_prot.up(evt);
+        up_prot.up(msg);
         delivered_bcasts++;
     }
 

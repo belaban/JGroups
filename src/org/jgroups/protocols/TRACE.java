@@ -1,6 +1,8 @@
 
 package org.jgroups.protocols;
+
 import org.jgroups.Event;
+import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
@@ -31,6 +33,12 @@ public class TRACE extends Protocol {
         return down_prot.down(evt);
     }
 
+    public Object down(Message msg) {
+         System.out.println("------------------- TRACE (sent) -----------------------");
+         System.out.printf("msg from %s to %s (%d bytes): hdrs=%s\n", msg.src(), msg.dest(), msg.length(), msg.printHeaders());
+         System.out.println("--------------------------------------------------------");
+         return down_prot.down(msg);
+     }
 
     public String toString() {
         return "TRACE";

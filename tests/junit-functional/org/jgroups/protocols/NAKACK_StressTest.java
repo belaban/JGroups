@@ -57,21 +57,19 @@ public class NAKACK_StressTest {
         nak.setDownProtocol(new Protocol() {public Object down(Event evt) {return null;}});
 
         nak.setUpProtocol(new Protocol() {
-            public Object up(Event evt) {
-                if(evt.getType() == Event.MSG) {
-                    delivered_msgs.incrementAndGet();
-                    NakAckHeader2 hdr=(NakAckHeader2)((Message)evt.getArg()).getHeader(NAKACK_ID);
-                    if(hdr != null)
-                        delivered_msg_list.add(hdr.getSeqno());
+            public Object up(Message msg) {
+                delivered_msgs.incrementAndGet();
+                NakAckHeader2 hdr=msg.getHeader(NAKACK_ID);
+                if(hdr != null)
+                    delivered_msg_list.add(hdr.getSeqno());
 
-                    if(delivered_msgs.get() >= num_msgs) {
-                        lock.lock();
-                        try {
-                            all_msgs_delivered.signalAll();
-                        }
-                        finally {
-                            lock.unlock();
-                        }
+                if(delivered_msgs.get() >= num_msgs) {
+                    lock.lock();
+                    try {
+                        all_msgs_delivered.signalAll();
+                    }
+                    finally {
+                        lock.unlock();
                     }
                 }
                 return null;
@@ -205,7 +203,7 @@ public class NAKACK_StressTest {
             while(num_msgs.getAndDecrement() > 0) {
                 long seqno=current_seqno.getAndIncrement();
                 Message msg=createMessage(null, sender, seqno, oob);
-                nak.up(new Event(Event.MSG, msg));
+                nak.up(msg);
             }
         }
     }

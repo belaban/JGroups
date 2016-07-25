@@ -156,7 +156,7 @@ public class RequestCorrelator {
 
         if(opts.anycasting()) {
             if(opts.useAnycastAddresses()) {
-                transport.down(new Event(Event.MSG, msg.dest(new AnycastAddress(dest_mbrs))));
+                transport.down(msg.dest(new AnycastAddress(dest_mbrs)));
             }
             else {
                 boolean first=true;
@@ -165,12 +165,12 @@ public class RequestCorrelator {
                     first=false;
                     if(!mbr.equals(local_addr) && copy.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK))
                         copy.clearTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
-                    transport.down(new Event(Event.MSG, copy));
+                    transport.down(copy);
                 }
             }
         }
         else
-            transport.down(new Event(Event.MSG, msg));
+            transport.down(msg);
     }
 
     /** Sends a request to a single destination */
@@ -198,7 +198,7 @@ public class RequestCorrelator {
         }
         else // async RPC
             rpc_stats.add(RpcStats.Type.UNICAST, dest, false, 0);
-        transport.down(new Event(Event.MSG, msg));
+        transport.down(msg);
     }
 
 
@@ -234,10 +234,6 @@ public class RequestCorrelator {
                 setLocalAddress(evt.getArg());
                 break;
 
-            case Event.MSG:
-                if(receiveMessage(evt.getArg()))
-                    return true; // message was consumed, don't pass it up
-                break;
             case Event.SITE_UNREACHABLE:
                 SiteMaster site_master=evt.getArg();
                 String site=site_master.getSite();
@@ -452,7 +448,7 @@ public class RequestCorrelator {
         rsp.putHeader(corr_id, rsp_hdr);
         if(log.isTraceEnabled())
             log.trace("sending rsp for %d to %s", req_id, rsp.getDest());
-        transport.down(new Event(Event.MSG, rsp));
+        transport.down(rsp);
     }
 
     protected static Buffer replyToBuffer(Object obj, Marshaller marshaller) throws Exception {

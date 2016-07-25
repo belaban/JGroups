@@ -1,7 +1,6 @@
 package org.jgroups.util;
 
 import org.jgroups.Address;
-import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.logging.Log;
 import org.jgroups.stack.Protocol;
@@ -107,7 +106,7 @@ public class ForwardQueue {
         try {
             forward_table.put(id, msg);
             if(running && !flushing)
-                down_prot.down(new Event(Event.MSG, msg));
+                down_prot.down(msg);
         }
         finally {
             in_flight_sends.decrementAndGet();
@@ -128,7 +127,7 @@ public class ForwardQueue {
         }
         if(log.isTraceEnabled())
             log.trace(local_addr + ": delivering " + sender + "::" + id);
-        up_prot.up(new Event(Event.MSG, msg));
+        up_prot.up(msg);
     }
 
     public void flush(Address new_target, final List<Address> mbrs) {
@@ -209,7 +208,7 @@ public class ForwardQueue {
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": flushing (forwarding) " + "::" + key + " to target " + target);
             ack_promise.reset();
-            down_prot.down(new Event(Event.MSG, forward_msg));
+            down_prot.down(forward_msg);
             Long ack=ack_promise.getResult(500);
             if((Objects.equals(ack, key)) || !forward_table.containsKey(key))
                 break;
@@ -224,7 +223,7 @@ public class ForwardQueue {
                 forward_msg.setFlag(Message.Flag.DONT_BUNDLE);
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": flushing (forwarding) " + "::" + key + " to target " + target);
-                down_prot.down(new Event(Event.MSG, forward_msg));
+                down_prot.down(forward_msg);
             }
         }
     }

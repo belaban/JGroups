@@ -206,24 +206,22 @@ public class SASL extends Protocol {
     }
 
     @Override
-    public Object up(Event evt) {
-        if (evt.getType() == Event.MSG) {
-            Message msg = (Message) evt.getArg();
-            SaslHeader saslHeader = (SaslHeader) msg.getHeader(SASL_ID);
-            GmsHeader gmsHeader = (GmsHeader) msg.getHeader(GMS_ID);
-            Address remoteAddress = msg.getSrc();
-            if (needsAuthentication(gmsHeader, remoteAddress)) {
-                if (saslHeader == null)
-                    throw new IllegalStateException("Found GMS join or merge request but no SASL header");
-                if (!serverChallenge(gmsHeader, saslHeader, msg))
-                    return null; // failed auth, don't pass up
-            } else if (saslHeader != null) {
-                SaslContext saslContext = sasl_context.get(remoteAddress);
-                if (saslContext == null) {
-                    throw new IllegalStateException(String.format(
-                            "Cannot find server context to challenge SASL request from %s", remoteAddress.toString()));
-                }
-                switch (saslHeader.getType()) {
+    public Object up(Message msg) {
+        SaslHeader saslHeader =msg.getHeader(SASL_ID);
+        GmsHeader gmsHeader =msg.getHeader(GMS_ID);
+        Address remoteAddress = msg.getSrc();
+        if (needsAuthentication(gmsHeader, remoteAddress)) {
+            if (saslHeader == null)
+                throw new IllegalStateException("Found GMS join or merge request but no SASL header");
+            if (!serverChallenge(gmsHeader, saslHeader, msg))
+                return null; // failed auth, don't pass up
+        } else if (saslHeader != null) {
+            SaslContext saslContext = sasl_context.get(remoteAddress);
+            if (saslContext == null) {
+                throw new IllegalStateException(String.format(
+                  "Cannot find server context to challenge SASL request from %s", remoteAddress.toString()));
+            }
+            switch (saslHeader.getType()) {
                 case CHALLENGE:
                     try {
                         if (log.isTraceEnabled())
@@ -233,7 +231,7 @@ public class SASL extends Protocol {
                         if (response != null) {
                             if (log.isTraceEnabled())
                                 log.trace("%s: sending RESPONSE to %s", getAddress(), remoteAddress);
-                            down_prot.down(new Event(Event.MSG, response));
+                            down_prot.down(response);
                         } else {
                             if (!saslContext.isSuccessful()) {
                                 throw new SaslException("computed response is null but challenge-response cycle not complete!");
@@ -258,7 +256,7 @@ public class SASL extends Protocol {
                             if (log.isTraceEnabled())
                                 log.trace("%s: sending CHALLENGE to %s", getAddress(), remoteAddress);
 
-                            down_prot.down(new Event(Event.MSG, challenge));
+                            down_prot.down(challenge);
                         } else {
                             if (!saslContext.isSuccessful()) {
                                 throw new SaslException("computed challenge is null but challenge-response cycle not complete!");
@@ -273,11 +271,10 @@ public class SASL extends Protocol {
                         }
                     }
                     break;
-                }
-                return null;
             }
+            return null;
         }
-        return up_prot.up(evt);
+        return up_prot.up(msg);
     }
 
     private void disposeContext(Address address) {
@@ -291,10 +288,10 @@ public class SASL extends Protocol {
     public void up(MessageBatch batch) {
         for (Message msg : batch) {
             // If we have a join or merge request --> authenticate, else pass up
-            GmsHeader gmsHeader = (GmsHeader) msg.getHeader(GMS_ID);
+            GmsHeader gmsHeader =msg.getHeader(GMS_ID);
             Address remoteAddress = msg.getSrc();
             if (needsAuthentication(gmsHeader, remoteAddress)) {
-                SaslHeader saslHeader = (SaslHeader) msg.getHeader(id);
+                SaslHeader saslHeader =msg.getHeader(id);
                 if (saslHeader == null) {
                     log.warn("Found GMS join or merge request but no SASL header");
                     sendRejectionMessage(gmsHeader.getType(), batch.sender(), "join or merge without an SASL header");
@@ -312,31 +309,31 @@ public class SASL extends Protocol {
     public Object down(Event evt) {
         switch (evt.getType()) {
         case Event.SET_LOCAL_ADDRESS:
-            local_addr = (Address) evt.getArg();
-            break;
-        case Event.MSG:
-            Message msg = (Message) evt.getArg();
-            GmsHeader hdr = (GmsHeader) msg.getHeader(GMS_ID);
-            Address remoteAddress = msg.getDest();
-            if (needsAuthentication(hdr, remoteAddress)) {
-                // We are a client who needs to authenticate
-                SaslClientContext ctx = null;
-
-                try {
-                    ctx = new SaslClientContext(saslClientFactory, mech, server_name != null ? server_name : remoteAddress.toString(), client_callback_handler, sasl_props, client_subject);
-                    sasl_context.put(remoteAddress, ctx);
-                    ctx.addHeader(msg, null);
-                } catch (Exception e) {
-                    if (ctx != null) {
-                        disposeContext(remoteAddress);
-                    }
-                    throw new SecurityException(e);
-                }
-            }
+            local_addr = evt.getArg();
             break;
         }
-
         return down_prot.down(evt);
+    }
+
+    public Object down(Message msg) {
+        GmsHeader hdr =msg.getHeader(GMS_ID);
+        Address remoteAddress = msg.getDest();
+        if (needsAuthentication(hdr, remoteAddress)) {
+            // We are a client who needs to authenticate
+            SaslClientContext ctx = null;
+
+            try {
+                ctx = new SaslClientContext(saslClientFactory, mech, server_name != null ? server_name : remoteAddress.toString(), client_callback_handler, sasl_props, client_subject);
+                sasl_context.put(remoteAddress, ctx);
+                ctx.addHeader(msg, null);
+            } catch (Exception e) {
+                if (ctx != null) {
+                    disposeContext(remoteAddress);
+                }
+                throw new SecurityException(e);
+            }
+        }
+        return down_prot.down(msg);
     }
 
     private boolean isSelf(Address remoteAddress) {
@@ -372,7 +369,7 @@ public class SASL extends Protocol {
             try {
                 ctx = new SaslServerContext(saslServerFactory, mech, server_name != null ? server_name : local_addr.toString(), server_callback_handler, sasl_props, server_subject);
                 sasl_context.put(remoteAddress, ctx);
-                this.getDownProtocol().down(new Event(Event.MSG, ctx.nextMessage(remoteAddress, saslHeader)));
+                this.getDownProtocol().down(ctx.nextMessage(remoteAddress, saslHeader));
                 ctx.awaitCompletion(timeout);
                 if (ctx.isSuccessful()) {
                     if (log.isDebugEnabled()) {
@@ -421,7 +418,7 @@ public class SASL extends Protocol {
         JoinRsp joinRes = new JoinRsp(error_msg); // specify the error message on the JoinRsp
         Message msg = new Message(dest).putHeader(GMS_ID, new GmsHeader(GmsHeader.JOIN_RSP)).setBuffer(
                 GMS.marshal(joinRes));
-        down_prot.down(new Event(Event.MSG, msg));
+        down_prot.down(msg);
     }
 
     protected void sendMergeRejectionMessage(Address dest) {
@@ -431,6 +428,6 @@ public class SASL extends Protocol {
         msg.putHeader(GMS_ID, hdr);
         if (log.isDebugEnabled())
             log.debug("merge response=" + hdr);
-        down_prot.down(new Event(Event.MSG, msg));
+        down_prot.down(msg);
     }
 }

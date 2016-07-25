@@ -1,6 +1,9 @@
 package org.jgroups.fork;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
 import org.jgroups.protocols.FORK;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -56,6 +59,10 @@ public class ForkProtocolStack extends ProtocolStack {
         return down_prot.down(evt);
     }
 
+    public Object down(Message msg) {
+        return down_prot.down(msg);
+    }
+
     public void setLocalAddress(Address addr) {
         if(local_addr != null && addr != null && local_addr.equals(addr))
             return;
@@ -96,7 +103,7 @@ public class ForkProtocolStack extends ProtocolStack {
         if(--inits == 0) {
             super.destroy();
             this.protocols.clear();
-            FORK fork=(FORK)findProtocol(FORK.class);
+            FORK fork=findProtocol(FORK.class);
             fork.remove(this.fork_stack_id);
         }
     }
@@ -105,20 +112,6 @@ public class ForkProtocolStack extends ProtocolStack {
 
     public Object up(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                FORK.ForkHeader hdr=(FORK.ForkHeader)msg.getHeader(FORK.ID);
-                if(hdr == null)
-                    break;
-                String forkId = hdr.getForkChannelId();
-                if(forkId == null)
-                    throw new IllegalArgumentException("header has a null fork_channel_id");
-                JChannel fork_channel=get(forkId);
-                if (fork_channel == null) {
-                    return this.unknownForkHandler.handleUnknownForkChannel(msg, forkId);
-                }
-                return fork_channel.up(evt);
-
             case Event.VIEW_CHANGE:
                 for(JChannel ch: fork_channels.values())
                     ch.up(evt);
@@ -127,11 +120,25 @@ public class ForkProtocolStack extends ProtocolStack {
         return null;
     }
 
+    public Object up(Message msg) {
+        FORK.ForkHeader hdr=msg.getHeader(FORK.ID);
+        if(hdr == null)
+            return null;
+        String forkId = hdr.getForkChannelId();
+        if(forkId == null)
+            throw new IllegalArgumentException("header has a null fork_channel_id");
+        JChannel fork_channel=get(forkId);
+        if (fork_channel == null) {
+            return this.unknownForkHandler.handleUnknownForkChannel(msg, forkId);
+        }
+        return fork_channel.up(msg);
+    }
+
     public void up(MessageBatch batch) {
         // Sort fork messages by fork-channel-id
         Map<String,List<Message>> map=new HashMap<>();
         for(Message msg: batch) {
-            FORK.ForkHeader hdr=(FORK.ForkHeader)msg.getHeader(FORK.ID);
+            FORK.ForkHeader hdr=msg.getHeader(FORK.ID);
             if(hdr != null) {
                 batch.remove(msg);
                 List<Message> list=map.get(hdr.getForkChannelId());

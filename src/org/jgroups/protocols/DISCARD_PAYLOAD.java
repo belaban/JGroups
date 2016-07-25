@@ -1,6 +1,5 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
@@ -21,31 +20,28 @@ public class DISCARD_PAYLOAD extends Protocol {
     public DISCARD_PAYLOAD() {
     }
 
-    public Object down(Event evt) {
-        if(evt.getType() == Event.MSG) {
-            Message msg=(Message)evt.getArg();
-            if(msg.getLength() > 0) {
-                try {
-                    Long payload=msg.getObject();
-                    if(payload != null) {
-                        if(payload == seqno) {
-                            synchronized(this) {
-                                if(num_discards < 3) {
-                                    num_discards++;
-                                    return null;
-                                }
+    public Object down(Message msg) {
+        if(msg.getLength() > 0) {
+            try {
+                Long payload=msg.getObject();
+                if(payload != null) {
+                    if(payload == seqno) {
+                        synchronized(this) {
+                            if(num_discards < 3) {
+                                num_discards++;
+                                return null;
                             }
                         }
-                        if(payload == duplicate) { // inject a duplicate message
-                            super.down(evt); // pass it down, will passed down a second time by the default down_prot.down(evt)
-                        }
+                    }
+                    if(payload == duplicate) { // inject a duplicate message
+                        super.down(msg); // pass it down, will passed down a second time by the default down_prot.down(evt)
                     }
                 }
-                catch(Throwable t) {
-                    ;
-                }
+            }
+            catch(Throwable t) {
+                ;
             }
         }
-        return down_prot.down(evt);
+        return down_prot.down(msg);
     }
 }

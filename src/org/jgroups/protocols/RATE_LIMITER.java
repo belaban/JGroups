@@ -103,51 +103,47 @@ public class RATE_LIMITER extends Protocol {
     }
 
     public Object down(Event evt) {
-        if(evt.getType() == Event.MSG) {
-            Message msg=(Message)evt.getArg();
-            int len=msg.getLength();
-            if(len == 0 || msg.isFlagSet(Message.Flag.NO_FC))
-                return down_prot.down(evt);
-
-            lock.lock();
-            try {
-                if(len > max_bytes) {
-                    log.error(Util.getMessage("MessageLength") + len + " bytes) exceeded max_bytes (" + max_bytes + "); " +
-                            "adjusting max_bytes to " + len);
-                    max_bytes=len;
-                }
-
-                if(num_bytes_sent_in_period + len > max_bytes) { // size exceeded
-                    long current_time=System.nanoTime();
-                    long block_time=time_period_ns - (current_time - current_period_start);
-                    if(block_time > 0) {
-                        LockSupport.parkNanos(block_time);
-                        num_blockings++;
-                        total_block_time+=block_time;
-                    }
-                    current_period_start=block_time > 0? current_time + block_time : System.nanoTime();
-                    num_bytes_sent_in_period=0;
-                }
-            }
-            finally {
-                num_bytes_sent_in_period+=len;
-                lock.unlock();
-            }
-
-            return down_prot.down(evt);
-        }
-
         if(evt.getType() == Event.CONFIG) {
-            Map<String,Object> map=(Map<String, Object>)evt.getArg();
+            Map<String,Object> map=evt.getArg();
             Integer tmp=map != null? (Integer)map.get("frag_size") : null;
             if(tmp != null)
                 frag_size=tmp;
             if(frag_size > 0 && max_bytes % frag_size != 0)
-                log.warn("For optimal performance, max_bytes (" + max_bytes +
-                           ") should be a multiple of frag_size (" + frag_size + ")");
+                log.warn("For optimal performance, max_bytes (%d) should be a multiple of frag_size (%d)", max_bytes, frag_size);
         }
-
         return down_prot.down(evt);
     }
 
+    public Object down(Message msg) {
+        int len=msg.getLength();
+        if(len == 0 || msg.isFlagSet(Message.Flag.NO_FC))
+            return down_prot.down(msg);
+
+        lock.lock();
+        try {
+            if(len > max_bytes) {
+                log.error(Util.getMessage("MessageLength") + len + " bytes) exceeded max_bytes (" + max_bytes + "); " +
+                            "adjusting max_bytes to " + len);
+                max_bytes=len;
+            }
+
+            if(num_bytes_sent_in_period + len > max_bytes) { // size exceeded
+                long current_time=System.nanoTime();
+                long block_time=time_period_ns - (current_time - current_period_start);
+                if(block_time > 0) {
+                    LockSupport.parkNanos(block_time);
+                    num_blockings++;
+                    total_block_time+=block_time;
+                }
+                current_period_start=block_time > 0? current_time + block_time : System.nanoTime();
+                num_bytes_sent_in_period=0;
+            }
+        }
+        finally {
+            num_bytes_sent_in_period+=len;
+            lock.unlock();
+        }
+
+        return down_prot.down(msg);
+    }
 }

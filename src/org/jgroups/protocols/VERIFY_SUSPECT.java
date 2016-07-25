@@ -114,38 +114,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     verifySuspectWithICMP(suspected_mbr);
                 return null;  // don't pass up; we will decide later (after verification) whether to pass it up
 
-
-            case Event.MSG:
-                Message msg=evt.getArg();
-                VerifyHeader hdr=msg.getHeader(this.id);
-                if(hdr == null)
-                    break;
-                switch(hdr.type) {
-                    case VerifyHeader.ARE_YOU_DEAD:
-                        if(hdr.from == null) {
-                            if(log.isErrorEnabled()) log.error(Util.getMessage("AREYOUDEADHdrFromIsNull"));
-                        }
-                        else {
-                            Message rsp;
-                            Address target=use_mcast_rsps? null : hdr.from;
-                            for(int i=0; i < num_msgs; i++) {
-                                rsp=new Message(target).setFlag(Message.Flag.INTERNAL)
-                                  .putHeader(this.id, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
-                                down_prot.down(new Event(Event.MSG, rsp));
-                            }
-                        }
-                        return null;
-                    case VerifyHeader.I_AM_NOT_DEAD:
-                        if(hdr.from == null) {
-                            if(log.isErrorEnabled()) log.error(Util.getMessage("IAMNOTDEADHdrFromIsNull"));
-                            return null;
-                        }
-                        unsuspect(hdr.from);
-                        return null;
-                }
-                return null;
-
-
             case Event.CONFIG:
                 if(bind_addr == null) {
                     Map<String,Object> config=evt.getArg();
@@ -153,6 +121,36 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                 }
         }
         return up_prot.up(evt);
+    }
+
+    public Object up(Message msg) {
+        VerifyHeader hdr=msg.getHeader(this.id);
+        if(hdr == null)
+            return up_prot.up(msg);
+        switch(hdr.type) {
+            case VerifyHeader.ARE_YOU_DEAD:
+                if(hdr.from == null) {
+                    if(log.isErrorEnabled()) log.error(Util.getMessage("AREYOUDEADHdrFromIsNull"));
+                }
+                else {
+                    Message rsp;
+                    Address target=use_mcast_rsps? null : hdr.from;
+                    for(int i=0; i < num_msgs; i++) {
+                        rsp=new Message(target).setFlag(Message.Flag.INTERNAL)
+                          .putHeader(this.id, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
+                        down_prot.down(rsp);
+                    }
+                }
+                return null;
+            case VerifyHeader.I_AM_NOT_DEAD:
+                if(hdr.from == null) {
+                    if(log.isErrorEnabled()) log.error(Util.getMessage("IAMNOTDEADHdrFromIsNull"));
+                    return null;
+                }
+                unsuspect(hdr.from);
+                return null;
+        }
+        return null;
     }
 
     /**
@@ -211,7 +209,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         for(int i=0; i < num_msgs; i++) {
             msg=new Message(mbr).setFlag(Message.Flag.INTERNAL)
               .putHeader(this.id, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
-            down_prot.down(new Event(Event.MSG, msg));
+            down_prot.down(msg);
         }               
     }
 

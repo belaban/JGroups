@@ -366,21 +366,45 @@ public abstract class Protocol {
     }
 
 
+    /**
+     * An event is to be sent down the stack. A protocol may want to examine its type and perform some action on it,
+     * depending on the event's type. If the event is a message MSG, then the protocol may need to add a header to it
+     * (or do nothing at all) before sending it down the stack using {@code down_prot.down()}.
+     */
+    public Object down(Event evt) {
+        return down_prot.down(evt);
+    }
 
     /**
-     * An event was received from the layer below. Usually the current layer will want to examine
-     * the event type and - depending on its type - perform some computation
-     * (e.g. removing headers from a MSG event type, or updating the internal membership list
-     * when receiving a VIEW_CHANGE event).
-     * Finally the event is either a) discarded, or b) an event is sent down
-     * the stack using {@code down_prot.down()} or c) the event (or another event) is sent up
-     * the stack using {@code up_prot.up()}.
+     * A message is sent down the stack. Protocols may examine the message and do something (e.g. add a header) with it
+     * before passing it down.
+     * @since 4.0
+     */
+    public Object down(Message msg) {
+        return down_prot.down(msg);
+    }
+
+
+    /**
+     * An event was received from the protocol below. Usually the current protocol will want to examine the event type
+     * and - depending on its type - perform some computation (e.g. removing headers from a MSG event type, or updating
+     * the internal membership list when receiving a VIEW_CHANGE event).
+     * Finally the event is either a) discarded, or b) an event is sent down the stack using {@code down_prot.down()}
+     * or c) the event (or another event) is sent up the stack using {@code up_prot.up()}.
      */
     public Object up(Event evt) {
         return up_prot.up(evt);
     }
 
 
+    /**
+     * A single message was received. Protocols may examine the message and do something (e.g. add a header) with it
+     * before passing it up.
+     * @since 4.0
+     */
+    public Object up(Message msg) {
+        return up_prot.up(msg);
+    }
 
 
     /**
@@ -403,7 +427,7 @@ public abstract class Protocol {
             if(msg != null && accept(msg)) {
                 it.remove();
                 try {
-                    up(new Event(Event.MSG, msg));
+                    up(msg);
                 }
                 catch(Throwable t) {
                     log.error(Util.getMessage("PassUpFailure"), t);
@@ -414,18 +438,6 @@ public abstract class Protocol {
             up_prot.up(batch);
     }
 
-
-    /**
-     * An event is to be sent down the stack. The layer may want to examine its type and perform
-     * some action on it, depending on the event's type. If the event is a message MSG, then
-     * the layer may need to add a header to it (or do nothing at all) before sending it down
-     * the stack using {@code down_prot.down()}. In case of a GET_ADDRESS event (which tries to
-     * retrieve the stack's address from one of the bottom layers), the layer may need to send
-     * a new response event back up the stack using {@code up_prot.up()}.
-     */
-    public Object down(Event evt) {
-        return down_prot.down(evt);
-    }
 
 
     /**

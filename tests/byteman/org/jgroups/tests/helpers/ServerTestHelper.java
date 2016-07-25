@@ -25,13 +25,4 @@ public class ServerTestHelper extends Helper {
         return obj.equals(ServerTest.B);
     }
 
-   /* public void stackTrace() {
-        try {
-            throw new Exception();
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-        }
-    }*/
-
 }

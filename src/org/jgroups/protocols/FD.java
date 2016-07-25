@@ -204,60 +204,55 @@ public class FD extends Protocol {
 
 
 
-    public Object up(Event evt) {
-        switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                FdHeader hdr=msg.getHeader(this.id);
-                if(hdr == null) {
-                    if(msg_counts_as_heartbeat)
-                        updateTimestamp(msg.getSrc());
-                    break;  // message did not originate from FD layer, just pass up
-                }
-
-                switch(hdr.type) {
-                    case FdHeader.HEARTBEAT:                       // heartbeat request; send heartbeat ack
-                        Address hb_sender=msg.getSrc();
-                        log.trace("%s: received are-you-alive from %s, sending response", local_addr, hb_sender);
-                        sendHeartbeatResponse(hb_sender);
-                        break;                                     // don't pass up !
-
-                    case FdHeader.HEARTBEAT_ACK:                   // heartbeat ack
-                        updateTimestamp(hdr.from);
-                        break;
-
-                    case FdHeader.SUSPECT:
-                        if(hdr.mbrs == null)
-                            return null;
-                        log.trace("%s: received suspect message: %s", local_addr, hdr);
-                        for(Address mbr: hdr.mbrs) {
-                            if(local_addr != null && mbr.equals(local_addr)) {
-                                log.warn("%s: I was suspected by %s; ignoring the SUSPECT message and sending back a HEARTBEAT_ACK",
-                                         local_addr, msg.src());
-                                sendHeartbeatResponse(msg.getSrc());
-                                continue;
-                            }
-                            lock.lock();
-                            try {
-                                computePingDest(mbr);
-                            }
-                            finally {
-                                lock.unlock();
-                            }
-                            up_prot.up(new Event(Event.SUSPECT, mbr));
-                            down_prot.down(new Event(Event.SUSPECT, mbr));
-                        }
-                        break;
-                    case FdHeader.UNSUSPECT:
-                        if(hdr.mbrs == null)
-                            return null;
-                        log.trace("%s: received unsuspect message: %s", local_addr, hdr);
-                        hdr.mbrs.forEach(this::unsuspect);
-                        break;
-                }
-                return null;
+    public Object up(Message msg) {
+        FdHeader hdr=msg.getHeader(this.id);
+        if(hdr == null) {
+            if(msg_counts_as_heartbeat)
+                updateTimestamp(msg.getSrc());
+            return up_prot.up(msg);  // message did not originate from FD layer, just pass up
         }
-        return up_prot.up(evt); // pass up to the layer above us
+
+        switch(hdr.type) {
+            case FdHeader.HEARTBEAT:                       // heartbeat request; send heartbeat ack
+                Address hb_sender=msg.getSrc();
+                log.trace("%s: received are-you-alive from %s, sending response", local_addr, hb_sender);
+                sendHeartbeatResponse(hb_sender);
+                break;                                     // don't pass up !
+
+            case FdHeader.HEARTBEAT_ACK:                   // heartbeat ack
+                updateTimestamp(hdr.from);
+                break;
+
+            case FdHeader.SUSPECT:
+                if(hdr.mbrs == null)
+                    return null;
+                log.trace("%s: received suspect message: %s", local_addr, hdr);
+                for(Address mbr: hdr.mbrs) {
+                    if(local_addr != null && mbr.equals(local_addr)) {
+                        log.warn("%s: I was suspected by %s; ignoring the SUSPECT message and sending back a HEARTBEAT_ACK",
+                                 local_addr, msg.src());
+                        sendHeartbeatResponse(msg.getSrc());
+                        continue;
+                    }
+                    lock.lock();
+                    try {
+                        computePingDest(mbr);
+                    }
+                    finally {
+                        lock.unlock();
+                    }
+                    up_prot.up(new Event(Event.SUSPECT, mbr));
+                    down_prot.down(new Event(Event.SUSPECT, mbr));
+                }
+                break;
+            case FdHeader.UNSUSPECT:
+                if(hdr.mbrs == null)
+                    return null;
+                log.trace("%s: received unsuspect message: %s", local_addr, hdr);
+                hdr.mbrs.forEach(this::unsuspect);
+                break;
+        }
+        return null;
     }
 
 
@@ -270,7 +265,7 @@ public class FD extends Protocol {
                 if(hdr.type == FdHeader.HEARTBEAT_ACK)
                     updated=true;
                 else
-                    up(new Event(Event.MSG, msg)); // SUSPECT and HEARTBEAT
+                    up(msg); // SUSPECT and HEARTBEAT
             }
         }
         if(updated || (msg_counts_as_heartbeat && batch.sender() != null))
@@ -308,7 +303,7 @@ public class FD extends Protocol {
                 hdr.from=local_addr;
                 Message unsuspect_msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(id, hdr);
                 log.trace("%s: broadcasting UNSUSPECT message (mbrs=%s)", local_addr, hdr.mbrs);
-                down_prot.down(new Event(Event.MSG, unsuspect_msg));
+                down_prot.down(unsuspect_msg);
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -324,7 +319,7 @@ public class FD extends Protocol {
         FdHeader tmp_hdr=new FdHeader(FdHeader.HEARTBEAT_ACK);
         tmp_hdr.from=local_addr;
         hb_ack.putHeader(this.id, tmp_hdr);
-        down_prot.down(new Event(Event.MSG, hb_ack));
+        down_prot.down(hb_ack);
     }
 
     @GuardedBy("lock")
@@ -457,7 +452,7 @@ public class FD extends Protocol {
             // 1. send heartbeat request
             Message hb_req=new Message(dest).setFlag(Message.Flag.INTERNAL).putHeader(id, new FdHeader(FdHeader.HEARTBEAT));
             log.trace("%s: sending are-you-alive msg to %s", local_addr, dest);
-            down_prot.down(new Event(Event.MSG, hb_req));
+            down_prot.down(hb_req);
             num_heartbeats++;
 
             // 2. If the time of the last heartbeat is > timeout and max_tries heartbeat messages have not been
@@ -612,7 +607,7 @@ public class FD extends Protocol {
             }
             Message suspect_msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(id, hdr);
             log.trace("%s: broadcasting SUSPECT message (suspects=%s)", local_addr, suspected_members);
-            down_prot.down(new Event(Event.MSG, suspect_msg));
+            down_prot.down(suspect_msg);
         }
 
         public void addSuspectedMember(Address suspect) {

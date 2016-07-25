@@ -134,30 +134,6 @@ public class SEQUENCER2 extends Protocol {
     
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-            	
-                Message msg=evt.getArg();
-                if(msg.getDest() != null || msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
-                    break;
-                
-                if(msg.getSrc() == null)
-                    msg.setSrc(local_addr);
-
-                try {
-                    fwd_queue.put(msg);
-                    if(seqno_reqs.getAndIncrement() == 0) {
-                        int num_reqs=seqno_reqs.get();
-                        sendSeqnoRequest(num_reqs);
-                    }
-                }
-                catch(InterruptedException e) {
-                    if(!running)
-                        return null;
-                    throw new RuntimeException(e);
-                }
-
-                return null; // don't pass down
-
             case Event.VIEW_CHANGE:
                 handleViewChange(evt.getArg());
                 break;
@@ -173,68 +149,31 @@ public class SEQUENCER2 extends Protocol {
         return down_prot.down(evt);
     }
 
-    public Object up(Event evt) {
-        Message msg;
-        SequencerHeader hdr;
 
-        switch(evt.getType()) {
-            case Event.MSG:
-                msg=evt.getArg();
-                if(msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
-                    break;
-                hdr=msg.getHeader(this.id);
-                if(hdr == null)
-                    break; // pass up
-                                
-                switch(hdr.type) {
-                    case SequencerHeader.REQUEST:
-                        if(!is_coord) {
-                            log.error("%s: non-coord; dropping REQUEST request from %s", local_addr, msg.getSrc());
-                            return null;
-                        }
-                        Address sender=msg.getSrc();
-                        if(view != null && !view.containsMember(sender)) {
-                            log.error("%s : dropping REQUEST from non-member %s; view=%s" + view, local_addr, sender, view);
-                            return null;
-                        }
+    public Object down(Message msg) {
+        if(msg.getDest() != null || msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
+            return down_prot.down(msg);
 
-                        long new_seqno=seqno.getAndAdd(hdr.num_seqnos) +1;
-                        sendSeqnoResponse(sender, new_seqno, hdr.num_seqnos);
-                        
-                        received_requests++;
-                        break;
-                        
-                	case SequencerHeader.RESPONSE:
-                		Address coordinator=msg.getSrc();
-                        if(view != null && !view.containsMember(coordinator)) {
-                            log.error(local_addr + "%s: dropping RESPONSE from non-coordinator %s; view=%s", local_addr, coordinator, view);
-                            return null;
-                        }
+        if(msg.getSrc() == null)
+            msg.setSrc(local_addr);
 
-                        long send_seqno=hdr.seqno;
-                        for(int i=0; i < hdr.num_seqnos; i++) {
-                            Message bcast_msg=fwd_queue.poll();
-                            if(bcast_msg == null) {
-                                log.error(Util.getMessage("Received%DSeqnosButFwdqueueIsEmpty"), hdr.num_seqnos);
-                                break;
-                            }
-
-                           if(log.isTraceEnabled())
-                               log.trace("%s: broadcasting %d", local_addr, send_seqno);
-                            broadcast(bcast_msg, send_seqno++);
-                        }
-                        int num_reqs=0;
-                        if((num_reqs=seqno_reqs.addAndGet(-hdr.num_seqnos)) > 0 && num_reqs > 0)
-                            sendSeqnoRequest(num_reqs);
-	                    break;
-                    
-                    case SequencerHeader.BCAST:
-                        deliver(msg, hdr);
-                        received_bcasts++;
-                        break;
-                }
+        try {
+            fwd_queue.put(msg);
+            if(seqno_reqs.getAndIncrement() == 0) {
+                int num_reqs=seqno_reqs.get();
+                sendSeqnoRequest(num_reqs);
+            }
+        }
+        catch(InterruptedException e) {
+            if(!running)
                 return null;
+            throw new RuntimeException(e);
+        }
+        return null; // don't pass down
+    }
 
+    public Object up(Event evt) {
+        switch(evt.getType()) {
             case Event.VIEW_CHANGE:
                 Object retval=up_prot.up(evt);
                 handleViewChange(evt.getArg());
@@ -244,11 +183,69 @@ public class SEQUENCER2 extends Protocol {
                 handleTmpView(evt.getArg());
                 break;
         }
-
         return up_prot.up(evt);
     }
 
-   /* public void up(MessageBatch batch) { // todo: better impl: add seq messages into the table in 1 op
+    public Object up(Message msg) {
+        SequencerHeader hdr;
+
+        if(msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
+            return up_prot.up(msg);
+        hdr=msg.getHeader(this.id);
+        if(hdr == null)
+            return up_prot.up(msg); // pass up
+                                
+        switch(hdr.type) {
+            case SequencerHeader.REQUEST:
+                if(!is_coord) {
+                    log.error("%s: non-coord; dropping REQUEST request from %s", local_addr, msg.getSrc());
+                    return null;
+                }
+                Address sender=msg.getSrc();
+                if(view != null && !view.containsMember(sender)) {
+                    log.error("%s : dropping REQUEST from non-member %s; view=%s" + view, local_addr, sender, view);
+                    return null;
+                }
+
+                long new_seqno=seqno.getAndAdd(hdr.num_seqnos) +1;
+                sendSeqnoResponse(sender, new_seqno, hdr.num_seqnos);
+                        
+                received_requests++;
+                break;
+                        
+            case SequencerHeader.RESPONSE:
+                Address coordinator=msg.getSrc();
+                if(view != null && !view.containsMember(coordinator)) {
+                    log.error(local_addr + "%s: dropping RESPONSE from non-coordinator %s; view=%s", local_addr, coordinator, view);
+                    return null;
+                }
+
+                long send_seqno=hdr.seqno;
+                for(int i=0; i < hdr.num_seqnos; i++) {
+                    Message bcast_msg=fwd_queue.poll();
+                    if(bcast_msg == null) {
+                        log.error(Util.getMessage("Received%DSeqnosButFwdqueueIsEmpty"), hdr.num_seqnos);
+                        break;
+                    }
+
+                    if(log.isTraceEnabled())
+                        log.trace("%s: broadcasting %d", local_addr, send_seqno);
+                    broadcast(bcast_msg, send_seqno++);
+                }
+                int num_reqs=0;
+                if((num_reqs=seqno_reqs.addAndGet(-hdr.num_seqnos)) > 0 && num_reqs > 0)
+                    sendSeqnoRequest(num_reqs);
+                break;
+                    
+            case SequencerHeader.BCAST:
+                deliver(msg, hdr);
+                received_bcasts++;
+                break;
+        }
+        return null;
+    }
+
+    /* public void up(MessageBatch batch) { // todo: better impl: add seq messages into the table in 1 op
         List<Tuple<Long,Message>> msgs=null;
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
             final Message msg=it.next();
@@ -263,7 +260,7 @@ public class SEQUENCER2 extends Protocol {
             switch(hdr.type) {
                 case SequencerHeader.REQUEST:
                 case SequencerHeader.RESPONSE:
-                    up(new Event(Event.MSG, msg));
+                    up(msg);
                     break;
 
                 case SequencerHeader.BCAST:
@@ -308,7 +305,7 @@ public class SEQUENCER2 extends Protocol {
 
             // simplistic implementation
             try {
-                up(new Event(Event.MSG, msg));
+                up(msg);
             }
             catch(Throwable t) {
                 log.error(Util.getMessage("FailedPassingUpMessage"), t);
@@ -361,7 +358,7 @@ public class SEQUENCER2 extends Protocol {
             return;
         SequencerHeader hdr=new SequencerHeader(SequencerHeader.REQUEST, 0, num_seqnos);
         Message forward_msg=new Message(target).putHeader(this.id, hdr);
-        down_prot.down(new Event(Event.MSG, forward_msg));
+        down_prot.down(forward_msg);
         sent_requests++;
     }
     
@@ -372,7 +369,7 @@ public class SEQUENCER2 extends Protocol {
         if (log.isTraceEnabled())
             log.trace(local_addr + ": sending seqno response to " + original_sender + ":: new_seqno=" + seqno + ", num_seqnos=" + num_seqnos);
 
-        down_prot.down(new Event(Event.MSG, ucast_msg));
+        down_prot.down(ucast_msg);
         sent_responses++;
 	}
     
@@ -382,7 +379,7 @@ public class SEQUENCER2 extends Protocol {
         if(log.isTraceEnabled())
             log.trace(local_addr + ": broadcasting ::" + seqno);
 
-        down_prot.down(new Event(Event.MSG, msg));
+        down_prot.down(msg);
         bcast_msgs++;
     }
 

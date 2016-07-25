@@ -170,7 +170,7 @@ public class MPING extends PING implements Runnable {
     public Object up(Event evt) {
         if(evt.getType() == Event.CONFIG) {
             if(bind_addr == null) {
-                Map<String,Object> config=(Map<String,Object>)evt.getArg();
+                Map<String,Object> config=evt.getArg();
                 bind_addr=(InetAddress)config.get("bind_addr");
             }
             return up_prot.up(evt);
@@ -313,7 +313,7 @@ public class MPING extends PING implements Runnable {
                 DataInput inp=new ByteArrayDataInputStream(packet.getData(), packet.getOffset(), packet.getLength());
                 Message msg=new Message();
                 msg.readFrom(inp);
-                up(new Event(Event.MSG, msg));
+                up(msg);
             }
             catch(SocketException socketEx) {
                 break;

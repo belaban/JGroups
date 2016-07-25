@@ -322,10 +322,7 @@ public class ProtocolConfigurationTest {
 		public String getName() {
 			return name ;
 		}
-		// do nothing
-		public Object down(Event evt) {
-			return down_prot.down(evt);
-		}
+
 		// do nothing
 		public Object up(Event evt) {
 			return up_prot.up(evt);

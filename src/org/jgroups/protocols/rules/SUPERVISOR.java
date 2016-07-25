@@ -170,10 +170,10 @@ public class SUPERVISOR extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
             case Event.VIEW_CHANGE:
-                handleView((View)evt.getArg());
+                handleView(evt.getArg());
                 break;
         }
 
@@ -191,10 +191,25 @@ public class SUPERVISOR extends Protocol {
         return down_prot.down(evt);
     }
 
+    public Object down(Message msg) {
+        if(num_event_handlers > 0) {
+            for(EventHandler handler: event_handlers) {
+                try {
+                    handler.down(msg);
+                }
+                catch(Throwable t) {
+                    log.error(Util.getMessage("EventHandlerFailedHandlingDownEvent"), t);
+                }
+            }
+        }
+
+        return down_prot.down(msg);
+    }
+
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
-                handleView((View)evt.getArg());
+                handleView(evt.getArg());
                 break;
         }
         if(num_event_handlers > 0) {
@@ -215,7 +230,7 @@ public class SUPERVISOR extends Protocol {
             for(Message msg: batch) {
                 for(EventHandler handler: event_handlers) {
                     try {
-                        handler.up(new Event(Event.MSG, msg));
+                        handler.up(msg);
                     }
                     catch(Throwable t) {
                         log.error(Util.getMessage("EventHandlerFailedHandlingUpEvent"), t);

@@ -110,21 +110,6 @@ public abstract class Encrypt extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                try {
-                    if(secret_key == null) {
-                        log.trace("%s: discarded %s message to %s as secret key is null, hdrs: %s",
-                                  local_addr, msg.dest() == null? "mcast" : "unicast", msg.dest(), msg.printHeaders());
-                        return null;
-                    }
-                    encryptAndSend(msg);
-                }
-                catch(Exception e) {
-                    log.warn("%s: unable to send message down", local_addr, e);
-                }
-                return null;
-
             case Event.VIEW_CHANGE:
                 handleView(evt.getArg());
                 break;
@@ -137,24 +122,40 @@ public abstract class Encrypt extends Protocol {
     }
 
 
+    public Object down(Message msg) {
+        try {
+            if(secret_key == null) {
+                log.trace("%s: discarded %s message to %s as secret key is null, hdrs: %s",
+                          local_addr, msg.dest() == null? "mcast" : "unicast", msg.dest(), msg.printHeaders());
+                return null;
+            }
+            encryptAndSend(msg);
+        }
+        catch(Exception e) {
+            log.warn("%s: unable to send message down", local_addr, e);
+        }
+        return null;
+    }
+
+
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
                 handleView(evt.getArg());
                 break;
-            case Event.MSG:
-                Message msg=evt.getArg();
-                try {
-                    return handleUpMessage(msg);
-                }
-                catch(Exception e) {
-                    log.warn("%s: exception occurred decrypting message", local_addr, e);
-                }
-                return null;
         }
         return up_prot.up(evt);
     }
 
+    public Object up(Message msg) {
+        try {
+            return handleUpMessage(msg);
+        }
+        catch(Exception e) {
+            log.warn("%s: exception occurred decrypting message", local_addr, e);
+        }
+        return null;
+    }
 
     public void up(MessageBatch batch) {
         Cipher cipher=null;
@@ -237,7 +238,7 @@ public abstract class Encrypt extends Protocol {
         // buffer (http://jira.jboss.com/jira/browse/JGRP-538)
         Message tmpMsg=decryptMessage(null, msg.copy()); // need to copy for possible xmits
         if(tmpMsg != null)
-            return up_prot.up(new Event(Event.MSG, tmpMsg));
+            return up_prot.up(tmpMsg);
         log.warn("%s: unrecognized cipher; discarding message from %s", local_addr, msg.src());
         return null;
     }
@@ -337,7 +338,7 @@ public abstract class Encrypt extends Protocol {
 
             // exclude existing headers, they will be seen again when we decrypt and unmarshal the msg at the receiver
             Message tmp=msg.copy(false, false).setBuffer(encrypted_msg).putHeader(this.id,hdr);
-            down_prot.down(new Event(Event.MSG, tmp));
+            down_prot.down(tmp);
             return;
         }
 
@@ -345,7 +346,7 @@ public abstract class Encrypt extends Protocol {
         Message msgEncrypted=msg.copy(false).putHeader(this.id, hdr);
         if(msg.getLength() > 0)
             msgEncrypted.setBuffer(code(msg.getRawBuffer(),msg.getOffset(),msg.getLength(),false));
-        down_prot.down(new Event(Event.MSG,msgEncrypted));
+        down_prot.down(msgEncrypted);
     }
 
 

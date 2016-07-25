@@ -192,30 +192,25 @@ public class JoinTest extends ChannelTestBase {
         public long           delay()           {return delay;}
         public DELAY_JOIN_REQ delay(long delay) {this.delay=delay; return this;}
 
-        public Object up(final Event evt) {
-            switch(evt.getType()) {
-                case Event.MSG:
-                    Message msg=(Message)evt.getArg();
-                    final GMS.GmsHeader hdr=msg.getHeader(gms_id);
-                    if(hdr != null) {
-                        switch(hdr.getType()) {
-                            case GMS.GmsHeader.JOIN_REQ:
-                            case GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
-                                System.out.println(new Date() + ": delaying JOIN-REQ by " + delay + " ms");
-                                Thread thread=new Thread() {
-                                    public void run() {
-                                        Util.sleep(delay);
-                                        System.out.println(new Date() + ": sending up delayed JOIN-REQ by " + hdr.getMember());
-                                        up_prot.up(evt);
-                                    }
-                                };
-                                thread.start();
-                                return null;
-                        }
-                    }
-                    break;
+        public Object up(final Message msg) {
+            final GMS.GmsHeader hdr=msg.getHeader(gms_id);
+            if(hdr != null) {
+                switch(hdr.getType()) {
+                    case GMS.GmsHeader.JOIN_REQ:
+                    case GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
+                        System.out.println(new Date() + ": delaying JOIN-REQ by " + delay + " ms");
+                        Thread thread=new Thread() {
+                            public void run() {
+                                Util.sleep(delay);
+                                System.out.println(new Date() + ": sending up delayed JOIN-REQ by " + hdr.getMember());
+                                up_prot.up(msg);
+                            }
+                        };
+                        thread.start();
+                        return null;
+                }
             }
-            return up_prot.up(evt);
+            return up_prot.up(msg);
         }
     }
 

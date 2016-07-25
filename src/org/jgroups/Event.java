@@ -1,5 +1,6 @@
 package org.jgroups;
 
+
 /**
  * Event is a JGroups internal class used for inter-stack and intra-stack communication. 
  * 
@@ -7,7 +8,6 @@ package org.jgroups;
  * @author Bela Ban
  */
 public class Event {
-    public static final int MSG                                =  1;  // arg = Message
     public static final int CONNECT                            =  2;  // arg = cluster name (string)
     public static final int DISCONNECT                         =  4;  // arg = member address (Address)
     public static final int VIEW_CHANGE                        =  6;  // arg = View (or MergeView in case of merge)
@@ -97,7 +97,6 @@ public class Event {
 
     public static String type2String(int t) {
         switch(t) {
-            case MSG:	                 return "MSG";
             case CONNECT:	             return "CONNECT";
             case DISCONNECT:	         return "DISCONNECT";
             case VIEW_CHANGE:	         return "VIEW_CHANGE";
@@ -162,8 +161,6 @@ public class Event {
     public String toString() {
         StringBuilder ret=new StringBuilder(64);
         ret.append(type2String(type)).append(", arg=").append(arg);
-        if(type == MSG)
-            ret.append(" (headers=").append(((Message)arg).printHeaders()).append(")");
         return ret.toString();
     }
 

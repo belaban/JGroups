@@ -149,7 +149,7 @@ public class STATE extends StreamingStateTransfer {
             bytesWrittenCounter+=len;
             if(Thread.interrupted())
                 throw interrupted((int)bytesWrittenCounter);
-            down_prot.down(new Event(Event.MSG, m));
+            down_prot.down(m);
             if(log.isTraceEnabled())
                 log.trace("%s: sent chunk of %s to %s",local_addr,Util.printBytes(len),stateRequester);
         }

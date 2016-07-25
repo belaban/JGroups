@@ -172,16 +172,14 @@ public class DISCARD extends Protocol {
             if(discard_dialog != null)
                 discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
         }
-
-        if(evt.getType() == Event.MSG) {
-            Message msg=evt.getArg();
-            if(shouldDropUpMessage(msg, msg.getSrc()))
-                return null;
-        }
-
         return up_prot.up(evt);
     }
 
+    public Object up(Message msg) {
+        if(shouldDropUpMessage(msg, msg.getSrc()))
+            return null;
+        return up_prot.up(msg);
+    }
 
     public void up(MessageBatch batch) {
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
@@ -195,48 +193,7 @@ public class DISCARD extends Protocol {
 
 
     public Object down(Event evt) {
-        Message msg;
-        double r;
-
         switch(evt.getType()) {
-            case Event.MSG:
-                msg=evt.getArg();
-                Address dest=msg.getDest();
-                boolean multicast=dest == null;
-
-                if(msg.getSrc() == null)
-                    msg.setSrc(localAddress());
-
-                if(discard_all) {
-                    if(dest == null || dest.equals(localAddress()))
-                        loopback(msg);
-                    return null;
-                }
-
-                if(!multicast && drop_down_unicasts > 0) {
-                    drop_down_unicasts=Math.max(0, drop_down_unicasts -1);
-                    return null;
-                }
-
-                if(multicast && drop_down_multicasts > 0) {
-                    drop_down_multicasts=Math.max(0, drop_down_multicasts -1);
-                    return null;
-                }
-
-                if(down > 0) {
-                    r=Math.random();
-                    if(r < down) {
-                        if(excludeItself && dest != null && dest.equals(localAddress())) {
-                            if(log.isTraceEnabled()) log.trace("excluding itself");
-                        }
-                        else {
-                            log.trace("dropping message");
-                            num_down++;
-                            return null;
-                        }
-                    }
-                }
-                break;
             case Event.VIEW_CHANGE:
                 View view=evt.getArg();
                 List<Address> mbrs=view.getMembers();
@@ -257,10 +214,47 @@ public class DISCARD extends Protocol {
                     return null;
                 break;
         }
-
         return down_prot.down(evt);
     }
 
+    public Object down(Message msg) {
+        Address dest=msg.getDest();
+        boolean multicast=dest == null;
+
+        if(msg.getSrc() == null)
+            msg.setSrc(localAddress());
+
+        if(discard_all) {
+            if(dest == null || dest.equals(localAddress()))
+                loopback(msg);
+            return null;
+        }
+
+        if(!multicast && drop_down_unicasts > 0) {
+            drop_down_unicasts=Math.max(0, drop_down_unicasts -1);
+            return null;
+        }
+
+        if(multicast && drop_down_multicasts > 0) {
+            drop_down_multicasts=Math.max(0, drop_down_multicasts -1);
+            return null;
+        }
+
+        if(down > 0) {
+            double r=Math.random();
+            if(r < down) {
+                if(excludeItself && dest != null && dest.equals(localAddress())) {
+                    if(log.isTraceEnabled()) log.trace("excluding itself");
+                }
+                else {
+                    log.trace("dropping message");
+                    num_down++;
+                    return null;
+                }
+            }
+        }
+        return down_prot.down(msg);
+    }
 
     /** Checks if a message should be passed up, or not */
     protected boolean shouldDropUpMessage(@SuppressWarnings("UnusedParameters") Message msg, Address sender) {
@@ -301,7 +295,7 @@ public class DISCARD extends Protocol {
 
         // pretty inefficient: creates one thread per message, okay for testing only
         Thread thread=new Thread(() -> {
-            up_prot.up(new Event(Event.MSG, rsp));
+            up_prot.up(rsp);
         });
         thread.start();
     }

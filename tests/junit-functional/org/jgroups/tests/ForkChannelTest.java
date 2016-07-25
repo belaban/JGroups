@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
+import org.jgroups.Message;
 import org.jgroups.blocks.ReplicatedHashMap;
 import org.jgroups.blocks.atomic.Counter;
 import org.jgroups.blocks.atomic.CounterService;
@@ -400,6 +401,11 @@ public class ForkChannelTest {
         public Object down(Event evt) {
             System.out.println(myname + ": down(): " + evt);
             return down_prot.down(evt);
+        }
+
+        public Object down(Message msg) {
+            System.out.println(myname + ": down(): " + msg);
+            return down_prot.down(msg);
         }
 
         public String toString() {

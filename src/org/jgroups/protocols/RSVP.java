@@ -91,54 +91,6 @@ public class RSVP extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                Address target=msg.getDest();
-                if((target != null && !handle_unicasts) || !(msg.isFlagSet(Message.Flag.RSVP) || msg.isFlagSet(Message.Flag.RSVP_NB)))
-                    break;
-
-                short next_id=getNextId();
-                RsvpHeader hdr=new RsvpHeader(RsvpHeader.REQ, next_id);
-                msg.putHeader(id, hdr);
-                boolean block=msg.isFlagSet(Message.Flag.RSVP);
-
-
-                Entry entry=target != null? new Entry(target) : new Entry(members); // volatile read of members
-                Object retval=null;
-                try {
-                    ids.put(next_id, entry);
-
-                    // sync members again - if a view was received after reading members intro Entry, but
-                    // before adding Entry to ids (https://issues.jboss.org/browse/JGRP-1503)
-                    entry.retainAll(members);
-
-                    // Send the message
-                    if(log.isTraceEnabled())
-                        log.trace(local_addr + ": " + hdr.typeToString() + " --> " + (target == null? "cluster" : target));
-                    retval=down_prot.down(evt);
-
-                    if(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK))
-                        entry.ack(local_addr);
-
-                    // Block on AckCollector (if we need to block)
-                    if(block)
-                        entry.block(timeout);
-                }
-                catch(TimeoutException e) {
-                    if(throw_exception_on_timeout)
-                        throw new RuntimeException(e);
-                    else if(log.isWarnEnabled())
-                        log.warn(Util.getMessage("RSVP_Timeout"), entry);
-                }
-                finally {
-                    if(block) {
-                        Entry tmp=ids.remove(next_id);
-                        if(tmp != null)
-                            tmp.destroy();
-                    }
-                }
-                return retval;
-
             case Event.VIEW_CHANGE:
                 handleView(evt.getArg());
                 break;
@@ -150,52 +102,99 @@ public class RSVP extends Protocol {
         return down_prot.down(evt);
     }
 
+    public Object down(Message msg) {
+        Address target=msg.getDest();
+        if((target != null && !handle_unicasts) || !(msg.isFlagSet(Message.Flag.RSVP) || msg.isFlagSet(Message.Flag.RSVP_NB)))
+            return down_prot.down(msg);
+
+        short next_id=getNextId();
+        RsvpHeader hdr=new RsvpHeader(RsvpHeader.REQ, next_id);
+        msg.putHeader(id, hdr);
+        boolean block=msg.isFlagSet(Message.Flag.RSVP);
+
+        Entry entry=target != null? new Entry(target) : new Entry(members); // volatile read of members
+        Object retval=null;
+        try {
+            ids.put(next_id, entry);
+
+            // sync members again - if a view was received after reading members intro Entry, but
+            // before adding Entry to ids (https://issues.jboss.org/browse/JGRP-1503)
+            entry.retainAll(members);
+
+            // Send the message
+            if(log.isTraceEnabled())
+                log.trace(local_addr + ": " + hdr.typeToString() + " --> " + (target == null? "cluster" : target));
+            retval=down_prot.down(msg);
+
+            if(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK))
+                entry.ack(local_addr);
+
+            // Block on AckCollector (if we need to block)
+            if(block)
+                entry.block(timeout);
+        }
+        catch(TimeoutException e) {
+            if(throw_exception_on_timeout)
+                throw new RuntimeException(e);
+            else if(log.isWarnEnabled())
+                log.warn(Util.getMessage("RSVP_Timeout"), entry);
+        }
+        finally {
+            if(block) {
+                Entry tmp=ids.remove(next_id);
+                if(tmp != null)
+                    tmp.destroy();
+            }
+        }
+        return retval;
+    }
 
     public Object up(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                if(!(msg.isFlagSet(Message.Flag.RSVP) || msg.isFlagSet(Message.Flag.RSVP_NB)))
-                    break;
-
-                Address dest=msg.getDest();
-                RsvpHeader hdr=msg.getHeader(id);
-                if(hdr == null) {
-                    if(dest == null || handle_unicasts)
-                        log.error(Util.getMessage("MessageWithRSVPFlagNeedsToHaveAnRsvpHeader"));
-                    break;
-                }
-                Address sender=msg.getSrc();
-                if(log.isTraceEnabled())
-                    log.trace(local_addr + ": " + hdr.typeToString() + " <-- " + sender);
-                switch(hdr.type) {
-                    case RsvpHeader.REQ:
-                        if(this.ack_on_delivery) {
-                            try {
-                                return up_prot.up(evt);
-                            }
-                            finally {
-                                sendResponse(sender, hdr.id);
-                            }
-                        }
-                        else {
-                            sendResponse(sender, hdr.id);
-                            return up_prot.up(evt);
-                        }
-
-                    case RsvpHeader.REQ_ONLY:
-                        return null;
-
-                    case RsvpHeader.RSP:
-                        handleResponse(msg.getSrc(), hdr.id);
-                        return null;
-                }
-                break;
             case Event.VIEW_CHANGE:
                 handleView(evt.getArg());
                 break;
         }
         return up_prot.up(evt);
+    }
+
+    public Object up(Message msg) {
+        if(!(msg.isFlagSet(Message.Flag.RSVP) || msg.isFlagSet(Message.Flag.RSVP_NB)))
+            return up_prot.up(msg);
+
+        Address dest=msg.getDest();
+        RsvpHeader hdr=msg.getHeader(id);
+        if(hdr == null) {
+            if(dest == null || handle_unicasts)
+                log.error(Util.getMessage("MessageWithRSVPFlagNeedsToHaveAnRsvpHeader"));
+            return up_prot.up(msg);
+        }
+        Address sender=msg.getSrc();
+        if(log.isTraceEnabled())
+            log.trace(local_addr + ": " + hdr.typeToString() + " <-- " + sender);
+        switch(hdr.type) {
+            case RsvpHeader.REQ:
+                if(this.ack_on_delivery) {
+                    try {
+                        return up_prot.up(msg);
+                    }
+                    finally {
+                        sendResponse(sender, hdr.id);
+                    }
+                }
+                else {
+                    sendResponse(sender, hdr.id);
+                    return up_prot.up(msg);
+                }
+
+            case RsvpHeader.REQ_ONLY:
+                return null;
+
+            case RsvpHeader.RSP:
+                handleResponse(msg.getSrc(), hdr.id);
+                return null;
+        }
+        return up_prot.up(msg);
     }
 
     public void up(MessageBatch batch) {
@@ -271,7 +270,7 @@ public class RSVP extends Protocol {
 
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": " + hdr.typeToString() + " --> " + dest);
-            down_prot.down(new Event(Event.MSG, msg));
+            down_prot.down(msg);
         }
         catch(Throwable t) {
             log.error(Util.getMessage("FailedSendingResponse"), t);
@@ -359,7 +358,7 @@ public class RSVP extends Protocol {
                 Message msg=new Message(dest).setFlag(Message.Flag.RSVP).putHeader(id,hdr);
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": " + hdr.typeToString() + " --> " + (val.target == null? "cluster" : val.target));
-                down_prot.down(new Event(Event.MSG, msg));
+                down_prot.down(msg);
             }
         }
     }

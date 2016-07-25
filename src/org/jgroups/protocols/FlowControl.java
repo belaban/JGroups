@@ -293,33 +293,6 @@ public abstract class FlowControl extends Protocol {
     @SuppressWarnings("unchecked")
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                if(msg.isFlagSet(Message.Flag.NO_FC))
-                    break;
-
-                Address dest=msg.getDest();
-                boolean multicast=dest == null;
-                boolean handle_multicasts=handleMulticastMessage();
-                boolean process=(handle_multicasts && multicast) || (!handle_multicasts && !multicast);
-                if(!process)
-                    break;
-
-                int length=msg.getLength();
-                if(length == 0)
-                    break;
-
-                Object retval=handleDownMessage(evt, msg, dest, length);
-
-                // if the message is DONT_LOOPBACK, we will not receive it, therefore the credit
-                // check needs to be done now
-                if(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK)) {
-                    long new_credits=adjustCredit(received, local_addr, length);
-                    if(new_credits > 0)
-                        sendCredit(local_addr, new_credits);
-                }
-                return retval;
-
             case Event.CONFIG:
                 handleConfigEvent(evt.getArg());
                 break;
@@ -336,41 +309,36 @@ public abstract class FlowControl extends Protocol {
     }
 
 
-    @SuppressWarnings("unchecked")
+    public Object down(Message msg) {
+        if(msg.isFlagSet(Message.Flag.NO_FC))
+            return down_prot.down(msg);
+
+        Address dest=msg.getDest();
+        boolean multicast=dest == null;
+        boolean handle_multicasts=handleMulticastMessage();
+        boolean process=(handle_multicasts && multicast) || (!handle_multicasts && !multicast);
+        if(!process)
+            return down_prot.down(msg);
+
+        int length=msg.getLength();
+        if(length == 0)
+            return down_prot.down(msg);
+
+        Object retval=handleDownMessage(msg, dest, length);
+
+        // if the message is DONT_LOOPBACK, we will not receive it, therefore the credit
+        // check needs to be done now
+        if(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK)) {
+            long new_credits=adjustCredit(received, local_addr, length);
+            if(new_credits > 0)
+                sendCredit(local_addr, new_credits);
+        }
+        return retval;
+    }
+
+
     public Object up(Event evt) {
         switch(evt.getType()) {
-
-            case Event.MSG:
-                Message msg=evt.getArg();
-                if(msg.isFlagSet(Message.Flag.NO_FC))
-                    break;
-
-                Address dest=msg.getDest();
-                boolean multicast=dest == null;
-                boolean handle_multicasts=handleMulticastMessage();
-                FcHeader hdr=msg.getHeader(this.id);
-                boolean process=(handle_multicasts && multicast) || (!handle_multicasts && !multicast) || hdr != null;
-                if(!process)
-                    break;
-                
-                if(hdr != null) {
-                    handleUpEvent(msg, hdr);
-                    return null; // don't pass message up
-                }
-
-                try {
-                    return up_prot.up(evt);
-                }
-                finally {
-                    int length=msg.getLength();
-                    if(length > 0) {
-                        Address sender=msg.getSrc();
-                        long new_credits=adjustCredit(received, sender, length);
-                        if(new_credits > 0)
-                            sendCredit(sender, new_credits);
-                    }
-                }
-
             case Event.VIEW_CHANGE:
                 handleViewChange(((View)evt.getArg()).getMembers());
                 break;
@@ -378,6 +346,36 @@ public abstract class FlowControl extends Protocol {
         return up_prot.up(evt);
     }
 
+    public Object up(Message msg) {
+        if(msg.isFlagSet(Message.Flag.NO_FC))
+            return up_prot.up(msg);
+
+        Address dest=msg.getDest();
+        boolean multicast=dest == null;
+        boolean handle_multicasts=handleMulticastMessage();
+        FcHeader hdr=msg.getHeader(this.id);
+        boolean process=(handle_multicasts && multicast) || (!handle_multicasts && !multicast) || hdr != null;
+        if(!process)
+            return up_prot.up(msg);
+
+        if(hdr != null) {
+            handleUpEvent(msg, hdr);
+            return null; // don't pass message up
+        }
+
+        try {
+            return up_prot.up(msg);
+        }
+        finally {
+            int length=msg.getLength();
+            if(length > 0) {
+                Address sender=msg.getSrc();
+                long new_credits=adjustCredit(received, sender, length);
+                if(new_credits > 0)
+                    sendCredit(sender, new_credits);
+            }
+        }
+    }
 
     protected void handleUpEvent(final Message msg, FcHeader hdr) {
         switch(hdr.type) {
@@ -446,7 +444,7 @@ public abstract class FlowControl extends Protocol {
     }
 
     
-    protected abstract Object handleDownMessage(final Event evt, final Message msg, Address dest, int length);
+    protected abstract Object handleDownMessage(final Message msg, Address dest, int length);
 
 
 
@@ -491,7 +489,7 @@ public abstract class FlowControl extends Protocol {
         Message msg=new Message(dest, longToBuffer(credits))
           .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
           .putHeader(this.id,getReplenishHeader());
-        down_prot.down(new Event(Event.MSG, msg));
+        down_prot.down(msg);
         num_credit_responses_sent++;
     }
 
@@ -507,7 +505,7 @@ public abstract class FlowControl extends Protocol {
         Message msg=new Message(dest, longToBuffer(credits_needed))
           .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
           .putHeader(this.id, getCreditRequestHeader());
-        down_prot.down(new Event(Event.MSG, msg));
+        down_prot.down(msg);
         num_credit_requests_sent++;
     }
 

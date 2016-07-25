@@ -98,29 +98,23 @@ public class ASYM_ENCRYPT extends Encrypt {
         super.stop();
     }
 
-    public Object down(Event evt) {
-        if(evt.type() == Event.MSG) {
-            Message msg=evt.arg();
-            if(skip(msg))
-                return down_prot.down(evt);
-        }
-        return super.down(evt);
+    public Object down(Message msg) {
+        if(skip(msg))
+            return down_prot.down(msg);
+        return super.down(msg);
     }
 
-    public Object up(Event evt) {
-        if(evt.type() == Event.MSG) {
-            Message msg=evt.arg();
-            if(skip(msg))
-                return up_prot.up(evt);
-        }
-        return super.up(evt);
+    public Object up(Message msg) {
+        if(skip(msg))
+            return up_prot.up(msg);
+        return super.up(msg);
     }
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
             if(skip(msg)) {
                 try {
-                    up_prot.up(new Event(Event.MSG, msg));
+                    up_prot.up(msg);
                     batch.remove(msg);
                 }
                 catch(Throwable t) {
@@ -322,7 +316,7 @@ public class ASYM_ENCRYPT extends Encrypt {
         Message newMsg=new Message(source, encryptedKey).src(local_addr)
           .putHeader(this.id, new EncryptHeader(EncryptHeader.SECRET_KEY_RSP, symVersion()));
         log.debug("%s: sending secret key to %s", local_addr, source);
-        down_prot.down(new Event(Event.MSG,newMsg));
+        down_prot.down(newMsg);
     }
 
     /** Encrypts the current secret key with the requester's public key (the requester will decrypt it with its private key) */
@@ -343,7 +337,7 @@ public class ASYM_ENCRYPT extends Encrypt {
     protected void sendKeyRequest(Address key_server) {
         Message newMsg=new Message(key_server, key_pair.getPublic().getEncoded()).src(local_addr)
           .putHeader(this.id,new EncryptHeader(EncryptHeader.SECRET_KEY_REQ, sym_version));
-        down_prot.down(new Event(Event.MSG,newMsg));
+        down_prot.down(newMsg);
     }
 
 
@@ -379,7 +373,7 @@ public class ASYM_ENCRYPT extends Encrypt {
             try {
                 Message decrypted_msg=decryptMessage(null, queued_msg.copy());
                 if(decrypted_msg != null)
-                    up_prot.up(new Event(Event.MSG, decrypted_msg));
+                    up_prot.up(decrypted_msg);
             }
             catch(Exception ex) {
                 log.error("failed decrypting message from %s: %s", queued_msg.src(), ex);

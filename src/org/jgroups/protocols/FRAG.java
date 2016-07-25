@@ -96,56 +96,52 @@ public class FRAG extends Protocol {
      */
     public Object down(Event evt) {
         switch(evt.getType()) {
-
-            case Event.MSG:
-                Message msg=evt.getArg();
-                long size=msg.size();
-                num_sent_msgs++;
-                if(size > frag_size) {
-                    if(log.isTraceEnabled()) {
-                        StringBuilder sb=new StringBuilder("message size is ");
-                        sb.append(size).append(", will fragment (frag_size=").append(frag_size).append(')');
-                        log.trace(sb.toString());
-                    }
-                    fragment(msg, size);  // Fragment and pass down
-                    return null;
-                }
-                break;
-
             case Event.VIEW_CHANGE:
                 handleViewChange(evt.getArg());
                 break;
         }
-
         return down_prot.down(evt);  // Pass on to the layer below us
     }
 
+    public Object down(Message msg) {
+        long size=msg.size();
+        num_sent_msgs++;
+        if(size > frag_size) {
+            if(log.isTraceEnabled()) {
+                StringBuilder sb=new StringBuilder("message size is ");
+                sb.append(size).append(", will fragment (frag_size=").append(frag_size).append(')');
+                log.trace(sb.toString());
+            }
+            fragment(msg, size);  // Fragment and pass down
+            return null;
+        }
+        return down_prot.down(msg);
+    }
 
     /**
      * If event is a message, if it is fragmented, re-assemble fragments into big message and pass up the stack.
      */
     public Object up(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                FragHeader hdr=msg.getHeader(this.id);
-                if(hdr != null) { // needs to be defragmented
-                    Message assembled_msg=unfragment(msg, hdr);
-                    if(assembled_msg != null)
-                        up_prot.up(new Event(Event.MSG, assembled_msg));
-                    return null;
-                }
-                else {
-                    num_received_msgs++;
-                }
-                break;
-
-            case Event.VIEW_CHANGE:
+              case Event.VIEW_CHANGE:
                 handleViewChange(evt.getArg());
                 break;
         }
-
         return up_prot.up(evt); // Pass up to the layer above us by default
+    }
+
+    public Object up(Message msg) {
+        FragHeader hdr=msg.getHeader(this.id);
+        if(hdr != null) { // needs to be defragmented
+            Message assembled_msg=unfragment(msg, hdr);
+            if(assembled_msg != null)
+                up_prot.up(assembled_msg);
+            return null;
+        }
+        else {
+            num_received_msgs++;
+        }
+        return up_prot.up(msg);
     }
 
     public void up(MessageBatch batch) {
@@ -219,8 +215,7 @@ public class FRAG extends Protocol {
                 Message frag_msg=new Message(dest, fragments[i]).src(src);
                 FragHeader hdr=new FragHeader(frag_id, i, num_frags);
                 frag_msg.putHeader(this.id, hdr);
-                Event evt=new Event(Event.MSG, frag_msg);
-                down_prot.down(evt);
+                down_prot.down(frag_msg);
             }
         }
         catch(Exception e) {

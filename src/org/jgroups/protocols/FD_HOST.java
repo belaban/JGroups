@@ -178,11 +178,11 @@ public class FD_HOST extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
-                View view=(View)evt.getArg();
+                View view=evt.getArg();
                 handleView(view);
                 break;
             case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+                local_addr=evt.getArg();
                 break;
             case Event.CONNECT:
             case Event.CONNECT_USE_FLUSH:
@@ -196,7 +196,7 @@ public class FD_HOST extends Protocol {
                 return retval;
 
             case Event.UNSUSPECT:
-                Address mbr=(Address)evt.getArg();
+                Address mbr=evt.getArg();
                 unsuspect(mbr);
                 break;
         }

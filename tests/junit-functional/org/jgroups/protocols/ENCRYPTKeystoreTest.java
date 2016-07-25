@@ -4,7 +4,6 @@
 package org.jgroups.protocols;
 
 
-import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.conf.ClassConfigurator;
@@ -48,8 +47,8 @@ public class ENCRYPTKeystoreTest {
         String messageText="hello this is a test message";
         Message msg=new Message(null, messageText.getBytes());
 
-        encrypt.down(new Event(Event.MSG, msg));
-        Message sentMsg=(Message)observer.getDownMessages().get("message0").getArg();
+        encrypt.down(msg);
+        Message sentMsg=observer.getDownMessages().get("message0");
         String encText=new String(sentMsg.getBuffer());
         assert !encText.equals(messageText);
         byte[] decodedBytes=encrypt.code(sentMsg.getRawBuffer(), sentMsg.getOffset(), sentMsg.getLength(), true);
@@ -76,8 +75,8 @@ public class ENCRYPTKeystoreTest {
 
         byte[] symVersion=digest.digest();
         Message msg=new Message(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, symVersion));
-        encrypt.up(new Event(Event.MSG, msg));
-        Message rcvdMsg=(Message)observer.getUpMessages().get("message0").getArg();
+        encrypt.up(msg);
+        Message rcvdMsg=observer.getUpMessages().get("message0");
         String decText=new String(rcvdMsg.getBuffer());
         assert decText.equals(messageText);
 
@@ -100,7 +99,7 @@ public class ENCRYPTKeystoreTest {
         byte[] symVersion=digest.digest();
 
         Message msg=new Message(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, symVersion));
-        encrypt.up(new Event(Event.MSG, msg));
+        encrypt.up(msg);
         assert observer.getUpMessages().isEmpty();
     }
 
@@ -113,7 +112,7 @@ public class ENCRYPTKeystoreTest {
         byte[] encodedBytes=encrypt2.code(bytes, 0, bytes.length, false);
         assert !new String(encodedBytes).equals(messageText);
         Message msg=new Message(null, encodedBytes);
-        encrypt.up(new Event(Event.MSG, msg));
+        encrypt.up(msg);
         assert observer.getUpMessages().isEmpty();
     }
 
@@ -121,7 +120,7 @@ public class ENCRYPTKeystoreTest {
         SYM_ENCRYPT encrypt=create("defaultStore.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
-        encrypt.up(new Event(Event.MSG, null));
+        encrypt.up((Message)null);
         assert observer.getUpMessages().isEmpty();
     }
 
@@ -129,7 +128,7 @@ public class ENCRYPTKeystoreTest {
         SYM_ENCRYPT encrypt=create("defaultStore.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
-        encrypt.up(new Event(Event.MSG, new Message().putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, "bla".getBytes()))));
+        encrypt.up(new Message().putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, "bla".getBytes())));
         assert observer.getUpMessages().isEmpty();
     }
 
@@ -138,15 +137,15 @@ public class ENCRYPTKeystoreTest {
         Message msg=new Message(null, "hello world".getBytes()).putHeader((short)1, new TpHeader("cluster"));
         MockProtocol mock=new MockProtocol();
         encrypt.setDownProtocol(mock);
-        encrypt.down(new Event(Event.MSG, msg));
+        encrypt.down(msg);
 
-        Message encrypted_msg=(Message)mock.getDownMessages().get("message0").getArg();
+        Message encrypted_msg=mock.getDownMessages().get("message0");
 
         encrypt.setDownProtocol(null);
         encrypt.setUpProtocol(mock);
-        encrypt.up(new Event(Event.MSG, encrypted_msg));
+        encrypt.up(encrypted_msg);
 
-        Message decrypted_msg=(Message)mock.getUpMessages().get("message1").getArg();
+        Message decrypted_msg=mock.getUpMessages().get("message1");
         String temp=new String(decrypted_msg.getBuffer());
         assert "hello world".equals(temp);
     }
@@ -159,20 +158,20 @@ public class ENCRYPTKeystoreTest {
 
 
     protected static class MockProtocol extends Protocol {
-        private final Map<String,Event> upMessages=new HashMap<>();
-        private final Map<String,Event> downMessages=new HashMap<>();
-        private int                     counter;
+        private final Map<String,Message> upMessages=new HashMap<>();
+        private final Map<String,Message> downMessages=new HashMap<>();
+        private int                       counter;
 
-        public Map<String,Event> getDownMessages() {return downMessages;}
-        public Map<String,Event> getUpMessages()   {return upMessages;}
+        public Map<String,Message> getDownMessages() {return downMessages;}
+        public Map<String,Message> getUpMessages()   {return upMessages;}
 
-        public Object down(Event evt) {
-            downMessages.put("message" + counter++, evt);
+        public Object down(Message msg) {
+            downMessages.put("message" + counter++, msg);
             return null;
         }
 
-        public Object up(Event evt) {
-            upMessages.put("message" + counter++, evt);
+        public Object up(Message msg) {
+            upMessages.put("message" + counter++, msg);
             return null;
         }
 

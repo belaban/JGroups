@@ -264,7 +264,7 @@ public class MPerf extends ReceiverAdapter {
 
 
     public void receive(Message msg) {
-        MPerfHeader hdr=(MPerfHeader)msg.getHeader(ID);
+        MPerfHeader hdr=msg.getHeader(ID);
         switch(hdr.type) {
             case MPerfHeader.DATA:
                 // we're checking the *application's* seqno, and multiple sender threads

@@ -60,6 +60,6 @@ public class PING extends Discovery {
     }
 
     protected void sendMcastDiscoveryRequest(Message msg) {
-        down_prot.down(new Event(Event.MSG, msg));
+        down_prot.down(msg);
     }
 }

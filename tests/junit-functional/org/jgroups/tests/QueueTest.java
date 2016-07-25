@@ -92,7 +92,6 @@ public class QueueTest {
         queue.add(3);
         queue.add(99);
         queue.add(8);
-        System.out.println("queue: " + Util.dumpQueue(queue));
         int size=queue.size();
         assert size == 4;
         LinkedList values=queue.values();

@@ -140,7 +140,7 @@ public class Merger {
             if(gms.flushProtocolInStack) { //[JGRP-700] - FLUSH: flushing should span merge
                 Message ack=new Message(data.getSender()).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
                   .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW_OK));
-                gms.getDownProtocol().down(new Event(Event.MSG, ack));
+                gms.getDownProtocol().down(ack);
             }
         }
         finally {
@@ -291,7 +291,7 @@ public class Merger {
     protected void sendMergeResponse(Address sender, View view, Digest digest, MergeId merge_id) {
         Message msg=new Message(sender).setBuffer(GMS.marshal(view, digest)).setFlag(Message.Flag.OOB,Message.Flag.INTERNAL)
           .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP).mergeId(merge_id));
-        gms.getDownProtocol().down(new Event(Event.MSG, msg));
+        gms.getDownProtocol().down(msg);
     }
 
     /**
@@ -322,7 +322,7 @@ public class Merger {
         for(Address coord: coords) {
             Message msg=new Message(coord).setBuffer(GMS.marshal(view, digest))
               .putHeader(gms.getId(),new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW).mergeId(merge_id));
-            gms.getDownProtocol().down(new Event(Event.MSG, msg));
+            gms.getDownProtocol().down(msg);
         }
 
         //[JGRP-700] - FLUSH: flushing should span merge; if flush is in stack wait for acks from subview coordinators
@@ -342,7 +342,7 @@ public class Merger {
     protected void sendMergeRejectedResponse(Address sender, MergeId merge_id) {
         Message msg=new Message(sender).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP).mergeId(merge_id).mergeRejected(true));
-        gms.getDownProtocol().down(new Event(Event.MSG, msg));
+        gms.getDownProtocol().down(msg);
     }
 
     protected void sendMergeCancelledMessage(Collection<Address> coords, MergeId merge_id) {
@@ -350,7 +350,7 @@ public class Merger {
             return;
         for(Address coord: coords) {
             Message msg=new Message(coord).putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.CANCEL_MERGE).mergeId(merge_id));
-            gms.getDownProtocol().down(new Event(Event.MSG, msg));
+            gms.getDownProtocol().down(msg);
         }
     }
 
@@ -373,7 +373,7 @@ public class Merger {
         long max_wait_time=gms.merge_timeout / 2; // gms.merge_timeout is guaranteed to be > 0, verified in init()
         digest_collector.reset(current_mbrs);
 
-        gms.getDownProtocol().down(new Event(Event.MSG, get_digest_req));
+        gms.getDownProtocol().down(get_digest_req);
 
         // add my own digest first - the get_digest_req needs to be sent first *before* getting our own digest, so
         // we have that message in our digest !
@@ -407,7 +407,7 @@ public class Merger {
         Digest digest=fetchDigestsFromAllMembersInSubPartition(gms.view, null);
         Message msg=new Message().putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.INSTALL_DIGEST))
           .setBuffer(GMS.marshal(null, digest));
-        gms.getDownProtocol().down(new Event(Event.MSG, msg));
+        gms.getDownProtocol().down(msg);
     }
 
 
@@ -604,7 +604,7 @@ public class Merger {
                 Message msg=new Message(coord).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
                   .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ).mbr(gms.local_addr).mergeId(new_merge_id))
                   .setBuffer(GMS.marshal(mbrs));
-                gms.getDownProtocol().down(new Event(Event.MSG, msg));
+                gms.getDownProtocol().down(msg);
             }
 
             // wait until num_rsps_expected >= num_rsps or timeout elapsed

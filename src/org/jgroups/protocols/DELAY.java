@@ -1,6 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Event;
+import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
@@ -69,30 +69,19 @@ public class DELAY extends Protocol {
             Util.interruptAndWaitToDie(delayed_message_handler);
     }
 
-    public Object down(final Event evt) {
-        if (isMessage(evt)) {
-            delayed_messages.add(new DelayedMessage(evt, System.nanoTime()));
-            // don't wait for the result, return immediately
-            return null;
-        }
-        else {
-            return down_prot.down(evt);
-        }
+    public Object down(Message msg) {
+        delayed_messages.add(new DelayedMessage(msg, System.nanoTime()));
+        return null;
     }
 
-    public Object up(final Event evt) {
-        if (isMessage(evt))
-            sleep(in_delay, in_delay_nanos);
-        return up_prot.up(evt);
+    public Object up(Message msg) {
+        sleep(in_delay, in_delay_nanos);
+        return up_prot.up(msg);
     }
 
     public void up(final MessageBatch batch) {
         sleep(in_delay, in_delay_nanos);
         up_prot.up(batch);
-    }
-
-    private static boolean isMessage(final Event evt) {
-        return evt.getType() == Event.MSG;
     }
 
     /**
@@ -113,13 +102,12 @@ public class DELAY extends Protocol {
     }
 
     private class DelayedMessage implements Delayed {
+        private final Message msg;
+        private final long    start;
+        private final long    delay_time;
 
-        private final Event event;
-        private final long start;
-        private final long delay_time;
-
-        public DelayedMessage(Event event, long start) {
-            this.event = event;
+        public DelayedMessage(Message msg, long start) {
+            this.msg = msg;
             this.start = start;
             this.delay_time = TimeUnit.NANOSECONDS.convert(computeDelay(out_delay), TimeUnit.MILLISECONDS) + out_delay_nanos;
         }
@@ -148,8 +136,8 @@ public class DELAY extends Protocol {
             for (;;) {
                 try {
                     delayed_messages.drainTo(buffer);
-                    for (DelayedMessage evt : buffer)
-                        down_prot.down(evt.event);
+                    for (DelayedMessage del_msg : buffer)
+                        down_prot.down(del_msg.msg);
                     buffer.clear();
                 } catch (Exception e) {
                     // handling thread should never die

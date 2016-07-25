@@ -72,36 +72,31 @@ public class DUPL extends Protocol {
         this.copy_multicast_msgs=copy_multicast_msgs;
     }
 
-    public Object down(Event evt) {
+    public Object down(Message msg) {
         boolean copy=(copy_multicast_msgs || copy_unicast_msgs) && outgoing_copies > 0;
         if(!copy)
-            return down_prot.down(evt);
+            return down_prot.down(msg);
 
-        switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                copy(msg, outgoing_copies, Direction.DOWN);
-                break;
-        }
-
-        return down_prot.down(evt);
+        copy(msg, outgoing_copies, Direction.DOWN);
+        return down_prot.down(msg);
     }
 
     public Object up(Event evt) {
         boolean copy=(copy_multicast_msgs || copy_unicast_msgs) && incoming_copies > 0;
         if(!copy)
             return up_prot.up(evt);
-
-        switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                copy(msg, incoming_copies, Direction.UP);
-                break;
-        }
-
         return up_prot.up(evt);
     }
 
+
+    public Object up(Message msg) {
+        boolean copy=(copy_multicast_msgs || copy_unicast_msgs) && incoming_copies > 0;
+        if(!copy)
+            return up_prot.up(msg);
+
+        copy(msg, incoming_copies, Direction.UP);
+        return up_prot.up(msg);
+    }
 
     public void up(MessageBatch batch) {
         boolean copy=(copy_multicast_msgs || copy_unicast_msgs) && incoming_copies > 0;
@@ -130,10 +125,10 @@ public class DUPL extends Protocol {
                 Message copy=msg.copy(true);
                 switch(direction) {
                     case UP:
-                        up_prot.up(new Event(Event.MSG, copy));
+                        up_prot.up(copy);
                         break;
                     case DOWN:
-                        down_prot.down(new Event(Event.MSG, copy));
+                        down_prot.down(copy);
                         break;
                 }
             }

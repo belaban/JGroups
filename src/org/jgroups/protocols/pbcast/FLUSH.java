@@ -261,22 +261,6 @@ public class FLUSH extends Protocol {
     public Object down(Event evt) {
         if(!bypass){
            switch (evt.getType()) {
-               case Event.MSG:
-                   Message msg =evt.getArg();
-                   Address dest = msg.getDest();
-                   if (dest == null) { // mcasts
-                       FlushHeader fh =msg.getHeader(this.id);
-                       if (fh != null && fh.type == FlushHeader.FLUSH_BYPASS) {
-                           return down_prot.down(evt);
-                       } else {
-                           blockMessageDuringFlush();
-                       }
-                   } else {
-                       // unicasts are irrelevant in virtual synchrony, let them through
-                       return down_prot.down(evt);
-                   }
-                   break;
-
                case Event.CONNECT:
                case Event.CONNECT_USE_FLUSH:
                    return handleConnect(evt,true);
@@ -313,6 +297,23 @@ public class FLUSH extends Protocol {
         return down_prot.down(evt);
     }
 
+    public Object down(Message msg) {
+        if(!bypass) {
+            Address dest = msg.getDest();
+            if (dest == null) { // mcasts
+                FlushHeader fh =msg.getHeader(this.id);
+                if (fh != null && fh.type == FlushHeader.FLUSH_BYPASS) {
+                    return down_prot.down(msg);
+                } else {
+                    blockMessageDuringFlush();
+                }
+            } else {
+                // unicasts are irrelevant in virtual synchrony, let them through
+                return down_prot.down(msg);
+            }
+        }
+        return down_prot.down(msg);
+    }
 
     private Object handleConnect(Event evt, boolean waitForUnblock) {
         if (sentBlock.compareAndSet(false, true)) {
@@ -359,90 +360,8 @@ public class FLUSH extends Protocol {
     }
 
     public Object up(Event evt) {
-        if(!bypass){
+        if(!bypass) {
            switch (evt.getType()) {
-               case Event.MSG:
-                   Message msg =evt.getArg();
-                   final FlushHeader fh =msg.getHeader(this.id);
-                   if (fh != null) {
-                       final Tuple<Collection<? extends Address>,Digest> tuple=readParticipantsAndDigest(msg.getRawBuffer(),
-                                                                                                         msg.getOffset(),
-                                                                                                         msg.getLength());
-                       switch (fh.type) {
-                           case FlushHeader.FLUSH_BYPASS:
-                               return up_prot.up(evt);
-                           case FlushHeader.START_FLUSH:
-
-                               Collection<? extends Address> fp = tuple.getVal1();
-                               boolean amIParticipant = (fp != null && fp.contains(localAddress))
-                                 || msg.getSrc().equals(localAddress);
-                               if (amIParticipant) {
-                                   handleStartFlush(msg, fh);
-                               } else {
-                                   if (log.isDebugEnabled())
-                                       log.debug(localAddress + ": received START_FLUSH but I'm not flush participant, not responding");
-                               }
-                               break;
-                           case FlushHeader.FLUSH_RECONCILE:
-                               handleFlushReconcile(msg);
-                               break;
-                           case FlushHeader.FLUSH_RECONCILE_OK:
-                               onFlushReconcileOK(msg);
-                               break;
-                           case FlushHeader.STOP_FLUSH:
-                               onStopFlush();
-                               break;
-                           case FlushHeader.ABORT_FLUSH:
-                               Collection<? extends Address> flushParticipants = tuple.getVal1();
-                               boolean participant = flushParticipants != null && flushParticipants.contains(localAddress);
-                               if (log.isDebugEnabled()) {
-                                  log.debug(localAddress + ": received ABORT_FLUSH from flush coordinator " + msg.getSrc()
-                                              + ",  am I flush participant=" + participant);
-                               }
-                               if (participant)
-                                  resetForNextFlush();
-                               break;
-                           case FlushHeader.FLUSH_NOT_COMPLETED:
-                               if (log.isDebugEnabled()) {
-                                   log.debug(localAddress + ": received FLUSH_NOT_COMPLETED from " + msg.getSrc());
-                               }
-                               boolean flushCollision = false;
-                               synchronized (sharedLock) {
-                                   flushNotCompletedMap.add(msg.getSrc());
-                                   flushCollision = !flushCompletedMap.isEmpty();
-                                   if (flushCollision) {
-                                       flushNotCompletedMap.clear();
-                                       flushCompletedMap.clear();
-                                   }
-                               }
-
-                               if (log.isDebugEnabled())
-                                   log.debug(localAddress + ": received FLUSH_NOT_COMPLETED from " + msg.getSrc() +
-                                               " collision=" + flushCollision);
-
-                               // reject flush if we have at least one OK and at least one FAIL
-                               if (flushCollision) {
-                                   Runnable r =() -> rejectFlush(tuple.getVal1(), fh.viewID);
-                                   new Thread(r).start();
-                               }
-                               // however, flush should fail/retry as soon as one FAIL is received
-                               flush_promise.setResult(new FlushStartResult(Boolean.FALSE, new Exception("Flush failed for " + msg.getSrc())));
-                               break;
-
-                           case FlushHeader.FLUSH_COMPLETED:
-                               if (isCurrentFlushMessage(fh))
-                                   onFlushCompleted(msg.getSrc(), msg, fh);
-                               break;
-                       }
-                       return null; // do not pass FLUSH msg up
-                   } else {
-                       // http://jira.jboss.com/jira/browse/JGRP-575: for processing of application messages after we join,
-                       // lets wait for STOP_FLUSH to complete before we start allowing message up
-                       if (msg.getDest() != null)
-                           return up_prot.up(evt); // allow unicasts to pass, virtual synchrony only applies to multicasts
-                   }
-                   break;
-
                case Event.VIEW_CHANGE:
                    // JGRP-618: FLUSH coordinator transfer reorders block/unblock/view events in applications (TCP stack only)
                    up_prot.up(evt);
@@ -483,6 +402,90 @@ public class FLUSH extends Protocol {
         return up_prot.up(evt);
     }
 
+    public Object up(Message msg) {
+        if(!bypass) {
+            final FlushHeader fh =msg.getHeader(this.id);
+            if (fh != null) {
+                final Tuple<Collection<? extends Address>,Digest> tuple=readParticipantsAndDigest(msg.getRawBuffer(),
+                                                                                                  msg.getOffset(),
+                                                                                                  msg.getLength());
+                switch (fh.type) {
+                    case FlushHeader.FLUSH_BYPASS:
+                        return up_prot.up(msg);
+                    case FlushHeader.START_FLUSH:
+
+                        Collection<? extends Address> fp = tuple.getVal1();
+                        boolean amIParticipant = (fp != null && fp.contains(localAddress))
+                          || msg.getSrc().equals(localAddress);
+                        if (amIParticipant) {
+                            handleStartFlush(msg, fh);
+                        } else {
+                            if (log.isDebugEnabled())
+                                log.debug(localAddress + ": received START_FLUSH but I'm not flush participant, not responding");
+                        }
+                        break;
+                    case FlushHeader.FLUSH_RECONCILE:
+                        handleFlushReconcile(msg);
+                        break;
+                    case FlushHeader.FLUSH_RECONCILE_OK:
+                        onFlushReconcileOK(msg);
+                        break;
+                    case FlushHeader.STOP_FLUSH:
+                        onStopFlush();
+                        break;
+                    case FlushHeader.ABORT_FLUSH:
+                        Collection<? extends Address> flushParticipants = tuple.getVal1();
+                        boolean participant = flushParticipants != null && flushParticipants.contains(localAddress);
+                        if (log.isDebugEnabled()) {
+                            log.debug(localAddress + ": received ABORT_FLUSH from flush coordinator " + msg.getSrc()
+                                        + ",  am I flush participant=" + participant);
+                        }
+                        if (participant)
+                            resetForNextFlush();
+                        break;
+                    case FlushHeader.FLUSH_NOT_COMPLETED:
+                        if (log.isDebugEnabled()) {
+                            log.debug(localAddress + ": received FLUSH_NOT_COMPLETED from " + msg.getSrc());
+                        }
+                        boolean flushCollision = false;
+                        synchronized (sharedLock) {
+                            flushNotCompletedMap.add(msg.getSrc());
+                            flushCollision = !flushCompletedMap.isEmpty();
+                            if (flushCollision) {
+                                flushNotCompletedMap.clear();
+                                flushCompletedMap.clear();
+                            }
+                        }
+
+                        if (log.isDebugEnabled())
+                            log.debug(localAddress + ": received FLUSH_NOT_COMPLETED from " + msg.getSrc() +
+                                        " collision=" + flushCollision);
+
+                        // reject flush if we have at least one OK and at least one FAIL
+                        if (flushCollision) {
+                            Runnable r =() -> rejectFlush(tuple.getVal1(), fh.viewID);
+                            new Thread(r).start();
+                        }
+                        // however, flush should fail/retry as soon as one FAIL is received
+                        flush_promise.setResult(new FlushStartResult(Boolean.FALSE, new Exception("Flush failed for " + msg.getSrc())));
+                        break;
+
+                    case FlushHeader.FLUSH_COMPLETED:
+                        if (isCurrentFlushMessage(fh))
+                            onFlushCompleted(msg.getSrc(), msg, fh);
+                        break;
+                }
+                return null; // do not pass FLUSH msg up
+            } else {
+                // http://jira.jboss.com/jira/browse/JGRP-575: for processing of application messages after we join,
+                // lets wait for STOP_FLUSH to complete before we start allowing message up
+                if (msg.getDest() != null)
+                    return up_prot.up(msg); // allow unicasts to pass, virtual synchrony only applies to multicasts
+            }
+        }
+        return up_prot.up(msg);
+    }
+
     public void up(MessageBatch batch) {
         if(bypass) {
             up_prot.up(batch);
@@ -492,12 +495,12 @@ public class FLUSH extends Protocol {
         for(Message msg: batch) {
             if(msg.getHeader(id) != null) {
                 batch.remove(msg);
-                up(new Event(Event.MSG, msg)); // let the existing code handle this
+                up(msg); // let the existing code handle this
             }
             else {
                 if(msg.getDest() != null) { // skip unicast messages, process them right away
                     batch.remove(msg);
-                    up_prot.up(new Event(Event.MSG, msg));
+                    up_prot.up(msg);
                 }
             }
         }
@@ -549,7 +552,7 @@ public class FLUSH extends Protocol {
 
         Message reconcileOk = new Message(requester).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .putHeader(this.id,new FlushHeader(FlushHeader.FLUSH_RECONCILE_OK));
-        down_prot.down(new Event(Event.MSG, reconcileOk));
+        down_prot.down(reconcileOk);
     }
 
     private void handleStartFlush(Message msg, FlushHeader fh) {
@@ -568,7 +571,7 @@ public class FLUSH extends Protocol {
             Message response = new Message(flushRequester)
               .putHeader(this.id,new FlushHeader(FlushHeader.FLUSH_NOT_COMPLETED,fh.viewID))
               .setBuffer(marshal(flushParticipants,null));
-            down_prot.down(new Event(Event.MSG, response));
+            down_prot.down(response);
             if (log.isDebugEnabled())
                 log.debug(localAddress + ": received START_FLUSH, responded with FLUSH_NOT_COMPLETED to " + flushRequester);
         }
@@ -583,7 +586,7 @@ public class FLUSH extends Protocol {
             Message reject = new Message(flushMember).src(localAddress).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
               .putHeader(this.id, new FlushHeader(FlushHeader.ABORT_FLUSH, viewId))
               .setBuffer(marshal(participants, null));
-            down_prot.down(new Event(Event.MSG, reject));
+            down_prot.down(reject);
         }
     }
 
@@ -700,7 +703,7 @@ public class FLUSH extends Protocol {
         if (participantsInFlush.isEmpty()) {
             flush_promise.setResult(SUCCESS_START_FLUSH);
         } else {
-            down_prot.down(new Event(Event.MSG, msg));
+            down_prot.down(msg);
             if (log.isDebugEnabled())
                 log.debug(localAddress + ": flush coordinator "
                         + " is starting FLUSH with participants " + participantsInFlush);
@@ -722,7 +725,7 @@ public class FLUSH extends Protocol {
             if (log.isDebugEnabled())
                 log.debug(localAddress + ": received RESUME, sending STOP_FLUSH to all");
             msg.putHeader(this.id, new FlushHeader(FlushHeader.STOP_FLUSH, viewID));
-            down_prot.down(new Event(Event.MSG, msg));
+            down_prot.down(msg);
         } else {
             for (Address address : members) {
                 Message msg = new Message(address).src(localAddress);
@@ -731,7 +734,7 @@ public class FLUSH extends Protocol {
                 if (log.isDebugEnabled())
                     log.debug(localAddress + ": received RESUME, sending STOP_FLUSH to " + address);
                 msg.putHeader(this.id, new FlushHeader(FlushHeader.STOP_FLUSH, viewID));
-                down_prot.down(new Event(Event.MSG, msg));
+                down_prot.down(msg);
             }
         }
         if(isParticipant)
@@ -780,9 +783,8 @@ public class FLUSH extends Protocol {
             Message start_msg = new Message(flushStarter)
               .putHeader(this.id, new FlushHeader(FlushHeader.FLUSH_COMPLETED, fh.viewID))
               .setBuffer(marshal(tuple.getVal1(),digest));
-            down_prot.down(new Event(Event.MSG, start_msg));
-            if (log.isDebugEnabled())
-                log.debug(localAddress + ": received START_FLUSH, responded with FLUSH_COMPLETED to " + flushStarter);
+            down_prot.down(start_msg);
+            log.debug(localAddress + ": received START_FLUSH, responded with FLUSH_COMPLETED to " + flushStarter);
         }
 
     }
@@ -828,7 +830,7 @@ public class FLUSH extends Protocol {
             }
         }
         if (needsReconciliationPhase) {
-            down_prot.down(new Event(Event.MSG, msg));
+            down_prot.down(msg);
         } else if (flushCompleted) {
             flush_promise.setResult(SUCCESS_START_FLUSH);
             if (log.isDebugEnabled())
@@ -921,7 +923,7 @@ public class FLUSH extends Protocol {
         if (flushOkCompleted) {
             Digest digest = (Digest) down_prot.down(Event.GET_DIGEST_EVT);
             m.putHeader(this.id, new FlushHeader(FlushHeader.FLUSH_COMPLETED, viewID)).setBuffer(marshal(null, digest));
-            down_prot.down(new Event(Event.MSG, m));
+            down_prot.down(m);
 
             if (log.isDebugEnabled())
                 log.debug(localAddress + ": sent FLUSH_COMPLETED message to " + flushCoordinator);

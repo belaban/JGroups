@@ -2,7 +2,6 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.Address;
-import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.logging.Log;
@@ -60,7 +59,7 @@ public abstract class GmsImpl {
         hdr.merge_id=merge_id;
         msg.putHeader(gms.getId(), hdr);
         log.debug("%s: merge response=%s", gms.local_addr, hdr);
-        gms.getDownProtocol().down(new Event(Event.MSG, msg));
+        gms.getDownProtocol().down(msg);
     }
 
 

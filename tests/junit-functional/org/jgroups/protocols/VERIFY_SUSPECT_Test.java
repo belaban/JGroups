@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Global;
+import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.DefaultThreadFactory;
 import org.jgroups.util.ThreadFactory;
@@ -19,9 +20,7 @@ import java.util.Map;
  */
 @Test(groups=Global.TIME_SENSITIVE,singleThreaded=true)
 public class VERIFY_SUSPECT_Test {
-    static final Address a=Util.createRandomAddress("A"),
-      b=Util.createRandomAddress("B"),
-      c=Util.createRandomAddress("C");
+    static final Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B");
     long start;
 
     public void testTimer() {
@@ -82,6 +81,7 @@ public class VERIFY_SUSPECT_Test {
             public Object down(Event evt) {
                 return null;
             }
+            public Object down(Message msg) {return null;}
 
             public ThreadFactory getThreadFactory() {
                 return new DefaultThreadFactory("foo",false,true);
@@ -110,7 +110,7 @@ public class VERIFY_SUSPECT_Test {
 
         public Object up(Event evt) {
             if(evt.getType() == Event.SUSPECT) {
-                Address suspect=(Address)evt.getArg();
+                Address suspect=evt.getArg();
                 long diff=System.currentTimeMillis() - start;
                 map.put(suspect, diff);
                 System.out.println("[" + diff + "] evt = " + evt);
@@ -121,6 +121,7 @@ public class VERIFY_SUSPECT_Test {
 
     protected static class NoopProtocol extends Protocol {
         public Object down(Event evt) {return null;}
-        public ThreadFactory getThreadFactory() {return new DefaultThreadFactory("y",false,true);}
+        public Object down(Message msg) {return null;}
+        public ThreadFactory getThreadFactory() {return new DefaultThreadFactory("y", false, true);}
     }
 }

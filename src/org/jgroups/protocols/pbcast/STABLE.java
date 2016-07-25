@@ -222,23 +222,23 @@ public class STABLE extends Protocol {
 
     public Object up(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                StableHeader hdr=msg.getHeader(this.id);
-                if(hdr == null) {
-                    handleRegularMessage(msg);
-                    return up_prot.up(evt);
-                }
-
-                handleUpEvent(hdr, msg.getSrc(), readDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
-                return null;  // don't pass STABLE or STABILITY messages up the stack
-
             case Event.VIEW_CHANGE:
                 Object retval=up_prot.up(evt);
                 handleViewChange(evt.getArg());
                 return retval;
         }
         return up_prot.up(evt);
+    }
+
+    public Object up(Message msg) {
+        StableHeader hdr=msg.getHeader(this.id);
+        if(hdr == null) {
+            handleRegularMessage(msg);
+            return up_prot.up(msg);
+        }
+
+        handleUpEvent(hdr, msg.getSrc(), readDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
+        return null;  // don't pass STABLE or STABILITY messages up the stack
     }
 
     protected void handleUpEvent(StableHeader hdr, Address sender, Digest digest) {
@@ -662,12 +662,12 @@ public class STABLE extends Protocol {
           .setBuffer(marshal(d));
         try {
             if(!send_in_background) {
-                down_prot.down(new Event(Event.MSG, msg));
+                down_prot.down(msg);
                 return;
             }
             Runnable r=new Runnable() {
                 public void run() {
-                    down_prot.down(new Event(Event.MSG, msg));
+                    down_prot.down(msg);
                     num_stable_msgs_sent++;
                 }
                 public String toString() {return STABLE.class.getSimpleName() + ": STABLE-GOSSIP";}
@@ -840,7 +840,7 @@ public class STABLE extends Protocol {
                   .setBuffer(marshal(stability_digest));
                 log.trace("%s: sending stability msg %s", local_addr, printDigest(stability_digest));
                 num_stability_msgs_sent++;
-                down_prot.down(new Event(Event.MSG, msg));
+                down_prot.down(msg);
             }
             catch(Exception e) {
                 log.warn("failed sending STABILITY message", e);

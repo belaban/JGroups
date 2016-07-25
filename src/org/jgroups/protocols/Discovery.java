@@ -253,86 +253,84 @@ public abstract class Discovery extends Protocol {
         write(list, out);
     }
 
-    @SuppressWarnings("unchecked")
     public Object up(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=evt.getArg();
-                PingHeader hdr=msg.getHeader(this.id);
-                if(hdr == null)
-                    return up_prot.up(evt);
-
-                if(is_leaving)
-                    return null; // prevents merging back a leaving member (https://issues.jboss.org/browse/JGRP-1336)
-
-                PingData data=readPingData(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                Address logical_addr=data != null? data.getAddress() : msg.src();
-
-                switch(hdr.type) {
-
-                    case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
-                        if(cluster_name == null || hdr.cluster_name == null) {
-                            log.warn("cluster_name (%s) or cluster_name of header (%s) is null; passing up discovery " +
-                                       "request from %s, but this should not be the case", cluster_name, hdr.cluster_name, msg.src());
-                        }
-                        else {
-                            if(!cluster_name.equals(hdr.cluster_name)) {
-                                log.warn("%s: discarding discovery request for cluster '%s' from %s; " +
-                                           "our cluster name is '%s'. Please separate your clusters properly",
-                                         logical_addr, hdr.cluster_name, msg.src(), cluster_name);
-                                return null;
-                            }
-                        }
-
-                        // add physical address and logical name of the discovery sender (if available) to the cache
-                        if(data != null) {
-                            addDiscoveryResponseToCaches(logical_addr, data.getLogicalName(), data.getPhysicalAddr());
-                            discoveryRequestReceived(msg.getSrc(), data.getLogicalName(), data.getPhysicalAddr());
-                            addResponse(data, false);
-                        }
-
-                        if(return_entire_cache) {
-                            Map<Address,PhysicalAddress> cache=(Map<Address,PhysicalAddress>)down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS));
-                            if(cache != null) {
-                                for(Map.Entry<Address,PhysicalAddress> entry: cache.entrySet()) {
-                                    Address addr=entry.getKey();
-                                    // JGRP-1492: only return our own address, and addresses in view.
-                                    if(addr.equals(local_addr) || members.contains(addr)) {
-                                        PhysicalAddress physical_addr=entry.getValue();
-                                        sendDiscoveryResponse(addr, physical_addr, UUID.get(addr), msg.getSrc(), isCoord(addr));
-                                    }
-                                }
-                            }
-                            return null;
-                        }
-
-                        // Only send a response if hdr.mbrs is not empty and contains myself. Otherwise always send my info
-                        Collection<? extends Address> mbrs=data != null? data.mbrs() : null;
-                        boolean send_response=mbrs == null || mbrs.contains(local_addr);
-                        if(send_response) {
-                            PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-                            sendDiscoveryResponse(local_addr, physical_addr, UUID.get(local_addr), msg.getSrc(), is_coord);
-                        }
-                        return null;
-
-                    case PingHeader.GET_MBRS_RSP:
-                        // add physical address (if available) to transport's cache
-                        if(data != null) {
-                            log.trace("%s: received GET_MBRS_RSP from %s: %s", local_addr, msg.src(), data);
-                            handleDiscoveryResponse(data, msg.src());
-                        }
-                        return null;
-
-                    default:
-                        log.warn("got PING header with unknown type %d", hdr.type);
-                        return null;
-                }
-
             case Event.FIND_MBRS:
                 return findMembers(evt.getArg(), false, true); // this is done asynchronously
         }
-
         return up_prot.up(evt);
+    }
+
+    public Object up(Message msg) {
+        PingHeader hdr=msg.getHeader(this.id);
+        if(hdr == null)
+            return up_prot.up(msg);
+
+        if(is_leaving)
+            return null; // prevents merging back a leaving member (https://issues.jboss.org/browse/JGRP-1336)
+
+        PingData data=readPingData(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+        Address logical_addr=data != null? data.getAddress() : msg.src();
+
+        switch(hdr.type) {
+
+            case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
+                if(cluster_name == null || hdr.cluster_name == null) {
+                    log.warn("cluster_name (%s) or cluster_name of header (%s) is null; passing up discovery " +
+                               "request from %s, but this should not be the case", cluster_name, hdr.cluster_name, msg.src());
+                }
+                else {
+                    if(!cluster_name.equals(hdr.cluster_name)) {
+                        log.warn("%s: discarding discovery request for cluster '%s' from %s; " +
+                                   "our cluster name is '%s'. Please separate your clusters properly",
+                                 logical_addr, hdr.cluster_name, msg.src(), cluster_name);
+                        return null;
+                    }
+                }
+
+                // add physical address and logical name of the discovery sender (if available) to the cache
+                if(data != null) {
+                    addDiscoveryResponseToCaches(logical_addr, data.getLogicalName(), data.getPhysicalAddr());
+                    discoveryRequestReceived(msg.getSrc(), data.getLogicalName(), data.getPhysicalAddr());
+                    addResponse(data, false);
+                }
+
+                if(return_entire_cache) {
+                    Map<Address,PhysicalAddress> cache=(Map<Address,PhysicalAddress>)down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS));
+                    if(cache != null) {
+                        for(Map.Entry<Address,PhysicalAddress> entry: cache.entrySet()) {
+                            Address addr=entry.getKey();
+                            // JGRP-1492: only return our own address, and addresses in view.
+                            if(addr.equals(local_addr) || members.contains(addr)) {
+                                PhysicalAddress physical_addr=entry.getValue();
+                                sendDiscoveryResponse(addr, physical_addr, UUID.get(addr), msg.getSrc(), isCoord(addr));
+                            }
+                        }
+                    }
+                    return null;
+                }
+
+                // Only send a response if hdr.mbrs is not empty and contains myself. Otherwise always send my info
+                Collection<? extends Address> mbrs=data != null? data.mbrs() : null;
+                boolean send_response=mbrs == null || mbrs.contains(local_addr);
+                if(send_response) {
+                    PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+                    sendDiscoveryResponse(local_addr, physical_addr, UUID.get(local_addr), msg.getSrc(), is_coord);
+                }
+                return null;
+
+            case PingHeader.GET_MBRS_RSP:
+                // add physical address (if available) to transport's cache
+                if(data != null) {
+                    log.trace("%s: received GET_MBRS_RSP from %s: %s", local_addr, msg.src(), data);
+                    handleDiscoveryResponse(data, msg.src());
+                }
+                return null;
+
+            default:
+                log.warn("got PING header with unknown type %d", hdr.type);
+                return null;
+        }
     }
 
 
@@ -570,13 +568,13 @@ public abstract class Discovery extends Protocol {
               : stagger_timeout * rank / view_size - (stagger_timeout / view_size);
             timer.schedule(() -> {
                 log.trace("%s: received GET_MBRS_REQ from %s, sending staggered response %s", local_addr, sender, data);
-                down_prot.down(new Event(Event.MSG, rsp_msg));
+                down_prot.down(rsp_msg);
             }, sleep_time, TimeUnit.MILLISECONDS);
             return;
         }
 
         log.trace("%s: received GET_MBRS_REQ from %s, sending response %s", local_addr, sender, data);
-        down_prot.down(new Event(Event.MSG, rsp_msg));
+        down_prot.down(rsp_msg);
     }
 
     protected static String addressAsString(Address address) {
