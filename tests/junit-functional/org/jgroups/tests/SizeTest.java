@@ -266,6 +266,7 @@ public class SizeTest {
         _testSize(hdr);
         _testMarshalling(hdr);
 
+        //noinspection NumericOverflow
         for(long timestamp: new long[]{0, 100, Long.MAX_VALUE -1, Long.MAX_VALUE, Long.MAX_VALUE +100}) {
             hdr=UNICAST3.Header.createSendFirstSeqnoHeader((int)timestamp);
             _testSize(hdr);
