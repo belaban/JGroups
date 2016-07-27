@@ -206,6 +206,7 @@ public class SizeTest {
         _testSize(hdr);
         _testMarshalling(hdr);
 
+        //noinspection NumericOverflow
         for(long timestamp: new long[]{0, 100, Long.MAX_VALUE -1, Long.MAX_VALUE, Long.MAX_VALUE +100}) {
             hdr=UNICAST3.Header.createSendFirstSeqnoHeader((int)timestamp);
             _testSize(hdr);
@@ -732,7 +733,7 @@ public class SizeTest {
 
         uuid=org.jgroups.util.UUID.randomUUID();
         byte[] buf=Util.streamableToByteBuffer(uuid);
-        org.jgroups.util.UUID uuid2=(org.jgroups.util.UUID)Util.streamableFromByteBuffer(org.jgroups.util.UUID.class, buf);
+        org.jgroups.util.UUID uuid2=Util.streamableFromByteBuffer(UUID.class, buf);
         System.out.println("uuid:  " + uuid);
         System.out.println("uuid2: " + uuid2);
         assert uuid.equals(uuid2);
@@ -802,7 +803,7 @@ public class SizeTest {
 
     private static void _testMarshalling(UNICAST3.Header hdr) throws Exception {
         byte[] buf=Util.streamableToByteBuffer(hdr);
-        UNICAST3.Header hdr2=(UNICAST3.Header)Util.streamableFromByteBuffer(UNICAST3.Header.class, buf);
+        UNICAST3.Header hdr2=Util.streamableFromByteBuffer(UNICAST3.Header.class, buf);
 
         assert hdr.type()       == hdr2.type();
         assert hdr.seqno()      == hdr2.seqno();
@@ -825,7 +826,7 @@ public class SizeTest {
         System.out.println(hdr.getClass().getSimpleName() + ": size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
 
-        Header hdr2=(Header)Util.streamableFromByteBuffer(hdr.getClass(), serialized_form);
+        Header hdr2=Util.streamableFromByteBuffer(hdr.getClass(), serialized_form);
         assert hdr2.size() == hdr.size();
     }
 
@@ -859,7 +860,7 @@ public class SizeTest {
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
 
-        View view=(View)Util.streamableFromByteBuffer(v.getClass(),serialized_form);
+        View view=Util.streamableFromByteBuffer(v.getClass(), serialized_form);
         System.out.println("old view: " + v + "\nnew view: " + view);
         assert view.equals(v);
         return view;
@@ -885,7 +886,7 @@ public class SizeTest {
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
 
-        JoinRsp rsp2=(JoinRsp)Util.streamableFromByteBuffer(JoinRsp.class, serialized_form);
+        JoinRsp rsp2=Util.streamableFromByteBuffer(JoinRsp.class, serialized_form);
         assert Util.match(rsp.getDigest(), rsp2.getDigest());
         assert Util.match(rsp.getView(), rsp2.getView());
         assert Util.match(rsp.getFailReason(), rsp2.getFailReason());

@@ -59,9 +59,10 @@ public class Util {
     private static final byte TYPE_INT          = 15;
     private static final byte TYPE_LONG         = 16;
     private static final byte TYPE_SHORT        = 17;
-    private static final byte TYPE_STRING       = 18;
+    private static final byte TYPE_STRING       = 18; // ascii
     private static final byte TYPE_BYTEARRAY    = 19;
     private static final byte TYPE_EXCEPTION    = 20;
+    private static final byte TYPE_UTF_STRING   = 21; // multibyte charset
 
     // constants
     public static final int MAX_PORT=65535; // highest port allocatable
@@ -476,6 +477,9 @@ public class Util {
             case TYPE_LONG:    return (T)(Long)Bits.readLong(buffer, offset);
             case TYPE_SHORT:   return (T)(Short)Bits.readShort(buffer, offset);
             case TYPE_STRING:  return (T)new String(buffer, offset, length);
+            case TYPE_UTF_STRING:
+                in=new ByteArrayDataInputStream(buffer, offset, length);
+                return (T)in.readUTF();
             case TYPE_BYTEARRAY:
                 byte[] tmp=new byte[length];
                 System.arraycopy(buffer,offset,tmp,0,length);
@@ -524,57 +528,7 @@ public class Util {
             }
         }
 
-        switch(type) {
-            case TYPE_BOOLEAN:
-                return ((Boolean)obj)? TYPE_BOOLEAN_TRUE : TYPE_BOOLEAN_FALSE;
-            case TYPE_BYTE:
-                return new byte[]{TYPE_BYTE, (byte)obj};
-            case TYPE_CHAR:
-                byte[] buf=new byte[Global.BYTE_SIZE *3];
-                buf[0]=TYPE_CHAR;
-                Bits.writeChar((char)obj, buf, 1);
-                return buf;
-            case TYPE_DOUBLE:
-                buf=new byte[Global.BYTE_SIZE + Global.DOUBLE_SIZE];
-                buf[0]=TYPE_DOUBLE;
-                Bits.writeDouble((double)obj, buf, 1);
-                return buf;
-            case TYPE_FLOAT:
-                buf=new byte[Global.BYTE_SIZE + Global.FLOAT_SIZE];
-                buf[0]=TYPE_FLOAT;
-                Bits.writeFloat((float)obj, buf, 1);
-                return buf;
-            case TYPE_INT:
-                buf=new byte[Global.BYTE_SIZE + Global.INT_SIZE];
-                buf[0]=TYPE_INT;
-                Bits.writeInt((int)obj, buf, 1);
-                return buf;
-            case TYPE_LONG:
-                buf=new byte[Global.BYTE_SIZE + Global.LONG_SIZE];
-                buf[0]=TYPE_LONG;
-                Bits.writeLong((long)obj, buf, 1);
-                return buf;
-            case TYPE_SHORT:
-                buf=new byte[Global.BYTE_SIZE + Global.SHORT_SIZE];
-                buf[0]=TYPE_SHORT;
-                Bits.writeShort((short)obj, buf, 1);
-                return buf;
-            case TYPE_STRING:
-                String str=(String)obj;
-                int len=str.length();
-                ByteBuffer retval=ByteBuffer.allocate(Global.BYTE_SIZE + len).put(TYPE_STRING);
-                for(int i=0; i < len; i++)
-                    retval.put((byte)str.charAt(i));
-                return retval.array();
-            case TYPE_BYTEARRAY:
-                buf=(byte[])obj;
-                byte[] buffer=new byte[Global.BYTE_SIZE + buf.length];
-                buffer[0]=TYPE_BYTEARRAY;
-                System.arraycopy(buf, 0, buffer, 1, buf.length);
-                return buffer;
-            default:
-                throw new IllegalArgumentException("type " + type + " is invalid");
-        }
+        return marshalPrimitiveType(type, obj);
     }
 
 
@@ -606,59 +560,74 @@ public class Util {
                 return out_stream.getBuffer();
             }
         }
-
-        switch(type) {
-            case TYPE_BOOLEAN:
-                return new Buffer(((Boolean)obj)? TYPE_BOOLEAN_TRUE : TYPE_BOOLEAN_FALSE);
-            case TYPE_BYTE:
-                return new Buffer(new byte[]{TYPE_BYTE, (byte)obj});
-            case TYPE_CHAR:
-                byte[] buf=new byte[Global.BYTE_SIZE *3];
-                buf[0]=TYPE_CHAR;
-                Bits.writeChar((char)obj, buf, 1);
-                return new Buffer(buf);
-            case TYPE_DOUBLE:
-                buf=new byte[Global.BYTE_SIZE + Global.DOUBLE_SIZE];
-                buf[0]=TYPE_DOUBLE;
-                Bits.writeDouble((double)obj, buf, 1);
-                return new Buffer(buf);
-            case TYPE_FLOAT:
-                buf=new byte[Global.BYTE_SIZE + Global.FLOAT_SIZE];
-                buf[0]=TYPE_FLOAT;
-                Bits.writeFloat((float)obj, buf, 1);
-                return new Buffer(buf);
-            case TYPE_INT:
-                buf=new byte[Global.BYTE_SIZE + Global.INT_SIZE];
-                buf[0]=TYPE_INT;
-                Bits.writeInt((int)obj, buf, 1);
-                return new Buffer(buf);
-            case TYPE_LONG:
-                buf=new byte[Global.BYTE_SIZE + Global.LONG_SIZE];
-                buf[0]=TYPE_LONG;
-                Bits.writeLong((long)obj, buf, 1);
-                return new Buffer(buf);
-            case TYPE_SHORT:
-                buf=new byte[Global.BYTE_SIZE + Global.SHORT_SIZE];
-                buf[0]=TYPE_SHORT;
-                Bits.writeShort((short)obj, buf, 1);
-                return new Buffer(buf);
-            case TYPE_STRING:
-                String str=(String)obj;
-                int len=str.length();
-                ByteBuffer retval=ByteBuffer.allocate(Global.BYTE_SIZE + len).put(TYPE_STRING);
-                for(int i=0; i < len; i++)
-                    retval.put((byte)str.charAt(i));
-                return new Buffer(retval.array());
-            case TYPE_BYTEARRAY:
-                buf=(byte[])obj;
-                byte[] buffer=new byte[Global.BYTE_SIZE + buf.length];
-                buffer[0]=TYPE_BYTEARRAY;
-                System.arraycopy(buf, 0, buffer, 1, buf.length);
-                return new Buffer(buffer);
-            default:
-                throw new IllegalArgumentException("type " + type + " is invalid");
-        }
+        return new Buffer(marshalPrimitiveType(type, obj));
     }
+
+
+    protected static byte[] marshalPrimitiveType(byte type, Object obj) {
+          switch(type) {
+              case TYPE_BOOLEAN:
+                  return ((Boolean)obj)? TYPE_BOOLEAN_TRUE : TYPE_BOOLEAN_FALSE;
+              case TYPE_BYTE:
+                  return new byte[]{TYPE_BYTE, (byte)obj};
+              case TYPE_CHAR:
+                  byte[] buf=new byte[Global.BYTE_SIZE *3];
+                  buf[0]=TYPE_CHAR;
+                  Bits.writeChar((char)obj, buf, 1);
+                  return buf;
+              case TYPE_DOUBLE:
+                  buf=new byte[Global.BYTE_SIZE + Global.DOUBLE_SIZE];
+                  buf[0]=TYPE_DOUBLE;
+                  Bits.writeDouble((double)obj, buf, 1);
+                  return buf;
+              case TYPE_FLOAT:
+                  buf=new byte[Global.BYTE_SIZE + Global.FLOAT_SIZE];
+                  buf[0]=TYPE_FLOAT;
+                  Bits.writeFloat((float)obj, buf, 1);
+                  return buf;
+              case TYPE_INT:
+                  buf=new byte[Global.BYTE_SIZE + Global.INT_SIZE];
+                  buf[0]=TYPE_INT;
+                  Bits.writeInt((int)obj, buf, 1);
+                  return buf;
+              case TYPE_LONG:
+                  buf=new byte[Global.BYTE_SIZE + Global.LONG_SIZE];
+                  buf[0]=TYPE_LONG;
+                  Bits.writeLong((long)obj, buf, 1);
+                  return buf;
+              case TYPE_SHORT:
+                  buf=new byte[Global.BYTE_SIZE + Global.SHORT_SIZE];
+                  buf[0]=TYPE_SHORT;
+                  Bits.writeShort((short)obj, buf, 1);
+                  return buf;
+              case TYPE_STRING:
+                  String str=(String)obj;
+                  if(Util.isAsciiString(str)) {
+                      int len=str.length();
+                      ByteBuffer retval=ByteBuffer.allocate(Global.BYTE_SIZE + len).put(TYPE_STRING);
+                      for(int i=0; i < len; i++)
+                          retval.put((byte)str.charAt(i));
+                      return retval.array();
+                  }
+                  else {
+                      ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(str.length()*2 +3);
+                      out.write(TYPE_UTF_STRING);
+                      out.writeUTF(str);
+                      byte[] ret=new byte[out.position()];
+                      System.arraycopy(out.buffer(), 0, ret, 0, ret.length);
+                      return ret;
+                  }
+              case TYPE_BYTEARRAY:
+                  buf=(byte[])obj;
+                  byte[] buffer=new byte[Global.BYTE_SIZE + buf.length];
+                  buffer[0]=TYPE_BYTEARRAY;
+                  System.arraycopy(buf, 0, buffer, 1, buf.length);
+                  return buffer;
+              default:
+                  throw new IllegalArgumentException("type " + type + " is invalid");
+          }
+      }
+
 
 
     public static void objectToStream(Object obj, DataOutput out) throws Exception {
@@ -679,7 +648,8 @@ public class Util {
             writeGenericStreamable((Streamable)obj,out);
         }
         else if((type=PRIMITIVE_TYPES.get(obj.getClass())) != null) {
-            out.write(type);
+            if(type != TYPE_STRING)
+                out.write(type);
             switch(type) {
                 case TYPE_BOOLEAN:
                     out.writeBoolean((Boolean)obj);
@@ -707,16 +677,15 @@ public class Util {
                     break;
                 case TYPE_STRING:
                     String str=(String)obj;
-                    if(str.length() > Short.MAX_VALUE) {
-                        out.writeBoolean(true);
-                        try(ObjectOutputStream oos=new ObjectOutputStream(out instanceof ByteArrayDataOutputStream?
-                                                                            new OutputStreamAdapter((ByteArrayDataOutputStream)out) :
-                                                                            (OutputStream)out)) {
-                            oos.writeObject(str);
-                        }
+                    if(Util.isAsciiString(str)) {
+                        int len=str.length();
+                        out.write(TYPE_STRING);
+                        out.writeInt(len);
+                        for(int i=0; i < len; i++)
+                            out.write((byte)str.charAt(i));
                     }
                     else {
-                        out.writeBoolean(false);
+                        out.write(TYPE_UTF_STRING);
                         out.writeUTF(str);
                     }
                     break;
@@ -769,15 +738,15 @@ public class Util {
             case TYPE_LONG:       return (T)(Long)in.readLong();
             case TYPE_SHORT:      return (T)(Short)in.readShort();
             case TYPE_STRING:
-                if(in.readBoolean()) { // large string
-                    try(ObjectInputStream ois=new ObjectInputStream(in instanceof ByteArrayDataInputStream?
-                                                                      new org.jgroups.util.InputStreamAdapter((ByteArrayDataInputStream)in) :
-                                                                      (InputStream)in)) {
-                        return (T)ois.readObject();
-                    }
+                int str_len=in.readInt();
+                if(str_len == 0) return (T)"";
+                byte[] tmp=new byte[str_len];
+                for(int i=0; i < str_len; i++) {
+                    tmp[i]=in.readByte();
                 }
-                else
-                    return (T)in.readUTF();
+                return (T)new String(tmp);
+            case TYPE_UTF_STRING:
+                return (T)in.readUTF();
             case TYPE_BYTEARRAY:
                 int len=in.readInt();
                 byte[] tmpbuf=new byte[len];
@@ -1016,6 +985,16 @@ public class Util {
             sb.append(Integer.toHexString(v));
         }
         return sb.toString().toUpperCase();
+    }
+
+    public static boolean isAsciiString(String str) {
+        if(str == null) return false;
+        for(int i=0; i < str.length(); i++) {
+            int ch=str.charAt(i);
+            if(ch >= 128)
+                return false;
+        }
+        return true;
     }
 
     /** Compares 2 byte arrays, elements are treated as unigned */

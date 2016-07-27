@@ -237,6 +237,11 @@ public class UtilTest {
         assert rc;
     }
 
+    public void testIsAsciiString() {
+        assert Util.isAsciiString("Bela");
+        assert !Util.isAsciiString("\u1F601");
+    }
+
 
     public static void testReadBytes() {
         assert 10 == Util.readBytesInteger("10");
@@ -290,7 +295,7 @@ public class UtilTest {
     }
 
     @SuppressWarnings("unchecked")
-    public void testObjectToFromByteBuffer() throws Exception {
+    public void testSerialization() throws Exception {
         byte[] buf;
         Address addr=Util.createRandomAddress(), addr2;
         List<String> list=new ArrayList<>(), list2;
@@ -345,12 +350,24 @@ public class UtilTest {
           Short.MAX_VALUE,
           Short.MIN_VALUE,
           "Bela Ban",
+          "\u1F601", // multibyte string
           new byte[]{'H', 'e', 'l', 'l', 'o'},
           Util.generateArray(1024)
         };
+        System.out.printf("\n ------------ objectToByteBuffer() ------------\n");
         for(int i=0; i < values.length; i++) {
             Object value=values[i];
-            marshal(value);
+            objectToByteBuffer(value);
+        }
+        System.out.printf("\n ------------ objectToBuffer() ------------\n");
+        for(int i=0; i < values.length; i++) {
+            Object value=values[i];
+            objectToBuffer(value);
+        }
+        System.out.printf("\n ------------ objectToStream() ------------\n");
+        for(int i=0; i < values.length; i++) {
+            Object value=values[i];
+            objectToStream(value);
         }
     }
 
@@ -372,7 +389,7 @@ public class UtilTest {
         Assert.assertEquals(msg.getLength(), msg2.getLength());
     }
 
-    public static void testStringMarshalling() throws Exception {
+    public void testStringMarshalling() throws Exception {
         byte[] tmp={'B', 'e', 'l', 'a'};
         String str=new String(tmp);
         byte[] buf=Util.objectToByteBuffer(str);
@@ -381,6 +398,25 @@ public class UtilTest {
         tmp[1]='a';
         str2=Util.objectFromByteBuffer(buf);
         assert str.equals(str2);
+    }
+
+    public void testStringMarshalling2() throws Exception {
+        String first="Bela";
+        long val=322649;
+        String last="Ban";
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(64);
+        Util.objectToStream(first, out);
+        Util.objectToStream(val, out);
+        Util.objectToStream(last, out);
+
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(out.buffer(), 0, out.position());
+        String first2=Util.objectFromStream(in);
+        long val2=Util.objectFromStream(in);
+        String last2=Util.objectFromStream(in);
+
+        assert first.equals(first2);
+        assert val == val2;
+        assert last.equals(last2);
     }
 
     public static void testObjectToByteArrayWithLargeString() throws Exception {
@@ -471,7 +507,7 @@ public class UtilTest {
 
 
 
-    static void marshal(Object obj) throws Exception {
+    static void objectToByteBuffer(Object obj) throws Exception {
         byte[] buf=Util.objectToByteBuffer(obj);
         assert buf != null;
         assert buf.length > 0;
@@ -494,6 +530,26 @@ public class UtilTest {
     }
 
 
+    static void objectToBuffer(Object obj) throws Exception {
+        Buffer buf=Util.objectToBuffer(obj);
+        assert buf != null;
+        assert buf.getLength() > 0;
+        Object obj2=Util.objectFromByteBuffer(buf.getBuf(), buf.getOffset(), buf.getLength());
+        System.out.println("obj=" + obj + ", obj2=" + obj2 + " (type=" + obj.getClass().getName() + ", length=" + buf.getLength() + " bytes)");
+        Assert.assertEquals(obj, obj2);
+    }
+
+    static void objectToStream(Object obj) throws Exception {
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(128);
+        Util.objectToStream(obj, out);
+        assert out.position() > 0;
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(out.buffer(), 0, out.position());
+
+        Object obj2=Util.objectFromStream(in);
+        System.out.println("obj=" + obj + ", obj2=" + obj2 + " (type=" + obj.getClass().getName() + ", length=" + out.position() + " bytes)");
+        Assert.assertEquals(obj, obj2);
+    }
+
     public static void testWriteStreamable() throws Exception {
         Message m=new Message(null, "Hello");
         ViewId vid2=new ViewId(Util.createRandomAddress(), 35623);
@@ -511,7 +567,6 @@ public class UtilTest {
         Assert.assertEquals(m.getLength(), m2.getLength());
         assert v3 != null;
     }
-
 
 
     public static void testWriteView() throws Exception {
