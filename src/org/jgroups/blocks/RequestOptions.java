@@ -118,6 +118,7 @@ public class RequestOptions {
         return flag != null && ((transient_flags & flag.value()) == flag.value());
     }
 
+    public RequestOptions setFlags(Message.Flag ... flags) {return flags(flags);}
     public RequestOptions flags(Message.Flag ... flags) {
         if(flags != null)
             for(Message.Flag flag: flags)
@@ -125,7 +126,16 @@ public class RequestOptions {
                     this.flags |= flag.value();
         return this;
     }
+    /** Not recommended as the internal representation of flags might change (e.g. from short to int). Use
+     * {@link #setFlags(Message.Flag...)} instead */
+    public RequestOptions setFlags(short flags) {
+        short tmp=this.flags;
+        tmp|=flags;
+        this.flags=tmp;
+        return this;
+    }
 
+    public RequestOptions setTransientFlags(Message.TransientFlag ... flags) {return transientFlags(flags);}
     public RequestOptions transientFlags(Message.TransientFlag ... flags) {
         if(flags != null)
             for(Message.TransientFlag flag: flags)
@@ -133,6 +143,16 @@ public class RequestOptions {
                     this.transient_flags |= flag.value();
         return this;
     }
+    /** Not recommended as the internal representation of flags might change (e.g. from short to int). Use
+     * {@link #setTransientFlags(Message.TransientFlag...)} instead.
+     */
+    public RequestOptions setTransientFlags(short flags) {
+        short tmp=this.transient_flags;
+        tmp|=flags;
+        this.transient_flags=(byte)tmp;
+        return this;
+    }
+
 
     public RequestOptions clearFlags(Message.Flag ... flags) {
         if(flags != null)
