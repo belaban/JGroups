@@ -44,6 +44,11 @@ public class Rsp<T> {
         setException(t);
     }
 
+    public void readIn(Rsp<T> other) {
+        this.flags = other.flags;
+        this.value = other.value;
+    }
+
     public T getValue() {
         return hasException()? null : (T)value;
     }
