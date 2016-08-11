@@ -226,11 +226,12 @@ public class JDBC_PING extends Discovery {
             try (PreparedStatement ps=conn.prepareStatement(contains_sql)) {
                 ps.setString(1, cluster_name);
                 ps.setString(2, addressAsString);
-                ResultSet resultSet=ps.executeQuery();
-                if(!resultSet.next())
-                    return false;
-                int count=resultSet.getInt("RECORDCOUNT");
-                return count > 0;
+                try (ResultSet resultSet=ps.executeQuery()) {
+                	if(!resultSet.next())
+                		return false;
+                	int count=resultSet.getInt("RECORDCOUNT");
+                	return count > 0;
+                }
             }
         }
         catch(SQLException e) {
@@ -264,27 +265,28 @@ public class JDBC_PING extends Discovery {
     protected void readAll(Connection connection, List<Address> members, String clustername, Responses rsps) throws SQLException {
         try (PreparedStatement ps=connection.prepareStatement(select_all_pingdata_sql)) {
             ps.setString(1, clustername);
-            ResultSet resultSet=ps.executeQuery();
-            while(resultSet.next()) {
-                byte[] bytes=resultSet.getBytes(1);
-                try {
-                    PingData data=deserialize(bytes);
-                    if(data == null || (members != null && !members.contains(data.getAddress())))
-                        continue;
-                    rsps.addResponse(data, false);
-                    if(local_addr != null && !local_addr.equals(data.getAddress()))
-                        addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
-                }
-                catch(Exception e) {
-                    int row=resultSet.getRow();
-                    log.error("%s: failed deserializing row %d: %s; removing it from the table", local_addr, row, e);
-                    try {
-                        resultSet.deleteRow();
-                    }
-                    catch(Throwable t) {
-                        log.error("%s: failed removing row %d: %s; please delete it manually", local_addr, row, e);
-                    }
-                }
+            try (ResultSet resultSet=ps.executeQuery()) {
+	            while(resultSet.next()) {
+	                byte[] bytes=resultSet.getBytes(1);
+	                try {
+	                    PingData data=deserialize(bytes);
+	                    if(data == null || (members != null && !members.contains(data.getAddress())))
+	                        continue;
+	                    rsps.addResponse(data, false);
+	                    if(local_addr != null && !local_addr.equals(data.getAddress()))
+	                        addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
+	                }
+	                catch(Exception e) {
+	                    int row=resultSet.getRow();
+	                    log.error("%s: failed deserializing row %d: %s; removing it from the table", local_addr, row, e);
+	                    try {
+	                        resultSet.deleteRow();
+	                    }
+	                    catch(Throwable t) {
+	                        log.error("%s: failed removing row %d: %s; please delete it manually", local_addr, row, e);
+	                    }
+	                }
+	            }
             }
         }
     }
