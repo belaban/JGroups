@@ -9,7 +9,11 @@ import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 
 import java.net.SocketException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static org.jgroups.protocols.TP.BUNDLE_MSG;
@@ -23,7 +27,7 @@ import static org.jgroups.protocols.TP.MSG_OVERHEAD;
  */
 public abstract class BaseBundler implements Bundler {
     /** Keys are destinations, values are lists of Messages */
-    protected final Map<Address,List<Message>>  msgs=new HashMap<>(24);
+    protected final Map<Address,List<Message>>  msgs=new ConcurrentHashMap<>(24);
     protected TP                                transport;
     protected final ReentrantLock               lock=new ReentrantLock();
     protected @GuardedBy("lock") long           count;    // current number of bytes accumulated
@@ -41,25 +45,12 @@ public abstract class BaseBundler implements Bundler {
     public void send(Message msg) throws Exception {}
 
     public void viewChange(View view) {
-        lock.lock();
-        try {
-            for(Iterator<Address> it=msgs.keySet().iterator(); it.hasNext();) {
-                Address mbr=it.next();
-                if(mbr != null && !view.containsMember(mbr)) // skip dest == null
-                    it.remove();
-            }
-        }
-        finally {
-            lock.unlock();
-        }
+        msgs.keySet().stream().filter(mbr -> mbr != null && !view.containsMember(mbr)).forEach(msgs::remove);
     }
 
     public int size() {
-        int num=0;
-        Collection<List<Message>> values=msgs.values();
-        for(List<Message> list: values)
-            num+=list.size();
-        return num;
+        long num=msgs.values().stream().flatMap(Collection::stream).map(Message::size).reduce(0L, (a,b) -> a+b);
+        return (int)num;
     }
 
     /**
