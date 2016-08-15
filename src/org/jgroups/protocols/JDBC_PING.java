@@ -262,8 +262,22 @@ public class JDBC_PING extends Discovery {
         }
     }
 
+	protected static final PreparedStatement prepareStatement(final Connection connection, final String sql, final int resultSetType,
+		final int resultSetConcurrency) throws SQLException {
+		try {
+			return connection.prepareStatement(sql, resultSetType, resultSetConcurrency);
+		} catch(final SQLException x) {
+			try {
+				return connection.prepareStatement(sql);
+			} catch(final SQLException x2) {
+				x.addSuppressed(x2);
+				throw x;
+			}
+		}
+	}
+
     protected void readAll(Connection connection, List<Address> members, String clustername, Responses rsps) throws SQLException {
-        try (PreparedStatement ps=connection.prepareStatement(select_all_pingdata_sql)) {
+        try (PreparedStatement ps=prepareStatement(connection, select_all_pingdata_sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE)) {
             ps.setString(1, clustername);
             try (ResultSet resultSet=ps.executeQuery()) {
 	            while(resultSet.next()) {
