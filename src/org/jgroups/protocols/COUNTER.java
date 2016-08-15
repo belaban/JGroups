@@ -905,7 +905,6 @@ public class COUNTER extends Protocol {
 
         public void readFrom(DataInput in) throws Exception {
             int len=in.readInt();
-            if(len == 0) return;
             names=readReconciliationNames(in, len);
             values=readReconciliationLongs(in, len);
             versions=readReconciliationLongs(in,len);
@@ -1077,7 +1076,6 @@ public class COUNTER extends Protocol {
 
         public void readFrom(DataInput in) throws Exception {
             int len=in.readInt();
-            if(len == 0) return;
             names=readReconciliationNames(in, len);
             values=readReconciliationLongs(in, len);
             versions=readReconciliationLongs(in,len);
