@@ -75,7 +75,7 @@ public class JDBC_PING extends Discovery {
     protected String delete_single_sql = "DELETE FROM JGROUPSPING WHERE own_addr=? AND cluster_name=?";
 
     @Property(description="SQL to clear the table")
-    protected String clear_sql="DELETE from JGROUPSPING";
+    protected String clear_sql="DELETE from JGROUPSPING WHERE cluster_name=?";
     
     @Property(description = "SQL used to fetch all node's PingData. Customizable, but keep the order of parameters and pick compatible types: " + 
                 "only one parameter needed, String compatible, representing the Cluster name. Must return a byte[], the Serialized PingData as" + 
@@ -414,6 +414,12 @@ public class JDBC_PING extends Discovery {
     protected void clearTable() {
         try(Connection conn=getConnection()) {
             try (PreparedStatement ps=conn.prepareStatement(clear_sql)) {
+				// check presence of cluster_name parameter for backwards compatibility
+				if (clear_sql.indexOf('?') >= 0) {
+					ps.setString(1, cluster_name);
+				} else {
+					log.debug("Please update your clear_sql to include cluster_name parameter.");
+				}
                 ps.execute();
             }
         }
