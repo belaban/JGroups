@@ -1456,7 +1456,7 @@ public class Util {
     public static boolean tossWeightedCoin(double probability) {
         long r=random(100);
         long cutoff=(long)(probability * 100);
-        return r < cutoff;
+        return r <= cutoff;
     }
 
 

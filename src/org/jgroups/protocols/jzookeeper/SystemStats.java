@@ -2,16 +2,16 @@ package org.jgroups.protocols.jzookeeper;
 
 import java.util.ArrayList;
 
-import oshi.SystemInfo;
-import oshi.hardware.HardwareAbstractionLayer;
-import oshi.hardware.Processor;
-import oshi.software.os.OperatingSystem;
+//import oshi.SystemInfo;
+//import oshi.hardware.HardwareAbstractionLayer;
+//import oshi.hardware.Processor;
+//import oshi.software.os.OperatingSystem;
 
 
 public class SystemStats {
 
 	private String osName;
-	private HardwareAbstractionLayer hal;
+	//private HardwareAbstractionLayer hal;
 	
 	private int cpuNumber;
 	private String cpuVendor;
@@ -32,41 +32,41 @@ public class SystemStats {
 	}
 	
 	public void initAll(){
-		SystemInfo si = new SystemInfo();
-		OperatingSystem os = si.getOperatingSystem();
+//		SystemInfo si = new SystemInfo();
+//		OperatingSystem os = si.getOperatingSystem();
 		
-		this.osName = os.toString();
-		this.hal = si.getHardware();
-		this.cpuNumber = hal.getProcessors().length;
+	//	this.osName = os.toString();
+		//this.hal = si.getHardware();
+		//this.cpuNumber = hal.getProcessors().length;
 		this.coresLoad = new ArrayList<Double>(this.cpuNumber);
 		
-		this.memAvailable =  hal.getMemory().getAvailable();
-		this.memTotal = hal.getMemory().getTotal();
+		//this.memAvailable =  hal.getMemory().getAvailable();
+		//this.memTotal = hal.getMemory().getTotal();
 		
-		for (Processor cpu : hal.getProcessors()) {
-			this.coresLoad.add( cpu.getSystemLoadAverage() );	
-			
-			this.systemLoad = cpu.getSystemCpuLoad();
-			this.systemLoadAverage  = cpu.getSystemLoadAverage();
-			this.cpuVendor = cpu.getVendor();
-			this.cpuFreq = cpu.getVendorFreq();
-		}
+//		for (Processor cpu : hal.getProcessors()) {
+//			this.coresLoad.add( cpu.getSystemLoadAverage() );	
+//			
+//			this.systemLoad = cpu.getSystemCpuLoad();
+//			this.systemLoadAverage  = cpu.getSystemLoadAverage();
+//			this.cpuVendor = cpu.getVendor();
+//			this.cpuFreq = cpu.getVendorFreq();
+//		}
 		
 	}
 	
 	
 	public void getCurrentValues(){
-		this.memAvailable =  hal.getMemory().getAvailable();
-		this.memTotal = hal.getMemory().getTotal();
+//		this.memAvailable =  hal.getMemory().getAvailable();
+//		this.memTotal = hal.getMemory().getTotal();
 		
-		for (Processor cpu : hal.getProcessors()) {
-			this.coresLoad.add( cpu.getSystemLoadAverage() );	
-			
-			this.systemLoad = cpu.getSystemCpuLoad();
-			this.systemLoadAverage  = cpu.getSystemLoadAverage();
-			this.cpuVendor = cpu.getVendor();
-			this.cpuFreq = cpu.getVendorFreq();
-		}
+		//for (Processor cpu : hal.getProcessors()) {
+//			this.coresLoad.add( cpu.getSystemLoadAverage() );	
+//			
+//			this.systemLoad = cpu.getSystemCpuLoad();
+//			this.systemLoadAverage  = cpu.getSystemLoadAverage();
+//			this.cpuVendor = cpu.getVendor();
+//			this.cpuFreq = cpu.getVendorFreq();
+//		}
 	}
 	
 
@@ -212,13 +212,13 @@ public class SystemStats {
 	}
 
 
-	public HardwareAbstractionLayer getHal() {
-		return hal;
-	}
-
-	public void setHal(HardwareAbstractionLayer hal) {
-		this.hal = hal;
-	}
+//	public HardwareAbstractionLayer getHal() {
+//		return hal;
+//	}
+//
+//	public void setHal(HardwareAbstractionLayer hal) {
+//		this.hal = hal;
+//	}
 	
 	
 	//public static void main(String[] args) {

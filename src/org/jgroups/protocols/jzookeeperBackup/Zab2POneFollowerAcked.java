@@ -1,4 +1,4 @@
-package org.jgroups.protocols.jzookeeper;
+package org.jgroups.protocols.jzookeeperBackup;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -26,6 +26,8 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.protocols.jzookeeper.MessageId;
+import org.jgroups.protocols.jzookeeper.Proposal;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 

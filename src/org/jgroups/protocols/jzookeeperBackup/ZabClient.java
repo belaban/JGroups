@@ -21,6 +21,8 @@ import org.jgroups.Version;
 import org.jgroups.View;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.protocols.jzookeeper.MessageId;
+import org.jgroups.protocols.jzookeeper.ZabHeader;
 import org.jgroups.util.Util;
 
 public class ZabClient extends ReceiverAdapter {

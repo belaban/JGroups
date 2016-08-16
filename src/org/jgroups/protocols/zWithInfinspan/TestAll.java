@@ -8,7 +8,6 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.UNICAST2;
 import org.jgroups.protocols.relay.RELAY2;
-import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -32,7 +31,7 @@ public class TestAll extends ReceiverAdapter {
     private Address                local_addr;
     private RpcDispatcher          disp;
     static final String            groupname="Cluster";
-	private String propsFile = "conf/Zab.xml";
+	private String propsFile = "conf/ZabInsinspan.xml";
 	private static String ProtocotName = "";
     protected final List<Address>  members=new ArrayList<Address>();
     protected final List<Address>  site_masters=new ArrayList<Address>();
@@ -40,6 +39,8 @@ public class TestAll extends ReceiverAdapter {
 	private List<Address> Box = new ArrayList<Address>();
     private String outputDir;
 	private View view;
+	private String initiator;
+	private String channelName;
 
 
     // ============ configurable properties ==================
@@ -104,8 +105,9 @@ public class TestAll extends ReceiverAdapter {
 
     public void init(List<String> Members, String protocolName, String props,
 			 int totalNum_msgs, int totalPerThreads, int num_threads,
-			 int msg_size, String outputDir, int numOfClients, int load, int numsOfWarmUpPerThread,
-			 int timeout, boolean sync) throws Throwable {
+			 int msg_size, String outputDir, int numOfClients, int load,
+			 int numsOfWarmUpPerThread, int timeout, boolean sync, String 
+			 channelName, String initiator) throws Throwable {
     	this.ProtocotName = protocolName;
     	this.propsFile = props;
     	this.num_msgs = totalNum_msgs;
@@ -118,6 +120,8 @@ public class TestAll extends ReceiverAdapter {
 		this.numsOfWarmUpPerThread = numsOfWarmUpPerThread;
 		this.timeout = timeout;
 		this.sync = sync;
+		this.channelName = channelName;
+		this.initiator = initiator;
 
         channel=new JChannel(propsFile);
         System.out.println("this.ProtocotName := " + this.ProtocotName+ " propsFile :="+propsFile+
@@ -130,7 +134,7 @@ public class TestAll extends ReceiverAdapter {
             }
         });
         disp.setRequestMarshaller(new CustomMarshaller());
-		channel.connect("CLRPC");
+		channel.connect(channelName);
         local_addr=channel.getAddress();
         this.boxMembers = Members;
 
@@ -145,8 +149,12 @@ public class TestAll extends ReceiverAdapter {
 //        if(members.size() < 2)
 //            return;
 
-        while (members.size() < 3)
-            Util.sleep(1);
+        //while (members.size() < 3)
+           // Util.sleep(1);
+        if (channel.getAddress().toString().contains(initiator)) {
+			System.out.println("I am initiator");
+			startBenchmark();
+		}
 
         Address coord = pickCoordinator();
         //System.out.println("Coordinator := " + coord);
@@ -466,6 +474,7 @@ public class TestAll extends ReceiverAdapter {
 
         RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0, anycastRequests);
         options.setFlags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.NO_FC);
+        System.out.println("Members ---------------->>>> | " + dest);
         RspList<Object> responses=disp.callRemoteMethods(dest, new MethodCall(START), options);
         System.out.println("after sending rpc");
 
@@ -579,7 +588,10 @@ public class TestAll extends ReceiverAdapter {
 
 
         public void run() {
-        	System.out.println(" Inside run");
+        	System.out.println("Inside run");
+        	System.out.println("num_msgs_to_send: "+num_msgs_to_send);
+
+        	
             final byte[] buf=new byte[msg_size];
             Object[] put_args={0, buf};
             Object[] get_args={0};
@@ -887,6 +899,8 @@ public class TestAll extends ReceiverAdapter {
         int numWarmUp= 10000; 
         int timeout=0;
         boolean sync=true;
+        String channelName = "ZabInfinspan";
+		String initiator = "";
 
 
         for (int i = 0; i < args.length; i++) {
@@ -948,6 +962,14 @@ public class TestAll extends ReceiverAdapter {
         		 sync = Boolean.parseBoolean(args[++i]);
                  continue;
              }
+        	 if ("-channel".equals(args[i])) {
+        		 channelName = args[++i];
+ 				continue;
+ 			}			
+ 			if ("-init".equals(args[i])) {
+ 				initiator = args[++i];
+ 				continue;
+ 			}
         	 
         }
 
@@ -956,7 +978,8 @@ public class TestAll extends ReceiverAdapter {
             test=new TestAll();
             test.init(Members, name, propsFile, totalMessages,
 					numberOfMessages, numsThreads, msgSize, 
-					outputDir, numOfClients, load, numWarmUp, timeout, sync);
+					outputDir, numOfClients, load, numWarmUp, timeout
+					, sync, channelName, initiator);
             test.eventLoop();
            
         }

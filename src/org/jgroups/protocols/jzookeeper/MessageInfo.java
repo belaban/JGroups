@@ -81,7 +81,7 @@ public class MessageInfo implements Comparable<MessageInfo>, SizeStreamable {
 
     @Override
     public int size() {
-        return id.serializedSize() + Bits.size(ordering) + longArraySize(lastOrderSequence) + (viewId != null ? viewId.serializedSize() : 0) + (destinations != null ? Util.size(destinations) : 0);
+        return id.size() + Bits.size(ordering) + longArraySize(lastOrderSequence) + (viewId != null ? viewId.serializedSize() : 0) + (destinations != null ? Util.size(destinations) : 0);
       }
 
     @Override

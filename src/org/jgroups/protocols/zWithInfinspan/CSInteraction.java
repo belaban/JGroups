@@ -197,10 +197,10 @@ public class CSInteraction extends Protocol {
         if (index > 2)
             index=0;
         Message requestMessage = new Message(zabMembers.get(index)).putHeader(
-        (short) 75, hdrReq);
-        //int diff = 1000 - hdrReq.size();
-        //if (diff > 0)
-        //message.setBuffer(new byte[diff]); // Necessary to ensure that each msgs size is 1kb, necessary for accurate network measurements
+        (short) 78, hdrReq);
+        int diff = 1000 - hdrReq.size();
+        if (diff > 0)
+        message.setBuffer(new byte[diff]); // Necessary to ensure that each msgs size is 1kb, necessary for accurate network measurements
 
         down_prot.down(new Event(Event.MSG, requestMessage));
             

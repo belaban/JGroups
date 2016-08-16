@@ -731,7 +731,7 @@ import org.jgroups.util.MessageBatch;
 					latencies.add((int)(System.nanoTime() - startTime));
 		    		//log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!I am the zab request receiver, going to send response back to " + hdrOrginal.getMessageId().getAddress());
 			    	ZabHeader hdrResponse = new ZabHeader(ZabHeader.RESPONSE, committedZxid,  hdrOrginal.getMessageId());
-			    	Message msgResponse = new Message(hdrOrginal.getMessageId().getAddress()).putHeader(this.id, hdrResponse);
+			    	Message msgResponse = new Message(hdrOrginal.getMessageId().getOriginator()).putHeader(this.id, hdrResponse);
 		       		down_prot.down(new Event(Event.MSG, msgResponse));     
 
 		    	}

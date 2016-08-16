@@ -28,7 +28,6 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.protocols.jzookeeper.ProtocolStats;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
@@ -242,27 +241,6 @@ public class Zab extends Protocol {
 
 		return up_prot.up(evt);
 	}
-
-	
-	public void up(MessageBatch batch) {
-		for (Message msg : batch) {
-			if (msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER)
-					|| msg.isFlagSet(Message.Flag.OOB)
-					|| msg.getHeader(id) == null)
-				continue;
-			batch.remove(msg);
-
-			try {
-				up(new Event(Event.MSG, msg));
-			} catch (Throwable t) {
-				log.error("failed passing up message", t);
-			}
-		}
-
-		if (!batch.isEmpty())
-			up_prot.up(batch);
-	}
-
 	
 	/*
 	 * --------------------------------- Private Methods  --------------------------------
@@ -476,7 +454,7 @@ public class Zab extends Protocol {
 	private void sendOrderResponse(MessageOrderInfo messageOrderInfo){
 		CSInteractionHeader hdrResponse = new CSInteractionHeader(CSInteractionHeader.RESPONSE, messageOrderInfo);
 		Message msgResponse = new Message(messageOrderInfo.getId()
-				.getOriginator()).putHeader((short) 78, hdrResponse);
+				.getOriginator()).putHeader((short) 79, hdrResponse);
 		down_prot.down(new Event(Event.MSG, msgResponse));
 	}
 	

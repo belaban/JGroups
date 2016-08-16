@@ -6,6 +6,7 @@ import org.jgroups.annotations.*;
 import org.jgroups.blocks.LazyRemovalCache;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.protocols.jzookeeper.zWithInfinspan.ZabHeader;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -1863,6 +1864,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         // JIRA: https://issues.jboss.org/browse/JGRP-1737
         boolean bypass_bundling=msg.isFlagSet(Message.Flag.DONT_BUNDLE) &&
           (!ignore_dont_bundle || bundler instanceof SenderSendsWithTimerBundler || dest instanceof PhysicalAddress);
+       log.info("ignore_dont_bundle=: "+ignore_dont_bundle);
+       log.info("bypass_bundling=: "+bypass_bundling);
+       if (msg.getHeader((short) 78) instanceof ZabHeader){
+           log.info("ZabHeader Type=: "+((ZabHeader) msg.getHeader((short) 78)).getType());
+
+       }
         if(!bypass_bundling) {
             bundler.send(msg);
             return;

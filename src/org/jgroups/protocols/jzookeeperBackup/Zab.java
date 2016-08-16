@@ -404,8 +404,8 @@ public class Zab extends Protocol {
 		} else {
 			if (!stats.isWarmup()) {
 				long stf = System.nanoTime();
-				hdrReq.getMessageId().setStartFToLF(stf);
-				hdrReq.getMessageId().setStartTime(stf);
+				//hdrReq.getMessageId().setStartFToLF(stf);
+				//hdrReq.getMessageId().setStartTime(stf);
 			}
 			forward(msg);
 		}
@@ -454,8 +454,8 @@ public class Zab extends Protocol {
 			countMessageFollower++;
 			stats.incCountMessageFollower();
 			if (requestQueue.contains(hdrAck.getMessageId())) {
-				long stf = hdrAck.getMessageId().getStartFToLF();
-				stats.addLatencyFToLF((int) (System.nanoTime() - stf));
+				//long stf = hdrAck.getMessageId().getStartFToLF();
+			//	stats.addLatencyFToLF((int) (System.nanoTime() - stf));
 				// log.info("Latency for forward fro zxid=" + dZxid +
 				// " start time=" + stf + " End Time=" + etf +
 				// " latency = "+((etf - stf)/1000000));

@@ -516,7 +516,7 @@ public class CopyZab extends Protocol {
 			ZabHeader hdrResponse = new ZabHeader(ZabHeader.RESPONSE, hdr.getZxid(),
 					hdrOrginal.getMessageId());
 			Message msgResponse = new Message(hdrOrginal.getMessageId()
-					.getAddress()).putHeader(this.id, hdrResponse);
+					.getOriginator()).putHeader(this.id, hdrResponse);
 			down_prot.down(new Event(Event.MSG, msgResponse));
 
 		}

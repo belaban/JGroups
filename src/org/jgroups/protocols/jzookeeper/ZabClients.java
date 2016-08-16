@@ -21,6 +21,8 @@ import org.jgroups.Version;
 import org.jgroups.View;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.protocols.jzookeeper.MessageId;
+import org.jgroups.protocols.jzookeeper.Zab2PhasesHeader;
 import org.jgroups.util.Util;
 
 /*
@@ -57,7 +59,7 @@ public class ZabClients extends ReceiverAdapter {
     private long warmUpRequests = 0;
     private long currentLoad = 0;
     private int sendTime = 0;
-    private long stt=0,et=0;
+   // private long stt=0,et=0;
     private ZabTestThreadss zabTest= new ZabTestThreadss();
 
 
@@ -73,7 +75,7 @@ public class ZabClients extends ReceiverAdapter {
 		this.warmUpRequests = warmUpRequests;
 		this.props = propsFile;
 		this.load = load;
-     	this.sendTime=sendTime;
+		this.sendTime=sendTime;
 		this.zabTest = zabTest;
 		this.ID = ClassConfigurator
 			.getProtocolId(Zab2Phases.class);
@@ -109,10 +111,10 @@ public class ZabClients extends ReceiverAdapter {
 		System.out.println(sb);
 		channel = new JChannel(props);
 		channel.setReceiver(this);
-		channel.connect("ZABCluster");
+		channel.connect("Zab2PAll");
 		local_addr = channel.getAddress();
-		JmxConfigurator.registerChannel(channel, Util.getMBeanServer(),
-				"jgroups", "ZABCluster", true);
+		//JmxConfigurator.registerChannel(channel, Util.getMBeanServer(),
+			//	"jgroups", "ZABCluster", true);
 		Address coord = channel.getView().getMembers().get(0);
 
 	}
@@ -197,7 +199,7 @@ public class ZabClients extends ReceiverAdapter {
 
 
 		protected Sender(CyclicBarrier barrier, AtomicLong local,
-				byte[] payload, long num_msgsPerThreads, int load, int sendTime) {
+				byte[] payload, long num_msgsPerThreads, int load,int sendTime) {
 			super("" + (count++));
 			this.barrier = barrier;
 			this.payload = payload;
@@ -223,7 +225,7 @@ public class ZabClients extends ReceiverAdapter {
 			numSendMsg =0;
 			for (int i = 0; i < num_msgsPerThreads; i++) {
 				numSendMsg = i;
-					if(is_warmUp){
+				//	if(is_warmUp){
 					while ((numSendMsg - msgReceived) > load){
 							try {
 								Thread.sleep(0,1);
@@ -231,7 +233,7 @@ public class ZabClients extends ReceiverAdapter {
 								e1.printStackTrace();
 							}
 					}
-				}
+			//	}
 				try {
 					MessageId messageId = new MessageId(local_addr,
 							local.getAndIncrement(), System.currentTimeMillis());
@@ -243,11 +245,11 @@ public class ZabClients extends ReceiverAdapter {
 					msg.putHeader(ID, hdrReq);
 				//	System.out.println("sender " + this.getName()+ " Sending " + i + " out of " + num_msgsPerThreads);
         	if(!is_warmUp){
-						stt=System.currentTimeMillis();
-						System.out.println("sendTime="+sendTime);
+					//	stt=System.currentTimeMillis();
+					//	System.out.println("sendTime="+sendTime);
 						Thread.sleep(sendTime);
-						et=System.currentTimeMillis();
-						System.out.println("et-stt="+(et-stt));
+					//	et=System.currentTimeMillis();
+					//	System.out.println("et-stt="+(et-stt));
 					}
 					channel.send(msg);
 					//isSend = true;

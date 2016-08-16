@@ -114,10 +114,7 @@ public class CSInteraction extends Protocol {
                 switch (header.getType()) {
                     case CSInteractionHeader.RESPONSE:
                         handleOrderingResponse(header);
-                        break;
-                    case CSInteractionHeader.BROADCAST:
-                        handleBroadcast(header, message);
-                        break;                  
+                        break;                
                 }
                 return null;
             case Event.VIEW_CHANGE:
@@ -133,8 +130,18 @@ public class CSInteraction extends Protocol {
     public Object down(Event event) {
         switch (event.getType()) {
             case Event.MSG:
-                handleMessageRequest(event);
-                return null;
+                //handleMessageRequest(event);
+               // return null;
+                
+                Message message = (Message) event.getArg();
+                CSInteractionHeader header = (CSInteractionHeader) message.getHeader(id);
+    			if (header instanceof CSInteractionHeader){
+    				handleMessageRequest(message);
+    				return null;
+    			}
+    			else{
+    				break;
+    			}
             case Event.SET_LOCAL_ADDRESS:
                 local_addr = (Address) event.getArg();
                 break;
@@ -172,8 +179,7 @@ public class CSInteraction extends Protocol {
 			return;
 	}
 
-    private void handleMessageRequest(Event event) {
-    	Message message = (Message) event.getArg();
+    private void handleMessageRequest(Message message) {
         Address destination = message.getDest();
         //Store put here, and Forward write to Z to obtain ordering
         if (destination != null && destination instanceof AnycastAddress && !message.isFlagSet(Message.Flag.NO_TOTAL_ORDER)) {
@@ -182,9 +188,9 @@ public class CSInteraction extends Protocol {
         	sendOrderingRequest(((AnycastAddress) destination).getAddresses(), message);
         }
  
-        else if (destination != null && !(destination instanceof AnycastAddress)) {
-			down_prot.down(new Event(Event.MSG, message));
-		}
+       // else if (destination != null && !(destination instanceof AnycastAddress)) {
+			//down_prot.down(new Event(Event.MSG, message));
+		//}
 
 	}
     

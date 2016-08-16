@@ -572,7 +572,7 @@ public class Zab2PhasesWithCommit extends Protocol {
 			ZabHeader hdrResponse = new ZabHeader(ZabHeader.RESPONSE, dZxid,
 					hdrOrginal.getMessageId());
 			Message msgResponse = new Message(hdrOrginal.getMessageId()
-					.getAddress()).putHeader(this.id, hdrResponse);
+					.getOriginator()).putHeader(this.id, hdrResponse);
 			down_prot.down(new Event(Event.MSG, msgResponse));
 
 		}

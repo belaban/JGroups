@@ -153,7 +153,7 @@ import org.jgroups.util.MessageBatch;
 	    	avgLatencies.clear();avgLatenciesTimer.clear();   	
 	    	currentCpuTime=0;
 	    	this.stats = new ProtocolStats(ProtocolName, clients.size(),
-					numberOfSenderInEachClient, outDir, outDirWork, false);
+					numberOfSenderInEachClient, outDir, false);
 			log.info("Reset done");
 	    	MessageId messageId = new MessageId(local_addr,
 					-10, System.currentTimeMillis());
@@ -728,7 +728,7 @@ import org.jgroups.util.MessageBatch;
 					stats.setEndThroughputTime(System.currentTimeMillis());
 				
 					
-					if (stats.getnumReqDelivered().get() > 999000){
+					if (stats.getnumReqDelivered() > 999000){
 						makeAllFollowersAck=true;
 						//if (startSending==true){
 							//_timer.cancel();

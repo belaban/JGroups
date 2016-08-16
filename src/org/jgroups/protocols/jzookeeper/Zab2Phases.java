@@ -131,7 +131,7 @@ public class Zab2Phases extends Protocol {
 		countMessageFollower = 0;
 		timer.schedule(new Throughput(), 1000, 1000);
 		this.stats = new ProtocolStats(ProtocolName, clients.size(),
-				numberOfSenderInEachClient, outDir, outDirWork, false);
+				numberOfSenderInEachClient, outDir, false);
 		log.info("Reset done");
 		MessageId messageId = new MessageId(local_addr, -10,
 				System.currentTimeMillis());

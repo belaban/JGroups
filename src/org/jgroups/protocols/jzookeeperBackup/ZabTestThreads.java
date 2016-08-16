@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.jgroups.protocols.jzookeeper.MessageId;
 import org.jgroups.protocols.jzookeeper.Zab;
-import org.jgroups.protocols.jzookeeper.ZabClient.Sender;
 import org.jgroups.protocols.jzookeeper.ZabHeader;
+import org.jgroups.protocols.jzookeeper.ZabClient.Sender;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;

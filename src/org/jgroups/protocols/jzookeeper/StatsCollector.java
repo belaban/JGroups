@@ -1,6 +1,6 @@
 package org.jgroups.protocols.jzookeeper;
 
-import oshi.util.FormatUtil;
+//import oshi.util.FormatUtil;
 
 
 public class StatsCollector implements Runnable{
@@ -19,9 +19,9 @@ public class StatsCollector implements Runnable{
 		while(true){
 			if((System.currentTimeMillis()-startTime) > ((long)refreshRateSeconds*1000) ){
 				this.stats.getCurrentValues();
-				System.out.println("Available Memory over Total: "
-						+ FormatUtil.formatBytes(this.stats.getHal().getMemory().getAvailable()) + "/"
-						+ FormatUtil.formatBytes(this.stats.getHal().getMemory().getTotal()));
+				//System.out.println("Available Memory over Total: "
+						//+ FormatUtil.formatBytes(this.stats.getHal().getMemory().getAvailable()) + "/"
+						//+ FormatUtil.formatBytes(this.stats.getHal().getMemory().getTotal()));
 				startTime = System.currentTimeMillis();
 			}
 		}

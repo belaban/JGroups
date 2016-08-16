@@ -1,4 +1,4 @@
-package org.jgroups.protocols.jzookeeper;
+package org.jgroups.protocols.jzookeeperBackup;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.jgroups.Message;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.protocols.jzookeeper.MessageId;
 
 /*
  * It uses to gathering protocol stats like throughput, latency and load.

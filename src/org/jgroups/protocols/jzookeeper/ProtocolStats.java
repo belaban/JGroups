@@ -72,7 +72,7 @@ public class ProtocolStats {
 	}
 
 	public ProtocolStats(String protocolName, int numberOfClients,
-			int numberOfSenderInEachClient, String outDir, String outDirWork,
+			int numberOfSenderInEachClient, String outDir,
 			boolean stopWarmup) {
 
 		this.latencies = new ArrayList<Long>();
