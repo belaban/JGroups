@@ -86,8 +86,8 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                     continue;
                 long size=msg.size();
                 if(count + size >= transport.getMaxBundleSize())
-                    sendBundledMessages();
-                addMessage(msg, size);
+                    _sendBundledMessages();
+                _addMessage(msg, size);
                 while(true) {
                     remove_queue.clear();
                     int num_msgs=queue.drainTo(remove_queue);
@@ -97,18 +97,38 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                         msg=remove_queue.get(i);
                         size=msg.size();
                         if(count + size >= transport.getMaxBundleSize())
-                            sendBundledMessages();
-                        addMessage(msg, size);
+                            _sendBundledMessages();
+                        _addMessage(msg, size);
                     }
                 }
                 if(count > 0)
-                    sendBundledMessages();
+                    _sendBundledMessages();
             }
             catch(Throwable t) {
             }
         }
     }
 
+    // This should not affect perf, as the lock is uncontended most of the time
+    protected void _sendBundledMessages() {
+        lock.lock();
+        try {
+            sendBundledMessages();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    protected void _addMessage(Message msg, long size) {
+        lock.lock();
+        try {
+            addMessage(msg, size);
+        }
+        finally {
+            lock.unlock();
+        }
+    }
 
     protected static int assertPositive(int value, String message) {
         if(value <= 0) throw new IllegalArgumentException(message);
