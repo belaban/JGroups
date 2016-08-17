@@ -10,6 +10,9 @@ import org.testng.annotations.Test;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 
 @Test(groups=Global.FUNCTIONAL)
@@ -684,6 +687,23 @@ public class UtilTest {
         }
     }
 
+    public void testRandom() {
+        List<Long> list=LongStream.rangeClosed(1,10).boxed().collect(Collectors.toList());
+        for(int i=0; i < 1_000_000; i++) {
+            long random=Util.random(10);
+            assert random >= 1 && random <= 10: String.format("random is %d", random);
+            if(list.remove(random) && list.isEmpty())
+                break;
+        }
+        assert list.isEmpty();
+
+        long random=Util.random(1);
+        assert random == 1;
+
+        random=Util.random(0);
+        assert random == 1;
+    }
+
 
     public static void testMatch() {
         long[] a={1,2,3};
@@ -812,17 +832,27 @@ public class UtilTest {
         assert new_nodes.contains(e);
     }
 
-    public static void testPickRandomElement() {
+    public void testPickRandomElement() {
         List<Integer> v=new ArrayList<>();
         for(int i=0; i < 10; i++) {
             v.add(i);
         }
-
-        Integer el;
         for(int i=0; i < 10000; i++) {
-            el=Util.pickRandomElement(v);
+            Integer el=Util.pickRandomElement(v);
             assert el >= 0 && el < 10;
         }
+    }
+
+    public void testPickRandomElement2() {
+        List<Integer> list=IntStream.rangeClosed(0, 9).boxed().collect(Collectors.toList());
+        for(int i=0; i < 1_000_000; i++) {
+            Integer el=Util.pickRandomElement(list);
+            boolean rc=list.remove(el);
+            assert rc;
+            if(list.isEmpty())
+                break;
+        }
+        assert list.isEmpty();
     }
 
 

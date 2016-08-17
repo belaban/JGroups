@@ -1768,9 +1768,10 @@ public class Util {
     }
 
 
-    /** Returns a random value in the range [1 - range] */
+    /** Returns a random value in the range [1 - range]. If range is 0, 1 will be returned. If range is negative, an
+     * exception will be thrown */
     public static long random(long range) {
-        return (long)((Math.random() * range) % range) + 1;
+        return range == 0? 1 : ThreadLocalRandom.current().nextLong(range) + 1;
     }
 
 
@@ -2198,29 +2199,6 @@ public class Util {
     }
 
 
-    /**
-     * Selects a random subset of members according to subset_percentage and returns them.
-     * Picks no member twice from the same membership. If the percentage is smaller than 1 -> picks 1 member.
-     */
-    public static List<Address> pickSubset(List<Address> members,double subset_percentage) {
-        List<Address> ret=new ArrayList<>(), tmp_mbrs;
-        int num_mbrs=members.size(), subset_size, index;
-
-        if(num_mbrs == 0) return ret;
-        subset_size=(int)Math.ceil(num_mbrs * subset_percentage);
-
-        tmp_mbrs=new ArrayList<>(members);
-
-        for(int i=subset_size; i > 0 && !tmp_mbrs.isEmpty(); i--) {
-            index=(int)((Math.random() * num_mbrs) % tmp_mbrs.size());
-            ret.add(tmp_mbrs.get(index));
-            tmp_mbrs.remove(index);
-        }
-
-        return ret;
-    }
-
-
     public static <T> boolean contains(T key,T[] list) {
         if(list == null) return false;
         for(T tmp : list)
@@ -2371,24 +2349,18 @@ public class Util {
     public static <T> T pickRandomElement(List<T> list) {
         if(list == null || list.isEmpty()) return null;
         int size=list.size();
-        int index=(int)((Math.random() * size * 10) % size);
+        int index=(int)Util.random(size)-1;
         return list.get(index);
     }
 
     public static <T> T pickRandomElement(T[] array) {
         if(array == null) return null;
         int size=array.length;
-        int index=(int)((Math.random() * size * 10) % size);
+        int index=(int)Util.random(size)-1;
         return array[index];
     }
 
-    /**
-     * Returns the object next to element in list
-     * @param list
-     * @param obj
-     * @param <T>
-     * @return
-     */
+
     public static <T> T pickNext(List<T> list,T obj) {
         if(list == null || obj == null)
             return null;

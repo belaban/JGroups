@@ -408,7 +408,6 @@ public class STABLE extends Protocol {
         if(view == null)
             return;
         digest=new MutableDigest(view.getMembersRaw()); // .set(getDigest());
-        log.trace("%s: reset digest to %s", local_addr, printDigest(digest));
         votes=new FixedSizeBitSet(view.size()); // all 0's initially
     }
 
@@ -698,21 +697,44 @@ public class STABLE extends Protocol {
 
 
     /**
-     Schedules a stability message to be mcast after a random number of milliseconds (range 1-5 secs).
+     Schedules a stability message to be mcast after a random number of milliseconds (range [1-stability_delay] secs).
      The reason for waiting a random amount of time is that, in the worst case, all members receive a
      STABLE_GOSSIP message from the last outstanding member at the same time and would therefore mcast the
      STABILITY message at the same time too. To avoid this, each member waits random N msecs. If, before N
      elapses, some other member sent the STABILITY message, we just cancel our own message. If, during
-     waiting for N msecs to send STABILITY message S1, another STABILITY message S2 is to be sent, we just
-     discard S2.
-     @param tmp A copy of te stability digest, so we don't need to copy it again
+     waiting for N msecs to send STABILITY message S1, another STABILITY message S2 is to be sent, we just discard S2.
+     @param tmp A copy of the stability digest, so we don't need to copy it again
      */
     protected void sendStabilityMessage(Digest tmp, final ViewId view_id) {
-        // give other members a chance to mcast STABILITY message. if we receive STABILITY by the end of our random
-        // sleep, we will not send the STABILITY msg. this prevents that all mbrs mcast a STABILITY msg at the same time
-        startStabilityTask(tmp, view_id, Util.random(stability_delay));
+        if(send_stable_msgs_to_coord_only || stability_delay <= 1)
+            _sendStabilityMessage(tmp, view_id);
+        else {
+            // give other members a chance to mcast STABILITY message. if we receive STABILITY by the end of our random
+            // sleep, we will not send the STABILITY msg. this prevents that all mbrs mcast a STABILITY msg at the same time
+            startStabilityTask(tmp, view_id, Util.random(stability_delay));
+        }
     }
 
+    protected void _sendStabilityMessage(Digest stability_digest, final ViewId view_id) {
+        if(suspended) {
+            log.debug("STABILITY message will not be sent as suspended=%b", suspended);
+            return;
+        }
+
+        // https://issues.jboss.org/browse/JGRP-1638: we reverted to sending the STABILITY message *unreliably*,
+        // but clear votes *before* sending it
+        try {
+            Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
+              .putHeader(id, new StableHeader(StableHeader.STABILITY, view_id))
+              .setBuffer(marshal(stability_digest));
+            log.trace("%s: sending stability msg %s", local_addr, printDigest(stability_digest));
+            num_stability_msgs_sent++;
+            down_prot.down(msg);
+        }
+        catch(Exception e) {
+            log.warn("failed sending STABILITY message", e);
+        }
+    }
 
     protected Digest getDigest() {
         return (Digest)down_prot.down(Event.GET_DIGEST_EVT);
@@ -803,11 +825,7 @@ public class STABLE extends Protocol {
         public String toString() {return STABLE.class.getSimpleName() + ": StableTask";}
 
         long computeSleepTime() {
-            return getRandom((desired_avg_gossip * 2));
-        }
-
-        long getRandom(long range) {
-            return (long)((Math.random() * range) % range);
+            return Util.random((desired_avg_gossip * 2));
         }
     }
 
@@ -827,24 +845,7 @@ public class STABLE extends Protocol {
         }
 
         public void run() {
-            if(suspended) {
-                log.debug("STABILITY message will not be sent as suspended=%s", suspended);
-                return;
-            }
-
-            // https://issues.jboss.org/browse/JGRP-1638: we reverted to sending the STABILITY message *unreliably*,
-            // but clear votes *before* sending it
-            try {
-                Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
-                  .putHeader(id, new StableHeader(StableHeader.STABILITY, view_id))
-                  .setBuffer(marshal(stability_digest));
-                log.trace("%s: sending stability msg %s", local_addr, printDigest(stability_digest));
-                num_stability_msgs_sent++;
-                down_prot.down(msg);
-            }
-            catch(Exception e) {
-                log.warn("failed sending STABILITY message", e);
-            }
+            _sendStabilityMessage(stability_digest, view_id);
         }
 
         public String toString() {return STABLE.class.getSimpleName() + ": StabilityTask";}

@@ -456,8 +456,7 @@ public class RELAY2 extends Protocol {
                 SiteUUID site_uuid=(SiteUUID)hdr.final_dest;
 
                 //  If configured to do so, we want to load-balance these messages,
-                int index=(int)Util.random( members.size()) -1;
-                UUID tmp=(UUID)members.get(index);
+                UUID tmp=(UUID)Util.pickRandomElement(members);
                 SiteAddress final_dest=new SiteUUID(tmp, site_uuid.getName(), site_uuid.getSite());
 
                 // If we select a different address to handle this message, we handle it here.

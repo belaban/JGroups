@@ -61,7 +61,7 @@
               xmit_table_msgs_per_row="1000"
               xmit_table_max_compaction_time="30000"
               max_msg_batch_size="500"/>
-    <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
+    <pbcast.STABLE desired_avg_gossip="50000"
                    max_bytes="8m"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
                 view_bundling="true"/>
