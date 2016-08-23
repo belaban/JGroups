@@ -18,7 +18,6 @@ import java.util.function.Supplier;
  * @author Bela Ban
  */
 public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
-    private static final long       serialVersionUID=-1818672332115113291L;
     private InetAddress             ip_addr;
     private int                     port;
     static boolean                  resolve_dns;
@@ -37,7 +36,7 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
 
 
 
-    // Used only by Externalization
+    // Used only by marshalling
     public IpAddress() {
     }
 
@@ -183,23 +182,6 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
     }
 
 
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        try {
-            readFrom(in);
-        }
-        catch(Exception e) {
-            throw new IOException(e);
-        }
-    }
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        try {
-            writeTo(out);
-        }
-        catch(Exception e) {
-            throw new IOException(e);
-        }
-    }
 
     public void writeTo(DataOutput out) throws Exception {
         if(ip_addr != null) {

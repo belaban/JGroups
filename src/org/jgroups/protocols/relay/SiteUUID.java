@@ -17,7 +17,6 @@ import java.util.function.Supplier;
 public class SiteUUID extends ExtendedUUID implements SiteAddress {
     protected static final byte[] NAME      = Util.stringToBytes("relay2.name"); // logical name, can be null
     protected static final byte[] SITE_NAME = Util.stringToBytes("relay2.site");
-    private static final long     serialVersionUID=7128439052905502361L;
 
 
     public SiteUUID() {

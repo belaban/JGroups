@@ -10,7 +10,6 @@ import java.util.function.Supplier;
  * @since  3.5
  */
 public class FlagsUUID extends UUID {
-    private static final long serialVersionUID=1554312788073432804L;
     protected int             flags;
 
 
@@ -62,15 +61,6 @@ public class FlagsUUID extends UUID {
         return (T)this;
     }
 
-    public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-        Bits.writeInt(flags, out);
-    }
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-        flags=Bits.readInt(in);
-    }
 
     public void writeTo(DataOutput out) throws Exception {
         super.writeTo(out);

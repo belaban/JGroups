@@ -15,7 +15,6 @@ import java.util.function.Supplier;
  * @since 3.2
  */
 public class SiteMaster extends SiteUUID {
-    private static final long serialVersionUID=-6147979304449032483L;
 
     public SiteMaster() {
         setFlag(RELAY2.site_master_flag);

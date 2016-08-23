@@ -14,7 +14,6 @@ import java.util.function.Supplier;
  * @since  3.5
  */
 public class ExtendedUUID extends FlagsUUID {
-    private static final long serialVersionUID=81916525425329355L;
     protected byte[][]        keys;
     protected byte[][]        values;
 
@@ -150,16 +149,6 @@ public class ExtendedUUID extends FlagsUUID {
         return (T)this;
     }
 
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-        write(out);
-    }
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-        read(in);
-    }
 
     public void writeTo(DataOutput out) throws Exception {
         super.writeTo(out);

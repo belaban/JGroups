@@ -16,7 +16,6 @@ import java.util.function.Supplier;
  */
 public class AnycastAddress implements Address, Constructable<AnycastAddress> {
     protected Collection<Address> destinations;
-    private static final long serialVersionUID = -3133792315497822421L;
 
     public AnycastAddress() {
     }
@@ -88,9 +87,7 @@ public class AnycastAddress implements Address, Constructable<AnycastAddress> {
         if (o == null || getClass() != o.getClass()) return false;
 
         AnycastAddress that = (AnycastAddress) o;
-
         return !(destinations != null ? !destinations.equals(that.destinations) : that.destinations != null);
-
     }
 
     @Override
@@ -130,21 +127,4 @@ public class AnycastAddress implements Address, Constructable<AnycastAddress> {
         destinations = (Collection<Address>) Util.readAddresses(in, ArrayList.class);
     }
 
-    @Override
-    public void writeExternal(ObjectOutput objectOutput) throws IOException {
-        try {
-            writeTo(objectOutput);
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-    }
-
-    @Override
-    public void readExternal(ObjectInput objectInput) throws IOException, ClassNotFoundException {
-        try {
-            readFrom(objectInput);
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-    }
 }

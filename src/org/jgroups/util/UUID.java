@@ -19,7 +19,6 @@ import java.util.function.Supplier;
  * @author Bela Ban
  */
 public class UUID implements Address, Constructable<UUID> {
-    private static final long serialVersionUID=-6194072960039354716L;
     protected long   mostSigBits;
     protected long   leastSigBits;
 
@@ -298,16 +297,6 @@ public class UUID implements Address, Constructable<UUID> {
     }
 
     public void readFrom(DataInput in) throws Exception {
-        leastSigBits=in.readLong();
-        mostSigBits=in.readLong();
-    }
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(leastSigBits);
-        out.writeLong(mostSigBits);
-    }
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         leastSigBits=in.readLong();
         mostSigBits=in.readLong();
     }

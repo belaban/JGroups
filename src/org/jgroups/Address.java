@@ -4,8 +4,6 @@ package org.jgroups;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.UUID;
 
-import java.io.Externalizable;
-
 /**
  * Address identifies cluster member. For example, whenever a unicast message is sent in a cluster
  * an Address of a cluster member message recipient needs to be specified. Similarly a cluster
@@ -18,7 +16,7 @@ import java.io.Externalizable;
  * @see PhysicalAddress
  * @see UUID
  */
-public interface Address extends Streamable, Comparable<Address>, Externalizable {
+public interface Address extends Streamable, Comparable<Address> {
     // flags used for marshalling
     byte NULL        = 1 << 0;
     byte UUID_ADDR   = 1 << 1;
