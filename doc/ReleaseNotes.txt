@@ -1,6 +1,6 @@
 
 
-Release notes JGroups 3.6.7
+Release notes JGroups 4.0.0
 ===========================
 
 Author: Bela Ban
@@ -13,11 +13,10 @@ New features
 
 
 
-Interoperability between TCP and TCP_NIO2
+bla
 -----------------------------------------
-[https://issues.jboss.org/browse/JGRP-1952]
+[]
 
-This allows nodes that have TCP as transport to talk to nodes that have TCP_NIO2 as transport, and vice versa.
 
 
 
@@ -25,120 +24,18 @@ Optimizations
 =============
 
 
-Transport: reuse of receive buffers
------------------------------------
-[https://issues.jboss.org/browse/JGRP-1998]
-
-On a message reception, the transport would create a new buffer in TCP and TCP_NIO2 (not in UDP), read the message into
-that buffer and then pass it to the one of thread pools, copying single messages (not batches).
-This was changed to reusing the same buffers in UDP, TCP and TCP_NIO2, by reading the network data into one of those
-buffers, de-serializing the message (or message batch) and then passing it to one of the thread pools.
-The effect is a much lower memory allocation rate.
-
-
-Message bundling: reuse of send buffers
----------------------------------------
-[https://issues.jboss.org/browse/JGRP-1989]
-
-When sending messages, a new buffer would be created for marshalling for every message (or message bundle). This was
-changed to reuse the same buffer for all messages or message bundles. The effect is a smaller memory allocation rate
-on the send path.
-
-
-TCP_NIO2: copy on-demand when sending messages
-----------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1991]
-
-If a message sent by TCP_NIO2 cannot be put entirely into the network buffer of the OS, then the remainder of that
-message is copied. This is needed to implement reusing of send buffers, see JGRP-1989 above.
-
-
-TCP_NIO2: single selector slows down writes and reads
------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1999]
-
-This transport used to have a single selector, processing both writes and reads in the same thread. Writes are not
-expensive, but reads can be, as de-serialization adds up.
-We now have a reader thread for every NioConnection which processes reads (using work stealing) separate from the
-selector thread. When idle for some time, the reader thread terminates and a new thread is created on subsequent data
-available to be read.
-UPerf (4 nodes) showed a perf increase from 15'000 msgs/sec/node to 24'000. TCP_NIO2's speed is now roughly the
-same as TCP.
-
-
-Headers: collapse 2 arrays into 1
----------------------------------
-[https://issues.jboss.org/browse/JGRP-1990]
-
-A Message had a Headers instance which had an array for header IDs and another one for the actual headers. These
-2 arrays were collapsed into a single array and Headers is not a separate class anymore, but the array is managed
-directly inside Message.
-This reduces the memory needed for a message by ca 22 bytes!
-
-
-RpcDispatcher: removal of unneeded field in a request
------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-2001]
-
-The request-id was carried in both the Request (UnicastRequest or MulticastRequest) and the header, which is duplicate
-and a waste. Removed from Request and also removed rsp_expected from the header, total savings ca. 9 bytes per RPC.
-
-
-Switched back from DatagramSocket to MulticastSocket for sending of IP multicasts
----------------------------------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1970]
-
-This caused some issues in MacOS based systems: when the routing table was not setup correctly, multicasting
-would not work (nodes wouldn't find each other).
-Also, on Windows, IPv6 wouldn't work: https://github.com/belaban/JGroups/wiki/FAQ.
-
-
-Make the default number of headers in a message configurable
-------------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1985]
-
-The default was 3 (changed to 4 now) and if we had more headers, then the headers array needed to be resized
-(unneeded memory allocation).
-
-
-Message bundling
-----------------
-[https://issues.jboss.org/browse/JGRP-1986]
-
-When the threshold of the send queue was exceeded, the bundler thread would send messages one-by-one, leading
-to bad performance.
-
-
-TransferQueueBundler: switch to array from linked list for queue
-----------------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1987]
-
-Less memory allocation overhead
 
 
 
 Bug fixes
 =========
 
-SASL now handles merges correctly
----------------------------------
-[https://issues.jboss.org/browse/JGRP-1967]
-
-
-FRAG2: message corruption when thread pools are disabled
---------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1973]
-
-
-Discovery leaks responses
--------------------------
-[https://issues.jboss.org/browse/JGRP-1983]
-
-
 
 
 Manual
 ======
+
+NOT YET AVAILABLE! Stay tuned and meanwhile read the src code...
 
 The manual is at http://www.jgroups.org/manual/index.html.
 
@@ -146,5 +43,5 @@ The complete list of features and bug fixes can be found at http://jira.jboss.co
 
 
 Bela Ban, Kreuzlingen, Switzerland
-Jan 2016
+Aug 2016
 
