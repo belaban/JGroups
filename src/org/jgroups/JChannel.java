@@ -1094,12 +1094,7 @@ public class JChannel implements Closeable {
     }
 
     protected Address determineCoordinator() {
-        List<Address> mbrs=view != null? view.getMembers() : null;
-        if(mbrs == null)
-            return null;
-        if(!mbrs.isEmpty())
-            return mbrs.iterator().next();
-        return null;
+        return view != null? view.getCoord() : null;
     }
 
     protected TimeScheduler getTimer() {
