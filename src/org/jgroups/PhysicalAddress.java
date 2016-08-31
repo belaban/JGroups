@@ -10,4 +10,5 @@ import org.jgroups.util.UUID;
  * @author Bela Ban
  */
 public interface PhysicalAddress extends Address {
+    String printIpAddress();
 }

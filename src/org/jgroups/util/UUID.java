@@ -145,7 +145,7 @@ public class UUID implements Address, Constructable<UUID> {
      * @return  A randomly generated {@code UUID}
      */
     public static UUID randomUUID() {
-        return new UUID(generateRandomBytes());
+        return new UUID(generateRandomBytes(16));
     }
 
 
@@ -311,12 +311,15 @@ public class UUID implements Address, Constructable<UUID> {
     }
 
 
-    protected static byte[] generateRandomBytes() {
+    public static byte[] generateRandomBytes() {
+        return generateRandomBytes(16);
+    }
+    public static byte[] generateRandomBytes(int size) {
         SecureRandom ng=numberGenerator;
         if(ng == null)
             numberGenerator=ng=new SecureRandom();
 
-        byte[] randomBytes=new byte[16];
+        byte[] randomBytes=new byte[size];
         ng.nextBytes(randomBytes);
         return randomBytes;
     }

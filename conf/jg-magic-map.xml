@@ -4,27 +4,28 @@
 
     <!-- Generic classes -->
     <class id="1"  name="org.jgroups.stack.IpAddress"/>
-    <class id="2"  name="org.jgroups.Message"/>
-    <class id="3"  name="org.jgroups.View"/>
-    <class id="4"  name="org.jgroups.ViewId"/>
-    <class id="5"  name="org.jgroups.MergeView"/>
-    <class id="6"  name="org.jgroups.protocols.PingData"/>
-    <class id="7"  name="org.jgroups.protocols.pbcast.JoinRsp"/>
-    <class id="8"  name="org.jgroups.util.Digest"/>
-    <class id="9"  name="org.jgroups.util.UUID"/>
-    <class id="10" name="org.jgroups.util.ExtendedUUID"/>
-    <class id="11" name="org.jgroups.protocols.relay.SiteUUID"/>
-    <class id="12" name="org.jgroups.protocols.relay.SiteMaster"/>
-    <class id="13" name="org.jgroups.protocols.Executing$Request"/>
-    <class id="14" name="org.jgroups.blocks.executor.ExecutionService$RunnableAdapter"/>
-    <class id="15" name="org.jgroups.blocks.executor.Executions$StreamableCallable"/>
-    <class id="16" name="org.jgroups.util.SeqnoList"/>
-    <class id="17" name="org.jgroups.AnycastAddress"/>
-    <class id="18" name="org.jgroups.auth.SimpleToken"/>
-    <class id="19" name="org.jgroups.auth.FixedMembershipToken"/>
-    <class id="20" name="org.jgroups.auth.MD5Token"/>
-    <class id="21" name="org.jgroups.auth.X509Token"/>
-    <class id="22" name="org.jgroups.blocks.MethodCall"/>
+    <class id="2" name="org.jgroups.stack.IpAddressUUID"/>
+    <class id="3"  name="org.jgroups.Message"/>
+    <class id="4"  name="org.jgroups.View"/>
+    <class id="5"  name="org.jgroups.ViewId"/>
+    <class id="6"  name="org.jgroups.MergeView"/>
+    <class id="7"  name="org.jgroups.protocols.PingData"/>
+    <class id="8"  name="org.jgroups.protocols.pbcast.JoinRsp"/>
+    <class id="9"  name="org.jgroups.util.Digest"/>
+    <class id="10" name="org.jgroups.util.UUID"/>
+    <class id="11" name="org.jgroups.util.ExtendedUUID"/>
+    <class id="12" name="org.jgroups.protocols.relay.SiteUUID"/>
+    <class id="13" name="org.jgroups.protocols.relay.SiteMaster"/>
+    <class id="14" name="org.jgroups.protocols.Executing$Request"/>
+    <class id="15" name="org.jgroups.blocks.executor.ExecutionService$RunnableAdapter"/>
+    <class id="16" name="org.jgroups.blocks.executor.Executions$StreamableCallable"/>
+    <class id="17" name="org.jgroups.util.SeqnoList"/>
+    <class id="18" name="org.jgroups.AnycastAddress"/>
+    <class id="19" name="org.jgroups.auth.SimpleToken"/>
+    <class id="20" name="org.jgroups.auth.FixedMembershipToken"/>
+    <class id="21" name="org.jgroups.auth.MD5Token"/>
+    <class id="22" name="org.jgroups.auth.X509Token"/>
+    <class id="23" name="org.jgroups.blocks.MethodCall"/>
 
     <!-- Headers -->
     <class id="50"   name="org.jgroups.protocols.FD$FdHeader"/>

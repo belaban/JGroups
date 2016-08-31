@@ -170,13 +170,13 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     }
 
 
-    public void sendToAllMembers(String group, byte[] data, int offset, int length) throws Exception {
-        sendToMember(group, null, data, offset, length); // null destination represents mcast
+    public void sendToAllMembers(String group, Address sender, byte[] data, int offset, int length) throws Exception {
+        sendToMember(group, null, sender, data, offset, length); // null destination represents mcast
     }
 
-    public void sendToMember(String group, Address dest, byte[] data, int offset, int length) throws Exception {
+    public void sendToMember(String group, Address dest, Address sender, byte[] data, int offset, int length) throws Exception {
         try {
-            writeRequest(new GossipData(GossipType.MESSAGE, group, dest, data, offset, length));
+            writeRequest(new GossipData(GossipType.MESSAGE, group, dest, data, offset, length).setSender(sender));
         }
         catch(Exception ex) {
             throw new Exception(String.format("connection to %s broken. Could not send message to %s: %s",

@@ -41,9 +41,6 @@ public class TCPPING extends Discovery {
     protected int max_dynamic_hosts=2000;
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    /**
-     * List of PhysicalAddresses
-     */
 
     /** https://jira.jboss.org/jira/browse/JGRP-989 */
     protected BoundedList<PhysicalAddress> dynamic_hosts;
@@ -110,8 +107,8 @@ public class TCPPING extends Discovery {
                     }
                 }
                 break;
-            case Event.SET_PHYSICAL_ADDRESS:
-                Tuple<Address,PhysicalAddress> tuple=(Tuple<Address,PhysicalAddress>)evt.getArg();
+            case Event.ADD_PHYSICAL_ADDRESS:
+                Tuple<Address,PhysicalAddress> tuple=evt.getArg();
                 PhysicalAddress physical_addr=tuple.getVal2();
                 if(physical_addr != null && !initial_hosts.contains(physical_addr))
                     dynamic_hosts.addIfAbsent(physical_addr);
@@ -155,16 +152,20 @@ public class TCPPING extends Discovery {
             final Message msg=new Message(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
               .putHeader(this.id,hdr).setBuffer(marshal(data));
 
-            if(async_discovery_use_separate_thread_per_request) {
-                timer.execute(() -> {
-                    log.trace("%s: sending discovery request to %s", local_addr, msg.getDest());
-                    down_prot.down(msg);
-                });
-            }
-            else {
-                log.trace("%s: sending discovery request to %s", local_addr, msg.getDest());
-                down_prot.down(msg);
-            }
+            if(async_discovery_use_separate_thread_per_request)
+                timer.execute(() -> sendDiscoveryRequest(msg));
+            else
+                sendDiscoveryRequest(msg);
+        }
+    }
+
+    protected void sendDiscoveryRequest(Message req) {
+        try {
+            log.trace("%s: sending discovery request to %s", local_addr, req.getDest());
+            down_prot.down(req);
+        }
+        catch(Throwable t) {
+            log.trace("sending discovery request to %s failed: %s", req.dest(), t);
         }
     }
 }

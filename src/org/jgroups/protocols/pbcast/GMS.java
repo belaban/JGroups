@@ -1049,7 +1049,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                             (PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)) : null;
                     System.out.println("\n-------------------------------------------------------------------\n" +
                             "GMS: address=" + local_addr + ", cluster=" + evt.getArg() +
-                            (physical_addr != null? ", physical address=" + physical_addr : "") +
+                            (physical_addr != null? ", physical address=" + physical_addr.printIpAddress() : "") +
                             "\n-------------------------------------------------------------------");
                 }
                 else {
@@ -1057,7 +1057,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         PhysicalAddress physical_addr=print_physical_addrs?
                           (PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)) : null;
                         log.debug("address=" + local_addr + ", cluster=" + evt.getArg() +
-                                    (physical_addr != null? ", physical address=" + physical_addr : ""));
+                                    (physical_addr != null? ", physical address=" + physical_addr.printIpAddress() : ""));
                     }
                 }
                 down_prot.down(evt);

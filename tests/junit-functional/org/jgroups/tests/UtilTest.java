@@ -2,6 +2,8 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.IpAddressUUID;
 import org.jgroups.util.Bits;
 import org.jgroups.util.*;
 import org.testng.Assert;
@@ -615,16 +617,21 @@ public class UtilTest {
         Assert.assertEquals(s2, s4);
     }
 
-    public static void testWriteAddress() throws Exception {
+    public void testWriteAddress() throws Exception {
         Address a1=Util.createRandomAddress();
         Address a2=Util.createRandomAddress();
         Address a4=Util.createRandomAddress();
+        Address a5=new IpAddress("127.0.0.1", 5555);
+        Address a6=new IpAddressUUID("127.0.0.1", 5555);
 
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
         Util.writeAddress(a1, dos);
         Util.writeAddress(a2, dos);
         Util.writeAddress(a4, dos);
+        Util.writeAddress(a5, dos);
+        Util.writeAddress(a6, dos);
+
         dos.close();
         byte[] buf=outstream.toByteArray();
         ByteArrayInputStream instream=new ByteArrayInputStream(buf);
@@ -633,6 +640,11 @@ public class UtilTest {
         Assert.assertEquals(a1, Util.readAddress(dis));
         Assert.assertEquals(a2, Util.readAddress(dis));
         Assert.assertEquals(a4, Util.readAddress(dis));
+
+        Address tmp=Util.readAddress(dis);
+        assert a5.equals(tmp);
+        tmp=Util.readAddress(dis);
+        assert a6.equals(tmp);
     }
 
     public static void testWriteNullAddress() throws Exception {

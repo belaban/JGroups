@@ -8,6 +8,8 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.DiagnosticsHandler;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.IpAddressUUID;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.ThreadFactory;
@@ -70,14 +72,18 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                       "are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL, NON_LOOPBACK, match-interface, match-host, match-address",
               defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS,
               systemProperty={Global.BIND_ADDR},writable=false)
-    protected InetAddress bind_addr=null;
+    protected InetAddress bind_addr;
 
     @Property(description="Use \"external_addr\" if you have hosts on different networks, behind " +
       "firewalls. On each firewall, set up a port forwarding rule (sometimes called \"virtual server\") to " +
       "the local IP (e.g. 192.168.1.100) of the host then on each host, set \"external_addr\" TCP transport " +
       "parameter to the external (public IP) address of the firewall.",
               systemProperty=Global.EXTERNAL_ADDR,writable=false)
-    protected InetAddress external_addr=null;
+    protected InetAddress external_addr;
+
+    @Property(description="Use IP addresses (IpAddressUUID) instead of UUIDs as addresses. This is currently not " +
+      "compatible with RELAY2: disable if RELAY2 is used.")
+    protected boolean use_ip_addrs;
 
     @Property(description="Used to map the internal port (bind_port) to an external port. Only used if > 0",
               systemProperty=Global.EXTERNAL_PORT,writable=false)
@@ -85,7 +91,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     @Property(description="If true, the transport should use all available interfaces to receive multicast messages")
-    protected boolean receive_on_all_interfaces=false;
+    protected boolean receive_on_all_interfaces;
 
     /**
      * List<NetworkInterface> of interfaces to receive multicasts on. The multicast receive socket will listen
@@ -95,7 +101,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      */
     @Property(converter=PropertyConverters.NetworkInterfaceList.class,
               description="Comma delimited list of interfaces (IP addresses or interface names) to receive multicasts on")
-    protected List<NetworkInterface> receive_interfaces=null;
+    protected List<NetworkInterface> receive_interfaces;
 
     @Property(description="Max number of elements in the logical address cache before eviction starts")
     protected int logical_addr_cache_max_size=2000;
@@ -117,7 +123,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property(description="Whether or not to make a copy of a message before looping it back up. Don't use this; might " +
       "get removed without warning")
-    protected boolean loopback_copy=false;
+    protected boolean loopback_copy;
 
     @Property(description="Loop back the message on a separate thread or use the current thread. Don't use this; " +
       "might get removed without warning")
@@ -268,7 +274,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       "will be suppressed. 0 disables this (every warning will be logged). Setting the log level to ERROR also " +
       "disables this.")
     protected long suppress_time_different_cluster_warnings=60000;
-
 
 
     /**
@@ -618,17 +623,16 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected static final LazyRemovalCache.Printable<Address,LazyRemovalCache.Entry<PhysicalAddress>> print_function
       =(logical_addr, entry) -> {
-          StringBuilder sb=new StringBuilder();
-          String tmp_logical_name=UUID.get(logical_addr);
-          if(tmp_logical_name != null)
-              sb.append(tmp_logical_name).append(": ");
-          if(logical_addr instanceof UUID)
-              sb.append(((UUID)logical_addr).toStringLong());
-          else
-              sb.append(logical_addr);
-          sb.append(": ").append(entry).append("\n");
-          return sb.toString();
-      };
+        StringBuilder sb=new StringBuilder();
+        String tmp_logical_name=UUID.get(logical_addr);
+        if(tmp_logical_name != null)
+            sb.append(tmp_logical_name).append(": ");
+        if(logical_addr instanceof UUID)
+            sb.append(((UUID)logical_addr).toStringLong()).append(": ");
+        sb.append(entry.toString(val -> val instanceof PhysicalAddress? val.printIpAddress() : val.toString()));
+        sb.append("\n");
+        return sb.toString();
+    };
 
     /** Cache keeping track of WHO_HAS requests for physical addresses (given a logical address) and expiring
      * them after who_has_cache_timeout ms */
@@ -667,7 +671,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public View    view()            {return view;}
 
     @ManagedAttribute(description="The physical address of the channel")
-    public String getLocalPhysicalAddress() {return local_physical_addr != null? local_physical_addr.toString() : null;}
+    public String getLocalPhysicalAddress() {return local_physical_addr != null? local_physical_addr.printIpAddress() : null;}
 
 
 
@@ -964,6 +968,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public boolean getLogDiscardMessages()                    {return log_discard_msgs;}
     public void    setLogDiscardMessagesVersion(boolean flag) {log_discard_msgs_version=flag;}
     public boolean getLogDiscardMessagesVersion()             {return log_discard_msgs_version;}
+    public boolean getUseIpAddresses()                        {return use_ip_addrs;}
 
 
     @ManagedOperation(description="Dumps the contents of the logical address cache")
@@ -1168,6 +1173,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
     public void start() throws Exception {
+        if(use_ip_addrs) {
+            PhysicalAddress tmp=getPhysicalAddress();
+            if(tmp instanceof IpAddress) {
+                local_addr=new IpAddressUUID(((IpAddress)tmp).getIpAddress(), ((IpAddress)tmp).getPort());
+                stack.getTopProtocol().down(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+                stack.getTopProtocol().up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+            }
+        }
         fetchLocalAddresses();
         if(timer == null)
             throw new Exception("timer is null");
@@ -1305,13 +1318,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
 
         Address dest=msg.getDest(), sender=msg.getSrc();
-        if(dest instanceof PhysicalAddress) {
-            // We can modify the message because it won't get retransmitted. The only time we have a physical address
-            // as dest is when TCPPING sends the initial discovery requests to initial_hosts: this is below UNICAST,
-            // so no retransmission
-            msg.dest(null).setFlag(Message.Flag.DONT_BUNDLE);
-        }
-
         if(log.isTraceEnabled())
             log.trace("%s: sending msg to %s, src=%s, headers are %s", local_addr, dest, sender, msg.printHeaders());
 
@@ -1561,8 +1567,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             msg.readFrom(in);
 
             if(!multicast) {
-                Address dest=msg.getDest(), target=local_addr;
-                if(dest != null && target != null && !dest.equals(target))
+                Address dest=msg.getDest();
+                if(dest != null && !(Objects.equals(dest, local_addr) || Objects.equals(dest, local_physical_addr)))
                     return;
             }
 
@@ -1643,13 +1649,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         public void run() {
-            boolean multicast=msg.getDest() == null;
+            Address dest=msg.getDest();
+            boolean multicast=dest == null;
             try {
-                if(!multicast) {
-                    Address dest=msg.getDest(), target=local_addr;
-                    if(target != null && !dest.equals(target))
-                        return;
-                }
+                // this check is already done before creating a SingleMessageHandler
+                // if(!multicast && !Objects.equals(dest, local_addr) && !Objects.equals(dest, local_physical_addr))
+                   // return;
 
                 if(stats) {
                     num_msgs_received++;
@@ -1686,8 +1691,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
 
             if(!batch.multicast()) {
-                Address dest=batch.dest(), target=local_addr;
-                if(dest != null && target != null && !dest.equals(target))
+                Address dest=batch.dest();
+                if(dest != null && !(Objects.equals(dest, local_addr) || Objects.equals(dest, local_physical_addr)))
                     return;
             }
 
@@ -1699,7 +1704,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /** Serializes and sends a message. This method is not reentrant */
     protected void send(Message msg, Address dest) throws Exception {
         // bundle all messages, even the ones tagged with DONT_BUNDLE: https://issues.jboss.org/browse/JGRP-1737
-        boolean bypass_bundling=msg.isFlagSet(Message.Flag.DONT_BUNDLE) && dest instanceof PhysicalAddress;
+        boolean bypass_bundling=msg.isFlagSet(Message.Flag.DONT_BUNDLE); //  && dest instanceof PhysicalAddress;
         if(!bypass_bundling) {
             bundler.send(msg);
             return;
@@ -1770,7 +1775,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             mbrs=logical_addr_cache.keySet();
 
         for(Address mbr: mbrs) {
-            PhysicalAddress target=logical_addr_cache.get(mbr);
+            PhysicalAddress target=mbr instanceof PhysicalAddress? (PhysicalAddress)mbr : logical_addr_cache.get(mbr);
             if(target == null) {
                 if(missing == null)
                     missing=new ArrayList<>(mbrs.size());
@@ -1914,7 +1919,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 boolean skip_removed_values=arg instanceof Boolean && (Boolean)arg;
                 return logical_addr_cache.contents(skip_removed_values);
 
-            case Event.SET_PHYSICAL_ADDRESS:
+            case Event.ADD_PHYSICAL_ADDRESS:
                 Tuple<Address,PhysicalAddress> tuple=evt.getArg();
                 return addPhysicalAddressToCache(tuple.getVal1(), tuple.getVal2());
 
@@ -1936,9 +1941,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      */
     protected void registerLocalAddress(Address addr) {
         PhysicalAddress physical_addr=getPhysicalAddress();
-        if(physical_addr != null && addr != null) {
-            local_physical_addr=physical_addr;
-            addPhysicalAddressToCache(addr,physical_addr);
+        if(physical_addr == null)
+            return;
+        local_physical_addr=physical_addr;
+        if(addr != null) {
+            if(use_ip_addrs && local_addr instanceof IpAddressUUID)
+                addPhysicalAddressToCache(addr, (PhysicalAddress)local_addr);
+            else
+                addPhysicalAddressToCache(addr, physical_addr);
         }
     }
 

@@ -4,6 +4,9 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.IpAddressUUID;
+import org.jgroups.util.ByteArrayDataInputStream;
+import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -34,6 +37,8 @@ public class IpAddressTest {
             f=new IpAddress("2001:0db8:0000:0000:0000:002e:0370:2334", 80);
             g=new IpAddress("2001:0db8:0000:0000:0000:002e:0370:2334", 8080);
             h=new IpAddress("ff0e::3:4:5", 5555);
+            j=new IpAddressUUID("::1", 5555);
+            k=new IpAddressUUID("::1", 5555);
         }
         else {
             a=new IpAddress("localhost", 5555);
@@ -43,8 +48,9 @@ public class IpAddressTest {
             f=new IpAddress("www.ibm.com", 80);
             g=new IpAddress("www.ibm.com", 8080);
             h=new IpAddress("224.0.0.1", 5555);
+            j=new IpAddressUUID("localhost", 5555);
+            k=new IpAddressUUID("localhost", 5555);
         }
-
         c=b;
     }
 
@@ -60,9 +66,12 @@ public class IpAddressTest {
         tmp=new IpAddress("fe80::21b:21ff:fe07:a3b0:6000");
         assert tmp.getPort() == 6000;
         assert tmp.getIpAddress().equals(InetAddress.getByName("fe80::21b:21ff:fe07:a3b0"));
+
+        tmp=new IpAddressUUID(7500);
+        assert tmp.getPort() == 7500;
     }
 
-    public static void testUnknownAddress() {
+    public void testUnknownAddress() {
         try {
             IpAddress tmp=new IpAddress("idontknow.com", 55);
             assert false : "should throw an UnknownHostException for " + tmp;
@@ -71,11 +80,27 @@ public class IpAddressTest {
         }
     }
 
+    public void testCopy() {
+        IpAddress tmp=a.copy();
+        assert tmp.equals(a);
+
+        tmp=j.copy();
+        assert tmp.equals(j);
+    }
+
     public void testEquality() throws Exception {
         Assert.assertEquals(a, b);
         Assert.assertEquals(c, b);
         Assert.assertEquals(a, e);
         Assert.assertEquals(c, e);
+
+        assert !j.equals(k);
+        assert !k.equals(j);
+        assert a.equals(j);
+        assert j.equals(a);
+
+        IpAddress tmp=new IpAddressUUID("localhost", 5555);
+        assert !tmp.equals(j);
     }
 
 
@@ -122,6 +147,10 @@ public class IpAddressTest {
         assert !e.equals(f);
         assert !f.equals(g);
         assert !(a.equals(tmp));
+
+        tmp=new IpAddressUUID("localhost", 5555);
+        assert a.equals(tmp);
+        assert tmp.equals(a);
     }
 
 
@@ -145,10 +174,20 @@ public class IpAddressTest {
 
 
 
-    public void testCompareTo() {
+    public void testCompareTo() throws UnknownHostException {
         Assert.assertEquals(0, a.compareTo(b));
         assert a.compareTo(d) < 0;
         assert d.compareTo(a) > 0;
+
+        assert j.compareTo(k) != 0;
+
+        IpAddressUUID tmp=new IpAddressUUID("localhost", 5556);
+        assert tmp.compareTo(j) != 0;
+        tmp=new IpAddressUUID("localhost", 5555);
+        assert tmp.compareTo(j) != 0;
+
+        assert tmp.compareTo(a) == 0;
+        assert a.compareTo(tmp) == 0;
     }
 
 
@@ -170,8 +209,7 @@ public class IpAddressTest {
         }
         stop=System.currentTimeMillis();
         long diff=stop-start;
-        System.out.println("calling compareTo(" + one + ", " + two + ") " + num + " times took " +
-                           diff + "ms, result=" + rc);
+        System.out.printf("calling compareTo(%s, %s) %d times took %d ms, result=%d\n", one, two, num, diff, rc);
     }
 
 
@@ -180,6 +218,29 @@ public class IpAddressTest {
         int hcode_a=a.hashCode();
         int hcode_b=b.hashCode();
         Assert.assertEquals(hcode_a, hcode_b);
+
+        int hc_j=j.hashCode(), hc_k=k.hashCode();
+        assert hc_j == hc_k;
+        assert a.hashCode() == j.hashCode();
+
+        Map<Address,Integer> map=new HashMap<>();
+        map.put(j, 1);
+        map.put(k, 2);
+        System.out.println("map = " + map);
+        assert map.size() == 2;
+
+        map.put(a, 22);
+        assert map.size() == 2;
+        Integer val=map.get(a);
+        assert val != null && val == 22;
+
+        val=map.get(j);
+        assert val != null && val == 22;
+
+        map.put(j, 50);
+        assert map.size() == 2;
+        val=map.get(a);
+        assert val != null && val == 50;
     }
 
 
@@ -256,6 +317,18 @@ public class IpAddressTest {
 
         assert y2.getIpAddress() != null;
         Assert.assertEquals(1111, y2.getPort());
+
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream();
+        j.writeTo(out);
+        k.writeTo(out);
+
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(out.buffer(), 0, out.position());
+        IpAddressUUID tmp=new IpAddressUUID();
+        tmp.readFrom(in);
+        assert tmp.equals(j);
+        tmp=new IpAddressUUID();
+        tmp.readFrom(in);
+        assert tmp.equals(k);
     }
 
 

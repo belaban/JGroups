@@ -43,7 +43,7 @@ public class Event {
     public static final int CONNECT_WITH_STATE_TRANSFER        = 80;  // arg = cluster name (string)
     public static final int GET_PHYSICAL_ADDRESS               = 87;  // arg = Address --> PhysicalAddress
     public static final int GET_LOGICAL_PHYSICAL_MAPPINGS      = 88;  // arg = boolean --> Map<Address,PhysicalAddress>
-    public static final int SET_PHYSICAL_ADDRESS               = 89;  // arg = Tuple<Address,PhysicalAddress> --> boolean
+    public static final int ADD_PHYSICAL_ADDRESS               = 89;  // arg = Tuple<Address,PhysicalAddress> --> boolean
     public static final int REMOVE_ADDRESS                     = 90;  // arg = Address
     public static final int GET_LOCAL_ADDRESS                  = 91;  // arg = null --> UUID (local_addr)
     public static final int CONNECT_USE_FLUSH			       = 92;
@@ -133,7 +133,7 @@ public class Event {
             case CONNECT_WITH_STATE_TRANSFER:    return "CONNECT_WITH_STATE_TRANSFER";
             case GET_PHYSICAL_ADDRESS:   return "GET_PHYSICAL_ADDRESS";
             case GET_LOGICAL_PHYSICAL_MAPPINGS: return "GET_LOGICAL_PHYSICAL_MAPPINGS";
-            case SET_PHYSICAL_ADDRESS:   return "SET_PHYSICAL_ADDRESS";
+            case ADD_PHYSICAL_ADDRESS:   return "ADD_PHYSICAL_ADDRESS";
             case REMOVE_ADDRESS:         return "REMOVE_ADDRESS";
             case GET_LOCAL_ADDRESS:      return "GET_LOCAL_ADDRESS";
             case CONNECT_USE_FLUSH: return "CONNECT_USE_FLUSH";

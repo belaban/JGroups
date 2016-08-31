@@ -227,7 +227,7 @@ public class TcpConnection extends Connection {
                 throw new IOException("packet from " + client_sock.getInetAddress() + ":" + client_sock.getPort() +
                                         " has different version (" + Version.print(version) +
                                         ") from ours (" + Version.printVersion() + "); discarding it");
-            short addr_len=in.readShort(); // only needed by NioConnection
+            in.readShort(); // address length is only needed by NioConnection
 
             Address client_peer_addr=new IpAddress();
             client_peer_addr.readFrom(in);

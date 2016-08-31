@@ -11,6 +11,7 @@ import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.IpAddressUUID;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 
@@ -1169,7 +1170,68 @@ public class Util {
         return batches;
     }
 
+    public static List<Message> parse(byte[] buf, int offset, int length) {
+        return parse(new ByteArrayInputStream(buf, offset, length));
+    }
 
+    public static List<Message> parse(String filename) throws FileNotFoundException {
+        return parse(new FileInputStream(filename));
+    }
+
+    public static List<Message> parse(InputStream input) {
+        List<Message>   retval=new ArrayList<>();
+        DataInputStream dis=null;
+        try {
+            dis=new DataInputStream(input);
+
+            short version;
+            for(;;) {
+                try {
+                    version=dis.readShort();
+                }
+                catch(IOException io_ex) {
+                    break;
+                }
+
+                System.out.println("version = " + version + " (" + Version.print(version) + ")");
+                byte flags=dis.readByte();
+                // System.out.println("flags: " + Message.flagsToString(flags));
+
+                boolean is_message_list=(flags & LIST) == LIST;
+                boolean multicast=(flags & MULTICAST) == MULTICAST;
+
+                if(is_message_list) { // used if message bundling is enabled
+                    final MessageBatch[] batches=Util.readMessageBatch(dis,multicast);
+                    for(MessageBatch batch: batches) {
+                        if(batch != null)
+                            for(Message msg: batch)
+                                retval.add(msg);
+                    }
+                }
+                else {
+                    Message msg=Util.readMessage(dis);
+                    retval.add(msg);
+                }
+            }
+            return retval;
+        }
+        catch(Throwable t) {
+            t.printStackTrace();
+            return null;
+        }
+        finally {
+            Util.close(dis);
+        }
+    }
+
+    public static String dump(byte[] buf, int offset, int length) {
+        StringBuilder sb=new StringBuilder();
+        List<Message> msgs=parse(new ByteArrayInputStream(buf, offset, length));
+        if(msgs != null)
+            for(Message msg: msgs)
+                sb.append(String.format("dst=%s src=%s (%d bytes): hdrs= %s\n", msg.dest(), msg.src(), msg.getLength(), msg.printHeaders()));
+        return sb.toString();
+    }
 
 
     public static void writeView(View view,DataOutput out) throws Exception {
@@ -1235,8 +1297,10 @@ public class Util {
             else
                 streamable_addr=false;
         }
-        else if(addr instanceof IpAddress)
+        else if(addr.getClass().equals(IpAddress.class))
             flags=Util.setFlag(flags,Address.IP_ADDR);
+        else if(addr.getClass().equals(IpAddressUUID.class))
+            flags=Util.setFlag(flags, Address.IP_ADDR_UUID);
         else
             streamable_addr=false;
         out.writeByte(flags);
@@ -1266,6 +1330,10 @@ public class Util {
         }
         else if(Util.isFlagSet(flags,Address.IP_ADDR)) {
             addr=new IpAddress();
+            addr.readFrom(in);
+        }
+        else if(Util.isFlagSet(flags, Address.IP_ADDR_UUID)) {
+            addr=new IpAddressUUID();
             addr.readFrom(in);
         }
         else {

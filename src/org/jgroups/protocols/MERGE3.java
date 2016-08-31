@@ -322,7 +322,7 @@ public class MERGE3 extends Protocol {
         if(logical_name != null && sender instanceof UUID)
             UUID.add(sender, logical_name);
         if(physical_addr != null)
-            down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<>(sender, physical_addr)));
+            down(new Event(Event.ADD_PHYSICAL_ADDRESS, new Tuple<>(sender, physical_addr)));
         synchronized(views) {
             ViewId existing=views.get(sender);
             if(existing == null || existing.compareTo(view_id) < 0)

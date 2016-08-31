@@ -82,7 +82,7 @@ public class PDC extends Protocol {
                 new_map.putAll(cache);
                 return new_map;
 
-            case Event.SET_PHYSICAL_ADDRESS:
+            case Event.ADD_PHYSICAL_ADDRESS:
                 Tuple<Address,PhysicalAddress> new_val=(Tuple<Address, PhysicalAddress>)evt.getArg();
                 if(new_val != null) {
                     cache.put(new_val.getVal1(), new_val.getVal2());

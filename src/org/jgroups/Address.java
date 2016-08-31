@@ -18,11 +18,12 @@ import org.jgroups.util.UUID;
  */
 public interface Address extends Streamable, Comparable<Address> {
     // flags used for marshalling
-    byte NULL        = 1 << 0;
-    byte UUID_ADDR   = 1 << 1;
-    byte SITE_UUID   = 1 << 2;
-    byte SITE_MASTER = 1 << 3;
-    byte IP_ADDR     = 1 << 4;
+    byte NULL         = 1 << 0;
+    byte UUID_ADDR    = 1 << 1;
+    byte SITE_UUID    = 1 << 2;
+    byte SITE_MASTER  = 1 << 3;
+    byte IP_ADDR      = 1 << 4;
+    byte IP_ADDR_UUID = 1 << 5;
 
 
     /** Returns serialized size of this address */

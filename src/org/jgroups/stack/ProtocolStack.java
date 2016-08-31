@@ -625,7 +625,7 @@ public class ProtocolStack extends Protocol {
      */
     public <T extends Protocol> T removeProtocol(String prot_name) {
         if(prot_name == null) return null;
-        return removeProtocol(findProtocol(prot_name));
+        return removeProtocol((T)findProtocol(prot_name));
     }
 
     public ProtocolStack removeProtocols(String ... protocols) {
@@ -649,7 +649,7 @@ public class ProtocolStack extends Protocol {
     public <T extends Protocol> T removeProtocol(Class<? extends Protocol> prot) {
         if(prot == null)
             return null;
-        return removeProtocol(findProtocol(prot));
+        return removeProtocol((T)findProtocol(prot));
     }
 
     public <T extends Protocol> T removeProtocol(T prot) {

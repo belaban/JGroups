@@ -512,7 +512,7 @@ public abstract class Discovery extends Protocol {
         if(logical_name != null)
             UUID.add(mbr, logical_name);
         if(physical_addr != null)
-            return (Boolean)down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<>(mbr, physical_addr)));
+            return (Boolean)down(new Event(Event.ADD_PHYSICAL_ADDRESS, new Tuple<>(mbr, physical_addr)));
         return false;
     }
 

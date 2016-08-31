@@ -162,9 +162,8 @@ public class DiagnosticsHandler implements Runnable {
         if(list.isEmpty()) {
             if(transport != null) {
                 Address local_addr=transport.localAddress();
-                String default_rsp=String.format("local_addr=%s [%s]\nphysical_addr=%s\nview=%s\ncluster=%s\nversion=%s",
+                String default_rsp=String.format("local_addr=%s\nphysical_addr=%s\nview=%s\ncluster=%s\nversion=%s",
                                                  local_addr != null? local_addr : "n/a",
-                                                 local_addr != null? ((org.jgroups.util.UUID)local_addr).toStringLong() : "n/a",
                                                  transport.getLocalPhysicalAddress(),
                                                  transport.view(),
                                                  transport.getClusterName(),
