@@ -74,6 +74,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
               systemProperty={Global.BIND_ADDR},writable=false)
     protected InetAddress bind_addr;
 
+    @Property(description="Use IP addresses (IpAddressUUID) instead of UUIDs as addresses. This is currently not " +
+      "compatible with RELAY2: disable if RELAY2 is used.")
+    protected boolean use_ip_addrs;
+
     @Property(description="Use \"external_addr\" if you have hosts on different networks, behind " +
       "firewalls. On each firewall, set up a port forwarding rule (sometimes called \"virtual server\") to " +
       "the local IP (e.g. 192.168.1.100) of the host then on each host, set \"external_addr\" TCP transport " +
@@ -81,9 +85,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
               systemProperty=Global.EXTERNAL_ADDR,writable=false)
     protected InetAddress external_addr;
 
-    @Property(description="Use IP addresses (IpAddressUUID) instead of UUIDs as addresses. This is currently not " +
-      "compatible with RELAY2: disable if RELAY2 is used.")
-    protected boolean use_ip_addrs;
 
     @Property(description="Used to map the internal port (bind_port) to an external port. Only used if > 0",
               systemProperty=Global.EXTERNAL_PORT,writable=false)
@@ -624,7 +625,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected static final LazyRemovalCache.Printable<Address,LazyRemovalCache.Entry<PhysicalAddress>> print_function
       =(logical_addr, entry) -> {
         StringBuilder sb=new StringBuilder();
-        String tmp_logical_name=UUID.get(logical_addr);
+        String tmp_logical_name=NameCache.get(logical_addr);
         if(tmp_logical_name != null)
             sb.append(tmp_logical_name).append(": ");
         if(logical_addr instanceof UUID)
@@ -1828,7 +1829,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(data.getPhysicalAddr() != null)
                 addPhysicalAddressToCache(data.getAddress(),data.getPhysicalAddr());
             if(data.getLogicalName() != null)
-                UUID.add(data.getAddress(), data.getLogicalName());
+                NameCache.add(data.getAddress(), data.getLogicalName());
         }
     }
 
@@ -1854,7 +1855,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
                     List<Address> left_mbrs=Util.leftMembers(old_members,members);
                     if(left_mbrs != null && !left_mbrs.isEmpty())
-                        UUID.removeAll(left_mbrs);
+                        NameCache.removeAll(left_mbrs);
 
                     if(suppress_log_different_version != null)
                         suppress_log_different_version.removeExpired(suppress_time_different_version_warnings);

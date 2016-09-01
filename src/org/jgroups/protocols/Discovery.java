@@ -246,7 +246,7 @@ public abstract class Discovery extends Protocol {
         for(Map.Entry<Address,PhysicalAddress> entry: cache_contents.entrySet()) {
             Address         addr=entry.getKey();
             PhysicalAddress phys_addr=entry.getValue();
-            PingData data=new PingData(addr, true, UUID.get(addr), phys_addr).coord(addr.equals(local_addr));
+            PingData data=new PingData(addr, true, NameCache.get(addr), phys_addr).coord(addr.equals(local_addr));
             list.add(data);
         }
         OutputStream out=new FileOutputStream(output_filename);
@@ -303,7 +303,7 @@ public abstract class Discovery extends Protocol {
                             // JGRP-1492: only return our own address, and addresses in view.
                             if(addr.equals(local_addr) || members.contains(addr)) {
                                 PhysicalAddress physical_addr=entry.getValue();
-                                sendDiscoveryResponse(addr, physical_addr, UUID.get(addr), msg.getSrc(), isCoord(addr));
+                                sendDiscoveryResponse(addr, physical_addr, NameCache.get(addr), msg.getSrc(), isCoord(addr));
                             }
                         }
                     }
@@ -315,7 +315,7 @@ public abstract class Discovery extends Protocol {
                 boolean send_response=mbrs == null || mbrs.contains(local_addr);
                 if(send_response) {
                     PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-                    sendDiscoveryResponse(local_addr, physical_addr, UUID.get(local_addr), msg.getSrc(), is_coord);
+                    sendDiscoveryResponse(local_addr, physical_addr, NameCache.get(local_addr), msg.getSrc(), is_coord);
                 }
                 return null;
 
@@ -510,7 +510,7 @@ public abstract class Discovery extends Protocol {
         if(mbr == null)
             return false;
         if(logical_name != null)
-            UUID.add(mbr, logical_name);
+            NameCache.add(mbr, logical_name);
         if(physical_addr != null)
             return (Boolean)down(new Event(Event.ADD_PHYSICAL_ADDRESS, new Tuple<>(mbr, physical_addr)));
         return false;
@@ -609,7 +609,7 @@ public abstract class Discovery extends Protocol {
                 continue;
             boolean is_coordinator=isCoord(addr);
             for(Address target : new_mbrs)
-                sendDiscoveryResponse(addr,phys_addr,UUID.get(addr),target,is_coordinator);
+                sendDiscoveryResponse(addr,phys_addr,NameCache.get(addr),target,is_coordinator);
         }
 
         // 2. Send information about new_mbrs to <everyone - self - left_mbrs - new_mbrs>
@@ -623,7 +623,7 @@ public abstract class Discovery extends Protocol {
                     continue;
                 boolean is_coordinator=isCoord(addr);
                 for(Address target : targets)
-                    sendDiscoveryResponse(addr,phys_addr,UUID.get(addr),target,is_coordinator);
+                    sendDiscoveryResponse(addr,phys_addr,NameCache.get(addr),target,is_coordinator);
             }
         }
     }

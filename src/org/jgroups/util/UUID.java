@@ -3,12 +3,10 @@ package org.jgroups.util;
 import org.jgroups.Address;
 import org.jgroups.Constructable;
 import org.jgroups.Global;
-import org.jgroups.blocks.LazyRemovalCache;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.security.SecureRandom;
-import java.util.Collection;
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -25,46 +23,16 @@ public class UUID implements Address, Constructable<UUID> {
     /** The random number generator used by this class to create random based UUIDs */
     protected static volatile SecureRandom numberGenerator=null;
 
-    /** Keeps track of associations between logical addresses (UUIDs) and logical names */
-    protected static final LazyRemovalCache<Address,String> cache;
-
     protected static boolean print_uuids=false;
 
     protected static final int SIZE=Global.LONG_SIZE * 2;
 
-    protected static final LazyRemovalCache.Printable<Address,LazyRemovalCache.Entry<String>> print_function
-      =(key, entry) -> entry.getVal() + ": " + (key instanceof UUID? ((UUID)key).toStringLong() : key) + "\n";
-    
 
     static {
-        String tmp;
-
-        int max_elements=500;
-        long max_age=5000L;
-
-        try {
-            tmp=Util.getProperty(new String[]{Global.UUID_CACHE_MAX_ELEMENTS}, null, null, "500");
-            if(tmp != null)
-                max_elements=Integer.valueOf(tmp);
-        }
-        catch(Throwable t) {
-        }
-
-        try {
-            tmp=Util.getProperty(new String[]{Global.UUID_CACHE_MAX_AGE}, null, null, "120000");
-            if(tmp != null)
-                max_age=Long.valueOf(tmp);
-        }
-        catch(Throwable t) {
-        }
-
-        cache=new LazyRemovalCache<>(max_elements, max_age);
-
-
         /* Trying to get value of jgroups.print_uuids. PropertyPermission not granted if
         * running in an untrusted environment with JNLP */
         try {
-            tmp=Util.getProperty(new String[]{Global.PRINT_UUIDS}, null, null, "false");
+            String tmp=Util.getProperty(new String[]{Global.PRINT_UUIDS}, null, null, "false");
             print_uuids=Boolean.valueOf(tmp);
         }
         catch (SecurityException ex){
@@ -99,45 +67,6 @@ public class UUID implements Address, Constructable<UUID> {
         return UUID::new;
     }
 
-    public static void add(Address uuid, String logical_name) {
-        cache.add(uuid, logical_name); // overwrite existing entry
-    }
-
-    public static void add(Map<Address,String> map) {
-        if(map == null) return;
-        for(Map.Entry<Address,String> entry: map.entrySet())
-            add(entry.getKey(), entry.getValue());
-    }
-
-    public static String get(Address logical_addr) {
-        return cache.get(logical_addr);
-    }
-
-    public static Address getByName(String logical_name) {
-        return cache.getByValue(logical_name);
-    }
-
-    /** Returns a <em>copy</em> of the cache's contents */
-    public static Map<Address,String> getContents() {
-        return cache.contents();
-    }
-
-    public static void remove(Address addr) {
-        cache.remove(addr);
-    }
-
-    public static void removeAll(Collection<Address> mbrs) {
-        cache.removeAll(mbrs);
-    }
-
-    public static void retainAll(Collection<Address> logical_addrs) {
-        cache.retainAll(logical_addrs);
-    }
-
-    public static String printCache() {
-        return cache.printCache(print_function);
-    }
-
 
     /**
      * Static factory to retrieve a type 4 (pseudo randomly generated) UUID.
@@ -167,7 +96,7 @@ public class UUID implements Address, Constructable<UUID> {
     public String toString() {
         if(print_uuids)
             return toStringLong();
-        String val=cache.get(this);
+        String val=NameCache.get(this);
         return val != null? val : toStringLong();
     }
 

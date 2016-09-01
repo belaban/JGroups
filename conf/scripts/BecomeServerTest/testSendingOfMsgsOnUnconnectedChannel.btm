@@ -53,7 +53,7 @@ HELPER org.jgroups.tests.helpers.BecomeServerTestHelper
 AFTER INVOKE queueMessage ALL
 BIND queue=$0.become_server_queue;
      is_server=$0.is_server;
-     local_addr_name=org.jgroups.util.UUID.get($0.local_addr);
+     local_addr_name=org.jgroups.util.NameCache.get($0.local_addr);
 IF !is_server && local_addr_name.equals("B") && messageReceived(queue)
   DO rendezvous("rv");
 ENDRULE
@@ -66,7 +66,7 @@ RULE InstallView
 CLASS ClientGmsImpl
 METHOD installView
 AT ENTRY
-BIND local_addr_name=org.jgroups.util.UUID.get($0.gms.local_addr);
+BIND local_addr_name=org.jgroups.util.NameCache.get($0.gms.local_addr);
 IF local_addr_name.equals("B") AND rendezvous("rv") != -1
    DO System.out.println("--> B: installView() waiting on rendezvous until message has been received");
       rendezvous("rv");
@@ -80,7 +80,7 @@ CLASS NAKACK2
 METHOD flushBecomeServerQueue
 AT ENTRY
 BIND queue=$0.become_server_queue;
-     local_addr_name=org.jgroups.util.UUID.get($0.local_addr);
+     local_addr_name=org.jgroups.util.NameCache.get($0.local_addr);
 IF local_addr_name.equals("B")
     DO System.out.println("--> " + $0.local_addr + ": flushing queue (" + queue.size() + " element(s))");
 ENDRULE

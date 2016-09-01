@@ -13,7 +13,7 @@ CLASS ForwardQueue
 METHOD doFlush
 HELPER org.jgroups.tests.helpers.ForwardToCoordFailoverTestHelper
 AT READ flushing ALL
-BIND local_addr_name=org.jgroups.util.UUID.get($0.local_addr);
+BIND local_addr_name=org.jgroups.util.NameCache.get($0.local_addr);
      map:java.util.Map=$0.forward_table;
      empty=map.isEmpty();
 IF !empty && local_addr_name.equals("C")

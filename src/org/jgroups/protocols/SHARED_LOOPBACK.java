@@ -7,7 +7,7 @@ import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.AsciiString;
-import org.jgroups.util.UUID;
+import org.jgroups.util.NameCache;
 import org.jgroups.util.Util;
 
 import java.util.*;
@@ -104,7 +104,7 @@ public class SHARED_LOOPBACK extends TP {
             for(Map.Entry<Address,SHARED_LOOPBACK> entry: mbrs.entrySet()) {
                 Address addr=entry.getKey();
                 SHARED_LOOPBACK slp=entry.getValue();
-                PingData data=new PingData(addr, slp.isServer(), UUID.get(addr), null).coord(slp.isCoord());
+                PingData data=new PingData(addr, slp.isServer(), NameCache.get(addr), null).coord(slp.isCoord());
                 rsps.add(data);
             }
         }

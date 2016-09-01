@@ -6,7 +6,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Property;
-import org.jgroups.util.UUID;
+import org.jgroups.util.NameCache;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -71,7 +71,7 @@ public class RegexMembership extends AuthToken {
             }
         }
         if(match_logical_name) {
-            String logical_name=sender != null? UUID.get(sender) : null;
+            String logical_name=sender != null? NameCache.get(sender) : null;
             if(logical_name != null) {
                 Matcher matcher=pattern.matcher(logical_name);
                 boolean result=matcher.matches();

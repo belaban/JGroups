@@ -79,8 +79,8 @@ public class SizeTest {
         GossipData data;
         final Address own=org.jgroups.util.UUID.randomUUID();
         final Address coord=org.jgroups.util.UUID.randomUUID();
-        UUID.add(own, "own");
-        UUID.add(coord, "coord");
+        NameCache.add(own, "own");
+        NameCache.add(coord, "coord");
         PingData pd1=new PingData(coord, true, "coord", new IpAddress(7400));
         PingData pd2=new PingData(own, true, "own", new IpAddress(7500));
 

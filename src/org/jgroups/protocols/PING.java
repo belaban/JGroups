@@ -4,8 +4,8 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
-import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
 import java.io.InterruptedIOException;
@@ -44,7 +44,7 @@ public class PING extends Discovery {
         PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
 
         // https://issues.jboss.org/browse/JGRP-1670
-        PingData data=new PingData(local_addr, false, UUID.get(local_addr), physical_addr);
+        PingData data=new PingData(local_addr, false, NameCache.get(local_addr), physical_addr);
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name);
 
         if(members_to_find != null && members_to_find.size() <= max_members_in_discovery_request)

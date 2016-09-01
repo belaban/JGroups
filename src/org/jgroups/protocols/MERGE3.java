@@ -314,13 +314,13 @@ public class MERGE3 extends Protocol {
     protected MergeHeader createInfo() {
         PhysicalAddress physical_addr=local_addr != null?
           (PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)) : null;
-        return MergeHeader.createInfo(view.getViewId(), UUID.get(local_addr), physical_addr);
+        return MergeHeader.createInfo(view.getViewId(), NameCache.get(local_addr), physical_addr);
     }
 
     /** Adds received INFO to views hashmap */
     protected void addInfo(Address sender, ViewId view_id, String logical_name, PhysicalAddress physical_addr) {
         if(logical_name != null && sender instanceof UUID)
-            UUID.add(sender, logical_name);
+            NameCache.add(sender, logical_name);
         if(physical_addr != null)
             down(new Event(Event.ADD_PHYSICAL_ADDRESS, new Tuple<>(sender, physical_addr)));
         synchronized(views) {

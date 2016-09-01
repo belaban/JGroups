@@ -6,8 +6,8 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.NameCache;
 import org.jgroups.util.SocketFactory;
-import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
 import java.io.Closeable;
@@ -312,7 +312,7 @@ public class Channel implements Closeable {
     * @param member
     * @return The logical name for <code>member</code>
     */
-    public String getName(Address member) {return member != null? UUID.get(member) : null;}
+    public String getName(Address member) {return member != null? NameCache.get(member) : null;}
 
 
    /**

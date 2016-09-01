@@ -1004,9 +1004,9 @@ public class UtilTest {
 
     public static void testDetermineMergeParticipantsAndMergeCoords() {
         Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress();
-        org.jgroups.util.UUID.add(a, "A");
-        org.jgroups.util.UUID.add(b, "B");
-        org.jgroups.util.UUID.add(c, "C");
+        org.jgroups.util.NameCache.add(a, "A");
+        org.jgroups.util.NameCache.add(b, "B");
+        org.jgroups.util.NameCache.add(c, "C");
 
         View v1=View.create(b, 1, b, a, c);
         View v2=View.create(b, 2, b, c);
@@ -1033,10 +1033,10 @@ public class UtilTest {
 
     public static void testDetermineMergeParticipantsAndMergeCoords2() {
         Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
-        org.jgroups.util.UUID.add(a, "A");
-        org.jgroups.util.UUID.add(b, "B");
-        org.jgroups.util.UUID.add(c, "C");
-        org.jgroups.util.UUID.add(d, "D");
+        org.jgroups.util.NameCache.add(a, "A");
+        org.jgroups.util.NameCache.add(b, "B");
+        org.jgroups.util.NameCache.add(c, "C");
+        org.jgroups.util.NameCache.add(d, "D");
 
         View v1=View.create(a, 1, a, b);
         View v2=View.create(a, 1, a, b);
@@ -1065,10 +1065,10 @@ public class UtilTest {
 
     public static void testDetermineMergeParticipantsAndMergeCoords3() {
         Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
-        org.jgroups.util.UUID.add(a, "A");
-        org.jgroups.util.UUID.add(b, "B");
-        org.jgroups.util.UUID.add(c, "C");
-        org.jgroups.util.UUID.add(d, "D");
+        org.jgroups.util.NameCache.add(a, "A");
+        org.jgroups.util.NameCache.add(b, "B");
+        org.jgroups.util.NameCache.add(c, "C");
+        org.jgroups.util.NameCache.add(d, "D");
 
         View v1=View.create(a, 1, a, b, c, d);
         View v2=View.create(a, 1, a, b, c, d);
@@ -1096,10 +1096,10 @@ public class UtilTest {
 
     public static void testDetermineMergeParticipantsAndMergeCoords4() {
         Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
-        org.jgroups.util.UUID.add(a, "A");
-        org.jgroups.util.UUID.add(b, "B");
-        org.jgroups.util.UUID.add(c, "C");
-        org.jgroups.util.UUID.add(d, "D");
+        org.jgroups.util.NameCache.add(a, "A");
+        org.jgroups.util.NameCache.add(b, "B");
+        org.jgroups.util.NameCache.add(c, "C");
+        org.jgroups.util.NameCache.add(d, "D");
 
         View v1=View.create(a, 1, a, b);
         View v2=View.create(c, 1, c, d);

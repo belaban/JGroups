@@ -11,8 +11,8 @@ import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.stack.RouterStubManager;
+import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
-import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
 import java.net.InetAddress;
@@ -110,7 +110,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
             log.trace("registering " + local_addr + " under " + cluster_name + " with GossipRouter");
             stubManager.destroyStubs();
             PhysicalAddress physical_addr = (PhysicalAddress) down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-            stubManager = new RouterStubManager(this,cluster_name, local_addr, UUID.get(local_addr), physical_addr, reconnect_interval).useNio(this.use_nio);
+            stubManager = new RouterStubManager(this, cluster_name, local_addr, NameCache.get(local_addr), physical_addr, reconnect_interval).useNio(this.use_nio);
             for (InetSocketAddress host : initial_hosts) {
                 RouterStub stub=stubManager.createAndRegisterStub(new IpAddress(bind_addr, 0), new IpAddress(host.getAddress(), host.getPort()));
                 stub.socketConnectionTimeout(sock_conn_timeout);
@@ -162,7 +162,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
     @Override
     public void members(List<PingData> mbrs) {
         PhysicalAddress      own_physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-        PingData             data=new PingData(local_addr, false, org.jgroups.util.UUID.get(local_addr), own_physical_addr);
+        PingData             data=new PingData(local_addr, false, org.jgroups.util.NameCache.get(local_addr), own_physical_addr);
         PingHeader           hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name);
 
         Set<PhysicalAddress> physical_addrs=mbrs.stream().filter(ping_data -> ping_data != null && ping_data.getPhysicalAddr() != null)

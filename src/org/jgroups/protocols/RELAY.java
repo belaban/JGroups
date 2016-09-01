@@ -8,7 +8,6 @@ import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
-import org.jgroups.util.UUID;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -300,7 +299,7 @@ public class RELAY extends Protocol {
         try {
             ViewData data=Util.streamableFromByteBuffer(ViewData.class, buf, offset, length);
             if(data.uuids != null)
-                UUID.add(data.uuids);
+                NameCache.add(data.uuids);
 
             remote_view=data.remote_view;
             if(global_view == null || (data.global_view != null &&!global_view.equals(data.global_view))) {
@@ -703,7 +702,7 @@ public class RELAY extends Protocol {
         }
 
         public static ViewData create(View remote_view, View global_view) {
-            Map<Address,String> tmp=UUID.getContents();
+            Map<Address,String> tmp=NameCache.getContents();
             return new ViewData(remote_view, global_view, tmp);
         }
 

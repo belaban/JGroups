@@ -7,9 +7,9 @@ import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
 import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
 import javax.naming.InitialContext;
@@ -189,7 +189,7 @@ public class JDBC_PING extends Discovery {
     /** Write my own UUID,logical name and physical address to a file */
     protected void writeOwnInformation(boolean overwrite) {
         PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-        PingData data=new PingData(local_addr, is_server, UUID.get(local_addr), physical_addr).coord(is_coord);
+        PingData data=new PingData(local_addr, is_server, NameCache.get(local_addr), physical_addr).coord(is_coord);
         writeToDB(data, cluster_name, overwrite); // write my own data to file
     }
 

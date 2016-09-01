@@ -1,10 +1,7 @@
 package org.jgroups.protocols.relay;
 
 import org.jgroups.Address;
-import org.jgroups.util.AsciiString;
-import org.jgroups.util.ExtendedUUID;
-import org.jgroups.util.UUID;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.util.Arrays;
 import java.util.function.Supplier;
@@ -76,7 +73,7 @@ public class SiteUUID extends ExtendedUUID implements SiteAddress {
 
     public String print(boolean detailed) {
         String name=getName();
-        String retval=name != null? name : get(this);
+        String retval=name != null? name : NameCache.get(this);
         return retval + ":" + getSite() + (detailed? printOthers() : "");
     }
 

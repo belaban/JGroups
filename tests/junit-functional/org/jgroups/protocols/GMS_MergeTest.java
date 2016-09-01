@@ -747,7 +747,7 @@ public class GMS_MergeTest {
             if(name == null || name.isEmpty()) // generate a logical name if not set
                 name=Util.generateLocalName();
             if(name != null && !name.isEmpty())
-                org.jgroups.util.UUID.add(local_addr, name);
+                org.jgroups.util.NameCache.add(local_addr, name);
 
             Event evt=new Event(Event.SET_LOCAL_ADDRESS, local_addr);
             down(evt);

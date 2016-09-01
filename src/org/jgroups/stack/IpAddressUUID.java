@@ -2,6 +2,7 @@ package org.jgroups.stack;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
+import org.jgroups.util.NameCache;
 import org.jgroups.util.UUID;
 
 import java.io.DataInput;
@@ -19,7 +20,6 @@ import java.util.function.Supplier;
  * @since  4.0
  */
 public class IpAddressUUID extends IpAddress {
-    private static final long serialVersionUID=-3863862368697043599L;
     protected long low;
     protected int  high;
 
@@ -127,12 +127,12 @@ public class IpAddressUUID extends IpAddress {
     }
 
     public String toString() {
-        String logical_name=UUID.get(this);
+        String logical_name=NameCache.get(this);
         return logical_name != null? logical_name : super.toString();
     }
 
     public String toString(boolean detailed) {
-        String logical_name=UUID.get(this);
+        String logical_name=NameCache.get(this);
         if(logical_name != null)
             return detailed? String.format("%s (%s)", logical_name, super.toString()) : logical_name;
         return super.toString();

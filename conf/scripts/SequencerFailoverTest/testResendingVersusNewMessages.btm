@@ -13,7 +13,7 @@ CLASS SEQUENCER
 METHOD startFlusher
 HELPER org.jgroups.tests.helpers.SequencerFailoverTestHelper
 AFTER WRITE flushing ALL
-BIND local_addr_name=org.jgroups.util.UUID.get($0.local_addr);
+BIND local_addr_name=org.jgroups.util.NameCache.get($0.local_addr);
      map:java.util.Map=$0.forward_table;
      empty=map.isEmpty();
      flushing=$0.flushing

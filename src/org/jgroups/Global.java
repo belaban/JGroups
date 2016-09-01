@@ -48,8 +48,8 @@ public final class Global {
     public static final String MAGIC_NUMBER_FILE="jgroups.conf.magic_number_file";
     public static final String PROTOCOL_ID_FILE="jgroups.conf.protocol_id_file";
     public static final String PRINT_UUIDS="jgroups.print_uuids";
-    public static final String UUID_CACHE_MAX_ELEMENTS="jgroups.uuid_cache.max_elements";
-    public static final String UUID_CACHE_MAX_AGE="jgroups.uuid_cache.max_age";
+    public static final String NAME_CACHE_MAX_ELEMENTS="jgroups.name_cache.max_elements";
+    public static final String NAME_CACHE_MAX_AGE="jgroups.name_cache.max_age";
 
     public static final String IPV6_MCAST_PREFIX="jgroups.ipmcast.prefix";
 

@@ -5,9 +5,9 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.NameCache;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
-import org.jgroups.util.UUID;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
@@ -84,7 +84,7 @@ public class ConnectTest extends ChannelTestBase {
 
     protected static void print(JChannel ch, String msg) {
         System.out.println(msg + ": name=" + ch.getName() + ", addr=" + ch.getAddress() +
-                             ", UUID=" + ch.getAddressAsUUID() + "\nUUID cache:\n" + UUID.printCache() +
+                             ", UUID=" + ch.getAddressAsUUID() + "\nUUID cache:\n" + NameCache.printCache() +
                              "\nLogical_addr_cache:\n" + ch.getProtocolStack().getTransport().printLogicalAddressCache());
     }
 

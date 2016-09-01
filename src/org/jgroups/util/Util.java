@@ -2488,7 +2488,7 @@ public class Util {
 
     public static Address createRandomAddress(String name) {
         UUID retval=UUID.randomUUID();
-        UUID.add(retval,name);
+        NameCache.add(retval,name);
         return retval;
     }
 

@@ -39,7 +39,7 @@ public class FlagsUUID extends UUID {
     public static FlagsUUID randomUUID(String name) {
         FlagsUUID retval=new FlagsUUID(generateRandomBytes());
         if(name != null)
-            UUID.add(retval, name);
+            NameCache.add(retval, name);
         return retval;
     }
 

@@ -154,8 +154,8 @@ public class PDC extends Protocol {
             else {
                 if(data != null && data.getLogicalAddr() != null && data.getPhysicalAddr() != null) {
                     cache.put(data.getLogicalAddr(), (PhysicalAddress)data.getPhysicalAddr());
-                    if(data.getLogicalName() != null && UUID.get(data.getLogicalAddr()) == null)
-                        UUID.add(data.getLogicalAddr(), data.getLogicalName());
+                    if(data.getLogicalName() != null && NameCache.get(data.getLogicalAddr()) == null)
+                        NameCache.add(data.getLogicalAddr(), data.getLogicalName());
                 }
             }
         }
@@ -186,7 +186,7 @@ public class PDC extends Protocol {
         // this is because the writing can be very slow under some circumstances
         File tmpFile=null, destination=null;
         try {
-            tmpFile=writeToTempFile(root_dir, logical_addr, physical_addr, UUID.get(logical_addr));
+            tmpFile=writeToTempFile(root_dir, logical_addr, physical_addr, NameCache.get(logical_addr));
             if(tmpFile == null)
                 return;
 

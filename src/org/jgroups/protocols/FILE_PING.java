@@ -7,9 +7,9 @@ import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
 import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -111,7 +111,7 @@ public class FILE_PING extends Discovery {
             readAll(members, cluster_name, responses);
             if(responses.isEmpty()) {
                 PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS,local_addr));
-                PingData coord_data=new PingData(local_addr, true, UUID.get(local_addr), physical_addr).coord(is_coord);
+                PingData coord_data=new PingData(local_addr, true, NameCache.get(local_addr), physical_addr).coord(is_coord);
                 write(Collections.singletonList(coord_data), cluster_name);
                 return;
             }
@@ -126,7 +126,7 @@ public class FILE_PING extends Discovery {
                     ; // use case #1 if we have predefined files: most members join but are not coord
             }
             else {
-                sendDiscoveryResponse(local_addr, phys_addr, UUID.get(local_addr), null, false);
+                sendDiscoveryResponse(local_addr, phys_addr, NameCache.get(local_addr), null, false);
             }
         }
         finally {
@@ -147,7 +147,7 @@ public class FILE_PING extends Discovery {
     }
 
     protected static String addressToFilename(Address mbr) {
-        String logical_name=UUID.get(mbr);
+        String logical_name=NameCache.get(mbr);
         String name=(addressAsString(mbr) + (logical_name != null? "." + logical_name + SUFFIX : SUFFIX));
         return regexp.matcher(name).replaceAll("-");
     }
@@ -276,7 +276,7 @@ public class FILE_PING extends Discovery {
         for(Map.Entry<Address,PhysicalAddress> entry: cache_contents.entrySet()) {
             Address         addr=entry.getKey();
             PhysicalAddress phys_addr=entry.getValue();
-            PingData data=new PingData(addr, true, UUID.get(addr), phys_addr).coord(addr.equals(local_addr));
+            PingData data=new PingData(addr, true, NameCache.get(addr), phys_addr).coord(addr.equals(local_addr));
             list.add(data);
         }
         write(list, cluster_name);

@@ -50,7 +50,7 @@ public class ExtendedUUID extends FlagsUUID {
     public static ExtendedUUID randomUUID(String name) {
         ExtendedUUID retval=new ExtendedUUID(generateRandomBytes());
         if(name != null)
-            UUID.add(retval, name);
+            NameCache.add(retval, name);
         return retval;
     }
 
