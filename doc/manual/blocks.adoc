@@ -14,7 +14,7 @@ are located in the `org.jgroups.blocks` package.
 [[MessageDispatcher]]
 === MessageDispatcher
 
-Channels are simple patterns to _asynchronously_
+A channels is a simple class _asynchronously_
 send and receive messages. However, a significant number of communication patterns in group communication
 require _synchronous_ communication. For example, a sender would like to send a message to
 the group and wait for all responses. Or another application would like to send a message to the group and
@@ -67,7 +67,6 @@ The various options are:
   `GET_ALL`:: Block until responses from all members (minus the suspected ones) have been received.
   `GET_NONE`:: Wait for none. This makes the call non-blocking
   `GET_FIRST`:: Block until the first response (from anyone) has been received
-  `GET_MAJORITY`:: Block until a majority of members have responded
 * Timeout: number of milliseconds we're willing to block. If the call hasn't terminated after the
   timeout elapsed, a TimeoutException will be thrown. A timeout of 0 means to wait forever. The
   timeout is ignored if the call is non-blocking (mode=`GET_NONE`)
@@ -82,8 +81,6 @@ The various options are:
   a call. For example, if we expect responses from 10 members, but can return after having
   received 3 non-null responses, a RspFilter could be used. See <<RspFilter>> for
   a discussion on response filters.
-* Scope: a short, defining a scope. This allows for concurrent delivery of messages from the same
-  sender. See <<Scopes>> for a discussion on scopes.
 * Flags: the various flags to be passed to the message, see the section on <<MessageFlags, message flags>> for details.
 * Exclusion list: here we can pass a list of members (addresses) that should be excluded. For example,
   if the view is A,B,C,D,E, and we set the exclusion list to A,C then the caller will wait for
@@ -96,7 +93,7 @@ An example of how to use RequestOptions is:
 ----
 RpcDispatcher disp;
 RequestOptions opts=new RequestOptions(Request.GET_ALL)
-                    .setFlags(Message.NO_FC, Message.DONT_BUNDLE);
+                    .setFlags(Message.NO_FC, Message.OOB);
 Object val=disp.callRemoteMethod(target, method_call, opts);
 ----
 
@@ -106,23 +103,24 @@ The methods to send requests are:
 [source,java]
 ----
 public <T> RspList<T>
-       castMessage(final Collection<Address> dests, Message msg,
-                   RequestOptions options) throws Exception;
+       castMessage(Collection<Address> dests, byte[] data, int offset, int length,
+                   RequestOptions opts) throws Exception;
 
-public <T> NotifyingFuture<RspList<T>>
-       castMessageWithFuture(final Collection<Address> dests, Message msg,
-                             RequestOptions options) throws Exception;
+public <T> CompletableFuture<RspList<T>>
+       castMessageWithFuture(Collection<Address> dests, Buffer data,
+                             RequestOptions opts) throws Exception;
 
-public <T> T sendMessage(Message msg, RequestOptions opts) throws Exception;
+public <T> T sendMessage(Address dest, byte[] data, int offset, int length,
+                         RequestOptions opts) throws Exception;
 
-public <T> NotifyingFuture<T>
-       sendMessageWithFuture(Message msg, RequestOptions options) throws Exception;
+public <T> CompletableFuture<T>
+       sendMessageWithFuture(Address dest, byte[] data, int offset, int length,
+                             RequestOptions opts) throws Exception;
 ----
 
-`castMessage()` sends a message to all members defined in
-`dests`. If `dests` is null, the message will be sent to all
-members of the current cluster. Note that a possible destination set in the message will be overridden.
-If a message is sent synchronously (defined by `options.mode`) then `options.timeout`
+`castMessage()` sends a message to all members defined in `dests`. If `dests` is null, the message is sent to all
+members of the current cluster.
+If a message is sent synchronously (defined by `options.mode`), then `options.timeout`
 defines the maximum amount of time (in milliseconds) to wait for the responses.
 
 `castMessage()` returns a `RspList`, which contains a map of addresses and Rsps;
@@ -132,10 +130,12 @@ A `Rsp` instance contains the response value (or null), an exception if the targ
 an exception, whether the target member was suspected, or not, and so on. See the example below for
 more details.
 
-`castMessageWithFuture()` returns immediately, with a future. The future
+`castMessageWithFuture()` returns immediately, with a CompletableFuture. The future
 can be used to fetch the response list (now or later), and it also allows for installation of a callback
-which will be invoked whenever the future is done.
-See <<NotifyingFuture>> for details on how to use NotifyingFutures.
+which will be invoked when the future is done.
+See <<CompleteableFuture>> for details on how to use CompletableFutures.
+
+Note that `Buffer` is a simple wrapper around a byte[] array, an offset and a length.
 
 `sendMessage()` allows an application programmer to send a unicast message to a
 single cluster member and receive the response. The destination of the message has to be non-null (valid
@@ -143,8 +143,7 @@ address of a member). The mode argument is ignored (it is by default set to
 `ResponseMode.GET_FIRST`) unless it is set to `GET_NONE` in which case
 the request becomes asynchronous, ie. we will not wait for the response.
       
-`sendMessageWithFuture()` returns immediately with a future, which can be used to
-fetch the result.
+`sendMessageWithFuture()` returns immediately with a future, which can be used to fetch the result.
 
 One advantage of using this building block is that failed members are removed from the set of expected
 responses. For example, when sending a message to 10 members and waiting for all responses, and 2 members
@@ -202,26 +201,26 @@ This section shows an example of how to use a MessageDispatcher.
 [source,java]
 ----
 public class MessageDispatcherTest implements RequestHandler {
-    Channel            channel;
-    MessageDispatcher  disp;
-    RspList            rsp_list;
-    String             props; // to be set by application programmer
+    JChannel          channel;
+    MessageDispatcher disp;
+    RspList           rsp_list;
+    String            props; // to be set by application programmer
 
     public void start() throws Exception {
         channel=new JChannel(props);
-        disp=new MessageDispatcher(channel, null, null, this);
+        disp=new MessageDispatcher(channel, this);
         channel.connect("MessageDispatcherTestGroup");
 
         for(int i=0; i < 10; i++) {
             Util.sleep(100);
             System.out.println("Casting message #" + i);
+            byte[] payload=("Number #" + i).getBytes();
             rsp_list=disp.castMessage(null,
-                new Message(null, null, new String("Number #" + i)),
-                ResponseMode.GET_ALL, 0);
+                                      payload, 0, payload.length,
+                                      RequestOptions.SYNC());
             System.out.println("Responses:\n" +rsp_list);
         }
-        channel.close();
-        disp.stop();
+        Util.close(disp,channel);
     }
 
     public Object handle(Message msg) throws Exception {
@@ -249,7 +248,7 @@ We then send 10 messages to the group and wait for all responses. The timeout
 argument is 0, which causes the call to block until all responses have been received.
         
 The `handle()` method simply prints out a message and returns a string. This will
-be sent back to the caller as a response value (in `Rsp.value`). Has the call thrown an exception,
+be sent back to the caller as a response value (in `Rsp.value`). Had the call thrown an exception,
 `Rsp.exception` would be set instead.
         
 Finally both the MessageDispatcher and channel are closed.
@@ -264,9 +263,9 @@ value(s). An application will typically create a channel first, and then create 
 RpcDispatcher on top of it. RpcDispatcher can be used to invoke remote methods
 (client role) and at the same time be called by other members (server role).
 
-Compared to MessageDispatcher, no `handle()`
-method needs to be implemented. Instead the methods to be called can be placed directly in the class using
-regular method definitions (see example below). The methods will get invoked using reflection.
+Compared to MessageDispatcher, no `handle()` method needs to be implemented. Instead the methods to be called can be
+placed directly in the class using regular method definitions (see example below).
+The methods will get invoked using reflection.
 
 To invoke remote method calls (unicast and multicast) the following methods are used:
 
@@ -275,54 +274,50 @@ To invoke remote method calls (unicast and multicast) the following methods are 
 ----
 
 public <T> RspList<T>
-       callRemoteMethods(Collection<Address> dests,
-                         String method_name,
-                         Object[] args,
-                         Class[] types,
-                         RequestOptions options) throws Exception;
+       callRemoteMethods(Collection<Address> dests, String method_name, Object[] args,
+                         Class[] types, RequestOptions options) throws Exception;
 public <T> RspList<T>
-       callRemoteMethods(Collection<Address> dests,
-                         MethodCall method_call,
-                         RequestOptions options) throws Exception;
-public <T> NotifyingFuture<RspList<T>>
-       callRemoteMethodsWithFuture(Collection<Address> dests,
-                                   MethodCall method_call,
+       callRemoteMethods(Collection<Address> dests, MethodCall method_call,
+                         RequestOptions opts) throws Exception;
+
+public <T> CompletableFuture<RspList<T>>
+       callRemoteMethodsWithFuture(Collection<Address> dests, MethodCall method_call,
                                    RequestOptions options) throws Exception;
-public <T> T callRemoteMethod(Address dest,
-                              String method_name,
-                              Object[] args,
-                              Class[] types,
-                              RequestOptions options) throws Exception;
-public <T> T callRemoteMethod(Address dest,
-                              MethodCall call,
-                              RequestOptions options) throws Exception;
-public <T> NotifyingFuture<T>
+
+public <T> T
+       callRemoteMethod(Address dest, String meth, Object[] args, Class[] types,
+                        RequestOptions opts) throws Exception;
+
+public <T> T
+       callRemoteMethod(Address dest,
+                        MethodCall call,
+                        RequestOptions options) throws Exception;
+
+public <T> CompletableFuture<T>
        callRemoteMethodWithFuture(Address dest,
                                   MethodCall call,
-                                  RequestOptions options) throws Exception;
-    
+                                  RequestOptions opts) throws Exception
 ----
 
 The family of `callRemoteMethods()` methods is invoked with a list of receiver
 addresses. If null, the method will be invoked in all cluster members (including the sender). Each call takes
-the target members to invoke it on (`null` mean invoke on all cluster members), a method and a `RequestOption`.
+the target members to invoke it on (`null` mean invoke on all cluster members), a method and a `RequestOptions` instance.
 
 The method can be given as (1) the method name, (2) the arguments and (3) the argument types, or a
 MethodCall (containing a `java.lang.reflect.Method` and argument) can be given instead.
 
 As with MessageDispatcher, a `RspList` or a future to a RspList is returned.
 
-The family of `callRemoteMethod()` methods takes almost the same parameters, except
-that there is only one destination address instead of a list. If the dest
-argument is null, the call will fail.
+The family of `callRemoteMethod()` methods takes almost the same parameters, except that there is only one destination
+address instead of a list. If the dest argument is null, the call will fail.
 
-The `callRemoteMethod()` calls return the actual result (or type T), or throw an
+The `callRemoteMethod()` calls return the actual result (of type T), or throw an
 exception if the method threw an exception on the target member.
 
 Java's Reflection API is used to find the correct method in the target member according to the method name and
 number and types of supplied arguments. There is a runtime exception if a method cannot be resolved.
 
-Note that we could also use method IDs and the `MethodLookup` interface to resolve
+As an alternative, we can use method IDs and the `MethodLookup` interface to resolve
 methods, which is faster and has every RPC carry less data across the wire. To see how this is done,
 have a look at some of the MethodLookup implementations, e.g. in RpcDispatcherSpeedTest.
       
@@ -338,7 +333,7 @@ The code below shows an example of using RpcDispatcher:
 
 public class RpcDispatcherTest {
     JChannel           channel;
-    RpcDispatcher      disp;
+    RpcDispatcher disp;
     RspList            rsp_list;
     String             props; // set by application
 
@@ -355,18 +350,11 @@ public class RpcDispatcherTest {
 
         for(int i=0; i < 10; i++) {
             Util.sleep(100);
-            rsp_list=disp.callRemoteMethods(null,
-                                            "print",
-                                            new Object[]{i},
-                                            new Class[]{int.class},
-                                            opts);
-            // Alternative: use a (prefabricated) MethodCall:
-            // call.setArgs(i);
-            // rsp_list=disp.callRemoteMethods(null, call, opts);
+            call.setArgs(i);
+            rsp_list=disp.callRemoteMethods(null, call, opts);
             System.out.println("Responses: " + rsp_list);
         }
-        channel.close();
-        disp.stop();
+        Util.close(disp, channel);
     }
 
     public static void main(String[] args) throws Exception {
@@ -375,56 +363,51 @@ public class RpcDispatcherTest {
 }
 ----
 
-Class RpcDispatcher defines method `print()` which will be
-called subsequently. The entry point `start()` creates a channel and an
-RpcDispatcher which is layered on top. Method
-`callRemoteMethods()` then invokes the remote `print()`
+Class RpcDispatcher defines method `print()` which will be called subsequently. The entry point `start()` creates a
+channel and an RpcDispatcher which is layered on top. Method `callRemoteMethods()` then invokes the remote `print()`
 in all cluster members (also in the caller). When all responses have been received, the call returns
 and the responses are printed.
-        
 
 As can be seen, the RpcDispatcher building block reduces the amount of code that
 needs to be written to implement RPC-based group communication applications by providing a higher
 abstraction level between the application and the primitive channels.
         
 
-[[NotifyingFuture]]
+[[CompleteableFuture]]
 ===== Asynchronous calls with futures
 
-When invoking a synchronous call, the calling thread is blocked until the response (or responses) has
-been received.
+When invoking a synchronous call, the calling thread is blocked until the response (or responses) has been received.
 
-A _Future_ allows a caller to return immediately and grab the result(s) later. In
-2.9, two new methods, which return futures, have been added to RpcDispatcher:
+A _Future_ allows a caller to return immediately and grab the result(s) later. The methods which return futures are:
 
 
 [source,java]
 ----
-public NotifyingFuture<RspList>
+public <T> CompletableFuture<RspList<T>>
        callRemoteMethodsWithFuture(Collection<Address> dests,
                                    MethodCall method_call,
-                                   RequestOptions options) throws Exception;
-public <T> NotifyingFuture<T>
+                                   RequestOptions options) throws Exceptio;
+public <T> CompleteableFuture<T>
        callRemoteMethodWithFuture(Address dest,
                                   MethodCall call,
                                   RequestOptions options) throws Exception;
 ----
 
-A `NotifyingFuture` extends `java.util.concurrent.Future`, with its regular methods such as `isDone()`,
-`get()` and `cancel()`. NotifyingFuture adds `setListener<FutureListener>` to get notified when
-the result is available. This is shown in the following code:
+A `CompleteableFuture` extends `java.util.concurrent.Future`, with its regular methods such as `isDone()`,
+`get()` and `cancel()`. CompleteableFuture also allows to install some code that is run when the future is done.
+This is shown in the following code:
             
 [source,java]
 ----
-
-NotifyingFuture<RspList> future=dispatcher.callRemoteMethodsWithFuture(...);
-future.setListener(new FutureListener() {
-    void futureDone(Future<T> future) {
-        System.out.println("result is " + future.get());
-    }
+CompleteableFuture<RspList<Integer>> future=dispatcher.callRemoteMethodsWithFuture(...);
+future.whenComplete((result,ex) -> {
+    System.out.printf("result=%d\n", result);
 });
-            
 ----
+
+Here, the result (an int) is printed to stdout when available. Note that we could also have received an exception
+instead of a result, in which case argument `ex` would have carried the exception.
+
 
 [[RspFilter]]
 ==== Response filters
@@ -508,16 +491,19 @@ WARNING: If we have a RspFilter which doesn't terminate the call even if respons
 === Asynchronous invocation in MessageDispatcher and RpcDispatcher
 
 By default, a message received by a MessageDispatcher or RpcDispatcher is dispatched into application code
-by calling method handle from RequestHandler:
+by calling method handle() (1) of the RequestHandler interface:
 
 [source,java]
 ----
 public interface RequestHandler {
-    Object handle(Message msg) throws Exception;
+    Object handle(Message msg) throws Exception;   // <1>
+    default void handle(Message request, Response response) throws Exception {
+        throw new UnsupportedOperationException(); // <2>
+    }
 }
 ----
 
-In the case of RpcDispatcher, the `handle()` method converts the message's contents into a method call,
+In the case of RpcDispatcher, the `handle()` method (1) converts the message's contents into a method call,
 invokes the method against the target object and returns the result (or throws an exception). The return value
 of `handle()` is then sent back to the sender of the message.
         
@@ -529,32 +515,26 @@ If the invocation takes a while, e.g. because locks are acquired or the applicat
 the current thread is busy, another thread will be used for a different request message. This can quickly
 lead to the thread pool being exhausted or many messages getting queued if the pool has an associated queue.
         
-Therefore a new way of dispatching messages to the application was devised; the asynchronous invocation API:
-
-[source,java]
-----
-public interface AsyncRequestHandler extends RequestHandler {
-    void handle(Message request, Response response) throws Exception;
-}
-----
-
-Extending `RequestHandler`, interface `AsyncRequestHandler` adds an additional method taking a request message
-and a `Response` object. The request message contains the same information as before (e.g. a method call plus
-args). The `Response` argument is used to send a reply (if needed) at a later time, when processing is done.
+Therefore a new way of dispatching messages to the application was devised; the asynchronous invocation API. Method
+`handle(Request,Response`) (2) takes a request message and a `Response` object.The request message contains the same
+information as before (e.g. a method call plus args). The `Response` argument is used to send a reply (if needed) at
+a later time, when processing is done.
         
 [source,java]
 ----
 
 public interface Response {
     void send(Object reply, boolean is_exception);
+    void send(Message reply, boolean is_exception);
 }
-        
 ----
 
-Response encapsulates information about the request (e.g. request ID and sender), and has method `reply()` to
+`Response` encapsulates information about the request (e.g. request ID and sender), and has method `reply()` to
 send a response. The `is_exception` parameter can be set to true if the reply is actually an exception, e.g.
 that was thrown when `handle()` ran application code.
-        
+
+The second method takes a Message which needs to carry the serialized reply in its payload. This method can be used
+to control the type of message that's sent out, ie. by setting flags, adding headers and so on.
 
 The advantage of the new API is that it can, but doesn't have to, be used asynchronously. The default
 implementation still uses the synchronous invocation style:
@@ -574,7 +554,8 @@ subsequently sent back to the sender of the request message.
 However, an application could subclass MessageDispatcher or RpcDispatcher (as done in Infinispan), or it
 could set a custom request handler via `MessageDispatcher.setRequestHandler()`, and implement `handle()` by
 dispatching the processing to a thread from a thread pool. The thread which guided the request message from
-the network up to this point would be therefore immediately released and could be used for other messages.
+the network up to this point would be therefore immediately released and could be used to process other messages.
+
 The response would be sent whenever the invocation of application code is done, and thus the thread from
 the thread pool would not be blocked on I/O, trying to acquire locks or anything else that blocks in
 application code.
@@ -600,8 +581,6 @@ different (unrelated) web sessions to any available thread from the pool, but qu
 session, and processes those by the same thread, to provide ordering of updates to the same session. This
 would speed up overall processing, as updates to a web session 1 on A don't have to wait until all
 updates to an unrelated web session 2 on A have been processed.
-
-This is similar to what the <<SCOPE>> protocol tried to achieve.
 
 NOTE: The asynchronous invocation API was added in JGroups 3.3.
         
@@ -699,8 +678,7 @@ a given lock. Example: thread T1 locks "lock", but thread T2 can unlock it. This
 JGroups includes a demo (`org.jgroups.demos.LockServiceDemo`), which can be used to interactively experiment
 with distributed locks. `LockServiceDemo -h` dumps all command line options.
         
-Currently (Jan 2011), there are 2 protocols which provide locking:
-<<PEER_LOCK>> (deprecated) and <<CENTRAL_LOCK>> (recommended).
+There is one protocol which provides locking: <<CENTRAL_LOCK>>.
 
 Note that the locking protocol has to be placed at or towards the top of the stack (close to the channel), because it
 requires reliable unicasts and multicasts (e.g. provided by `UNICAST3` and `NAKACK2`).
@@ -850,7 +828,7 @@ experiment with a distributed sort algorithm and performance.  This is for demon
 performance should not be assumed to be better than local.
 `ExecutionServiceDemo -h` dumps all command line options.
         
-Currently (July 2011), there is one protocol which provide executions:
+There is one protocol which provide executions:
 <<CENTRAL_EXECUTOR>>. The executing protocol has to be placed at or
 towards the top of the stack (close to the channel).
         

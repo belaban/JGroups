@@ -19,8 +19,6 @@ import java.util.*;
  * Iterates over unsupported and experimental classes and creates tables listing those classes.
  * These tables are in turn then merged into asciidoc.
  *
- * todo: we should probably change the name of this class to PropertiesToAsciidoc
- * 
  * @author Vladimir Blagojevic
  * @author Bela Ban
  * 

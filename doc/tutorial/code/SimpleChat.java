@@ -11,7 +11,7 @@ import java.util.LinkedList;
 public class SimpleChat extends ReceiverAdapter {
     JChannel channel;
     String user_name=System.getProperty("user.name", "n/a");
-    final List<String> state=new LinkedList<String>();
+    final List<String> state=new LinkedList<>();
 
     public void viewAccepted(View new_view) {
         System.out.println("** view: " + new_view);
@@ -33,21 +33,18 @@ public class SimpleChat extends ReceiverAdapter {
 
     @SuppressWarnings("unchecked")
     public void setState(InputStream input) throws Exception {
-        List<String> list=(List<String>)Util.objectFromStream(new DataInputStream(input));
+        List<String> list=Util.objectFromStream(new DataInputStream(input));
         synchronized(state) {
             state.clear();
             state.addAll(list);
         }
         System.out.println("received state (" + list.size() + " messages in chat history):");
-        for(String str: list) {
-            System.out.println(str);
-        }
+        list.forEach(System.out::println);
     }
 
 
     private void start() throws Exception {
-        channel=new JChannel();
-        channel.setReceiver(this);
+        channel=new JChannel().setReceiver(this);
         channel.connect("ChatCluster");
         channel.getState(null, 10000);
         eventLoop();
@@ -64,7 +61,7 @@ public class SimpleChat extends ReceiverAdapter {
                     break;
                 }
                 line="[" + user_name + "] " + line;
-                Message msg=new Message(null, null, line);
+                Message msg=new Message(null, line);
                 channel.send(msg);
             }
             catch(Exception e) {

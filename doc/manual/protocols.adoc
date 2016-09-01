@@ -618,9 +618,6 @@ ${PDC}
 
 === Merging after a network partition
 
-[[MERGE2]]
-==== MERGE2
-
 If a cluster gets split for some reasons (e.g. network partition), this protocol merges the subclusters
 back into one cluster. It is only run by the coordinator (the oldest member in a cluster), which
 periodically multicasts its presence and view information. If another coordinator (for the same cluster)
@@ -634,23 +631,16 @@ Following a merge, the coordinator of the merged group can shift from the typica
 of the various subgroups need to reach a common decision as to who the new coordinator is.
 In order to ensure a consistent result, each coordinator combines the addresses of all the members
 in a list and then sorts the list. The first member in the sorted list becomes the coordinator.
-The sort order is determined by how the address implements the interface. Then JGroups  compares based
+The sort order is determined by how the address implements the interface. Then JGroups compares based
 on the UUID. So, take a hypothetical case where two machines were running, with one machine running
 three separate cluster members and the other two members. If communication between the machines were cut,
 the following subgroups would form:
 +{A,B} and {C,D,E}+
-Following the merge, the new view would be: +{C,D,A,B,E}+, with C being the new
-coordinator.
+Following the merge, the new view would be: +{C,D,A,B,E}+, with C being the new coordinator.
             
-
 Note that "A", "B" and so on are just logical names, attached to UUIDs, but the actual sorting is done
                 on the actual UUIDs.
             
-${MERGE2}
-
-NOTE: `MERGE2` is deprecated and will be removed in 4.0. Users of it should switch to `MERGE3`.
-
-
 
 [[MERGE3]]
 ==== MERGE3
@@ -669,15 +659,13 @@ The merge leader then asks the senders of the inconsistent ViewIds for their ful
 it simply passes a `MERGE` event up the stack, where the merge will be handled (by `GMS`) in exactly the same
 way as if `MERGE2` has generated the `MERGE` event.
 
-The advantages of `MERGE3` compared to `MERGE2` are:
+The advantages of `MERGE3` are:
 
 * Sending of INFO messages is spread out over time, preventing message peaks which might cause
   packet loss. This is especially important in large clusters.
-* Only 1 merge should be running at any time. Competing merges, as happening with `MERGE2`, slow
-  down the merge process, and don't scale to large clusters.
-* An INFO message carries the logical name and physical address of a member. Compared to `MERGE2`,
-  this allows us to immediately send messages to newly merged members, and not have to solicit
-  this information first.
+* Only 1 merge should be running at any time. There are no competing merges going on.
+* An INFO message carries the logical name and physical address of a member. This allows members to update their
+  logical/physical address caches.
 * On the downside, `MERGE3` has constant (small) traffic by all members.
 * `MERGE3` was written for an IP multicast capable transport (`UDP`), but it also works with other
   transports (such as `TCP`), although it isn't as efficient on `TCP` as on `UDP`.
@@ -928,121 +916,53 @@ ${VERIFY_SUSPECT}
 
 === Reliable message transmission
 
-[[NAKACK]]
+[[NAKACK2]]
+==== NAKACK2
+NAKACK2 provides reliable delivery and FIFO (= First In First Out) properties for messages sent to all
+nodes in a cluster.
 
+It performs lossless and FIFO delivery of multicast messages, using negative acks. E.g. when
+receiving P:1, P:3, P:4, a receiver delivers only P:1, and asks P for retransmission of message 2,
+queuing P3-4. When P2 is finally received, the receiver will deliver P2-4 to the application.
 
-==== pbcast.NAKACK
+Reliable delivery means that no message sent by a sender will ever be lost, as all messages are numbered with sequence
+numbers (by sender) and retransmission requests are sent to the sender of a message if that sequence number is not received.
 
-NAKACK provides reliable delivery and FIFO (= First In First Out) properties for messages sent to all
-                nodes in a cluster.
-            
-
-Reliable delivery means that no message sent by a sender will ever be lost, as all messages are
-numbered with sequence numbers (by sender) and retransmission requests are sent to the sender of
-a message if that sequence number is not received.
-
-NOTE: Note that NAKACK can also be configured to send retransmission requests for M to _anyone_ in the cluster,
+NOTE: Note that NAKACK2 can also be configured to send retransmission requests for M to _anyone_ in the cluster,
      rather than only to the sender of M.
 
-
-FIFO order means that all messages from a given sender are received in exactly the order in which
-                they were sent.
-            
-
-NAKACK is a Lossless and FIFO delivery of multicast messages, using negative acks. E.g. when
-                receiving P:1, P:3, P:4, a receiver delivers only P:1, and asks P for retransmission of message 2,
-                queuing P3-4. When P2 is finally received, the receiver will deliver P2-4 to the application.
-            
-
-${NAKACK}
-
-[[NAKACK2]]
-
-
-==== NAKACK2
-
-NAKACK2 was introduced in 3.1 and is a successor to NAKACK (at some point it will replace NAKACK). It
-                has the same properties as NAKACK, but its implementation is faster and uses less memory, plus it
-                creates fewer tasks in the timer.
-            
-
-Some of the properties of NAKACK were deprecated in NAKACK2, but were not removed so people can simply
-                change from NAKACK to NAKACK2 by changing the protocol name in the config.
-            
+FIFO order means that all messages from a given sender are received in exactly the order in which they were sent.
 
 ${NAKACK2}
 
-[[UNICAST]]
 
-
-==== UNICAST
-
-UNICAST provides reliable delivery and FIFO (= First In First Out) properties for point-to-point
-                messages between one sender and one receiver.
-            
-
-Reliable delivery means that no message sent by a sender will ever be lost, as all messages are
-                numbered with sequence numbers (by sender) and retransmission requests are sent to the sender of
-                a message if that sequence number is not received.
-            
-
-FIFO order means that all messages from a given sender are received in exactly the order in which
-                they were sent.
-            
-
-UNICAST uses _positive acks_ for retransmission; sender A keeps sending
-                message M until receiver B delivers M and sends an ack(M) to A, or until B leaves the cluster or A
-                crashes.
-            
-
-Although JGroups attempts to send acks selectively, UNICAST will still see a lot of acks on the wire.
-                If this is not desired, use UNICAST2 (see <<UNICAST2>>).
-            
-
-On top of a reliable transport, such as TCP, UNICAST is not really needed. However, concurrent
-                delivery of messages from the same sender is prevented by UNICAST by acquiring a lock on the sender's
-                retransmission table, so unless concurrent delivery is desired, UNICAST should not be removed from
-                the stack even if TCP is used.
-            
-
-${UNICAST}
-
-[[UNICAST2]]
-
-
-==== UNICAST2
-
-UNICAST2 provides lossless, ordered, communication between 2 members. Contrary to UNICAST, it
-                uses _negative acks_ (similar to NAKACK) rather than positive acks. This reduces the communication
-                overhead required for sending an ack for every message.
-            
-
-Negative acks have sender A simply send messages without retransmission, and receivers never ack
-                messages, until they detect a gap: for instance, if A sends messages 1,2,4,5, then B delivers 1 and 2,
-                but queues 4 and 5 because it is missing message 3 from A. B then asks A to retransmit 3. When 3 is
-                received, messages 3, 4 and 5 can be delivered to the application.
-            
-
-Compared to a positive ack scheme as used in UNICAST, negative acks have the advantage that they generate
-                less traffic: if all messages are received in order, we never need to do retransmission.
-            
-
-${UNICAST2}
 
 [[UNICAST3]]
+==== UNICAST2
 
+UNICAST3 provides reliable delivery and FIFO (= First In First Out) properties for point-to-point
+messages between a sender and a receiver.
 
-==== UNICAST3
+Reliable delivery means that no message sent by a sender will ever be lost, as all messages are
+numbered with sequence numbers (by sender) and retransmission requests are sent to the sender of
+a message if that sequence number is not received. UNICAST3 uses a mixture of positive and negative acks (similar to
+NAKACK2). This reduces the communication overhead required for sending an ack for every message.
 
-UNICAST3 (available in 3.3) is the successor to UNICAST2, but is based on UNICAST, as it uses a
-                positive acknowledgment mechanism. However, speed wise it is similar to UNICAST2
-            
+FIFO order means that all messages from a given sender are received in exactly the order in which
+they were sent.
+
+On top of a reliable transport, such as TCP, UNICAST3 is not really needed. However, concurrent
+delivery of messages from the same sender is prevented by UNICAST3 by acquiring a lock on the sender's
+retransmission table, so unless concurrent delivery is desired, UNICAST3 should not be removed from
+the stack even if TCP is used.
 
 Details of UNICAST3's design can be found here:
-                link:$$https://github.com/belaban/JGroups/blob/master/doc/design/UNICAST3.txt$$[UNICAST3]
-            
+link:$$https://github.com/belaban/JGroups/blob/master/doc/design/UNICAST3.txt$$[UNICAST3]
 
 ${UNICAST3}
+
+
+
 
 [[RSVP]]
 
@@ -1170,53 +1090,40 @@ this problem ? There are two solutions:
 === Flow control
 
 Flow control takes care of adjusting the rate of a message sender to the rate of the slowest receiver over time.
-            If a sender continuously sends messages at a rate that is faster than the receiver(s), the receivers will
-            either queue up messages, or the messages will get discarded by the receiver(s), triggering costly
-            retransmissions. In addition, there is spurious traffic on the cluster, causing even more retransmissions.
-        
+If a sender continuously sends messages at a rate that is faster than the receiver(s), the receivers will
+either queue up messages, or the messages will get discarded by the receiver(s), triggering costly
+retransmissions. In addition, there is spurious traffic on the cluster, causing even more retransmissions.
 
 Flow control throttles the sender so the receivers are not overrun with messages.
-        
+
+This is implemented through a credit based system, where each sender has `max_credits` credits and decrements
+them whenever a message is sent. The sender blocks when the credits fall below 0, and only resumes
+sending messages when it receives a replenishment message from the receivers.
+
+The receivers maintain a table of credits for all senders and decrement the given sender's credits
+as well, when a message is received.
+
+When a sender's credits drops below a threshold, the receiver will send a replenishment message to
+the sender. The threshold is defined by `min_bytes` or `min_threshold`.
 
 Note that flow control can be bypassed by setting message flag Message.NO_FC. See <<MessageFlags>>
             for details.
-        
 
-The properties for FlowControl are shown below and can be used in
-            MFC and UFC:
+
+The properties for FlowControl are shown below and can be used in `MFC` and `UFC`:
         
 
 ${FlowControl}
 
 
-
-==== FC
-
-FC uses a credit based system, where each sender has +$$max_credits$$+ credits and decrements
-                them whenever a message is sent. The sender blocks when the credits fall below 0, and only resumes
-                sending messages when it receives a replenishment message from the receivers.
-            
-
-The receivers maintain a table of credits for all senders and decrement the given sender's credits
-                as well, when a message is received.
-            
-
-When a sender's credits drops below a threshold, the receiver will send a replenishment message to
-                the sender. The threshold is defined by +$$min_bytes$$+ or +$$min_threshold$$+.
-            
-
-${FC}
-
-
-NOTE: FC has been deprecated, use MFC and UFC instead
-
-
 ==== MFC and UFC
 
-In 2.10, FC was separated into MFC (Multicast Flow Control) and Unicast Flow Control (UFC). The reason
-                was that multicast flow control should not be impeded by unicast flow control, and vice versa. Also,
-                performance for the separate implementations could be increased, plus they can be individually omitted.
-                For example, if no unicast flow control is needed, UFC can be left out of the stack configuration.
+NOTE: Flow control is implemented with MFC (Multicast Flow Control) and Unicast Flow Control (UFC). The reason
+for 2 separate protocols (which have a common superclass `FlowControl`) is that multicast flow control should not be
+impeded by unicast flow control, and vice versa. Also, performance for the separate implementations could be increased,
+plus they can be individually omitted.
+
+For example, if no unicast flow control is needed, UFC can be left out of the stack configuration.
             
 
 [[MFC]]
@@ -1224,8 +1131,7 @@ In 2.10, FC was separated into MFC (Multicast Flow Control) and Unicast Flow Con
 
 ===== MFC
 
-MFC has currently no properties other than those inherited by
-                    FlowControl (see above).
+MFC has currently no properties other than those inherited by FlowControl (see above).
                 
 
 ${MFC}
@@ -1235,8 +1141,7 @@ ${MFC}
 
 ===== UFC
 
-UFC has currently no properties other than those inherited by
-                    FlowControl (see above).
+UFC has currently no properties other than those inherited by FlowControl (see above).
                 
 
 ${UFC}
@@ -1739,41 +1644,7 @@ COMPRESS compresses messages larger than +$$min_size$$+, and uncompresses them a
 
 ${COMPRESS}
 
-[[SCOPE]]
 
-
-==== SCOPE
-
-As discussed in <<Scopes>>, the SCOPE protocol is used to deliver updates
-                to different scopes concurrently. It has to be placed somewhere above UNICAST and NAKACK.
-            
-
-SCOPE has a separate thread pool. The reason why the default thread pool from the transport wasn't used
-                is that the default thread pool has a different purpose. For example, it can use a queue to which all
-                incoming messages are added, which would defy the purpose of concurrent delivery in SCOPE. As a matter
-                of fact, using a queue would most likely delay messages get sent up into SCOPE!
-            
-
-Also, the default pool's rejection policy might not be "run", so the SCOPE implementation would have
-                to catch rejection exceptions and engage in a retry protocol, which is complex and wastes resources.
-            
-
-The configuration of the thread pool is shown below. If you expect _concurrent_
-                messages to N _different_ scopes, then the max pool size would ideally be set
-                to N. However, in most cases, this is not necessary as (a) the messages might not be to different
-                scopes or (b) not all N scopes might get messages at the same time. So even if the max pool size is a
-                bit smaller, the cost of this is slight delays, in the sense that a message for scope Y might wait until
-                the thread processing message for scope X is available.
-            
-
-To remove unused scopes, an expiry policy is provided: expiration_time is the number of milliseconds
-                after which an idle scope is removed. An idle scope is a scope which hasn't seen any messages for
-                expiration_time milliseconds. The expiration_interval value defines the number of milliseconds at
-                which the expiry task runs. Setting both values to 0 disables expiration; it would then have to be
-                done manually (see <<Scopes>> for details).
-            
-
-${SCOPE}
 
 [[RELAY]]
 
@@ -1831,62 +1702,28 @@ ${RATE_LIMITER}
 [[LockingProtocols]]
 ==== Locking protocols
 
-There are currently 2 locking protocols: org.jgroups.protocols.CENTRAL_LOCK and
-                org.jgroups.protocols.PEER_LOCK. Both extend Locking, which has the
-                following properties:
-            
+The locking protocol is org.jgroups.protocols.CENTRAL_LOCK:
 
 ${Locking}
 
 [[CENTRAL_LOCK]]
-
-
 ===== CENTRAL_LOCK
 
-CENTRAL_LOCK has the current coordinator of a cluster grants locks, so every node has to communicate
-                    with the coordinator to acquire or release a lock. Lock requests by different nodes for the same lock
-                    are processed in the order in which they are received.
-                
+CENTRAL_LOCK has the current coordinator of a cluster grants locks, so every node has to communicate with the
+coordinator to acquire or release a lock. Lock requests by different nodes for the same lock are processed
+in the order in which they are received.
 
-A coordinator maintains a lock table. To prevent losing the knowledge of who holds which locks, the
-                    coordinator can push lock information to a number of backups defined by num_backups. If num_backups
-                    is 0, no replication of lock information happens. If num_backups is greater than 0, then the coordinator
-                    pushes information about acquired and released locks to all backup nodes. Topology changes might
-                    create new backup nodes, and lock information is pushed to those on becoming a new backup node.
-                
+A coordinator maintains a lock table. To prevent losing the knowledge of who holds which locks, the coordinator can push
+lock information to a number of backups defined by num_backups. If num_backups is 0, no replication of lock information
+happens. If num_backups is greater than 0, then the coordinator pushes information about acquired and released locks to
+all backup nodes. Topology changes might create new backup nodes, and lock information is pushed to those on
+becoming a new backup node.
 
-The advantage of CENTRAL_LOCK is that all lock requests are granted in the same order across
-                    the cluster, which is not the case with PEER_LOCK.
-                
+The advantage of CENTRAL_LOCK is that all lock requests are granted in the same order across the cluster.
 
 ${CENTRAL_LOCK}
 
-[[PEER_LOCK]]
 
-
-===== PEER_LOCK
-
-PEER_LOCK acquires a lock by contacting all cluster nodes, and lock acquisition is only successful
-                    if all non-faulty cluster nodes (peers) grant it.
-                
-
-Unless a total order configuration is used (e.g. org.jgroups.protocols.SEQUENCER based), lock
-                    requests for the same resource from different senders may be received in different order, so
-                    deadlocks can occur. Example:
-                   
-* Nodes A and B
-* A and B call lock(X) at the same time
-* A receives L(X,A) followed by L(X,B): locks X(A), queues L(X,B)
-* B receives L(X,B) followed by L(X,A): locks X(B), queues L(X,A)
-                
-
-To acquire a lock, we need lock grants from both A and B, but this will never happen here.
-                    To fix this, either add SEQUENCER to the configuration, so that all lock requests are received in
-                    the same global order at both A and B, or use
-                    java.util.concurrent.locks.Lock.tryLock(long,javaTimeUnit) with retries if a lock cannot be acquired.
-                
-
-${PEER_LOCK}
 
 [[CENTRAL_EXECUTOR]]
 

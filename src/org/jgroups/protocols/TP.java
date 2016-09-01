@@ -663,7 +663,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public boolean isMulticastCapable() {return supportsMulticasting();}
 
     public String toString() {
-        return local_addr != null? name + "(local address: " + local_addr + ')' : name;
+        return local_addr != null? getName() + "(local address: " + local_addr + ')' : getName();
     }
 
     @ManagedAttribute(description="The address of the channel")

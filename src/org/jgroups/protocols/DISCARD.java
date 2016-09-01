@@ -21,7 +21,6 @@ import java.util.List;
  * of all up messages to be discarded. Setting 'down' or 'up' to 0 causes no loss, whereas 1 discards
  * all messages (not very useful).
  */
-@Unsupported
 @MBean(description="Discards messages")
 public class DISCARD extends Protocol {
     @Property

@@ -1,14 +1,21 @@
 
 == Installation and configuration
 
-The installation refers to version 3.x of JGroups. Refer to the installation instructions (INSTALL.html) that are
-shipped with the JGroups version you downloaded for details.
+The installation refers to version 4.x of JGroups.
     
 
 The JGroups JAR can be downloaded from http://sourceforge.net/projects/javagroups/files/JGroups[SourceForge].
-It is named `jgroups-x.y.z`, where x=major, y=minor and z=patch version, for example `jgroups-3.0.0.Final.jar`.
+It is named `jgroups-x.y.z`, where x=major, y=minor and z=patch version, for example `jgroups-4.0.0.Final.jar`.
 The JAR is all that's needed to get started using JGroups; it contains all core, demo and (selected) test
 classes, the sample XML configuration files and the schema.
+
+Alternatively, Maven / Gradle / Ivy etc can be used:
+
+```
+groupId: org.jgroups
+artifactId: jgroups
+version: 4.0.0.Final (for example)
+```
     
 The source code is hosted on https://github.com/belaban/jgroups[GitHub]. To build JGroups,
 ANT is currently used. In <<BuildingJGroups>> we'll show how to build JGroups from source.
@@ -19,7 +26,7 @@ ANT is currently used. In <<BuildingJGroups>> we'll show how to build JGroups fr
 
 * JGroups up to (and including) 3.5.0.Final requires JDK 6.
 * JGroups 3.6.x to (excluding) 4.0 requires JDK 7.
-* JGroups 4.0 will require JDK 8.
+* JGroups 4.x requires JDK 8.
 * There is no JNI code present so JGroups should run on all platforms.
 * Logging: by default, JGroups tries to use log4j2. If the classes are not found on the classpath, it
   resorts to log4j, and if still not found, it falls back to java.util.logging logger.
@@ -150,7 +157,7 @@ You should see the following output (more or less) if the class is found:
 ----
 $  java org.jgroups.Version
 
-   Version:      3.5.0.Final
+   Version:      4.0.0.Final
 ----
 
 
@@ -218,45 +225,36 @@ the internal network (e.g. `eth1`).
 [[ItDoesntWork]]
 === It doesn't work!
 
-NOTE: The section below refers to JGroups versions prior to 3.5. In 3.5 and later versions, `mcast` (see below) should be used.
+Make sure your machine is set up correctly for IP multicasting. There is a test program `mcast` which can be used to
+check if IP multicasting works.
 
-Make sure your machine is set up correctly for IP multicasting. There are 2 test programs that can be used to detect
-this: McastReceiverTest and McastSenderTest. Start `McastReceiverTest`, e.g.
+The options are:
 
+ `-bind_addr`:: the network interface to bind to for the receiver. If null, `mcast` will join all
+                available interfaces
+ `-port`:: the local port to use. If 0, an ephemeral port will be picked
+ `-mcast_addr`:: the multicast address to join
+ `-mcast_port`:: the port to listen on for multicasts
+ `-ttl`:: The TTL (for sending of packets)
+
+Start multiple instances of mcast:
 
 ----
-java org.jgroups.tests.McastReceiverTest
+java -Djava.net.preferIPv4Stack=true org.jgroups.tests.mcast
 ----
 
-Then start `McastSenderTest`:
-
-----
-java org.jgroups.tests.McastSenderTest
-----
+Note that java.net.preferIpv4Stack forces IPv4. If omitted, IPv6 will be used.
 
 If you want to bind to a specific network interface card (NIC), use `-bind_addr 192.168.0.2`, where `192.168.0.2`
 is the IP address of the NIC to which you want to bind. Use this parameter in both sender and receiver.
 
-You should be able to type in the McastSenderTest window and
-see the output in the McastReceiverTest. If not, try to use `-ttl 32` in the sender. If this still fails,
-consult a system administrator to help you setup IP multicast correctly. If you _are_
-the system administrator, look for another job :-)
+You should be able to type in the mcast window and see the output in all other instance. If not, try to use `-ttl 32`
+in the sender. If this still fails, consult a system administrator to help you setup IP multicast correctly. If you
+_are_ the system administrator, look for another job :-)
 
 Other means of getting help: there is a public forum on http://jira.jboss.com/jira/browse/JGRP[JIRA]
 for questions. Also consider subscribing to the javagroups-users mailing list to discuss such and other problems.
 
-==== mcast
-
-Instead of `McastSender` and `McastReceiver`, a single program `mcast` can be used. Start multiple instances of it.
-The options are:
-
-`-bind_addr`:: the network interface to bind to for the receiver. If null, `mcast` will join all
-               available interfaces
-`-port`:: the local port to use. If 0, an ephemeral port will be picked
-`-mcast_addr`:: the multicast address to join
-`-mcast_port`:: the port to listen on for multicasts
-`-ttl`:: The TTL (for sending of packets)
-        
 
 [[IPv6Issues]]
 === Problems with IPv6

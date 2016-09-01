@@ -4,8 +4,8 @@ package org.jgroups.stack;
 
 
 import org.jgroups.Event;
-import org.jgroups.Message;
 import org.jgroups.JChannel;
+import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
@@ -53,12 +53,6 @@ public abstract class Protocol {
     @Property(description="Enables ergonomics: dynamically find the best values for properties at runtime")
     protected boolean          ergonomics=true;
 
-    /** The name of the protocol. Is by default set to the protocol's classname. This property should rarely need to
-     * be set, e.g. only in cases where we want to create more than 1 protocol of the same class in the same stack */
-    @Property(name="name",description="Give the protocol a different name if needed so we can have multiple " +
-            "instances of it in the same stack (also change ID)",writable=false)
-    protected String           name=getClass().getSimpleName();
-
     @Property(description="Fully qualified name of a class implementing ProtocolHook, will be called after creation of " +
       "the protocol (before init())",writable=false)
     protected String           after_creation_hook;
@@ -87,7 +81,7 @@ public abstract class Protocol {
     public ProtocolStack           getProtocolStack()                {return stack;}
     public boolean                 statsEnabled()                    {return stats;}
     public void                    enableStats(boolean flag)         {stats=flag;}
-    public String                  getName()                         {return name;}
+    public String                  getName()                         {return getClass().getSimpleName();}
     public short                   getId()                           {return id;}
     public <T extends Protocol> T  setId(short id)                   {this.id=id; return (T)this;}
     public <T extends Protocol> T  getUpProtocol()                   {return (T)up_prot;}
@@ -284,9 +278,6 @@ public abstract class Protocol {
      *                      ProtocolStack to fail, so the channel constructor will throw an exception
      */
     public void init() throws Exception {
-        short real_id=ClassConfigurator.getProtocolId(getClass());
-        if(real_id > 0 && id != real_id)
-            name=name+"-"+id;
     }
 
     /**

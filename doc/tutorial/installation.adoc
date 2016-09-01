@@ -5,23 +5,32 @@
 
 === Download
 JGroups can be downloaded http://sourceforge.net/projects/javagroups/files/JGroups[here].
-For this tutorial, I'm using the binary version of JGroups 3.0, so download one of the jgroups-3.x.y.jar
-files (e.g. jgroups-3.0.0.Final.jar).
+For this tutorial, I'm using the binary version of JGroups 4.0, so download one of the jgroups-4.x.y.jar
+files (e.g. jgroups-4.0.0.Final.jar).
         
 
 This JAR file contains:
             
 * JGroups core, demo and (selected) test classes
-* INSTALL.html: detailed configuration instructions plus trouble shooting
 * Sample configuration files, e.g. udp.xml or tcp.xml
 
 
-NOTE: JGroups 3.0 requires JDK 6 or higher.
+NOTE: JGroups 4.x requires JDK 8
+
+
+==== Maven
+Maven / Gradle / Ivy etc can be used to include JGroups:
+
+```
+groupId: org.jgroups
+artifactId: jgroups
+version: 4.0.0.Final (for example)
+```
 
 
 
 === Configuration
-Add jgroups-3.x.y.jar to your classpath. If you use the log4j logging system, you also have to add log4j.jar
+Add jgroups-4.x.y.jar to your classpath. If you use the log4j2 logging system, you also have to add log4j2.jar
 (this is not necessary if you use the JDK logging system).
         
 
@@ -37,14 +46,14 @@ java org.jgroups.Version
 or
 
 ----
-java -jar jgroups-3.x.y.jar
+java -jar jgroups-4.x.y.jar
 ----
 
 You should see the following output (more or less) if the class is found:
 
 ----
 $  java org.jgroups.Version
-   Version:      3.5.0.Final
+   Version:      4.0.0.Final
 ----
 
 

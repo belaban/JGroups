@@ -181,9 +181,6 @@ public class ProtocolConfigurationTest {
 		List<String> getList() {
 			return list ;
 		}
-		public String getName() {
-			return name ;
-		}
 		// do nothing
 		public Object down(Event evt) {
 			return down_prot.down(evt);
@@ -203,9 +200,6 @@ public class ProtocolConfigurationTest {
 		}
 		@Property(name="c") 
 		public void setC(int c) {
-		}
-		public String getName() {
-			return name ;
 		}
 		// do nothing
 		public Object down(Event evt) {
@@ -241,9 +235,6 @@ public class ProtocolConfigurationTest {
 		}
 		public InetAddress getC() {
 			return c ;
-		}
-		public String getName() {
-			return name ;
 		}
 		// do nothing
 		public Object down(Event evt) {
@@ -291,9 +282,6 @@ public class ProtocolConfigurationTest {
 			return ipAddressListMethod ;
 		}
 		
-		public String getName() {
-			return name ;
-		}
 		// do nothing
 		public Object down(Event evt) {
 			return down_prot.down(evt);
@@ -319,9 +307,6 @@ public class ProtocolConfigurationTest {
 	        return retval;
 	    }
 		
-		public String getName() {
-			return name ;
-		}
 
 		// do nothing
 		public Object up(Event evt) {

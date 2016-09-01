@@ -70,7 +70,6 @@ public class SASL extends Protocol {
     private SaslClientFactory saslClientFactory;
 
     public SASL() {
-        name = this.getClass().getSimpleName();
     }
 
     @Property(name = "client_callback_handler_class")

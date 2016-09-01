@@ -25,30 +25,23 @@ The architecture of JGroups is shown in <<ArchitectureFig>>.
 .The architecture of JGroups
 image::images/Architecture.png["Architecture of JGroups,align=left,valign=top]
 
-It consists of 3 parts: (1) the Channel used by
-application programmers to build reliable group communication
-applications, (2) the building blocks, which are layered on top of
-the channel and provide a higher abstraction level and (3) the
-protocol stack, which implements the properties specified for a
-given channel.
-    
+It consists of 3 parts: (1) the Channel used by application programmers to build reliable group communication
+applications, (2) the building blocks, which are layered on top of the channel and provide a higher abstraction level
+and (3) the protocol stack, which implements the properties specified for a given channel.
 
 This document describes how to install and _use_ JGroups, ie. the Channel API and the
 building blocks. The targeted audience is application programmers who want to use JGroups to
 build reliable distributed programs that need group communication.
     
 
-A channel is connected to a protocol stack. Whenever the
-application sends a message, the channel passes it on to the
-protocol stack, which passes it to the topmost protocol. The
-protocol processes the message and the passes it down to the protocol
-below it. Thus the message is handed from protocol to protocol until
-the bottom (transport) protocol puts it on the network. The same happens in the
-reverse direction: the transport protocol listens for
-messages on the network. When a message is received it will be
-handed up the protocol stack until it reaches the channel. The
-channel then invokes the receive() callback in the application to deliver the message.
-    
+A channel is connected to a protocol stack. Whenever the application sends a message, the channel passes it on to the
+protocol stack, which passes it to the topmost protocol. The protocol processes the message and the passes it down to
+the protocol below it. Thus the message is handed from protocol to protocol until the bottom (transport) protocol puts
+it on the network.
+
+The same happens in the reverse direction: the transport protocol listens for messages on the network. When a message is
+received it will be handed up the protocol stack until it reaches the channel. The channel then invokes the receive()
+callback in the application to deliver the message.
 
 When an application connects to the channel, the protocol stack will be started, and when it disconnects the
 stack will be stopped. When the channel is closed, the stack will be destroyed, releasing its resources.

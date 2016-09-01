@@ -26,63 +26,7 @@ might use a simple UDP channel, possibly including a fragmentation layer, but no
 packets is preferred to costly retransmission).
         
 
-[[SharedTransport]]
-=== Sharing a transport between multiple channels in a JVM
 
-A transport protocol (UDP, TCP) has all the resources of a stack: the default thread pool, the OOB thread
-pool and the timer thread pool. If we run multiple channels in the same JVM, instead of creating 4
-separate stacks with a separate transport each, we can create the transport protocol as a
-_singleton_ protocol, shared by all 4 stacks.
-
-If those transports happen to be the same (all 4 channels use UDP, for example), then we can share them and
-only create 1 instance of UDP. That transport instance is created and started only once; when the first
-channel is created, and is deleted when the last channel is closed.
-        
-If we have 4 channels inside of a JVM (as is the case in an application server such as JBoss), then we
-have 12 separate thread pools (3 per transport, 4 transports). Sharing the transport reduces this to 3.
-
-Each channel created over a shared transport has to join a different cluster. An exception will be thrown
-if a channel sharing a transport tries to connect to a cluster to which another channel over the same
-transport is already connected.
-
-This is needed to multiplex and de-multiplex messages between the shared transport and the different stacks
-running over it; when we have 3 channels (C1 connected to "cluster-1", C2 connected to "cluster-2" and C3
-connected to "cluster-3") sending messages over the same shared transport, the cluster name
-with which the channel connected is used to multiplex messages over the shared transport: a header with
-the cluster name ("cluster-1") is added when C1 sends a message.
-
-When a message with a header of "cluster-1" is received by the shared transport, it is used to demultiplex
-the message and dispatch it to the right channel (C1 in this example) for processing.
-
-How channels can share a single transport:
-
-[[SharedTransportFig]]
-image::./images/SharedTransport.png[A shared transport,width="60%"]
-
-Here we see 4 channels which share 2 transports. Note that first 3 channels which share transport
-"tp_one" have the same protocols on top of the shared transport. This is _not_
-required; the protocols above "tp_one" could be different for each of the 3 channels as long
-as all applications residing on the same shared transport have the same requirements for the transport's
-configuration.
-
-The "tp_two" transport is used by the application on the right side.
-
-Note that the physical address of a shared channel is the same for all connected channels, so all
-applications sharing the first transport have physical address `192.168.2.5:35181`.
-
-To use shared transports, all we need to do is to add a property "singleton_name" to the transport
-configuration. All channels with the same singleton name will be shared:
-
-[source,xml]
-----
-<UDP
-    singleton_name="tp_one"
-/>
-----
-
-All channels using this configuration will now shared transport "tp_one". The channel on the right will
-have a different configuration, with singleton_name="tp_two".
-        
 
 
 === Transport protocols
@@ -98,24 +42,19 @@ A typical protocol stack configuration using UDP is:
 
 [source,xml]
 ----
-
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
-         ucast_recv_buf_size="20M"
+         ucast_recv_buf_size="5M"
          ucast_send_buf_size="640K"
-         mcast_recv_buf_size="25M"
+         mcast_recv_buf_size="5M"
          mcast_send_buf_size="640K"
-         loopback="true"
-         discard_incompatible_packets="true"
          max_bundle_size="64K"
-         max_bundle_timeout="30"
          ip_ttl="${jgroups.udp.ip_ttl:2}"
          enable_diagnostics="true"
 
-         thread_pool.enabled="true"
          thread_pool.min_threads="2"
          thread_pool.max_threads="8"
          thread_pool.keep_alive_time="5000"
@@ -123,15 +62,13 @@ A typical protocol stack configuration using UDP is:
          thread_pool.queue_max_size="10000"
          thread_pool.rejection_policy="discard"
 
-         oob_thread_pool.enabled="true"
          oob_thread_pool.min_threads="1"
          oob_thread_pool.max_threads="8"
          oob_thread_pool.keep_alive_time="5000"
          oob_thread_pool.queue_enabled="false"
-         oob_thread_pool.rejection_policy="Run"/>
+         oob_thread_pool.rejection_policy="discard"/>
 
-    <PING timeout="2000"
-            num_initial_members="3"/>
+    <PING />
     <MERGE3 max_interval="30000"
             min_interval="10000"/>
     <FD_SOCK/>
@@ -139,12 +76,11 @@ A typical protocol stack configuration using UDP is:
     <VERIFY_SUSPECT timeout="1500"  />
     <BARRIER />
     <pbcast.NAKACK2 use_mcast_xmit="true"
-                   retransmit_timeout="300,600,1200"
                    discard_delivered_msgs="true"/>
-    <UNICAST3 timeout="300,600,1200"/>
+    <UNICAST3 />
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="4M"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="3000"
+    <pbcast.GMS print_local_addr="true" join_timeout="2000"
                 view_bundling="true"/>
     <UFC max_credits="2M"
          min_threshold="0.4"/>
@@ -153,7 +89,6 @@ A typical protocol stack configuration using UDP is:
     <FRAG2 frag_size="60K"  />
     <pbcast.STATE_TRANSFER />
 </config>
-        
 ----
 
 In a nutshell the properties of the protocols are:
@@ -229,20 +164,24 @@ STATE_TRANSFER::
 [[MessageBundling]]
 ==== Message bundling
 
-Message bundling is beneficial when sending many small messages; it queues them until they have accumulated
-                a certain size, or until a timeout has elapsed. Then, the queued messages are assembled into a larger
-                message, and that message is then sent. At the receiver, the large message is disassembled and the
-                smaller messages are sent up the stack.
-            
+Message bundling is beneficial when sending many small messages; they are queued until a threshold (number of bytes)
+has been exceeded. Then, the queued messages are assembled into a message batch (see <<MessageBatch>>) and the batch
+is sent.
+
+At the receiver, the message batch is passed up the stack, so protocols and/or the application can process multiple
+messages in one shot.
 
 When sending many smaller messages, the ratio between payload and message headers might be small; say we
-                send a "hello" string: the payload here is 7 bytes, whereas the addresses and headers (depending on the
-                stack configuration) might be 30 bytes. However, if we bundle (say) 100 messages, then the payload of
-                the large message is 700 bytes, but the header is still 30 bytes. Thus, we're able to send more
-                actual data across the wire with one large message than many smaller ones.
-            
+send a "hello" string: the payload here is 7 bytes, whereas the addresses and headers (depending on the
+stack configuration) might be 30 bytes. However, if we bundle (say) 100 messages, then the payload of
+the large message is 700 bytes, but the header is still 30 bytes. Thus, we're able to send more
+actual data across the wire with a message batch than with many small messages.
 
-Message bundling is conceptually similar to TCP's Nagling algorithm.
+NOTE: A message batch of 100 messages contains the sender's and destination address and the cluster name only _once_.
+      If the cluster name is 10 bytes, then we save roughly
+      `99*10 + 99 * 18 *2` (assuming non-null destination addresses and IPv4) = `4500` bytes.
+            
+Message bundling/batching is conceptually similar to TCP's Nagle algorithm.
             
 
 A sample configuration is shown below:
@@ -250,108 +189,49 @@ A sample configuration is shown below:
 
 [source,xml]
 ----
-
-<UDP
-    enable_bundling="true"
-    max_bundle_size="64K"
-    max_bundle_timeout="30"
-/>
-            
+<UDP max_bundle_size="64K"/>
 ----
 
-Here, bundling is enabled (the default). The max accumulated size is 64'000 bytes and we wait for
-                30 ms max. If at time T0, we're sending 10 smaller messages with an accumulated size of 2'000 bytes, but
-                then send no more messages, then the timeout will kick in after 30 ms and the messages will get packed
-                into a large message M and M will be sent. If we send 1000 messages of 100 bytes each, then - after
-                exceeding 64'000 bytes (after ca. 64 messages) - we'll send the large message, and this might have taken
-                only 3 ms.
+Here, bundling is enabled (the default). The max accumulated size is 64'000 bytes.
+
+If at time T0, we're sending 10 smaller messages with an accumulated size of 2'000 bytes, but
+then send no more messages, then a message batch of 10 will be sent immediately after the 10th message has been sent.
+
+If we send 1000 messages of 100 bytes each, then - after exceeding 64'000 bytes (after ca. 64 messages) - we'll
+send the message batch, and this might have taken only 3 ms.
             
 
-NOTE: In 3.x, message bundling is the default, so it cannot be enabled or disabled anymore (the config
-      is ignored). However, a message can set the `DONT_BUNDLE` flag to skip bundling.
+NOTE: Since 3.x, message bundling is the default, and it cannot be enabled or disabled anymore (the config
+      is ignored). However, a message can set the `DONT_BUNDLE` flag to skip message bundling. This is only recognized
+      for OOB messages, so if a message needs to skip bundling, it needs to have flags `OOB` and `DONT_BUNDLE` set.
 
 
 [[MessageBundlingAndPerf]]
 ===== Message bundling and performance
 
-While message bundling is good when sending many small messages asynchronously, it can be bad when
-                    invoking synchronous RPCs: say we're invoking 10 synchronous (blocking) RPCs across the cluster
-                    with an RpcDispatcher (see <<RpcDispatcher>>), and the payload of the marshalled
-                    arguments of one call is less than 64K.
+As with Nagling, message bundling/batching can affect latency. In most scenarios, latency should be small as a message
+batch is sent when either `max_bundle_size` bytes have accumulated, or no more messages are sent. The algorithm for
+bundling looks more or less like this:
+
+....
+If enough space in the queue:
+    queue message, get next message
+If max_bundle_size exceeded, or no more message -> send message batch
+....
                 
-
-Because the RPC is blocking, we'll wait until the call has returned before invoking the next RPC.
-                
-
-For each RPC, the request takes up to 30 ms, and each response will also take up to 30 ms, for a
-                    total of 60 ms _per call_. So the 10 blocking RPCs would take a total of 600 ms!
-                
-
-This is clearly not desirable. However, there's a simple solution: we can use message flags
-                    (see <<MessageFlags>>) to override the default bundling behavior in the transport:
-                
-[source,java]
-----
-
-RpcDispatcher disp;
-RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, 5000)
-                        .setFlags(Message.DONT_BUNDLE);
-RspList rsp_list=disp.callRemoteMethods(null,
-                                        "print",
-                                        new Object[]{i},
-                                        new Class[]{int.class},
-                                        opts);
-                
-----
-
-The `RequestOptions.setFlags(Message.DONT_BUNDLE)` call tags the message
-with the `DONT_BUNDLE` flag. When the message is to be sent by the transport, it will be sent
-immediately, regardless of whether bundling is enabled in the transport.
-                
-Using the `DONT_BUNDLE` flag to invoke print() will take a few milliseconds
-for 10 blocking RPCs versus 600 ms without the flag.
-                
-
-An alternative to setting the DONT_BUNDLE flag is to use futures to invoke 10 blocking RPCs:
-                    
-
-
-[source,java]
-----
-
-List<Future<RspList>> futures=new ArrayList<Future<RspList>>();
-for(int i=0; i < 10; i++) {
-    Future<RspList> future=disp.callRemoteMethodsWithFuture(...);
-    futures.add(future);
-}
-
-for(Future<RspList> future: futures) {
-    RspList rsp_list=future.get();
-    // do something with the response
-}
-                
-----
-
-Here we use callRemoteMethodsWithFuture() which (although the call
-                    is blocking!) returns immediately, with a future. After invoking the 10 calls, we then grab the
-                    results by fetching them from the futures.
-                
-
-Compared to the few milliseconds above, this will take 60 ms (30 for the request and 30 for
-                    the responses), but this is still better than the 600 ms we get when not using the DONT_BUNDLE
-                    flag. Note that, if the accumulated size of the 10 requests exceeds +$$max_bundle_size$$+,
-                    the large message would be sent immediately, so this might even be faster than 30 ms for the request.
-                
+When the message send rate is high and/or many large messages are sent, latency is more or less the time to fill
+`max_bundle_size`. This should be sufficient for a lot of applications. If not, flags `OOB` and `DONT_BUNDLE` can be
+used to bypass bundling.
 
 
 
 ==== UDP
 
-UDP uses _IP multicast_ for sending messages to all members of a cluster, and
-                _UDP datagrams_ for unicast messages (sent to a single member). When started, it
-                opens a unicast and multicast socket: the unicast socket is used to send/receive unicast messages,
-                while the multicast socket sends/receives multicast messages. The physical address of the channel will
-                be the address and port number of the _unicast_ socket.
+UDP uses _IP multicasting_ for sending messages to all members of a cluster, and
+_UDP datagrams_ for unicast messages (sent to a single member). When started, it
+opens a unicast and multicast socket: the unicast socket is used to send/receive unicast messages,
+while the multicast socket sends/receives multicast messages. The physical address of the channel will
+be the address and port number of the _unicast_ socket.
             
 
 
@@ -410,68 +290,53 @@ The properties for a typical stack based on TCP might look like this (edited for
 ----
 
 <TCP bind_port="7800" />
-<TCPPING timeout="3000"
-         initial_hosts="${jgroups.tcpping.initial_hosts:HostA[7800],HostB[7801]}"
-         port_range="1"
-         num_initial_members="3"/>
+<TCPPING initial_hosts="${jgroups.tcpping.initial_hosts:HostA[7800],HostB[7801]}"
+         port_range="1"/>
 <VERIFY_SUSPECT timeout="1500"  />
 <pbcast.NAKACK2 use_mcast_xmit="false"
-               retransmit_timeout="300,600,1200,2400,4800"
-               discard_delivered_msgs="true"/>
+                discard_delivered_msgs="true"/>
+<UNICAST3/>
 <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                max_bytes="400000"/>
-<pbcast.GMS print_local_addr="true" join_timeout="3000"
-               view_bundling="true"/>
+<pbcast.GMS print_local_addr="true" join_timeout="2000"
+            view_bundling="true"/>
             
 ----
 
-TCP:: 
-                        The transport protocol, uses TCP (from TCP/IP) to send
-                            unicast and multicast messages. In the latter case, it sends
-                            multiple unicast messages.
+TCP:: The transport protocol, uses TCP (from TCP/IP) to send unicast and multicast messages. In the latter case, it sends
+      multiple unicast messages.
 
+TCPPING::Discovers the initial membership to determine coordinator. Join request will then be sent to coordinator.
 
-                    TCPPING:: 
-                        Discovers the initial membership to determine coordinator.
-                            Join request will then be sent to coordinator.
+VERIFY_SUSPECT:: Double checks that a suspected member is really dead
 
+pbcast.NAKACK2:: Reliable and FIFO multicast message delivery
 
-                    VERIFY_SUSPECT:: 
-                        Double checks that a suspected member is really dead
+UNICAST3:: Reliable unicast message delivery
 
+pbcast.STABLE:: Distributed garbage collection of messages seen by all members
 
-                    pbcast.NAKACK:: 
-                        Reliable and FIFO message delivery
-
-
-                    pbcast.STABLE:: 
-                        Distributed garbage collection of messages seen by all
-                            members
-
-
-                    pbcast.GMS:: 
-                        Membership services. Takes care of joining and removing
-                            new/old members, emits view changes
-
+pbcast.GMS:: Membership services. Takes care of joining and removing new/old members, emits view changes
 
 When using TCP, each message to all of the cluster members is sent as multiple unicast messages
-                (one to each member). Due to the fact that IP multicasting cannot be used to discover the initial
-                members, another mechanism has to be used to find the initial membership. There are a number of
-                alternatives (see <<DiscoveryProtocols>> for a discussion of all discovery protocols):
+(one to each member). Due to the fact that IP multicasting cannot be used to discover the initial
+members, another mechanism has to be used to find the initial membership. There are a number of
+alternatives (see <<DiscoveryProtocols>> for a discussion of all discovery protocols):
             
 
-
-* TCPPING: uses a list of well-known group members that it solicits for initial membership
+* TCPPING: uses a list of well-known group members that it contacts for initial membership
 * TCPGOSSIP: this requires a GossipRouter (see below), which is an external process, acting
              as a lookup service. Cluster members register with under their cluster name, and new members
              query the GossipRouter for initial cluster membership information.
 
-The next two section illustrate the use of TCP with both TCPPING and TCPGOSSIP.
-            
+
+==== TCP_NIO2
+This is a TCP/IP based implementation based on non blocking IO (NIO2).
+
+Details at <<TCP_NIO2>>.
+
 
 [[TCPPING]]
-
-
 ===== Using TCP and TCPPING
 
 A protocol stack using TCP and TCPPING looks like this (other protocols omitted):
@@ -482,9 +347,8 @@ A protocol stack using TCP and TCPPING looks like this (other protocols omitted)
 ----
 
 <TCP bind_port="7800" /> +
-<TCPPING initial_hosts="HostA[7800],HostB[7800]" port_range="2"
-         timeout="3000" num_initial_members="3" />
-                
+<TCPPING initial_hosts="HostA[7800],HostB[7800]"
+         port_range="2" />
 ----
 
 The concept behind TCPPING is that some selected cluster members assume the role of well-known hosts
@@ -519,7 +383,7 @@ TCPGOSSIP uses one or more GossipRouters to (1) register itself and (2)
 ----
 
 <TCP />
-<TCPGOSSIP initial_hosts="HostA[5555],HostB[5555]" num_initial_members="3" />
+<TCPGOSSIP initial_hosts="HostA[5555],HostB[5555]" />
                 
 ----
 
@@ -672,69 +536,52 @@ However, there are several drawbacks: first, having to maintain a TCP connection
                 enable outgoing traffic on 2 ports in a firewall, e.g. when a user does not 'own' the firewall.
             
 
-[[ConcurrentStack]]
+[[TransportDetails]]
+=== The transport in detail
+
+The transport is always the protocol at the bottom of the stack, responsible for sending and receiving messages.
+
+It contains most of the resources, such as regular, OOB and internal thread pools for handling of incoming messages,
+a timer thread pool to fire tasks at certain times, sockets for sending and receiving of messages, and thread and socket
+factories.
+
+The transport is shown in <<TransportDetailsFig>>.
 
 
-=== The concurrent stack
-
-The concurrent stack (introduced in 2.5) provides a number of improvements over previous releases,
-            which had some deficiencies:
-            
-* Large number of threads: each protocol had by default 2 threads, one for the up and one for the
-                    down queue. They could be disabled per protocol by setting up_thread or down_thread to false.
-                    In the new model, these threads have been removed.
-                
-* Sequential delivery of messages: JGroups used to have a single queue for incoming messages,
-                    processed by one thread. Therefore, messages from different senders were still processed in
-                    FIFO order. In 2.5 these messages can be processed in parallel.
-                
-* Out-of-band messages: when an application doesn't care about the ordering properties of a message,
-                    the OOB flag can be set and JGroups will deliver this particular message without regard for any
-                    ordering.
-                
-        
+[[TransportDetailsFig]]
+.The transport protocol
+image::./images/TransportDetails.png[]
 
 
+The transport consists of 4 thread pools (java.util.concurrent.Executor):
 
-==== Overview
+* The regular thread pool. Used to handle regular (non-OOB and non-internal) messages
+* The out-of-band (OOB) thread pool to handle OOB messages
+* The internal thread pool for JGroups-internal messages only (not shown) and
+* The timer thread pool to fire tasks (e.g. retransmission tasks) at periodic intervals
 
-The architecture of the concurrent stack is shown in <<ConcurrentStackFig>>. The changes
-                were made entirely inside of the transport protocol (TP, with subclasses UDP, TCP and TCP_NIO). Therefore,
-                to configure the concurrent stack, the user has to modify the config for (e.g.) UDP in the XML file.
-            
+NOTE: The internal thread pool should be used by JGroups only and is therefore not discussed. Although it can be
+      configured via XML, this is not needed in most cases.
 
-[[ConcurrentStackFig]]
-.The concurrent stack
-image::./images/ConcurrentStack.png[]
-
-
-The concurrent stack consists of 2 thread pools (java.util.concurrent.Executor): the out-of-band (OOB)
-                thread pool and the regular thread pool. Packets are received by multicast or unicast receiver threads
-                (UDP) or a ConnectionTable (TCP, TCP_NIO). Packets marked as OOB (with Message.setFlag(Message.OOB)) are
-                dispatched to the OOB thread pool, and all other packets are dispatched to the regular thread pool.
-            
+When a (UDP or TCP) socket receives a message or message batch, it passes the message to one of the thread pools for
+processing.
 
 When a thread pool is disabled, then we use the thread of the caller (e.g. multicast or unicast
-                receiver threads or the ConnectionTable) to send the message up the stack and into the application.
-                Otherwise, the packet will be processed by a thread from the thread pool, which sends the message up
-                the stack. When all current threads are busy, another thread might be created, up to the maximum number
-                of threads defined. Alternatively, the packet might get queued up until a thread becomes available.
+receiver threads or the ConnectionTable) to send the message up the stack and into the application.
+Otherwise, the packet will be processed by a thread from the thread pool, which sends the message up
+the stack. When all current threads are busy, another thread might be created, up to the maximum number
+of threads defined. Alternatively, the packet might get queued up until a thread becomes available, or it can get dropped
+if the pool is exhausted.
             
-
 The point of using a thread pool is that the receiver threads should only receive the packets and forward
-                them to the thread pools for processing, because unmarshalling and processing is slower than simply
-                receiving the message and can benefit from parallelization.
+them to the thread pools for processing, because unmarshalling and processing is slower than simply
+receiving the message and can benefit from parallelization.
             
 
 
 
-===== Configuration
+==== Configuration
 
-Note that this is preliminary and names or properties might change
-
-We are thinking of exposing the thread pools programmatically, meaning that a developer might be able to set both
-                    threads pools programmatically, e.g. using something like TP.setOOBThreadPool(Executor executor).
-                
 
 Here's an example of the new configuration:
                 
@@ -752,7 +599,7 @@ Here's an example of the new configuration:
     thread_pool.keep_alive_time="20000"
     thread_pool.queue_enabled="false"
     thread_pool.queue_max_size="10"
-    thread_pool.rejection_policy="Run"
+    thread_pool.rejection_policy="discard"
 
     oob_thread_pool.enabled="true"
     oob_thread_pool.min_threads="1"
@@ -760,15 +607,15 @@ Here's an example of the new configuration:
     oob_thread_pool.keep_alive_time="30000"
     oob_thread_pool.queue_enabled="true"
     oob_thread_pool.queue_max_size="10"
-    oob_thread_pool.rejection_policy="Run"/>
+    oob_thread_pool.rejection_policy="discard"/>
                 
 ----
 
-The attributes for the 2 thread pools are prefixed with thread_pool and oob_thread_pool respectively.
+The attributes for the thread pools are prefixed with thread_pool and oob_thread_pool respectively.
                 
 
-The attributes are listed below. They roughly correspond to the options of a
-                    java.util.concurrent.ThreadPoolExecutor in JDK 5.
+The attributes are listed below. They roughly correspond to the options of
+                    `java.util.concurrent.ThreadPoolExecutor`.
 
 .Attributes of thread pools
 [options="header",cols="3,10"]
@@ -793,170 +640,89 @@ The attributes are listed below. They roughly correspond to the options of a
 |rejection_policy|Determines what happens when the thread pool (and queue, if enabled) is
                                     full. The default is to run on the caller's thread. "Abort" throws an runtime
                                     exception. "Discard" discards the message, "DiscardOldest" discards the
-                                    oldest entry in the queue. Note that these values might change, for example a
-                                    "Wait" value might get added in the future.
+                                    oldest entry in the queue.
 
 |===============
 
 
 
-                
 
 
+==== Message delivery and ordering
 
-==== Elimination of up and down threads
+A message is considered _delivered_ as soon as the `receive()` callback returns. While messages are _received_ in a
+non-defined order, the reliable protocols (`NAKACK2` and `UNICAST3`) establish an order in which messages are _delivered_.
 
-By removing the 2 queues/protocol and the associated 2 threads, we effectively reduce the number of
-                threads needed to handle a message, and thus context switching overhead. We also get clear and unambiguous
-                semantics for Channel.send(): now, all messages are sent down the stack on the caller's thread and
-                the send() call only returns once the message has been put on the network. In addition, an exception will
-                only be propagated back to the caller if the message has not yet been placed in a retransmit buffer.
-                Otherwise, JGroups simply logs the error message but keeps retransmitting the message. Therefore,
-                if the caller gets an exception, the message should be re-sent.
-            
+Regular messages or message batches from a sender P are _delivered_ in the order in which they were sent. E.g. if P
+sent messages 4 and 5, then the application's `receive()` callback will be invoked with 4, and when 4 returns, with
+message 5. Alternatively, the application might receive a message batch containing messages 4 and 5. When iterating
+through that batch, message 4 will be consumed before message 5.
 
-On the receiving side, a message is handled by a thread pool, either the regular or OOB thread pool. Both
-                thread pools can be completely eliminated, so that we can save even more threads and thus further
-                reduce context switching. The point is that the developer is now able to control the threading behavior
-                almost completely.
-            
+Regular messages from different senders P and Q are delivered in parallel. E.g if P sends 4 and 5 and Q sends 56 and 57,
+then the `receive()` callback might get invoked in parallel for P4 and Q57. Therefore the `receive()` callbacks
+have to be thread-safe.
 
+In contrast, OOB messages are delivered in an undefined order, e.g. messages P4 and P5 might get delivered as P4 -> P5
+(P4 followed by P5) in some receivers and P5 -> P4 in others. It is also possible that P4 is delivered in parallel with
+P5, each message getting delivered by a different thread.
 
-
-==== Concurrent message delivery
-
-Up to version 2.5, all messages received were processed by a single thread, even if the messages were
-                sent by different senders. For instance, if sender A sent messages 1, 2 and 3, and B sent message 4 and 5,
-                and if A's messages were all received first, then B's messages 4 and 5 could only be processed after
-                messages 1-3 from A were processed!
-
-
-Now, we can process messages from different senders in parallel, e.g. messages 1, 2 and 3 from A can be
-                processed by one thread from the thread pool and messages 4 and 5 from B can be processed on a different
-                thread.
-
-
-As a result, we get a speedup of almost N for a cluster of N if every node is sending messages and we
-                configure the thread pool to have at least N threads. There is actually a unit test
-                (ConcurrentStackTest.java) which demonstrates this.
-
-
-[[Scopes]]
-==== Scopes: concurrent message delivery for messages from the same sender
-
-
-NOTE: In JGroups 3.3, SCOPE is replaced with the <<AsyncInvocation>>. SCOPE will probably be removed in JGroups 4.x.
-
-In the previous paragraph, we showed how the concurrent stack delivers messages from different senders
-                concurrently. But all (non-OOB) messages from the same sender P are delivered in the order in which
-                P sent them. However, this is not good enough for certain types of applications.
-            
-
-Consider the case of an application which replicates HTTP sessions. If we have sessions X, Y and Z, then
-updates to these sessions are delivered in the order in which there were performed, e.g. X1, X2, X3,
-Y1, Z1, Z2, Z3, Y2, Y3, X4. This means that update Y1 has to wait until updates X1-3 have been delivered.
-If these updates take some time, e.g. spent in lock acquisition or deserialization, then all subsequent
-messages are delayed by the sum of the times taken by the messages ahead of them in the delivery order.
-            
-
-However, in most cases, updates to different web sessions should be completely unrelated, so they could
-                be delivered concurrently. For instance, a modification to session X should not have any effect on
-                session Y, therefore updates to X, Y and Z can be delivered concurrently.
-            
-
-One solution to this is out-of-band (OOB) messages (see next paragraph). However, OOB messages do not
-                guarantee ordering, so updates X1-3 could be delivered as X1, X3, X2. If this is not wanted, but
-                messages pertaining to a given web session should all be delivered concurrently between sessions, but
-                ordered _within_ a given session, then we can resort to _scoped messages_.
-            
-
-Scoped messages apply only to _regular_ (non-OOB) messages, and are delivered
-                concurrently between scopes, but ordered within a given scope. For example, if we used the sessions above
-                (e.g. the jsessionid) as scopes, then the delivery could be as follows ('-&gt;' means sequential, '||' means concurrent):
-
-`X1 -> X2 -> X3 -> X4 || Y1 -> Y2 -> Y3 || Z1 -> Z2 -> Z3`
-
-
-This means that all updates to X are delivered in parallel to updates to Y and updates to Z. However, within
-a given scope, updates are delivered in the order in which they were performed, so X1 is delivered before
-X2, which is delivered before X3 and so on.
-            
-
-Taking the above example, using scoped messages, update Y1 does _not_ have to wait for
-                updates X1-3 to complete, but is processed immediately.
-            
-
-To set the scope of a message, use method Message.setScope(short).
-            
-
-Scopes are implemented in a separate protocol called <<SCOPE>>. This protocol
-                has to be placed somewhere above ordering protocols like UNICAST or NAKACK (or SEQUENCER for that matter).
-            
-
-
-.Uniqueness of scopes
-NOTE: Note that scopes should be _as unique as possible_. Compare this to hashing: the fewer collisions
-      there are, the better the concurrency will be. So, if for example, two web sessions pick the same
-      scope, then updates to those sessions will be delivered in the order in which they were sent, and
-      not concurrently. While this doesn't cause erroneous behavior, it defies the purpose of SCOPE. +
-      Also note that, if multicast and unicast messages have the same scope, they will be delivered
-      in sequence. So if A multicasts messages to the group with scope 25, and A also unicasts messages
-      to B with scope 25, then A's multicasts and unicasts will be delivered in order at B! Again,
-      this is correct, but since multicasts and unicasts are unrelated, might slow down things!
+The only guarantee for both regular and OOB messages is that a message will get delivered exactly once. Dropped messages
+are retransmitted and duplicate messages are dropped.
 
 
 [[OOB]]
-==== Out-of-band messages
+===== Out-of-band messages
 
 OOB messages completely ignore any ordering constraints the stack might have. Any message marked as OOB
-                will be processed by the OOB thread pool. This is necessary in cases where we don't want the message
-                processing to wait until all other messages from the same sender have been processed, e.g. in the
-                heartbeat case: if sender P sends 5 messages and then a response to a heartbeat request received from
-                some other node, then the time taken to process P's 5 messages might take longer than the heartbeat
-                timeout, so that P might get falsely suspected! However, if the heartbeat response is marked as OOB,
-                then it will get processed by the OOB thread pool and therefore might be concurrent to its previously
-                sent 5 messages and not trigger a false suspicion.
-            
+will be processed by the OOB thread pool.
 
-The 2 unit tests UNICAST_OOB_Test and NAKACK_OOB_Test demonstrate how OOB messages influence the ordering,
-                for both unicast and multicast messages.
+This is necessary in cases where we don't want the message processing to wait until all other messages from the same
+sender have been processed, e.g. in the heartbeat case: if sender P sends 5 messages and then a response to a heartbeat
+request received from some other node, then the time taken to process P's 5 messages might take longer than the heartbeat
+timeout, so that P might get falsely suspected!
+
+However, if the heartbeat response is marked as OOB, then it will get processed by the OOB thread pool and therefore
+might be concurrent to its previously sent 5 messages and not trigger a false suspicion.
+            
+The unit tests `UNICAST_OOB_Test` and `NAKACK_OOB_Test` demonstrate how OOB messages influence the ordering,
+for both unicast and multicast messages.
             
 
 
 
 ==== Replacing the default and OOB thread pools
 
-In JGroups 2.7, there are three thread pools and four thread factories in TP:
+The following thread pools and factories are in TP:
 
 [options="header",cols="3,10"]
 |===============
 |Name|Description
 |Default thread pool|This is the pool for handling incoming messages. It can be fetched using
-                                    getDefaultThreadPool() and replaced using setDefaultThreadPool(). When setting a
-                                    thread pool, the old thread pool (if any) will be shutdown and all of its tasks
-                                    cancelled first.
+`getDefaultThreadPool()` and replaced using `setDefaultThreadPool()`. When setting a
+thread pool, the old thread pool (if any) will be shutdown and all of its tasks
+cancelled first.
                                 
 |OOB thread pool|This is the pool for handling incoming OOB messages. Methods to get and set
-                                    it are getOOBThreadPool() and setOOBThreadPool().
+                                    it are `getOOBThreadPool()` and `setOOBThreadPool()`.
 |Timer thread pool|This is the thread pool for the timer. The max number of threads is set through
                                 the timer.num_threads property. The timer thread pool cannot be set, it can only
-                                be retrieved using getTimer(). However, the thread factory of the timer
+                                be retrieved using `getTimer()`. However, the thread factory of the timer
                                 can be replaced (see below).
-|Default thread factory|This is the thread factory (org.jgroups.util.ThreadFactory) of the default
+|Default thread factory|This is the thread factory (`org.jgroups.util.ThreadFactory`) of the default
                                     thread pool, which handles incoming messages. A thread pool factory is used to
                                     name threads and possibly make them daemons.
                                     It can be accessed using
-                                    getDefaultThreadPoolThreadFactory() and setDefaultThreadPoolThreadFactory().
+                                    `getDefaultThreadPoolThreadFactory()` and `setDefaultThreadPoolThreadFactory()`.
 |OOB thread factory|This is the thread factory for the OOB thread pool. It can be retrieved
-                                using getOOBThreadPoolThreadFactory() and set using method
-                                setOOBThreadPoolThreadFactory().
+                                using `getOOBThreadPoolThreadFactory()` and set using method
+                                `setOOBThreadPoolThreadFactory()`.
 |Timer thread factory|This is the thread factory for the timer thread pool. It can be accessed
-                                using getTimerThreadFactory() and setTimerThreadFactory().
+                                using `getTimerThreadFactory()` and `setTimerThreadFactory()`.
 |Global thread factory|The global thread factory can get used (e.g. by protocols) to create threads
-                                which don't live in the transport, e.g. the FD_SOCK server socket handler thread.
-                                Each protocol has a method getTransport(). Once the TP is obtained, getThreadFactory()
+                                which don't live in the transport, e.g. the `FD_SOCK` server socket handler thread.
+                                Each protocol has a method `getTransport()`. Once the TP is obtained, `getThreadFactory()`
                                 can be called to get the global thread factory. The global thread factory
-                                can be replaced with setThreadFactory().
+                                can be replaced with `setThreadFactory()`.
 
 |===============
 
@@ -968,32 +734,25 @@ NOTE: Note that thread pools and factories should be replaced after a channel ha
 
 ==== Sharing of thread pools between channels in the same JVM
 
-In JGroups 2.7, the default and OOB thread pools can be shared between instances running inside the same JVM. The
-                advantage here is that multiple channels running within the same JVM can pool (and therefore save) threads.
-                The disadvantage is that thread naming will not show to which channel instance an incoming thread
-                belongs to.
-            
+The default and OOB thread pools can be shared between instances running inside the same JVM. The advantage here is
+that multiple channels running within the same JVM can pool (and therefore save) threads.
 
-Note that we can not just share thread pools between JChannels within the same JVM, but we can also
-                share entire transports. For details see <<SharedTransport>>.
+The disadvantage is that thread naming will not show to which channel instance an incoming thread belongs to.
             
 
 
 
-=== Using a custom socket factory
+==== Using a custom socket factory
 
-JGroups creates all of its sockets through a SocketFactory, which is located in the transport (TP) or
-            TP.ProtocolAdapter (in a shared transport). The factory has methods to create sockets (Socket,
-            ServerSocket, DatagramSocket and MulticastSocket),
-            close sockets and list all open sockets. Every socket creation method has a service name, which could
-            be for example "jgroups.fd_sock.srv_sock". The service name is used to look up a port (e.g. in a config
-            file) and create the correct socket.
+JGroups creates all of its sockets through a SocketFactory, which is located in the transport (TP). The factory has
+methods to create sockets (Socket, ServerSocket, DatagramSocket and MulticastSocket),
+close sockets and list all open sockets. Every socket creation method has a service name, which could
+be for example "jgroups.fd_sock.srv_sock". The service name is used to look up a port (e.g. in a config
+file) and create the correct socket.
+
+To provide one's own socket factory, the following has to be done: the code below creates a SocketFactory implementation
+and sets it in the transport:
         
-
-To provide one's own socket factory, the following has to be done: if we have a non-shared transport,
-            the code below creates a SocketFactory implementation and sets it in the transport:
-        
-
 
 [source,java]
 ----
@@ -1006,31 +765,7 @@ ch.connect("demo");
         
 ----
 
-If a shared transport is used, then we have to set 2 socket factories: 1 in the shared transport and
-            one in the TP.ProtocolAdapter:
-        
 
-
-[source,java]
-----
-
-JChannel c1=new JChannel("config.xml"), c2=new JChannel("config.xml");
-
-TP transport=c1.getProtocolStack().getTransport();
-transport.setSocketFactory(new MySocketFactory("transport"));
-
-c1.setSocketFactory(new MySocketFactory("first-cluster"));
-c2.setSocketFactory(new MySocketFactory("second-cluster"));
-
-c1.connect("first-cluster");
-c2.connect("second-cluster");
-        
-----
-
-First, we grab one of the channels to fetch the transport and set a SocketFactory in it. Then we
-            set one SocketFactory per channel that resides on the shared transport. When JChannel.connect() is
-            called, the SocketFactory will be set in TP.ProtocolAdapter.
-        
 
 [[HandlingNetworkPartitions]]
 === Handling network partitions
@@ -1069,7 +804,7 @@ In both cases, the application has to handle a MergeView (subclass of View), as 
 public void viewAccepted(View view) {
     if(view instanceof MergeView) {
         MergeView tmp=(MergeView)view;
-        Vector<View> subgroups=tmp.getSubgroups();
+        List<View> subgroups=tmp.getSubgroups();
         // merge state or determine primary partition
         // run in a separate thread!
     }
@@ -1139,15 +874,12 @@ Here's code which picks as primary partition the first view in the MergeView, th
 
 public static void main(String[] args) throws Exception {
     final JChannel ch=new JChannel("/home/bela/udp.xml");
-    ch.setReceiver(new ExtendedReceiverAdapter() {
+    ch.setReceiver(new ReceiverAdapter() {
         public void viewAccepted(View new_view) {
             handleView(ch, new_view);
         }
     });
     ch.connect("x");
-    while(ch.isConnected())
-        Util.sleep(5000);
-    }
 
     private static void handleView(JChannel ch, View new_view) {
         if(new_view instanceof MergeView) {
@@ -1167,7 +899,7 @@ public static void main(String[] args) throws Exception {
         }
 
         public void run() {
-            Vector<View> subgroups=view.getSubgroups();
+            List<View> subgroups=view.getSubgroups();
             View tmp_view=subgroups.firstElement(); // picks the first
             Address local_addr=ch.getLocalAddress();
             if(!tmp_view.getMembers().contains(local_addr)) {
@@ -1252,7 +984,7 @@ Of course, the above mechanism requires that at least 3 nodes are up at any give
 
 === Flushing: making sure every node in the cluster received a message
 
-To change this, we can turn on virtual synchrony (by adding FLUSH to the top of the stack), which guarantees that
+To change this, we can turn on virtual synchrony (by adding `FLUSH` to the top of the stack), which guarantees that
             
 * A message M sent in V1 will be delivered in V1. So, in the example above, M1 would get delivered in
   view V1; by A, B and C, but not by D.
@@ -1265,21 +997,19 @@ To change this, we can turn on virtual synchrony (by adding FLUSH to the top of 
                 
 
 Sometimes it is important to know that every node in the cluster received all messages up to a certain point,
-            even if there is no new view being installed. To do this (initiate a manual flush), an application programmer
-            can call Channel.startFlush() to start a flush and Channel.stopFlush() to terminate it.
+even if there is no new view being installed. To do this (initiate a manual flush), an application programmer
+can call `JChannel.startFlush()` to start a flush and `JChannel.stopFlush()` to terminate it.
         
 
-Channel.startFlush() flushes all pending messages out of the system. This stops all senders (calling
-            Channel.down() during a flush will block until the flush has completed)footnote:[Note that block()
-            will be called in a Receiver when the flush is about to start and unblock() will be called when it ends].
-            When startFlush() returns, the caller knows that (a) no messages will get sent anymore until stopFlush() is
-            called and (b) all members have received all messages sent before startFlush() was called.
-        
+`JChannel.startFlush()` flushes all pending messages out of the system. This stops all senders (calling
+`JChannel.down()` during a flush will block until the flush has completed)footnote:[Note that block()
+will be called in a Receiver when the flush is about to start and unblock() will be called when it ends].
+When `startFlush()` returns, the caller knows that (a) no messages will get sent anymore until `stopFlush()` is
+called and (b) all members have received all messages sent before `startFlush()` was called.
 
-Channel.stopFlush() terminates the flush protocol, no blocked senders can resume sending messages.
+`JChannel.stopFlush()` terminates the flush protocol, no blocked senders can resume sending messages.
         
-
-Note that the FLUSH protocol has to be present on top of the stack, or else the flush will fail.
+Note that the `FLUSH` protocol has to be present on top of the stack, or else the flush will fail.
         
 
 
@@ -1296,72 +1026,12 @@ NOTE: This is work-in-progress, and +udp-largecluster.xml+ is likely to see chan
 
 
 
-==== Reducing chattiness
-
-When we have a chatty protocol, scaling to a large number of nodes might be a problem: too many messages
-                are sent and - because they are generated in addition to the regular traffic - this can have a
-                negative impact on the cluster. A possible impact is that more of the regular messages are dropped, and
-                have to be retransmitted, which impacts performance. Or heartbeats are dropped, leading to false
-                suspicions. So while the negative effects of chatty protocols may not be seen in small clusters, they
-                _will_ be seen in large clusters!
-            
-
-
-
-===== Failure detection protocols
-
-Failure detection protocols determine when a member is unresponsive, and subsequently
-                    _suspect_ it. Usually (FD, FD_ALL), messages (heartbeats) are used to determine
-                    the health of a member, but we can also use TCP connections (FD_SOCK) to connect to a member P, and
-                    suspect P when the connection is closed.
-                
-
-Heartbeating requires messages to be sent around, and we need to be careful to limit the number of
-                    messages sent by a failure detection protocol (1) to detect crashed members and (2) when a member
-                    has been suspected. The following sections discuss how to configure FD_ALL, FD and FD_SOCK, the most
-                    commonly used failure detection protocols, for use in large clusters.
-                
-
-
-
-.FD_SOCK
-FD_SOCK is discussed in detail in <<FD_SOCK>>.
-                    
-
-
-
-.FD
-FD uses a ring topology, where every member sends heartbeats to its neighbor only. We
-                        recommend to use this protocol only when TCP is the transport, as it generates a lot of
-                        traffic in large clusters.
-                    
-
-For details see <<FD>>.
-                    
-
-
-
-.FD_ALL
-FD_ALL has every member periodically multicast a heartbeat, and everyone updates internal
-                        tables of members and their last heartbeat received. When a member hasn't received a heartbeat
-                        from any given member for more than +timeout+ ms, that member will get
-                        suspected.
-                    
-
-FD_ALL is the recommended failure detection protocol when the transport provides IP
-                        multicasting capabilities (UDP).
-                    
-
-For details see <<FD_ALL>>.
-                    
 
 [[STOMP]]
-
-
 === STOMP support
 
-STOMP is a JGroups protocol which implements the link:$$http://stomp.codehaus.org$$[STOMP]
-            protocol. Currently (as of Aug 2011), transactions and acks are not implemented.
+`STOMP` is a JGroups protocol which implements the link:$$http://stomp.codehaus.org$$[STOMP]
+protocol. Transactions and acks have not been implemented yet.
         
 
 Adding the STOMP protocol to a configuration means that
@@ -1504,7 +1174,7 @@ JGroups uses subclasses of UUID (PayloadUUID) to ship the site name with an addr
             When C multicasts a message in the NYC cluster, A will forward it to D, which will re-broadcast the message on
             its local cluster, with the sender being D. This means that the sender of the local broadcast will appear
             as D (so all retransmit requests got to D), but the original sender C is preserved in the header.
-            At the RELAY protocol, the sender will be replaced with the original sender (C) having site="nyc".
+            At the RELAY protocol, the sender will be replaced with the original sender ( nodeC) having site="nyc".
             When node F wants to reply to the sender of the multicast, the destination
             of the message will be C, which is intercepted by the RELAY protocol and forwarded to the current
             relay (D). D then picks the correct destination (C) and sends the message to the remote cluster, where
@@ -1587,20 +1257,11 @@ To use RELAY2, it has to be placed at the top of the configuration, e.g.:
 
 <relay.RELAY2 site="LON" config="/home/bela/relay2.xml"
               relay_multicasts="true" />
-<FORWARD_TO_COORD />
-        
 ----
 
 The above configuration has a site name which will be used to route messages between sites. To do that, addresses
             contain the site-ID, so we always know which site the address is from. E.g. an address A1:LON in the SFO site
             is not local, but will be routed to the remote site SFO.
-        
-
-The FORWARD_TO_COORD protocol is optional, but since it guarantees reliable message forwarding to the local
-            site master, it is recommended. It makes sure that - if a local coordinator (site master) crashes or leaves
-            while a message is being forwarded to it - the message will be forwarded to the next coordinator once
-            elected.
-        
 
 The relay_multicasts property determines whether or not multicast messages (with dest = null) are relayed to
             the other sites, or not. When we have a site LON, connected to sites SFO and NYC, if a multicast message is
@@ -1617,19 +1278,19 @@ The config property points to an XML file which defines the setup of the sites, 
 <RelayConfiguration xmlns="urn:jgroups:relay:1.0">
 
     <sites>
-        <site name="lon" id="0">
+        <site name="lon">
             <bridges>
                 <bridge config="/home/bela/global.xml" name="global"/>
             </bridges>
         </site>
 
-        <site name="nyc" id="1">
+        <site name="nyc">
             <bridges>
                 <bridge config="/home/bela/global.xml" name="global"/>
             </bridges>
         </site>
 
-        <site name="sfo" id="2">
+        <site name="sfo">
             <bridges>
                 <bridge name="global" config="/home/bela/global.xml"/>
             </bridges>
@@ -1875,7 +1536,7 @@ In round 1, A send m1 to B.
 In round 2, A sends m2 to B, but B also forwards m1 (received in round 1) to C.
 
 
-In round 3, A is done. B forwards m2 to C and C forwards m1 to D (in parallel, denoted by '||').
+In round 3, A is done. B forwards m2 to C and C forwards m1 to D (in parallel, denoted by ``||`).
 
 
 In round 4, C forwards m2 to D.
@@ -1933,20 +1594,23 @@ DAISYCHAIN can be placed directly on top of the transport, regardless of whether
             
 ----
 
+NOTE: Daisychaining is experimental. While results show that performance for multicast messages (= messages to
+      all cluster nodes) is excellent, it has never been tested extensively.
+
+
+
 [[MessageFlags]]
 === Tagging messages with flags
 
 A message can be tagged with a selection of _flags_, which alter the way certain
-            protocols treat the message. This is done as follows:
+protocols treat the message. This is done as follows:
         
 
 
 [source,java]
 ----
 
-Message msg=new Message();
-msg.setFlag(Message.OOB, Message.NO_FC);
-        
+Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.NO_FC);
 ----
 
 Here we tag the message to be OOB (out of band) and to bypass flow control.
@@ -1971,23 +1635,20 @@ Message.DONT_BUNDLE:: This flag causes the transport not to bundle the message, 
 Message.NO_FC:: This flag bypasses any flow control protocol (see <<FlowControl>>) for a discussion
                 of flow control protocols.
 
-Message.SCOPED:: This flag is set automatically when Message.setScope() is called.
-                 See <<Scopes>> for a discussion on scopes.
-
-Message.NO_RELIABILITY:: When sending unicast or multicast messages, some protocols (UNICAST, NAKACK) add sequence
+Message.NO_RELIABILITY:: When sending unicast or multicast messages, some protocols (`UNICAST3`, `NAKACK2`) add sequence
                          numbers to the messages in order to (1) deliver them reliably and (2) in order. +
-                         If we don't want reliability, we can tag the message with flag NO_RELIABILITY. This means that
+                         If we don't want reliability, we can tag the message with flag `NO_RELIABILITY`. This means that
                          a message tagged with this flag may not be received, may be received more than once, or may
                          be received out of order. +
-                         A message tagged with NO_RELIABILITY will simply bypass reliable protocols such as UNICAST
-                         and NAKACK. +
-                         For example, if we send multicast message M1, M2 (NO_RELIABILITY), M3 and M4, and the starting
+                         A message tagged with `NO_RELIABILITY` will simply bypass reliable protocols such as `UNICAST3`
+                         and `NAKACK2`. +
+                         For example, if we send multicast message M1, M2 (`NO_RELIABILITY`), M3 and M4, and the starting
                          sequence number is #25, then M1 will have seqno #25, M3 will have #26 and M4 will have #27. We
                          can see that we don't allocate a seqno for M2 here.
 
 Message.NO_TOTAL_ORDER:: If we use a total order configuration with SEQUENCER (<<SEQUENCER>>), then we
                          can bypass SEQUENCER (if we don't need total order for a given message) by tagging the message
-                         with ++$$NO_TOTAL_ORDER$$++.
+                         with flag `NO_TOTAL_ORDER`.
 
 Message.NO_RELAY:: If we use RELAY (see <<RelayAdvanced>>) and don't want a message to be relayed to
                    the other site(s), then we can tag the message with NO_RELAY.
@@ -2011,8 +1672,8 @@ Message.DONT_LOOPBACK:: If this flag is set and the message is a multicast messa
                         An example is the Discovery protocol: when sending a discovery request, the sender is only
                         interested in responses from other members and therefore doesn't need to receive its own
                         discovery multicast request. +
-                        Note that this is a _transient flag_, so Message.isTransientFlagSet(..) has
-                        to be used instead of Message.isFlagSet(..
+                        Note that this is a _transient flag_, so Message.setTransientFlag() has
+                        to be used instead of Message.setFlag()
                     
 NOTE: Note that `DONT_LOOPBACK` does not make any sense for _unicast_ messages,
       as the sender of a message sent to itself will never receive it.
@@ -2021,158 +1682,195 @@ NOTE: Note that `DONT_LOOPBACK` does not make any sense for _unicast_ messages,
 [[PerformanceTests]]
 === Performance tests
 
-There are a number of performance tests shipped with JGroups. The section below discusses MPerf, which
-            is a replacement for (static) perf.Test. This change was done in 3.1.
+There are a number of performance tests shipped with JGroups. The section below discusses MPerf and UPerf.
         
 
 [[MPerf]]
 ==== MPerf
 
 MPerf is a test which measures multicast performance. This doesn't mean _IP multicast_
-                performance, but _point-to-multipoint_ performance. Point-to-multipoint means that
-                we measure performance of one-to-many messages; in other words, messages sent to all cluster members.
+performance, but _point-to-multipoint_ performance. Point-to-multipoint means that
+we measure performance of one-to-many messages; in other words, messages sent to all cluster members.
             
 
-Compared to the old perf.Test, MPerf is dynamic; it doesn't need a setup file to define the
-                number of senders, number of messages to be sent and message size. Instead, all the configuration
-                needed by an instance of MPerf is an XML stack configuration, and configuration changes done in one
-                member are automatically broadcast to all other members.
-            
+MPerf is dynamic; it doesn't need a setup file to define the number of senders, number of messages to be sent and
+message size.
 
+Instead, all the configuration needed by an instance of MPerf is an XML stack configuration, and configuration changes
+done in one member are automatically broadcast to all other members.
+            
 MPerf can be started as follows:
             
-
-
 ----
 
 java -cp $CLASSPATH -Djava.net.preferIPv4Stack=true org.jgroups.tests.perf.MPerf -props ./fast.xml
-            
 ----
 
-This assumes that we're using IPv4 addresses (otherwise IPv6 addresses are used) and the JGroups JAR on
-                CLASSPATH.
-            
+This assumes that we're using IPv4 addresses (otherwise IPv6 addresses are used) and the JGroups JAR on the classpath.
+
 
 A screen shot of MPerf looks like this (could be different, depending on the JGroups version):
             
 
-
 [listing]
 ....
 
-[linux]/home/bela$ mperf.sh -props ./fast.xml -name B
+[belasmac] /Users/bela$ mperf.sh -props ~/fast.xml -name A
+
 
 ----------------------- MPerf -----------------------
-Date: Mon Dec 12 15:33:21 CET 2011
+Date: Mon Sep 05 14:26:55 CEST 2016
 Run by: bela
-JGroups version: 3.5.0.Final
+JGroups version: 4.0.0-SNAPSHOT
+
 
 -------------------------------------------------------------------
-GMS: address=B, cluster=mperf, physical address=192.168.1.5:46614
+GMS: address=A, cluster=mperf, physical address=127.0.0.1:52344
 -------------------------------------------------------------------
-** [A|9] [A, B]
-num_msgs=1000000
-msg_size=1000
-num_threads=1
+** [A|0] (1) [A]
 [1] Send [2] View
-[3] Set num msgs (1000000) [4] Set msg size (1KB) [5] Set threads (1)
-[6] New config (./fast.xml)
-[x] Exit this [X] Exit all
-            
+[3] Set num msgs (1000000) [4] Set msg size (1KB) [5] Set threads (10) [6] New config (/Users/bela/fast.xml)
+[7] Number of senders (all) [o] Toggle OOB (false)
+[x] Exit this [X] Exit all [c] Cancel sending
 ....
 
-We're starting MPerf with +-props ./fast.xml+ and +-name B+. The -props option
-                points to a JGroups configuration file, and -name gives the member the name "B".
-            
+We're starting MPerf with `-props ~/fast.xml` and `-name A`. The `-props` option
+points to a JGroups configuration file, and `-name` gives the member the name "A".
+
+A few instances of MPerf can now be started and each instance should join the same cluster.
 
 MPerf can then be run by pressing [1]. In this case, every member in the cluster (in the example, we
-                have members A and B) will send 1 million 1K messages. Once all messages have been received, MPerf will
-                write a summary of the performance results to stdout:
+have members A and B) will send 1 million 1K messages. Once all messages have been received, MPerf will
+write a summary of the performance results to stdout:
             
-
-
 ----
 
-[1] Send [2] View
-[3] Set num msgs (1000000) [4] Set msg size (1KB) [5] Set threads (1)
-[6] New config (./fast.xml)
-[x] Exit this [X] Exit all
 1
+[1] Send [2] View
+[3] Set num msgs (1000000) [4] Set msg size (1KB) [5] Set threads (10) [6] New config (/Users/bela/fast.xml)
+[7] Number of senders (all) [o] Toggle OOB (false)
+[x] Exit this [X] Exit all [c] Cancel sending
 -- sending 1000000 msgs
 ++ sent 100000
--- received 200000 msgs (1410 ms, 141843.97 msgs/sec, 141.84MB/sec)
+-- received 200000 msgs (217 ms, 921658.99 msgs/sec, 921.66MB/sec)
 ++ sent 200000
--- received 400000 msgs (1326 ms, 150829.56 msgs/sec, 150.83MB/sec)
 ++ sent 300000
--- received 600000 msgs (1383 ms, 144613.16 msgs/sec, 144.61MB/sec)
+-- received 400000 msgs (225 ms, 888888.89 msgs/sec, 888.89MB/sec)
 ++ sent 400000
--- received 800000 msgs (1405 ms, 142348.75 msgs/sec, 142.35MB/sec)
 ++ sent 500000
--- received 1000000 msgs (1343 ms, 148920.33 msgs/sec, 148.92MB/sec)
+-- received 600000 msgs (228 ms, 877192.98 msgs/sec, 877.19MB/sec)
 ++ sent 600000
--- received 1200000 msgs (1700 ms, 117647.06 msgs/sec, 117.65MB/sec)
 ++ sent 700000
--- received 1400000 msgs (1399 ms, 142959.26 msgs/sec, 142.96MB/sec)
+-- received 800000 msgs (277 ms, 722021.66 msgs/sec, 722.02MB/sec)
 ++ sent 800000
--- received 1600000 msgs (1359 ms, 147167.03 msgs/sec, 147.17MB/sec)
 ++ sent 900000
--- received 1800000 msgs (1689 ms, 118413.26 msgs/sec, 118.41MB/sec)
+-- received 1000000 msgs (412 ms, 485436.89 msgs/sec, 485.44MB/sec)
 ++ sent 1000000
--- received 2000000 msgs (1519 ms, 131665.57 msgs/sec, 131.67MB/sec)
+-- received 1200000 msgs (305 ms, 655737.7 msgs/sec, 655.74MB/sec)
+-- received 1400000 msgs (294 ms, 680272.11 msgs/sec, 680.27MB/sec)
+-- received 1600000 msgs (228 ms, 877192.98 msgs/sec, 877.19MB/sec)
+-- received 1800000 msgs (223 ms, 896860.99 msgs/sec, 896.86MB/sec)
+-- received 2000000 msgs (237 ms, 843881.86 msgs/sec, 843.88MB/sec)
 
 Results:
 
-B: 2000000 msgs, 2GB received, msgs/sec=137608.37, throughput=137.61MB
-A: 2000000 msgs, 2GB received, msgs/sec=137959.58, throughput=137.96MB
+A: 2000000 msgs, 2GB received, time=2646ms, msgs/sec=755857.9, throughput=755.86MB
+B: 2000000 msgs, 2GB received, time=2642ms, msgs/sec=757002.27, throughput=757MB
 
 ===============================================================================
- Avg/node:    2000000 msgs, 2GB received, msgs/sec=137788.49, throughput=137.79MB
- Avg/cluster: 4000000 msgs, 4GB received, msgs/sec=275576.99, throughput=275.58MB
+ Average/node:    2000000 msgs, 2GB received, time=2644ms, msgs/sec=756429.65, throughput=756.43MB
+ Average/cluster: 4000000 msgs, 4GB received, time=2644ms, msgs/sec=1512859.3, throughput=1.51GB
 ================================================================================
-
-
-[1] Send [2] View
-[3] Set num msgs (1000000) [4] Set msg size (1KB) [5] Set threads (1) [6] New config (./fast.xml)
-[x] Exit this [X] Exit all
-            
 ----
 
-In the sample run above, we see member B's screen. B sends 1 million messages and waits for its
-                1 million and the 1 million messages from B to be received before it dumps some stats to stdout. The
-                stats include the number of messages and bytes received, the time, the message rate and throughput
-                averaged over the 2 members. It also shows the aggregated performance over the entire cluster.
-            
+In the sample run above, we see member A's screen. A sends 1 million messages and waits for its
+1 million and the 1 million messages from B to be received before it dumps some stats to stdout. The
+stats include the number of messages and bytes received, the time, the message rate and throughput
+averaged over the 2 members. It also shows the aggregated performance over the entire cluster.
 
-In the sample run above, we got an average 137MB of data per member per second, and an aggregated
-                275MB per second for the entire cluster (A and B in this case).
+In the sample run above (both processes on the same box), we got an average 756 MB of data per member per second, and
+an aggregated 1.5 GB per second for the entire cluster (A and B in this case).
             
 
 Parameters such as the number of messages to be sent, the message size and the number of threads to be
-                used to send the messages can be configured by pressing the corresponding numbers. After pressing return,
-                the change will be broadcast to all cluster members, so that we don't have to go to each member and
-                apply the same change. Also, new members started, will fetch the current configuration and apply it.
-            
+used to send the messages can be configured by pressing the corresponding numbers. After pressing return,
+the change will be broadcast to all cluster members, so that we don't have to go to each member and
+apply the same change. Also, new members started, will fetch the current configuration and apply it.
 
 For example, if we set the message size in A to 2000 bytes, then the change would be sent to B, which
-                would apply it as well. If we started a third member C, it would also have a configuration with a
-                message size of 2000.
-            
+would apply it as well. If we started a third member C, it would also have a configuration with a
+message size of 2000.
 
 Another feature is the ability to restart all cluster members with a new configuration. For example, if
-                we modified +./fast.xml+, we could select [6] to make all cluster members disconnect and
-                close their existing channels and start a new channel based on the modified fast.xml configuration.
+we modified +./fast.xml+, we could select [6] to make all cluster members disconnect and
+close their existing channels and start a new channel based on the modified fast.xml configuration.
             
 
 The new configuration file doesn't even have to be accessible on all cluster members; only on the
-                member which makes the change. The file contents will be read by that member, converted into a byte buffer
-                and shipped to all cluster members, where the new channel will then be created with the byte buffer
-                (converted into an input stream) as config.
+member which makes the change. The file contents will be read by that member, converted into a byte buffer
+and shipped to all cluster members, where the new channel will then be created with the byte buffer
+(converted into an input stream) as config.
             
-
 Being able to dynamically change the test parameters and the JGroups configuration makes MPerf suited to
-                be run in larger clusters; unless a new JGroups version is installed, MPerf will never have to be
-                restarted manually.
-            
+be run in larger clusters; unless a new JGroups version is installed, MPerf will never have to be
+restarted manually.
+
+[[UPerf]]
+==== UPerf
+
+UPerf is used to measure point-to-point (= unicast) communication between members. Start a few members like this:
+
+----
+java -cp $CLASSPATH -Djava.net.preferIPv4Stack=true org.jgroups.tests.perf.UPerf -props ./fast.xml
+----
+
+They will form a cluster. When `[1]` is pressed, every node will invoke 20000 synchronous RPCs on other members, each
+time randomly selecting a member from the cluster. This will be done by 25 threads, but both number of RPCs and sender
+threads can be changed dynamically across the entire cluster at runtime.
+
+With an 80% chance, a request will mimic a GET which is a small request returning a (by default) 1K response. With a 20%
+chance, the request is a PUT which is a 1K request and a small response. The read-write ration can be changed via `[r]`.
+
+GETs and PUTs mimic a distributed cache where GETs query information from the cache and PUT update information.
+
+When done, every member sends its results back to the node on which the test was started, which then tallies the results,
+computes averages etc and prints the result of this round to stdout.
+
+Here's a sample run on member A:
+
+....
+[1] Invoke RPCs [6] Sender threads (25) [7] Num msgs (20000) [8] Msg size (1KB)
+[s] Sync (true) [o] OOB (true) [b] Msg bundling (true)
+[a] Anycast count (2) [r] Read percentage (0.80)
+[l] local gets (false) [d] print details (false)  [i] print invokers (false)
+[v] View [x] Exit [X] Exit all
+
+1
+invoking 20000 RPCs of 1KB, sync=true, oob=true, msg_bundling=true
+.........
+
+done (in 877 ms)
+
+======================= Results: ===========================
+D: 23121.39 reqs/sec (15813 gets, 4187 puts, get RTT 971.37 us, put RTT 1495.74 us)
+A: 22805.02 reqs/sec (15826 gets, 4174 puts, get RTT 992.44 us, put RTT 1541.44 us)
+B: 24449.88 reqs/sec (15807 gets, 4193 puts, get RTT 873.63 us, put RTT 1551.84 us)
+C: 22371.36 reqs/sec (15826 gets, 4174 puts, get RTT 937.02 us, put RTT 1755.55 us)
+
+
+Throughput: 23161.55 reqs/sec/node (23.16MB/sec)
+Roundtrip:  gets avg = 932.40 us, puts avg = 1646.17 us
+....
+
+This run was on a cluster consisting of {A,B,C,D} and the test was initiated on member A. When everyone is done, the
+results for A, B, C and D are printed individually, then averages for throughout and round-trip times are computed and
+also printed to stdout.
+
+In this round, every node managed to invoke roughly 23'000 sync RPCs per second on randomly selected other members.
+The average GET time was slightly under 1 ms and PUT was roughly 1.6 ms.
+
+
+
 
 [[Ergonomics]]
 
@@ -2327,28 +2025,32 @@ probe.sh op=SUPERVISOR.dumpRules
 
 === Probe
 
-Probe is the Swiss Army Knife for JGroups; it allows to fetch information about the members running in
-            a cluster, get and set properties of the various protocols, and invoke methods in all cluster members.
+Probe is the Swiss Army Knife of JGroups; it allows to fetch information about the members running in
+a cluster, get and set properties of the various protocols, and invoke methods in all cluster members.
         
 
 Probe can even insert protocols into running cluster members, or remove/replace existing protocols. Note
-            that this doesn't make sense though with _stateful_ protocols such as NAKACK. But this
-            feature is helpful, it could be used for example to insert a diagnostics or stats protocol into a running
-            system. When done, the protocol can be removed again.
-        
+that this doesn't make sense though with _stateful_ protocols such as NAKACK. But this
+feature is helpful, it could be used for example to insert a diagnostics or stats protocol into a running
+system. When done, the protocol can be removed again.
 
-Probe is a script (__probe.sh__ in the __bin__ directory of the source
-            distribution) that can be invoked on any of the hosts in same network in which a cluster is running.
-        
+Probe is a script (`probe.sh` in the `bin` directory of the source
+distribution) that can be invoked on any of the hosts in same network in which a cluster is running. The probe.sh script
+essentially calls `org.jgroups.tests.Probe` which is part of the JGroups JAR.
+
+Otherwise, probe can be run as follows:
+
+....
+java -cp jgroups.jar -Djava.net.preferIPv4Stack=true org.jgroups.tests.Probe
+....
+
+For IPv6 stacks, the `java.net.preferIPv4Stack` system property can be omitted.
 
 
-NOTE: Probe currently requires IP multicasting to be enabled in a network, in order to discover the cluster
-      members in a network. It _can_ be used with TCP as transport, but still
-      requires multicasting.
-
-The probe.sh script essentially calls org.jgroups.tests.Probe which is part of
-            the JGroups JAR.
-        
+NOTE: Probe by default uses IP multicasting to send probe requests to all cluster nodes. However, if IP multicasting
+      is not available or disabled in a network, probe can also be given the address of a single member
+      via the `-addr` option. That member then returns the addresses of the other cluster members, and probe
+      sends the request to all members individually.
 
 The way probe works is that every stack has an additional multicast socket that by default listens
             on 224.0.75.75:7500 for diagnostics requests from probe. The configuration is located in the transport
@@ -2366,10 +2068,10 @@ The way probe works is that every stack has an additional multicast socket that 
                         
 |diagnostics_addr|
                             The multicast address which the MulticastSocket should join. The default is
-                            +"224.0.75.75"+ for IPv4 and +"ff0e::0:75:75" for IPv6+.
+                            `224.0.75.75` for IPv4 and `ff0e::0:75:75` for IPv6.
                         
 |diagnostics_port|
-                            The port on which the MulticastSocket should listen. The default is 7500.
+                            The port on which the MulticastSocket should listen. The default is `7500`.
                         
 
 |===============
@@ -2381,42 +2083,37 @@ Probe is extensible; by implementing a ProbeHandler and registering it with the
             javadoc for details.
         
 
-To get information about the cluster members running in the local network, we can use the following
-            probe command (note that probe could also be invoked as
-            ++java -classpath $CP org.jgroups.tests.Probe $\*++):
+To get information about the cluster members running in the local network, we can use the following probe command:
         
-
 
 ----
 
-[linux]/home/bela/JGroups$ probe.sh
+[belasmac] /Users/bela$ probe.sh
 
--- send probe on /224.0.75.75:7500
+-- sending probe on /224.0.75.75:7500
 
 
-#1 (149 bytes):
-local_addr=A [1a1f543c-2332-843b-b523-8d7653874de7]
-cluster=DrawGroupDemo
-view=[A|1] [A, B]
-physical_addr=192.168.1.5:43283
-version=3.0.0.Beta1
+#1 (100 bytes):
+local_addr=B
+physical_addr=127.0.0.1:52060
+view=[A|1] (2) [A, B]
+cluster=draw
+version=4.0.0-SNAPSHOT
 
-                
-#2 (149 bytes):
-local_addr=B [88588976-5416-b054-ede9-0bf8d4b56c02]
-cluster=DrawGroupDemo
-view=[A|1] [A, B]
-physical_addr=192.168.1.5:35841
-version=3.0.0.Beta1
+#2 (100 bytes):
+local_addr=A
+physical_addr=127.0.0.1:60570
+view=[A|1] (2) [A, B]
+cluster=draw
+version=4.0.0-SNAPSHOT
 
 
 2 responses (2 matches, 0 non matches)
-[linux]/home/bela/JGroups$
-        
+[belasmac] /Users/bela$
 ----
 
 This gets us 2 responses, from A and B. "A" and "B" are the logical names, but we also see the UUIDs.
-They're both in the same cluster ("DrawGroupDemo") and both have the same view
+They're both in the same cluster ("draw") and both have the same view
 (`[A|1] [A, B]`). The physical address and the version of both members is also shown.
         
 
@@ -2478,106 +2175,62 @@ We can also get information about specific properties in a given protocol:
 
 ----
 
-[linux]/home/bela$ probe.sh  jmx=NAKACK.xmit
+[belasmac] /Users/bela$ probe.sh  jmx=NAKACK2.xmit
 
--- send probe on /224.0.75.75:7500
-
-
-#1 (443 bytes):
-local_addr=A [1a1f543c-2332-843b-b523-8d7653874de7]
-cluster=DrawGroupDemo
-physical_addr=192.168.1.5:43283
-jmx=NAKACK={xmit_table_max_compaction_time=600000, xmit_history_max_size=50,
-            xmit_rsps_sent=0, xmit_reqs_received=0, xmit_table_num_rows=5,
-            xmit_reqs_sent=0, xmit_table_resize_factor=1.2,
-            xmit_from_random_member=false, xmit_table_size=78,
-            xmit_table_msgs_per_row=10000, xmit_rsps_received=0}
-
-view=[A|1] [A, B]
-version=3.0.0.Beta1
+-- sending probe on /224.0.75.75:7500
 
 
-#2 (443 bytes):
-local_addr=B [88588976-5416-b054-ede9-0bf8d4b56c02]
-cluster=DrawGroupDemo
-physical_addr=192.168.1.5:35841
-jmx=NAKACK={xmit_table_max_compaction_time=600000, xmit_history_max_size=50,
-            xmit_rsps_sent=0, xmit_reqs_received=0, xmit_table_num_rows=5,
-            xmit_reqs_sent=0, xmit_table_resize_factor=1.2,
-            xmit_from_random_member=false, xmit_table_size=54,
-            xmit_table_msgs_per_row=10000, xmit_rsps_received=0}
+#1 (597 bytes):
+local_addr=A [ip=127.0.0.1:63259, version=4.0.0-SNAPSHOT, cluster=draw, 2 mbr(s)]
+NAKACK2={xmit_from_random_member=false, xmit_interval=500, xmit_reqs_received=0, xmit_reqs_sent=0, xmit_rsps_received=0, xmit_rsps_sent=0, xmit_table_capacity=204800, xmit_table_max_compaction_time=30000, xmit_table_missing_messages=0, xmit_table_msgs_per_row=2000, xmit_table_num_compactions=0, xmit_table_num_current_rows=100, xmit_table_num_moves=0, xmit_table_num_purges=1, xmit_table_num_resizes=0, xmit_table_num_rows=100, xmit_table_resize_factor=1.2, xmit_table_undelivered_msgs=0, xmit_task_running=true}
 
-view=[A|1] [A, B]
-version=3.0.0.Beta1
+
+#2 (597 bytes):
+local_addr=B [ip=127.0.0.1:62737, version=4.0.0-SNAPSHOT, cluster=draw, 2 mbr(s)]
+NAKACK2={xmit_from_random_member=false, xmit_interval=500, xmit_reqs_received=0, xmit_reqs_sent=0, xmit_rsps_received=0, xmit_rsps_sent=0, xmit_table_capacity=204800, xmit_table_max_compaction_time=30000, xmit_table_missing_messages=0, xmit_table_msgs_per_row=2000, xmit_table_num_compactions=0, xmit_table_num_current_rows=100, xmit_table_num_moves=0, xmit_table_num_purges=1, xmit_table_num_resizes=0, xmit_table_num_rows=100, xmit_table_resize_factor=1.2, xmit_table_undelivered_msgs=0, xmit_task_running=true}
 
 
 
 
 2 responses (2 matches, 0 non matches)
-[linux]/home/bela$
-
-        
+[belasmac] /Users/bela$
 ----
 
-This returns all JMX attributes that start with +"xmit"+ in all NAKACK protocols of
-            all cluster members. We can also pass a list of attributes:
+This returns all JMX attributes that start with `"xmit"` in all NAKACK2 protocols of
+all cluster members. We can also pass a list of attributes:
         
 
 
 ----
+[belasmac] /Users/bela$ probe.sh  jmx=NAKACK2.xmit,num
 
-[linux]/home/bela$ probe.sh  jmx=NAKACK.missing,xmit
-
--- send probe on /224.0.75.75:7500
-
-
-#1 (468 bytes):
-local_addr=A [1a1f543c-2332-843b-b523-8d7653874de7]
-cluster=DrawGroupDemo
-physical_addr=192.168.1.5:43283
-jmx=NAKACK={xmit_table_max_compaction_time=600000, xmit_history_max_size=50,
-            xmit_rsps_sent=0, xmit_reqs_received=0, xmit_table_num_rows=5,
-            xmit_reqs_sent=0, xmit_table_resize_factor=1.2,
-            xmit_from_random_member=false, xmit_table_size=78,
-            missing_msgs_received=0, xmit_table_msgs_per_row=10000,
-            xmit_rsps_received=0}
-
-view=[A|1] [A, B]
-version=3.0.0.Beta1
+-- sending probe on /224.0.75.75:7500
 
 
-#2 (468 bytes):
-local_addr=B [88588976-5416-b054-ede9-0bf8d4b56c02]
-cluster=DrawGroupDemo
-physical_addr=192.168.1.5:35841
-jmx=NAKACK={xmit_table_max_compaction_time=600000, xmit_history_max_size=50,
-            xmit_rsps_sent=0, xmit_reqs_received=0, xmit_table_num_rows=5,
-            xmit_reqs_sent=0, xmit_table_resize_factor=1.2,
-            xmit_from_random_member=false, xmit_table_size=54,
-            missing_msgs_received=0, xmit_table_msgs_per_row=10000,
-            xmit_rsps_received=0}
-
-view=[A|1] [A, B]
-version=3.0.0.Beta1
+#1 (646 bytes):
+local_addr=A [ip=127.0.0.1:63259, version=4.0.0-SNAPSHOT, cluster=draw, 2 mbr(s)]
+NAKACK2={num_messages_received=115, num_messages_sent=26, xmit_from_random_member=false, xmit_interval=500, xmit_reqs_received=0, xmit_reqs_sent=0, xmit_rsps_received=0, xmit_rsps_sent=0, xmit_table_capacity=204800, xmit_table_max_compaction_time=30000, xmit_table_missing_messages=0, xmit_table_msgs_per_row=2000, xmit_table_num_compactions=0, xmit_table_num_current_rows=100, xmit_table_num_moves=0, xmit_table_num_purges=1, xmit_table_num_resizes=0, xmit_table_num_rows=100, xmit_table_resize_factor=1.2, xmit_table_undelivered_msgs=0, xmit_task_running=true}
 
 
+#2 (646 bytes):
+local_addr=B [ip=127.0.0.1:62737, version=4.0.0-SNAPSHOT, cluster=draw, 2 mbr(s)]
+NAKACK2={num_messages_received=115, num_messages_sent=89, xmit_from_random_member=false, xmit_interval=500, xmit_reqs_received=0, xmit_reqs_sent=0, xmit_rsps_received=0, xmit_rsps_sent=0, xmit_table_capacity=204800, xmit_table_max_compaction_time=30000, xmit_table_missing_messages=0, xmit_table_msgs_per_row=2000, xmit_table_num_compactions=0, xmit_table_num_current_rows=100, xmit_table_num_moves=0, xmit_table_num_purges=1, xmit_table_num_resizes=0, xmit_table_num_rows=100, xmit_table_resize_factor=1.2, xmit_table_undelivered_msgs=0, xmit_task_running=true}
 
 
 2 responses (2 matches, 0 non matches)
-[linux]/home/bela$
-        
+[belasmac] /Users/bela$
 ----
 
-This returns all attributes of NAKACK that start with +"xmit"+ or +"missing"+.
+This returns all attributes of NAKACK2 that start with `"xmit"` or `"num"`.
         
 
 To invoke an operation, e.g. to set the logging level in all UDP protocols from "warn" to "trace", we
-            can use _probe.sh op=UPD.setLevel["trace"]_. This raises the logging level in all
-            UDP protocols of all cluster members, which is useful to diagnose a running system.
+can use `probe.sh op=UPD.setLevel["trace"]`. This raises the logging level in all
+UDP protocols of all cluster members, which is useful to diagnose a running system.
         
 
 Operation invocation uses reflection, so any method defined in any protocol can be invoked. This is
-            a powerful tool to get diagnostics information from a running cluster.
+a powerful tool to get diagnostics information from a running cluster.
         
 
 For further information, refer to the command line options of probe (`probe.sh -h`).
@@ -2590,8 +2243,7 @@ Probe can also be used to inspect for every node P:
 * the number of multicast RPCs invoked (sync or async)
 * the number of anycast RPCs invoked (sync or async)
 
-For sync RPCs, it is also possible to get the min/max/avg times for RPCs to a given destination. Note that this
-doesn't currently apply to sync RPCs which return futures as timings are not taken for these.
+For sync RPCs, it is also possible to get the min/max/avg times for RPCs to a given destination.
 
 Since taking the times for all sync RPCs takes time (2x `System.nanoTime()` for each RPC), this is disabled by default
 and has to be enabled (assuming we have 4 nodes running):
@@ -2600,7 +2252,7 @@ and has to be enabled (assuming we have 4 nodes running):
 probe.sh rpcs-enable-details
 ----
 
-From now on, timings for sync RPCs will be taken (async RPCs or RPCs which return futures are not timed and therefore
+From now on, timings for sync RPCs will be taken (async RPCs are not timed and therefore
 not affected by the timing costs). To disable this, `probe rpcs-disable-details` can be called.
 
 To get RPC stats, `rpcs` and `rpcs-details` can be used:

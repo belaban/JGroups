@@ -60,7 +60,7 @@ public class AUTH extends Protocol {
     protected Address               local_addr;
 
 
-    public AUTH() {name="AUTH";}
+    public AUTH() {}
 
     protected volatile boolean      authenticate_coord=true;
     

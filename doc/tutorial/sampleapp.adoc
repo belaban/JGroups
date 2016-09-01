@@ -13,20 +13,20 @@ The goal of this chapter is to write a simple text-based chat application (Simpl
     
 
 === JGroups overview
-JGroups uses a JChannel as the main API to connect to a cluster, send and receive messages, and to register
+JGroups uses a `JChannel` as the main API to connect to a cluster, send and receive messages, and to register
 listeners that are called when things (such as member joins) happen.
 
-What is sent around are Messages, which contain a byte buffer (the payload), plus the sender's and receiver's address.
-Addresses are subclasses of org.jgroups.Address, and usually contain an IP address plus a port.
+What is sent around are `Messages`, which contain a byte buffer (the payload), plus the sender's and receiver's address.
+Addresses are subclasses of `org.jgroups.Address`, and usually contain an IP address plus a port.
 
-The list of instances in a cluster is called a View, and every instance contains
-exactly the same View. The list of the addresses of all instances can get retrieved by calling
+The list of instances in a cluster is called a `View`, and every instance contains
+exactly the same view. The list of the addresses of all instances can get retrieved by calling
 View.getMembers().
 
 Instances can only send or receive messages after they've joined a cluster.
 
-When an instance wants to leave the cluster, methods JChannel.disconnect() or JChannel.close() can be called.
-The latter actually calls disconnect() if the channel is still connected before closing the channel.
+When an instance wants to leave the cluster, methods `JChannel.disconnect()` or `JChannel.close()` can be called.
+The latter actually calls `disconnect()` if the channel is still connected before closing the channel.
         
 
 
@@ -34,7 +34,7 @@ The latter actually calls disconnect() if the channel is still connected before 
 === Creating a channel and joining a cluster
 To join a cluster, we'll use a JChannel. An instance of JChannel is created with a configuration
 (e.g. an XML file) which defines the properties of the channel. To actually connect to the cluster, the
-connect(String clustername) method is used. All channel instances which call connect() with the same argument will
+`connect(String clustername)` method is used. All channel instances which call connect() with the same argument will
 join the same cluster. So, let's actually create a JChannel and connect to a cluster called "ChatCluster":
         
 [source,java]
@@ -58,9 +58,9 @@ public class SimpleChat {
 
 
 First we create a channel using the empty constructor. This configures the channel with the default properties.
-Alternatively, we could pass an XML file to configure the channel, e.g. new JChannel("/home/bela/udp.xml").
+Alternatively, we could pass an XML file to configure the channel, e.g. `new JChannel("/home/bela/udp.xml")`.
 
-The connect() method joins cluster "ChatCluster". Note that we don't need to explicitly create a cluster
+The `connect()` method joins cluster "ChatCluster". Note that we don't need to explicitly create a cluster
 beforehand; connect() creates the cluster if it is the first instance. All instances which join the same
 cluster will be in the same cluster, for example if we have
             
@@ -98,7 +98,7 @@ private void eventLoop() {
             if(line.startsWith("quit") || line.startsWith("exit"))
                 break;
             line="[" + user_name + "] " + line;
-            Message msg=new Message(null, null, line);
+            Message msg=new Message(null, line);
             channel.send(msg);
         }
         catch(Exception e) {
@@ -117,13 +117,11 @@ The first argument of the Message constructor is the destination address. A null
 sends the message to everyone in the cluster (a non-null address of an instance would send the message
 to only one instance).
         
-The second argument is our own address. This is null as well, as the stack will insert the
-correct address anyway.
-        
-The third argument is the line that we read from stdin, this uses Java
+
+The second argument is the line that we read from stdin, this uses Java
 serialization to create a byte[] buffer and set the message's payload. Note that we could also
-serialize the object ourselves (which is actually the recommended way!) and use the Message contructor which
-takes a byte[] buffer as third argument.
+serialize the object ourselves (which is actually recommended!) and use the Message contructor which
+takes a byte[] buffer as second argument.
 
 The application is now fully functional, except that we don't yet receive messages or view notifications.
 This is done in the next section below.
@@ -131,9 +129,9 @@ This is done in the next section below.
 
 === Receiving messages and view change notifications
 
-Let's now register as a Receiver to receive message and view changes. To this end, we could implement
-org.jgroups.Receiver, however, I chose to extend ReceiverAdapter which has default
-implementations, and only override callbacks (receive() and viewChange()) we're interested in. We
+Let's now register as a `Receiver` to receive message and view changes. To this end, we could implement
+`org.jgroups.Receiver`, however, I chose to extend `ReceiverAdapter` which has default
+implementations, and only override callbacks (`receive()` and `viewChange()`) we're interested in. We
 now need to extend ReceiverAdapter:
 
 
@@ -147,8 +145,7 @@ public class SimpleChat extends ReceiverAdapter {
 [source,java]
 ----
 private void start() throws Exception {
-    channel=new JChannel();
-    channel.setReceiver(this);
+    channel=new JChannel().setReceiver(this);
     channel.connect("ChatCluster");
     eventLoop();
     channel.close();
@@ -193,7 +190,7 @@ GMS: address=linux-48776, cluster=ChatCluster, physical address=192.168.1.5:4244
 >
 ....
 
-The name of this instance is linux-48776 and the physical address is 192.168.1.5:42442 (IP address:port).
+The name of this instance is `linux-48776` and the physical address is `192.168.1.5:42442` (IP address:port).
 A name is generated by JGroups (using the hostname and a random short) if the user doesn't set it. The name
 stays with an instance for its lifetime, and maps to an underlying UUID. The UUID then maps to a
 physical address.
@@ -212,8 +209,8 @@ GMS: address=linux-37238, cluster=ChatCluster, physical address=192.168.1.5:4071
 >
 ....
 
-The cluster list is now [linux-48776, linux-37238], showing the first and second instance that
-joined the cluster. Note that the first instance (linux-48776) also received the same view, so both
+The cluster list is now `[linux-48776, linux-37238]`, showing the first and second instance that
+joined the cluster. Note that the first instance (`linux-48776`) also received the same view, so both
 instances have the exact same view with the same ordering of its instances in the list. The instances are
 listed in order of joining the cluster, with the oldest instance as first element.
 
@@ -235,7 +232,7 @@ clients can access any server in the cluster after a server which hosted the cli
 and the user sessions will still be available.
 
 Any update to a session is replicated across the cluster, e.g. by serializing the attribute that was
-modified and sending the modification to every server in the cluster via JChannel.send(). This is needed
+modified and sending the modification to every server in the cluster via `JChannel.send()`. This is needed
 so that all servers have the same state.
 
 However, what happens when a new server is started ? That server has to somehow get the state
@@ -253,8 +250,7 @@ The start() method is now modified to include the call to JChannel.getState():
 [source,java]
 ----
 private void start() throws Exception {
-    channel=new JChannel();
-    channel.setReceiver(this);
+    channel=new JChannel().setReceiver(this);
     channel.connect("ChatCluster");
     channel.getState(null, 10000);
     eventLoop();
@@ -329,9 +325,7 @@ public void setState(InputStream input) throws Exception {
         state.addAll(list);
     }
     System.out.println(list.size() + " messages in chat history):");
-    for(String str: list) {
-        System.out.println(str);
-    }
+    list.forEach(System.out::println);
 }
 ----
 
@@ -360,7 +354,7 @@ The code for SimpleChat can be found ./code/SimpleChat.java[here].
         
 Here are some links for further information about JGroups:
 
-* SimpleChat code: file:./code/SimpleChat.java[SimpleChat.java]
+* SimpleChat code: link:./code/SimpleChat.java[SimpleChat.java]
 * JGroups web site: http://www.jgroups.org[http://www.jgroups.org]
 * Downloads: http://sourceforge.net/projects/javagroups/files/JGroups/[here]
 * JIRA bug tracking: http://jira.jboss.com/jira/browse/JGRP[http://jira.jboss.com/jira/browse/JGRP]
