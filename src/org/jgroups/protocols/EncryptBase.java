@@ -11,7 +11,6 @@ import javax.crypto.SecretKey;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.zip.Adler32;
@@ -56,6 +55,9 @@ public abstract class EncryptBase extends Protocol {
       "true, Adler32 will be used")
     protected boolean                       use_adler;
 
+    @Property(description="Max number of keys in key_map")
+    protected int                           key_map_max_size=20;
+
     protected volatile Address              local_addr;
 
     protected volatile View                 view;
@@ -70,7 +72,7 @@ public abstract class EncryptBase extends Protocol {
     protected volatile SecretKey            secret_key;
 
     // map to hold previous keys so we can decrypt some earlier messages if we need to
-    protected final Map<AsciiString,Cipher> key_map=new WeakHashMap<>();
+    protected Map<AsciiString,Cipher>       key_map;
 
 
 
@@ -101,6 +103,7 @@ public abstract class EncryptBase extends Protocol {
             log.warn("%s: setting cipher_pool_size (%d) to %d (power of 2) for faster modulo operation", local_addr, cipher_pool_size, tmp);
             cipher_pool_size=tmp;
         }
+        key_map=new BoundedHashMap<>(key_map_max_size);
         encoding_ciphers=new ArrayBlockingQueue<>(cipher_pool_size);
         decoding_ciphers=new ArrayBlockingQueue<>(cipher_pool_size);
         initSymCiphers(sym_algorithm, secret_key);
