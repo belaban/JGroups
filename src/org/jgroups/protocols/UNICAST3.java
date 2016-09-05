@@ -361,13 +361,14 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     public void init() throws Exception {
         super.init();
-        time_service=getTransport().getTimeService();
+        TP transport=getTransport();
+        time_service=transport.getTimeService();
         if(time_service == null)
             throw new IllegalStateException("time service from transport is null");
         last_sync_sent=new ExpiryCache<>(sync_min_interval);
 
         // max bundle size (minus overhead) divided by <long size> times bits per long
-        int estimated_max_msgs_in_xmit_req=(getTransport().getMaxBundleSize() -50) * Global.LONG_SIZE;
+        int estimated_max_msgs_in_xmit_req=(transport.getMaxBundleSize() -50) * Global.LONG_SIZE;
         int old_max_xmit_size=max_xmit_req_size;
         if(max_xmit_req_size <= 0)
             max_xmit_req_size=estimated_max_msgs_in_xmit_req;
@@ -375,6 +376,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             max_xmit_req_size=Math.min(max_xmit_req_size, estimated_max_msgs_in_xmit_req);
         if(old_max_xmit_size != max_xmit_req_size)
             log.trace("%s: set max_xmit_req_size from %d to %d", local_addr, old_max_xmit_size, max_xmit_req_size);
+
+
+        boolean oob_pool_enabled=(boolean)transport.getValue("oob_thread_pool_enabled"),
+          regular_pool_enabled=(boolean)transport.getValue("thread_pool_enabled");
+        if(!oob_pool_enabled && !regular_pool_enabled)
+            log.info("both the regular and OOB thread pools are disabled; %s could be removed (JGRP-2069)", getClass().getSimpleName());
     }
 
     public void start() throws Exception {
