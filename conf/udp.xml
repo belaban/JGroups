@@ -20,12 +20,6 @@
          enable_diagnostics="true"
          thread_naming_pattern="cl"
 
-         timer_type="new3"
-         timer.min_threads="2"
-         timer.max_threads="4"
-         timer.keep_alive_time="3000"
-         timer.queue_max_size="500"
-
          thread_pool.min_threads="2"
          thread_pool.max_threads="8"
          thread_pool.keep_alive_time="5000"

@@ -186,10 +186,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected boolean internal_thread_pool_enabled=true;
 
     @Property(name="internal_thread_pool.min_threads",description="Minimum thread pool size for the internal thread pool")
-    protected int internal_thread_pool_min_threads=2;
+    protected int internal_thread_pool_min_threads=0;
 
     @Property(name="internal_thread_pool.max_threads",description="Maximum thread pool size for the internal thread pool")
-    protected int internal_thread_pool_max_threads=100;
+    protected int internal_thread_pool_max_threads=10;
 
     @Property(name="internal_thread_pool.keep_alive_time", description="Timeout in ms to remove idle threads from the internal pool")
     protected long internal_thread_pool_keep_alive_time=30000;
@@ -205,15 +205,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected String internal_thread_pool_rejection_policy="abort";
 
 
-
-    @Property(description="Type of timer to be used. The only valid value is \"new3\" (TimeScheduler3).")
-    protected String timer_type="new3";
-
     @Property(name="timer_thread_pool.enabled",description="Enable or disable the thread pool inside the timer")
     protected boolean timer_thread_pool_enabled=true;
 
     @Property(name="timer.min_threads",description="Minimum thread pool size for the timer thread pool")
-    protected int timer_min_threads=1;
+    protected int timer_min_threads=0;
 
     @Property(name="timer.max_threads",description="Max thread pool size for the timer thread pool")
     protected int timer_max_threads=5;
@@ -1048,14 +1044,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
               .transport(this);
 
         if(timer == null) {
-            if(timer_type.equalsIgnoreCase("new3")) {
-                BlockingQueue<Runnable> queue=timer_queue_enabled? new ArrayBlockingQueue<>(timer_queue_max_size) :
-                  new SynchronousQueue<>();
-                timer=new TimeScheduler3(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
-                                         queue, timer_rejection_policy, timer_thread_pool_enabled);
-            }
-            else
-                throw new Exception("timer_type has to be \"new3\"");
+            BlockingQueue<Runnable> queue=timer_queue_enabled? new ArrayBlockingQueue<>(timer_queue_max_size) :
+              new SynchronousQueue<>();
+            timer=new TimeScheduler3(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
+                                     queue, timer_rejection_policy, timer_thread_pool_enabled);
         }
 
         if(time_service_interval > 0)
