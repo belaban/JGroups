@@ -64,9 +64,7 @@ public class OrderingTest {
 
 
     protected static JChannel createChannel() throws Exception {
-        return new JChannel(new SHARED_LOOPBACK().setValue("oob_thread_pool_rejection_policy", "run")
-                              .setValue("thread_pool_rejection_policy", "run")
-                              .setValue("thread_pool_queue_max_size", 100000),
+        return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
                             new MERGE3(),
                             new FD_SOCK(),

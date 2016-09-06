@@ -101,20 +101,6 @@ public abstract class Protocol {
         return Util.getField(field, this);
     }
 
-    public Protocol setValues(Map<String,Object> values) {
-        if(values == null)
-            return this;
-        for(Map.Entry<String,Object> entry: values.entrySet()) {
-            String attrname=entry.getKey();
-            Object value=entry.getValue();
-            Field field=Util.getField(getClass(), attrname);
-            if(field != null) {
-                Util.setField(field, this, value);
-            }
-        }
-        return this;
-    }
-
 
     public Protocol setValue(String name, Object value) {
         if(name == null || value == null)

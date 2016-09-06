@@ -60,6 +60,11 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         start();
     }
 
+    public TimeScheduler3(Executor thread_pool, ThreadFactory factory) {
+        timer_thread_factory=factory;
+        pool=thread_pool;
+        start();
+    }
 
     public void    setThreadFactory(ThreadFactory f) {condSet((p) -> p.setThreadFactory(f));}
     public int     getMinThreads()                   {return condGet(ThreadPoolExecutor::getCorePoolSize, 0);}

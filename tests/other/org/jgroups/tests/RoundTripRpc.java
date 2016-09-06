@@ -5,9 +5,7 @@ import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
 import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.protocols.TP;
 import org.jgroups.util.AverageMinMax;
-import org.jgroups.util.DirectExecutor;
 import org.jgroups.util.Util;
 
 import java.lang.reflect.Method;
@@ -42,14 +40,8 @@ public class RoundTripRpc implements MembershipListener {
     protected void start(String props, String name) throws Exception {
         channel=new JChannel(props).name(name);
 
-        TP transport=channel.getProtocolStack().getTransport();
-        transport.setOOBThreadPool(new DirectExecutor());
-        //transport.setDefaultThreadPool(new DirectExecutor());
-
-        //ThreadPoolExecutor thread_pool=new ThreadPoolExecutor(4, 4, 30000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(5000));
-        //transport.setDefaultThreadPool(thread_pool);
-        //transport.setOOBThreadPool(thread_pool);
-        //transport.setInternalThreadPool(thread_pool);
+        // TP transport=channel.getProtocolStack().getTransport();
+        // transport.setThreadPool(new DirectExecutor());
 
         disp=new RpcDispatcher(channel, this).setMembershipListener(this);
         disp.setMethodLookup(ignored -> requestMethod);

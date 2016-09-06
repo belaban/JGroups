@@ -38,7 +38,6 @@ public class DAISYCHAIN extends Protocol {
     protected volatile Address       local_addr, next;
     protected int                    view_size=0;
     protected Executor               default_pool=null;
-    protected Executor               oob_pool=null;
     protected volatile boolean       running=true;
 
     @ManagedAttribute
@@ -55,8 +54,7 @@ public class DAISYCHAIN extends Protocol {
     }
 
     public void init() throws Exception {
-        default_pool=getTransport().getDefaultThreadPool();
-        oob_pool=getTransport().getOOBThreadPool();
+        default_pool=getTransport().getThreadPool();
     }
 
     public void start() throws Exception {
@@ -108,8 +106,7 @@ public class DAISYCHAIN extends Protocol {
             if(msg.getSrc() == null)
                 msg.setSrc(local_addr);
 
-            Executor pool=msg.isFlagSet(Message.Flag.OOB)? oob_pool : default_pool;
-            pool.execute(() -> up_prot.up(msg));
+            default_pool.execute(() -> up_prot.up(msg));
         }
         return down_prot.down(copy);
 

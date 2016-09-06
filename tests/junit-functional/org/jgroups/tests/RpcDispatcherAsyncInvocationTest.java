@@ -120,9 +120,8 @@ public class RpcDispatcherAsyncInvocationTest {
 
     protected static JChannel createChannel(String name) throws Exception {
         TP transport=new SHARED_LOOPBACK();
-        transport.setOOBThreadPoolMinThreads(10);
-        transport.setOOBThreadPoolMaxThreads(20);
-        transport.setOOBThreadPoolQueueEnabled(false);
+        transport.setThreadPoolMinThreads(10);
+        transport.setThreadPoolMaxThreads(20);
         return new JChannel(new Protocol[]{
           transport,
           new SHARED_LOOPBACK_PING(),

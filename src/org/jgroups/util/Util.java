@@ -1135,7 +1135,6 @@ public class Util {
         MessageBatch[] batches=new MessageBatch[4]; // [0]: reg, [1]: OOB, [2]: internal-oob, [3]: internal
         Address dest=Util.readAddress(in);
         Address src=Util.readAddress(in);
-        // AsciiString cluster_name=Bits.readAsciiString(in);
         short length=in.readShort();
         byte[] cluster_name=length >= 0? new byte[length] : null;
         if(cluster_name != null)

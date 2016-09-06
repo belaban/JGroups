@@ -99,9 +99,8 @@ public class RemoteGetStressTest {
 
     protected static JChannel createChannel(String name) throws Exception {
         Protocol[] protocols={
-          new SHARED_LOOPBACK().setValue("oob_thread_pool_min_threads", 1)
-            .setValue("oob_thread_pool_max_threads", 5)
-          .setValue("oob_thread_pool_queue_enabled", false),
+          new SHARED_LOOPBACK().setValue("thread_pool_min_threads", 1)
+            .setValue("thread_pool_max_threads", 5),
           new SHARED_LOOPBACK_PING(),
           new NAKACK2(),
           new UNICAST3(),

@@ -31,7 +31,7 @@ public class OOBTest extends ChannelTestBase {
     void init() throws Exception {
         a=createChannel(true, 2, "A");
         b=createChannel(a, "B");
-        setOOBPoolSize(a,b);
+        setThreadPoolSize(a, b);
         setStableGossip(a,b);
         a.connect("OOBTest");
         b.connect("OOBTest");
@@ -193,9 +193,6 @@ public class OOBTest extends ChannelTestBase {
         MyReceiver receiver=new MySleepingReceiver("A", 1000);
         a.setReceiver(receiver);
 
-        TP transport=a.getProtocolStack().getTransport();
-        transport.setOOBRejectionPolicy("discard");
-
         final int NUM=10;
         for(int i=1; i <= NUM; i++)
             a.send(new Message(null, i).setFlag(Message.Flag.OOB));
@@ -225,7 +222,6 @@ public class OOBTest extends ChannelTestBase {
     public void testOOBUnicastMessageLoss() throws Exception {
         MyReceiver receiver=new MySleepingReceiver("B", 1000);
         b.setReceiver(receiver);
-        a.getProtocolStack().getTransport().setOOBRejectionPolicy("discard");
 
         final int NUM=10;
         final Address dest=b.getAddress();
@@ -353,11 +349,11 @@ public class OOBTest extends ChannelTestBase {
     }
 
 
-    private static void setOOBPoolSize(JChannel... channels) {
+    private static void setThreadPoolSize(JChannel... channels) {
         for(JChannel channel: channels) {
             TP transport=channel.getProtocolStack().getTransport();
-            transport.setOOBThreadPoolMinThreads(4);
-            transport.setOOBThreadPoolMaxThreads(8);
+            transport.setThreadPoolMinThreads(4);
+            transport.setThreadPoolMaxThreads(8);
         }
     }
 
@@ -397,7 +393,7 @@ public class OOBTest extends ChannelTestBase {
                 }
             }
 
-            msgs.add((Integer)msg.getObject());
+            msgs.add(msg.getObject());
         }
     }
 
@@ -410,7 +406,7 @@ public class OOBTest extends ChannelTestBase {
         public Collection<Integer> getMsgs() {return msgs;}
 
         public void receive(Message msg) {
-            Integer val=(Integer)msg.getObject();
+            Integer val=msg.getObject();
             System.out.println(name + ": <-- " + val);
             msgs.add(val);
         }

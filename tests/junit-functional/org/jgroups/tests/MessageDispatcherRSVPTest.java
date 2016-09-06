@@ -21,9 +21,6 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collections;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -37,8 +34,6 @@ public class MessageDispatcherRSVPTest {
     protected final JChannel[]          channels=new JChannel[NUM];
     protected final MessageDispatcher[] dispatchers=new MessageDispatcher[NUM];
     protected MyDiagnosticsHandler      handler;
-    protected ThreadPoolExecutor        oob_thread_pool;
-    protected ThreadPoolExecutor        thread_pool;
 
 
 
@@ -50,25 +45,9 @@ public class MessageDispatcherRSVPTest {
                                          new DefaultThreadFactory("", false));
         handler.start();
 
-        TimeScheduler timer=new TimeScheduler3(new DefaultThreadFactory("Timer", true, true),
-                                               5,20,
-                                               3000, 5000, "abort");
-
-        oob_thread_pool=new ThreadPoolExecutor(5, Math.max(5, NUM/4), 3000, TimeUnit.MILLISECONDS,
-                                               new ArrayBlockingQueue<>(NUM * NUM));
-        oob_thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
-
-        thread_pool=new ThreadPoolExecutor(5, Math.max(5, NUM/4), 3000, TimeUnit.MILLISECONDS,
-                                           new ArrayBlockingQueue<>(NUM * NUM));
-        thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-
-
         System.out.print("Connecting channels: ");
         for(int i=0; i < NUM; i++) {
             SHARED_LOOPBACK shared_loopback=new SHARED_LOOPBACK();
-            shared_loopback.setTimer(timer);
-            shared_loopback.setOOBThreadPool(oob_thread_pool);
-            shared_loopback.setDefaultThreadPool(thread_pool);
             shared_loopback.setDiagnosticsHandler(handler);
 
             channels[i]=new JChannel(shared_loopback,

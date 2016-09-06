@@ -46,11 +46,11 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         
         TP transport=c1.getProtocolStack().getTransport();
         ExecutorService thread_pool=Executors.newFixedThreadPool(2);
-        transport.setDefaultThreadPool(thread_pool);
+        transport.setThreadPool(thread_pool);
 
         transport=c2.getProtocolStack().getTransport();
         thread_pool=Executors.newFixedThreadPool(2);
-        transport.setDefaultThreadPool(thread_pool);
+        transport.setThreadPool(thread_pool);
         
         c1.send(null, "hello world");
         c2.send(null, "bela");

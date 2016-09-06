@@ -123,7 +123,7 @@ public class RingBundlerTest {
 
         public MockTransport() {
             this.cluster_name=new AsciiString("mock");
-            global_thread_factory=new DefaultThreadFactory("", false);
+            thread_factory=new DefaultThreadFactory("", false);
         }
 
         public boolean supportsMulticasting() {

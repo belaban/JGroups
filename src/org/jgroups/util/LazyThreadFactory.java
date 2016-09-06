@@ -19,16 +19,11 @@ public class LazyThreadFactory extends DefaultThreadFactory {
         super(baseName, createDaemons, use_numbering);
     }
 
+    public Thread newThread(Runnable r) {
+         return newThread(r, baseName);
+     }
+
     public Thread newThread(Runnable r, String name) {
-         return newThread(null, r, name);
-     }
-
-     public Thread newThread(Runnable r) {
-         return newThread(null, r, baseName);
-     }
-
-
-    private Thread newThread(ThreadGroup group, Runnable r, String name) {
         Thread retval=null;
         String addr=address;
         if(addr == null)
@@ -69,7 +64,7 @@ public class LazyThreadFactory extends DefaultThreadFactory {
         for(Iterator<WeakReference<Thread>> it=threads.iterator(); it.hasNext();) {
             WeakReference<Thread> ref=it.next();
             Thread thread=ref.get();
-            if(thread == null || !thread.isAlive()) {
+            if(thread == null || thread.getState() == Thread.State.TERMINATED) {
                 it.remove();
                 continue;
             }
@@ -78,6 +73,16 @@ public class LazyThreadFactory extends DefaultThreadFactory {
             thread.setName(name);
         }
     }
+
+    protected String dumpThreads() {
+        StringBuilder sb=new StringBuilder();
+        int cnt=1;
+        for(WeakReference<Thread> ref: threads)
+            sb.append(String.format("ref %d: %s\n", cnt++, ref.get()));
+        return sb.toString();
+    }
+
+
 
     /** Replaces "<ADDR>" with the local address and <CLUSTER> with the cluster name */
     private String changeName(String name) {

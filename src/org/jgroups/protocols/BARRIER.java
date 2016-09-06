@@ -287,15 +287,8 @@ public class BARRIER extends Protocol {
         if(queue.isEmpty())
             return;
 
-        for(Message msg: queue.values()) {
-            Executor pool=transport.pickThreadPool(msg.isFlagSet(Message.Flag.OOB),msg.isFlagSet(Message.Flag.INTERNAL));
-            try {
-                pool.execute(transport.new SingleMessageHandler(msg));
-            }
-            catch(Throwable t) {
-                log.warn("%s: failure passing message up the stack: %s", local_addr, t);
-            }
-        }
+        for(Message msg: queue.values())
+            transport.submitToThreadPool(transport.new SingleMessageHandler(msg), true);
         queue.clear();
     }
 

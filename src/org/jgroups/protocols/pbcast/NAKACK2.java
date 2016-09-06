@@ -973,18 +973,15 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             log.trace("%s: flushing become_server_queue (%d elements)", local_addr, become_server_queue.size());
 
             TP transport=getTransport();
-            Executor thread_pool=transport.getDefaultThreadPool(), oob_thread_pool=transport.getOOBThreadPool();
-
             for(final Message msg: become_server_queue) {
-                Executor pool=msg.isFlagSet(Message.Flag.OOB)? oob_thread_pool : thread_pool;
-                pool.execute(() -> {
+                transport.submitToThreadPool(() -> {
                     try {
                         up(msg);
                     }
                     finally {
                         become_server_queue.remove(msg);
                     }
-                });
+                }, true);
             }
         }
     }

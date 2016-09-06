@@ -130,101 +130,25 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       "might get removed without warning")
     protected boolean loopback_separate_thread=true;
 
-
     @Property(description="Thread naming pattern for threads in this channel. Valid values are \"pcl\": " +
       "\"p\": includes the thread name, e.g. \"Incoming thread-1\", \"UDP ucast receiver\", " +
       "\"c\": includes the cluster name, e.g. \"MyCluster\", " +
       "\"l\": includes the local address of the current member, e.g. \"192.168.5.1:5678\"")
     protected String thread_naming_pattern="cl";
 
-    @Property(name="oob_thread_pool.enabled",description="Enable or disable the OOB thread pool",writable=false)
-    protected boolean oob_thread_pool_enabled=true;
 
-    @Property(name="oob_thread_pool.min_threads",description="Minimum thread pool size for the OOB thread pool")
-    protected int oob_thread_pool_min_threads=2;
-
-    @Property(name="oob_thread_pool.max_threads",description="Max thread pool size for the OOB thread pool")
-    protected int oob_thread_pool_max_threads=10;
-
-    @Property(name="oob_thread_pool.keep_alive_time", description="Timeout in ms to remove idle threads from the OOB pool")
-    protected long oob_thread_pool_keep_alive_time=30000;
-
-    @Property(name="oob_thread_pool.queue_enabled", description="Use queue to enqueue incoming OOB messages")
-    protected boolean oob_thread_pool_queue_enabled=false;
-
-    @Property(name="oob_thread_pool.queue_max_size",description="Maximum queue size for incoming OOB messages")
-    protected int oob_thread_pool_queue_max_size=500;
-
-    @Property(name="oob_thread_pool.rejection_policy",
-              description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
-    protected String oob_thread_pool_rejection_policy="abort";
-
-    @Property(name="thread_pool.min_threads",description="Minimum thread pool size for the regular thread pool")
-    protected int thread_pool_min_threads=2;
-
-    @Property(name="thread_pool.max_threads",description="Maximum thread pool size for the regular thread pool")
-    protected int thread_pool_max_threads=10;
-
-    @Property(name="thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle thread from regular pool")
-    protected long thread_pool_keep_alive_time=30000;
-
-    @Property(name="thread_pool.enabled",description="Enable or disable the regular thread pool")
+    @Property(name="thread_pool.enabled",description="Enable or disable the thread pool")
     protected boolean thread_pool_enabled=true;
 
-    @Property(name="thread_pool.queue_enabled", description="Queue to enqueue incoming regular messages")
-    protected boolean thread_pool_queue_enabled=true;
+    @Property(name="thread_pool.min_threads",description="Minimum thread pool size for the thread pool")
+    protected int thread_pool_min_threads=0;
 
-    @Property(name="thread_pool.queue_max_size", description="Maximum queue size for incoming regular messages")
-    protected int thread_pool_queue_max_size=10000;
+    @Property(name="thread_pool.max_threads",description="Maximum thread pool size for the thread pool")
+    protected int thread_pool_max_threads=20;
 
-    @Property(name="thread_pool.rejection_policy",
-              description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
-    protected String thread_pool_rejection_policy="abort";
+    @Property(name="thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle threads from pool")
+    protected long thread_pool_keep_alive_time=30000;
 
-
-    @Property(name="internal_thread_pool.enabled",description="Enable or disable the internal thread pool",writable=false)
-    protected boolean internal_thread_pool_enabled=true;
-
-    @Property(name="internal_thread_pool.min_threads",description="Minimum thread pool size for the internal thread pool")
-    protected int internal_thread_pool_min_threads=0;
-
-    @Property(name="internal_thread_pool.max_threads",description="Maximum thread pool size for the internal thread pool")
-    protected int internal_thread_pool_max_threads=10;
-
-    @Property(name="internal_thread_pool.keep_alive_time", description="Timeout in ms to remove idle threads from the internal pool")
-    protected long internal_thread_pool_keep_alive_time=30000;
-
-    @Property(name="internal_thread_pool.queue_enabled", description="Queue to enqueue incoming internal messages")
-    protected boolean internal_thread_pool_queue_enabled=false;
-
-    @Property(name="internal_thread_pool.queue_max_size",description="Maximum queue size for incoming internal messages")
-    protected int internal_thread_pool_queue_max_size=500;
-
-    @Property(name="internal_thread_pool.rejection_policy",
-              description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
-    protected String internal_thread_pool_rejection_policy="abort";
-
-
-    @Property(name="timer_thread_pool.enabled",description="Enable or disable the thread pool inside the timer")
-    protected boolean timer_thread_pool_enabled=true;
-
-    @Property(name="timer.min_threads",description="Minimum thread pool size for the timer thread pool")
-    protected int timer_min_threads=0;
-
-    @Property(name="timer.max_threads",description="Max thread pool size for the timer thread pool")
-    protected int timer_max_threads=5;
-
-    @Property(name="timer.keep_alive_time", description="Timeout in ms to remove idle threads from the timer pool")
-    protected long timer_keep_alive_time=30000;
-
-    @Property(name="timer.queue_max_size", description="Max number of elements on a timer queue")
-    protected int timer_queue_max_size=100;
-
-    @Property(name="timer.queue_enabled", description="Use queue to for the timer thread pool")
-    protected boolean timer_queue_enabled=false;
-
-    @Property(name="timer.rejection_policy",description="Timer rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
-    protected String timer_rejection_policy="abort"; // abort will spawn a new thread if the timer thread pool is full
 
     @Property(description="Interval (in ms) at which the time service updates its timestamp. 0 disables the time service")
     protected long time_service_interval=500;
@@ -362,33 +286,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return avg_batch_size.getAverage();
     }
 
-    public void setOOBThreadPoolKeepAliveTime(long time) {
-        oob_thread_pool_keep_alive_time=time;
-        if(oob_thread_pool instanceof ThreadPoolExecutor)
-            ((ThreadPoolExecutor)oob_thread_pool).setKeepAliveTime(time, TimeUnit.MILLISECONDS);
-    }
-
-    public long getOOBThreadPoolKeepAliveTime() {return oob_thread_pool_keep_alive_time;}
-
-
-    public void setOOBThreadPoolMinThreads(int size) {
-        oob_thread_pool_min_threads=size;
-        if(oob_thread_pool instanceof ThreadPoolExecutor)
-            ((ThreadPoolExecutor)oob_thread_pool).setCorePoolSize(size);
-    }
-
-    public int getOOBThreadPoolMinThreads() {return oob_thread_pool_min_threads;}
-
-    public void setOOBThreadPoolMaxThreads(int size) {
-        oob_thread_pool_max_threads=size;
-        if(oob_thread_pool instanceof ThreadPoolExecutor)
-            ((ThreadPoolExecutor)oob_thread_pool).setMaximumPoolSize(size);
-    }
-
-    public int getOOBThreadPoolMaxThreads() {return oob_thread_pool_max_threads;}
-
-    public void setOOBThreadPoolQueueEnabled(boolean flag) {this.oob_thread_pool_queue_enabled=flag;}
-
 
     public void setThreadPoolMinThreads(int size) {
         thread_pool_min_threads=size;
@@ -415,34 +312,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     public long getThreadPoolKeepAliveTime() {return thread_pool_keep_alive_time;}
-
-
-
-    public void setTimerMinThreads(int size) {
-        timer_min_threads=size;
-        if(timer != null)
-            timer.setMinThreads(size);
-    }
-
-    public int getTimerMinThreads() {return timer_min_threads;}
-
-
-    public void setTimerMaxThreads(int size) {
-        timer_max_threads=size;
-        if(timer != null)
-            timer.setMaxThreads(size);
-    }
-
-    public int getTimerMaxThreads() {return timer_max_threads;}
-
-
-    public void setTimerKeepAliveTime(long time) {
-        timer_keep_alive_time=time;
-        if(timer != null)
-            timer.setKeepAliveTime(time);
-    }
-
-    public long getTimerKeepAliveTime() {return timer_keep_alive_time;}
 
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
@@ -474,8 +343,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedAttribute(description="Number of bytes received")
     protected long num_bytes_received;
 
-    @ManagedAttribute(description="Number of messages rejected by the thread pool")
+    @ManagedAttribute(description="Number of dropped messages that were rejected by the thread pool")
     protected int num_rejected_msgs;
+
+    @ManagedAttribute(description="Number of threads spawned as a result of thread pool rejection")
+    protected int num_threads_spawned;
 
     /** The name of the group to which this member is connected. With a shared transport, the channel name is
      * in TP.ProtocolAdapter (cluster_name), and this field is not used */
@@ -532,7 +404,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
 
-    /** The address (host and port) of this member. Null by default when a shared transport is used */
+    /** The address (host and port) of this member */
     protected Address         local_addr;
     protected PhysicalAddress local_physical_addr;
     protected volatile        View view;
@@ -546,48 +418,19 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected final ReentrantLock connectLock = new ReentrantLock();
     
 
-    // ================================== OOB thread pool ========================
-    protected Executor oob_thread_pool;
+    // ================================== Thread pool ======================
 
-    /** Factory which is used by oob_thread_pool */
-    protected ThreadFactory oob_thread_factory;
+    /** The thread pool which handles unmarshalling, version checks and dispatching of messages */
+    protected Executor                thread_pool;
 
-    /** Used if oob_thread_pool is a ThreadPoolExecutor and oob_thread_pool_queue_enabled is true */
-    protected BlockingQueue<Runnable> oob_thread_pool_queue;
-
-
-    // ================================== Regular thread pool ======================
-
-    /** The thread pool which handles unmarshalling, version checks and dispatching of regular messages */
-    protected Executor thread_pool;
-
-    /** Factory which is used by oob_thread_pool */
-    protected ThreadFactory default_thread_factory;
-
-    /** Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled is true */
-    protected BlockingQueue<Runnable> thread_pool_queue;
-
-    // ================================== Internal thread pool ======================
-
-    /** The thread pool which handles JGroups internal messages (Flag.INTERNAL) */
-    protected Executor                internal_thread_pool;
-
-    /** Factory which is used by internal_thread_pool */
-    protected ThreadFactory           internal_thread_factory;
-
-    /** Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled is true */
-    protected BlockingQueue<Runnable> internal_thread_pool_queue;
+    /** Factory which is used by the thread pool */
+    protected ThreadFactory           thread_factory;
 
     // ================================== Timer thread pool  =========================
     protected TimeScheduler           timer;
 
-    protected ThreadFactory           timer_thread_factory;
-
     protected TimeService             time_service;
 
-    // ================================ Default thread factory ========================
-    /** Used by all threads created by JGroups outside of the thread pools */
-    protected ThreadFactory           global_thread_factory=null;
 
     // ================================= Default SocketFactory ========================
     protected SocketFactory           socket_factory=new DefaultSocketFactory();
@@ -675,6 +518,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void resetStats() {
         num_msgs_sent=num_msgs_received=num_single_msgs_received=num_batches_received=num_bytes_sent=num_bytes_received=0;
         num_oob_msgs_received=num_incoming_msgs_received=num_internal_msgs_received=num_single_msgs_sent=num_single_msgs_sent_instead_of_batch=num_batches_sent=0;
+        num_rejected_msgs=num_threads_spawned=0;
         avg_batch_size.clear();
     }
 
@@ -712,78 +556,25 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         this.bundler=bundler;
     }
 
-    public void setThreadPoolQueueEnabled(boolean flag) {thread_pool_queue_enabled=flag;}
 
-
-    public Executor getDefaultThreadPool() {
+    public Executor getThreadPool() {
         return thread_pool;
     }
 
-    public void setDefaultThreadPool(Executor thread_pool) {
+    public void setThreadPool(Executor thread_pool) {
         if(this.thread_pool != null)
             shutdownThreadPool(this.thread_pool);
         this.thread_pool=thread_pool;
     }
 
-    public ThreadFactory getDefaultThreadPoolThreadFactory() {
-        return default_thread_factory;
+    public ThreadFactory getThreadPoolThreadFactory() {
+        return thread_factory;
     }
 
-    public void setDefaultThreadPoolThreadFactory(ThreadFactory factory) {
-        default_thread_factory=factory;
+    public void setThreadPoolThreadFactory(ThreadFactory factory) {
+        thread_factory=factory;
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setThreadFactory(factory);
-    }
-
-    public Executor getOOBThreadPool() {
-        return oob_thread_pool;
-    }
-
-    public void setOOBThreadPool(Executor oob_thread_pool) {
-        if(this.oob_thread_pool != null) {
-            shutdownThreadPool(this.oob_thread_pool);
-        }
-        this.oob_thread_pool=oob_thread_pool;
-    }
-
-    public ThreadFactory getOOBThreadPoolThreadFactory() {
-        return oob_thread_factory;
-    }
-
-    public void setOOBThreadPoolThreadFactory(ThreadFactory factory) {
-        oob_thread_factory=factory;
-        if(oob_thread_pool instanceof ThreadPoolExecutor)
-            ((ThreadPoolExecutor)oob_thread_pool).setThreadFactory(factory);
-    }
-
-    public Executor getInternalThreadPool() {
-        return internal_thread_pool;
-    }
-
-    public void setInternalThreadPool(Executor internal_thread_pool) {
-        if(this.internal_thread_pool != null)
-            shutdownThreadPool(this.internal_thread_pool);
-        this.internal_thread_pool=internal_thread_pool;
-    }
-
-    public ThreadFactory getInternalThreadPoolThreadFactory() {
-        return internal_thread_factory;
-    }
-
-    public void setInternalThreadPoolThreadFactory(ThreadFactory factory) {
-        internal_thread_factory=factory;
-        if(internal_thread_pool instanceof ThreadPoolExecutor)
-            ((ThreadPoolExecutor)internal_thread_pool).setThreadFactory(factory);
-    }
-
-    public ThreadFactory getTimerThreadFactory() {
-        return timer_thread_factory;
-    }
-
-    public void setTimerThreadFactory(ThreadFactory factory) {
-        timer_thread_factory=factory;
-        if(timer != null)
-            timer.setThreadFactory(factory);
     }
 
     public TimeScheduler getTimer() {return timer;}
@@ -809,11 +600,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     public ThreadFactory getThreadFactory() {
-        return global_thread_factory;
+        return thread_factory;
     }
 
     public void setThreadFactory(ThreadFactory factory) {
-        global_thread_factory=factory;
+        thread_factory=factory;
     }
 
     public SocketFactory getSocketFactory() {
@@ -852,45 +643,19 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void setPortRange(int range) {this.port_range=range;}
     public int getPortRange() {return port_range ;}
 
-    
-    @ManagedAttribute(description="Current number of threads in the OOB thread pool")
-    public int getOOBPoolSize() {
-        return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getPoolSize() : 0;
-    }
-
-    @ManagedAttribute(description="Current number of active threads in the OOB thread pool")
-    public int getOOBPoolSizeActive() {
-        return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getActiveCount() : 0;
-    }
 
     public long getOOBMessages() {
         return num_oob_msgs_received;
     }
 
-    @ManagedAttribute(description="Number of messages in the OOB thread pool's queue")
-    public int getOOBQueueSize() {
-        return oob_thread_pool_queue != null? oob_thread_pool_queue.size() : 0;
-    }
-
-    public int getOOBMaxQueueSize() {
-        return oob_thread_pool_queue_max_size;
-    }
-
-
-    public void setOOBRejectionPolicy(String rejection_policy) {
-        RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
-        if(oob_thread_pool instanceof ThreadPoolExecutor)
-            ((ThreadPoolExecutor)oob_thread_pool).setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
-    }
-
 
     @ManagedAttribute(description="Current number of threads in the default thread pool")
-    public int getRegularPoolSize() {
+    public int getThreadPoolSize() {
         return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getPoolSize() : 0;
     }
 
     @ManagedAttribute(description="Current number of active threads in the default thread pool")
-    public int getRegularPoolSizeActive() {
+    public int getThreadPoolSizeActive() {
         return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getActiveCount() : 0;
     }
 
@@ -898,39 +663,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return num_incoming_msgs_received;
     }
 
-    @ManagedAttribute(description="Number of messages in the default thread pool's queue")
-    public int getRegularQueueSize() {
-        return thread_pool_queue != null? thread_pool_queue.size() : 0;
-    }
-
-    public int getRegularMaxQueueSize() {
-        return thread_pool_queue_max_size;
-    }
-
-
-    @ManagedAttribute(description="Current number of threads in the internal thread pool")
-    public int getInternalPoolSize() {
-        return internal_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)internal_thread_pool).getPoolSize() : 0;
-    }
-
-    @ManagedAttribute(description="Current number of active threads in the internal thread pool")
-    public int getInternalPoolSizeActive() {
-        return internal_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)internal_thread_pool).getActiveCount() : 0;
-    }
-
     public long getInternalMessages() {
         return num_internal_msgs_received;
     }
-
-    @ManagedAttribute(description="Number of messages in the internal thread pool's queue")
-    public int getInternalQueueSize() {
-        return internal_thread_pool_queue != null? internal_thread_pool_queue.size() : 0;
-    }
-
-    public int getInternalMaxQueueSize() {
-        return internal_thread_pool_queue_max_size;
-    }
-
 
     @ManagedAttribute(name="timer_tasks",description="Number of timer tasks queued up for execution")
     public int getNumTimerTasks() {
@@ -954,12 +689,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @ManagedAttribute(description="Whether the diagnostics handler is running or not")
     public boolean isDiagnosticsHandlerRunning() {return diag_handler != null && diag_handler.isRunning();}
-
-    public void setRegularRejectionPolicy(String rejection_policy) {
-        RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
-        if(thread_pool instanceof ThreadPoolExecutor)
-            ((ThreadPoolExecutor)thread_pool).setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
-    }
 
     public void    setLogDiscardMessages(boolean flag)        {log_discard_msgs=flag;}
     public boolean getLogDiscardMessages()                    {return log_discard_msgs;}
@@ -1018,23 +747,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void init() throws Exception {
         this.id=ClassConfigurator.getProtocolId(TP.class);
 
-        // Create the default thread factory
-        if(global_thread_factory == null)
-            global_thread_factory=new DefaultThreadFactory("", false);
-
-        // Create the timer and the associated thread factory - depends on singleton_name
-        if(timer_thread_factory == null)
-            timer_thread_factory=new LazyThreadFactory("Timer", true, true);
-
-        if(default_thread_factory == null)
-            default_thread_factory=new DefaultThreadFactory("Incoming", false, true);
+        if(thread_factory == null)
+            //thread_factory=new DefaultThreadFactory("jgroups", false, true);
+          thread_factory=new LazyThreadFactory("jgroups", false, true);
         
-        if(oob_thread_factory == null)
-            oob_thread_factory=new DefaultThreadFactory("OOB", false, true);
-
-        if(internal_thread_factory == null)
-            internal_thread_factory=new DefaultThreadFactory("INT", false, true);
-
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
 
@@ -1043,16 +759,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                                                 diagnostics_ttl, log, getSocketFactory(), getThreadFactory(), diagnostics_passcode)
               .transport(this);
 
-        if(timer == null) {
-            BlockingQueue<Runnable> queue=timer_queue_enabled? new ArrayBlockingQueue<>(timer_queue_max_size) :
-              new SynchronousQueue<>();
-            timer=new TimeScheduler3(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
-                                     queue, timer_rejection_policy, timer_thread_pool_enabled);
-        }
-
-        if(time_service_interval > 0)
-            time_service=new TimeService(timer, time_service_interval).start();
-
         who_has_cache=new ExpiryCache<>(who_has_cache_timeout);
 
         if(suppress_time_different_version_warnings > 0)
@@ -1060,56 +766,26 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(suppress_time_different_cluster_warnings > 0)
             suppress_log_different_cluster=new SuppressLog<>(log, "MsgDroppedDiffCluster", "SuppressMsg");
 
-        // ========================================== OOB thread pool ==============================
 
-        if(oob_thread_pool == null
-          || (oob_thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)oob_thread_pool).isShutdown())) {
-            if(oob_thread_pool_enabled) {
-                if(oob_thread_pool_queue_enabled)
-                    oob_thread_pool_queue=new ArrayBlockingQueue<>(oob_thread_pool_queue_max_size);
-                else
-                    oob_thread_pool_queue=new SynchronousQueue<>();
-                oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
-                                                 oob_thread_pool_rejection_policy, oob_thread_pool_queue, oob_thread_factory);
-            }
-            else // otherwise use the caller's thread to unmarshal the byte buffer into a message
-                oob_thread_pool=new DirectExecutor();
-        }
+        // ====================================== Thread pool ===========================
 
-        // ====================================== Regular thread pool ===========================
-
-        if(thread_pool == null
-          || (thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)thread_pool).isShutdown())) {
+        if(thread_pool == null || (thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)thread_pool).isShutdown())) {
             if(thread_pool_enabled) {
-                if(thread_pool_queue_enabled)
-                    thread_pool_queue=new ArrayBlockingQueue<>(thread_pool_queue_max_size);
-                else
-                    thread_pool_queue=new SynchronousQueue<>();
                 thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
-                                             thread_pool_rejection_policy, thread_pool_queue, default_thread_factory);
+                                             "abort", new SynchronousQueue<>(), thread_factory);
             }
             else // otherwise use the caller's thread to unmarshal the byte buffer into a message
                 thread_pool=new DirectExecutor();
         }
 
 
-        // ========================================== Internal thread pool ==============================
+        // ========================================== Timer ==============================
+        if(timer == null)
+            timer=new TimeScheduler3(thread_pool, thread_factory);
 
-        if(internal_thread_pool == null
-          || (internal_thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)internal_thread_pool).isShutdown())) {
-            if(internal_thread_pool_enabled) {
-                if(internal_thread_pool_queue_enabled)
-                    internal_thread_pool_queue=new ArrayBlockingQueue<>(internal_thread_pool_queue_max_size);
-                else
-                    internal_thread_pool_queue=new SynchronousQueue<>();
-                internal_thread_pool=createThreadPool(internal_thread_pool_min_threads, internal_thread_pool_max_threads, internal_thread_pool_keep_alive_time,
-                                                      internal_thread_pool_rejection_policy, internal_thread_pool_queue, internal_thread_factory);
-                if(internal_thread_pool_min_threads < 2)
-                    log.warn("The internal thread pool was configured with only %d min_threads; this might lead to problems " +
-                               "when more than 1 thread is needed, e.g. when merging", internal_thread_pool_min_threads);
-            }
-            // if the internal thread pool is disabled, we won't create it (not even a DirectExecutor)
-        }
+        if(time_service_interval > 0)
+            time_service=new TimeService(timer, time_service_interval).start();
+
 
         Map<String, Object> m=new HashMap<>(2);
         if(bind_addr != null)
@@ -1148,18 +824,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(time_service != null)
             time_service.stop();
 
-        if(timer != null)
-            timer.stop();
-
-        // 3. Stop the thread pools
-        if(oob_thread_pool instanceof ThreadPoolExecutor)
-            shutdownThreadPool(oob_thread_pool);
-
+        // Stop the thread pool
         if(thread_pool instanceof ThreadPoolExecutor)
             shutdownThreadPool(thread_pool);
 
-        if(internal_thread_pool instanceof ThreadPoolExecutor)
-            shutdownThreadPool(internal_thread_pool);
+        if(timer != null)
+            timer.stop();
     }
 
     /**
@@ -1395,9 +1065,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         // changed to fix http://jira.jboss.com/jira/browse/JGRP-506
         boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
-        Executor pool=internal && internal_thread_pool != null? internal_thread_pool
-          : internal || msg.isFlagSet(Message.Flag.OOB)? oob_thread_pool : thread_pool;
-        submitToThreadPool(pool, () -> passMessageUp(copy, null, false, multicast, false));
+        submitToThreadPool(() -> passMessageUp(copy, null, false, multicast, false), internal);
     }
 
     protected void _send(Message msg, Address dest) {
@@ -1523,21 +1191,19 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
             if(oob_batch != null && !oob_batch.isEmpty()) {
                 num_oob_msgs_received+=oob_batch.size();
-                submitToThreadPool(oob_thread_pool, new BatchHandler(oob_batch));
+                submitToThreadPool(new BatchHandler(oob_batch), false);
             }
             if(batch != null) {
                 num_incoming_msgs_received+=batch.size();
-                submitToThreadPool(thread_pool, new BatchHandler(batch));
+                submitToThreadPool(new BatchHandler(batch), false);
             }
             if(internal_batch_oob != null && !internal_batch_oob.isEmpty()) {
                 num_oob_msgs_received+=internal_batch_oob.size();
-                Executor pool=internal_thread_pool != null? internal_thread_pool : oob_thread_pool;
-                submitToThreadPool(pool, new BatchHandler(internal_batch_oob));
+                submitToThreadPool(new BatchHandler(internal_batch_oob), true);
             }
             if(internal_batch != null) {
                 num_internal_msgs_received+=internal_batch.size();
-                Executor pool=internal_thread_pool != null? internal_thread_pool : oob_thread_pool;
-                submitToThreadPool(pool, new BatchHandler(internal_batch));
+                submitToThreadPool(new BatchHandler(internal_batch), true);
             }
         }
         catch(Throwable t) {
@@ -1573,8 +1239,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             else
                 num_incoming_msgs_received++;
 
-            Executor pool=pickThreadPool(oob, internal);
-            submitToThreadPool(pool, new SingleMessageHandler(msg));
+            submitToThreadPool(new SingleMessageHandler(msg), internal);
         }
         catch(Throwable t) {
             log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
@@ -1590,33 +1255,41 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 continue;
             for(Message msg: oob_batch) {
                 if(msg.isFlagSet(Message.Flag.DONT_BUNDLE) && msg.isFlagSet(Message.Flag.OOB)) {
-                    boolean oob=msg.isFlagSet(Message.Flag.OOB), internal=msg.isFlagSet(Message.Flag.INTERNAL);
+                    boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
                     msg.putHeader(id, new TpHeader(oob_batch.clusterName()));
-                    Executor pool=pickThreadPool(oob, internal);
                     oob_batch.remove(msg);
                     num_oob_msgs_received++;
-                    submitToThreadPool(pool, new SingleMessageHandler(msg));
+                    submitToThreadPool(new SingleMessageHandler(msg), internal);
                 }
             }
         }
     }
 
-    protected void submitToThreadPool(Executor thread_pool, Runnable task) {
+    public void submitToThreadPool(Runnable task, boolean spawn_thread_on_rejection) {
         try {
             thread_pool.execute(task);
         }
         catch(RejectedExecutionException ex) {
-            num_rejected_msgs++;
+            if(spawn_thread_on_rejection) {
+                num_threads_spawned++;
+                runInNewThread(task);
+            }
+            else
+                num_rejected_msgs++;
         }
         catch(Throwable t) {
             log.error("failure submitting task to thread pool", t);
         }
     }
 
-    protected Executor pickThreadPool(boolean oob, boolean internal) {
-        return internal && internal_thread_pool != null? internal_thread_pool
-          : (internal || oob)? oob_thread_pool : thread_pool;
+    protected void runInNewThread(Runnable task) {
+        Thread thread=thread_factory != null?
+          thread_factory.newThread(task, "jgroups-temp-thread")
+          : new Thread(task, "jgroups-temp-thread");
+        thread.start();
     }
+
+
 
     protected boolean versionMatch(short version, Address sender) {
         boolean match=Version.isBinaryCompatible(version);
@@ -1962,10 +1635,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected void setThreadNames() {
         if(diag_handler != null)
-            global_thread_factory.renameThread(DiagnosticsHandler.THREAD_NAME, diag_handler.getThread());
+            thread_factory.renameThread(DiagnosticsHandler.THREAD_NAME, diag_handler.getThread());
         if(bundler instanceof TransferQueueBundler) {
-            global_thread_factory.renameThread(TransferQueueBundler.THREAD_NAME,
-                                               ((TransferQueueBundler)bundler).getThread());
+            thread_factory.renameThread(TransferQueueBundler.THREAD_NAME, ((TransferQueueBundler)bundler).getThread());
         }
     }
 
@@ -1976,18 +1648,17 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(bundler instanceof TransferQueueBundler) {
             Thread thread=((TransferQueueBundler)bundler).getThread();
             if(thread != null)
-                global_thread_factory.renameThread(TransferQueueBundler.THREAD_NAME, thread);
+                thread_factory.renameThread(TransferQueueBundler.THREAD_NAME, thread);
         }
         else if(bundler instanceof RingBufferBundler) {
             Thread thread=((RingBufferBundler)bundler).getThread();
             if(thread != null)
-                global_thread_factory.renameThread(RingBufferBundler.THREAD_NAME, thread);
+                thread_factory.renameThread(RingBufferBundler.THREAD_NAME, thread);
         }
     }
 
     protected void setInAllThreadFactories(String cluster_name, Address local_address, String pattern) {
-        ThreadFactory[] factories= {timer_thread_factory, default_thread_factory, oob_thread_factory,
-          internal_thread_factory, global_thread_factory };
+        ThreadFactory[] factories= {thread_factory};
 
         for(ThreadFactory factory: factories) {
             if(pattern != null)

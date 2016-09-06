@@ -4,7 +4,10 @@ import org.jgroups.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.*;
+import org.jgroups.protocols.DISCARD;
+import org.jgroups.protocols.SHARED_LOOPBACK;
+import org.jgroups.protocols.SHARED_LOOPBACK_PING;
+import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
@@ -18,10 +21,6 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -44,28 +43,15 @@ public class MergeTest2 {
                                          new DefaultThreadFactory("", false));
         handler.start();
         
-        TimeScheduler timer=new TimeScheduler3(new DefaultThreadFactory("Timer", true, true),
-                                               5,10,
-                                               3000, 1000, "abort");
-
-        ThreadPoolExecutor oob_thread_pool=new ThreadPoolExecutor(5, 50, 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1000));
-        oob_thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-
-        ThreadPoolExecutor thread_pool=new ThreadPoolExecutor(5, 10, 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(10000));
-        thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
-
-        a=createChannel("A", timer, thread_pool, oob_thread_pool);
-        b=createChannel("B", timer, thread_pool, oob_thread_pool);
-        c=createChannel("C", timer, thread_pool, oob_thread_pool);
-        d=createChannel("D", timer, thread_pool, oob_thread_pool);
+        a=createChannel("A");
+        b=createChannel("B");
+        c=createChannel("C");
+        d=createChannel("D");
     }
 
 
-    protected JChannel createChannel(String name, TimeScheduler timer, Executor thread_pool, Executor oob_thread_pool) throws Exception {
+    protected JChannel createChannel(String name) throws Exception {
         SHARED_LOOPBACK shared_loopback=new SHARED_LOOPBACK();
-        shared_loopback.setTimer(timer);
-        shared_loopback.setOOBThreadPool(oob_thread_pool);
-        shared_loopback.setDefaultThreadPool(thread_pool);
         shared_loopback.setDiagnosticsHandler(handler);
 
         JChannel retval=new JChannel(shared_loopback,
@@ -116,7 +102,7 @@ public class MergeTest2 {
             assert ch.getView().size() == 1;
             if(ch.getAddress().equals(faulty_member)) // skip the faulty member; it keeps discarding messages
                 continue;
-            DISCARD discard=(DISCARD)ch.getProtocolStack().findProtocol(DISCARD.class);
+            DISCARD discard=ch.getProtocolStack().findProtocol(DISCARD.class);
             discard.setDiscardAll(false);
         }
 
@@ -126,7 +112,7 @@ public class MergeTest2 {
         }
 
         System.out.println("Injecting MERGE event into merge leader " + merge_leader.getAddress());
-        GMS gms=(GMS)merge_leader.getProtocolStack().findProtocol(GMS.class);
+        GMS gms=merge_leader.getProtocolStack().findProtocol(GMS.class);
         gms.setLevel("trace");
         gms.up(new Event(Event.MERGE, merge_views));
 

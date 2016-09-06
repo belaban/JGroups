@@ -12,7 +12,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -378,10 +377,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             log.trace("%s: set max_xmit_req_size from %d to %d", local_addr, old_max_xmit_size, max_xmit_req_size);
 
 
-        boolean oob_pool_enabled=(boolean)transport.getValue("oob_thread_pool_enabled"),
-          regular_pool_enabled=(boolean)transport.getValue("thread_pool_enabled");
-        if(!oob_pool_enabled && !regular_pool_enabled)
-            log.info("both the regular and OOB thread pools are disabled; %s could be removed (JGRP-2069)", getClass().getSimpleName());
+        boolean regular_pool_enabled=(boolean)transport.getValue("thread_pool_enabled");
+        if(!regular_pool_enabled)
+            log.info("the thread pool is disabled; %s could be removed (JGRP-2069)", getClass().getSimpleName());
     }
 
     public void start() throws Exception {
@@ -815,11 +813,10 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         // If there are other msgs, tell the regular thread pool to handle them (https://issues.jboss.org/browse/JGRP-1732)
         final AtomicBoolean processing=win.getProcessing();
         if(!win.isEmpty() && !processing.get() /* && seqno < win.getHighestReceived() */) { // commented to handle hd == hr !
-            Executor pool=getTransport().getDefaultThreadPool();
-            getTransport().submitToThreadPool(pool, () -> {
+            getTransport().submitToThreadPool(() -> {
                 if(processing.compareAndSet(false, true))
                     removeAndDeliver(processing, win, sender);
-            });
+            }, true);
         }
     }
 

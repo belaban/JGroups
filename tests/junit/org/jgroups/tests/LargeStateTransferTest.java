@@ -41,7 +41,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
         provider=createChannel(true, 2, "provider");
         modifyStack(provider);
         requester=createChannel(provider, "requester");
-        setOOBPoolSize(provider, requester);
+        setThreadPoolSize(provider, requester);
     }
 
     @AfterMethod
@@ -88,12 +88,11 @@ public class LargeStateTransferTest extends ChannelTestBase {
     }
 
 
-    private static void setOOBPoolSize(JChannel... channels) {
+    private static void setThreadPoolSize(JChannel... channels) {
         for(JChannel channel: channels) {
             TP transport=channel.getProtocolStack().getTransport();
-            transport.setOOBThreadPoolMinThreads(2);
-            transport.setOOBThreadPoolMaxThreads(8);
-            transport.setOOBThreadPoolQueueEnabled(false);
+            transport.setThreadPoolMinThreads(2);
+            transport.setThreadPoolMaxThreads(8);
         }
     }
 
@@ -104,7 +103,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
 
     private static void modifyStack(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        GMS gms=(GMS)stack.findProtocol(GMS.class);
+        GMS gms=stack.findProtocol(GMS.class);
         if(gms != null)
             gms.setLogCollectMessages(false);
     }
