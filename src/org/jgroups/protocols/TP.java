@@ -204,7 +204,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(name="max_bundle_size", description="Maximum number of bytes for messages to be queued until they are sent")
     protected int max_bundle_size=64000;
 
-    @Property(description="The type of bundler used (\"ring-buffer\" (default), \"transfer-queue\", \"sender-sends\" or " +
+    @Property(description="The type of bundler used (\"ring-buffer\", \"transfer-queue\" (default), \"sender-sends\" or " +
       "\"no-bundler\") or the fully qualified classname of a Bundler implementation")
     protected String bundler_type="transfer-queue";
 

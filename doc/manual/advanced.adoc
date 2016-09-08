@@ -87,7 +87,7 @@ In a nutshell the properties of the protocols are:
 
 UDP:: 
                     This is the transport protocol. It uses IP multicasting to send messages to the entire cluster,
-                        or individual nodes. Other transports include TCP and TUNNEL.
+                        or individual nodes. Other transports include TCP, TCP_NIO2 and TUNNEL.
                     
 
 PING::
@@ -297,7 +297,7 @@ The properties for a typical stack based on TCP might look like this (edited for
 TCP:: The transport protocol, uses TCP (from TCP/IP) to send unicast and multicast messages. In the latter case, it sends
       multiple unicast messages.
 
-TCPPING::Discovers the initial membership to determine coordinator. Join request will then be sent to coordinator.
+TCPPING:: Discovers the initial membership to determine coordinator. Join request will then be sent to coordinator.
 
 VERIFY_SUSPECT:: Double checks that a suspected member is really dead
 
@@ -527,42 +527,35 @@ However, there are several drawbacks: first, having to maintain a TCP connection
                 enable outgoing traffic on 2 ports in a firewall, e.g. when a user does not 'own' the firewall.
             
 
+
 [[TransportDetails]]
 === The transport in detail
 
 The transport is always the protocol at the bottom of the stack, responsible for sending and receiving messages.
 
-It contains most of the resources, such as regular, OOB and internal thread pools for handling of incoming messages,
-a timer thread pool to fire tasks at certain times, sockets for sending and receiving of messages, and thread and socket
-factories.
+It contains most of the resources, such as the thread pool for handling of incoming messages, sockets for sending and
+receiving of messages, and thread and socket factories.
 
 The transport is shown in <<TransportDetailsFig>>.
-
 
 [[TransportDetailsFig]]
 .The transport protocol
 image::./images/TransportDetails.png[]
 
 
-The transport consists of 4 thread pools (java.util.concurrent.Executor):
+The transport consists of a thread pool (`java.util.concurrent.ThreadPoolExecutor`) which handles all types of messages
+(internal, OOB and regular) and is also used by the timer to fire tasks (e.g. retransmission tasks) at fixed or
+dynamic intervals.
 
-* The regular thread pool. Used to handle regular (non-OOB and non-internal) messages
-* The out-of-band (OOB) thread pool to handle OOB messages
-* The internal thread pool for JGroups-internal messages only (not shown) and
-* The timer thread pool to fire tasks (e.g. retransmission tasks) at periodic intervals
-
-NOTE: The internal thread pool should be used by JGroups only and is therefore not discussed. Although it can be
-      configured via XML, this is not needed in most cases.
-
-When a (UDP or TCP) socket receives a message or message batch, it passes the message to one of the thread pools for
+When a (UDP or TCP) socket receives a message or message batch, it passes the message to the thread pool for
 processing.
 
-When a thread pool is disabled, then we use the thread of the caller (e.g. multicast or unicast
+When the thread pool is disabled, then we use the thread of the caller (e.g. multicast or unicast
 receiver threads or the ConnectionTable) to send the message up the stack and into the application.
+
 Otherwise, the packet will be processed by a thread from the thread pool, which sends the message up
 the stack. When all current threads are busy, another thread might be created, up to the maximum number
-of threads defined. Alternatively, the packet might get queued up until a thread becomes available, or it can get dropped
-if the pool is exhausted.
+of threads defined. Alternatively, the packet might get dropped if the pool is exhausted.
             
 The point of using a thread pool is that the receiver threads should only receive the packets and forward
 them to the thread pools for processing, because unmarshalling and processing is slower than simply
@@ -583,56 +576,29 @@ Here's an example of the new configuration:
 
 <UDP
     thread_naming_pattern="cl"
-
     thread_pool.enabled="true"
-    thread_pool.min_threads="1"
+    thread_pool.min_threads="0"
     thread_pool.max_threads="100"
-    thread_pool.keep_alive_time="20000"
-    thread_pool.queue_enabled="false"
-    thread_pool.queue_max_size="10"
-    thread_pool.rejection_policy="discard"
-
-    oob_thread_pool.enabled="true"
-    oob_thread_pool.min_threads="1"
-    oob_thread_pool.max_threads="4"
-    oob_thread_pool.keep_alive_time="30000"
-    oob_thread_pool.queue_enabled="true"
-    oob_thread_pool.queue_max_size="10"
-    oob_thread_pool.rejection_policy="discard"/>
-                
+    thread_pool.keep_alive_time="20000" />
 ----
 
-The attributes for the thread pools are prefixed with thread_pool and oob_thread_pool respectively.
+The attributes for the thread pools are prefixed with thread_pool respectively.
                 
 
-The attributes are listed below. They roughly correspond to the options of
-                    `java.util.concurrent.ThreadPoolExecutor`.
+The attributes are listed below. They roughly correspond to the options of `java.util.concurrent.ThreadPoolExecutor`.
 
-.Attributes of thread pools
+.Attributes of the thread pool
 [options="header",cols="3,10"]
 |===============
 |Name|Description
-|thread_naming_pattern|Determines how threads are named that are running from thread pools in
-                                    concurrent stack. Valid values include any combination of "cl" letters, where
-                                    "c" includes the cluster name and "l" includes local address of the channel.
-                                        The default is "cl"
+|thread_naming_pattern|Determines how threads are named that are running from thread pools in concurrent stack.
+                       Valid values include any combination of "cl" letters, where "c" includes the cluster name and
+                       "l" includes local address of the channel. The default is "cl".
                                     
-|enabled|Whether or not to use a thread pool. If set to false, the caller's thread
-                                    is used.
+|enabled|Whether or not to use a thread pool. If set to false, the caller's thread is used.
 |min_threads|The minimum number of threads to use.
 |max_threads|The maximum number of threads to use.
 |keep_alive_time|Number of milliseconds until an idle thread is removed from the pool
-|queue_enabled|Whether or not to use a (bounded) queue. If enabled, when all minimum
-                                    threads are busy, work items are added to the queue. When the queue is full,
-                                    additional threads are created, up to max_threads. When max_threads have been
-                                    reached (and the queue is full), the rejection policy is consulted.
-|max_size|The maximum number of elements in the queue. Ignored if the queue is
-                                    disabled
-|rejection_policy|Determines what happens when the thread pool (and queue, if enabled) is
-                                    full. The default is to run on the caller's thread. "Abort" throws an runtime
-                                    exception. "Discard" discards the message, "DiscardOldest" discards the
-                                    oldest entry in the queue.
-
 |===============
 
 
@@ -664,16 +630,15 @@ are retransmitted and duplicate messages are dropped.
 [[OOB]]
 ===== Out-of-band messages
 
-OOB messages completely ignore any ordering constraints the stack might have. Any message marked as OOB
-will be processed by the OOB thread pool.
+OOB messages completely ignore any ordering constraints the stack might have.
 
 This is necessary in cases where we don't want the message processing to wait until all other messages from the same
 sender have been processed, e.g. in the heartbeat case: if sender P sends 5 messages and then a response to a heartbeat
 request received from some other node, then the time taken to process P's 5 messages might take longer than the heartbeat
 timeout, so that P might get falsely suspected!
 
-However, if the heartbeat response is marked as OOB, then it will get processed by the OOB thread pool and therefore
-might be concurrent to its previously sent 5 messages and not trigger a false suspicion.
+However, if the heartbeat response is marked as OOB, then it will get processed in parallel to the other 5 messages
+from P and not trigger a false suspicion.
             
 The unit tests `UNICAST_OOB_Test` and `NAKACK_OOB_Test` demonstrate how OOB messages influence the ordering,
 for both unicast and multicast messages.
@@ -681,52 +646,37 @@ for both unicast and multicast messages.
 
 
 
-==== Replacing the default and OOB thread pools
+==== Replacing the thread pool and factories
 
 The following thread pools and factories are in TP:
 
 [options="header",cols="3,10"]
 |===============
 |Name|Description
-|Default thread pool|This is the pool for handling incoming messages. It can be fetched using
-`getDefaultThreadPool()` and replaced using `setDefaultThreadPool()`. When setting a
-thread pool, the old thread pool (if any) will be shutdown and all of its tasks
-cancelled first.
+|Thread pool|This is the pool for handling incoming messages. It can be fetched using
+`getThreadPool()` and replaced using `setThreadPool()`. When replacing the
+thread pool, the old thread pool will be shutdown and all of its tasks cancelled first.
                                 
-|OOB thread pool|This is the pool for handling incoming OOB messages. Methods to get and set
-                                    it are `getOOBThreadPool()` and `setOOBThreadPool()`.
-|Timer thread pool|This is the thread pool for the timer. The max number of threads is set through
-                                the timer.num_threads property. The timer thread pool cannot be set, it can only
-                                be retrieved using `getTimer()`. However, the thread factory of the timer
-                                can be replaced (see below).
-|Default thread factory|This is the thread factory (`org.jgroups.util.ThreadFactory`) of the default
-                                    thread pool, which handles incoming messages. A thread pool factory is used to
-                                    name threads and possibly make them daemons.
-                                    It can be accessed using
-                                    `getDefaultThreadPoolThreadFactory()` and `setDefaultThreadPoolThreadFactory()`.
-|OOB thread factory|This is the thread factory for the OOB thread pool. It can be retrieved
-                                using `getOOBThreadPoolThreadFactory()` and set using method
-                                `setOOBThreadPoolThreadFactory()`.
-|Timer thread factory|This is the thread factory for the timer thread pool. It can be accessed
-                                using `getTimerThreadFactory()` and `setTimerThreadFactory()`.
-|Global thread factory|The global thread factory can get used (e.g. by protocols) to create threads
-                                which don't live in the transport, e.g. the `FD_SOCK` server socket handler thread.
-                                Each protocol has a method `getTransport()`. Once the TP is obtained, `getThreadFactory()`
-                                can be called to get the global thread factory. The global thread factory
-                                can be replaced with `setThreadFactory()`.
-
+|Thread factory|This is the thread factory (`org.jgroups.util.ThreadFactory`) of the thread pool, which handles incoming
+                messages. A thread pool factory is used to name threads and possibly make them daemons.
+                It can be accessed using `getThreadPoolThreadFactory()` and `setThreadPoolThreadFactory()`.
+|Socket factory | This is responsible for creation and deletion of sockets. It can be fetched using `getSocketFactory()`
+                  and set using `setSocketFactory()`.
 |===============
 
 
 
-NOTE: Note that thread pools and factories should be replaced after a channel has been created and
-      before it is connected (JChannel.connect()).
+NOTE: Note that the thread pool and (thread and socket) factories should be replaced after a channel has been created
+      and *before* it is connected (`JChannel.connect()`).
 
 
 ==== Sharing of thread pools between channels in the same JVM
 
-The default and OOB thread pools can be shared between instances running inside the same JVM. The advantage here is
-that multiple channels running within the same JVM can pool (and therefore save) threads.
+The thread pool can be shared between instances running inside the same JVM. This can be done by creating an
+implementation of `Executor`, a number of channels and then setting the same executor in all channels via
+`setThreadPool(Executor e)`.
+
+The advantage here is that multiple channels running within the same JVM can pool (and therefore save) threads.
 
 The disadvantage is that thread naming will not show to which channel instance an incoming thread belongs to.
             
