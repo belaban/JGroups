@@ -2,13 +2,17 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
+import org.jgroups.protocols.TCP;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
@@ -122,6 +126,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     @Property(description="Max number of times the last seqno is resent before acquiescing if last seqno isn't incremented")
     protected int     resend_last_seqno_max_times=1;
+
+    @ManagedAttribute(description="True if sending a message can block at the transport level")
+    protected boolean sends_can_block=true;
 
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 
@@ -395,6 +402,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
 
         TP transport=getTransport();
+        sends_can_block=transport instanceof TCP; // UDP and TCP_NIO2 won't block
         transport.registerProbeHandler(this);
         if(!transport.supportsMulticasting()) {
             if(use_mcast_xmit) {
@@ -1445,7 +1453,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     protected void startRetransmitTask() {
         if(xmit_task == null || xmit_task.isDone())
-            xmit_task=timer.scheduleWithFixedDelay(new RetransmitTask(), 0, xmit_interval, TimeUnit.MILLISECONDS);
+            xmit_task=timer.scheduleWithFixedDelay(new RetransmitTask(), 0, xmit_interval, TimeUnit.MILLISECONDS, sends_can_block);
     }
 
     protected void stopRetransmitTask() {

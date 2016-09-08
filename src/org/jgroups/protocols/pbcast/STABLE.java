@@ -3,12 +3,15 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
+import org.jgroups.protocols.TCP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -446,7 +449,7 @@ public class STABLE extends Protocol {
         try {
             if(stable_task_future == null || stable_task_future.isDone()) {
                 StableTask stable_task=new StableTask();
-                stable_task_future=timer.scheduleWithDynamicInterval(stable_task);
+                stable_task_future=timer.scheduleWithDynamicInterval(stable_task, getTransport() instanceof TCP);
                 log.trace("%s: stable task started", local_addr);
             }
         }
@@ -478,7 +481,7 @@ public class STABLE extends Protocol {
         synchronized(resume_task_mutex) {
             if(resume_task_future == null || resume_task_future.isDone()) {
                 ResumeTask resume_task=new ResumeTask();
-                resume_task_future=timer.schedule(resume_task, max_suspend_time, TimeUnit.MILLISECONDS);
+                resume_task_future=timer.schedule(resume_task, max_suspend_time, TimeUnit.MILLISECONDS, false);
                 log.debug("%s: resume task started, max_suspend_time=%d", local_addr, max_suspend_time);
             }
         }
@@ -501,7 +504,8 @@ public class STABLE extends Protocol {
         try {
             if(stability_task_future == null || stability_task_future.isDone()) {
                 StabilitySendTask stability_task=new StabilitySendTask(d, view_id); // runs only once
-                stability_task_future=timer.schedule(stability_task, delay, TimeUnit.MILLISECONDS);
+                stability_task_future=timer.schedule(stability_task, delay, TimeUnit.MILLISECONDS,
+                                                     getTransport() instanceof TCP);
             }
         }
         finally {
@@ -673,7 +677,7 @@ public class STABLE extends Protocol {
             };
 
             // Run in a separate thread so we don't potentially block (http://jira.jboss.com/jira/browse/JGRP-532)
-            timer.execute(r);
+            timer.execute(r, getTransport() instanceof TCP);
         }
         catch(Throwable t) {
             log.warn("failed sending STABLE message", t);

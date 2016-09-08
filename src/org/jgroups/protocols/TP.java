@@ -363,6 +363,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedAttribute(description="Number of internal messages received")
     protected long num_internal_msgs_received;
 
+    @ManagedAttribute(description="If enabled, the timer will run non-blocking tasks on its own (runner) thread, and " +
+      "not submit them to the thread pool. Otherwise, all tasks are submitted to the thread pool. This attribute is " +
+      "experimental and may be removed without notice.")
+    protected boolean timer_handle_non_blocking_tasks=true;
+
     @ManagedAttribute(description="Class of the timer implementation")
     public String getTimerClass() {
         return timer != null? timer.getClass().getSimpleName() : "null";
@@ -402,6 +407,15 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public static String loggerType() {return LogFactory.loggerType();}
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
+    @ManagedOperation(description="If enabled, the timer will run non-blocking tasks on its own (runner) thread, and " +
+      "not submit them to the thread pool. Otherwise, all tasks are submitted to the thread pool. This attribute is " +
+      "experimental and may be removed without notice.")
+    public void enableBlockingTimerTasks(boolean flag) {
+        if(flag != this.timer_handle_non_blocking_tasks) {
+            this.timer_handle_non_blocking_tasks=flag;
+            timer.setNonBlockingTaskHandling(flag);
+        }
+    }
 
 
     /** The address (host and port) of this member */
@@ -780,8 +794,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
         // ========================================== Timer ==============================
-        if(timer == null)
+        if(timer == null) {
             timer=new TimeScheduler3(thread_pool, thread_factory);
+            timer.setNonBlockingTaskHandling(timer_handle_non_blocking_tasks);
+        }
 
         if(time_service_interval > 0)
             time_service=new TimeService(timer, time_service_interval).start();
@@ -808,7 +824,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 public String toString() {
                     return TP.this.getClass().getSimpleName() + ": LogicalAddressCacheReaper (interval=" + logical_addr_cache_expiration + " ms)";
                 }
-            }, logical_addr_cache_reaper_interval, logical_addr_cache_reaper_interval, TimeUnit.MILLISECONDS);
+            }, logical_addr_cache_reaper_interval, logical_addr_cache_reaper_interval, TimeUnit.MILLISECONDS, false);
         }
     }
 

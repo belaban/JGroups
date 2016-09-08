@@ -1572,7 +1572,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 queue.clear();
                 waitUntilCompleted(MAX_COMPLETION_TIME);
                 queue.close(true);
-                resumer=timer.schedule(this::resume, resume_task_timeout, TimeUnit.MILLISECONDS);
+                resumer=timer.schedule(this::resume, resume_task_timeout, TimeUnit.MILLISECONDS, false);
             }
         }
 

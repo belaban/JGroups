@@ -102,6 +102,8 @@ public abstract class Discovery extends Protocol {
     protected final Map<Long,Responses>  ping_responses=new HashMap<>();
     @ManagedAttribute(description="Whether the transport supports multicasting")
     protected boolean                    transport_supports_multicasting=true;
+    @ManagedAttribute(description="True if sending a message can block at the transport level")
+    protected boolean                    sends_can_block=true;
     protected static final byte[]        WHITESPACE=" \t".getBytes();
 
 
@@ -113,6 +115,7 @@ public abstract class Discovery extends Protocol {
         if(stagger_timeout < 0)
             throw new IllegalArgumentException("stagger_timeout cannot be negative");
         transport_supports_multicasting=getTransport().supportsMulticasting();
+        sends_can_block=getTransport() instanceof TCP; // UDP and TCP_NIO2 won't block
     }
 
     public abstract boolean isDynamic();
@@ -517,7 +520,7 @@ public abstract class Discovery extends Protocol {
     }
 
     protected synchronized void startCacheDissemination(List<Address> curr_mbrs, List<Address> left_mbrs, List<Address> new_mbrs) {
-        timer.execute(new DiscoveryCacheDisseminationTask(curr_mbrs,left_mbrs,new_mbrs));
+        timer.execute(new DiscoveryCacheDisseminationTask(curr_mbrs,left_mbrs,new_mbrs), sends_can_block);
     }
 
 
@@ -569,7 +572,7 @@ public abstract class Discovery extends Protocol {
             timer.schedule(() -> {
                 log.trace("%s: received GET_MBRS_REQ from %s, sending staggered response %s", local_addr, sender, data);
                 down_prot.down(rsp_msg);
-            }, sleep_time, TimeUnit.MILLISECONDS);
+            }, sleep_time, TimeUnit.MILLISECONDS, sends_can_block);
             return;
         }
 

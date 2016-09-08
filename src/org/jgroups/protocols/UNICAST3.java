@@ -93,6 +93,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Number of retransmit responses sent")
     protected final AtomicLong xmit_rsps_sent=new AtomicLong(0);
 
+    @ManagedAttribute(description="True if sending a message can block at the transport level")
+    protected boolean sends_can_block=true;
+
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
 
@@ -361,6 +364,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     public void init() throws Exception {
         super.init();
         TP transport=getTransport();
+        sends_can_block=transport instanceof TCP; // UDP and TCP_NIO2 won't block
         time_service=transport.getTimeService();
         if(time_service == null)
             throw new IllegalStateException("time service from transport is null");
@@ -1082,7 +1086,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected void startRetransmitTask() {
         if(xmit_task == null || xmit_task.isDone())
-            xmit_task=timer.scheduleWithFixedDelay(new RetransmitTask(), 0, xmit_interval, TimeUnit.MILLISECONDS);
+            xmit_task=timer.scheduleWithFixedDelay(new RetransmitTask(), 0, xmit_interval, TimeUnit.MILLISECONDS, sends_can_block);
     }
 
     protected void stopRetransmitTask() {

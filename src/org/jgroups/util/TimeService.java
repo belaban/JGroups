@@ -25,6 +25,8 @@ public class TimeService  implements Runnable {
     public TimeService(final TimeScheduler timer, long interval) {
         this.timer=timer;
         this.interval=interval;
+        if(timer == null)
+            throw new IllegalArgumentException("timer must not be null");
     }
 
     /**
@@ -68,7 +70,7 @@ public class TimeService  implements Runnable {
 
     protected synchronized void startTask() {
         stopTask();
-        task=timer != null? timer.scheduleWithFixedDelay(this, interval, interval, TimeUnit.MILLISECONDS) : null;
+        task=timer.scheduleWithFixedDelay(this, interval, interval, TimeUnit.MILLISECONDS, false);
     }
 
     protected synchronized void stopTask() {

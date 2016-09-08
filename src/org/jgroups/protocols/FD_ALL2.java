@@ -215,7 +215,7 @@ public class FD_ALL2 extends Protocol {
         lock.lock();
         try {
             if(!isTimeoutCheckerRunning()) {
-                timeout_checker_future=timer.scheduleWithFixedDelay(new TimeoutChecker(), timeout, timeout, TimeUnit.MILLISECONDS);
+                timeout_checker_future=timer.scheduleWithFixedDelay(new TimeoutChecker(), timeout, timeout, TimeUnit.MILLISECONDS, false);
             }
         }
         finally {
@@ -241,7 +241,8 @@ public class FD_ALL2 extends Protocol {
         lock.lock();
         try {
             if(!isHeartbeatSenderRunning()) {
-                heartbeat_sender_future=timer.scheduleWithFixedDelay(new HeartbeatSender(), 1000, interval, TimeUnit.MILLISECONDS);
+                heartbeat_sender_future=timer.scheduleWithFixedDelay(new HeartbeatSender(), 1000, interval, TimeUnit.MILLISECONDS,
+                                                                     getTransport() instanceof TCP);
             }
         }
         finally {

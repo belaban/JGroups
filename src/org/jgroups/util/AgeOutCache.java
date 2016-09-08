@@ -63,7 +63,7 @@ public class AgeOutCache<K> {
                 return "AgeOutCache (timeout=" + timeout +
                   ", handler=" + (handler != null? handler.getClass().getSimpleName() : null) + ")";
             }
-        }, timeout, TimeUnit.MILLISECONDS);
+        }, timeout, TimeUnit.MILLISECONDS, false); // this task never blocks
         Future<?> result=map.putIfAbsent(key, future);
         if(result != null)
             future.cancel(true);

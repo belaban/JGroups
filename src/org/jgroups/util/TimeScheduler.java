@@ -37,8 +37,9 @@ public interface TimeScheduler {
      * if task cannot be accepted for execution because the executor has been shut down.
      * @throws NullPointerException if command is null
      */
-    void execute(Runnable command);
-    
+    default void execute(Runnable command) {execute(command, true);}
+    void execute(Runnable command, boolean can_block);
+
 
     /**
      * Creates and executes a one-shot action that becomes enabled after the given delay.
@@ -51,8 +52,8 @@ public interface TimeScheduler {
      * @throws java.util.concurrent.RejectedExecutionException if the task cannot be scheduled for execution
      * @throws NullPointerException if command is null
      */
-    Future<?> schedule(Runnable command, long delay, TimeUnit unit);
-
+    default Future<?> schedule(Runnable command, long delay, TimeUnit unit) {return schedule(command, delay, unit, true);}
+    Future<?> schedule(Runnable command, long delay, TimeUnit unit, boolean can_block);
 
     
     /**
@@ -71,10 +72,13 @@ public interface TimeScheduler {
      * @throws NullPointerException if command is null
      * @throws IllegalArgumentException if delay less than or equal to zero
      */
-    Future<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit);
+    default Future<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
+        return scheduleWithFixedDelay(command, initialDelay, delay, unit, true);
+    }
+    Future<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit, boolean can_block);
 
 
-      /**
+    /**
      * Creates and executes a periodic action that becomes enabled first
      * after the given initial delay, and subsequently with the given
      * period; that is executions will commence after
@@ -99,7 +103,10 @@ public interface TimeScheduler {
      * @throws NullPointerException if command is null
      * @throws IllegalArgumentException if period less than or equal to zero
      */
-      Future<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit);
+    default  Future<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
+        return scheduleAtFixedRate(command, initialDelay, period, unit, true);
+    }
+    Future<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit, boolean can_block);
 
 
     
@@ -110,7 +117,10 @@ public interface TimeScheduler {
      * The task is never done until nextInterval() return a value <= 0 or the task is cancelled.
      * @param task the task to execute
      */
-    Future<?> scheduleWithDynamicInterval(Task task);
+    default Future<?> scheduleWithDynamicInterval(Task task) {
+        return scheduleWithDynamicInterval(task, true);
+    }
+    Future<?> scheduleWithDynamicInterval(Task task, boolean can_block);
 
 
     void setThreadFactory(ThreadFactory factory);
@@ -153,6 +163,9 @@ public interface TimeScheduler {
      * @return
      */
     int getCurrentThreads();
+
+    boolean getNonBlockingTaskHandling();
+    void    setNonBlockingTaskHandling(boolean b);
 
 
     /**

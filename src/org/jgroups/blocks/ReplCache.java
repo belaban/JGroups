@@ -572,7 +572,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
             l.viewAccepted(new_view);
 
         if(old_nodes != null) {
-            timer.schedule((Runnable)() -> rebalance(old_nodes, new ArrayList<>(new_view.getMembers())), 100, TimeUnit.MILLISECONDS);
+            timer.schedule(() -> rebalance(old_nodes, new ArrayList<>(new_view.getMembers())), 100, TimeUnit.MILLISECONDS);
         }
     }
 

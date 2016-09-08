@@ -153,7 +153,7 @@ public class TCPPING extends Discovery {
               .putHeader(this.id,hdr).setBuffer(marshal(data));
 
             if(async_discovery_use_separate_thread_per_request)
-                timer.execute(() -> sendDiscoveryRequest(msg));
+                timer.execute(() -> sendDiscoveryRequest(msg), sends_can_block);
             else
                 sendDiscoveryRequest(msg);
         }

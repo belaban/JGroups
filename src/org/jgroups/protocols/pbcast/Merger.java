@@ -437,7 +437,7 @@ public class Merger {
     protected synchronized void startMergeKiller() {
         if(merge_killer == null || merge_killer.isDone()) {
             MergeKiller task=new MergeKiller(this.merge_id);
-            merge_killer=gms.timer.schedule(task, (long)(gms.merge_timeout * 2), TimeUnit.MILLISECONDS);
+            merge_killer=gms.timer.schedule(task, gms.merge_timeout * 2, TimeUnit.MILLISECONDS, false);
         }
     }
 

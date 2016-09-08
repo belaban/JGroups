@@ -233,7 +233,7 @@ public class FD_ALL extends Protocol {
         lock.lock();
         try {
             if(!isTimeoutCheckerRunning()) {
-                timeout_checker_future=timer.scheduleWithFixedDelay(new TimeoutChecker(),timeout_check_interval,timeout_check_interval, TimeUnit.MILLISECONDS);
+                timeout_checker_future=timer.scheduleWithFixedDelay(new TimeoutChecker(),timeout_check_interval,timeout_check_interval, TimeUnit.MILLISECONDS, false);
             }
         }
         finally {
@@ -259,7 +259,8 @@ public class FD_ALL extends Protocol {
         lock.lock();
         try {
             if(!isHeartbeatSenderRunning())
-                heartbeat_sender_future=timer.scheduleWithFixedDelay(new HeartbeatSender(), interval, interval, TimeUnit.MILLISECONDS);
+                heartbeat_sender_future=timer.scheduleWithFixedDelay(new HeartbeatSender(), interval, interval, TimeUnit.MILLISECONDS,
+                                                                     getTransport() instanceof TCP);
         }
         finally {
             lock.unlock();

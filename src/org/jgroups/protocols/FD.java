@@ -185,7 +185,7 @@ public class FD extends Protocol {
     protected void startMonitor() {
         if(monitor_future == null || monitor_future.isDone()) {
             last_ack=System.nanoTime();  // start from scratch
-            monitor_future=timer.scheduleWithFixedDelay(new Monitor(), timeout, timeout, TimeUnit.MILLISECONDS);
+            monitor_future=timer.scheduleWithFixedDelay(new Monitor(), timeout, timeout, TimeUnit.MILLISECONDS, false);
             num_tries.set(1);
         }
     }
@@ -521,7 +521,7 @@ public class FD extends Protocol {
                     bcast_future=timer.scheduleWithFixedDelay(task,
                                                               0, // run immediately the first time
                                                               timeout, // then every timeout milliseconds, until cancelled
-                                                              TimeUnit.MILLISECONDS);
+                                                              TimeUnit.MILLISECONDS, getTransport() instanceof TCP);
                 }
                 else {
                     task.addSuspectedMember(suspect);
