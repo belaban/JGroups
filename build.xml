@@ -348,16 +348,10 @@
              includes="org/jgroups/**">
             <fileset dir="${conf.dir}" includes="*.xml, jg-messages*.properties, JGROUPS_VERSION.properties">
                 <exclude name="log4j*.xml"/>
+                <exclude name="settings.xml"/>
             </fileset>
             <fileset dir="${compile.dir}/schema">
                 <include name="jgroups.xsd"/>
-            </fileset>
-            <fileset dir="${root.dir}">
-                <include name="INSTALL.html"/>
-                <include name="LICENSE"/>
-            </fileset>
-            <fileset dir="${lib.dir}">
-                <include name="licenses/thirdparty*"/>
             </fileset>
         </jar>
     </target>
