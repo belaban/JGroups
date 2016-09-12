@@ -141,8 +141,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected boolean use_fork_join_pool;
 
     @Property(name="thread_pool.use_common_fork_join_pool",
-      description="If use_fork_join_pool is true and this attribute is also true, the common fork-join pool " +
-        "will be (re)used; otherwise a custom ForkJoinPool will be created")
+      description="If true, the common fork-join pool will be used; otherwise a custom ForkJoinPool will be created")
     protected boolean use_common_fork_join_pool;
 
     @Property(name="thread_pool.enabled",description="Enable or disable the thread pool")
@@ -798,7 +797,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
         // ====================================== Thread pool ===========================
-
+        if(use_common_fork_join_pool)
+            use_fork_join_pool=true;
         if(thread_pool == null || (thread_pool instanceof ExecutorService && ((ExecutorService)thread_pool).isShutdown())) {
             if(thread_pool_enabled) {
                 thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
@@ -1403,8 +1403,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected void send(Message msg, Address dest) throws Exception {
         // bundle all messages, even the ones tagged with DONT_BUNDLE: https://issues.jboss.org/browse/JGRP-1737
         boolean bypass_bundling=msg.isFlagSet(Message.Flag.DONT_BUNDLE); //  && dest instanceof PhysicalAddress;
-        if(!bypass_bundling) {
-            bundler.send(msg);
+        Bundler tmp_bundler;
+        if(!bypass_bundling && (tmp_bundler=bundler) != null) {
+            tmp_bundler.send(msg);
             return;
         }
 
