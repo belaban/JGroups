@@ -189,7 +189,7 @@ public class DuplicateTest extends ChannelTestBase {
         b.connect("DuplicateTest");
         c.connect("DuplicateTest");
 
-        Util.waitUntilAllChannelsHaveSameSize(20000, 1000,a,b, c);
+        Util.waitUntilAllChannelsHaveSameView(20000, 1000, a, b, c);
     }
 
 

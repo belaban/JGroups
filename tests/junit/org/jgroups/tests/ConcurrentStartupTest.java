@@ -50,7 +50,7 @@ public class ConcurrentStartupTest {
             for(int i=0; i < channels.length; i++)
                 tmp[i]=channels[i].getChannel();
 
-            Util.waitUntilAllChannelsHaveSameSize(30000, 500, tmp);
+            Util.waitUntilAllChannelsHaveSameView(30000, 500, tmp);
             System.out.println("\n>>>> all nodes have the same view " + tmp[0].getView() + "  <<<<\n");
 
             // Sleep to ensure async messages arrive

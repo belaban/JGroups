@@ -29,7 +29,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         changeNAKACK2(a,b);
         a.connect("LastMessageDroppedTest");
         b.connect("LastMessageDroppedTest");
-        Util.waitUntilAllChannelsHaveSameSize(10000,500,a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
     }
 
 

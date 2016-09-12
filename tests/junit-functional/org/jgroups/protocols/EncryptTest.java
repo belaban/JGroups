@@ -42,7 +42,7 @@ public abstract class EncryptTest {
         a=create("A").connect(cluster_name).setReceiver(ra=new MyReceiver<>().rawMsgs(true));
         b=create("B").connect(cluster_name).setReceiver(rb=new MyReceiver<>().rawMsgs(true));
         c=create("C").connect(cluster_name).setReceiver(rc=new MyReceiver<>().rawMsgs(true));
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b, c);
         rogue=createRogue("rogue").connect(cluster_name);
         Stream.of(a,b,c,rogue).forEach(ch -> System.out.printf("%s: %s\n", ch.getAddress(), ch.getView()));
         System.out.println("");

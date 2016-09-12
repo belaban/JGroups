@@ -29,7 +29,7 @@ public class ConcurrentFlushTest {
         a.connect("testTwoStartFlushes");
         b=createChannel("B");
         b.connect("testTwoStartFlushes");
-        Util.waitUntilAllChannelsHaveSameSize(10000,500,a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
 
         assert startFlush(a, true);
         assert startFlush(a, false);
@@ -44,7 +44,7 @@ public class ConcurrentFlushTest {
         a.connect("testTwoStartFlushesOnDifferentMembersWithTotalFlush");
         b=createChannel("B");
         b.connect("testTwoStartFlushesOnDifferentMembersWithTotalFlush");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
 
         assert startFlush(a, false);
         assert !startFlush(b, 1, 500, false);
@@ -62,7 +62,7 @@ public class ConcurrentFlushTest {
         a.connect("testConcurrentFlush");
         b=createChannel("B");
         b.connect("testConcurrentFlush");
-        Util.waitUntilAllChannelsHaveSameSize(10000,500,a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
 
         final CountDownLatch startFlushLatch=new CountDownLatch(1);
         final CountDownLatch stopFlushLatch=new CountDownLatch(1);
@@ -102,7 +102,7 @@ public class ConcurrentFlushTest {
 
         c=createChannel("C");
         c.connect("testConcurrentFlushAndPartialFlush");
-        Util.waitUntilAllChannelsHaveSameSize(10000,500,a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b, c);
 
         final CountDownLatch startFlushLatch=new CountDownLatch(1);
         final CountDownLatch stopFlushLatch=new CountDownLatch(1);

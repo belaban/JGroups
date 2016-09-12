@@ -51,7 +51,7 @@ public class NAKACK_RetransmitTest {
         a.connect("NAKACK_RetransmitTest");
         b.connect("NAKACK_RetransmitTest");
         c.connect("NAKACK_RetransmitTest");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b, c);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b, c);
     }
 
     @AfterMethod

@@ -70,7 +70,7 @@ public class UNICAST_OOB_Test {
 
         a.connect("UNICAST_OOB_Test");
         b.connect("UNICAST_OOB_Test");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
 
         Address dest=b.getAddress();
         for(int i=1; i <=5; i++) {

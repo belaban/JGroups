@@ -34,12 +34,12 @@ public class FdMonitorTest {
         assert !FD(a).isMonitorRunning();
 
         b.connect(CLUSTER_NAME);
-        Util.waitUntilAllChannelsHaveSameSize(10000,500,a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
 
         validateFdMonitor("");
 
         reconnect(b);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500,a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
 
         // Util.sleep(60000);
         validateFdMonitor("after B reconnect");

@@ -265,22 +265,21 @@ public class Util {
      * @param channels The channels which should form the view. The expected view size is channels.length.
      *                 Must be non-null
      */
-    public static void waitUntilAllChannelsHaveSameSize(long timeout,long interval,JChannel... channels) throws TimeoutException {
-        int size=channels.length;
-
+    public static void waitUntilAllChannelsHaveSameView(long timeout, long interval, JChannel... channels) throws TimeoutException {
         if(interval >= timeout || timeout <= 0)
             throw new IllegalArgumentException("interval needs to be smaller than timeout or timeout needs to be > 0");
         long target_time=System.currentTimeMillis() + timeout;
         while(System.currentTimeMillis() <= target_time) {
-            boolean all_channels_have_correct_size=true;
+            boolean all_channels_have_correct_view=true;
+            View first=channels[0].getView();
             for(JChannel ch : channels) {
                 View view=ch.getView();
-                if(view == null || view.size() != size) {
-                    all_channels_have_correct_size=false;
+                if(!Objects.equals(view, first) || view.size() != channels.length) {
+                    all_channels_have_correct_view=false;
                     break;
                 }
             }
-            if(all_channels_have_correct_size)
+            if(all_channels_have_correct_view)
                 return;
             Util.sleep(interval);
         }
@@ -290,10 +289,33 @@ public class Util {
             views[i]=channels[i].getView();
             sb.append(channels[i].getName()).append(": ").append(views[i]).append("\n");
         }
+        View first=channels[0].getView();
         for(View view : views)
-            if(view == null || view.size() != size)
+            if(!Objects.equals(view, first))
                 throw new TimeoutException("Timeout " + timeout + " kicked in, views are:\n" + sb);
     }
+
+    public static boolean allChannelsHaveSameView(JChannel... channels) {
+        View first=channels[0].getView();
+        for(JChannel ch : channels) {
+            View view=ch.getView();
+            if(!Objects.equals(view, first) || view.size() != channels.length)
+                return false;
+        }
+        return true;
+    }
+
+    public static void assertAllChannelsHaveSameView(JChannel ... channels) {
+        assert allChannelsHaveSameView(channels) : String.format("channels have different views:\n%s\n", printViews(channels));
+    }
+
+    public static String printViews(JChannel ... channels) {
+        StringBuilder sb=new StringBuilder();
+        for(JChannel ch: channels)
+            sb.append(String.format("%s: %s\n", ch.name(), ch.getView()));
+        return sb.toString();
+    }
+
 
 
     /**
@@ -3988,16 +4010,16 @@ public class Util {
      *                when not authorised to retrieved system properties
      */
     public static String replaceProperties(final String string,final Properties props) {
-        /** File separator value */
+        // File separator value
         final String FILE_SEPARATOR=File.separator;
 
-        /** Path separator value */
+        // Path separator value
         final String PATH_SEPARATOR=File.pathSeparator;
 
-        /** File separator alias */
+        // File separator alias
         final String FILE_SEPARATOR_ALIAS="/";
 
-        /** Path separator alias */
+        // Path separator alias
         final String PATH_SEPARATOR_ALIAS=":";
 
         // States used in property parsing

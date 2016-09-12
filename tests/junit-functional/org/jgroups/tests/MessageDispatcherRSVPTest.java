@@ -71,7 +71,7 @@ public class MessageDispatcherRSVPTest {
             if(i == 0)
                 Util.sleep(1000);
         }
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, channels);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, channels);
         System.out.println("");
     }
 

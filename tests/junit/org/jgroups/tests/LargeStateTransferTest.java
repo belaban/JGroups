@@ -75,7 +75,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
         p.reset();
         requester.setReceiver(new Requester(p));
         requester.connect(GROUP);
-        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, provider, requester);
+        Util.waitUntilAllChannelsHaveSameView(20000, 1000, provider, requester);
 
         log("requesting state of " + Util.printBytes(size));
         long start=System.currentTimeMillis();

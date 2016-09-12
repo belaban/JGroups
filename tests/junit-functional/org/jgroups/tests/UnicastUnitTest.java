@@ -178,7 +178,7 @@ public class UnicastUnitTest {
     protected void connect() throws Exception {
         a.connect("UnicastUnitTest");
         b.connect("UnicastUnitTest");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
     }
 
 

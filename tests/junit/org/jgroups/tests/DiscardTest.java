@@ -66,7 +66,7 @@ public class DiscardTest extends ChannelTestBase {
 
         a.connect(GROUP);
         b.connect(GROUP);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
 
         if(discard) {
             DISCARD discard_prot=new DISCARD();

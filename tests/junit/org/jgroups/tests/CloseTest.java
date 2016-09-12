@@ -47,10 +47,10 @@ public class CloseTest extends ChannelTestBase {
         b=createChannel(a, "B");
         a.connect("testCreationAndCoordClose");
         b.connect("testCreationAndCoordClose");
-        Util.waitUntilAllChannelsHaveSameSize(10000,500,a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
 
         a.disconnect();
-        Util.waitUntilAllChannelsHaveSameSize(10000,500,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, b);
     }
 
     public void testViewChangeReceptionOnChannelCloseByParticipant() throws Exception {
@@ -68,12 +68,12 @@ public class CloseTest extends ChannelTestBase {
         b.setReceiver(r2);
         r1.clearViews();
         b.connect(GROUP);
-        Util.waitUntilAllChannelsHaveSameSize(10000,1000,a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
         a_addr=a.getAddress();
         b_addr=b.getAddress();
 
         Util.close(b);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a);
         View v=r1.getViews().get(0);
         members=v.getMembers();
         System.out.println("-- first view of c1: " + v);
@@ -101,7 +101,7 @@ public class CloseTest extends ChannelTestBase {
         b=createChannel(a, "B");
         b.setReceiver(r2);
         b.connect(GROUP);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
         a_addr=a.getAddress();
         b_addr=b.getAddress();
         View v=r2.getViews().get(0);
@@ -111,7 +111,7 @@ public class CloseTest extends ChannelTestBase {
 
         r2.clearViews();
         Util.close(b);
-        Util.waitUntilAllChannelsHaveSameSize(5000, 500, a);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a);
 
         v=r1.getViews().get(r1.getViews().size() -1);
         members=v.getMembers();
@@ -142,7 +142,7 @@ public class CloseTest extends ChannelTestBase {
 
         b=createChannel(a, "B");
         b.connect(GROUP);
-        Util.waitUntilAllChannelsHaveSameSize(10000,1000,a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
         System.out.println("view is " + b.getView());
     }
 
@@ -177,24 +177,24 @@ public class CloseTest extends ChannelTestBase {
         assert b.isOpen() && !b.isConnected();
         b.connect(GROUP);
         assert b.isConnected();
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
 
         b.disconnect();
         assert b.isOpen() && !b.isConnected();
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a);
 
         b.connect(GROUP);
         assert b.isConnected();
-        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, a, b);
+        Util.waitUntilAllChannelsHaveSameView(20000, 1000, a, b);
 
         // Now see what happens if we disaconnect and reconnect A (the current coord)
         a.disconnect();
         assert a.isOpen() && !a.isConnected();
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, b);
 
         a.connect(GROUP);
         assert a.isOpen() && a.isConnected();
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
     }
 
     public void testMultipleConnectsAndDisconnects2() throws Exception {
@@ -203,15 +203,15 @@ public class CloseTest extends ChannelTestBase {
         a.connect("CloseTest");
         b=createChannel(a, "B");
         b.connect("CloseTest");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
 
         for(int i=1; i <= NUM; i++) {
             System.out.print("#" + i + " disconnecting: ");
             b.disconnect();
             System.out.println("OK");
-            Util.waitUntilAllChannelsHaveSameSize(10000, 500, a);
+            Util.waitUntilAllChannelsHaveSameView(10000, 500, a);
             b.connect("CloseTest");
-            Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b);
+            Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
         }
     }
 

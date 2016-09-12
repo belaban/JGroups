@@ -23,7 +23,7 @@ public class SUPERVISOR_Test {
         a.connect("SUPERVISOR_Test");
         b=createChannel("B");
         b.connect("SUPERVISOR_Test");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
     }
 
     @AfterMethod

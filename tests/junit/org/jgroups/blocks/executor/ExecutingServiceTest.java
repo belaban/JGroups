@@ -64,7 +64,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         er3=new ExecutionRunner(c);
         c.connect("ExecutionServiceTest");
 
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000,a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b, c);
         
         LogFactory.getLog(ExecutionRunner.class).setLevel("debug");
     }

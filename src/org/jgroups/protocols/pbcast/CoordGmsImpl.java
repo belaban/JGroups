@@ -71,25 +71,6 @@ public class CoordGmsImpl extends ServerGmsImpl {
 
 
     /**
-     * Invoked upon receiving a MERGE event from the MERGE layer. Starts the merge protocol.
-     * See description of protocol in DESIGN.
-     * @param views A List of <em>different</em> views detected by the merge protocol
-     */
-    public void merge(Map<Address, View> views) {
-        merger.merge(views);
-    }
-
-    public void handleMergeResponse(MergeData data, MergeId merge_id) {
-        merger.handleMergeResponse(data, merge_id);
-    }
-
-
-    public void handleMergeCancelled(MergeId merge_id) {
-        merger.handleMergeCancelled(merge_id);
-    }
-
-
-    /**
      * Fetches the digests from all members and installs them again. Used only for diagnosis and support; don't
      * use this otherwise !
      */

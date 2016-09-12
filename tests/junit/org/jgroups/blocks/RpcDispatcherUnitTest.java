@@ -45,7 +45,7 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
         d3=new RpcDispatcher(c3, o3);
         c3.connect(GROUP);
 
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, c1,c2,c3);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, c1, c2, c3);
 
         a1=c1.getAddress();
         a2=c2.getAddress();

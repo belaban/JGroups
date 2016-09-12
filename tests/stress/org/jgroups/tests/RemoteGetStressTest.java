@@ -65,7 +65,7 @@ public class RemoteGetStressTest {
             dispatchers[i]=new RpcDispatcher(channels[i], this);
             channels[i].connect("cluster");
         }
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, channels);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, channels);
         System.out.println("view A: " + channels[0].getView());
 
         target_members=Arrays.asList(channels[1].getAddress(), channels[2].getAddress(), channels[3].getAddress());

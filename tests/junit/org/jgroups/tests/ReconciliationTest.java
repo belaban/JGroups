@@ -290,7 +290,7 @@ public class ReconciliationTest {
         JChannel b = createChannel("B");
         Cache cache_2 = new Cache(b, "cache-2");
         b.connect("testVirtualSynchrony");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
 
         // start adding messages
         flush(a); // flush all pending message out of the system so everyone receives them

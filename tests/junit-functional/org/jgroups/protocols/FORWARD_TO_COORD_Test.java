@@ -59,7 +59,7 @@ public class FORWARD_TO_COORD_Test {
         }
         System.out.println("\n");
         System.out.flush();
-        Util.waitUntilAllChannelsHaveSameSize(30000,1000,channels);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, channels);
     }
 
     @AfterMethod

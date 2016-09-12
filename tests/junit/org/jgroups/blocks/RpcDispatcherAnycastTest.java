@@ -41,7 +41,7 @@ public class RpcDispatcherAnycastTest extends ChannelTestBase {
         disp3=new RpcDispatcher(c, obj3);
         c.connect("RpcDispatcherAnycastTest");
         obj3.setAddress(c.getAddress());
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b, c);
     }
 
     @AfterMethod void tearDown() throws Exception {

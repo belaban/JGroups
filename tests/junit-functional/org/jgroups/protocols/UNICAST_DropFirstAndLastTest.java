@@ -35,7 +35,7 @@ public class UNICAST_DropFirstAndLastTest {
         rb=new MyReceiver<Integer>().name("B").verbose(true);
         b=createChannel(unicast_class, "B").receiver(rb);
         b.connect("UNICAST_DropFirstAndLastTest");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
     }
 
     @AfterMethod protected void destroy() {setLevel("warn", a, b); Util.close(b, a); rb.reset();}

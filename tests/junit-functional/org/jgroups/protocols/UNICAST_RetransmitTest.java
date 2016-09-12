@@ -29,7 +29,7 @@ public class UNICAST_RetransmitTest {
         change(a, b);
         a.connect("UNICAST_RetransmitTest");
         b.connect("UNICAST_RetransmitTest");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
     }
 
     @AfterMethod

@@ -33,7 +33,7 @@ public class SequencerFailoverTest extends BMNGRunner {
         a=createChannel(props, "A", GROUP);
         b=createChannel(props, "B", GROUP);
         c=createChannel(props, "C", GROUP);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b, c);
     }
 
     @AfterMethod

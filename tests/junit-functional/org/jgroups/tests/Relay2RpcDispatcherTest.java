@@ -81,13 +81,13 @@ public class Relay2RpcDispatcherTest {
     	b.connect(LON_CLUSTER);
     	rpca.start();
     	rpcb.start();
-    	Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a, b);
+    	Util.waitUntilAllChannelsHaveSameView(30000, 1000, a, b);
     	
     	x.connect(SFO_CLUSTER);
     	y.connect(SFO_CLUSTER);
     	rpcx.start();
     	rpcy.start();
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, x, y);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, x, y);
 
         assert a.getView().size() == 2;
         assert x.getView().size() == 2;

@@ -59,7 +59,7 @@ public class SequencerMergeTest {
         c.connect(GROUP);
         d.connect(GROUP);
 
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, b,c,d);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, b, c, d);
         removeDiscard(a,b,c,d);
         System.out.println("Channels:\n" + printChannels(a,b,c,d));
         MyReceiver ra=new MyReceiver("A");
@@ -143,7 +143,7 @@ public class SequencerMergeTest {
         c.connect(GROUP);
         d.connect(GROUP);
 
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a,b,c,d);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b, c, d);
         Util.sleep(1000);
         System.out.println("Channels:\n" + printChannels(a,b,c,d));
         MyReceiver ra=new MyReceiver("A");
@@ -189,7 +189,7 @@ public class SequencerMergeTest {
         injectMergeEvent(merge_evt, b);
 
         // Wait for merge to complete.
-        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, a,b,c,d);
+        Util.waitUntilAllChannelsHaveSameView(20000, 1000, a, b, c, d);
         final View merged_view = a.getView();
         System.out.println("\nMerged view is " + merged_view);
     }

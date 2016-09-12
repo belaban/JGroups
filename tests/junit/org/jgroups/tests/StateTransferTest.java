@@ -99,7 +99,7 @@ public class StateTransferTest extends ChannelTestBase {
         for(int i=0; i < apps.length; i++)
             tmp[i]=apps[i].getChannel();
 
-        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, tmp);
+        Util.waitUntilAllChannelsHaveSameView(20000, 1000, tmp);
 
         for(Thread thread: threads)
             thread.join(20000);

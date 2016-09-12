@@ -47,7 +47,7 @@ public class MergeTest4 {
         b=createChannel("B", true);
         c=createChannel("C", true);
         d=createChannel("D", true);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b,c,d);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b, c, d);
         enableInfoSender(false, a, b, c, d); // stops INFO sending in MERGE3
     }
 
@@ -62,8 +62,8 @@ public class MergeTest4 {
 
         injectView(v1, a,b);
         injectView(v2, c,d);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, c,d);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, c, d);
         for(JChannel ch: Arrays.asList(a,b,c,d))
             System.out.println(ch.getName() + ": " + ch.getView());
         Address merge_leader_one=new Membership().add(a.getAddress(), b.getAddress()).sort().elementAt(0);
@@ -101,15 +101,15 @@ public class MergeTest4 {
         injectView(v1, a,b);
         injectView(v2, c,d);
         enableInfoSender(false, a,b,c,d);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, c,d);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, c, d);
         enableInfoSender(false, a,b,c,d);
         for(JChannel ch: Arrays.asList(a,b,c,d))
             System.out.println(ch.getName() + ": " + ch.getView());
         System.out.println("\nEnabling INFO sending in merge protocols to merge subclusters");
         enableInfoSender(true, a, b, c, d);
 
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b,c,d);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, a, b, c, d);
         System.out.println("\nResulting views:");
         for(JChannel ch: Arrays.asList(a,b,c,d)) {
             GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
@@ -169,7 +169,7 @@ public class MergeTest4 {
         gms=merge_leader.getProtocolStack().findProtocol(GMS.class);
         gms.up(new Event(Event.MERGE, merge_views));
         
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b, c, d);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b, c, d);
         
         System.out.println("Views are:");
         for(JChannel ch: Arrays.asList(a,b,c,d)) {
@@ -206,7 +206,7 @@ public class MergeTest4 {
 
         merge.checkInconsistencies(); // no merge will happen
 
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a);
         System.out.println("A's view: " + a.getView());
         assert a.getView().size() == 1;
         assert a.getView().containsMember(a.getAddress());
@@ -256,7 +256,7 @@ public class MergeTest4 {
 
         injectMergeEvents(merge_msgs, a,b);
         checkInconsistencies(a,b); // merge will happen between A and B
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
         System.out.println("A's view: " + a.getView() + "\nB's view: " + b.getView());
         assert a.getView().size() == 2;
         assert a.getView().containsMember(a.getAddress());
@@ -281,7 +281,7 @@ public class MergeTest4 {
         h=createChannel("H", true);
         i=createChannel("I", true);
         j=createChannel("J", true);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b,c,d,e,f,g,h,i,j);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b, c, d, e, f, g, h, i, j);
         enableInfoSender(false, a,b,c,d,e,f,g,h,i,j); // stops INFO sending in MERGE3
         for(JChannel ch: Arrays.asList(a,b,c,d,e,f,g,h,i,j))
             System.out.println(ch.getName() + ": " + ch.getView());
@@ -302,7 +302,7 @@ public class MergeTest4 {
         System.out.println("\nEnabling INFO sending in merge protocols to merge subclusters");
         enableInfoSender(true, a,b,c,d,e,f,g,h,i,j);
 
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b,c,d,e,f,g,h,i,j);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, a, b, c, d, e, f, g, h, i, j);
         System.out.println("\nResulting views:");
         for(JChannel ch: Arrays.asList(a,b,c,d,e,f,g,h,i,j)) {
             GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
@@ -338,8 +338,8 @@ public class MergeTest4 {
         injectView(two, c);
         enableInfoSender(false, a,b,c);
 
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, c);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, c);
         System.out.printf("\nPartitions:\n");
         for(JChannel ch: Arrays.asList(a,b,c))
             System.out.println(ch.getName() + ": " + ch.getView());
@@ -351,7 +351,7 @@ public class MergeTest4 {
         enableInfoSender(true,a,b,c);
         System.out.println("\nEnabling INFO sending in merge protocols to merge subclusters");
 
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, a, b, c);
         System.out.println("\nResulting views:");
         for(JChannel ch: Arrays.asList(a,b,c)) {
             GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
@@ -377,7 +377,7 @@ public class MergeTest4 {
         f=createChannel("F", true);
         g=createChannel("G", true);
         h=createChannel("H", true);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b,c,d,e,f,g,h);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b, c, d, e, f, g, h);
         enableInfoSender(false, a,b,c,d,e,f,g,h); // stops INFO sending in MERGE3
         for(JChannel ch: Arrays.asList(a,b,c,d,e,f,g,h))
             System.out.println(ch.getName() + ": " + ch.getView());
@@ -389,7 +389,7 @@ public class MergeTest4 {
         injectView(v2, e,f);
         injectView(v3, g,h);
         enableInfoSender(false, a,b,c,d,e,f,g,h); // stops INFO sending in MERGE3
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b,c,d);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b, c, d);
         for(int x=0; x < 10; x++) { // can't use waitUntilAllChannelsHaveSameSize() as the channel list's length != view !
             if(e.getView().size() == v2.size() && f.getView().size() == v2.size())
                 break;
@@ -397,7 +397,7 @@ public class MergeTest4 {
         }
         assert e.getView().size() == v2.size() : "E's view: " + e.getView();
         assert f.getView().size() == v2.size() : "F's view: " + f.getView();
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, g,h);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, g, h);
 
         System.out.printf("\nPartitions:\n");
         for(JChannel ch: Arrays.asList(a,b,c,d,e,f,g,h))
@@ -406,7 +406,7 @@ public class MergeTest4 {
         enableInfoSender(true,a,b,c,d,e,f,g,h);
         System.out.println("\nEnabling INFO sending in merge protocols to merge subclusters");
 
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b,c,d,e,f,g,h);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, a, b, c, d, e, f, g, h);
         System.out.println("\nResulting views:");
         for(JChannel ch: Arrays.asList(a,b,c,d,e,f,g,h)) {
             GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
@@ -434,7 +434,7 @@ public class MergeTest4 {
         t=createChannel("T", true);
         u=createChannel("U", true);
         v=createChannel("V", true);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, s,t,u,v);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, s, t, u, v);
         enableInfoSender(false, s,t,u,v); // stops INFO sending in MERGE3
         for(JChannel ch: Arrays.asList(s,t,u,v))
             System.out.println(ch.getName() + ": " + ch.getView());
@@ -446,9 +446,9 @@ public class MergeTest4 {
         injectView(v2, t);
         injectView(v3, u,v);
         enableInfoSender(false, s,t,u,v); // stops INFO sending in MERGE3
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, s);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, t);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, u,v);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, s);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, t);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, u, v);
 
         System.out.printf("\nPartitions:\n");
         for(JChannel ch: Arrays.asList(s,t,u,v))
@@ -457,7 +457,7 @@ public class MergeTest4 {
         enableInfoSender(true,s,t,u,v);
         System.out.println("\nEnabling INFO sending in merge protocols to merge subclusters");
 
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, s,t,u,v);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, s, t, u, v);
         System.out.println("\nResulting views:");
         for(JChannel ch: Arrays.asList(s,t,u,v)) {
             GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
@@ -491,7 +491,7 @@ public class MergeTest4 {
         t.connect("MergeTest4");
         u.connect("MergeTest4");
         v.connect("MergeTest4");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, s,t,u,v);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, s, t, u, v);
 
         for(JChannel ch: Arrays.asList(s,t,u,v))
             System.out.println(ch.getName() + ": " + ch.getView());
@@ -501,9 +501,9 @@ public class MergeTest4 {
         injectView(v1, s);
         injectView(v2, t);
         injectView(v3, u, v);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, s);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, t);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, u,v);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, s);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, t);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, u, v);
 
         System.out.printf("\nPartitions:\n");
         for(JChannel ch: Arrays.asList(s,t,u,v))
@@ -521,7 +521,7 @@ public class MergeTest4 {
         GMS gms=findChannel(merge_leader).getProtocolStack().findProtocol(GMS.class);
         gms.up(new Event(Event.MERGE, different_views));
 
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, s,t,u,v);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, s, t, u, v);
         System.out.println("\nResulting views:");
         for(JChannel ch: Arrays.asList(s,t,u,v)) {
             gms=ch.getProtocolStack().findProtocol(GMS.class);
