@@ -447,6 +447,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /** Factory which is used by the thread pool */
     protected ThreadFactory           thread_factory;
 
+    protected Executor                internal_pool; // only created if thread_pool is enabled, to handle internal msgs
+
     // ================================== Timer thread pool  =========================
     protected TimeScheduler           timer;
 
@@ -670,7 +672,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-    @ManagedAttribute(description="Current number of threads in the default thread pool")
+    @ManagedAttribute(description="Current number of threads in the thread pool")
     public int getThreadPoolSize() {
         if(thread_pool instanceof ThreadPoolExecutor)
             return ((ThreadPoolExecutor)thread_pool).getPoolSize();
@@ -679,7 +681,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return 0;
     }
 
-    @ManagedAttribute(description="Current number of active threads in the default thread pool")
+    @ManagedAttribute(description="Current number of threads in the internal thread pool")
+    public int getInternalThreadPoolSize() {
+        if(internal_pool instanceof ThreadPoolExecutor)
+            return ((ThreadPoolExecutor)internal_pool).getPoolSize();
+        return 0;
+    }
+
+    @ManagedAttribute(description="Current number of active threads in the thread pool")
     public int getThreadPoolSizeActive() {
         if(thread_pool instanceof ThreadPoolExecutor)
             return ((ThreadPoolExecutor)thread_pool).getActiveCount();
@@ -803,6 +812,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(thread_pool_enabled) {
                 thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
                                              "abort", new SynchronousQueue<>(), thread_factory, log, use_fork_join_pool, use_common_fork_join_pool);
+                internal_pool=createThreadPool(0, 8, 30000, "abort", new SynchronousQueue<>(), thread_factory, log, false, false);
             }
             else // otherwise use the caller's thread to unmarshal the byte buffer into a message
                 thread_pool=new DirectExecutor();
@@ -1298,25 +1308,35 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     public void submitToThreadPool(Runnable task, boolean spawn_thread_on_rejection) {
+        submitToThreadPool(thread_pool, task, spawn_thread_on_rejection, true);
+    }
+
+    public void submitToThreadPool(Executor pool, Runnable task, boolean spawn_thread_on_rejection, boolean forward_to_internal_pool) {
         try {
-            thread_pool.execute(task);
+            pool.execute(task);
         }
         catch(RejectedExecutionException ex) {
-            if(spawn_thread_on_rejection) {
+            if(!spawn_thread_on_rejection) {
+                num_rejected_msgs++;
+                return;
+            }
+
+            if(forward_to_internal_pool && internal_pool != null) {
+                submitToThreadPool(internal_pool, task, true, false);
+            }
+            else {
                 num_threads_spawned++;
                 runInNewThread(task);
             }
-            else
-                num_rejected_msgs++;
         }
         catch(Throwable t) {
             log.error("failure submitting task to thread pool", t);
         }
     }
 
+
     protected void runInNewThread(Runnable task) {
-        Thread thread=thread_factory != null?
-          thread_factory.newThread(task, "jgroups-temp-thread")
+        Thread thread=thread_factory != null? thread_factory.newThread(task, "jgroups-temp-thread")
           : new Thread(task, "jgroups-temp-thread");
         thread.start();
     }
