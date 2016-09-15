@@ -58,7 +58,7 @@ public class SCOPE_Test extends ChannelTestBase {
 
         a.connect("SCOPE_Test");
         b.connect("SCOPE_Test");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b);
 
         MyScopedReceiver receiver=new MyScopedReceiver();
         b.setReceiver(receiver);
@@ -120,7 +120,7 @@ public class SCOPE_Test extends ChannelTestBase {
 
         a.connect("SCOPE_Test");
         b.connect("SCOPE_Test");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000,a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000,a,b);
 
         MyReceiver receiver=new MyReceiver();
         b.setReceiver(receiver);

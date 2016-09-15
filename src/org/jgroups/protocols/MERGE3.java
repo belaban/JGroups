@@ -39,18 +39,22 @@ public class MERGE3 extends Protocol {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     @Property(description="Minimum time in ms before sending an info message")
-    protected long min_interval=1000;
+    protected long    min_interval=1000;
 
     @Property(description="Interval (in milliseconds) when the next info " +
             "message will be sent. A random value is picked from range [1..max_interval]")
-    protected long max_interval=10000;
+    protected long    max_interval=10000;
 
     @Property(description="The max number of merge participants to be involved in a merge. 0 sets this to unlimited.")
-    protected int  max_participants_in_merge=100;
+    protected int     max_participants_in_merge=100;
+
+    @Property(description="If true, only coordinators periodically check view consistency, otherwise everybody runs " +
+      "this task (https://issues.jboss.org/browse/JGRP-2092). Might get removed without notice.")
+    protected boolean only_coords_run_consistency_checker=false;
 
     /* ---------------------------------------------- JMX -------------------------------------------------------- */
     @Property(description="Interval (in ms) after which we check for view inconsistencies")
-    protected long check_interval=0;
+    protected long check_interval;
 
     @ManagedAttribute(description="Number of cached ViewIds")
     public int getViews() {return views.size();}
@@ -232,12 +236,15 @@ public class MERGE3 extends Protocol {
                     max_participants_in_merge=Math.max(100, view.size() / 3);
 
                 startInfoSender();
+                if(only_coords_run_consistency_checker == false)
+                    startViewConsistencyChecker();
 
                 List<Address> mbrs=view.getMembers();
                 Address coord=mbrs.isEmpty()? null : mbrs.get(0);
                 if(coord != null && coord.equals(local_addr)) {
                     is_coord=true;
-                    startViewConsistencyChecker(); // start task if we became coordinator (doesn't start if already running)
+                    if(only_coords_run_consistency_checker)
+                        startViewConsistencyChecker(); // start task if we became coordinator (doesn't start if already running)
                 }
                 else {
                     // if we were coordinator, but are no longer, stop task. this happens e.g. when we merge and someone
@@ -433,7 +440,9 @@ public class MERGE3 extends Protocol {
             for(Map.Entry<ViewId,Set<Address>> entry: converted_views.entrySet()) {
                 Address coord=entry.getKey().getCreator();
                 Set<Address> members=entry.getValue();
-                if(members != null && members.contains(coord))
+                if(only_coords_run_consistency_checker && members != null && members.contains(coord))
+                    coords.add(coord);
+                else
                     coords.add(coord);
             }
 

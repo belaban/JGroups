@@ -33,7 +33,7 @@ public class FragTest2 {
         a.connect("FragTest2");
         b=create("B");
         b.connect("FragTest2");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
     }
 
     @AfterMethod protected void destroy() {Util.close(b, a);}

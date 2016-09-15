@@ -29,7 +29,7 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             b.setReceiver(r2);
             b.connect("UUIDCacheClearTest");
 
-            Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
+            Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
 
 
             // send one unicast message from a to b and vice versa

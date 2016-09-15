@@ -70,7 +70,7 @@ public class NakackTest {
             receivers[i]=new Receiver(channels[i]);
             channels[i].setReceiver(receivers[i]);
         }
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, channels);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, channels);
     }
 
     @AfterMethod

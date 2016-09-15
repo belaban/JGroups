@@ -47,7 +47,7 @@ public class MergeTest extends ChannelTestBase {
 
     protected void mergeHelper(String cluster_name, String ... members) throws Exception {
         channels=createChannels(cluster_name, members);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, channels);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, channels);
         print(channels);
 
         System.out.println("\ncreating partitions: ");

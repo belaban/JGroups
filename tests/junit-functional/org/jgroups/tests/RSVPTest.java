@@ -97,7 +97,7 @@ public class RSVPTest {
             channels[i].connect("RSVPTest");
             System.out.print(i + 1 + " ");
         }
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, channels);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, channels);
         System.out.println("");
     }
 

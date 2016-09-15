@@ -40,7 +40,7 @@ public class NioServerTest2 {
         b.setReceiver(rb=new MyReceiver());
         a.connect("NioServerTest2");
         b.connect("NioServerTest2");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
     }
 
     @AfterMethod protected void destroy() {Util.close(b,a);}

@@ -56,7 +56,7 @@ public class SequencerOrderTest {
         r3=new MyReceiver("C");
         c.setReceiver(r3);
 
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000,a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b, c);
 
         for(int i=0; i < senders.length; i++)
             senders[i]=new Sender(NUM_MSGS, num,a,b,c);

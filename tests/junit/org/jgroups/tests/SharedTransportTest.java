@@ -72,7 +72,7 @@ public class SharedTransportTest extends ChannelTestBase {
         changeGMSTimeout(1000,a,b);
         a.connect("x");
         b.connect("x");
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, a,b);
     }
 
 
@@ -111,7 +111,7 @@ public class SharedTransportTest extends ChannelTestBase {
         changeGMSTimeout(1000,a,b,c);
         a.connect("cluster-1");
         c.connect("cluster-1");
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,c);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, a,c);
 
         a.send(new Message(null, null, "msg-1"));
         c.send(new Message(null, null, "msg-2"));
@@ -178,7 +178,7 @@ public class SharedTransportTest extends ChannelTestBase {
         changeGMSTimeout(1000,a,b);
         a.connect("x");
         b.connect("x");
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, a,b);
     }
 
 
@@ -188,7 +188,7 @@ public class SharedTransportTest extends ChannelTestBase {
         changeGMSTimeout(1000,a,b);
         a.connect("x");
         b.connect("x");
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, a,b);
     }
 
 
@@ -360,8 +360,8 @@ public class SharedTransportTest extends ChannelTestBase {
         b.connect("two");
         c.connect("one");
 
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, b);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,c);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a,c);
 
         b.send(null, "hello world");
         assertSize(1, r2);

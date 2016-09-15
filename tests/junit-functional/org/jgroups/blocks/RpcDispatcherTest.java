@@ -62,13 +62,13 @@ public class RpcDispatcherTest {
         b=createChannel("B");
         disp2=new RpcDispatcher(b, new ServerObject(2));
         b.connect(GROUP);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000,a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000,a,b);
 
         c=createChannel("C");
         disp3=new RpcDispatcher(c, new ServerObject(3));
         c.connect(GROUP);
 
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000,a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b, c);
         System.out.println("A=" + a.getView() + "\nB=" + b.getView() + "\nC=" + c.getView());
     }
 

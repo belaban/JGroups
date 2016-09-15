@@ -112,9 +112,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
       "(only done in coord role). Set to true if a state transfer protocol is detected")
     protected boolean install_view_locally_first=false;
 
-    @Property(description="Use Merger2 instead of Merger for merge handling. Will be removed soon (don't use)")
-    protected boolean use_merger2=true;
-
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
@@ -380,7 +377,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
     public void init() throws Exception {
-        merger=use_merger2? new Merger2(this) : new Merger(this);
+        merger=new Merger(this);
         if(view_ack_collection_timeout <= 0)
             throw new IllegalArgumentException("view_ack_collection_timeout has to be greater than 0");
         if(merge_timeout <= 0)

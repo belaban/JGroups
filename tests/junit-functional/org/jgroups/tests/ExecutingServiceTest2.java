@@ -47,7 +47,7 @@ public class ExecutingServiceTest2 {
 
         channel1.connect("test-cluster");
         channel2.connect("test-cluster");
-        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, channel1, channel2);
+        Util.waitUntilAllChannelsHaveSameView(20000, 1000, channel1, channel2);
 
         final ExecutionService executionService=new ExecutionService(channel1);
         ExecutionRunner executionRunner1=new ExecutionRunner(channel1);

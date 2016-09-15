@@ -65,7 +65,7 @@ public class BecomeServerTest extends BMNGRunner {
 
         b.connect("BecomeServerTest");
 
-        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, a,b);
+        Util.waitUntilAllChannelsHaveSameView(20000, 1000, a, b);
 
         System.out.println("\nA: " + a.getView() + "\nB: " + b.getView());
     }

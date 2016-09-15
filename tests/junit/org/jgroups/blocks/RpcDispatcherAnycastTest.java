@@ -39,6 +39,7 @@ public class RpcDispatcherAnycastTest extends ChannelTestBase {
         disp3=new RpcDispatcher(ch3, obj3);
         ch3.connect("RpcDispatcherAnycastTest");
         obj3.setAddress(ch3.getAddress());
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, ch, ch2, ch3);
     }
 
     @AfterMethod

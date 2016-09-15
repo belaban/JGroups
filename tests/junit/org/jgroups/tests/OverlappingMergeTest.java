@@ -43,7 +43,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         b.connect("OverlappingMergeTest");
         c.connect("OverlappingMergeTest");
 
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, a, b, c);
         multicast_transport=isMulticastTransport(a);
     }
 
@@ -394,7 +394,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         System.out.println("B's view: " + b.getView());
         System.out.println("C's view: " + c.getView());
 
-        Util.waitUntilAllChannelsHaveSameSize(50000, 1000, a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(50000, 1000, a, b, c);
 
         View va=a.getView(), vb=b.getView(), vc=c.getView();
         System.out.println("\nA's view: " + va);

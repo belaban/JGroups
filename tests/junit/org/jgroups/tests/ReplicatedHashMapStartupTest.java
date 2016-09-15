@@ -52,7 +52,7 @@ public class ReplicatedHashMapStartupTest {
                 Util.sleep(100);
             }
 
-           Util.waitUntilAllChannelsHaveSameSize(10000, 500, channels); // verify all views are correct
+           Util.waitUntilAllChannelsHaveSameView(10000, 500, channels); // verify all views are correct
 
             // verify all maps have all elements
             for(ReplicatedHashMap<Address,Integer> map:maps)

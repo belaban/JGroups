@@ -115,7 +115,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         b=createChannel(a, "B");
         d2=new MessageDispatcher(b, null, null, null);
         b.connect("MessageDispatcherUnitTest");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
 
         d1.setRequestHandler(new MyHandler(new byte[]{'d', '1'}));
         d2.setRequestHandler(new MyHandler(new byte[]{'d', '2'}));

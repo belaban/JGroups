@@ -302,7 +302,7 @@ public class ForkChannelTest {
         fc4=createForkChannel(b, "stack2", "fc2");
         rhm_fc4=new ReplicatedHashMap<>(fc4);
 
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
         b.getState(null, 10000);
 
         for(int i=0; i < 10; i++) {

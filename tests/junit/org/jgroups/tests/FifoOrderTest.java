@@ -51,7 +51,7 @@ public class FifoOrderTest extends ChannelTestBase {
         a.connect("FifoOrderTest");
         b.connect("FifoOrderTest");
         c.connect("FifoOrderTest");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b, c);
 
         new Thread(new Sender(a)) {}.start();
         new Thread(new Sender(b)) {}.start();

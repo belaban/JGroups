@@ -34,7 +34,7 @@ public class FlushWithChannelJoinsAndFailuresTest {
             if(j == 0)
                 Util.sleep(1000);
         }
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, channels);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, channels);
 
         for (int i = 1; i <= 2; i++) {
             int killPositions[] = { 0, 3, 5, 8 };
@@ -47,7 +47,7 @@ public class FlushWithChannelJoinsAndFailuresTest {
             }
             System.out.println("***** Round " + i + " done *****");
         }
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, channels);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, channels);
     }
 
     protected JChannel createChannel(String name) throws Exception {

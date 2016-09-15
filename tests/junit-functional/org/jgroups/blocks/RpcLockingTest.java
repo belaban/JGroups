@@ -36,7 +36,7 @@ public class RpcLockingTest {
         b.connect(RpcLockingTest.class.getSimpleName());
         lock_b=new LockService(b).getLock("lock");
 
-		Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a, b);
+		Util.waitUntilAllChannelsHaveSameView(30000, 1000, a, b);
 		System.out.println("");
 
         disp_a.setRequestHandler(new RequestHandler() {

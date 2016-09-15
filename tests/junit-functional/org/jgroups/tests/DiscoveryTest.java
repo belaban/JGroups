@@ -40,7 +40,7 @@ public class DiscoveryTest {
         b.connect("cluster");
         c.connect("cluster");
         d.connect("cluster");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b,c,d);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b, c, d);
         System.out.printf("view is %s\n", a.getView());
     }
 

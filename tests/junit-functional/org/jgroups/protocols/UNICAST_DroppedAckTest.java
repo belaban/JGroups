@@ -25,7 +25,7 @@ public class UNICAST_DroppedAckTest {
         b=createChannel(unicast_class, "B");
         a.connect("UNICAST_DroppedAckTest");
         b.connect("UNICAST_DroppedAckTest");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
     }
 
     @AfterMethod protected void destroy() {Util.close(b, a);}

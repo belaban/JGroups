@@ -213,6 +213,8 @@ public class Merger {
     protected Address determineMergeLeader(Map<Address,View> views) {
         // we need the merge *coordinators* not merge participants because not everyone can lead a merge !
         Collection<Address> coords=Util.determineActualMergeCoords(views);
+        if(coords.isEmpty())
+            coords=Util.determineMergeCoords(views); // https://issues.jboss.org/browse/JGRP-2092
         if(coords.isEmpty()) {
             log.error("%s: unable to determine merge leader from %s; not starting a merge", gms.local_addr, views);
             return null;
@@ -221,29 +223,28 @@ public class Merger {
     }
 
     /**
-     * Needs to return a map of all subview coordinators and their views (as a collection of members)
+     * Needs to return a map of all subview coordinators and their views (as a collection of members). The merge policy
+     * is defined in https://issues.jboss.org/browse/JGRP-1910
      */
-    protected Map<Address,Collection<Address>> determineMergeCoords(Map<Address,View> views) {
+    protected static Map<Address,Collection<Address>> determineMergeCoords(Map<Address,View> views) {
         Map<Address,Collection<Address>> retval=new HashMap<>();
-
-        // Add all different coordinators of the views into the hashmap and sets their members:
-        Collection<Address> coordinators=Util.determineMergeCoords(views);
-        for(Address coord: coordinators) {
-            View view=views.get(coord);
-            if(view != null)
-                retval.put(coord, new ArrayList<>(view.getMembers()));
+        for(View view: views.values()) {
+            Address coord=view.getCreator();
+            Collection<Address> members=retval.get(coord);
+            if(members == null)
+                retval.put(coord, members=new ArrayList<>());
+            for(Address mbr: view.getMembersRaw())
+                if(!members.contains(mbr))
+                    members.add(mbr);
         }
 
         // For the merge participants which are not coordinator, we simply add them, and the associated
         // membership list consists only of themselves
         Collection<Address> merge_participants=Util.determineMergeParticipants(views);
-        merge_participants.removeAll(coordinators);
+        merge_participants.removeAll(retval.keySet());
         for(Address merge_participant: merge_participants) {
-            if(!retval.containsKey(merge_participant)) {
-                Collection<Address> tmp=new ArrayList<>();
-                tmp.add(merge_participant);
-                retval.put(merge_participant, tmp);
-            }
+            if(!retval.containsKey(merge_participant))
+                retval.put(merge_participant, Collections.singletonList(merge_participant));
         }
         return retval;
     }

@@ -48,7 +48,6 @@ public class LargeMergeTest {
                                        .setValue("conn_expiry_timeout", 10000),
                                      new STABLE().setValue("max_bytes",500000),
                                      new GMS().setValue("print_local_addr",false)
-                                       .setValue("use_merger2", true)
                                        .setValue("join_timeout", 1)
                                        .setValue("leave_timeout",100)
                                        .setValue("log_view_warnings",false)

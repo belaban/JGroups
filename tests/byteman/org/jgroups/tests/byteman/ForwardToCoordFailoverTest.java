@@ -32,7 +32,7 @@ public class ForwardToCoordFailoverTest extends BMNGRunner {
         a=createChannel("A", CLUSTER);
         b=createChannel("B", CLUSTER);
         c=createChannel("C", CLUSTER);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b, c);
     }
 
     @AfterMethod

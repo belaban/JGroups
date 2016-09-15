@@ -41,7 +41,7 @@ public class MessageBundlingTest extends ChannelTestBase {
         r2=new MyReceiver();
         b.setReceiver(r2);
         b.connect("MessageBundlingTest");
-        Util.waitUntilAllChannelsHaveSameSize(10000,1000,a,b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
     }
 
     @AfterMethod void tearDown() throws Exception {Util.close(b,a);}

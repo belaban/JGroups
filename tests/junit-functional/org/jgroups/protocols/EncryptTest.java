@@ -50,7 +50,7 @@ public abstract class EncryptTest {
         c.connect(cluster_name);
         c.setReceiver(rc=new MyReceiver<>().rawMsgs(true));
 
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a,b,c);
         rogue=createRogue("rogue");
         rogue.connect(cluster_name);
         for(JChannel ch: asList(a,b,c))

@@ -1,10 +1,12 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.Address;
+import org.jgroups.View;
 import org.jgroups.util.MergeId;
 import org.jgroups.util.Digest;
 
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * Common super class for CoordGmsImpl and ParticipantGmsImpl
@@ -14,6 +16,15 @@ public abstract class ServerGmsImpl extends GmsImpl {
 
     protected ServerGmsImpl(GMS gms) {
         super(gms);
+    }
+
+    /**
+     * Invoked upon receiving a MERGE event from the MERGE layer. Starts the merge protocol.
+     * See description of protocol in DESIGN.
+     * @param views A List of <em>different</em> views detected by the merge protocol
+     */
+    public void merge(Map<Address, View> views) {
+        merger.merge(views);
     }
 
 
@@ -26,6 +37,14 @@ public abstract class ServerGmsImpl extends GmsImpl {
      */
     public void handleMergeRequest(Address sender, MergeId merge_id, Collection<? extends Address> mbrs) {
         merger.handleMergeRequest(sender, merge_id, mbrs);
+    }
+
+    public void handleMergeResponse(MergeData data, MergeId merge_id) {
+        merger.handleMergeResponse(data, merge_id);
+    }
+
+    public void handleMergeCancelled(MergeId merge_id) {
+        merger.handleMergeCancelled(merge_id);
     }
 
     /**

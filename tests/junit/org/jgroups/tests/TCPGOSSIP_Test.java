@@ -130,7 +130,7 @@ public class TCPGOSSIP_Test {
 
             // restart and....
             gossipRouter.start();
-            Util.waitUntilAllChannelsHaveSameSize(60000, 1000, coordinator, channel, third);
+            Util.waitUntilAllChannelsHaveSameView(60000, 1000, coordinator, channel, third);
 
             // confirm they found each other
             View view = channel.getView();
@@ -161,7 +161,7 @@ public class TCPGOSSIP_Test {
 
             // restart and....
             gossipRouter.start();
-            Util.waitUntilAllChannelsHaveSameSize(60000, 1000, coordinator, channel, third);
+            Util.waitUntilAllChannelsHaveSameView(60000, 1000, coordinator, channel, third);
 
             // confirm they found each other
             View view = channel.getView();

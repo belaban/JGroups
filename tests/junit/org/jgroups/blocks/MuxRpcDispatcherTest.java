@@ -45,7 +45,7 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
             Util.sleep(1000);
         }
 
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, channels);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, channels);
     }
 
     @AfterMethod

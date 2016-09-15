@@ -72,7 +72,7 @@ public class Relay2Test {
     public void testMissingRouteAfterMerge() throws Exception {
         a=createNode(LON, "A", LON_CLUSTER, null);
         b=createNode(LON, "B", LON_CLUSTER, null);
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, a, b);
 
         x=createNode(SFO, "X", SFO_CLUSTER, null);
         assert x.getView().size() == 1;
@@ -125,7 +125,7 @@ public class Relay2Test {
         gms=(GMS)b.getProtocolStack().findProtocol(GMS.class);
         gms.installView(merge_view, null);
 
-        Util.waitUntilAllChannelsHaveSameSize(20000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameView(20000, 500, a, b);
         System.out.println("A's view: " + a.getView() + "\nB's view: " + b.getView());
 
         for(int i=0; i < 20; i++) {
@@ -152,13 +152,13 @@ public class Relay2Test {
 
         a.connect(BRIDGE_CLUSTER);
         b.connect(BRIDGE_CLUSTER);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
 
         b.disconnect();
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a);
 
         b.connect(BRIDGE_CLUSTER);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
     }
 
 
@@ -189,8 +189,8 @@ public class Relay2Test {
         b=createNode(LON, "B", LON_CLUSTER, null);
         x=createNode(SFO, "X", SFO_CLUSTER, null);
         y=createNode(SFO, "Y", SFO_CLUSTER, null);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 100, a, b);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 100, x, y);
+        Util.waitUntilAllChannelsHaveSameView(10000, 100, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 100, x, y);
         waitForBridgeView(2, 20000, 100, a, x); // A and X are site masters
 
         long start=System.currentTimeMillis();
@@ -198,7 +198,7 @@ public class Relay2Test {
         long time=System.currentTimeMillis()-start;
         System.out.println("A took " + time + " ms");
 
-        Util.waitUntilAllChannelsHaveSameSize(10000, 100, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 100, b);
         waitForBridgeView(2, 20000, 100, b, x); // B and X are now site masters
 
         long start2=System.currentTimeMillis();
