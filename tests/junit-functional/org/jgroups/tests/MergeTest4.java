@@ -592,7 +592,6 @@ public class MergeTest4 {
                                      new UNICAST3(),
                                      new STABLE().setValue("max_bytes",50000),
                                      new GMS().setValue("print_local_addr",false)
-                                       .setValue("use_merger2", true)
                                        .setValue("join_timeout", 100)
                                        .setValue("leave_timeout", 100)
                                        .setValue("merge_timeout",5000)

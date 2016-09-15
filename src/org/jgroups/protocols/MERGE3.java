@@ -56,7 +56,7 @@ public class MERGE3 extends Protocol {
 
     /* ---------------------------------------------- JMX -------------------------------------------------------- */
     @Property(description="Interval (in ms) after which we check for view inconsistencies")
-    protected long check_interval=0;
+    protected long check_interval;
 
     @ManagedAttribute(description="Number of cached ViewIds")
     public int getViews() {return views.size();}
