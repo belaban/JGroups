@@ -158,7 +158,7 @@ public class SizeTest {
         Set<Address> tmp=new HashSet<>();
         tmp.add(a1);
         tmp.add(a2);
-        sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, tmp);
+        sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT).mbrs(tmp);
         _testSize(sockhdr);
 
 
@@ -182,7 +182,7 @@ public class SizeTest {
         set.add(new IpAddress(3452));
         set.add(new IpAddress("127.0.0.1", 5000));
 
-        hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE, set);
+        hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE).mbrs(set);
         _testSize(hdr);
 
         // check that IpAddress is correctly sized in FD_SOCK.FdHeader

@@ -868,7 +868,7 @@ public class UtilTest {
     }
 
 
-    public static void testPickNext() {
+    public void testPickNext() {
         List<Integer> list=new ArrayList<>(10);
         for(int i=0; i < 10; i++)
             list.add(i);

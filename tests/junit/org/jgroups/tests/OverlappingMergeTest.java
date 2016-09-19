@@ -49,6 +49,10 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
     @AfterMethod
     protected void stop() throws Exception {
+        for(JChannel ch: new JChannel[]{a,b,c,d}) {
+            if(ch != null)
+                ch.getProtocolStack().findProtocol(GMS.class).setLevel("warn");
+        }
         Util.close(d,c,b,a);
         ra.clear(); rb.clear(); rc.clear();
     }
@@ -281,12 +285,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         System.out.println("\nA's view: " + va);
         System.out.println("B's view: " + vb);
         System.out.println("C's view: " + vc);
-        assertEquals("A's view is " + va,3,va.size());
-        assertEquals("B's view is " + vb, 3, vb.size());
-        assertEquals("C's view is " + vc,3,vc.size());
-
-        for(JChannel ch: new JChannel[]{a,b,c})
-            ch.getProtocolStack().findProtocol(GMS.class).setLevel("warn");
+        Util.waitUntilAllChannelsHaveSameView(100, 50, a,b,c);
     }
 
 

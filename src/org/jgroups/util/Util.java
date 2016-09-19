@@ -2453,11 +2453,12 @@ public class Util {
     public static <T> T pickNext(List<T> list,T obj) {
         if(list == null || obj == null)
             return null;
-        Object[] array=list.toArray();
-        for(int i=0; i < array.length; i++) {
-            T tmp=(T)array[i];
+        int size=list.size();
+
+        for(int i=0; i < size; i++) {
+            T tmp=list.get(i);
             if(Objects.equals(tmp, obj))
-                return (T)array[(i + 1) % array.length];
+                return list.get((i + 1) % size);
         }
         return null;
     }

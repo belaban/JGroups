@@ -51,6 +51,20 @@ public class LazyRemovalCache<K,V> {
         return added;
     }
 
+    public void addAll(Map<K,V> m) {
+        if(m == null)
+            return;
+        for(Map.Entry<K,V> entry: m.entrySet()) {
+            K key=entry.getKey();
+            V val=entry.getValue();
+            map.put(key, new Entry<>(val));
+        }
+    }
+
+    public Set<Map.Entry<K, Entry<V>>> entrySet() {
+        return map.entrySet();
+    }
+
     public boolean containsKey(K key) {
         return map.containsKey(key);
     }
