@@ -242,6 +242,8 @@ public abstract class Protocol {
                         try {
                             Object value=method.invoke(this);
                             String attributeName=Util.methodNameToAttributeName(method_name);
+                            if(value instanceof Double)
+                                value=String.format("%.2f", (double)value);
                             map.put(attributeName, value != null? value.toString() : null);
                         }
                         catch(Exception e) {
