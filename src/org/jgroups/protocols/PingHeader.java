@@ -11,41 +11,39 @@ import java.util.function.Supplier;
 
 
 /**
+ * Used to send discovery requests and responses
  * @author Bela Ban
  */
 public class PingHeader extends Header {
     public static final byte GET_MBRS_REQ=1;
     public static final byte GET_MBRS_RSP=2;
 
-    protected byte   type=0;
-    protected String cluster_name;
+    protected byte    type;
+    protected String  cluster_name;
+    protected boolean initial_discovery;
 
 
     public PingHeader() {
     }
 
-    public PingHeader(byte type)                               {this.type=type;}
-    public byte type()                                         {return type;}
-    public PingHeader clusterName(String name)                 {this.cluster_name=name; return this;}
-
-    public short getMagicId() {return 53;}
+    public PingHeader(byte type)                   {this.type=type;}
+    public byte       type()                       {return type;}
+    public PingHeader clusterName(String name)     {this.cluster_name=name; return this;}
+    public boolean    initialDiscovery()           {return initial_discovery;}
+    public PingHeader initialDiscovery(boolean b)  {this.initial_discovery=b; return this;}
+    public short      getMagicId()                 {return 53;}
 
     public Supplier<? extends Header> create() {return PingHeader::new;}
 
     public int size() {
-        int retval=Global.BYTE_SIZE *2; // type and cluster_name presence
+        int retval=Global.BYTE_SIZE *3; // type, cluster_name presence and initial_discovery
         if(cluster_name != null)
             retval += cluster_name.length() +2;
         return retval;
     }
 
     public String toString() {
-        StringBuilder sb=new StringBuilder();
-        sb.append("[type=" + type2Str(type));
-        if(cluster_name != null)
-            sb.append(", cluster=").append(cluster_name);
-        sb.append(']');
-        return sb.toString();
+        return String.format("[%s cluster=%s initial_discovery=%b]", type2Str(type), cluster_name, initial_discovery);
     }
 
     static String type2Str(byte t) {
@@ -57,13 +55,15 @@ public class PingHeader extends Header {
     }
 
 
-    public void writeTo(DataOutput outstream) throws Exception {
-        outstream.writeByte(type);
-        Bits.writeString(cluster_name,outstream);
+    public void writeTo(DataOutput out) throws Exception {
+        out.writeByte(type);
+        Bits.writeString(cluster_name,out);
+        out.writeBoolean(initial_discovery);
     }
 
-    public void readFrom(DataInput instream) throws Exception {
-        type=instream.readByte();
-        cluster_name=Bits.readString(instream);
+    public void readFrom(DataInput in) throws Exception {
+        type=in.readByte();
+        cluster_name=Bits.readString(in);
+        initial_discovery=in.readBoolean();
     }
 }

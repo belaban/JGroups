@@ -24,18 +24,14 @@ import java.util.stream.Collectors;
 
 
 /**
- * The TCPGOSSIP protocol layer retrieves the initial membership (used by the
- * GMS when started by sending event FIND_INITIAL_MBRS down the stack). We do
- * this by contacting one or more GossipRouters, which must be running at
- * well-known addresses:ports. The responses should allow us to determine the
- * coordinator whom we have to contact, e.g. in case we want to join the group.
- * When we are a server (after having received the BECOME_SERVER event), we'll
- * respond to TCPGOSSIP requests with a TCPGOSSIP response.
- * <p>
- * The FIND_INITIAL_MBRS event will eventually be answered with a
- * FIND_INITIAL_MBRS_OK event up the stack.
- * 
+ * The TCPGOSSIP protocol layer retrieves the initial membership (used by GMS when started by sending event
+ * FIND_INITIAL_MBRS down the stack). We do this by contacting one or more GossipRouters, which must be running at
+ * well-known addresses:ports. The responses should allow us to determine the coordinator whom we have to contact,
+ * e.g. in case we want to join the group.
+ * When we are a server (after having received the BECOME_SERVER event), we'll respond to TCPGOSSIP requests with a
+ * TCPGOSSIP response.
  * @author Bela Ban
+ * @since a long time ago
  */
 public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotification {
     
@@ -86,10 +82,6 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
         if(transport instanceof TUNNEL)
             throw new IllegalStateException("TCPGOSSIP cannot be used with TUNNEL; use either TUNNEL:PING or " +
                     "TCP:TCPGOSSIP as valid configurations");
-    }
-
-    public void start() throws Exception {
-        super.start();
     }
 
     public void stop() {

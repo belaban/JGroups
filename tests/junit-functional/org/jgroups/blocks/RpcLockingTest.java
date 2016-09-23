@@ -76,8 +76,7 @@ public class RpcLockingTest {
 
     protected JChannel createChannel(String name) throws Exception {
         return new JChannel(
-          new SHARED_LOOPBACK(),
-          new SHARED_LOOPBACK_PING().setValue("force_sending_discovery_rsps", true),
+          new SHARED_LOOPBACK(), new SHARED_LOOPBACK_PING(),
           new MERGE3().setValue("min_interval", 1000).setValue("max_interval", 3000),
           new NAKACK2().setValue("use_mcast_xmit", false).setValue("discard_delivered_msgs", true)
             .setValue("log_discard_msgs", false).setValue("log_not_found_msgs", false),

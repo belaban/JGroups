@@ -11,6 +11,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * A view is a local representation of the current membership of a group. Only one view is installed
@@ -221,6 +222,14 @@ public class View implements Comparable<View>, Streamable, Iterable<Address>, Co
         return retval;
     }
 
+    public static List<Address> newMembers(View old, View new_view) {
+        if(old == null || new_view == null)
+            return null;
+        List<Address> retval=new ArrayList<>(new_view.getMembers());
+        retval.removeAll(old.getMembers());
+        return retval;
+    }
+
     /**
      * Returns the difference between 2 views from and to. It is assumed that view 'from' is logically prior to view 'to'.
      * @param from The first view
@@ -266,6 +275,17 @@ public class View implements Comparable<View>, Streamable, Iterable<Address>, Co
         }
 
         return new Address[][]{joined != null? joined : new Address[]{}, left != null? left : new Address[]{}};
+    }
+
+    /** Returns true if all views are the same. Uses the view IDs for comparison */
+    public static boolean sameViews(View ... views) {
+        ViewId first_view_id=views[0].getViewId();
+        return Stream.of(views).allMatch(v -> v.getViewId().equals(first_view_id));
+    }
+
+    public static boolean sameViews(Collection<View> views) {
+        ViewId first_view_id=views.iterator().next().getViewId();
+        return views.stream().allMatch(v -> v.getViewId().equals(first_view_id));
     }
 
     public Iterator<Address> iterator() {

@@ -20,9 +20,9 @@
          enable_diagnostics="true"
          thread_naming_pattern="cl"
 
-         thread_pool.min_threads="2"
-         thread_pool.max_threads="8"
-         thread_pool.keep_alive_time="5000"/>
+         thread_pool.min_threads="0"
+         thread_pool.max_threads="20"
+         thread_pool.keep_alive_time="30000"/>
 
     <PING />
     <MERGE3 max_interval="30000"

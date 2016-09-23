@@ -210,7 +210,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         System.out.println("B's view: " + vb);
         System.out.println("C's view: " + vc);
         assertEquals("A's view is " + va,3,va.size());
-        assertEquals("B's view is " + vb, 3, vb.size());
+        assertEquals("B's view is " + vb,3, vb.size());
         assertEquals("C's view is " + vc,3,vc.size());
 
         System.out.println("\n==== Sending messages after merge ====");

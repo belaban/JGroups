@@ -774,51 +774,7 @@ public class UtilTest {
     }
 
 
-    public static void testLeftMembers() {
-        final Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
 
-        List<Address> v1=new ArrayList<>();
-        v1.add(a);
-        v1.add(b);
-        v1.add(c);
-        v1.add(d);
-
-        List<Address> v2=new ArrayList<>();
-        v2.add(c);
-        v2.add(d);
-
-        View one=new View(new ViewId(a, 1), v1),
-                two=new View(new ViewId(b,2), v2);
-        List<Address> left=View.leftMembers(one, two);
-        System.out.println("left = " + left);
-        assert left != null;
-        assert left.size() == 2;
-        assert left.contains(a);
-        assert left.contains(b);
-    }
-
-    public static void testLeftMembers2() {
-        final Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
-
-        List<Address> v1=new ArrayList<>();
-        v1.add(a);
-        v1.add(b);
-        v1.add(c);
-        v1.add(d);
-
-        List<Address> v2=new ArrayList<>();
-        v2.add(c);
-        v2.add(d);
-        v2.add(a);
-        v2.add(b);
-
-        View one=new View(new ViewId(a, 1), v1),
-                two=new View(new ViewId(b,2), v2);
-        List<Address> left=View.leftMembers(one, two);
-        System.out.println("left = " + left);
-        assert left != null;
-        assert left.isEmpty();
-    }
 
 
     public static void testNewMembers() {

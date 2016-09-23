@@ -38,7 +38,7 @@ public class SizeTest {
     }
 
 
-    public static void testPingHeader() throws Exception {
+    public void testPingHeader() throws Exception {
         _testSize(new PingHeader(PingHeader.GET_MBRS_REQ).clusterName("bla"));
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP));
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP).clusterName(null));

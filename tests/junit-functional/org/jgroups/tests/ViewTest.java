@@ -58,7 +58,7 @@ public class ViewTest {
         }
 
         byte[] buf=Util.objectToByteBuffer(view);
-        View view2=(View)Util.objectFromByteBuffer(buf);
+        View view2=Util.objectFromByteBuffer(buf);
         System.out.println("view2 = " + view2);
 
         mbrs=view2.getMembers();
@@ -98,7 +98,8 @@ public class ViewTest {
     }
 
     public void testEquals() {
-        assert view.equals(view);
+        View tmp=view;
+        assert view.equals(tmp); // tests '=='
     }
 
     public void testEquals2() {
@@ -107,6 +108,16 @@ public class ViewTest {
         assert v1.equals(v2);
         View v3=new View(a, 12543, new ArrayList<>(members));
         assert !v1.equals(v3);
+    }
+
+    /** Tests {@link View#sameViews(View...)} */
+    public void testSameViews() {
+        View v1=View.create(a,1,a,b,c), v2=View.create(a,1,a,b,c), v3=View.create(a,1,a,b,c), v4=View.create(b,1,a,b,c);
+        assert View.sameViews(v1,v2,v3);
+        assert !View.sameViews(v1,v2,v3,v4);
+
+        assert View.sameViews(Arrays.asList(v1,v2,v3));
+        assert !View.sameViews(Arrays.asList(v1,v2,v3,v4));
     }
  
 
@@ -173,6 +184,39 @@ public class ViewTest {
         assert left[0].equals(a) && left[1].equals(e) && left[2].equals(f);
     }
 
+
+    public void testLeftMembers() {
+        View one=View.create(a, 1, a,b,c,d),
+          two=View.create(b, 2, c,d);
+
+        List<Address> left=View.leftMembers(one, two);
+        System.out.println("left = " + left);
+        assert left != null;
+        assert left.size() == 2;
+        assert left.contains(a);
+        assert left.contains(b);
+    }
+
+    public void testLeftMembers2() {
+        View one=View.create(a, 1, a,b,c,d),
+          two=View.create(b, 2, c,d,a,b);
+        List<Address> left=View.leftMembers(one, two);
+        System.out.println("left = " + left);
+        assert left != null;
+        assert left.isEmpty();
+    }
+
+    public void testNewMembers() {
+        View one=View.create(a, 1, a,b),
+          two=View.create(b, 2, a,b,c,d);
+
+        List<Address> new_mbrs=View.newMembers(one, two);
+        System.out.println("new = " + new_mbrs);
+        assert new_mbrs != null;
+        assert new_mbrs.size() == 2;
+        assert new_mbrs.contains(c);
+        assert new_mbrs.contains(d);
+    }
 
     public void testIterator() {
         List<Address> mbrs=new ArrayList<>(members.size());

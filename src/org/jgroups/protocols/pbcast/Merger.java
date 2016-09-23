@@ -73,6 +73,16 @@ public class Merger {
      * @param views A List of <em>different</em> views detected by the merge protocol, keyed by sender
      */
     public void merge(Map<Address, View> views) {
+        if(views == null || views.isEmpty()) {
+            log.warn("the views passed with the MERGE event were empty (or null); ignoring MERGE event");
+            return;
+        }
+
+        if(View.sameViews(views.values())) {
+            log.debug("MERGE event is ignored because of identical views: %s", Util.printListWithDelimiter(views.values(), ", "));
+            return;
+        }
+
         if(isMergeInProgress()) {
             log.trace("%s: merge is already running (merge_id=%s)", gms.local_addr, merge_id);
             return;

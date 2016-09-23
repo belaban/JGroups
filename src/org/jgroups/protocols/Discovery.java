@@ -40,20 +40,17 @@ public abstract class Discovery extends Protocol {
 
     @Property(description="Whether or not to return the entire logical-physical address cache mappings on a " +
       "discovery request, or not.")
-    protected boolean                    return_entire_cache=false;
+    protected boolean                    return_entire_cache;
 
     @Property(description="If greater than 0, we'll wait a random number of milliseconds in range [0..stagger_timeout] " +
       "before sending a discovery response. This prevents traffic spikes in large clusters when everyone sends their " +
       "discovery response at the same time")
     protected long                       stagger_timeout;
 
-    @Property(description="Always sends a discovery response, no matter what")
-    protected boolean                    force_sending_discovery_rsps=true;
-
 
     @Property(description="If a persistent disk cache (PDC) is present, combine the discovery results with the " +
       "contents of the disk cache before returning the results")
-    protected boolean                    use_disk_cache=false;
+    protected boolean                    use_disk_cache;
 
     @Property(description="Max size of the member list shipped with a discovery request. If we have more, the " +
       "mbrs field in the discovery request header is nulled and members return the entire membership, " +
@@ -65,7 +62,7 @@ public abstract class Discovery extends Protocol {
 
     @Property(description="If true then the discovery is done on a separate timer thread. Should be set to true when " +
       "discovery is blocking and/or takes more than a few milliseconds")
-    protected boolean                    async_discovery=false;
+    protected boolean                    async_discovery;
 
     @Property(description="If enabled, use a separate thread for every discovery request. Can be used with or without " +
       "async_discovery")
@@ -73,35 +70,33 @@ public abstract class Discovery extends Protocol {
 
     @Property(description="When a new node joins, and we have a static discovery protocol (TCPPING), then send the " +
       "contents of the discovery cache to new and existing members if true (and we're the coord). Addresses JGRP-1903")
-    protected boolean                    send_cache_on_join=false;
+    protected boolean                    send_cache_on_join;
 
-
-    @ManagedOperation(description="Sets force_sending_discovery_rsps")
-    public void setForceSendingDiscoveryRsps(boolean flag) {
-        force_sending_discovery_rsps=flag;
-    }
+    @Property(description="The max rank of this member to respond to discovery requests, e.g. if " +
+      "max_rank_to_reply=2 in {A,B,C,D,E}, only A (rank 1) and B (rank 2) will reply. A value <= 0 means " +
+      "everybody will reply. This attribute is ignored if TP.use_ip_addrs is false.")
+    protected int                        max_rank_to_reply;
 
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
-
 
     @ManagedAttribute(description="Total number of discovery requests sent ")
     protected int                        num_discovery_requests;
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    protected volatile boolean           is_server=false;
-    protected volatile boolean           is_leaving=false;
+    protected volatile boolean           is_server;
+    protected volatile boolean           is_leaving;
     protected TimeScheduler              timer;
-    protected View                       view;
-    protected final List<Address>        members=new ArrayList<>(11);
+    protected volatile View              view;
     @ManagedAttribute(description="Whether this member is the current coordinator")
-    protected boolean                    is_coord=false;
-    protected Address                    local_addr=null;
-    protected Address                    current_coord;
+    protected volatile boolean           is_coord;
+    protected volatile Address           local_addr;
+    protected volatile Address           current_coord;
     protected String                     cluster_name;
     protected final Map<Long,Responses>  ping_responses=new HashMap<>();
     @ManagedAttribute(description="Whether the transport supports multicasting")
     protected boolean                    transport_supports_multicasting=true;
+    protected boolean                    use_ip_addrs; // caches TP.use_ip_addrs
     @ManagedAttribute(description="True if sending a message can block at the transport level")
     protected boolean                    sends_can_block=true;
     protected static final byte[]        WHITESPACE=" \t".getBytes();
@@ -109,13 +104,15 @@ public abstract class Discovery extends Protocol {
 
 
     public void init() throws Exception {
-        timer=getTransport().getTimer();
+        TP tp=getTransport();
+        timer=tp.getTimer();
         if(timer == null)
             throw new Exception("timer cannot be retrieved from protocol stack");
         if(stagger_timeout < 0)
             throw new IllegalArgumentException("stagger_timeout cannot be negative");
-        transport_supports_multicasting=getTransport().supportsMulticasting();
+        transport_supports_multicasting=tp.supportsMulticasting();
         sends_can_block=getTransport() instanceof TCP; // UDP and TCP_NIO2 won't block
+        use_ip_addrs=tp.getUseIpAddresses();
     }
 
     public abstract boolean isDynamic();
@@ -138,8 +135,6 @@ public abstract class Discovery extends Protocol {
     public Discovery returnEntireCache(boolean flag)    {return_entire_cache=flag; return this;}
     public long      staggerTimeout()                   {return stagger_timeout;}
     public Discovery staggerTimeout(long timeout)       {stagger_timeout=timeout; return this;}
-    public boolean   forceDiscoveryResponses()          {return force_sending_discovery_rsps;}
-    public Discovery forceDiscoveryResponses(boolean f) {force_sending_discovery_rsps=f; return this;}
     public boolean   useDiskCache()                     {return use_disk_cache;}
     public Discovery useDiskCache(boolean flag)         {use_disk_cache=flag; return this;}
     public Discovery discoveryRspExpiryTime(long t)     {this.discovery_rsp_expiry_time=t; return this;}
@@ -163,10 +158,7 @@ public abstract class Discovery extends Protocol {
 
     @ManagedOperation(description="Sends information about my cache to everyone but myself")
     public void sendCacheInformation() {
-        List<Address> current_members=null;
-        synchronized(members) {
-            current_members=new ArrayList<>(members);
-        }
+        List<Address> current_members=new ArrayList<>(view.getMembers());
         disseminateDiscoveryInformation(current_members, null, current_members);
     }
 
@@ -292,7 +284,7 @@ public abstract class Discovery extends Protocol {
                 }
 
                 // add physical address and logical name of the discovery sender (if available) to the cache
-                if(data != null) {
+                if(data != null) { // null if use_ip_addrs is true
                     addDiscoveryResponseToCaches(logical_addr, data.getLogicalName(), data.getPhysicalAddr());
                     discoveryRequestReceived(msg.getSrc(), data.getLogicalName(), data.getPhysicalAddr());
                     addResponse(data, false);
@@ -304,9 +296,9 @@ public abstract class Discovery extends Protocol {
                         for(Map.Entry<Address,PhysicalAddress> entry: cache.entrySet()) {
                             Address addr=entry.getKey();
                             // JGRP-1492: only return our own address, and addresses in view.
-                            if(addr.equals(local_addr) || members.contains(addr)) {
+                            if(addr.equals(local_addr) || view.containsMember(addr)) {
                                 PhysicalAddress physical_addr=entry.getValue();
-                                sendDiscoveryResponse(addr, physical_addr, NameCache.get(addr), msg.getSrc(), isCoord(addr));
+                                sendDiscoveryResponse(addr, physical_addr, NameCache.get(addr), msg.getSrc(), is_coord);
                             }
                         }
                     }
@@ -315,11 +307,11 @@ public abstract class Discovery extends Protocol {
 
                 // Only send a response if hdr.mbrs is not empty and contains myself. Otherwise always send my info
                 Collection<? extends Address> mbrs=data != null? data.mbrs() : null;
-                boolean send_response=mbrs == null || mbrs.contains(local_addr);
-                if(send_response) {
-                    PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-                    sendDiscoveryResponse(local_addr, physical_addr, NameCache.get(local_addr), msg.getSrc(), is_coord);
-                }
+                boolean drop_because_of_rank=use_ip_addrs && max_rank_to_reply > 0 && hdr.initialDiscovery() && Util.getRank(view, local_addr) > max_rank_to_reply;
+                if(drop_because_of_rank || (mbrs != null && !mbrs.contains(local_addr)))
+                    return null;
+                PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+                sendDiscoveryResponse(local_addr, physical_addr, NameCache.get(local_addr), msg.getSrc(), is_coord);
                 return null;
 
             case PingHeader.GET_MBRS_RSP:
@@ -353,29 +345,19 @@ public abstract class Discovery extends Protocol {
                 return findMembers(null, true, false); // triggered by JOIN process (ClientGmsImpl)
 
             case Event.FIND_MBRS:
-                return findMembers(evt.getArg(), false, false); // triggered by MERGE2/MERGE3
+                return findMembers(evt.getArg(), false, false); // triggered by MERGE3
 
-            // case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
-                List<Address> tmp;
                 View old_view=view;
                 view=evt.getArg();
-                if((tmp=view.getMembers()) != null) {
-                    synchronized(members) {
-                        members.clear();
-                        members.addAll(tmp);
-                    }
-                }
-                current_coord=!members.isEmpty()? members.get(0) : null;
+                current_coord=view.getCoord();
                 is_coord=current_coord != null && local_addr != null && current_coord.equals(local_addr);
                 Object retval=down_prot.down(evt);
                 if(send_cache_on_join && !isDynamic() && is_coord) {
                     List<Address> curr_mbrs, left_mbrs, new_mbrs;
-                    synchronized(members) {
-                        curr_mbrs=new ArrayList<>(members);
-                        left_mbrs=old_view != null? Util.leftMembers(old_view.getMembers(), members) : null;
-                        new_mbrs=old_view != null? Util.newMembers(old_view.getMembers(), members) : null;
-                    }
+                    curr_mbrs=new ArrayList<>(view.getMembers());
+                    left_mbrs=View.leftMembers(old_view, view);
+                    new_mbrs=View.newMembers(old_view, view);
                     startCacheDissemination(curr_mbrs, left_mbrs, new_mbrs); // separate task
                 }
                 return retval;

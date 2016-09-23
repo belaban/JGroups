@@ -8,10 +8,14 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.util.BoundedList;
+import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Tuple;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 
 /**
@@ -100,7 +104,7 @@ public class TCPPING extends Discovery {
         Object retval=super.down(evt);
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
-                for(Address logical_addr: members) {
+                for(Address logical_addr: view.getMembersRaw()) {
                     PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, logical_addr));
                     if(physical_addr != null && !initial_hosts.contains(physical_addr)) {
                         dynamic_hosts.addIfAbsent(physical_addr);
@@ -125,11 +129,17 @@ public class TCPPING extends Discovery {
 
     @Override
     public void findMembers(List<Address> members, boolean initial_discovery, Responses responses) {
-        PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+        PingData        data=null;
+        PhysicalAddress physical_addr=null;
 
-        // https://issues.jboss.org/browse/JGRP-1670
-        PingData data=new PingData(local_addr, false, org.jgroups.util.NameCache.get(local_addr), physical_addr);
-        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name);
+        if(!use_ip_addrs || !initial_discovery) {
+            physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+
+            // https://issues.jboss.org/browse/JGRP-1670
+            data=new PingData(local_addr, false, NameCache.get(local_addr), physical_addr);
+            if(members != null && members.size() <= max_members_in_discovery_request)
+                data.mbrs(members);
+        }
 
         List<PhysicalAddress> cluster_members=new ArrayList<>(initial_hosts.size() + (dynamic_hosts != null? dynamic_hosts.size() : 0) + 5);
         initial_hosts.stream().filter(phys_addr -> !cluster_members.contains(phys_addr)).forEach(cluster_members::add);
@@ -144,13 +154,16 @@ public class TCPPING extends Discovery {
                 list.stream().filter(phys_addr -> !cluster_members.contains(phys_addr)).forEach(cluster_members::add);
         }
 
+        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name).initialDiscovery(initial_discovery);
         for(final PhysicalAddress addr: cluster_members) {
             if(physical_addr != null && addr.equals(physical_addr)) // no need to send the request to myself
                 continue;
 
             // the message needs to be DONT_BUNDLE, see explanation above
             final Message msg=new Message(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
-              .putHeader(this.id,hdr).setBuffer(marshal(data));
+              .putHeader(this.id,hdr);
+            if(data != null)
+                msg.setBuffer(marshal(data));
 
             if(async_discovery_use_separate_thread_per_request)
                 timer.execute(() -> sendDiscoveryRequest(msg), sends_can_block);
