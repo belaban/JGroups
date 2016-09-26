@@ -151,7 +151,7 @@ public class SASL extends Protocol {
     }
 
     public String getServerName(String server_name) {
-        return server_name;
+        return this.server_name;
     }
 
     public void setTimeout(long timeout) {
