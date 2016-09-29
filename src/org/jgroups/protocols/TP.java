@@ -968,6 +968,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public Map<String, String> handleProbe(String... keys) {
         Map<String,String> retval=new HashMap<>(keys != null? keys.length : 2);
+        if(keys == null)
+            return retval;
+
         for(String key: keys) {
             switch(key) {
                 case "dump":
