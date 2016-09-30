@@ -1,6 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Message;
+import org.jgroups.Event;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.Protocol;
@@ -28,10 +28,12 @@ public class DELIVERY_TIME extends Protocol {
         delivery_times.clear();
     }
 
-    public Object up(Message msg) {
+    public Object up(Event evt) {
+        if(evt.getType() != Event.MSG)
+            return up_prot.up(evt);
         long start=Util.micros();
         try {
-            return up_prot.up(msg);
+            return up_prot.up(evt);
         }
         finally {
             long time=Util.micros()-start;
