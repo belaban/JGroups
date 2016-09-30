@@ -6,7 +6,6 @@ import org.jgroups.util.SeqnoList;
 import org.jgroups.util.Table;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -26,14 +25,7 @@ public class TableTest {
 
     protected static final Predicate<Message> dont_loopback_filter=msg -> msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
 
-    @DataProvider(name="rangeProvider")
-    protected static final Object[][] rangeProvider() {
-        return new Object[][]{
-          {Long.MAX_VALUE - 10, 20},
-          {-10, 20}
-        };
-    }
-    
+
     public static void testCreation() {
         Table<Integer> table=new Table<>(3, 10, 0);
         System.out.println("table = " + table);
@@ -1382,8 +1374,14 @@ public class TableTest {
 
 
 
-    @Test(groups=Global.FUNCTIONAL,dataProvider="rangeProvider")
-    public void testSeqnoOverflow(long seqno, final int delta) {
+    @Test(groups=Global.FUNCTIONAL)
+    public void testSeqnoOverflow() {
+        _testSeqnoOverflow(Long.MAX_VALUE - 10, 20);
+        _testSeqnoOverflow(-10, 20);
+    }
+
+
+    protected void _testSeqnoOverflow(long seqno, final int delta) {
         long orig_seqno=seqno;
         Table<Message> win=new Table<>(3, 10, seqno);
 
