@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /** Tests {@link org.jgroups.util.Table<Integer>}
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=false)
+@Test(groups=Global.FUNCTIONAL)
 public class TableTest {
 
     protected static final Filter<Message> dont_loopback_filter=new Filter<Message>() {
