@@ -2,6 +2,8 @@ package org.jgroups.logging;
 
 import org.jgroups.Global;
 
+import java.util.Locale;
+
 
 /**
  * Factory that creates {@link Log} instances.
@@ -11,7 +13,12 @@ import org.jgroups.Global;
  * @since 4.0
  */
 public final class LogFactory {
-    public static final boolean       IS_LOG4J2_AVAILABLE; // log4j2 is the default
+    private static final Locale      LOCALE = new Locale(
+            System.getProperty("user.language"),
+            System.getProperty("user.country"));
+
+    public static final boolean       IS_SLF4J_AVAILABLE;   // slf4j is the default
+    public static final boolean       IS_LOG4J2_AVAILABLE;
     protected static boolean          use_jdk_logger;
     protected static CustomLogFactory custom_log_factory=null;
 
@@ -22,6 +29,7 @@ public final class LogFactory {
     static {
         use_jdk_logger=isPropertySet(Global.USE_JDK_LOGGER);
         IS_LOG4J2_AVAILABLE=isAvailable("org.apache.logging.log4j.core.Logger");
+        IS_SLF4J_AVAILABLE=isAvailable("org.slf4j.Logger");
     }
 
     public static CustomLogFactory getCustomLogFactory()                         {return custom_log_factory;}
@@ -31,6 +39,7 @@ public final class LogFactory {
 
     public static String loggerType() {
         if(use_jdk_logger)      return "jdk";
+        if(IS_SLF4J_AVAILABLE)  return "slf4j";
         if(IS_LOG4J2_AVAILABLE) return "log4j2";
         return "jdk";
     }
@@ -60,6 +69,9 @@ public final class LogFactory {
         if(use_jdk_logger)
             return new JDKLogImpl(clazz);
 
+        if (IS_SLF4J_AVAILABLE)
+            return new Slf4jLogImpl(LOCALE, clazz);
+
         if(IS_LOG4J2_AVAILABLE)
             return new Log4J2LogImpl(clazz);
 
@@ -72,6 +84,9 @@ public final class LogFactory {
 
         if(use_jdk_logger)
             return new JDKLogImpl(category);
+
+        if (IS_SLF4J_AVAILABLE)
+            return new Slf4jLogImpl(LOCALE, category);
 
         if(IS_LOG4J2_AVAILABLE)
             return new Log4J2LogImpl(category);
