@@ -25,15 +25,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Iterates over all concrete Protocol classes and creates XML schema used for validation of configuration files.
@@ -113,12 +105,7 @@ public class XMLSchemaGenerator {
             String package_name=PROT_PACKAGE + (suffix == null || suffix.isEmpty()? "" : "." + suffix);
             Set<Class<?>> classes=getClasses(Protocol.class, package_name);
             List<Class<?>> sortedClasses = new LinkedList<>(classes);
-            Collections.sort(sortedClasses, new Comparator<Class<?>>() {
-                @Override
-                public int compare(Class<?> o1, Class<?> o2) {
-                    return o1.getCanonicalName().compareTo(o2.getCanonicalName());
-                }
-            });
+            Collections.sort(sortedClasses, (o1, o2) -> o1.getCanonicalName().compareTo(o2.getCanonicalName()));
             for (Class<?> clazz : sortedClasses)
                 classToXML(xmldoc, parent, clazz, package_name);
         }
@@ -205,7 +192,7 @@ public class XMLSchemaGenerator {
             choice.appendChild(tmp);
         }
 
-        Map<String, DelayingElementWriter> sortedElements = new TreeMap<String, DelayingElementWriter>();
+        Map<String, DelayingElementWriter> sortedElements =new TreeMap<>();
 
         XmlAttribute xml_attr=Util.getAnnotation(clazz, XmlAttribute.class);
         if(xml_attr != null) {
@@ -213,14 +200,11 @@ public class XMLSchemaGenerator {
             if(attrs.length > 0) {
                 Set<String> set=new HashSet<>(Arrays.asList(attrs)); // to weed out dupes
                 for(final String attr: set) {
-                    sortedElements.put(attr, new DelayingElementWriter() {
-                        @Override
-                        public void writeElement() {
-                            Element attributeElement = xmldoc.createElement("xs:attribute");
-                            attributeElement.setAttribute("name", attr);
-                            attributeElement.setAttribute("type", "xs:string");
-                            complexType.appendChild(attributeElement);
-                        }
+                    sortedElements.put(attr, () -> {
+                        Element attributeElement = xmldoc.createElement("xs:attribute");
+                        attributeElement.setAttribute("name", attr);
+                        attributeElement.setAttribute("type", "xs:string");
+                        complexType.appendChild(attributeElement);
                     });
                 }
             }
@@ -243,26 +227,23 @@ public class XMLSchemaGenerator {
                     if(property == null || property.isEmpty()) {
                         throw new IllegalArgumentException("Cannot create empty attribute name for element xs:attribute, field is " + field);
                     }
-                    sortedElements.put(property, new DelayingElementWriter() {
-                        @Override
-                        public void writeElement() {
-                            Element attributeElement = xmldoc.createElement("xs:attribute");
-                            attributeElement.setAttribute("name", property);
+                    sortedElements.put(property, () -> {
+                        Element attributeElement = xmldoc.createElement("xs:attribute");
+                        attributeElement.setAttribute("name", property);
 
-                            // Agreement with Bela Ban on Jan-20-2009 (Go Obama!!!) to treat all types as
-                            // xs:string since we do not know where users are going to use
-                            // replacement tokens in configuration files. Therefore, the type becomes
-                            // indeterminate.
-                            attributeElement.setAttribute("type", "xs:string");
-                            complexType.appendChild(attributeElement);
+                        // Agreement with Bela Ban on Jan-20-2009 (Go Obama!!!) to treat all types as
+                        // xs:string since we do not know where users are going to use
+                        // replacement tokens in configuration files. Therefore, the type becomes
+                        // indeterminate.
+                        attributeElement.setAttribute("type", "xs:string");
+                        complexType.appendChild(attributeElement);
 
-                            Element annotationElement = xmldoc.createElement("xs:annotation");
-                            attributeElement.appendChild(annotationElement);
+                        Element annotationElement = xmldoc.createElement("xs:annotation");
+                        attributeElement.appendChild(annotationElement);
 
-                            Element documentationElement = xmldoc.createElement("xs:documentation");
-                            documentationElement.setTextContent(r.description());
-                            annotationElement.appendChild(documentationElement);
-                        }
+                        Element documentationElement = xmldoc.createElement("xs:documentation");
+                        documentationElement.setTextContent(r.description());
+                        annotationElement.appendChild(documentationElement);
                     });
                 }
             }
@@ -280,23 +261,20 @@ public class XMLSchemaGenerator {
                 } else {
                     name = annotation.name();
                 }
-                sortedElements.put(name, new DelayingElementWriter() {
-                    @Override
-                    public void writeElement() {
-                        Element attributeElement = xmldoc.createElement("xs:attribute");
-                        attributeElement.setAttribute("name", name);
-                        attributeElement.setAttribute("type", "xs:string");
-                        complexType.appendChild(attributeElement);
+                sortedElements.put(name, () -> {
+                    Element attributeElement = xmldoc.createElement("xs:attribute");
+                    attributeElement.setAttribute("name", name);
+                    attributeElement.setAttribute("type", "xs:string");
+                    complexType.appendChild(attributeElement);
 
-                        String desc = annotation.description();
-                        if (!desc.isEmpty()) {
-                            Element annotationElement = xmldoc.createElement("xs:annotation");
-                            attributeElement.appendChild(annotationElement);
+                    String desc = annotation.description();
+                    if (!desc.isEmpty()) {
+                        Element annotationElement = xmldoc.createElement("xs:annotation");
+                        attributeElement.appendChild(annotationElement);
 
-                            Element documentationElement = xmldoc.createElement("xs:documentation");
-                            documentationElement.setTextContent(annotation.description());
-                            annotationElement.appendChild(documentationElement);
-                        }
+                        Element documentationElement = xmldoc.createElement("xs:documentation");
+                        documentationElement.setTextContent(annotation.description());
+                        annotationElement.appendChild(documentationElement);
                     }
                 });
             }
