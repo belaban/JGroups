@@ -171,7 +171,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
                 }
 
                 if (log.isTraceEnabled()) {
-                    log.trace("Message %s is ready to be deliver. Final sequencer number is %d",
+                    log.trace("Message %s is ready to be delivered. Final sequencer number is %d",
                               messageID, finalSequenceNumber);
                 }
 
@@ -317,7 +317,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
                 }
 
                 if (trace) {
-                    log.trace("Message %s is ready to be deliver. Final sequencer number is %d" +
+                    log.trace("Message %s is ready to be delivered. Final sequencer number is %d",
                                 messageID, finalSequenceNumber);
                 }
 
