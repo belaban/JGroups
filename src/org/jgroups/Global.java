@@ -54,6 +54,8 @@ public final class Global {
     public static final String IPV6_MCAST_PREFIX="jgroups.ipmcast.prefix";
 
     public static final String USE_JDK_LOGGER="jgroups.use.jdk_logger"; // forces use of the JDK logger
+    public static final String LOG_CLASS="jgroups.log_class"; // class of preferred logger
+
     /** System prop for defining the default number of headers in a Message */
     public static final String DEFAULT_HEADERS="jgroups.msg.default_headers";
 
