@@ -88,7 +88,7 @@ doc:: documentation
 JGroups has no runtime dependencies; all that's needed to use it is to have jgroups.jar on the classpath.
 For logging, this means the JVM's logging (java.util.logging) is used.
 
-However, JGroups can use any other logging framework. By default, log4j and log4j2 are supported if the
+However, JGroups can use any other logging framework. By default, log4j2 and slf4j are supported if the
 corresponding JARs are found on the classpath.
         
 
@@ -135,6 +135,17 @@ public interface CustomLogFactory {
 The implementation needs to return an implementation of `org.jgroups.logging.Log`.
 
 To use the custom log, `LogFactory.setCustomLogFactory(CustomLogFactory f)` needs to be called.
+
+==== Setting the preferred log class
+
+It is possible to set the preferred log class via system property `jgroups.log_class`. To do this, the fully
+qualified name of a class which provides the following functionality has to be given:
+* Implement the `Log` interface
+* Provide a constructor taking a `Class` type as only argument
+* Provide a constructor taking a `String` type as only argument
+
+Example: `-Djgroups.log_class=org.jgroups.logging.Slf4jLogImpl`
+
 
 
 [[TestingTheSetup]]
