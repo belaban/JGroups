@@ -135,11 +135,7 @@ public final class PropertyConverters {
             	setBindAddress((Protocol)obj, new_bind_addr) ;
 
             // if no bind_interface specified, set it to the empty string to avoid exception
-            // from @Property processing
-            if (propertyValue != null)
-            	return propertyValue ;
-            else
-            	return "" ;
+            return propertyValue != null? propertyValue : "";
         }
 
 
