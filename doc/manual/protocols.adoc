@@ -302,6 +302,126 @@ The name of a file is always UUID.logical_name.list, e.g. `0000-0000-00000000000
 a UUID of 1, a logical name of "m1.1" and the suffix ".list".
             
 
+===== Removing a member which crashed or left gracefully
+When we have view `{A,B,C,D}` (A being the coordinator), the file `2f73fcac-aecb-2a98-4300-26ca4b1016d2.A.list` might
+have the following contents:
+
+----
+C 	c0a6f4f8-a4a3-60c1-8420-07c81c0256d6 	192.168.1.168:7802 	F
+D 	9db6cf43-138c-d7cb-8eb3-2aa4e7cb5f7e 	192.168.1.168:7803 	F
+A 	2f73fcac-aecb-2a98-4300-26ca4b1016d2 	192.168.1.168:7800 	T
+B 	c6afa01d-494f-f340-c0db-9795102ac2a3 	192.168.1.168:7801 	F
+----
+
+It shows the 4 members with their UUIDs, IP addreses and ports, and the coordinator (A). When we now make C leave
+(gracefully, or by killing it), the file should have 3 lines, but it doesn't:
+
+----
+C 	c0a6f4f8-a4a3-60c1-8420-07c81c0256d6 	192.168.1.168:7802 	F
+D 	9db6cf43-138c-d7cb-8eb3-2aa4e7cb5f7e 	192.168.1.168:7803 	F
+A 	2f73fcac-aecb-2a98-4300-26ca4b1016d2 	192.168.1.168:7800 	T
+B 	c6afa01d-494f-f340-c0db-9795102ac2a3 	192.168.1.168:7801 	F
+----
+
+Indeed, the entry for C is still present! Why?
+
+The reason is that the entry for C is marked as _removable_, but the entry is not removed straight away, because that
+would require a call to the store, which might be expensive, or cost money. For instance, if the backend store is
+cloud based, then the REST call to the cloud store might cost money.
+
+Therefore, removable members are only removed when the logical cache size exceeds its capacity. The capacity is defined
+in `TP.logical_addr_cache_max_size`. Alternatively, if `TP.logical_addr_cache_reaper_interval` is greater than 0,
+then a reaper task will scan the logical cache every `logical_addr_cache_reaper_interval` milliseconds and remove
+elements marked as removable _and older than `TP.logical_addr_cache_expiration` milliseconds_.
+
+We can look at the logical cache with JMX or probe (slightly edited):
+
+----
+[belasmac] /Users/bela/jgroups-azure$ probe.sh uuids
+
+#1 (338 bytes):
+local_addr=A [ip=192.168.1.168:7800, version=4.0.0-SNAPSHOT, cluster=draw, 3 mbr(s)]
+local_addr=A
+uuids=3 elements:
+A: 2f73fcac-aecb-2a98-4300-26ca4b1016d2: 192.168.1.168:7800 (9 secs old)
+D: 9db6cf43-138c-d7cb-8eb3-2aa4e7cb5f7e: 192.168.1.168:7803 (5 secs old)
+B: c6afa01d-494f-f340-c0db-9795102ac2a3: 192.168.1.168:7801 (1 secs old)
+
+#2 (338 bytes):
+local_addr=B [ip=192.168.1.168:7801, version=4.0.0-SNAPSHOT, cluster=draw, 3 mbr(s)]
+local_addr=B
+uuids=3 elements:
+A: 2f73fcac-aecb-2a98-4300-26ca4b1016d2: 192.168.1.168:7800 (1 secs old)
+D: 9db6cf43-138c-d7cb-8eb3-2aa4e7cb5f7e: 192.168.1.168:7803 (5 secs old)
+B: c6afa01d-494f-f340-c0db-9795102ac2a3: 192.168.1.168:7801 (2 secs old)
+
+#3 (339 bytes):
+local_addr=D [ip=192.168.1.168:7803, version=4.0.0-SNAPSHOT, cluster=draw, 3 mbr(s)]
+local_addr=D
+uuids=3 elements:
+A: 2f73fcac-aecb-2a98-4300-26ca4b1016d2: 192.168.1.168:7800 (1 secs old)
+D: 9db6cf43-138c-d7cb-8eb3-2aa4e7cb5f7e: 192.168.1.168:7803 (11 secs old)
+B: c6afa01d-494f-f340-c0db-9795102ac2a3: 192.168.1.168:7801 (1 secs old)
+
+3 responses (3 matches, 0 non matches)
+----
+
+This shows that the reaper must have removed the stale entry for C already.
+
+If we start C again and then kill it again and immediately look at the file, then the contents are:
+
+----
+D 	9db6cf43-138c-d7cb-8eb3-2aa4e7cb5f7e 	192.168.1.168:7803 	F
+A 	2f73fcac-aecb-2a98-4300-26ca4b1016d2 	192.168.1.168:7800 	T
+B 	c6afa01d-494f-f340-c0db-9795102ac2a3 	192.168.1.168:7801 	F
+C 	5b36fe23-b151-6859-3953-97addfa2534d 	192.168.1.168:7802 	F
+----
+
+We can see that C is still present.
+
+NOTE: If we restart C a couple of time, the file will actually list multiple Cs. However, each entry is is different,
+as only the logical name is the same, but the actual addresses (UUIDs) are different.
+
+
+Running probe immediately after restarting C, before the reaper kicks in, it indeed shows the old C as being removable:
+
+----
+[belasmac] /Users/bela/jgroups-azure$ probe.sh uuids
+
+#1 (423 bytes):
+local_addr=A [ip=192.168.1.168:7800, version=4.0.0-SNAPSHOT, cluster=draw, 3 mbr(s)]
+local_addr=A
+uuids=4 elements:
+A: 2f73fcac-aecb-2a98-4300-26ca4b1016d2: 192.168.1.168:7800 (5 secs old)
+C: 5b36fe23-b151-6859-3953-97addfa2534d: 192.168.1.168:7802 (5 secs old, removable)
+D: 9db6cf43-138c-d7cb-8eb3-2aa4e7cb5f7e: 192.168.1.168:7803 (9 secs old)
+B: c6afa01d-494f-f340-c0db-9795102ac2a3: 192.168.1.168:7801 (11 secs old)
+
+#2 (423 bytes):
+local_addr=B [ip=192.168.1.168:7801, version=4.0.0-SNAPSHOT, cluster=draw, 3 mbr(s)]
+local_addr=B
+uuids=4 elements:
+A: 2f73fcac-aecb-2a98-4300-26ca4b1016d2: 192.168.1.168:7800 (15 secs old)
+C: 5b36fe23-b151-6859-3953-97addfa2534d: 192.168.1.168:7802 (5 secs old, removable)
+D: 9db6cf43-138c-d7cb-8eb3-2aa4e7cb5f7e: 192.168.1.168:7803 (9 secs old)
+B: c6afa01d-494f-f340-c0db-9795102ac2a3: 192.168.1.168:7801 (5 secs old)
+
+#3 (424 bytes):
+local_addr=D [ip=192.168.1.168:7803, version=4.0.0-SNAPSHOT, cluster=draw, 3 mbr(s)]
+local_addr=D
+uuids=4 elements:
+A: 2f73fcac-aecb-2a98-4300-26ca4b1016d2: 192.168.1.168:7800 (15 secs old)
+C: 5b36fe23-b151-6859-3953-97addfa2534d: 192.168.1.168:7802 (5 secs old, removable)
+D: 9db6cf43-138c-d7cb-8eb3-2aa4e7cb5f7e: 192.168.1.168:7803 (5 secs old)
+B: c6afa01d-494f-f340-c0db-9795102ac2a3: 192.168.1.168:7801 (11 secs old)
+
+3 responses (3 matches, 0 non matches)
+----
+
+Here, we can see that C is marked as removable. Once its entry is 60 seconds old (`logical_addr_cache_expiration`), then
+the reaper (if configured to run) will remove the element on its next run.
+
+
 [[BootstrapConfiguration]]
 ===== Configuration with a preconfigured bootstrap file
 
