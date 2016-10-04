@@ -151,7 +151,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected int thread_pool_min_threads=0;
 
     @Property(name="thread_pool.max_threads",description="Maximum thread pool size for the thread pool")
-    protected int thread_pool_max_threads=use_fork_join_pool? Runtime.getRuntime().availableProcessors() : 100;
+    protected int thread_pool_max_threads=100;
 
     @Property(name="thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle threads from pool")
     protected long thread_pool_keep_alive_time=30000;
@@ -808,6 +808,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         // ====================================== Thread pool ===========================
         if(use_common_fork_join_pool)
             use_fork_join_pool=true;
+        if(use_fork_join_pool)
+            thread_pool_max_threads=Runtime.getRuntime().availableProcessors();
         if(thread_pool == null || (thread_pool instanceof ExecutorService && ((ExecutorService)thread_pool).isShutdown())) {
             if(thread_pool_enabled) {
                 thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
