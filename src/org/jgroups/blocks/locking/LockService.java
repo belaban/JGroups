@@ -132,7 +132,7 @@ public class LockService {
             Boolean retval=(Boolean)ch.down(new Event(Event.LOCK, new LockInfo(name, true, false, false, 0, TimeUnit.MILLISECONDS)));
             if(retval != null && retval)
                 holder.set(Thread.currentThread());
-            return retval;
+            return retval == null ? false : retval;
         }
 
         /**
@@ -151,7 +151,7 @@ public class LockService {
                 throw new InterruptedException();
             if(retval != null && retval)
                 holder.set(Thread.currentThread());
-            return retval;
+            return retval == null ? false : retval;
         }
 
         /**
