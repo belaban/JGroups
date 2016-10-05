@@ -100,6 +100,43 @@ public class UtilTest {
         assert result != null && result.equals("200");
     }
 
+    public void testReplaceProperties() {
+        String input="hello ${my.name:Bela}";
+
+        String out=Util.replaceProperties(input, null);
+        System.out.println("out = " + out);
+
+        assert out.equals("hello Bela");
+        Properties props=new Properties();
+        props.put("my.name", "Michelle");
+        out=Util.replaceProperties(input, props);
+        System.out.println("out = " + out);
+        assert out.equals("hello Michelle");
+
+        input="hello \\${my.name:Bela}"; // no replacement as the trailing slash prevents this
+        out=Util.replaceProperties(input, null);
+        System.out.println("out = " + out);
+
+        input=input.replace("\\${", "${");
+        assert out.equals(input);
+
+        input="\\${escape:bla}";
+        out=Util.replaceProperties(input, null);
+        System.out.println("out = " + out);
+
+        input=input.replace("\\${", "${");
+        assert input.equals(out);
+
+
+        input="<UDP bind_addr=\"\\${my.bind_addr:127.0.0.1}\" ... />";
+        out=Util.replaceProperties(input, null);
+        System.out.println("out = " + out);
+
+        input=input.replace("\\${", "${");
+        assert input.equals(out);
+    }
+
+
     public static void testFlags() {
         final byte ONE   =   1;
         final byte FIVE =   16;

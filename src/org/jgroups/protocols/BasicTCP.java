@@ -56,13 +56,13 @@ public abstract class BasicTCP extends TP implements Receiver {
               description="The address of a local network interface which should be used by client sockets to bind to. " +
                 "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
               systemProperty={Global.TCP_CLIENT_BIND_ADDR},writable=false)
-    protected InetAddress client_bind_addr=null;
+    protected InetAddress client_bind_addr;
 
     @Property(description="The local port a client socket should bind to. If 0, an ephemeral port will be picked.")
-    protected int         client_bind_port=0;
+    protected int         client_bind_port;
 
     @Property(description="If true, client sockets will not explicitly bind to bind_addr but will defer to the native socket")
-    protected boolean     defer_client_bind_addr=false;
+    protected boolean     defer_client_bind_addr;
 
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */

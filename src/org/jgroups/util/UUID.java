@@ -23,21 +23,8 @@ public class UUID implements Address, Constructable<UUID> {
     /** The random number generator used by this class to create random based UUIDs */
     protected static volatile SecureRandom numberGenerator=null;
 
-    protected static boolean print_uuids=false;
-
     protected static final int SIZE=Global.LONG_SIZE * 2;
 
-
-    static {
-        /* Trying to get value of jgroups.print_uuids. PropertyPermission not granted if
-        * running in an untrusted environment with JNLP */
-        try {
-            String tmp=Util.getProperty(new String[]{Global.PRINT_UUIDS}, null, null, "false");
-            print_uuids=Boolean.valueOf(tmp);
-        }
-        catch (SecurityException ex){
-        }
-    }
 
 
     public UUID() {
@@ -94,8 +81,6 @@ public class UUID implements Address, Constructable<UUID> {
 
 
     public String toString() {
-        if(print_uuids)
-            return toStringLong();
         String val=NameCache.get(this);
         return val != null? val : toStringLong();
     }

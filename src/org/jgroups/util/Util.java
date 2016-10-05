@@ -3986,41 +3986,28 @@ public class Util {
 
 
     /**
-     * Go through the input string and replace any occurance of ${p} with the
-     * props.getProperty(p) value. If there is no such property p defined, then
-     * the ${p} reference will remain unchanged.
+     * Go through the input string and replace any occurance of ${p} with the props.getProperty(p) value.
+     * If there is no such property p defined, then the ${p} reference will remain unchanged.
      * <p/>
      * If the property reference is of the form ${p:v} and there is no such
      * property p, then the default value v will be returned.
      * <p/>
-     * If the property reference is of the form ${p1,p2} or ${p1,p2:v} then the
-     * primary and the secondary properties will be tried in turn, before
-     * returning either the unchanged input, or the default value.
+     * If the property reference is of the form ${p1,p2} or ${p1,p2:v} then the primary and the secondary properties
+     * will be tried in turn, before returning either the unchanged input, or the default value.
      * <p/>
-     * The property ${/} is replaced with System.getProperty("file.separator")
-     * value and the property ${:} is replaced with
-     * System.getProperty("path.separator").
-     * @param string -
-     *               the string with possible ${} references
-     * @param props  -
-     *               the source for ${x} property ref values, null means use
+     * The property ${/} is replaced with System.getProperty("file.separator") value and the property ${:} is replaced
+     * with System.getProperty("path.separator").
+     * @param string the string with possible ${} references
+     * @param props  the source for ${x} property ref values, null means use
      *               System.getProperty()
      * @return the input string with all property references replaced if any. If
-     * there are no valid references the input string will be returned.
-     * @throws {@link java.security.AccessControlException}
-     *                when not authorised to retrieved system properties
+     *         there are no valid references the input string will be returned.
+     * @throws {@link java.security.AccessControlException} when not authorised to retrieved system properties
      */
     public static String replaceProperties(final String string,final Properties props) {
-        // File separator value
         final String FILE_SEPARATOR=File.separator;
-
-        // Path separator value
         final String PATH_SEPARATOR=File.pathSeparator;
-
-        // File separator alias
         final String FILE_SEPARATOR_ALIAS="/";
-
-        // Path separator alias
         final String PATH_SEPARATOR_ALIAS=":";
 
         // States used in property parsing
@@ -4036,12 +4023,17 @@ public class Util {
             char c=chars[i];
 
             // Dollar sign outside brackets
-            if(c == '$' && state != IN_BRACKET)
-                state=SEEN_DOLLAR;
+            if(c == '$' && state != IN_BRACKET) {
+
+                // check for escape char '\':
+                if(i > 0 && chars[i-1] != '\\')
+                    state=SEEN_DOLLAR;
+            }
 
                 // Open bracket immediatley after dollar
             else if(c == '{' && state == SEEN_DOLLAR) {
-                buffer.append(string.substring(start,i - 1));
+                // buffer.append(string.substring(start,i - 1));
+                append(buffer, string.substring(start,i - 1));
                 state=IN_BRACKET;
                 start=i - 1;
             }
@@ -4113,16 +4105,24 @@ public class Util {
         }
 
         // No properties
-        if(!properties)
-            return string;
+       // if(!properties)
+         //   return string;
 
         // Collect the trailing characters
-        if(start != chars.length)
-            buffer.append(string.substring(start,chars.length));
+        if(start != chars.length) {
+            // buffer.append(string.substring(start,chars.length));
+            append(buffer, string.substring(start, chars.length));
+        }
 
-        // Done
         return buffer.toString();
     }
+
+    protected static void append(StringBuilder sb, String str) {
+        if(sb == null || str == null)
+            return;
+        sb.append(str.replace("\\${", "${"));
+    }
+
 
     /**
      * Try to resolve a "key" from the provided properties by checking if it is

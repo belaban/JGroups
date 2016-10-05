@@ -1,6 +1,5 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.ByteArrayDataInputStream;
@@ -27,7 +26,7 @@ public class BPING extends PING implements Runnable {
     @Property(description="Target address for broadcasts. This should be restricted to the local subnet, e.g. 192.168.1.255")
     protected String dest="255.255.255.255";
 
-    @Property(description="Port for discovery packets", systemProperty=Global.BPING_BIND_PORT)
+    @Property(description="Port for discovery packets")
     protected int bind_port=8555;
 
     @Property(description="Sends discovery packets to ports 8555 to (8555+port_range)")

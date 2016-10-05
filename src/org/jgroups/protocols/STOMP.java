@@ -35,11 +35,10 @@ public class STOMP extends Protocol implements Runnable {
     @Property(name="bind_addr",
               description="The bind address which should be used by the server socket. The following special values " +
                       "are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
-              defaultValueIPv4="0.0.0.0", defaultValueIPv6="::",
-              systemProperty={Global.STOMP_BIND_ADDR},writable=false)
-    protected InetAddress bind_addr=null;
+              defaultValueIPv4="0.0.0.0", defaultValueIPv6="::", writable=false)
+    protected InetAddress bind_addr;
 
-    @Property(description="If set, then endpoint will be set to this address",systemProperty=Global.STOMP_ENDPOINT_ADDR)
+    @Property(description="If set, then endpoint will be set to this address")
     protected String endpoint_addr;
 
     @Property(description="Port on which the STOMP protocol listens for requests",writable=false)

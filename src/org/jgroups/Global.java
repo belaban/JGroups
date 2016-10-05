@@ -40,14 +40,9 @@ public final class Global {
     public static final String MPING_MCAST_PORT="jgroups.mping.mcast_port";
     public static final String MPING_IP_TTL="jgroups.mping.ip_ttl";
 
-    public static final String BPING_BIND_PORT="jgroups.bping.bind_port";
-
-    public static final String STOMP_BIND_ADDR="jgroups.stomp.bind_addr";
-    public static final String STOMP_ENDPOINT_ADDR="jgroups.stomp.endpoint_addr";
-
     public static final String MAGIC_NUMBER_FILE="jgroups.conf.magic_number_file";
     public static final String PROTOCOL_ID_FILE="jgroups.conf.protocol_id_file";
-    public static final String PRINT_UUIDS="jgroups.print_uuids";
+
     public static final String NAME_CACHE_MAX_ELEMENTS="jgroups.name_cache.max_elements";
     public static final String NAME_CACHE_MAX_AGE="jgroups.name_cache.max_age";
 

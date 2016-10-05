@@ -36,6 +36,78 @@ of all protocols, org.jgroups.stack.Protocol.
 |===============
 
 
+[[SystemProperties]]
+=== System properties
+
+The table below lists system properties which can be used to override attribute values, mostly in protocols. For example,
+if we have a config like this:
+
+[source,xml]
+----
+<UDP bind_addr="127.0.0.1" />
+----
+
+, then the bind address will be `127.0.0.1`. However, if we run the system with `-Djgroups.bind_addr=1.2.3.4` (see below),
+the bind address will be `1.2.3.4`.
+
+
+Note that if we use our own variables, like this:
+
+[source,xml]
+----
+<UDP bind_addr="\${my.bind_addr:127.0.0.1}" />
+----
+
+, then system property `my.bind_addr` takes precedence over `jgroups.bind_addr`. In the above case, the actual bind
+address chosen will be:
+
+|=================
+|System properties | Bind address picked
+| `-Dmy.bind_addr=1.2.3.4` `-Djgroups.bind_addr=5.6.7.8` | `1.2.3.4`
+| `-Djgroups.bind_addr=5.6.7.8` | `5.6.7.8`
+| none | `127.0.0.1`
+|=================
+
+
+.System properties
+[align="left",width="90%",cols="4,10",options="header"]
+|===============
+|Name|Description
+
+| jgroups.bind_addr | The network interface to be used. Example: `-Djgroups.bind_addr=192.168.1.3` or
+                      `-Djgroups.bind_addr=match-interface:eth0`. Overrides attribute `bind_addr` in the transport
+                      protocol (see below).
+| jgroups.external_addr | The external bind address to be used. Overrides `external_addr` in the transport protocol.
+
+| jgroups.external_port | The external port to be used by the transport.
+| jgroups.tcp.client_bind_addr | The network interface client sockets in TCP should bind to. Overrides `client_bind_addr`
+                                 in TCP
+| jgroups.tcpping.initial_hosts | The list of initial hosts in TCPPING
+| jgroups.udp.mcast_addr | The multicast address used by UDP
+| jgroups.udp.mcast_port | The multicast port used by UDP
+| jgroups.udp.ip_ttl | The TTL used by UDP
+| jgroups.mping.mcast_addr | The multicast address used by MPING
+| jgroups.mping.mcast_port | The multicast port used by MPING
+| jgroups.mping.ip_ttl | The TTL used by MPING
+| jgroups.conf.magic_number_file | The file where the mappings between IDs and classes are defined.
+                                   Default: `jg-magic-map.xml`
+| jgroups.conf.protocol_id_file | The file where the mappings between IDs and protocols are defined.
+                                  Default: `jg-protocol-ids.xml`
+| jgroups.name_cache.max_elements | The max number of elements in the NameCache which holds mappings between addresses
+                                    and logical names
+| jgroups.name_cache.max_age | The max age (in milliseconds) a mapping between address and logical name is kept in the
+                               NameCache. Not that elements are only evicted if there's not enough room.
+| jgroups.ipmcast.prefix | Needed if an IPv4 multicast address is used in an IPv6 system. The prefix (default: `ff0e::`)
+                           will prefix the IPv4 multicast address, e.g. `232.5.5.5` -> `ff0e::232.5.5.5`
+| jgroups.use.jdk_logger | If true, the JDK logger (`java.util.logging.Logger`) will be used
+| jgroups.log_class | The fully qualified name of a class implementing a logger to be used. See <<Logging>> for details.
+| jgroups.msg.default_headers | System prop for defining the default number of headers in a Message (default: 4).
+
+|===============
+
+
+
+
 [[Transport]]
 === Transport
 
@@ -50,7 +122,7 @@ It can also be set for the entire stack using system property +$$-Djgroups.bind_
 provides a value for bind_addr unless it has already been set in the XML config.
         
 
-The following special values are also recognized for ++$$bind_addr$$++:
+The following special values are also recognized for `bind_addr`:
         
 
 GLOBAL:: Picks a global IP address if available. If not, falls back to a SITE_LOCAL IP address.
