@@ -784,6 +784,7 @@ members. `KUBE_PING` is hosted on jgroups-extras; refer to [1] for details.
 This is a discovery protocol that allows cluster nodes to run on the Azure cloud [1]. For details refer to [2].
 
 [1] https://azure.microsoft.com/en-us/
+
 [2] https://github.com/jgroups-extras/jgroups-azure
 
 
