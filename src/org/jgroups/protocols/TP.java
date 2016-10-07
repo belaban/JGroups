@@ -812,9 +812,15 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             thread_pool_max_threads=Runtime.getRuntime().availableProcessors();
         if(thread_pool == null || (thread_pool instanceof ExecutorService && ((ExecutorService)thread_pool).isShutdown())) {
             if(thread_pool_enabled) {
+                int num_cores=Runtime.getRuntime().availableProcessors();
+                int max_internal_size=Math.max(4, num_cores);
+                if(log.isDebugEnabled())
+                    log.debug("thread pool min/max/keep-alive: %d/%d/%d use_fork_join=%b, internal pool: %d/%d/%d (%d cores available)",
+                              thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time, use_fork_join_pool,
+                              0, max_internal_size, 30000, num_cores);
                 thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
                                              "abort", new SynchronousQueue<>(), thread_factory, log, use_fork_join_pool, use_common_fork_join_pool);
-                internal_pool=createThreadPool(0, 8, 30000, "abort", new SynchronousQueue<>(), thread_factory, log, false, false);
+                internal_pool=createThreadPool(0, max_internal_size, 30000, "abort", new SynchronousQueue<>(), thread_factory, log, false, false);
             }
             else // otherwise use the caller's thread to unmarshal the byte buffer into a message
                 thread_pool=new DirectExecutor();
