@@ -30,9 +30,6 @@ fi;
 #JG_FLAGS="-Djgroups.bind_addr=match-address:192.168.1.*"
 JG_FLAGS="$JG_FLAGS -Djava.net.preferIPv4Stack=true"
 FLAGS="-server -Xmx1G -Xms500M"
-#GC="-XX:+UseParNewGC -XX:+UseConcMarkSweepGC" ## concurrent mark and sweep (CMS) collector
-#GC="-XX:+UseG1GC -XX:MaxGCPauseMillis=200"
-#GC="-XX:+UseG1GC -XX:+UseStringDeduplication"
 GC="-XX:+UseG1GC"
 
 JMX="-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost"
