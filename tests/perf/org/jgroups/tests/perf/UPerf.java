@@ -42,7 +42,7 @@ public class UPerf extends ReceiverAdapter {
     // ============ configurable properties ==================
     @Property protected boolean sync=true, oob=true;
     @Property protected int     num_threads=25;
-    @Property protected int     num_msgs=20000, msg_size=1000;
+    @Property protected int     num_msgs=50000, msg_size=1000;
     @Property protected int     anycast_count=2;
     @Property protected boolean msg_bundling=true;
     @Property protected double  read_percentage=0.8; // 80% reads, 20% writes
