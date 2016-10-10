@@ -4,25 +4,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 /**
  * Manages a fixed pool of resources (e.g. buffers). Uses the fast try-lock operation to get a resource from the pool,
- * or returns a newly created resource. When the returned lock is unlocks, that resource becomes available again
+ * or returns a newly created resource. When the returned lock is unlocked, that resource becomes available again
  * for consumption
  * @author Bela Ban
  * @since  3.5
  */
 public class Pool<T> {
-    protected final T[]        pool;
-    protected final Lock[]     locks;
-    protected final Creator<T> creator;
+    protected final T[]         pool;
+    protected final Lock[]      locks;
+    protected final Supplier<T> creator;
 
-    public interface Creator<T> {
-        T create();
-    }
 
     @SuppressWarnings("unchecked")
-    public Pool(int capacity, Creator<T> creator) {
+    public Pool(int capacity, Supplier<T> creator) {
         this.creator=creator;
         this.pool=(T[])new Object[Util.getNextHigherPowerOfTwo(capacity)];
         this.locks=new Lock[pool.length];
@@ -57,10 +55,10 @@ public class Pool<T> {
             if(lock.tryLock()) {
                 if(pool[index] != null)
                     return new Element<>(pool[index], lock);
-                return new Element<>(pool[index]=creator.create(), lock);
+                return new Element<>(pool[index]=creator.get(), lock);
             }
         }
-        return new Element<>(creator.create(), null);
+        return new Element<>(creator.get(), null);
     }
 
 
@@ -71,7 +69,7 @@ public class Pool<T> {
         return sb.toString();
     }
 
-    public class Element<T> {
+    public static class Element<T> {
         protected final T    element;
         protected final Lock lock;
 
