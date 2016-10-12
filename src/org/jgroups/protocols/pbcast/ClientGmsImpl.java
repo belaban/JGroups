@@ -81,9 +81,10 @@ public class ClientGmsImpl extends GmsImpl {
 
             responses.waitFor(gms.join_timeout);
             responses.done();
+            join_attempts++;
             long diff=System.currentTimeMillis() - start;
-            if(responses.isEmpty()) {
-                log.trace("%s: no members discovered after %d ms: creating cluster as first member", gms.local_addr, diff);
+            if(responses.isEmpty() && gms.max_join_attempts != 0 && join_attempts >= gms.max_join_attempts) {
+                log.trace("%s: no members discovered after %d ms: creating cluster as first member, retried %d times", gms.local_addr, diff, join_attempts);
                 becomeSingletonMember(mbr);
                 return;
             }
@@ -94,7 +95,7 @@ public class ClientGmsImpl extends GmsImpl {
             // We didn't get any coord responses; all responses were clients. If I'm the first of the sorted clients
             // I'll become coordinator. The others will wait and then retry the discovery and join process
             if(coords == null) { // e.g. because we have all clients only
-                if(firstOfAllClients(mbr, responses))
+                if(firstOfAllClients(mbr, responses, join_attempts))
                     return;
                 continue;
             }
@@ -104,7 +105,6 @@ public class ClientGmsImpl extends GmsImpl {
                 Collections.shuffle(coords); // so the code below doesn't always pick the same coord
             }
 
-            join_attempts++;
             for(Address coord: coords) {
                 log.debug("%s: sending JOIN(%s) to %s", gms.local_addr, mbr, coord);
                 sendJoinMessage(coord, mbr, joinWithStateTransfer, useFlushIfPresent);
@@ -160,7 +160,7 @@ public class ClientGmsImpl extends GmsImpl {
 
     /** Handles the case where no coord responses were received. Returns true if we became the coord
      * (caller needs to terminate the join() call), or false when the caller needs to continue */
-    protected boolean firstOfAllClients(final Address joiner, final Responses rsps) {
+    protected boolean firstOfAllClients(final Address joiner, final Responses rsps, long join_attempts) {
         log.trace("%s: could not determine coordinator from rsps %s", gms.local_addr, rsps);
 
         // so the member to become singleton member (and thus coord) is the first of all clients
@@ -171,8 +171,8 @@ public class ClientGmsImpl extends GmsImpl {
 
         log.trace("%s: nodes to choose new coord from are: %s", gms.local_addr, clients);
         Address new_coord=clients.first();
-        if(new_coord.equals(joiner)) {
-            log.trace("%s: I (%s) am the first of the nodes, will become coordinator", gms.local_addr, joiner);
+        if(new_coord.equals(joiner) && gms.max_join_attempts != 0 && join_attempts >= gms.max_join_attempts) {
+            log.trace("%s: I (%s) am the first of the nodes, will become coordinator, retried %d times", gms.local_addr, joiner, join_attempts);
             becomeSingletonMember(joiner);
             return true;
         }
