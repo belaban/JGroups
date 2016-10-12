@@ -122,12 +122,14 @@ Declarative configuration would look like this:
     <MFC/>
     <UFC/>
     <FORK>
-       <fork-stack id="1">
-          <CENTRAL_LOCK num_backups="2" ... />
-       </fork-stack>
-       <fork-stack id="2">
-          <COUNTER bypass_bundling="true" timeout="5000" ... />
-       </fork-stack>
+       <fork-stacks xmlns:fork="urn:org.jgroups:fork:3.6">
+          <fork:stack id="1">
+             <CENTRAL_LOCK num_backups="2" ... />
+          </fork:stack>
+          <fork:stack id="2">
+             <COUNTER bypass_bundling="true" timeout="5000" ... />
+          </fork:stack>
+       </fork-stacks>
     </FORK>
     <FRAG2/>
     <TOA/>

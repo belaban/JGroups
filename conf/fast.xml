@@ -8,8 +8,8 @@
 -->
 
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns="urn:org:jgroups"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+        xmlns="urn:org.jgroups:jgroups:3.6"
+        xsi:schemaLocation="urn:org.jgroups:jgroups:3.6 http://www.jgroups.org/schema/jgroups-3.6.xsd">
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
          ip_ttl="0"

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:org.jgroups:fork:3.6"
+           elementFormDefault="qualified" attributeFormDefault="unqualified"
+           xmlns="urn:org.jgroups:fork:3.6"
+           xmlns:jgroups="urn:org.jgroups:jgroups:3.6">
+
+    <xs:import namespace="urn:org.jgroups:jgroups:3.6" schemaLocation="http://www.jgroups.org/schema/jgroups-3.6.xsd"/>
+
+    <xs:complexType name="ForkStack">
+        <xs:complexContent>
+            <xs:extension base="jgroups:ConfigType">
+                <xs:attribute name="id" type="xs:string" use="required"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="ForkStacksType">
+        <xs:sequence >
+            <xs:element name="stack" type="ForkStack" minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:element name="stacks" type="ForkStacksType"/>
+
+</xs:schema>

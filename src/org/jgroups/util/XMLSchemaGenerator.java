@@ -62,12 +62,16 @@ public class XMLSchemaGenerator {
         try {
             FileWriter fw = new FileWriter(f, false);
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
             DocumentBuilder builder = factory.newDocumentBuilder();
             DOMImplementation impl = builder.getDOMImplementation();
-            Document xmldoc = impl.createDocument("http://www.w3.org/2001/XMLSchema", "xs:schema", null);
-            xmldoc.getDocumentElement().setAttribute("targetNamespace", "urn:org:jgroups");
+            String targetNamespace = "urn:org.jgroups:jgroups:" + Version.major + "." + Version.minor;
+            Document xmldoc = impl.createDocument(targetNamespace, "xs:schema", null);
+            xmldoc.getDocumentElement().setAttribute("targetNamespace", targetNamespace);
+            xmldoc.getDocumentElement().setAttribute("xmlns", targetNamespace);
+            xmldoc.getDocumentElement().setAttribute("xmlns:xs", "http://www.w3.org/2001/XMLSchema");
             xmldoc.getDocumentElement().setAttribute("elementFormDefault", "qualified");
-            xmldoc.getDocumentElement().setAttribute("attributeFormDefault", "qualified");
+            xmldoc.getDocumentElement().setAttribute("attributeFormDefault", "unqualified");
 
             Element complexType = xmldoc.createElement("xs:complexType");
             complexType.setAttribute("name", "ConfigType");
@@ -78,6 +82,10 @@ public class XMLSchemaGenerator {
             complexType.appendChild(allType);
 
             generateProtocolSchema(xmldoc, allType, PACKAGES);
+
+            Element anyProtocol = xmldoc.createElement("xs:any");
+            anyProtocol.setAttribute("namespace", "##other");
+            allType.appendChild(anyProtocol);
 
             Element xsElement = xmldoc.createElement("xs:element");
             xsElement.setAttribute("name", "config");
@@ -167,7 +175,7 @@ public class XMLSchemaGenerator {
     }
 
     private static Element createXMLTree(Document xmldoc, Class<?> clazz, String pkgname) throws Exception {
-
+        Set<String> generatedAttributes = new HashSet<String>();
         Element classElement = xmldoc.createElement("xs:element");
         String elementName = pkgname + "." + clazz.getSimpleName();
         if(elementName == null || elementName.isEmpty()) {
@@ -204,6 +212,7 @@ public class XMLSchemaGenerator {
                     attributeElement.setAttribute("name", attr);
                     attributeElement.setAttribute("type", "xs:string");
                     complexType.appendChild(attributeElement);
+                    generatedAttributes.add(attr);
                 }
             }
         }
@@ -224,6 +233,11 @@ public class XMLSchemaGenerator {
                     if(property == null || property.isEmpty()) {
                         throw new IllegalArgumentException("Cannot create empty attribute name for element xs:attribute, field is " + field);
                     }
+                    if (generatedAttributes.contains(property)) {
+                        continue;
+                    }
+                    generatedAttributes.add(property);
+
                     Element attributeElement = xmldoc.createElement("xs:attribute");
                     attributeElement.setAttribute("name", property);
 
@@ -254,6 +268,11 @@ public class XMLSchemaGenerator {
                 if (name.length() < 1) {
                     name = Util.methodNameToAttributeName(method.getName());
                 }
+                if (generatedAttributes.contains(name)) {
+                    continue;
+                }
+                generatedAttributes.add(name);
+
                 Element attributeElement = xmldoc.createElement("xs:attribute");
                 attributeElement.setAttribute("name", name);
                 attributeElement.setAttribute("type", "xs:string");

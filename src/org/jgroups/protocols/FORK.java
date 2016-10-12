@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentMap;
  * @author Bela Ban
  * @since  3.4
  */
-@XmlInclude(schema="fork-stacks.xsd",type=XmlInclude.Type.IMPORT,namespace="fork",alias="fork")
+@XmlInclude(schema="http://www.jgroups.org/schema/fork-3.6.xsd",type=XmlInclude.Type.IMPORT,namespace="urn:org.jgroups:fork:3.6",alias="fork")
 @XmlElement(name="fork-stacks",type="fork:ForkStacksType")
 @MBean(description="Implementation of FORK protocol")
 public class FORK extends Protocol {

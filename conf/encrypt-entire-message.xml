@@ -2,9 +2,9 @@
 <!-- This encrypts the entire message, even UNICAST3 and NAKACK headers (to reveal sequence numbers).
      Note that ENCRYPT could be placed even lower, e.g. just above UDP -->
 
-<config xmlns="urn:org:jgroups"
+<config xmlns="urn:org.jgroups:jgroups:3.6"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+        xsi:schemaLocation="urn:org.jgroups:jgroups:3.6 http://www.jgroups.org/schema/jgroups-3.6.xsd">
     <UDP/>
     <PING/>
     <MERGE3/>

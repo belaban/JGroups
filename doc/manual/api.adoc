@@ -408,9 +408,9 @@ A sample XML configuration looks like this (edited from `udp.xml`):
 
 [source,xml]
 ----
-<config xmlns="urn:org:jgroups"
+<config xmlns="urn:org.jgroups:jgroups:3.6"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+        xsi:schemaLocation="urn:org.jgroups:jgroups:3.6 http://www.jgroups.org/schema/jgroups-3.6.xsd">
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
          ucast_recv_buf_size="20M"

@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Bela Ban
  * @since 3.2
  */
-@XmlInclude(schema="relay.xsd",type=XmlInclude.Type.IMPORT,namespace="urn:jgroups:relay:1.0",alias="relay")
+@XmlInclude(schema="http://www.jgroups.org/schema/relay-3.6.xsd",type=XmlInclude.Type.IMPORT,namespace="urn:org.jgroups:relay:3.6",alias="relay")
 @XmlElement(name="RelayConfiguration",type="relay:RelayConfigurationType")
 @MBean(description="RELAY2 protocol")
 public class RELAY2 extends Protocol {

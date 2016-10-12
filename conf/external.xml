@@ -1,0 +1,27 @@
+
+<!-- Dummy file to check parsing of external schemas -->
+
+<config xmlns="urn:org.jgroups:jgroups:3.6"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org.jgroups:jgroups:3.6 http://www.jgroups.org/schema/jgroups-3.6.xsd">
+    <UDP mcast_port="${jgroups.udp.mcast_port:45588}" />
+    <relay.RELAY2>
+        <RelayConfiguration xmlns:relay="urn:org.jgroups:relay:3.6">
+            <relay:sites>
+                <relay:site name="">
+                    <relay:bridges />
+                </relay:site>
+            </relay:sites>
+        </RelayConfiguration>
+    </relay.RELAY2>
+    <FORK>
+        <fork-stacks xmlns:fork="urn:org.jgroups:fork:3.6">
+            <fork:stack id="foo">
+                <PING />
+            </fork:stack>
+            <fork:stack id="bar">
+                <MPING />
+            </fork:stack>
+        </fork-stacks>
+    </FORK>
+</config>
