@@ -13,7 +13,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
-import static org.jgroups.tests.FragTest2.type;
 
 /**
  * Tests bundler performance
@@ -70,8 +69,9 @@ public class BundlerStressTest {
                         msg_size=Util.readIntFromStdin("msg_size: ");
                         break;
                     case 'b':
+                        String type=null;
                         try {
-                            String type=Util.readStringFromStdin("new bundler type: ");
+                            type=Util.readStringFromStdin("new bundler type: ");
                             Bundler old=this.bundler;
                             this.bundler=createBundler(type);
                             this.bundler.init(transport);

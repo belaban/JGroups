@@ -681,12 +681,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return 0;
     }
 
-    @ManagedAttribute(description="Current number of threads in the internal thread pool")
-    public int getInternalThreadPoolSize() {
-        if(internal_pool instanceof ThreadPoolExecutor)
-            return ((ThreadPoolExecutor)internal_pool).getPoolSize();
-        return 0;
-    }
 
     @ManagedAttribute(description="Current number of active threads in the thread pool")
     public int getThreadPoolSizeActive() {
@@ -694,6 +688,27 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             return ((ThreadPoolExecutor)thread_pool).getActiveCount();
         if(thread_pool instanceof ForkJoinPool)
             return ((ForkJoinPool)thread_pool).getRunningThreadCount();
+        return 0;
+    }
+
+    @ManagedAttribute(description="Largest number of threads in the thread pool")
+    public int getThreadPoolSizeLargest() {
+        if(thread_pool instanceof ThreadPoolExecutor)
+            return ((ThreadPoolExecutor)thread_pool).getLargestPoolSize();
+        return 0;
+    }
+
+    @ManagedAttribute(description="Current number of threads in the internal thread pool")
+    public int getInternalThreadPoolSize() {
+        if(internal_pool instanceof ThreadPoolExecutor)
+            return ((ThreadPoolExecutor)internal_pool).getPoolSize();
+        return 0;
+    }
+
+    @ManagedAttribute(description="Largest number of threads in the internal thread pool")
+    public int getInternalThreadPoolSizeLargest() {
+        if(internal_pool instanceof ThreadPoolExecutor)
+            return ((ThreadPoolExecutor)internal_pool).getLargestPoolSize();
         return 0;
     }
 
