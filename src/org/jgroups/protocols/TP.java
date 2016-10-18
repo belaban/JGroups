@@ -588,6 +588,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(this.thread_pool != null)
             shutdownThreadPool(this.thread_pool);
         this.thread_pool=thread_pool;
+        if(timer instanceof TimeScheduler3)
+            ((TimeScheduler3)timer).setThreadPool(thread_pool);
     }
 
     public ThreadFactory getThreadPoolThreadFactory() {

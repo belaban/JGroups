@@ -19,7 +19,7 @@ import java.util.function.Function;
  */
 public class TimeScheduler3 implements TimeScheduler, Runnable {
     /** Thread pool used to execute the tasks */
-    protected final Executor              pool;
+    protected Executor                    pool;
 
     /** DelayQueue with tasks being sorted according to execution times (next execution first) */
     protected final BlockingQueue<Task>   queue=new DelayQueue<>();
@@ -70,6 +70,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
     }
 
     public void    setThreadFactory(ThreadFactory f)     {condSet((p) -> p.setThreadFactory(f));}
+    public void    setThreadPool(Executor new_pool)      {pool=new_pool;}
     public int     getMinThreads()                       {return condGet(ThreadPoolExecutor::getCorePoolSize, 0);}
     public void    setMinThreads(int size)               {condSet(p -> p.setCorePoolSize(size));}
     public int     getMaxThreads()                       {return condGet(ThreadPoolExecutor::getMaximumPoolSize, 0);}
