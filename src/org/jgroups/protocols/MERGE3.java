@@ -56,39 +56,41 @@ public class MERGE3 extends Protocol {
 
     /* ---------------------------------------------- JMX -------------------------------------------------------- */
     @Property(description="Interval (in ms) after which we check for view inconsistencies")
-    protected long check_interval;
+    protected long    check_interval;
 
     @ManagedAttribute(description="Number of cached ViewIds")
     public int getViews() {return views.size();}
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    protected Address        local_addr=null;
+    protected Address          local_addr;
 
-    protected volatile View  view;
+    protected volatile View    view;
 
-    protected TimeScheduler  timer;
+    protected TimeScheduler    timer;
 
-    protected Future<?>      info_sender;
+    protected final InfoSender info_sender=new InfoSender();
 
-    protected Future<?>      view_consistency_checker;
+    protected Future<?>        info_sender_future;
+
+    protected Future<?>        view_consistency_checker;
 
     // hashmap to keep track of view-id sent in INFO messages. Keys=senders, values = ViewId sent
     protected final Map<Address,ViewId> views=new HashMap<>();
 
     protected final ResponseCollector<View> view_rsps=new ResponseCollector<>();
 
-    protected boolean        transport_supports_multicasting=true;
+    protected boolean          transport_supports_multicasting=true;
 
-    protected String         cluster_name;
+    protected String           cluster_name;
 
 
 
     @ManagedAttribute(description="Whether or not the current member is the coordinator")
-    protected volatile boolean is_coord=false;
+    protected volatile boolean is_coord;
     
     @ManagedAttribute(description="Number of times a MERGE event was sent up the stack")
-    protected int           num_merge_events=0;
+    protected int           num_merge_events;
 
     @ManagedAttribute(description="Is the view consistency checker task running")
     public synchronized boolean isViewConsistencyCheckerRunning() {
@@ -100,7 +102,7 @@ public class MERGE3 extends Protocol {
 
     @ManagedAttribute(description="Is the info sender task running")
     public synchronized boolean isInfoSenderRunning() {
-        return info_sender != null && !info_sender.isDone();
+        return info_sender_future != null && !info_sender_future.isDone();
     }
 
     @ManagedOperation(description="Lists the contents of the cached views")
@@ -185,14 +187,15 @@ public class MERGE3 extends Protocol {
     }
 
     protected synchronized void startInfoSender() {
-        if(info_sender == null || info_sender.isDone())
-            info_sender=timer.scheduleWithDynamicInterval(new InfoSender(), getTransport() instanceof TCP);
+        if(info_sender_future == null || info_sender_future.isDone())
+            info_sender_future=timer.scheduleWithDynamicInterval(info_sender, getTransport() instanceof TCP);
     }
 
     protected synchronized void stopInfoSender() {
-        if(info_sender != null) {
-            info_sender.cancel(true);
-            info_sender=null;
+        if(info_sender_future != null) {
+            info_sender_future.cancel(true);
+            info_sender.stop();
+            info_sender_future=null;
         }
     }
 
@@ -367,6 +370,7 @@ public class MERGE3 extends Protocol {
 
     protected class InfoSender implements TimeScheduler.Task {
         protected final long discovery_timeout=(max_interval + min_interval) /2;
+        protected Responses  rsps;
 
         public void run() {
             if(view == null) {
@@ -384,7 +388,7 @@ public class MERGE3 extends Protocol {
                 return;
             }
 
-            Responses rsps=(Responses)down_prot.down(Event.FIND_MBRS_EVT);
+            rsps=(Responses)down_prot.down(Event.FIND_MBRS_EVT);
             rsps.waitFor(discovery_timeout); // return immediately if done
             rsps.done();
             if(rsps.isEmpty())
@@ -400,6 +404,11 @@ public class MERGE3 extends Protocol {
                 Message info=new Message(dest).setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr);
                 down_prot.down(info);
             }
+        }
+
+        public void stop() {
+            if(rsps != null)
+                rsps.clear();
         }
 
         public long nextInterval() {
