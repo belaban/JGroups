@@ -3888,7 +3888,11 @@ public class Util {
             if(addr.equals(bind_addr))
                 return;
         }
-        throw new BindException("[" + prot_name + "] " + bind_addr + " is not a valid address on any local network interface");
+        StringBuilder sb=new StringBuilder();
+        if(prot_name != null)
+            sb.append('[').append(prot_name).append("] ");
+        sb.append(bind_addr).append(" is not a valid address on any local network interface");
+        throw new BindException(sb.toString());
     }
 
 

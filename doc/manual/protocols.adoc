@@ -155,6 +155,17 @@ An example of setting the bind address in UDP to use a site local address is:
 
 This will pick any address of any interface that's site-local, e.g. a +192.168.x.x+ or
 +10.x.x.x+ address.
+
+Since 4.0, it is possible to define a list of addresses in `bind_addr`. Each entry of the list will be tried and the
+first entry that works will be used. Example:
+
+[source,xml]
+----
+<UDP bind_addr="match-interface:eth2,10.5.5.5,match-interface:en.\*,127.0.0.1" />
+----
+
+This would try to bind to `eth2` first. If not found, then an interface with address `10.5.5.5` would be tried,
+then an interface starting with `en` would be tried. If still not found, we'd bind to `127.0.0.1`.
         
 
 [[UDP]]

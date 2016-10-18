@@ -10,11 +10,7 @@ import org.jgroups.util.Util;
 
 import java.lang.reflect.Field;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
@@ -259,15 +255,12 @@ public final class PropertyConverters {
             if(Boolean.TYPE.equals(propertyFieldType)) {
                 return Boolean.parseBoolean(propertyValue);
             } else if (Integer.TYPE.equals(propertyFieldType)) {
-                // return Integer.parseInt(propertyValue);
                 return Util.readBytesInteger(propertyValue);
             } else if (Long.TYPE.equals(propertyFieldType)) {
-                // return Long.parseLong(propertyValue);
                 return Util.readBytesLong(propertyValue);
             } else if (Byte.TYPE.equals(propertyFieldType)) {
                 return Byte.parseByte(propertyValue);
             } else if (Double.TYPE.equals(propertyFieldType)) {
-                // return Double.parseDouble(propertyValue);
                 return Util.readBytesDouble(propertyValue);
             } else if (Short.TYPE.equals(propertyFieldType)) {
                 return Short.parseShort(propertyValue);
@@ -276,28 +269,22 @@ public final class PropertyConverters {
             } else if(InetAddress.class.equals(propertyFieldType)) {
 
                 InetAddress retval=null;
-                Util.AddressScope addr_scope=null;
-                try {
-                    addr_scope=Util.AddressScope.valueOf(propertyValue.toUpperCase());
+                if(propertyValue.contains(",")) {
+                    List<String> addrs=Util.parseCommaDelimitedStrings(propertyValue);
+                    for(String addr: addrs) {
+                        try {
+                            retval=convertBindAddress(addr);
+                            if(retval != null)
+                                break;
+                        }
+                        catch(Throwable t) {
+                        }
+                    }
+                    if(retval == null)
+                        throw new IllegalArgumentException(String.format("failed parsing attribute %s with value %s", propertyName, propertyValue));
                 }
-                catch(Throwable ex) {
-                }
-
-                if(addr_scope != null)
-                    retval=Util.getAddress(addr_scope);
-                else {
-                    if(propertyValue.startsWith("match"))
-                        retval=Util.getAddressByPatternMatch(propertyValue);
-                    else
-                        retval=InetAddress.getByName(propertyValue);
-                }
-
-                if(retval instanceof Inet4Address && retval.isMulticastAddress() && Util.getIpStackType() == StackType.IPv6) {
-                    String tmp=prefix + propertyValue;
-                    retval=InetAddress.getByName(tmp);
-                    return retval;
-                }
-
+                else
+                    retval=convertBindAddress(propertyValue);
 
                 if(check_scope && retval instanceof Inet6Address && retval.isLinkLocalAddress()) {
                     // check scope
@@ -306,9 +293,8 @@ public final class PropertyConverters {
                     if(scope == 0) {
                         // fix scope
                         Inet6Address ret=getScopedInetAddress(addr);
-                        if(ret != null) {
+                        if(ret != null)
                             retval=ret;
-                        }
                     }
                 }
                 return retval;
@@ -316,6 +302,37 @@ public final class PropertyConverters {
             return propertyValue;
         }
 
+
+        protected static InetAddress convertBindAddress(String value) throws Exception {
+            InetAddress retval=null;
+            Util.AddressScope addr_scope=null;
+            try {
+                addr_scope=Util.AddressScope.valueOf(value.toUpperCase());
+            }
+            catch(Throwable ex) {
+            }
+
+            if(addr_scope != null)
+                retval=Util.getAddress(addr_scope);
+            else {
+                if(value.startsWith("match"))
+                    retval=Util.getAddressByPatternMatch(value);
+                else {
+                    retval=InetAddress.getByName(value);
+                    //if(retval != null && !retval.isMulticastAddress())
+                      //  Util.checkIfValidAddress(retval, null);
+                    if(retval != null)
+                        return retval;
+                }
+            }
+
+            if(retval instanceof Inet4Address && retval.isMulticastAddress() && Util.getIpStackType() == StackType.IPv6) {
+                String tmp=prefix + value;
+                retval=InetAddress.getByName(tmp);
+                return retval;
+            }
+            return retval;
+        }
 
         protected static Inet6Address getScopedInetAddress(Inet6Address addr) {
             if(addr == null)
