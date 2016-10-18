@@ -10,29 +10,24 @@ import org.jgroups.util.*;
 
 import java.io.*;
 import java.net.*;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Uses its own IP multicast socket to send and receive discovery requests/responses. Can be used in
  * conjuntion with a non-UDP transport, e.g. TCP.<p>
- * The discovery is <em>assymetric</em>: discovery requests are broadcast via the multicast socket, and
- * received via the multicast socket by everyone in the group. However, the discovery responses are sent
- * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
- * e.g. 192.168.0.2:7800).
+ * The discovery is <em>asymmetric</em>: discovery requests are broadcast via the multicast socket, and received via the
+ * multicast socket by everyone in the group. However, the discovery responses are sent back via the regular transport
+ * (e.g. TCP) to the sender (discovery request contained sender's regular address, e.g. 192.168.0.2:7800).
  * @author Bela Ban
  */
 public class MPING extends PING implements Runnable {
     
-    private static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
+    protected static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
 
 
     static {
         can_bind_to_mcast_addr=(Util.checkForLinux() && !Util.checkForAndroid())
-          || Util.checkForSolaris()
-          || Util.checkForHp();
+          || Util.checkForSolaris() || Util.checkForHp();
     }
 
 
@@ -42,26 +37,26 @@ public class MPING extends PING implements Runnable {
     @Property(description="Bind address for multicast socket. " +
             "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
               systemProperty={Global.BIND_ADDR})
-    InetAddress bind_addr=null;
+    protected InetAddress bind_addr;
     
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class, 
     		description="The interface (NIC) which should be used by this transport",dependsUpon="bind_addr")
-    protected String bind_interface_str=null;
+    protected String bind_interface_str;
  
 
     @Property(description="Time to live for discovery packets. Default is 8", systemProperty=Global.MPING_IP_TTL)
-    int ip_ttl=8;
+    protected int ip_ttl=8;
 
     @Property(description="Multicast address to be used for discovery", name="mcast_addr", systemProperty=Global.MPING_MCAST_ADDR,
               defaultValueIPv4="230.5.6.7", defaultValueIPv6="ff0e::5:6:7")
-    InetAddress mcast_addr=null;
+    protected InetAddress mcast_addr;
 
 
     @Property(description="Multicast port for discovery packets. Default is 7555", systemProperty=Global.MPING_MCAST_PORT)
-    int mcast_port=7555;
+    protected int mcast_port=7555;
 
-    @Property(description="If true, the transport should use all available interfaces to receive multicast messages. Default is false")
-    boolean receive_on_all_interfaces=false;
+    @Property(description="If true, the transport should use all available interfaces to receive multicast messages")
+    protected boolean receive_on_all_interfaces;
 
     /**
      * List<NetworkInterface> of interfaces to receive multicasts on. The
@@ -72,7 +67,7 @@ public class MPING extends PING implements Runnable {
      * receive_on_all_interfaces.
      */
     @Property(converter=PropertyConverters.NetworkInterfaceList.class, description="List of interfaces to receive multicasts on")
-    List<NetworkInterface> receive_interfaces=null;
+    protected List<NetworkInterface> receive_interfaces;
 
     /**
      * If true, the transport should use all available interfaces to send
@@ -80,32 +75,27 @@ public class MPING extends PING implements Runnable {
      * times, so use with care
      */
     @Property(description="Whether send messages are sent on all interfaces. Default is false")
-    boolean send_on_all_interfaces=false;
+    protected boolean send_on_all_interfaces;
 
     /**
-     * List<NetworkInterface> of interfaces to send multicasts on. The
-     * multicast send socket will send the same multicast message on all of
-     * these interfaces. This is a comma-separated list of IP addresses or
-     * interface names. E.g. "192.168.5.1,eth1,127.0.0.1". Duplicates are
-     * discarded. If this property is set, it override send_on_all_interfaces.
+     * List<NetworkInterface> of interfaces to send multicasts on. The multicast send socket will send the same multicast
+     * message on all of these interfaces. This is a comma-separated list of IP addresses or interface names.
+     * E.g. "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded. If this property is set, it override send_on_all_interfaces.
      */
     @Property(converter=PropertyConverters.NetworkInterfaceList.class, description="List of interfaces to send multicasts on")
-    List<NetworkInterface> send_interfaces=null;
+    protected List<NetworkInterface> send_interfaces;
     
     
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     
-    private MulticastSocket mcast_sock=null;
+    protected MulticastSocket   mcast_sock;
 
-    /**
-     * If we have multiple mcast send sockets, e.g. send_interfaces or
-     * send_on_all_interfaces enabled
-     */
-    private MulticastSocket[] mcast_send_sockets=null;
+    /** If we have multiple mcast send sockets, e.g. send_interfaces or send_on_all_interfaces enabled */
+    protected MulticastSocket[] mcast_send_sockets;
     
-    private volatile Thread receiver=null;
+    protected volatile Thread   receiver;
 
 
 
@@ -181,8 +171,7 @@ public class MPING extends PING implements Runnable {
 
     public void init() throws Exception {
         super.init();
-        if(log.isDebugEnabled())
-            log.debug("bind_addr=" + bind_addr + " mcast_addr=" + mcast_addr + ", mcast_port=" + mcast_port);
+        log.debug("bind_addr=%s, mcast_addr=%s, mcast_port=%d", bind_addr, mcast_addr, mcast_port);
     }
 
     public void start() throws Exception {
@@ -208,10 +197,9 @@ public class MPING extends PING implements Runnable {
         }
 
 
-        // 3b. Create mcast sender socket
+        // Create mcast sender socket
         if(send_on_all_interfaces || (send_interfaces != null && !send_interfaces.isEmpty())) {
             List interfaces;
-            NetworkInterface intf;
             if(send_interfaces != null)
                 interfaces=send_interfaces;
             else
@@ -219,48 +207,15 @@ public class MPING extends PING implements Runnable {
             mcast_send_sockets=new MulticastSocket[interfaces.size()];
             int index=0;
             for(Iterator it=interfaces.iterator(); it.hasNext();) {
-                intf=(NetworkInterface)it.next();
+                NetworkInterface intf=(NetworkInterface)it.next();
                 mcast_send_sockets[index]=new MulticastSocket();
                 mcast_send_sockets[index].setNetworkInterface(intf);
                 mcast_send_sockets[index].setTimeToLive(ip_ttl);
                 index++;
             }
         }
-
-
         startReceiver();
         super.start();
-    }
-
-
-    private void bindToInterfaces(List<NetworkInterface> interfaces, MulticastSocket s, InetAddress mcast_addr) throws IOException {
-        SocketAddress tmp_mcast_addr=new InetSocketAddress(mcast_addr, mcast_port);
-        for(Iterator it=interfaces.iterator(); it.hasNext();) {
-            NetworkInterface i=(NetworkInterface)it.next();
-            for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
-                InetAddress addr=(InetAddress)en2.nextElement();
-                if ((Util.getIpStackType() == StackType.IPv4 && addr instanceof Inet4Address)
-                  || (Util.getIpStackType() == StackType.IPv6 && addr instanceof Inet6Address)) {
-                    s.joinGroup(tmp_mcast_addr, i);
-                    if(log.isTraceEnabled())
-                        log.trace("joined " + tmp_mcast_addr + " on " + i.getName() + " (" + addr + ")");
-                    break;
-                }
-            }
-        }
-    }
-
-
-
-    private void startReceiver() {
-        if(receiver == null || !receiver.isAlive()) {
-            ThreadFactory factory=getThreadFactory();
-            receiver=factory != null? factory.newThread(this, "MPING") : new Thread(this, "MPING)");
-            receiver.setDaemon(true);
-            receiver.start();
-            if(log.isTraceEnabled())
-                log.trace("receiver thread started");
-        }
     }
 
     public void stop() {
@@ -269,6 +224,61 @@ public class MPING extends PING implements Runnable {
         mcast_sock=null;
         super.stop();
     }
+
+
+    public void run() {
+        final byte[]   receive_buf=new byte[65535];
+        DatagramPacket packet=new DatagramPacket(receive_buf, receive_buf.length);
+
+        while(mcast_sock != null && receiver != null && Thread.currentThread().equals(receiver)) {
+            packet.setData(receive_buf, 0, receive_buf.length);
+            try {
+                mcast_sock.receive(packet);
+                DataInput inp=new ByteArrayDataInputStream(packet.getData(), packet.getOffset(), packet.getLength());
+                Message msg=new Message();
+                msg.readFrom(inp);
+                if(!Objects.equals(local_addr,msg.getSrc())) // discard discovery request from self
+                    up(msg);
+            }
+            catch(SocketException socketEx) {
+                break;
+            }
+            catch(Throwable ex) {
+                log.error(Util.getMessage("FailedReceivingPacketFrom"), packet.getSocketAddress(), ex);
+            }
+        }
+        log.debug("receiver thread terminated");
+    }
+
+
+
+    protected void bindToInterfaces(List<NetworkInterface> interfaces, MulticastSocket s, InetAddress mcast_addr) throws IOException {
+        SocketAddress tmp_mcast_addr=new InetSocketAddress(mcast_addr, mcast_port);
+        for(Iterator it=interfaces.iterator(); it.hasNext();) {
+            NetworkInterface i=(NetworkInterface)it.next();
+            for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
+                InetAddress addr=(InetAddress)en2.nextElement();
+                if ((Util.getIpStackType() == StackType.IPv4 && addr instanceof Inet4Address)
+                  || (Util.getIpStackType() == StackType.IPv6 && addr instanceof Inet6Address)) {
+                    s.joinGroup(tmp_mcast_addr, i);
+                    log.trace("joined " + tmp_mcast_addr + " on " + i.getName() + " (" + addr + ")");
+                    break;
+                }
+            }
+        }
+    }
+
+
+    protected void startReceiver() {
+        if(receiver == null || !receiver.isAlive()) {
+            ThreadFactory factory=getThreadFactory();
+            receiver=factory != null? factory.newThread(this, "MPING") : new Thread(this, "MPING)");
+            receiver.setDaemon(true);
+            receiver.start();
+            log.debug("receiver thread started");
+        }
+    }
+
 
     @Override
     protected void sendMcastDiscoveryRequest(Message msg) {
@@ -299,32 +309,6 @@ public class MPING extends PING implements Runnable {
         catch(Exception ex) {
             log.error(Util.getMessage("FailedSendingDiscoveryRequest"), ex);
         }
-    }
-
-
-
-    public void run() {
-        final byte[]         receive_buf=new byte[65535];
-        DatagramPacket       packet=new DatagramPacket(receive_buf, receive_buf.length);
-
-        while(mcast_sock != null && receiver != null && Thread.currentThread().equals(receiver)) {
-            packet.setData(receive_buf, 0, receive_buf.length);
-            try {
-                mcast_sock.receive(packet);
-                DataInput inp=new ByteArrayDataInputStream(packet.getData(), packet.getOffset(), packet.getLength());
-                Message msg=new Message();
-                msg.readFrom(inp);
-                up(msg);
-            }
-            catch(SocketException socketEx) {
-                break;
-            }
-            catch(Throwable ex) {
-                log.error(Util.getMessage("FailedReceivingPacketFrom"), packet.getSocketAddress(), ex);
-            }
-        }
-        if(log.isTraceEnabled())
-            log.trace("receiver thread terminated");
     }
 
 
