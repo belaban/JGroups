@@ -2,7 +2,9 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -11,6 +13,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.management.*;
+import java.util.Date;
 
 /**
  * Tests exposing attributes and operations via JMX using annotations (@ManagedAttribute, @ManagedOperation)
@@ -32,7 +35,7 @@ public class JmxTest {
     protected void setup() throws Exception {
         obj_name=new ObjectName(NAME);
         obj=new Child();
-        JmxConfigurator.register(obj, server,NAME);
+        JmxConfigurator.register(obj, server, NAME);
         assert server.isRegistered(obj_name);
     }
 
@@ -77,6 +80,16 @@ public class JmxTest {
         check("javaStyleFlag", true, true, false);
     }
 
+    public void testAdditionalJmxObjects() throws Exception {
+        ProvideAdditionalObjects objs=new ProvideAdditionalObjects();
+        JmxConfigurator.register(objs, server, "jmxtest:name=additional_obj");
+        ObjectName n=new ObjectName("jmxtest:name=additional_obj");
+
+        Object val=getAttribute(n, "num_msgs_sent");
+        assert (int)val == 0;
+        val=getAttribute(n, "num_msgs_received");
+        assert (int)val == 0;
+    }
 
 
     protected void check(String attr_name, boolean writable) throws Exception {
@@ -136,11 +149,15 @@ public class JmxTest {
     }
 
     protected Object getAttribute(String attr_name) throws Exception {
-        return server.getAttribute(obj_name, attr_name);
+        return getAttribute(obj_name, attr_name);
     }
 
+    protected Object getAttribute(ObjectName name, String attr_name) throws Exception {
+        return server.getAttribute(name, attr_name);
+    }
 
     protected static class Parent {
+        @SuppressWarnings("FieldMayBeFinal")
         @ManagedAttribute(description="age",writable=false)
         private short age=22;   // exposed as read-only 'age'
 
@@ -190,5 +207,38 @@ public class JmxTest {
 
         public boolean javaStyleFlag()              {return javaStyleFlag;}
         public Child   javaStyleFlag(boolean flag)  {javaStyleFlag=flag; return this;}
+    }
+
+    protected static class ProvideAdditionalObjects implements AdditionalJmxObjects {
+        protected final AdditionalInfo info=new AdditionalInfo();
+
+        @ManagedAttribute(description="age",writable=true)
+        protected int age=10;
+
+        public Object[] getJmxObjects() {
+            return new Object[]{info};
+        }
+    }
+
+    protected static class AdditionalInfo {
+        @ManagedAttribute(description="number of msgs sent")
+        protected int num_msgs_sent;
+        @ManagedAttribute(description="number of msgs sent", writable=true)
+        public int num_msgs_received;
+
+        @ManagedAttribute(description="current date")
+        public static String getDate() {
+            return new Date().toString();
+        }
+
+        @ManagedOperation(description="say name")
+        public static void sayName() {
+            System.out.printf("hello world\n");
+        }
+
+        @ManagedOperation(description="foo")
+        public static void foo() {
+            System.out.println("foo()");
+        }
     }
 }

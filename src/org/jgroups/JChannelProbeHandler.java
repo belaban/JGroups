@@ -1,6 +1,7 @@
 package org.jgroups;
 
 import org.jgroups.blocks.MethodCall;
+import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.jmx.ResourceDMBean;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -84,16 +85,44 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                     if(index != -1) {
                         String attrname=tmp.substring(0, index);
                         String attrvalue=tmp.substring(index+1);
-                        Protocol prot=ch.getProtocolStack().findProtocol(protocol_name);
-                        Field field=prot != null? Util.getField(prot.getClass(), attrname) : null;
+                        Object target=ch.getProtocolStack().findProtocol(protocol_name);
+                        Field field=target != null? Util.getField(target.getClass(), attrname) : null;
+                        if(field == null && target instanceof AdditionalJmxObjects) {
+                            Object[] objs=((AdditionalJmxObjects)target).getJmxObjects();
+                            if(objs != null && objs.length > 0) {
+                                for(Object o: objs) {
+                                    field=o != null? Util.getField(o.getClass(), attrname) : null;
+                                    if(field != null) {
+                                        target=o;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
                         if(field != null) {
-                            Object value=Util.convert(attrvalue,field.getType());
-                            if(value != null)
-                                prot.setValue(attrname, value);
+                            Object value=Util.convert(attrvalue, field.getType());
+                            if(value != null) {
+                                if(target instanceof Protocol)
+                                    ((Protocol)target).setValue(attrname, value);
+                                else
+                                    Util.setField(field, target, value);
+                            }
                         }
                         else {
                             // try to find a setter for X, e.g. x(type-of-x) or setX(type-of-x)
-                            ResourceDMBean.Accessor setter=ResourceDMBean.findSetter(prot, attrname);  // Util.getSetter(prot.getClass(), attrname);
+                            ResourceDMBean.Accessor setter=ResourceDMBean.findSetter(target, attrname);  // Util.getSetter(prot.getClass(), attrname);
+                            if(setter == null && target instanceof AdditionalJmxObjects) {
+                                Object[] objs=((AdditionalJmxObjects)target).getJmxObjects();
+                                if(objs != null && objs.length > 0) {
+                                    for(Object o: objs) {
+                                        setter=o != null? ResourceDMBean.findSetter(target, attrname) : null;
+                                        if(setter!= null)
+                                            break;
+                                    }
+                                }
+                            }
+
                             if(setter != null) {
                                 try {
                                     Class<?> type=setter instanceof ResourceDMBean.FieldAccessor?
@@ -170,11 +199,24 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                 args[i]=(String)strings[i];
         }
 
-        Method method=MethodCall.findMethod(prot.getClass(), method_name, args);
+        Object target=prot;
+        Method method=MethodCall.findMethod(target.getClass(), method_name, args);
         if(method == null) {
-            log.warn(Util.getMessage("MethodNotFound"), ch.getAddress(), prot.getClass().getSimpleName(), method_name);
-            return;
+            if(prot instanceof AdditionalJmxObjects) {
+                for(Object obj: ((AdditionalJmxObjects)prot).getJmxObjects()) {
+                    method=MethodCall.findMethod(obj.getClass(), method_name, args);
+                    if(method != null) {
+                        target=obj;
+                        break;
+                    }
+                }
+            }
+            if(method == null) {
+                log.warn(Util.getMessage("MethodNotFound"), ch.getAddress(), target.getClass().getSimpleName(), method_name);
+                return;
+            }
         }
+
         MethodCall call=new MethodCall(method);
         Object[] converted_args=null;
         if(args != null) {
@@ -183,7 +225,7 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
             for(int i=0; i < args.length; i++)
                 converted_args[i]=Util.convert(args[i], types[i]);
         }
-        Object retval=call.invoke(prot, converted_args);
+        Object retval=call.invoke(target, converted_args);
         if(retval != null)
             map.put(prot_name + "." + method_name, retval.toString());
     }

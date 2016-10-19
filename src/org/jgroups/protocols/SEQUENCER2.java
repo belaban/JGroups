@@ -15,7 +15,6 @@ import org.jgroups.util.Util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -56,33 +55,25 @@ public class SEQUENCER2 extends Protocol {
     protected volatile boolean                  running=true;
 
 
+    @ManagedAttribute protected long request_msgs;
+    @ManagedAttribute protected long response_msgs;
 
-    protected long request_msgs=0;
-    protected long response_msgs=0;
-    protected long bcast_msgs=0;
-    
-    protected long received_bcasts=0;
-    protected long delivered_bcasts=0;
-    protected long broadcasts_sent=0;
-    
-    protected long sent_requests=0;    
-    protected long received_requests=0;
-    protected long sent_responses=0;
-    protected long received_responses=0;
+    @ManagedAttribute protected long bcasts_sent;
+    @ManagedAttribute protected long bcasts_received;
+    @ManagedAttribute protected long bcasts_delivered;
+
+    @ManagedAttribute protected long sent_requests;
+    @ManagedAttribute protected long received_requests;
+    @ManagedAttribute protected long sent_responses;
+    @ManagedAttribute protected long received_responses;
 
     protected Table<Message>  received_msgs = new Table<>();
-    protected int max_msg_batch_size = 100;
+    protected int             max_msg_batch_size = 100;
 
     @ManagedAttribute
-    public boolean isCoordinator() {return is_coord;}
-    public Address getCoordinator() {return coord;}
+    public boolean isCoordinator()   {return is_coord;}
+    public Address getCoordinator()  {return coord;}
     public Address getLocalAddress() {return local_addr;}
-    @ManagedAttribute
-    public long getBroadcast() {return bcast_msgs;}
-    @ManagedAttribute
-    public long getReceivedRequests() {return received_requests;}
-    @ManagedAttribute
-    public long getReceivedBroadcasts() {return received_bcasts;}
 
     @ManagedAttribute(description="Number of messages in the forward-queue")
     public int getFwdQueueSize() {return fwd_queue.size();}
@@ -90,31 +81,8 @@ public class SEQUENCER2 extends Protocol {
 
     @ManagedOperation
     public void resetStats() {
-        request_msgs=response_msgs=bcast_msgs=received_bcasts=delivered_bcasts=broadcasts_sent=0L;
+        request_msgs=response_msgs=bcasts_sent=bcasts_received=bcasts_delivered=0L;
         sent_requests=received_requests=sent_responses=received_responses=0L; // reset number of sent and received requests and responses
-    }
-
-    @ManagedOperation
-    public Map<String,Object> dumpStats() {
-        Map<String,Object> m=super.dumpStats();
-        m.put("requests", request_msgs);
-        m.put("responses", response_msgs);
-        m.put("broadcast",bcast_msgs);
-        
-        m.put("sent_requests", sent_requests);
-        m.put("received_requests", received_requests);
-        m.put("sent_responses", sent_responses);
-        m.put("received_responses", received_responses);
-        
-        m.put("received_bcasts",   received_bcasts);
-        m.put("delivered_bcasts",  delivered_bcasts);
-        m.put("broadcasts_sent",   broadcasts_sent);
-        return m;
-    }
-
-    @ManagedOperation
-    public String printStats() {
-        return dumpStats().toString();
     }
 
 
@@ -128,10 +96,6 @@ public class SEQUENCER2 extends Protocol {
         super.stop();
     }
 
-    public long getBroadcastsSent(){
-    	return broadcasts_sent;
-    }
-    
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
@@ -239,7 +203,7 @@ public class SEQUENCER2 extends Protocol {
                     
             case SequencerHeader.BCAST:
                 deliver(msg, hdr);
-                received_bcasts++;
+                bcasts_received++;
                 break;
         }
         return null;
@@ -380,7 +344,7 @@ public class SEQUENCER2 extends Protocol {
             log.trace(local_addr + ": broadcasting ::" + seqno);
 
         down_prot.down(msg);
-        bcast_msgs++;
+        bcasts_sent++;
     }
 
 

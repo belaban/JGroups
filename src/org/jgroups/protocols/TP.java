@@ -6,6 +6,7 @@ import org.jgroups.annotations.*;
 import org.jgroups.blocks.LazyRemovalCache;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverters;
+import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.DiagnosticsHandler;
@@ -51,7 +52,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Transport protocol")
-public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHandler {
+public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHandler, AdditionalJmxObjects {
 
     public static final byte       LIST=1; // we have a list of messages rather than a single message when set
     public static final byte       MULTICAST=2; // message is a multicast (versus a unicast) message when set
@@ -320,47 +321,21 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public long getThreadPoolKeepAliveTime() {return thread_pool_keep_alive_time;}
 
+    public Object[] getJmxObjects() {
+        return new Object[]{msg_stats};
+    }
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
+    protected final MsgStats msg_stats=new MsgStats();
 
-    @ManagedAttribute(description="Number of messages sent")
-    protected long num_msgs_sent;
 
-    @ManagedAttribute(description="Number of regular messages received")
-    protected long num_msgs_received;
 
-    @ManagedAttribute(description="Number of single messages sent")
-    protected long num_single_msgs_sent;
-
-    @ManagedAttribute(description="Number of message batches received")
-    protected long num_batches_received;
-
-    @ManagedAttribute(description="Number of message batches sent")
-    protected long num_batches_sent;
-
-    @ManagedAttribute(description="Number of bytes sent")
-    protected long num_bytes_sent;
-
-    @ManagedAttribute(description="Number of bytes received")
-    protected long num_bytes_received;
-
-    @ManagedAttribute(description="Number of dropped messages that were rejected by the thread pool")
-    protected int num_rejected_msgs;
-
-    @ManagedAttribute(description="Number of threads spawned as a result of thread pool rejection")
-    protected int num_threads_spawned;
 
     /** The name of the group to which this member is connected. With a shared transport, the channel name is
      * in TP.ProtocolAdapter (cluster_name), and this field is not used */
     @ManagedAttribute(description="Channel (cluster) name")
     protected AsciiString cluster_name;
-
-    @ManagedAttribute(description="Number of OOB messages received. This value is included in num_msgs_received.")
-    protected long num_oob_msgs_received;
-
-    @ManagedAttribute(description="Number of internal messages received. This value is included in num_msgs_received.")
-    protected long num_internal_msgs_received;
 
     @ManagedAttribute(description="If enabled, the timer will run non-blocking tasks on its own (runner) thread, and " +
       "not submit them to the thread pool. Otherwise, all tasks are submitted to the thread pool. This attribute is " +
@@ -511,6 +486,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected TP() {
     }
 
+    public MsgStats getMessageStats() {return msg_stats;}
+
     /** Whether or not hardware multicasting is supported */
     public abstract boolean supportsMulticasting();
 
@@ -531,9 +508,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     public void resetStats() {
-        num_msgs_sent=num_msgs_received=num_batches_received=num_bytes_sent=num_bytes_received=0;
-        num_oob_msgs_received=num_internal_msgs_received=num_single_msgs_sent=num_batches_sent=0;
-        num_rejected_msgs=num_threads_spawned=0;
+        msg_stats.reset();
         avg_batch_size.clear();
     }
 
@@ -643,11 +618,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public String getThreadNamingPattern() {return thread_naming_pattern;}
 
 
-    public long getNumMessagesSent()                  {return num_msgs_sent;}
-    public long getNumMessagesReceived()              {return num_msgs_received;}
-    public long getNumBytesSent()                     {return num_bytes_sent;}
-    public long getNumBytesReceived()                 {return num_bytes_received;}
-    public void incrBatchesSent(int delta)            {num_batches_sent+=delta;}
+    public long getNumMessagesSent()                  {return msg_stats.getNumMsgsSent();}
+    public void incrBatchesSent(int delta)            {if(stats) msg_stats.incrNumBatchesSent(delta);}
+    public void incrNumSingleMsgsSent(int d)          {if(stats) msg_stats.incrNumSingleMsgsSent(d);}
     public InetAddress getBindAddress()               {return bind_addr;}
     public void setBindAddress(InetAddress bind_addr) {this.bind_addr=bind_addr;}
     public int getBindPort()                          {return bind_port;}
@@ -659,10 +632,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void setPortRange(int range) {this.port_range=range;}
     public int getPortRange() {return port_range ;}
 
-
-    public long getOOBMessages() {
-        return num_oob_msgs_received;
-    }
 
 
     @ManagedAttribute(description="Current number of threads in the thread pool")
@@ -703,10 +672,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(internal_pool instanceof ThreadPoolExecutor)
             return ((ThreadPoolExecutor)internal_pool).getLargestPoolSize();
         return 0;
-    }
-
-    public long getInternalMessages() {
-        return num_internal_msgs_received;
     }
 
     @ManagedAttribute(name="timer_tasks",description="Number of timer tasks queued up for execution")
@@ -1300,7 +1265,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
                     msg.putHeader(id, new TpHeader(oob_batch.clusterName()));
                     oob_batch.remove(msg);
-                    num_oob_msgs_received++;
+                    if(stats)
+                        msg_stats.incrNumOOBMsgsReceived(1);
                     submitToThreadPool(new SingleMessageHandler(msg), internal);
                 }
             }
@@ -1317,7 +1283,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
         catch(RejectedExecutionException ex) {
             if(!spawn_thread_on_rejection) {
-                num_rejected_msgs++;
+                msg_stats.incrNumRejectedMsgs(1);
                 return;
             }
 
@@ -1325,7 +1291,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 submitToThreadPool(internal_pool, task, true, false);
             }
             else {
-                num_threads_spawned++;
+                msg_stats.incrNumThreadsSpawned(1);
                 runInNewThread(task);
             }
         }
@@ -1372,14 +1338,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             try {
                 if(stats) {
                     if(msg.isFlagSet(Message.Flag.OOB))
-                        num_oob_msgs_received++;
+                        msg_stats.incrNumOOBMsgsReceived(1);
                     else if(msg.isFlagSet(Message.Flag.INTERNAL))
-                        num_internal_msgs_received++;
+                        msg_stats.incrNumInternalMsgsReceived(1);
                     else
-                        num_msgs_received++;
-                    num_bytes_received+=msg.getLength();
+                        msg_stats.incrNumMsgsReceived(1);
+                    msg_stats.incrNumBytesReceived(msg.getLength());
                 }
-
                 TpHeader hdr=msg.getHeader(id);
                 AsciiString cname=new AsciiString(hdr.cluster_name);
                 passMessageUp(msg, cname, true, multicast, true);
@@ -1403,13 +1368,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(stats) {
                 int batch_size=batch.size();
                 if(batch.getMode() == MessageBatch.Mode.OOB)
-                    num_oob_msgs_received+=batch_size;
+                    msg_stats.incrNumOOBMsgsReceived(batch_size);
                 else if(batch.getMode() == MessageBatch.Mode.INTERNAL)
-                    num_internal_msgs_received+=batch_size;
+                    msg_stats.incrNumInternalMsgsReceived(batch_size);
                 else
-                    num_msgs_received+=batch_size;
-                num_batches_received++;
-                num_bytes_received+=batch.length();
+                    msg_stats.incrNumMsgsReceived(batch_size);
+                msg_stats.incrNumBatchesReceived(1);
+                msg_stats.incrNumBytesReceived(batch.length());
                 avg_batch_size.add(batch_size);
             }
 
@@ -1436,8 +1401,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public void doSend(byte[] buf, int offset, int length, Address dest) throws Exception {
         if(stats) {
-            num_msgs_sent++;
-            num_bytes_sent+=length;
+            msg_stats.incrNumMsgsSent(1);
+            msg_stats.incrNumBytesSent(length);
         }
         if(dest == null)
             sendMulticast(buf, offset, length);

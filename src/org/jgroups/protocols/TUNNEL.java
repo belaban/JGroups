@@ -206,8 +206,8 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         Util.writeMessage(msg, dos, dest == null);
 
         if(stats) {
-            num_msgs_sent++;
-            num_bytes_sent+=dos.position();
+            msg_stats.incrNumMsgsSent(1);
+            msg_stats.incrNumBytesSent(dos.position());
         }
         if(dest == null)
             tunnel_policy.sendToAllMembers(group, local_addr, dos.buffer(), 0, dos.position());

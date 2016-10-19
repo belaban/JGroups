@@ -35,7 +35,8 @@ public class SEQUENCER extends Protocol {
     protected Address                           local_addr;
     protected volatile Address                  coord;
     protected volatile View                     view;
-    protected volatile boolean                  is_coord=false;
+    @ManagedAttribute
+    protected volatile boolean                  is_coord;
     protected final AtomicLong                  seqno=new AtomicLong(0);
 
 
@@ -76,26 +77,17 @@ public class SEQUENCER extends Protocol {
       "0 disables this, which means that ack-mode is always on")
     protected int  threshold=10;
 
-    protected int  num_acks=0;
-
-    protected long forwarded_msgs=0;
-    protected long bcast_msgs=0;
-    protected long received_forwards=0;
-    protected long received_bcasts=0;
-    protected long delivered_bcasts=0;
+    @ManagedAttribute protected int  num_acks;
+    @ManagedAttribute protected long forwarded_msgs;
+    @ManagedAttribute protected long bcast_msgs;
+    @ManagedAttribute protected long received_forwards;
+    @ManagedAttribute protected long received_bcasts;
+    @ManagedAttribute protected long delivered_bcasts;
 
     @ManagedAttribute
     public boolean isCoordinator() {return is_coord;}
     public Address getCoordinator() {return coord;}
     public Address getLocalAddress() {return local_addr;}
-    @ManagedAttribute
-    public long getForwarded() {return forwarded_msgs;}
-    @ManagedAttribute
-    public long getBroadcast() {return bcast_msgs;}
-    @ManagedAttribute
-    public long getReceivedForwards() {return received_forwards;}
-    @ManagedAttribute
-    public long getReceivedBroadcasts() {return received_bcasts;}
 
     @ManagedAttribute(description="Number of messages in the forward-table")
     public int getForwardTableSize() {return forward_table.size();}
@@ -109,21 +101,6 @@ public class SEQUENCER extends Protocol {
         forwarded_msgs=bcast_msgs=received_forwards=received_bcasts=delivered_bcasts=0L;
     }
 
-    @ManagedOperation
-    public Map<String,Object> dumpStats() {
-        Map<String,Object> m=super.dumpStats();
-        m.put("forwarded",forwarded_msgs);
-        m.put("broadcast",bcast_msgs);
-        m.put("received_forwards", received_forwards);
-        m.put("received_bcasts",   received_bcasts);
-        m.put("delivered_bcasts",  delivered_bcasts);
-        return m;
-    }
-
-    @ManagedOperation
-    public String printStats() {
-        return dumpStats().toString();
-    }
 
     public void start() throws Exception {
         super.start();

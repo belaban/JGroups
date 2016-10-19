@@ -353,13 +353,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
 
-    public Map<String, Object> dumpStats() {
-        Map<String, Object> m=super.dumpStats();
-        m.put("num_unacked_msgs", getNumUnackedMessages());
-        m.put("num_msgs_in_recv_windows", getXmitTableUndeliveredMessages());
-        return m;
-    }
-
 
     public void init() throws Exception {
         super.init();

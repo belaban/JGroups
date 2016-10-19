@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 import org.jgroups.Event;
 import org.jgroups.Message;
@@ -92,6 +93,7 @@ public class STATS extends Protocol {
         return down_prot.down(msg);
     }
 
+    @ManagedOperation
     public String printStats() {
         Map.Entry entry;
         Object key, val;

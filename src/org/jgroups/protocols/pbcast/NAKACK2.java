@@ -436,17 +436,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
 
-    public Map<String,Object> dumpStats() {
-        Map<String,Object> retval=super.dumpStats();
-        retval.put("msgs", printMessages());
-        return retval;
-    }
-
-    public String printStats() {
-        return String.format("\nStability messages received\n%s\n", printStabilityMessages());
-    }
-
-
 
     public String printStabilityHistory() {
         StringBuilder sb=new StringBuilder();

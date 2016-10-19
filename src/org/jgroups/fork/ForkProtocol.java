@@ -5,8 +5,6 @@ import org.jgroups.Message;
 import org.jgroups.protocols.FORK;
 import org.jgroups.stack.Protocol;
 
-import java.util.Map;
-
 /**
  * Acts as bottom protool of a fork-stack. Knows about the fork-stack-id and inserts it into the ForkHeader of messages
  * sent down the stack
@@ -20,10 +18,6 @@ public class ForkProtocol extends Protocol {
         this.fork_stack_id=fork_stack_id;
     }
 
-
-    public Map<String,Object> dumpStats() {
-        return null;
-    }
 
     public Object down(Event evt) {
         switch(evt.getType()) {

@@ -8,6 +8,9 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverter;
 import org.jgroups.conf.ProtocolConfiguration;
+import org.jgroups.jmx.AdditionalJmxObjects;
+import org.jgroups.jmx.ResourceDMBean;
+import org.jgroups.logging.Log;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
@@ -103,8 +106,6 @@ public class ProtocolStack extends Protocol {
                     Protocol prot=null;
                     try {
                         prot=createProtocol(prot_name);
-                        //prot.init();
-                        //prot.start();
                     }
                     catch(Exception e) {
                         log.error(Util.getMessage("FailedCreatingAnInstanceOf") + prot_name, e);
@@ -243,25 +244,20 @@ public class ProtocolStack extends Protocol {
 
 
     /**
-     *
      * @return Map<String,Map<key,val>>
      */
     public Map<String,Object> dumpStats() {
-        Map<String,Object> retval=new HashMap<>();
-
-        Protocol p=top_prot;
-        while(p != null) {
+        Map<String,Object> retval=new HashMap<>(); // no need to be sorted, we need order of protocols as in the config!
+        for(Protocol p=top_prot; p != null; p=p.getDownProtocol()) {
             String prot_name=p.getName();
-            Map<String,Object> tmp=p.dumpStats();
-            if(prot_name != null && tmp != null)
+            if(prot_name == null)
+                continue;
+            Map<String,Object> tmp=new TreeMap<>();
+            dumpStats(p, tmp, log);
+            if(!tmp.isEmpty())
                 retval.put(prot_name, tmp);
-            p=p.getDownProtocol();
         }
         return retval;
-    }
-
-    public Map<String,Object> dumpStats(String protocol_name) {
-        return dumpStats(protocol_name, null);
     }
 
 
@@ -270,29 +266,27 @@ public class ProtocolStack extends Protocol {
         if(prot == null)
             return null;
 
-        Map<String,Object> retval=new HashMap<>(), tmp;
-        tmp=prot.dumpStats();
-        if(tmp != null) {
-            if(attrs != null && !attrs.isEmpty()) {
-                // weed out attrs not in list
-                for(Iterator<String> it=tmp.keySet().iterator(); it.hasNext();) {
-                    String attrname=it.next();
-                    boolean found=false;
-                    for(String attr: attrs) {
-                        if(attrname.startsWith(attr)) {
-                            found=true;
-                            break; // found
-                        }
+        Map<String,Object> retval=new HashMap<>(), tmp=new TreeMap<>();
+        dumpStats(prot, tmp, log);
+        if(attrs != null && !attrs.isEmpty()) {
+            // weed out attrs not in list
+            for(Iterator<String> it=tmp.keySet().iterator(); it.hasNext();) {
+                String attrname=it.next();
+                boolean found=false;
+                for(String attr: attrs) {
+                    if(attrname.startsWith(attr)) {
+                        found=true;
+                        break; // found
                     }
-                    if(!found)
-                        it.remove();
                 }
+                if(!found)
+                    it.remove();
             }
-            retval.put(protocol_name, new TreeMap<>(tmp));
         }
-
+        retval.put(protocol_name, tmp);
         return retval;
     }
+
 
     /**
      * Prints the names of the protocols, from the bottom to top. If include_properties is true,
@@ -372,6 +366,19 @@ public class ProtocolStack extends Protocol {
 
     public String printProtocolSpecAsPlainString() {
         return printProtocolSpecAsPlainString(false);
+    }
+
+    protected static void dumpStats(Object obj, Map<String,Object> map, Log log) {
+        ResourceDMBean.dumpStats(obj, map, log); // dumps attrs and operations into tmp
+        if(obj instanceof AdditionalJmxObjects) {
+            Object[] objs=((AdditionalJmxObjects)obj).getJmxObjects();
+            if(objs != null && objs.length > 0) {
+                for(Object o: objs) {
+                    if(o != null)
+                        ResourceDMBean.dumpStats(o, map, log);
+                }
+            }
+        }
     }
 
     private String printProtocolSpecAsPlainString(boolean print_props) {

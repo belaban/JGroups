@@ -6,11 +6,9 @@ package org.jgroups.stack;
 import org.jgroups.Event;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
-import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.jmx.ResourceDMBean;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
@@ -21,8 +19,9 @@ import org.jgroups.util.Util;
 import org.w3c.dom.Node;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 
 /**
@@ -192,73 +191,8 @@ public abstract class Protocol {
         ;
     }
 
-    public String printStats() {
-        return null;
-    }
-
-    public Map<String,Object> dumpStats() {
-        Map<String,Object> map=new TreeMap<>();
-        for(Class<?> clazz=this.getClass();clazz != null;clazz=clazz.getSuperclass()) {
-            Field[] fields=clazz.getDeclaredFields();
-            for(Field field: fields) {
-                if(field.isAnnotationPresent(ManagedAttribute.class) ||
-                  (field.isAnnotationPresent(Property.class) && field.getAnnotation(Property.class).exposeAsManagedAttribute())) {
-
-                    ManagedAttribute attr_annotation=field.getAnnotation(ManagedAttribute.class);
-                    Property         prop=field.getAnnotation(Property.class);
-                    String attr_name=attr_annotation != null? attr_annotation.name() : prop != null? prop.name() : null;
-                    if(attr_name != null && !attr_name.trim().isEmpty())
-                        attr_name=attr_name.trim();
-                    else
-                        attr_name=field.getName();
-
-                    try {
-                        field.setAccessible(true);
-                        Object value=field.get(this);
-                        map.put(attr_name, value != null? value.toString() : null);
-                    }
-                    catch(Exception e) {
-                        log.warn("Could not retrieve value of attribute (field) " + attr_name, e);
-                    }
-                }
-            }
-
-            Method[] methods=this.getClass().getMethods();
-            for(Method method: methods) {
-                if(method.isAnnotationPresent(ManagedAttribute.class) ||
-                        (method.isAnnotationPresent(Property.class) && method.getAnnotation(Property.class).exposeAsManagedAttribute())) {
-
-                    ManagedAttribute attr_annotation=method.getAnnotation(ManagedAttribute.class);
-                    Property         prop=method.getAnnotation(Property.class);
-                    String method_name=attr_annotation != null? attr_annotation.name() : prop != null? prop.name() : null;
-                    if(method_name != null && !method_name.trim().isEmpty())
-                        method_name=method_name.trim();
-                    else {
-                        String field_name=Util.methodNameToAttributeName(method.getName());
-                        method_name=Util.attributeNameToMethodName(field_name);
-                    }
-
-                    if(ResourceDMBean.isGetMethod(method)) {
-                        try {
-                            Object value=method.invoke(this);
-                            String attributeName=Util.methodNameToAttributeName(method_name);
-                            if(value instanceof Double)
-                                value=String.format("%.2f", (double)value);
-                            map.put(attributeName, value != null? value.toString() : null);
-                        }
-                        catch(Exception e) {
-                            log.warn("Could not retrieve value of attribute (method) " + method_name,e);
-                        }
-                    }
-                }
-            }
-        }
-        return map;
-    }
-    
 
 
-    
     /**
      * Called after instance has been created (null constructor) and before protocol is started.
      * Properties are already set. Other protocols are not yet connected and events cannot yet be sent.
@@ -299,24 +233,17 @@ public abstract class Protocol {
 
 
     /** List of events that are required to be answered by some layer above */
-    public List<Integer> requiredUpServices() {
-        return null;
-    }
+    @SuppressWarnings("MethodMayBeStatic")
+    public List<Integer> requiredUpServices() {return null;}
 
     /** List of events that are required to be answered by some layer below */
-    public List<Integer> requiredDownServices() {
-        return null;
-    }
+    public List<Integer> requiredDownServices() {return null;}
 
     /** List of events that are provided to layers above (they will be handled when sent down from above) */
-    public List<Integer> providedUpServices() {
-        return null;
-    }
+    public List<Integer> providedUpServices() {return null;}
 
     /** List of events that are provided to layers below (they will be handled when sent down below) */
-    public List<Integer> providedDownServices() {
-        return null;
-    }
+    public List<Integer> providedDownServices() {return null;}
 
     /** Returns all services provided by protocols below the current protocol */
     public final List<Integer> getDownServices() {

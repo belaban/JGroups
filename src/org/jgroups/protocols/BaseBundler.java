@@ -84,7 +84,7 @@ public abstract class BaseBundler implements Bundler {
                 Address dst=entry.getKey();
                 sendMessageList(dst, list.get(0).getSrc(), list);
                 if(transport.statsEnabled())
-                    transport.num_batches_sent++;
+                    transport.incrBatchesSent(1);
             }
         }
         clearMessages();
@@ -102,7 +102,7 @@ public abstract class BaseBundler implements Bundler {
             Util.writeMessage(msg, output, dest == null);
             transport.doSend(output.buffer(), 0, output.position(), dest);
             if(transport.statsEnabled())
-                transport.num_single_msgs_sent++;
+                transport.incrNumSingleMsgsSent(1);
         }
         catch(SocketException sock_ex) {
             log.trace(Util.getMessage("SendFailure"),

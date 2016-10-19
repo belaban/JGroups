@@ -60,12 +60,6 @@ public class UFC extends FlowControl {
         return sb.toString();
     }
 
-    public Map<String, Object> dumpStats() {
-        Map<String, Object> retval=super.dumpStats();
-        retval.put("senders", printMap(sent));
-        return retval;
-    }
-
 
     protected boolean          handleMulticastMessage() {return false;}
     @Override protected Header getReplenishHeader()     {return UFC_REPLENISH_HDR;}

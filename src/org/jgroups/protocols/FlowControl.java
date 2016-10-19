@@ -224,12 +224,6 @@ public abstract class FlowControl extends Protocol {
         return sb.toString();
     }
 
-    public Map<String, Object> dumpStats() {
-        Map<String, Object> retval=super.dumpStats();      
-        retval.put("receivers", printMap(received));
-        return retval;
-    }
-
 
     protected long getMaxBlockTime(long length) {
         if(max_block_times == null)
