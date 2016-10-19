@@ -74,14 +74,9 @@ public class NoBundler implements Bundler {
         try {
             output.position(0);
             Util.writeMessage(msg, output, dest == null);
-            //long start=Util.micros();
             transport.doSend(output.buffer(), 0, output.position(), dest);
-            //long time_us=Util.micros()-start;
             if(transport.statsEnabled())
-                transport.incrSingleMsgsInsteadOfBatches();
-            //synchronized(send) {
-            //    send.add(time_us);
-            //}
+                transport.num_single_msgs_sent++;
         }
         catch(SocketException sock_ex) {
             log.trace(Util.getMessage("SendFailure"),

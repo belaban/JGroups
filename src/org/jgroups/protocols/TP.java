@@ -326,17 +326,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @ManagedAttribute(description="Number of messages sent")
     protected long num_msgs_sent;
-    @ManagedAttribute(description="Number of messages received")
-    protected long num_msgs_received;
 
-    @ManagedAttribute(description="Number of single messages received")
-    protected long num_single_msgs_received;
+    @ManagedAttribute(description="Number of regular messages received")
+    protected long num_msgs_received;
 
     @ManagedAttribute(description="Number of single messages sent")
     protected long num_single_msgs_sent;
-
-    @ManagedAttribute(description="Number of single messages that were sent instead of sending a batch of 1")
-    protected long num_single_msgs_sent_instead_of_batch;
 
     @ManagedAttribute(description="Number of message batches received")
     protected long num_batches_received;
@@ -361,13 +356,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedAttribute(description="Channel (cluster) name")
     protected AsciiString cluster_name;
 
-    @ManagedAttribute(description="Number of OOB messages received")
+    @ManagedAttribute(description="Number of OOB messages received. This value is included in num_msgs_received.")
     protected long num_oob_msgs_received;
 
-    @ManagedAttribute(description="Number of regular messages received")
-    protected long num_incoming_msgs_received;
-
-    @ManagedAttribute(description="Number of internal messages received")
+    @ManagedAttribute(description="Number of internal messages received. This value is included in num_msgs_received.")
     protected long num_internal_msgs_received;
 
     @ManagedAttribute(description="If enabled, the timer will run non-blocking tasks on its own (runner) thread, and " +
@@ -458,7 +450,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     // ================================= Default SocketFactory ========================
     protected SocketFactory           socket_factory=new DefaultSocketFactory();
 
-    protected volatile Bundler        bundler;
+    protected Bundler                 bundler;
 
     protected DiagnosticsHandler      diag_handler;
     protected final List<DiagnosticsHandler.ProbeHandler> preregistered_probe_handlers=new LinkedList<>();
@@ -539,8 +531,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     public void resetStats() {
-        num_msgs_sent=num_msgs_received=num_single_msgs_received=num_batches_received=num_bytes_sent=num_bytes_received=0;
-        num_oob_msgs_received=num_incoming_msgs_received=num_internal_msgs_received=num_single_msgs_sent=num_single_msgs_sent_instead_of_batch=num_batches_sent=0;
+        num_msgs_sent=num_msgs_received=num_batches_received=num_bytes_sent=num_bytes_received=0;
+        num_oob_msgs_received=num_internal_msgs_received=num_single_msgs_sent=num_batches_sent=0;
         num_rejected_msgs=num_threads_spawned=0;
         avg_batch_size.clear();
     }
@@ -576,7 +568,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     /** Installs a bundler. Needs to be done before the channel is connected */
     public void setBundler(Bundler bundler) {
-        this.bundler=bundler;
+        if(bundler != null)
+            this.bundler=bundler;
     }
 
 
@@ -654,9 +647,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public long getNumMessagesReceived()              {return num_msgs_received;}
     public long getNumBytesSent()                     {return num_bytes_sent;}
     public long getNumBytesReceived()                 {return num_bytes_received;}
-    public void incrBatchesSent()                     {num_batches_sent++;}
     public void incrBatchesSent(int delta)            {num_batches_sent+=delta;}
-    public void incrSingleMsgsInsteadOfBatches()      {num_single_msgs_sent_instead_of_batch++;}
     public InetAddress getBindAddress()               {return bind_addr;}
     public void setBindAddress(InetAddress bind_addr) {this.bind_addr=bind_addr;}
     public int getBindPort()                          {return bind_port;}
@@ -712,10 +703,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(internal_pool instanceof ThreadPoolExecutor)
             return ((ThreadPoolExecutor)internal_pool).getLargestPoolSize();
         return 0;
-    }
-
-    public long getRegularMessages() {
-        return num_incoming_msgs_received;
     }
 
     public long getInternalMessages() {
@@ -1259,22 +1246,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
             removeAndDispatchNonBundledMessages(oob_batch, internal_batch_oob);
 
-            if(oob_batch != null && !oob_batch.isEmpty()) {
-                num_oob_msgs_received+=oob_batch.size();
+            if(oob_batch != null && !oob_batch.isEmpty())
                 submitToThreadPool(new BatchHandler(oob_batch), false);
-            }
-            if(batch != null) {
-                num_incoming_msgs_received+=batch.size();
+            if(batch != null)
                 submitToThreadPool(new BatchHandler(batch), false);
-            }
-            if(internal_batch_oob != null && !internal_batch_oob.isEmpty()) {
-                num_oob_msgs_received+=internal_batch_oob.size();
+            if(internal_batch_oob != null && !internal_batch_oob.isEmpty())
                 submitToThreadPool(new BatchHandler(internal_batch_oob), true);
-            }
-            if(internal_batch != null) {
-                num_internal_msgs_received+=internal_batch.size();
+            if(internal_batch != null)
                 submitToThreadPool(new BatchHandler(internal_batch), true);
-            }
         }
         catch(Throwable t) {
             log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
@@ -1301,14 +1280,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     return;
             }
 
-            boolean oob=msg.isFlagSet(Message.Flag.OOB), internal=msg.isFlagSet(Message.Flag.INTERNAL);
-            if(oob)
-                num_oob_msgs_received++;
-            else if(internal)
-                num_internal_msgs_received++;
-            else
-                num_incoming_msgs_received++;
-
+            boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
             submitToThreadPool(new SingleMessageHandler(msg), internal);
         }
         catch(Throwable t) {
@@ -1398,13 +1370,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             Address dest=msg.getDest();
             boolean multicast=dest == null;
             try {
-                // this check is already done before creating a SingleMessageHandler
-                // if(!multicast && !Objects.equals(dest, local_addr) && !Objects.equals(dest, local_physical_addr))
-                   // return;
-
                 if(stats) {
-                    num_msgs_received++;
-                    num_single_msgs_received++;
+                    if(msg.isFlagSet(Message.Flag.OOB))
+                        num_oob_msgs_received++;
+                    else if(msg.isFlagSet(Message.Flag.INTERNAL))
+                        num_internal_msgs_received++;
+                    else
+                        num_msgs_received++;
                     num_bytes_received+=msg.getLength();
                 }
 
@@ -1430,7 +1402,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         public void run() {
             if(stats) {
                 int batch_size=batch.size();
-                num_msgs_received+=batch_size;
+                if(batch.getMode() == MessageBatch.Mode.OOB)
+                    num_oob_msgs_received+=batch_size;
+                else if(batch.getMode() == MessageBatch.Mode.INTERNAL)
+                    num_internal_msgs_received+=batch_size;
+                else
+                    num_msgs_received+=batch_size;
                 num_batches_received++;
                 num_bytes_received+=batch.length();
                 avg_batch_size.add(batch_size);
@@ -1450,20 +1427,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /** Serializes and sends a message. This method is not reentrant */
     protected void send(Message msg, Address dest) throws Exception {
         // bundle all messages, even the ones tagged with DONT_BUNDLE: https://issues.jboss.org/browse/JGRP-1737
-        boolean bypass_bundling=msg.isFlagSet(Message.Flag.DONT_BUNDLE); //  && dest instanceof PhysicalAddress;
-        Bundler tmp_bundler;
-        if(!bypass_bundling && (tmp_bundler=bundler) != null) {
+        // remove the ones tagged as OOB|DONT_BUNDLE at the receiver and pass them up individually (in separate threads)
+        Bundler tmp_bundler=bundler;
+        if(tmp_bundler != null)
             tmp_bundler.send(msg);
-            return;
-        }
-
-        // we can create between 300'000 - 400'000 output streams and do the marshalling per second,
-        // so this is not a bottleneck ! Most messages will be sent via the bundler anyway
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)(msg.size() + MSG_OVERHEAD)); // version+flag+msg
-        Util.writeMessage(msg, out, dest == null);
-        doSend(out.buffer(), 0, out.position(), dest);
-        if(stats)
-            num_single_msgs_sent++;
     }
 
 
