@@ -231,6 +231,14 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     public int hashCode() {return remote.hashCode();}
 
     public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+
+        if (this.getClass() != obj.getClass()) {
+            return false;
+        }
+
         return compareTo((RouterStub)obj) == 0;
     }
 
