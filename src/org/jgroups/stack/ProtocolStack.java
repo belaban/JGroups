@@ -19,6 +19,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 
 /**
@@ -79,15 +80,25 @@ public class ProtocolStack extends Protocol {
                     key=key.substring("remove-protocol".length());
                     int index=key.indexOf('=');
                     if(index != -1) {
-                        String prot_name=key.substring(index +1);
-                        if(prot_name != null && !prot_name.isEmpty()) {
-                            try {
-                                Protocol removed=removeProtocol(prot_name);
-                                if(removed != null)
-                                    log.debug("removed protocol " + prot_name + " from stack");
-                            }
-                            catch(Exception e) {
-                                log.error(Util.getMessage("FailedRemovingProtocol") + prot_name, e);
+                        String rest=key.substring(index +1);
+                        if(rest != null && !rest.isEmpty()) {
+                            List<String> prots=Util.parseCommaDelimitedStrings(rest);
+                            if(!prots.isEmpty()) {
+                                for(String p: prots) {
+                                    List<Protocol> protocols=findProtocols(p);
+                                    if(protocols != null && !protocols.isEmpty()) {
+                                        for(Protocol prot_to_remove: protocols) {
+                                            try {
+                                                Protocol removed=removeProtocol(prot_to_remove);
+                                                if(removed != null)
+                                                    log.debug("removed protocol %s from stack", prot_to_remove.getName());
+                                            }
+                                            catch(Exception e) {
+                                                log.error(Util.getMessage("FailedRemovingProtocol") + rest, e);
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -696,6 +707,21 @@ public class ProtocolStack extends Protocol {
             tmp=tmp.getDownProtocol();
         }
         return null;
+    }
+
+    public <T extends Protocol> List<T> findProtocols(String regexp) {
+        List<T> retval=null;
+        Pattern pattern=Pattern.compile(regexp);
+
+        for(T prot=(T)top_prot; prot != null; prot=prot.getDownProtocol()) {
+            String prot_name=prot.getName();
+            if(pattern.matcher(prot_name).matches()) {
+                if(retval == null)
+                    retval=new ArrayList<>();
+                retval.add(prot);
+            }
+        }
+        return retval;
     }
 
     public <T extends Protocol> T getBottomProtocol() {
