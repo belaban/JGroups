@@ -82,7 +82,7 @@ public class ASYM_ENCRYPT extends Encrypt {
     @ManagedOperation(description="Triggers a request for the secret key to the current keyserver")
     public void sendKeyRequest() {
         if(key_server_addr == null) {
-            log.error("%s: key server is currently not set", local_addr);
+            log.debug("%s: key server is currently not set", local_addr);
             return;
         }
         sendKeyRequest(key_server_addr);
