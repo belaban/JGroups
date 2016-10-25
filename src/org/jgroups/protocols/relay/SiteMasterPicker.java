@@ -5,12 +5,13 @@ import org.jgroups.Address;
 import java.util.List;
 
 /**
- * Allows an implementation to pick a {@link SiteMaster} from a list of site master (if multiple site masters are
- * enabled). An implementation could for example always pick the same site master for messages from a given sender
- * (sticky site master policy, see https://issues.jboss.org/browse/JGRP-2112).<p/>
- * The default implementation pick a random site master for every message to be relayed, even if they have the same
+ * Allows an implementation to pick a {@link SiteMaster} or a {@link Route} from a list (if multiple site masters are
+ * enabled). An implementation could for example always pick the same site master (or route) for messages from a given
+ * sender (sticky site master policy, see https://issues.jboss.org/browse/JGRP-2112).<p/>
+ * The default implementation picks a random site master for every message to be relayed, even if they have the same
  * original sender.<p/>
- * If only one site master is configured, then {@link #pick(List,Address)} will never be called.
+ * If only one site master is configured, then {@link #pickSiteMaster(List,Address)} (List,Address)} or
+ * {@link #pickRoute(String,List,Address)} will never be called.
  * @author Bela Ban
  * @since  3.6.12, 4.0
  */
