@@ -165,11 +165,12 @@ public class UDP extends TP {
         return ip_ttl;
     }
 
-    public void setMaxBundleSize(int size) {
+    public UDP setMaxBundleSize(int size) {
         super.setMaxBundleSize(size);
         if(size > Global.MAX_DATAGRAM_PACKET_SIZE)
             throw new IllegalArgumentException("max_bundle_size (" + size + ") cannot exceed the max datagram " +
                                                  "packet size of " + Global.MAX_DATAGRAM_PACKET_SIZE);
+        return this;
     }
 
     @ManagedAttribute(description="Number of messages dropped when sending because of insufficient buffer space")

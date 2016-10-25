@@ -236,10 +236,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return bundler != null? bundler.getClass().getName() : "null";
     }
 
-    public void setMaxBundleSize(int size) {
+    public TP setMaxBundleSize(int size) {
         if(size <= 0)
             throw new IllegalArgumentException("max_bundle_size (" + size + ") is <= 0");
         max_bundle_size=size;
+        return this;
     }
     public final int getMaxBundleSize() {return max_bundle_size;}
     public int getBundlerCapacity()     {return bundler_capacity;}
@@ -263,13 +264,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @ManagedAttribute(description="Sets the wait strategy in the RingBufferBundler. Allowed values are \"spin\", " +
       "\"yield\", \"park\", \"spin-park\" and \"spin-yield\" or a fully qualified classname")
-    public void bundlerWaitStrategy(String strategy) {
+    public TP bundlerWaitStrategy(String strategy) {
         if(bundler instanceof RingBufferBundler) {
             ((RingBufferBundler)bundler).waitStrategy(strategy);
             this.bundler_wait_strategy=strategy;
         }
         else
             this.bundler_wait_strategy=strategy;
+        return this;
     }
 
     @ManagedAttribute(description="Number of spins before a real lock is acquired")
@@ -278,10 +280,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     @ManagedAttribute(description="Sets the number of times a thread spins until a real lock is acquired")
-    public void bundlerNumSpins(int spins) {
+    public TP bundlerNumSpins(int spins) {
         this.bundler_num_spins=spins;
         if(bundler instanceof RingBufferBundler)
             ((RingBufferBundler)bundler).numSpins(spins);
+        return this;
     }
 
     @ManagedAttribute(description="Is the logical_addr_cache reaper task running")
@@ -295,28 +298,31 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-    public void setThreadPoolMinThreads(int size) {
+    public TP setThreadPoolMinThreads(int size) {
         thread_pool_min_threads=size;
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setCorePoolSize(size);
+        return this;
     }
 
     public int getThreadPoolMinThreads() {return thread_pool_min_threads;}
 
 
-    public void setThreadPoolMaxThreads(int size) {
+    public TP setThreadPoolMaxThreads(int size) {
         thread_pool_max_threads=size;
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setMaximumPoolSize(size);
+        return this;
     }
 
     public int getThreadPoolMaxThreads() {return thread_pool_max_threads;}
 
 
-    public void setThreadPoolKeepAliveTime(long time) {
+    public TP setThreadPoolKeepAliveTime(long time) {
         thread_pool_keep_alive_time=time;
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setKeepAliveTime(time, TimeUnit.MILLISECONDS);
+        return this;
     }
 
     public long getThreadPoolKeepAliveTime() {return thread_pool_keep_alive_time;}
@@ -365,15 +371,17 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     @ManagedOperation(description="Clears the cache for messages from different clusters")
-    public void clearDifferentClusterCache() {
+    public TP clearDifferentClusterCache() {
         if(suppress_log_different_cluster != null)
             suppress_log_different_cluster.getCache().clear();
+        return this;
     }
 
     @ManagedOperation(description="Clears the cache for messages from members with different versions")
-    public void clearDifferentVersionCache() {
+    public TP clearDifferentVersionCache() {
         if(suppress_log_different_version != null)
             suppress_log_different_version.getCache().clear();
+        return this;
     }
 
 
@@ -384,11 +392,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedOperation(description="If enabled, the timer will run non-blocking tasks on its own (runner) thread, and " +
       "not submit them to the thread pool. Otherwise, all tasks are submitted to the thread pool. This attribute is " +
       "experimental and may be removed without notice.")
-    public void enableBlockingTimerTasks(boolean flag) {
+    public TP enableBlockingTimerTasks(boolean flag) {
         if(flag != this.timer_handle_non_blocking_tasks) {
             this.timer_handle_non_blocking_tasks=flag;
             timer.setNonBlockingTaskHandling(flag);
         }
+        return this;
     }
 
 
@@ -512,7 +521,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         avg_batch_size.clear();
     }
 
-    public void registerProbeHandler(DiagnosticsHandler.ProbeHandler handler) {
+    public TP registerProbeHandler(DiagnosticsHandler.ProbeHandler handler) {
         if(diag_handler != null)
             diag_handler.registerProbeHandler(handler);
         else {
@@ -520,31 +529,35 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 preregistered_probe_handlers.add(handler);
             }
         }
+        return this;
     }
 
-    public void unregisterProbeHandler(DiagnosticsHandler.ProbeHandler handler) {
+    public TP unregisterProbeHandler(DiagnosticsHandler.ProbeHandler handler) {
         if(diag_handler != null)
             diag_handler.unregisterProbeHandler(handler);
+        return this;
     }
 
     /**
      * Sets a {@link DiagnosticsHandler}. Should be set before the stack is started
      * @param handler
      */
-    public void setDiagnosticsHandler(DiagnosticsHandler handler) {
+    public TP setDiagnosticsHandler(DiagnosticsHandler handler) {
         if(handler != null) {
             if(diag_handler != null)
                 diag_handler.stop();
             diag_handler=handler;
         }
+        return this;
     }
 
     public Bundler getBundler() {return bundler;}
 
     /** Installs a bundler. Needs to be done before the channel is connected */
-    public void setBundler(Bundler bundler) {
+    public TP setBundler(Bundler bundler) {
         if(bundler != null)
             this.bundler=bundler;
+        return this;
     }
 
 
@@ -552,22 +565,24 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return thread_pool;
     }
 
-    public void setThreadPool(Executor thread_pool) {
+    public TP setThreadPool(Executor thread_pool) {
         if(this.thread_pool != null)
             shutdownThreadPool(this.thread_pool);
         this.thread_pool=thread_pool;
         if(timer instanceof TimeScheduler3)
             ((TimeScheduler3)timer).setThreadPool(thread_pool);
+        return this;
     }
 
     public ThreadFactory getThreadPoolThreadFactory() {
         return thread_factory;
     }
 
-    public void setThreadPoolThreadFactory(ThreadFactory factory) {
+    public TP setThreadPoolThreadFactory(ThreadFactory factory) {
         thread_factory=factory;
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setThreadFactory(factory);
+        return this;
     }
 
     public TimeScheduler getTimer() {return timer;}
@@ -577,28 +592,25 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * running timer with tasks in it can wreak havoc !
      * @param timer
      */
-    public void setTimer(TimeScheduler timer) {
-        this.timer=timer;
-    }
+    public TP setTimer(TimeScheduler timer) {this.timer=timer; return this;}
 
     public TimeService getTimeService() {return time_service;}
 
-    public void setTimeService(TimeService ts) {
+    public TP setTimeService(TimeService ts) {
         if(ts == null)
-            return;
+            return this;
         if(time_service != null)
             time_service.stop();
         time_service=ts;
         time_service.start();
+        return this;
     }
 
     public ThreadFactory getThreadFactory() {
         return thread_factory;
     }
 
-    public void setThreadFactory(ThreadFactory factory) {
-        thread_factory=factory;
-    }
+    public TP setThreadFactory(ThreadFactory factory) {thread_factory=factory; return this;}
 
     public SocketFactory getSocketFactory() {
         return socket_factory;
@@ -618,19 +630,18 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public String getThreadNamingPattern() {return thread_naming_pattern;}
 
 
-    public long getNumMessagesSent()                  {return msg_stats.getNumMsgsSent();}
-    public void incrBatchesSent(int delta)            {if(stats) msg_stats.incrNumBatchesSent(delta);}
-    public void incrNumSingleMsgsSent(int d)          {if(stats) msg_stats.incrNumSingleMsgsSent(d);}
-    public InetAddress getBindAddress()               {return bind_addr;}
-    public void setBindAddress(InetAddress bind_addr) {this.bind_addr=bind_addr;}
-    public int getBindPort()                          {return bind_port;}
-    public void setBindPort(int port)                 {this.bind_port=port;}
-    public void setBindToAllInterfaces(boolean flag)  {this.receive_on_all_interfaces=flag;}
-
-    public boolean isReceiveOnAllInterfaces() {return receive_on_all_interfaces;}
+    public long getNumMessagesSent()                     {return msg_stats.getNumMsgsSent();}
+    public TP incrBatchesSent(int delta)                 {if(stats) msg_stats.incrNumBatchesSent(delta); return this;}
+    public TP incrNumSingleMsgsSent(int d)               {if(stats) msg_stats.incrNumSingleMsgsSent(d); return this;}
+    public InetAddress getBindAddress()                  {return bind_addr;}
+    public TP setBindAddress(InetAddress bind_addr)      {this.bind_addr=bind_addr; return this;}
+    public int getBindPort()                             {return bind_port;}
+    public TP setBindPort(int port)                      {this.bind_port=port; return this;}
+    public TP setBindToAllInterfaces(boolean flag)       {this.receive_on_all_interfaces=flag; return this;}
+    public boolean isReceiveOnAllInterfaces()            {return receive_on_all_interfaces;}
     public List<NetworkInterface> getReceiveInterfaces() {return receive_interfaces;}
-    public void setPortRange(int range) {this.port_range=range;}
-    public int getPortRange() {return port_range ;}
+    public TP setPortRange(int range)                    {this.port_range=range; return this;}
+    public int getPortRange()                            {return port_range;}
 
 
 
@@ -697,9 +708,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedAttribute(description="Whether the diagnostics handler is running or not")
     public boolean isDiagnosticsHandlerRunning() {return diag_handler != null && diag_handler.isRunning();}
 
-    public void    setLogDiscardMessages(boolean flag)        {log_discard_msgs=flag;}
+    public TP      setLogDiscardMessages(boolean flag)        {log_discard_msgs=flag; return this;}
     public boolean getLogDiscardMessages()                    {return log_discard_msgs;}
-    public void    setLogDiscardMessagesVersion(boolean flag) {log_discard_msgs_version=flag;}
+    public TP      setLogDiscardMessagesVersion(boolean flag) {log_discard_msgs_version=flag; return this;}
     public boolean getLogDiscardMessagesVersion()             {return log_discard_msgs_version;}
     public boolean getUseIpAddresses()                        {return use_ip_addrs;}
 

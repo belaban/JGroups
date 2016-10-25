@@ -52,7 +52,7 @@ public class RELAY2 extends Protocol {
 
     @Property(description="Whether or not we generate our own addresses in which we use can_become_site_master. " +
       "If this property is false, can_become_site_master is ignored")
-    protected boolean                                  enable_address_tagging=false;
+    protected boolean                                  enable_address_tagging;
 
     @Property(description="Whether or not to relay multicast (dest=null) messages")
     protected boolean                                  relay_multicasts=true;
@@ -63,7 +63,10 @@ public class RELAY2 extends Protocol {
 
     @Property(description="If true, logs a warning if the FORWARD_TO_COORD protocol is not found. This property might " +
       "get deprecated soon")
-    protected boolean                                  warn_when_ftc_missing=false;
+    protected boolean                                  warn_when_ftc_missing;
+
+    @Property(description="Fully qualified name of a class implementing SiteMasterPicker")
+    protected String                                   site_master_picker_impl;
 
 
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
@@ -74,10 +77,12 @@ public class RELAY2 extends Protocol {
     protected RelayConfig.SiteConfig                   site_config;
 
     @ManagedAttribute(description="Whether this member is a site master")
-    protected volatile boolean                         is_site_master=false;
+    protected volatile boolean                         is_site_master;
 
     // A list of site masters in this (local) site
     protected volatile List<Address>                   site_masters;
+
+    protected SiteMasterPicker                         site_master_picker;
 
     protected volatile Relayer                         relayer;
 
@@ -93,7 +98,7 @@ public class RELAY2 extends Protocol {
 
     @Property(description="If true, a site master forwards messages received from other sites to randomly chosen " +
       "members of the local site for load balancing, reducing work for itself")
-    protected boolean                                  can_forward_local_cluster=false;
+    protected boolean                                  can_forward_local_cluster;
 
     // protocol IDs above RELAY2
     protected short[]                                  prots_above;
@@ -125,24 +130,25 @@ public class RELAY2 extends Protocol {
 
 
     // Fluent configuration
-    public RELAY2 site(String site_name)             {site=site_name;              return this;}
-    public RELAY2 config(String cfg)                 {config=cfg;                  return this;}
-    public RELAY2 canBecomeSiteMaster(boolean flag)  {can_become_site_master=flag; return this;}
-    public RELAY2 enableAddressTagging(boolean flag) {enable_address_tagging=flag; return this;}
-    public RELAY2 relayMulticasts(boolean flag)      {relay_multicasts=flag;       return this;}
-    public RELAY2 asyncRelayCreation(boolean flag)   {async_relay_creation=flag;   return this;}
+    public RELAY2 site(String site_name)               {site=site_name;              return this;}
+    public RELAY2 config(String cfg)                   {config=cfg;                  return this;}
+    public RELAY2 canBecomeSiteMaster(boolean flag)    {can_become_site_master=flag; return this;}
+    public RELAY2 enableAddressTagging(boolean flag)   {enable_address_tagging=flag; return this;}
+    public RELAY2 relayMulticasts(boolean flag)        {relay_multicasts=flag;       return this;}
+    public RELAY2 asyncRelayCreation(boolean flag)     {async_relay_creation=flag;   return this;}
+    public RELAY2 siteMasterPicker(SiteMasterPicker s) {if(s != null) this.site_master_picker=s; return this;}
 
-    public String  site()                            {return site;}
-    public List<String> siteNames()                  {return getSites();}
-    public String  config()                          {return config;}
-    public boolean canBecomeSiteMaster()             {return can_become_site_master;}
-    public boolean enableAddressTagging()            {return enable_address_tagging;}
-    public boolean relayMulticasts()                 {return relay_multicasts;}
-    public boolean asyncRelayCreation()              {return async_relay_creation;}
-    public Address getLocalAddress()                 {return local_addr;}
-    public TimeScheduler getTimer()                  {return timer;}
-    public void incrementRelayed()                   {relayed.incrementAndGet();}
-    public void addToRelayedTime(long delta)         {relayed_time.addAndGet(delta);}
+    public String  site()                              {return site;}
+    public List<String> siteNames()                    {return getSites();}
+    public String  config()                            {return config;}
+    public boolean canBecomeSiteMaster()               {return can_become_site_master;}
+    public boolean enableAddressTagging()              {return enable_address_tagging;}
+    public boolean relayMulticasts()                   {return relay_multicasts;}
+    public boolean asyncRelayCreation()                {return async_relay_creation;}
+    public Address getLocalAddress()                   {return local_addr;}
+    public TimeScheduler getTimer()                    {return timer;}
+    public void incrementRelayed()                     {relayed.incrementAndGet();}
+    public void addToRelayedTime(long delta)           {relayed_time.addAndGet(delta);}
 
 
     public RouteStatusListener getRouteStatusListener()       {return route_status_listener;}
@@ -230,6 +236,18 @@ public class RELAY2 extends Protocol {
     public void init() throws Exception {
         super.init();
         configure();
+
+        if(site_master_picker == null) {
+            site_master_picker=new SiteMasterPicker() {
+                public Address pickSiteMaster(List<Address> site_masters, Address original_sender) {
+                    return Util.pickRandomElement(site_masters);
+                }
+
+                public Route pickRoute(String site, List<Route> routes, Address original_sender) {
+                    return Util.pickRandomElement(routes);
+                }
+            };
+        }
     }
 
     public void configure() throws Exception {
@@ -244,6 +262,12 @@ public class RELAY2 extends Protocol {
             log.warn("max_size_masters was " + max_site_masters + ", changed to 1");
             max_site_masters=1;
         }
+
+        if(site_master_picker_impl != null) {
+            Class<SiteMasterPicker> clazz=Util.loadClass(site_master_picker_impl, (Class)null);
+            this.site_master_picker=clazz.newInstance();
+        }
+
         if(config != null)
             parseSiteConfiguration(sites);
 
@@ -316,7 +340,7 @@ public class RELAY2 extends Protocol {
      */
     public JChannel getBridge(String site_name) {
         Relayer tmp=relayer;
-        Relayer.Route route=tmp != null? tmp.getRoute(site_name): null;
+        Route route=tmp != null? tmp.getRoute(site_name): null;
         return route != null? route.bridge() : null;
     }
 
@@ -325,7 +349,7 @@ public class RELAY2 extends Protocol {
      * @param site_name The site name, e.g. "SFO"
      * @return The route to the given site, or null if no route was found or we're not the coordinator
      */
-    public Relayer.Route getRoute(String site_name) {
+    public Route getRoute(String site_name) {
         Relayer tmp=relayer;
         return tmp != null? tmp.getRoute(site_name): null;
     }
@@ -373,10 +397,10 @@ public class RELAY2 extends Protocol {
             return null;
         }
 
-        // forward to the coordinator unless we're the coord (then route the message directly)
+        // forward to the site master unless we're the site master (then route the message directly)
         if(!is_site_master) {
             long start=stats? System.nanoTime() : 0;
-            Address site_master=pickSiteMaster();
+            Address site_master=pickSiteMaster(sender);
             if(site_master == null)
                 throw new IllegalStateException("site master is null");
             forwardTo(site_master, target, sender, msg, max_site_masters == 1);
@@ -527,24 +551,23 @@ public class RELAY2 extends Protocol {
             return;
         }
 
-        Relayer.Route route=tmp.getRoute(target_site);
+        Route route=tmp.getRoute(target_site, sender);
         if(route == null) {
             log.error(local_addr + ": no route to " + target_site + ": dropping message");
             sendSiteUnreachableTo(sender, target_site);
         }
-        else {
+        else
             route.send(dest,sender,msg);
-        }
     }
 
 
     /** Sends the message via all bridges excluding the excluded_sites bridges */
     protected void sendToBridges(Address sender, final Message msg, String ... excluded_sites) {
         Relayer tmp=relayer;
-        List<Relayer.Route> routes=tmp != null? tmp.getRoutes(excluded_sites) : null;
+        List<Route> routes=tmp != null? tmp.getRoutes(excluded_sites) : null;
         if(routes == null)
             return;
-        for(Relayer.Route route: routes) {
+        for(Route route: routes) {
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": relaying multicast message from " + sender + " via route " + route);
             try {
@@ -589,7 +612,7 @@ public class RELAY2 extends Protocol {
         boolean send_to_coord=false;
         if(dest instanceof SiteUUID) {
             if(dest instanceof SiteMaster) {
-                local_dest=pickSiteMaster();
+                local_dest=pickSiteMaster(sender);
                 if(local_dest == null)
                     throw new IllegalStateException("site master was null");
                 send_to_coord=true;
@@ -709,9 +732,12 @@ public class RELAY2 extends Protocol {
         return retval;
     }
 
-    /** Returns a random site master from site_masters */
-    protected Address pickSiteMaster() {
-        return Util.pickRandomElement(site_masters);
+    /** Returns a site master from site_masters */
+    protected Address pickSiteMaster(Address sender) {
+        List<Address> masters=site_masters;
+        if(masters.size() == 1)
+            return masters.get(0);
+        return site_master_picker.pickSiteMaster(masters, sender);
     }
 
 
