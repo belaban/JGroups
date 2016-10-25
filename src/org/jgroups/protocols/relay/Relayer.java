@@ -114,15 +114,16 @@ public class Relayer {
     }
 
 
+    protected Route getRoute(String site) { return getRoute(site, null);}
 
-    /**
-     * Grabs a random route
-     * @param site
-     * @return
-     */
-    protected synchronized Route getRoute(String site) {
+    protected synchronized Route getRoute(String site, Address sender) {
         List<Route> list=routes.get(site);
-        return list == null? null : Util.pickRandomElement(list);
+        if(list == null)
+            return null;
+        if(list.size() == 1)
+            return list.get(0);
+
+        return relay.site_master_picker.pickRoute(site, list, sender);
     }
 
     protected List<String> getSiteNames() {
@@ -165,62 +166,6 @@ public class Relayer {
 
 
 
-    /**
-     * Includes information about the site master of the route and the channel to be used
-     */
-    public class Route implements Comparable<Route> {
-        /** SiteUUID: address of the site master */
-        protected final Address   site_master;
-        protected final JChannel  bridge;
-
-        public Route(Address site_master, JChannel bridge) {
-            this.site_master=site_master;
-            this.bridge=bridge;
-        }
-
-        public JChannel           bridge()                               {return bridge;}
-        public Address            siteMaster()                           {return site_master;}
-
-        public void send(Address final_destination, Address original_sender, final Message msg) {
-            if(log.isTraceEnabled())
-                log.trace("routing message to " + final_destination + " via " + site_master);
-            long start=stats? System.nanoTime() : 0;
-            try {
-                Message copy=createMessage(site_master, final_destination, original_sender, msg);
-                bridge.send(copy);
-                if(stats) {
-                    relay.addToRelayedTime(System.nanoTime() - start);
-                    relay.incrementRelayed();
-                }
-            }
-            catch(Exception e) {
-                log.error(Util.getMessage("FailureRelayingMessage"), e);
-            }
-        }
-
-        public int compareTo(Route o) {
-            return site_master.compareTo(o.siteMaster());
-        }
-
-        public boolean equals(Object obj) {
-            return compareTo((Route)obj) == 0;
-        }
-
-        public int hashCode() {
-            return site_master.hashCode();
-        }
-
-        public String toString() {
-            return (site_master != null? site_master.toString() : "");
-        }
-
-        protected Message createMessage(Address target, Address final_destination, Address original_sender, final Message msg) {
-            Message copy=relay.copy(msg).dest(target).src(null);
-            RELAY2.Relay2Header hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, final_destination, original_sender);
-            copy.putHeader(relay.getId(), hdr);
-            return copy;
-        }
-    }
 
 
     protected class Bridge extends ReceiverAdapter {
@@ -247,7 +192,7 @@ public class Relayer {
         }
 
         public void receive(Message msg) {
-            RELAY2.Relay2Header hdr=(RELAY2.Relay2Header)msg.getHeader(relay.getId());
+            RELAY2.Relay2Header hdr=msg.getHeader(relay.getId());
             if(hdr == null) {
                 log.warn("received a message without a relay header; discarding it");
                 return;
@@ -290,7 +235,8 @@ public class Relayer {
                 }
 
                 // Add routes that aren't yet in the routing table:
-                val.stream().filter(addr -> !contains(list, addr)).forEach(addr -> list.add(new Route(addr, channel)));
+                val.stream().filter(addr -> !contains(list, addr))
+                  .forEach(addr -> list.add(new Route(addr, channel, relay, log).stats(stats)));
 
                 if(list.isEmpty()) {
                     routes.remove(key);

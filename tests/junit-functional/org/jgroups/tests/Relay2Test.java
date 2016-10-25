@@ -5,13 +5,16 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.relay.RELAY2;
-import org.jgroups.protocols.relay.Relayer;
+import org.jgroups.protocols.relay.Route;
+import org.jgroups.protocols.relay.SiteMaster;
+import org.jgroups.protocols.relay.SiteMasterPicker;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,10 +29,16 @@ public class Relay2Test {
     protected JChannel a, b, c;  // members in site "lon"
     protected JChannel x, y, z;  // members in site "sfo
 
-    protected static final String BRIDGE_CLUSTER = "global";
-    protected static final String LON_CLUSTER    = "lon-cluster";
-    protected static final String SFO_CLUSTER    = "sfo-cluster";
-    protected static final String SFO            = "sfo", LON="lon";
+    protected static final String      BRIDGE_CLUSTER = "global";
+    protected static final String      LON_CLUSTER    = "lon-cluster";
+    protected static final String      SFO_CLUSTER    = "sfo-cluster";
+    protected static final String      SFO            = "sfo", LON="lon";
+    protected static final InetAddress LOOPBACK;
+
+    static {
+        LOOPBACK=InetAddress.getLoopbackAddress();
+    }
+
 
     @AfterMethod protected void destroy() {Util.close(z,y,x,c,b,a);}
 
@@ -37,12 +46,12 @@ public class Relay2Test {
      * Test that RELAY2 can be added to an already connected channel.
      */
     public void testAddRelay2ToAnAlreadyConnectedChannel() throws Exception {
-        // 1- Create and connect a channel.
+        // Create and connect a channel.
         a=new JChannel();
         a.connect(SFO_CLUSTER);
         System.out.println("Channel " + a.getName() + " is connected. View: " + a.getView());
 
-        // 3- Add RELAY2 protocol to the already connected channel.
+        // Add RELAY2 protocol to the already connected channel.
         RELAY2 relayToInject = createRELAY2(SFO);
         // Util.setField(Util.getField(relayToInject.getClass(), "local_addr"), relayToInject, a.getAddress());
 
@@ -52,7 +61,7 @@ public class Relay2Test {
         relayToInject.configure();
         relayToInject.handleView(a.getView());
 
-        // 4- Check RELAY2 presence.
+        // Check for RELAY2 presence
         RELAY2 ar=a.getProtocolStack().findProtocol(RELAY2.class);
         assert ar != null;
 
@@ -60,7 +69,7 @@ public class Relay2Test {
 
         assert !ar.printRoutes().equals("n/a (not site master)") : "This member should be site master";
 
-        Relayer.Route route=getRoute(a, SFO);
+        Route route=getRoute(a, SFO);
         System.out.println("Route at sfo to sfo: " + route);
         assert route != null;
     }
@@ -98,7 +107,7 @@ public class Relay2Test {
         assert a_bridge.getView().size() == 2 : "bridge view is " + a_bridge.getView();
         assert x_bridge.getView().size() == 2 : "bridge view is " + x_bridge.getView();
 
-        Relayer.Route route=getRoute(x, LON);
+        Route route=getRoute(x, LON);
         System.out.println("Route at sfo to lon: " + route);
         assert route != null;
 
@@ -239,7 +248,7 @@ public class Relay2Test {
         System.out.println("Reconnecting X, waiting for 5 seconds to see if the route is marked as DOWN");
         x.connect(SFO_CLUSTER);
         Util.sleep(5000);
-        Relayer.Route route=getRoute(a, SFO);
+        Route route=getRoute(a, SFO);
         assert route != null : "route is " + route + " (expected to be UP)";
 
         route=getRoute(x, LON);
@@ -247,9 +256,74 @@ public class Relay2Test {
     }
 
 
+    /**
+     * Cluster A,B,C in LON and X,Y,Z in SFO. A, B, X and Y are site masters (max_site_masters: 2).
+     * Verifies that messages sent by C in the LON site are received in the correct order by all members of the SFO site
+     * despite using multiple site masters. JIRA: https://issues.jboss.org/browse/JGRP-2112
+     */
+    public void testSenderOrderWithMultipleSiteMasters() throws Exception {
+        MyReceiver rx=new MyReceiver(), ry=new MyReceiver(), rz=new MyReceiver();
+        final int NUM=512;
+        final String sm_picker_impl=SiteMasterPickerImpl.class.getName();
+        a=createNode(LON, "A", LON_CLUSTER, 2, sm_picker_impl, null);
+        b=createNode(LON, "B", LON_CLUSTER, 2, sm_picker_impl, null);
+        c=createNode(LON, "C", LON_CLUSTER, 2, sm_picker_impl, null);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b,c);
+
+        x=createNode(SFO, "X", SFO_CLUSTER, 2, sm_picker_impl, rx);
+        y=createNode(SFO, "Y", SFO_CLUSTER, 2, sm_picker_impl, ry);
+        z=createNode(SFO, "Z", SFO_CLUSTER, 2, sm_picker_impl, rz);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, x,y,z);
+
+        waitForBridgeView(4, 10000, 1000, a,b,x,y);
+
+        // C in LON sends messages to the site master of SFO (via either SM A or B); everyone in SFO (x,y,z)
+        // must receive them in correct order
+        SiteMaster target_sm=new SiteMaster(SFO);
+        System.out.printf("%s: sending %d messages to %s:\n", c.getAddress(), NUM, target_sm);
+        for(int i=1; i <= NUM; i++) {
+            Message msg=new Message(target_sm, i); // the seqno is in the payload of the message
+            c.send(msg);
+        }
+
+        boolean running=true;
+        for(int i=0; running && i < 10; i++) {
+            for(MyReceiver r: Arrays.asList(rx,ry,rz)) {
+                if(r.getList().size() >= NUM) {
+                    running=false;
+                    break;
+                }
+            }
+            Util.sleep(1000);
+        }
+
+        System.out.printf("X: size=%d\nY: size=%d\nZ: size=%d\n", rx.getList().size(), ry.getList().size(), rz.getList().size());
+        assert rx.getList().size() == NUM || ry.getList().size() == NUM;
+        assert rz.getList().isEmpty();
+    }
+
+    protected static class SiteMasterPickerImpl implements SiteMasterPicker {
+
+        public SiteMasterPickerImpl() {
+        }
+
+        public Address pickSiteMaster(List<Address> site_masters, Address original_sender) {
+            return site_masters.get(0);
+        }
+
+        public Route pickRoute(String site, List<Route> routes, Address original_sender) {
+            return routes.get(0);
+        }
+    }
+
 
     protected JChannel createNode(String site_name, String node_name, String cluster_name,
-                                  Receiver receiver) throws Exception {
+                                      Receiver receiver) throws Exception {
+        return createNode(site_name, node_name, cluster_name, 1, null, receiver);
+    }
+
+    protected JChannel createNode(String site_name, String node_name, String cluster_name, int num_site_masters,
+                                  String sm_picker, Receiver receiver) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
                                  new SHARED_LOOPBACK_PING(),
                                  new MERGE3().setValue("max_interval", 3000).setValue("min_interval", 1000),
@@ -257,7 +331,9 @@ public class Relay2Test {
                                  new UNICAST3(),
                                  new GMS().setValue("print_local_addr", false),
                                  new FORWARD_TO_COORD(),
-                                 createRELAY2(site_name)).name(node_name);
+                                 createRELAY2(site_name)
+                                   .setValue("max_site_masters", num_site_masters)
+                                   .setValue("site_master_picker_impl", sm_picker)).name(node_name);
         if(receiver != null)
             ch.setReceiver(receiver);
         if(cluster_name != null)
@@ -280,11 +356,11 @@ public class Relay2Test {
     }
 
     protected static Protocol[] createBridgeStack() {
-        return new Protocol[]{
-          new SHARED_LOOPBACK(),
-          new SHARED_LOOPBACK_PING(),
+        return new Protocol[] {
+          new TCP().setBindAddress(LOOPBACK),
+          new MPING(),
           new MERGE3().setValue("max_interval", 3000).setValue("min_interval", 1000),
-          new NAKACK2(),
+          new NAKACK2().setUseMcastXmit(false),
           new UNICAST3(),
           new GMS().setValue("print_local_addr", false)
         };
@@ -339,7 +415,7 @@ public class Relay2Test {
         RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
         if(relay == null)
             throw new IllegalArgumentException("Protocol RELAY2 not found");
-        Relayer.Route route=null;
+        Route route=null;
         long deadline=System.currentTimeMillis() + timeout;
         while(System.currentTimeMillis() < deadline) {
             route=relay.getRoute(site_name);
@@ -350,21 +426,21 @@ public class Relay2Test {
         assert (route != null && present) || (route == null && !present);
     }
 
-    protected Relayer.Route getRoute(JChannel ch, String site_name) {
+    protected Route getRoute(JChannel ch, String site_name) {
         RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
         return relay.getRoute(site_name);
     }
 
 
     protected static class MyReceiver extends ReceiverAdapter {
-        protected final List<Integer> list=new ArrayList<>(5);
+        protected final List<Integer> list=new ArrayList<>(512);
 
         public List<Integer> getList()            {return list;}
         public void          clear()              {list.clear();}
 
-        public void          receive(Message msg) {
-            list.add((Integer)msg.getObject());
-            System.out.println("<-- " + msg.getObject());
+        public void receive(Message msg) {
+            list.add(msg.getObject());
+            System.out.printf("<-- %s from %s\n", msg.getObject(), msg.src());
         }
     }
 
