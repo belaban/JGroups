@@ -9,7 +9,7 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.relay.RELAY2;
-import org.jgroups.protocols.relay.Relayer;
+import org.jgroups.protocols.relay.Route;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.Protocol;
@@ -113,7 +113,7 @@ public class Relay2RpcDispatcherTest {
         assert a_bridge.getView().size() == 2 : "bridge view is " + a_bridge.getView();
         assert x_bridge.getView().size() == 2 : "bridge view is " + x_bridge.getView();
 
-        Relayer.Route route=getRoute(x, LON);
+        Route route=getRoute(x, LON);
         System.out.println("Route at sfo to lon: " + route);
         assert route != null;
 
@@ -264,7 +264,7 @@ public class Relay2RpcDispatcherTest {
     }
 
 
-    protected Relayer.Route getRoute(JChannel ch, String site_name) {
+    protected Route getRoute(JChannel ch, String site_name) {
         RELAY2 relay=(RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class);
         return relay.getRoute(site_name);
     }

@@ -949,7 +949,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void incrBatchesSent(int delta)            {num_batches_sent+=delta;}
     public void incrSingleMsgsInsteadOfBatches()      {num_single_msgs_sent_instead_of_batch++;}
     public InetAddress getBindAddress()               {return bind_addr;}
-    public void setBindAddress(InetAddress bind_addr) {this.bind_addr=bind_addr;}
+    public TP  setBindAddress(InetAddress bind_addr) {this.bind_addr=bind_addr; return this;}
     public int getBindPort()                          {return bind_port;}
     public void setBindPort(int port)                 {this.bind_port=port;}
     public void setBindToAllInterfaces(boolean flag)  {this.receive_on_all_interfaces=flag;}
