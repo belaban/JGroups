@@ -118,7 +118,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>[1.7,)</version>
-            <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
 
