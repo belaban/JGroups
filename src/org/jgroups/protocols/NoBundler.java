@@ -26,7 +26,7 @@ public class NoBundler implements Bundler {
     // protected final Profiler                           send=new Profiler("nb.send", TimeUnit.MICROSECONDS);
 
 
-    public int       size()                {return 0;}
+    public int       size()                {return buf_pool.size();}
     public int       initialBufSize()      {return initial_buf_size;}
     public NoBundler initialBufSize(int s) {this.initial_buf_size=s; return this;}
     public int       poolSize()            {return pool_size;}

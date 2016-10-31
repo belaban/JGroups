@@ -1069,6 +1069,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             case "no-bundler":
             case "nb":
                 return new NoBundler().poolSize(no_bundler_pool_size).initialBufSize(no_bundler_initial_buf_size);
+            case "no-bundler-copy":
+            case "nbc":
+                return new NoBundlerCopy();
         }
 
         try {
