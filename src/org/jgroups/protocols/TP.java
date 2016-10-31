@@ -1914,7 +1914,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         boolean bypass_bundling=msg.isFlagSet(Message.Flag.DONT_BUNDLE) &&
           (!ignore_dont_bundle || bundler instanceof SenderSendsWithTimerBundler || dest instanceof PhysicalAddress);
         if(!bypass_bundling) {
-            bundler.send(msg);
+            Bundler tmp_bundler=bundler;
+            if(tmp_bundler != null)
+                tmp_bundler.send(msg);
             return;
         }
 
