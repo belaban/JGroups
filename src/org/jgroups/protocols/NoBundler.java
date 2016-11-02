@@ -63,6 +63,8 @@ public class NoBundler implements Bundler {
             sendSingleMessage(msg, out);
         }
         finally {
+            // todo: this is incorrect! A buffer might still be used when transport.doSend() returned, e.g.
+            // in a retransmission protocol, or in the bundler
             if(out != null)
                 buf_pool.offer(out);
         }
