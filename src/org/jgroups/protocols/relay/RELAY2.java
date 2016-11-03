@@ -763,7 +763,7 @@ public class RELAY2 extends Protocol {
         public short getMagicId() {return 80;}
         public Supplier<? extends Header> create() {return Relay2Header::new;}
 
-        public int size() {
+        public int serializedSize() {
             return Global.BYTE_SIZE + Util.size(final_dest) + Util.size(original_sender);
         }
 

@@ -41,7 +41,7 @@ public class AuthHeader extends Header {
         this.token=readAuthToken(in);
     }
 
-    public int size() {
+    public int serializedSize() {
         return sizeOf(token);
     }
 

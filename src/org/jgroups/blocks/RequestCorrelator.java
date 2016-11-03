@@ -563,7 +563,7 @@ public class RequestCorrelator {
             corrId=in.readShort();
         }
 
-        public int size() {
+        public int serializedSize() {
             return Global.BYTE_SIZE  // type
               + Bits.size(req_id)    // req_id
               + Global.SHORT_SIZE;   // corrId
@@ -598,8 +598,8 @@ public class RequestCorrelator {
             exclusion_list=Util.readAddresses(in);
         }
 
-        public int size() {
-            return (int)(super.size() + Util.size(exclusion_list));
+        public int serializedSize() {
+            return (int)(super.serializedSize() + Util.size(exclusion_list));
         }
 
         public String toString() {

@@ -370,7 +370,7 @@ public class FORK extends Protocol {
             this.fork_channel_id=fork_channel_id;
         }
 
-        public int size() {return Util.size(fork_stack_id) + Util.size(fork_channel_id);}
+        public int serializedSize() {return Util.size(fork_stack_id) + Util.size(fork_channel_id);}
 
         public void writeTo(DataOutput out) throws Exception {
             Bits.writeString(fork_stack_id,out);

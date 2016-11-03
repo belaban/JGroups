@@ -43,7 +43,7 @@ public class FragHeader extends Header {
         Bits.writeInt(num_frags, out);
     }
 
-    public int size() {
+    public int serializedSize() {
         return Bits.size(id) + Bits.size(frag_id) + Bits.size(num_frags);
     }
 

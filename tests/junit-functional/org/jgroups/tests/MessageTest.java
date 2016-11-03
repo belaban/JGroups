@@ -496,7 +496,7 @@ public class MessageTest {
             return num;
         }
 
-        public int size() {
+        public int serializedSize() {
             return 0;
         }
 

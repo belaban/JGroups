@@ -789,7 +789,7 @@ public class STABLE extends Protocol {
             return String.format("[%s] view-id= %s", type2String(type), view_id);
         }
 
-        public int size() {
+        public int serializedSize() {
             return Global.BYTE_SIZE // type
               + Util.size(view_id);
         }

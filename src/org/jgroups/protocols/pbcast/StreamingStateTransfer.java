@@ -582,7 +582,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
             bind_addr=Util.readStreamable(IpAddress.class, in);
         }
 
-        public int size() {
+        public int serializedSize() {
             int retval=Global.BYTE_SIZE; // type
             retval+=Global.BYTE_SIZE;    // presence byte for my_digest
             if(digest != null)

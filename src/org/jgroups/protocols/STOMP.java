@@ -648,7 +648,7 @@ public class STOMP extends Protocol implements Runnable {
 
 
 
-        public int size() {
+        public int serializedSize() {
             int retval=Global.INT_SIZE *2; // type + size of hashmap
             for(Map.Entry<String,String> entry: headers.entrySet()) {
                 retval+=entry.getKey().length() +2;

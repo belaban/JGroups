@@ -1421,7 +1421,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             useFlushIfPresent=(flags & USE_FLUSH) == USE_FLUSH;
         }
 
-        public int size() {
+        public int serializedSize() {
             int retval=Global.BYTE_SIZE  // type
               + Global.SHORT_SIZE       // flags
               + Util.size(mbr);

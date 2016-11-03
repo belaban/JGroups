@@ -205,7 +205,7 @@ public class FORWARD_TO_COORD extends Protocol {
         public short getMagicId() {return 81;}
         public long getId()   {return id;}
         public byte getType() {return type;}
-        public int  size()    {return Global.BYTE_SIZE + Bits.size(id);}
+        public int serializedSize()    {return Global.BYTE_SIZE + Bits.size(id);}
 
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);

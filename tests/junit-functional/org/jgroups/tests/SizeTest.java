@@ -821,13 +821,13 @@ public class SizeTest {
     }
 
     private static void _testSize(Header hdr) throws Exception {
-        long size=hdr.size();
+        long size=hdr.serializedSize();
         byte[] serialized_form=Util.streamableToByteBuffer(hdr);
         System.out.println(hdr.getClass().getSimpleName() + ": size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
 
         Header hdr2=Util.streamableFromByteBuffer(hdr.getClass(), serialized_form);
-        assert hdr2.size() == hdr.size();
+        assert hdr2.serializedSize() == hdr.serializedSize();
     }
 
 
@@ -874,7 +874,7 @@ public class SizeTest {
     }
 
     private static void _testSize(MERGE3.MergeHeader hdr) throws Exception {
-        long size=hdr.size();
+        long size=hdr.serializedSize();
         byte[] serialized_form=Util.streamableToByteBuffer(hdr);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);

@@ -1402,7 +1402,7 @@ abstract public class Locking extends Protocol {
             return LockingHeader::new;
         }
 
-        public int size() {
+        public int serializedSize() {
             return 0;
         }
 

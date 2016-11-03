@@ -158,7 +158,7 @@ public class HeadersTest {
         public void readFrom(DataInput in) throws Exception {
         }
 
-        public int size() {
+        public int serializedSize() {
             return 0;
         }
     }

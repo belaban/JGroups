@@ -452,7 +452,7 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
             my_digest=Util.readStreamable(Digest.class, in);
         }
 
-        public int size() {
+        public int serializedSize() {
             int retval=Global.BYTE_SIZE; // type
             retval+=Global.BYTE_SIZE;    // presence byte for my_digest
             if(my_digest != null)

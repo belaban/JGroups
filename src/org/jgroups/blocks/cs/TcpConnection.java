@@ -246,7 +246,7 @@ public class TcpConnection extends Connection {
     protected class Receiver implements Runnable {
         protected final Thread     recv;
         protected volatile boolean receiving=true;
-        protected volatile byte[]  buffer;
+        protected byte[]           buffer; // no need to be volatile, only accessed by this thread
 
         public Receiver(ThreadFactory f) {
             recv=f.newThread(this,"Connection.Receiver [" + getSockAddress() + "]");

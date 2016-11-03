@@ -474,7 +474,7 @@ public class SEQUENCER2 extends Protocol {
         }
 
         // type + seqno + localSeqno + flush_ack
-        public int size() {
+        public int serializedSize() {
             return Global.BYTE_SIZE + Bits.size(seqno) + Global.SHORT_SIZE;
         }
     }

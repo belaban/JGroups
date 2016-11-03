@@ -413,7 +413,7 @@ public class FD extends Protocol {
         }
 
 
-        public int size() {
+        public int serializedSize() {
             int retval=Global.BYTE_SIZE; // type
             retval+=Util.size(mbrs);
             retval+=Util.size(from);

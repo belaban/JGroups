@@ -752,7 +752,7 @@ public class MPerf extends ReceiverAdapter {
             return MPerfHeader::new;
         }
 
-        public int size() {
+        public int serializedSize() {
             int retval=Global.BYTE_SIZE;
             if(type == DATA)
                 retval+=Bits.size(seqno);

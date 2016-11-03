@@ -105,7 +105,7 @@ public class PERF extends Protocol {
             return PerfHeader::new;
         }
 
-        public int size() {
+        public int serializedSize() {
             return Global.LONG_SIZE;
         }
 

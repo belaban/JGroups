@@ -1014,7 +1014,7 @@ public class FLUSH extends Protocol {
         public long getViewID()                           {return viewID;}
 
         @Override
-        public int size() {
+        public int serializedSize() {
             return Global.BYTE_SIZE + Global.LONG_SIZE; // type and viewId
         }
 

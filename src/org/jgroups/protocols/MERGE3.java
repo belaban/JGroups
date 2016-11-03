@@ -555,7 +555,7 @@ public class MERGE3 extends Protocol {
         public short getMagicId() {return 75;}
         public Supplier<? extends Header> create() {return MergeHeader::new;}
 
-        public int size() {
+        public int serializedSize() {
             int retval=Global.BYTE_SIZE; // for the type
             retval+=Util.size(view_id);
             retval+=Global.BYTE_SIZE;     // presence byte for logical_name

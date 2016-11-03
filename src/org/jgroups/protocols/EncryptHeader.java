@@ -55,7 +55,7 @@ public class EncryptHeader extends Header {
         return String.format("[%s version=%s]", typeToString(type), (version != null? version.length + " bytes" : "n/a"));
     }
 
-    public int size() {return Global.BYTE_SIZE + Util.size(version) + Util.size(signature) /*+ Util.size(payload) */;}
+    public int serializedSize() {return Global.BYTE_SIZE + Util.size(version) + Util.size(signature) /*+ Util.size(payload) */;}
 
     protected static String typeToString(byte type) {
         switch(type) {

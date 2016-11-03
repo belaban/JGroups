@@ -654,7 +654,7 @@ public class SEQUENCER extends Protocol {
             flush_ack=in.readBoolean();
         }
 
-        public int size() {
+        public int serializedSize() {
             return Global.BYTE_SIZE + Bits.size(seqno) + Global.BYTE_SIZE; // type + seqno + flush_ack
         }
 

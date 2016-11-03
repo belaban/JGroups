@@ -31,7 +31,7 @@ public class FcHeader extends Header {
 
     public short getMagicId() {return 59;}
 
-    public int size() {
+    public int serializedSize() {
         return Global.BYTE_SIZE;
     }
 

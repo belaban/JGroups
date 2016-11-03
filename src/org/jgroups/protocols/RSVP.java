@@ -384,7 +384,7 @@ public class RSVP extends Protocol {
         public short getMagicId() {return 76;}
         public Supplier<? extends Header> create() {return RsvpHeader::new;}
 
-        public int size() {
+        public int serializedSize() {
             return Global.BYTE_SIZE + Global.SHORT_SIZE;
         }
 

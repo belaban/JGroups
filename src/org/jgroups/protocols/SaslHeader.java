@@ -70,7 +70,7 @@ public class SaslHeader extends Header {
     }
 
     @Override
-    public int size() {
+    public int serializedSize() {
         return Util.size(payload);
     }
 

@@ -190,7 +190,7 @@ public class NAMING extends Protocol {
             return String.format("%s addr=%s name=%s", type, addr, name);
         }
 
-        public int size() {
+        public int serializedSize() {
             return Global.SHORT_SIZE + Util.size(addr) + Util.size(name);
         }
     }

@@ -35,7 +35,7 @@ public class PingHeader extends Header {
 
     public Supplier<? extends Header> create() {return PingHeader::new;}
 
-    public int size() {
+    public int serializedSize() {
         int retval=Global.BYTE_SIZE *3; // type, cluster_name presence and initial_discovery
         if(cluster_name != null)
             retval += cluster_name.length() +2;

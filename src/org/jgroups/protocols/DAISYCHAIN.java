@@ -194,7 +194,7 @@ public class DAISYCHAIN extends Protocol {
 
         public Supplier<? extends Header> create() {return DaisyHeader::new;}
 
-        public int size() {
+        public int serializedSize() {
             return Global.SHORT_SIZE;
         }
 

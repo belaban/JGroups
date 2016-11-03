@@ -153,7 +153,7 @@ public final class Headers {
             if(hdr == null)
                 break;
             retval+=Global.SHORT_SIZE *2;    // for protocol ID and magic number
-            retval+=hdr.size();
+            retval+=hdr.serializedSize();
         }
         return retval;
     }

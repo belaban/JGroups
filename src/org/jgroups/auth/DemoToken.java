@@ -186,7 +186,7 @@ public class DemoToken extends AuthToken implements AUTH.UpHandler {
             }
         }
 
-        public int size() {
+        public int serializedSize() {
             int retval=Global.BYTE_SIZE; // type
             switch(type) {
                 case CHALLENGE:

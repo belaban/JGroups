@@ -1304,7 +1304,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             }
         }
 
-        public final int size() {
+        public final int serializedSize() {
             int retval=Global.BYTE_SIZE;     // type
             switch(type) {
                 case DATA:

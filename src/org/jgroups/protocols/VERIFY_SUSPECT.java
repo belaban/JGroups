@@ -381,7 +381,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             from=Util.readAddress(in);
         }
 
-        public int size() {
+        public int serializedSize() {
             return Global.SHORT_SIZE + Util.size(from);
         }
     }

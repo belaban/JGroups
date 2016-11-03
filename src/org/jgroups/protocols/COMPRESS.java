@@ -195,7 +195,7 @@ public class COMPRESS extends Protocol {
             return CompressHeader::new;
         }
 
-        public int size() {
+        public int serializedSize() {
             return Global.INT_SIZE;
         }
 

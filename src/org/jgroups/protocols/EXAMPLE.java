@@ -73,7 +73,7 @@ public class EXAMPLE extends Protocol {
 
         public Supplier<? extends Header> create() {return ExampleHeader::new;}
         public short getMagicId() {return 21000;}
-        public int size() {
+        public int serializedSize() {
             return 0; // return serialized size of all variables sent across the wire
         }
 

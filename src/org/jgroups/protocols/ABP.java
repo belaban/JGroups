@@ -183,7 +183,7 @@ public class ABP extends Protocol {
         public Supplier<? extends Header> create() {return ABPHeader::new;}
 
         @Override
-        public int size() {
+        public int serializedSize() {
             return Global.BYTE_SIZE *2;
         }
 

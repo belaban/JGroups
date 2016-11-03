@@ -631,7 +631,7 @@ public class RELAY extends Protocol {
             return RelayHeader::new;
         }
 
-        public int size() {
+        public int serializedSize() {
             int retval=Global.BYTE_SIZE; // type
             switch(type) {
                 case DISSEMINATE:

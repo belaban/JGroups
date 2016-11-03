@@ -100,7 +100,7 @@ public class NakAckHeader2 extends Header {
     }
     
 
-    public int size() {
+    public int serializedSize() {
         int retval=Global.BYTE_SIZE; // type
         switch(type) {
             case MSG:

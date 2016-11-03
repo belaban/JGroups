@@ -909,7 +909,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
 
 
-        public int size() {
+        public int serializedSize() {
             int retval=Global.BYTE_SIZE; // type
             retval+=Util.size(mbr);
 

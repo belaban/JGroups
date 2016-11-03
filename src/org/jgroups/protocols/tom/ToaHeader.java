@@ -69,7 +69,7 @@ public class ToaHeader extends Header {
     }
 
     @Override
-    public int size() {
+    public int serializedSize() {
         return (int) (Global.BYTE_SIZE + messageID.serializedSize() + Bits.size(sequencerNumber) +
                 Util.size(destinations));
     }
