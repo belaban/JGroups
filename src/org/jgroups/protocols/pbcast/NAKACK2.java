@@ -626,7 +626,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     public void up(MessageBatch batch) {
         int                       size=batch.size();
         boolean                   got_retransmitted_msg=false; // if at least 1 XMIT-RSP was received
-        List<Tuple<Long,Message>> msgs=null;      // regular or retransmitted messages
+        List<LongTuple<Message>>  msgs=null;      // regular or retransmitted messages
 
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
             final Message msg=it.next();
@@ -644,7 +644,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 case NakAckHeader2.MSG:
                     if(msgs == null)
                         msgs=new ArrayList<>(size);
-                    msgs.add(new Tuple<>(hdr.seqno, msg));
+                    msgs.add(new LongTuple<>(hdr.seqno, msg));
                     break;
                 case NakAckHeader2.XMIT_REQ:
                     try {
@@ -661,7 +661,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     if(xmitted_msg != null) {
                         if(msgs == null)
                             msgs=new ArrayList<>(size);
-                        msgs.add(new Tuple<>(hdr.seqno, xmitted_msg));
+                        msgs.add(new LongTuple<>(hdr.seqno, xmitted_msg));
                         got_retransmitted_msg=true;
                     }
                     break;
@@ -822,7 +822,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
 
-    protected void handleMessages(Address dest, Address sender, List<Tuple<Long,Message>> msgs, boolean oob, AsciiString cluster_name) {
+    protected void handleMessages(Address dest, Address sender, List<LongTuple<Message>> msgs, boolean oob, AsciiString cluster_name) {
         Table<Message> buf=xmit_table.get(sender);
         if(buf == null) {  // discard message if there is no entry for sender
             unknownMember(sender, "batch");
@@ -841,7 +841,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         if(added && oob) {
             MessageBatch oob_batch=new MessageBatch(dest, sender, null, dest == null, MessageBatch.Mode.OOB, msgs.size());
             if(loopback) {
-                for(Tuple<Long,Message> tuple: msgs) {
+                for(LongTuple<Message> tuple: msgs) {
                     long    seq=tuple.getVal1();
                     Message msg=buf.get(seq); // we *have* to get the message, because loopback means we didn't add it to win !
                     if(msg != null && msg.isFlagSet(Message.Flag.OOB) && msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
@@ -849,7 +849,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 }
             }
             else {
-                for(Tuple<Long,Message> tuple: msgs)
+                for(LongTuple<Message> tuple: msgs)
                     oob_batch.add(tuple.getVal2());
             }
             deliverBatch(oob_batch);

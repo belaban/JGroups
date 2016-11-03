@@ -470,7 +470,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         }
 
         int size=batch.size();
-        Map<Short,List<Tuple<Long,Message>>> msgs=new LinkedHashMap<>();
+        Map<Short,List<LongTuple<Message>>> msgs=new LinkedHashMap<>();
         ReceiverEntry entry=recv_table.get(batch.sender());
 
         for(Message msg: batch) {
@@ -484,10 +484,10 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 continue;
             }
 
-            List<Tuple<Long,Message>> list=msgs.get(hdr.conn_id);
+            List<LongTuple<Message>> list=msgs.get(hdr.conn_id);
             if(list == null)
                 msgs.put(hdr.conn_id, list=new ArrayList<>(size));
-            list.add(new Tuple<>(hdr.seqno(), msg));
+            list.add(new LongTuple<>(hdr.seqno(), msg));
 
             if(hdr.first)
                 entry=getReceiverEntry(batch.sender(), hdr.seqno(), hdr.first, hdr.connId());
@@ -499,7 +499,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             else {
                 if(msgs.keySet().retainAll(Collections.singletonList(entry.connId()))) // remove all conn-ids that don't match
                     sendRequestForFirstSeqno(batch.sender());
-                List<Tuple<Long,Message>> list=msgs.get(entry.connId());
+                List<LongTuple<Message>> list=msgs.get(entry.connId());
                 if(list != null && !list.isEmpty())
                     handleBatchReceived(entry, batch.sender(), list, batch.mode() == MessageBatch.Mode.OOB);
             }
@@ -511,7 +511,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     protected void handleBatchFromSelf(MessageBatch batch, Entry entry) {
-        List<Tuple<Long,Message>> list=new ArrayList<>(batch.size());
+        List<LongTuple<Message>> list=new ArrayList<>(batch.size());
 
         for(Message msg: batch) {
             Header hdr;
@@ -528,7 +528,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 batch.remove(msg);
                 continue;
             }
-            list.add(new Tuple<>(hdr.seqno(), msg));
+            list.add(new LongTuple<>(hdr.seqno(), msg));
         }
 
         if(!list.isEmpty()) {
@@ -542,7 +542,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
             if(batch.mode() == MessageBatch.Mode.OOB) {
                 MessageBatch oob_batch=new MessageBatch(local_addr, batch.sender(), batch.clusterName(), batch.multicast(), MessageBatch.Mode.OOB, len);
-                for(Tuple<Long,Message> tuple: list) {
+                for(LongTuple<Message> tuple: list) {
                     long    seq=tuple.getVal1();
                     Message msg=win.get(seq); // we *have* to get the message, because loopback means we didn't add it to win !
                     if(msg != null && msg.isFlagSet(Message.Flag.OOB) && msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
@@ -819,7 +819,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
 
-    protected void handleBatchReceived(final ReceiverEntry entry, Address sender, List<Tuple<Long,Message>> msgs, boolean oob) {
+    protected void handleBatchReceived(final ReceiverEntry entry, Address sender, List<LongTuple<Message>> msgs, boolean oob) {
         if(log.isTraceEnabled())
             log.trace("%s <-- DATA(%s: %s)", local_addr, sender, printMessageList(msgs));
 
@@ -838,7 +838,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
         if(added && oob) {
             MessageBatch oob_batch=new MessageBatch(local_addr, sender, null, false, MessageBatch.Mode.OOB, msgs.size());
-            for(Tuple<Long,Message> tuple: msgs)
+            for(LongTuple<Message> tuple: msgs)
                 oob_batch.add(tuple.getVal2());
 
             deliverBatch(oob_batch);
@@ -881,7 +881,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
 
-    protected String printMessageList(List<Tuple<Long,Message>> list) {
+    protected String printMessageList(List<LongTuple<Message>> list) {
         StringBuilder sb=new StringBuilder();
         int size=list.size();
         Message first=size > 0? list.get(0).getVal2() : null, second=size > 1? list.get(size-1).getVal2() : first;

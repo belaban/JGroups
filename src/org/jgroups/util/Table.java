@@ -218,7 +218,7 @@ public class Table<T> implements Iterable<T> {
      * @param list
      * @return True if at least 1 element was added successfully
      */
-    public boolean add(final List<Tuple<Long,T>> list) {
+    public boolean add(final List<LongTuple<T>> list) {
        return add(list, false);
     }
 
@@ -228,7 +228,7 @@ public class Table<T> implements Iterable<T> {
      * @param list
      * @return True if at least 1 element was added successfully. This guarantees that the list has at least 1 element
      */
-    public boolean add(final List<Tuple<Long,T>> list, boolean remove_added_elements) {
+    public boolean add(final List<LongTuple<T>> list, boolean remove_added_elements) {
         return add(list, remove_added_elements, null);
     }
 
@@ -241,7 +241,7 @@ public class Table<T> implements Iterable<T> {
      * @param const_value If non-null, this value should be used rather than the values of the list tuples
      * @return True if at least 1 element was added successfully, false otherwise.
      */
-    public boolean add(final List<Tuple<Long,T>> list, boolean remove_added_elements, T const_value) {
+    public boolean add(final List<LongTuple<T>> list, boolean remove_added_elements, T const_value) {
         if(list == null || list.isEmpty())
             return false;
         boolean added=false;
@@ -252,8 +252,8 @@ public class Table<T> implements Iterable<T> {
             if(highest_seqno != -1 && computeRow(highest_seqno) >= matrix.length)
                 resize(highest_seqno);
 
-            for(Iterator<Tuple<Long,T>> it=list.iterator(); it.hasNext();) {
-                Tuple<Long,T> tuple=it.next();
+            for(Iterator<LongTuple<T>> it=list.iterator(); it.hasNext();) {
+                LongTuple<T> tuple=it.next();
                 long seqno=tuple.getVal1();
                 T element=const_value != null? const_value : tuple.getVal2();
                 if(_add(seqno, element, false, null))
@@ -544,11 +544,11 @@ public class Table<T> implements Iterable<T> {
     }
 
     // list must not be null or empty
-    protected long findHighestSeqno(List<Tuple<Long,T>> list) {
+    protected long findHighestSeqno(List<LongTuple<T>> list) {
         long seqno=-1;
-        for(Tuple<Long,T> tuple: list) {
-            Long val=tuple.getVal1();
-            if(val != null && val - seqno > 0)
+        for(LongTuple<T> tuple: list) {
+            long val=tuple.getVal1();
+            if(val - seqno > 0)
                 seqno=val;
         }
         return seqno;

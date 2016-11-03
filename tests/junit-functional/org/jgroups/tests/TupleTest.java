@@ -21,14 +21,7 @@ public class TupleTest {
         Assert.assertEquals(322649, tuple.getVal2().intValue());
     }
 
-    public static void testSet() {
-        Tuple<String,Integer> tuple=new Tuple<>("Bela", 322649);
-        System.out.println("tuple: " + tuple);
-        tuple.setVal1("Michelle");
-        tuple.setVal2(7);
-        Assert.assertEquals("Michelle", tuple.getVal1());
-        Assert.assertEquals(7, tuple.getVal2().intValue());
-    }
+
 
     public static void testHashMap() {
         Map<Integer,Tuple<String,Integer>> map=new HashMap<>();
