@@ -895,7 +895,7 @@ public class SizeTest {
 
     private static void _testSize(SizeStreamable data) throws Exception {
         System.out.println("\ndata: " + data);
-        long size=data.size();
+        long size=data.serializedSize();
         byte[] serialized_form=Util.streamableToByteBuffer(data);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         assert serialized_form.length == size : "serialized length=" + serialized_form.length + ", size=" + size;

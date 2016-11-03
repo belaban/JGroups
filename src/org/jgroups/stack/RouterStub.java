@@ -119,7 +119,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
             _doConnect();
         }
         GossipData request=new GossipData(GossipType.REGISTER, group, addr, logical_name, phys_addr);
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(request.size()+10);
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(request.serializedSize()+10);
         request.writeTo(out);
         client.send(remote, out.buffer(), 0, out.position());
     }
@@ -240,7 +240,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
 
 
     protected synchronized void writeRequest(GossipData req) throws Exception {
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(req.size());
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(req.serializedSize());
         req.writeTo(out);
         client.send(remote, out.buffer(), 0, out.position());
     }

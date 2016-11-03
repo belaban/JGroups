@@ -112,7 +112,7 @@ public class GossipData implements SizeStreamable {
         return sb.toString();
     }
 
-    public int size() {
+    public int serializedSize() {
         int retval=Global.BYTE_SIZE;   // type
         if(group != null)
             retval+=group.length() +2; // group
@@ -128,7 +128,7 @@ public class GossipData implements SizeStreamable {
             retval+=Global.SHORT_SIZE;    // ping_data
             if(ping_data != null)
                 for(PingData data: ping_data)
-                    retval+=data.size();
+                    retval+=data.serializedSize();
 
             retval+=Util.size(physical_addr); // physical_addr
         }

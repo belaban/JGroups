@@ -963,13 +963,15 @@ public class Util {
 
 
     public static byte[] streamableToByteBuffer(Streamable obj) throws Exception {
-        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
+        int expected_size=obj instanceof SizeStreamable? ((SizeStreamable)obj).serializedSize() : 512;
+        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(expected_size);
         obj.writeTo(out);
         return Arrays.copyOf(out.buffer(), out.position());
     }
 
     public static Buffer streamableToBuffer(Streamable obj) {
-        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
+        int expected_size=obj instanceof SizeStreamable? ((SizeStreamable)obj).serializedSize() +1 : 512;
+        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(expected_size);
         try {
             Util.writeStreamable(obj,out);
             return out.getBuffer();

@@ -256,7 +256,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                         rsp.addPingData(data);
                     }
                 }
-                ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(rsp.size());
+                ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(rsp.serializedSize());
                 try {
                     rsp.writeTo(out);
                     server.send(sender, out.buffer(), 0, out.position());
@@ -374,7 +374,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
 
 
     protected void sendToAllMembersInGroup(Set<Map.Entry<Address,Entry>> dests, GossipData request) {
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(request.size());
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(request.serializedSize());
         try {
             request.writeTo(out);
         }
@@ -415,7 +415,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
 
 
     protected void sendToMember(Address dest, GossipData request) {
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(request.size());
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(request.serializedSize());
         try {
             request.writeTo(out);
             server.send(dest, out.buffer(), 0, out.position());

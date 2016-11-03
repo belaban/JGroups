@@ -122,7 +122,7 @@ public class PingData implements SizeStreamable, Constructable<PingData> {
         return sb.toString();
     }
 
-    public int size() {
+    public int serializedSize() {
         int retval=Global.BYTE_SIZE; // for is_server
         retval+=Util.size(sender);
         retval+=Global.BYTE_SIZE;     // presence byte for logical_name

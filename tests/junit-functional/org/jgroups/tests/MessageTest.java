@@ -410,7 +410,7 @@ public class MessageTest {
         _testSize(msg);
     }
 
-    public static void testReadFromSkipPayload() throws Exception {
+    public void testReadFromSkipPayload() throws Exception {
         Message msg=new Message(Util.createRandomAddress("A"), "bela".getBytes()).src(Util.createRandomAddress("B"));
         addHeaders(msg);
         byte[] buf=Util.streamableToByteBuffer(msg);

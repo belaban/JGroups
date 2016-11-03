@@ -4,7 +4,7 @@ package org.jgroups;
 
 import org.jgroups.annotations.Immutable;
 import org.jgroups.util.ArrayIterator;
-import org.jgroups.util.Streamable;
+import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -24,7 +24,7 @@ import java.util.stream.Stream;
  * @author Bela Ban
  */
 @Immutable
-public class View implements Comparable<View>, Streamable, Iterable<Address>, Constructable<View> {
+public class View implements Comparable<View>, SizeStreamable, Iterable<Address>, Constructable<View> {
 
    /**
     * A view is uniquely identified by its ViewID. The view id contains the creator address and a

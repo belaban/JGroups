@@ -2,10 +2,11 @@ package org.jgroups.protocols.tom;
 
 import org.jgroups.Address;
 import org.jgroups.util.Bits;
-import org.jgroups.util.Streamable;
+import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
 
 
 /**
@@ -16,7 +17,7 @@ import java.io.*;
  * @author Pedro Ruivo
  * @since 3.1
  */
-public class MessageID implements Comparable<MessageID>, Cloneable, Streamable {
+public class MessageID implements Comparable<MessageID>, Cloneable, SizeStreamable {
     private Address address = null;
     private long id = -1;
 

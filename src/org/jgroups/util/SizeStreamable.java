@@ -8,5 +8,5 @@ package org.jgroups.util;
  */
 public interface SizeStreamable extends Streamable {
     /** Returns the size (in bytes) of the marshalled object */
-    int size();
+    int serializedSize();
 }

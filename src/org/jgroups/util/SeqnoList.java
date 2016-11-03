@@ -14,7 +14,7 @@ import java.util.function.Supplier;
  * @author Bela Ban
  * @since  3.1
  */
-public class SeqnoList extends FixedSizeBitSet implements Streamable, Iterable<Long>, Constructable<SeqnoList> {
+public class SeqnoList extends FixedSizeBitSet implements SizeStreamable, Iterable<Long>, Constructable<SeqnoList> {
     protected long offset; // first seqno
 
     /** Only to be used by serialization */

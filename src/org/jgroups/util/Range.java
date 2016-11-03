@@ -6,7 +6,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 
 
-public class Range implements Streamable, Comparable<Range> {
+public class Range implements SizeStreamable, Comparable<Range> {
     public long low=-1;  // first msg to be retransmitted
     public long high=-1; // last msg to be retransmitted
 
