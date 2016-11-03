@@ -4,9 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Predicate;
+import java.util.function.*;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -39,8 +37,8 @@ public class MessageBatch implements Iterable<Message> {
     protected Mode             mode=Mode.REG;
 
     protected static final int INCR=5; // number of elements to add when resizing
-    protected static final     BiFunction<Message,MessageBatch,Integer> length_visitor=(msg, batch) -> msg != null? msg.getLength() : 0;
-    protected static final     BiFunction<Message,MessageBatch,Long>    total_size_visitor=(msg, batch) -> msg != null? msg.size() : 0;
+    protected static final     ToIntBiFunction<Message,MessageBatch>  length_visitor=(msg, batch) -> msg != null? msg.getLength() : 0;
+    protected static final     ToLongBiFunction<Message,MessageBatch> total_size_visitor=(msg, batch) -> msg != null? msg.size() : 0;
 
 
     public MessageBatch(int capacity) {
@@ -226,7 +224,7 @@ public class MessageBatch implements Iterable<Message> {
         return retval;
     }
 
-    public <T> void forEach(BiConsumer<Message,MessageBatch> consumer) {
+    public void forEach(BiConsumer<Message,MessageBatch> consumer) {
         for(int i=0; i < index; i++) {
             try {
                 consumer.accept(messages[i], this);
@@ -279,7 +277,7 @@ public class MessageBatch implements Iterable<Message> {
     public long totalSize() {
         long retval=0;
         for(int i=0; i < index; i++)
-            retval+=total_size_visitor.apply(messages[i], this);
+            retval+=total_size_visitor.applyAsLong(messages[i], this);
         return retval;
     }
 
@@ -287,7 +285,7 @@ public class MessageBatch implements Iterable<Message> {
     public int length() {
         int retval=0;
         for(int i=0; i < index; i++)
-            retval+=length_visitor.apply(messages[i], this);
+            retval+=length_visitor.applyAsInt(messages[i], this);
         return retval;
     }
 
