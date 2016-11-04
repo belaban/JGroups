@@ -36,12 +36,12 @@ public class RingBufferBundler extends BaseBundler {
     protected static final BiConsumer<Integer,Integer> PARK=(it,spins) -> LockSupport.parkNanos(1);
     protected static final BiConsumer<Integer,Integer> SPIN_PARK=(it, spins) -> {
         if(it < spins/10)
-            ; // spin for the first 10% of all iterations, then switch to park()
+            return; // spin for the first 10% of all iterations, then switch to park()
         LockSupport.parkNanos(1);
     };
     protected static final BiConsumer<Integer,Integer> SPIN_YIELD=(it, spins) -> {
         if(it < spins/10)
-            ;           // spin for the first 10% of the total number of iterations
+            return;           // spin for the first 10% of the total number of iterations
         Thread.yield(); //, then switch to yield()
     };
 
