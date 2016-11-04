@@ -139,7 +139,7 @@ public class ExtendedUUIDTest {
         uuid.put("name", Util.objectToByteBuffer("Bela"))
           .put("age",Util.objectToByteBuffer(49))
           .put("bool",Util.objectToByteBuffer(true));
-        int size=uuid.size();
+        int size=uuid.serializedSize();
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
         ExtendedUUID uuid2=Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);
@@ -152,7 +152,7 @@ public class ExtendedUUIDTest {
 
     public void testMarshallingNullHashMap() throws Exception {
         ExtendedUUID uuid=ExtendedUUID.randomUUID("A");
-        int size=uuid.size();
+        int size=uuid.serializedSize();
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
         Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);
@@ -163,7 +163,7 @@ public class ExtendedUUIDTest {
         for(int i=1; i <= 5; i++)
             uuid.put(String.valueOf(i), new byte[250]);
         System.out.println("uuid = " + uuid);
-        int size=uuid.size();
+        int size=uuid.serializedSize();
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
         ExtendedUUID uuid2=Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);
@@ -179,7 +179,7 @@ public class ExtendedUUIDTest {
         byte[] value=Util.objectToByteBuffer("Bela");
         for(int i=1; i <= 5; i++)
             uuid.put(String.valueOf(i), i % 2 == 0? value : null);
-        int size=uuid.size();
+        int size=uuid.serializedSize();
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
         ExtendedUUID uuid2=Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);
@@ -206,7 +206,7 @@ public class ExtendedUUIDTest {
                 uuid.remove(String.valueOf(i));
         assert uuid.length() == 5;
 
-        int size=uuid.size();
+        int size=uuid.serializedSize();
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
         ExtendedUUID uuid2=Util.streamableFromByteBuffer(ExtendedUUID.class, buffer);

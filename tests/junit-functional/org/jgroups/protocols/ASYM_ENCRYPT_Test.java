@@ -282,7 +282,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
 
 
     protected static Buffer marshalView(final View view) throws Exception {
-        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
+        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(Global.SHORT_SIZE + view.serializedSize());
         out.writeShort(determineFlags(view));
         view.writeTo(out);
         return out.getBuffer();

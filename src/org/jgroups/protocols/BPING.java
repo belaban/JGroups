@@ -101,7 +101,7 @@ public class BPING extends PING implements Runnable {
         try {
             if(msg.getSrc() == null)
                 msg.setSrc(local_addr);
-            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(128);
+            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)msg.size());
             msg.writeTo(out);
             for(int i=bind_port; i <= bind_port+port_range; i++) {
                 DatagramPacket packet=new DatagramPacket(out.buffer(), 0, out.position(), dest_addr, i);

@@ -503,7 +503,8 @@ public class COUNTER extends Protocol {
     }
 
     protected static Buffer streamableToBuffer(byte req_or_rsp, byte type, Streamable obj) throws Exception {
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(100);
+        int expected_size=obj instanceof SizeStreamable? ((SizeStreamable)obj).serializedSize() : 100;
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(expected_size);
         out.writeByte(req_or_rsp);
         out.writeByte(type);
         obj.writeTo(out);

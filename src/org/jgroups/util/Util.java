@@ -534,7 +534,8 @@ public class Util {
         }
 
         if(obj instanceof Streamable) {
-            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512, true);
+            int expected_size=obj instanceof SizeStreamable? ((SizeStreamable)obj).serializedSize() : 512;
+            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(expected_size, true);
             out.write(TYPE_STREAMABLE);
             writeGenericStreamable((Streamable)obj,out);
             return Arrays.copyOf(out.buf,out.position());
@@ -567,7 +568,8 @@ public class Util {
         }
 
         if(obj instanceof Streamable) {
-            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512, true);
+            int expected_size=obj instanceof SizeStreamable? ((SizeStreamable)obj).serializedSize() : 512;
+            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(expected_size, true);
             out.write(TYPE_STREAMABLE);
             writeGenericStreamable((Streamable)obj,out);
             return out.getBuffer();
@@ -983,7 +985,7 @@ public class Util {
 
 
     public static byte[] collectionToByteBuffer(Collection<Address> c) throws Exception {
-        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
+        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)Util.size(c));
         Util.writeAddresses(c,out);
         return Arrays.copyOf(out.buffer(), out.position());
     }
@@ -1373,13 +1375,13 @@ public class Util {
         if(addr instanceof UUID) {
             Class<? extends Address> clazz=addr.getClass();
             if(clazz.equals(UUID.class) || clazz.equals(SiteUUID.class) || clazz.equals(SiteMaster.class))
-                return retval + addr.size();
+                return retval + addr.serializedSize();
         }
         if(addr instanceof IpAddress)
-            return retval + addr.size();
+            return retval + addr.serializedSize();
 
         retval+=Global.SHORT_SIZE; // magic number
-        retval+=addr.size();
+        retval+=addr.serializedSize();
         return retval;
     }
 
@@ -1745,7 +1747,7 @@ public class Util {
 
 
     public static Buffer messageToByteBuffer(Message msg) throws Exception {
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)msg.size()+1);
 
         out.writeBoolean(msg != null);
         if(msg != null)

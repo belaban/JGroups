@@ -918,7 +918,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             int ipaddr_size = 0 ;
             ipaddr_size += Global.BYTE_SIZE ;     // presence byte
             if (sock_addr != null)
-              ipaddr_size += sock_addr.size();  // IpAddress size
+              ipaddr_size += sock_addr.serializedSize();  // IpAddress size
             retval += ipaddr_size ;
             retval+=Global.INT_SIZE; // mbrs size
             if(mbrs != null)

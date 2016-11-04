@@ -317,10 +317,12 @@ public class NioConnection extends Connection {
 
     protected void sendLocalAddress(Address local_addr) throws Exception {
         try {
-            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream();
+            int addr_size=local_addr.serializedSize();
+            int expected_size=cookie.length + Global.SHORT_SIZE*2 + addr_size;
+            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(expected_size +2);
             out.write(cookie, 0, cookie.length);
             out.writeShort(Version.version);
-            out.writeShort(local_addr.size()); // address size
+            out.writeShort(addr_size); // address size
             local_addr.writeTo(out);
             ByteBuffer buf=out.getByteBuffer();
             send(buf, false);

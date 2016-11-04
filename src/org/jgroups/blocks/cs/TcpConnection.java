@@ -196,7 +196,7 @@ public class TcpConnection extends Connection {
 
             // write the version
             out.writeShort(Version.version);
-            out.writeShort(local_addr.size()); // address size
+            out.writeShort(local_addr.serializedSize()); // address size
             local_addr.writeTo(out);
             out.flush(); // needed ?
             updateLastAccessed();

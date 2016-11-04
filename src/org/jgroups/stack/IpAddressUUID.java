@@ -122,8 +122,8 @@ public class IpAddressUUID extends IpAddress {
         high=in.readInt();
     }
 
-    public int size() {
-        return super.size() + Global.LONG_SIZE + Global.INT_SIZE;
+    public int serializedSize() {
+        return super.serializedSize() + Global.LONG_SIZE + Global.INT_SIZE;
     }
 
     public String toString() {

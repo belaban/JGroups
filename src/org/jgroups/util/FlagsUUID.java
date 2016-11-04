@@ -74,7 +74,7 @@ public class FlagsUUID extends UUID {
     }
 
     /** The number of bytes required to serialize this instance */
-    public int    size()     {return super.size() + Bits.size(flags);}
+    public int serializedSize()     {return super.serializedSize() + Bits.size(flags);}
     public String toString() {return String.format("%s (flags=%d)", super.toString(), flags);}
 
 

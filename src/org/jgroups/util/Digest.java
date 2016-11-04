@@ -27,7 +27,7 @@ import static java.lang.Math.max;
  * @author Bela Ban
  */
 @Immutable
-public class Digest implements Streamable, Iterable<Digest.Entry>, Constructable<Digest> {
+public class Digest implements SizeStreamable, Iterable<Digest.Entry>, Constructable<Digest> {
 
     // Stores the members corresponding to the seqnos. Example: members[2] --> hd=seqnos[4], hr=seqnos[5]
     protected Address[] members;
@@ -173,6 +173,10 @@ public class Digest implements Streamable, Iterable<Digest.Entry>, Constructable
             seqnos[i * 2]=tmp[0];
             seqnos[i * 2 +1]=tmp[1];
         }
+    }
+
+    public int serializedSize() {
+        return (int)serializedSize(true);
     }
 
     public long serializedSize(boolean with_members) {

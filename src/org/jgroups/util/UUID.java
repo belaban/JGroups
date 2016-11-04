@@ -216,7 +216,7 @@ public class UUID implements Address, Constructable<UUID> {
     }
 
 
-    public int size() {
+    public int serializedSize() {
         return SIZE;
     }
 

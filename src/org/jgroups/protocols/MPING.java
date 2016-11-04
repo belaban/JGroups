@@ -285,7 +285,7 @@ public class MPING extends PING implements Runnable {
         try {
             if(msg.getSrc() == null)
                 msg.setSrc(local_addr);
-            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(128);
+            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)(msg.size()+1));
             msg.writeTo(out);
             Buffer buf=out.getBuffer();
             DatagramPacket packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), mcast_addr, mcast_port);

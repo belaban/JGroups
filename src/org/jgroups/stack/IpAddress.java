@@ -184,7 +184,7 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
         port=in.readUnsignedShort();
     }
 
-    public int size() {
+    public int serializedSize() {
         // length (1 bytes) + 4 bytes for port
         int tmp_size=Global.BYTE_SIZE+ Global.SHORT_SIZE;
         if(ip_addr != null) {

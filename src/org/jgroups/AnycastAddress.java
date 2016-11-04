@@ -65,7 +65,7 @@ public class AnycastAddress implements Address, Constructable<AnycastAddress> {
         }
     }
 
-    public int size() {
+    public int serializedSize() {
         if (destinations == null) {
             return Global.INT_SIZE;
         }

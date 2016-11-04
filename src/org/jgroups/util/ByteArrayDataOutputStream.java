@@ -191,7 +191,7 @@ public class ByteArrayDataOutputStream implements DataOutput {
         int minCapacity=pos+bytes;
 
         if(minCapacity - buf.length > 0) {
-            int newCapacity=this.grow_exponentially? buf.length << 1 : buf.length + bytes + 32;
+            int newCapacity=this.grow_exponentially? buf.length << 1 : pos + bytes + 32;
             if(newCapacity - minCapacity < 0)
                 newCapacity=minCapacity;
             if(newCapacity < 0) {

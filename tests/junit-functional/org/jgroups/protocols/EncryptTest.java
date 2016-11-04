@@ -299,7 +299,7 @@ public abstract class EncryptTest {
 
 
     protected static Buffer marshal(final View view) throws Exception {
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(Util.size(view));
         out.writeShort(1);
         if(view != null)
             view.writeTo(out);

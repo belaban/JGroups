@@ -1166,13 +1166,19 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     protected static Buffer marshal(final View view, final Digest digest) {
         try {
-            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
+            int expected_size=Global.SHORT_SIZE;
+            if(view != null)
+                expected_size+=view.serializedSize();
+            boolean write_addrs=writeAddresses(view, digest);
+            if(digest != null)
+                expected_size=(int)digest.serializedSize(write_addrs);
+            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(expected_size +10);
             out.writeShort(determineFlags(view, digest));
             if(view != null)
                 view.writeTo(out);
 
             if(digest != null)
-                digest.writeTo(out, writeAddresses(view, digest));
+                digest.writeTo(out, write_addrs);
 
             return out.getBuffer();
         }
@@ -1187,7 +1193,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     protected static Buffer marshal(Collection<? extends Address> mbrs) {
         try {
-            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
+            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)Util.size(mbrs));
             Util.writeAddresses(mbrs, out);
             return out.getBuffer();
         }
@@ -1198,7 +1204,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     protected static Buffer marshal(final ViewId view_id) {
         try {
-            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
+            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(Util.size(view_id));
             Util.writeViewId(view_id, out);
             return out.getBuffer();
         }

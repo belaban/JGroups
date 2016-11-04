@@ -163,8 +163,8 @@ public class ExtendedUUID extends FlagsUUID {
     }
 
     /** The number of bytes required to serialize this instance */
-    public int size() {
-        return super.size() + Global.BYTE_SIZE + sizeofHashMap();
+    public int serializedSize() {
+        return super.serializedSize() + Global.BYTE_SIZE + sizeofHashMap();
     }
 
     /** The number of non-null keys */

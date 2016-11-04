@@ -117,7 +117,7 @@ public class SizeTest {
     }
 
 
-    public static void testDigest() throws Exception {
+    public void testDigest() throws Exception {
         Address addr=Util.createRandomAddress();
         Address addr2=Util.createRandomAddress();
         View view=View.create(addr, 1, addr, addr2);
@@ -832,7 +832,7 @@ public class SizeTest {
 
 
     private static void _testSize(Address addr) throws Exception {
-        long size=addr.size();
+        long size=addr.serializedSize();
         byte[] serialized_form=Util.streamableToByteBuffer(addr);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
