@@ -7,67 +7,30 @@ import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 
 import java.net.SocketException;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.stream.IntStream;
 
 /**
  * Bundler which doesn't bundle :-) Can be used to measure the diff between bundling and non-bundling (e.g. at runtime)
+ * This bundler doesn't use a pool of buffers, but creates a new buffer every time a message is sent.
  * @author Bela Ban
  * @since  4.0
+ * @Experimental
  */
 public class NoBundler implements Bundler {
     protected TP                                       transport;
     protected Log                                      log;
-    protected int                                      pool_size=10;
-    protected BlockingQueue<ByteArrayDataOutputStream> buf_pool;
-    protected int                                      initial_buf_size=512;
 
-    // protected final Profiler                           send=new Profiler("nb.send", TimeUnit.MICROSECONDS);
-
-
-    public int       size()                {return buf_pool.size();}
-    public int       initialBufSize()      {return initial_buf_size;}
-    public NoBundler initialBufSize(int s) {this.initial_buf_size=s; return this;}
-    public int       poolSize()            {return pool_size;}
-
-    public NoBundler poolSize(int s) {
-        if(s == pool_size) return this;
-        pool_size=s;
-        BlockingQueue<ByteArrayDataOutputStream> new_pool=new ArrayBlockingQueue<>(pool_size);
-        BlockingQueue<ByteArrayDataOutputStream> tmp=buf_pool;
-        buf_pool=new_pool;
-        if(tmp != null)
-            tmp.clear();
-        return this;
-    }
+    public int       size()                {return 0;}
 
     public void init(TP transport) {
         this.transport=transport;
         log=transport.getLog();
-        buf_pool=new ArrayBlockingQueue<>(pool_size);
-        IntStream.rangeClosed(1, pool_size).forEach(ignored -> buf_pool.offer(new ByteArrayDataOutputStream(initial_buf_size)));
-        // transport.registerProbeHandler(send);
     }
     public void start() {}
     public void stop()  {}
 
     public void send(Message msg) throws Exception {
-        ByteArrayDataOutputStream out=null;
-        try {
-            out=buf_pool.poll();
-            if(out == null) {
-                out=new ByteArrayDataOutputStream(initial_buf_size);
-                log.warn("created new output buffer as pool was empty");
-            }
-            sendSingleMessage(msg, out);
-        }
-        finally {
-            // todo: this is incorrect! A buffer might still be used when transport.doSend() returned, e.g.
-            // in a retransmission protocol, or in the bundler
-            if(out != null)
-                buf_pool.offer(out);
-        }
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)(msg.size() + 10));
+        sendSingleMessage(msg, out);
     }
 
 

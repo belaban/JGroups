@@ -219,12 +219,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="The max number of elements in a bundler if the bundler supports size limitations")
     protected int bundler_capacity=20000;
 
-    @Property(name="no_bundler.pool_size",description="Pool size of buffers for marshalling in NoBundler")
-    protected int no_bundler_pool_size=10;
-
-    @Property(name="no_bundler.initial_buf_size",description="The initial size of each buffer (in bytes)")
-    protected int no_bundler_initial_buf_size=512;
-
     @Property(description="Number of spins before a real lock is acquired")
     protected int bundler_num_spins=40;
 
@@ -1068,10 +1062,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 return new RingBufferBundlerLockless2(bundler_capacity);
             case "no-bundler":
             case "nb":
-                return new NoBundler().poolSize(no_bundler_pool_size).initialBufSize(no_bundler_initial_buf_size);
-            case "no-bundler-copy":
-            case "nbc":
-                return new NoBundlerCopy();
+                return new NoBundler();
         }
 
         try {

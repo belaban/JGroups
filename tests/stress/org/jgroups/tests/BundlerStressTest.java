@@ -167,7 +167,7 @@ public class BundlerStressTest {
         if(bundler.equals("ring-buffer-lockless2") || bundler.equals("rbl2"))
             return new RingBufferBundlerLockless2(BUFSIZE);
         if(bundler.startsWith("no-bundler") || bundler.equals("nb"))
-            return new NoBundler().poolSize(BUFSIZE).initialBufSize(25);
+            return new NoBundler();
         try {
             Class<Bundler> clazz=Util.loadClass(bundler, getClass());
             return clazz.newInstance();
