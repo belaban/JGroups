@@ -13,7 +13,6 @@ import java.net.SocketException;
  * This bundler doesn't use a pool of buffers, but creates a new buffer every time a message is sent.
  * @author Bela Ban
  * @since  4.0
- * @Experimental
  */
 public class NoBundler implements Bundler {
     protected TP                                       transport;
