@@ -106,7 +106,8 @@ public class BitsTest {
             long second_num=num;
             byte[] buf=marshall(num, second_num);
             int size=buf.length;
-            long[] result=unmarshalLongSeq(buf);
+            long[] result={0,0};
+            unmarshalLongSeq(buf, result, 0);
             System.out.println(num + " | " + second_num + " encoded to " + buf.length +
                                  " bytes, decoded to " + result[0] + " | " + result[1]);
             assert num == result[0] && second_num == result[1];
@@ -117,7 +118,8 @@ public class BitsTest {
             second_num=num+100;
 
             buf=marshall(num, second_num);
-            result=unmarshalLongSeq(buf);
+            result=new long[]{0,0};
+            unmarshalLongSeq(buf, result, 0);
             System.out.println(num + " | " + second_num + " encoded to " + buf.length +
                                  " bytes, decoded to " + result[0] + " | " + result[1]);
             assert num == result[0] && second_num == result[1];
@@ -139,7 +141,8 @@ public class BitsTest {
             ByteBuffer buf=marshallToByteBuffer(num, second_num);
             int size=buf.limit();
             buf.rewind();
-            long[] result=unmarshalLongSeq(buf);
+            long[] result={0,0};
+            unmarshalLongSeq(buf, result);
             System.out.println(num + " | " + second_num + " encoded to " + size +
                                  " bytes, decoded to " + result[0] + " | " + result[1]);
             assert num == result[0] && second_num == result[1];
@@ -151,7 +154,8 @@ public class BitsTest {
 
             buf=marshallToByteBuffer(num, second_num);
             buf.rewind();
-            result=unmarshalLongSeq(buf);
+            result=new long[]{0,0};
+            unmarshalLongSeq(buf, result);
             System.out.println(num + " | " + second_num + " encoded to " + buf.limit() +
                                  " bytes, decoded to " + result[0] + " | " + result[1]);
             assert num == result[0] && second_num == result[1];
@@ -190,9 +194,14 @@ public class BitsTest {
     public void testStringByteBuffer() throws Exception {
         String[] strings={null, "hello world", "1"};
         for(String str: strings) {
-            ByteBuffer buf=marshallToByteBuffer(str);
+            ByteBuffer buf=marshallToByteBuffer(str, false);
             buf.rewind();
             String s=unmarshallString(buf);
+            assert str == null && s == null || str.equals(s);
+
+            buf=marshallToByteBuffer(str, true);
+            buf.rewind();
+            s=unmarshallString(buf);
             assert str == null && s == null || str.equals(s);
         }
     }
@@ -308,9 +317,9 @@ public class BitsTest {
         return output.toByteArray();
     }
 
-    protected static ByteBuffer marshallToByteBuffer(String val) throws Exception {
+    protected static ByteBuffer marshallToByteBuffer(String val, boolean direct) throws Exception {
         int size=Bits.size(val);
-        ByteBuffer buf=ByteBuffer.allocate(size);
+        ByteBuffer buf=direct? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
         Bits.writeString(val, buf);
         return buf;
     }
@@ -359,12 +368,12 @@ public class BitsTest {
         return Bits.readInt(buf);
     }
 
-    protected static long[] unmarshalLongSeq(byte[] buf) throws Exception {
-        return Bits.readLongSequence(createInputStream(buf));
+    protected static void unmarshalLongSeq(byte[] buf, long[] seqnos, int index) throws Exception {
+        Bits.readLongSequence(createInputStream(buf), seqnos, index);
     }
 
-    protected static long[] unmarshalLongSeq(ByteBuffer buf) throws Exception {
-        return Bits.readLongSequence(buf);
+    protected static void unmarshalLongSeq(ByteBuffer buf, long[] seqnos) throws Exception {
+        Bits.readLongSequence(buf, seqnos);
     }
 
     protected static AsciiString unmarshallAsciiString(byte[] buf) throws Exception {

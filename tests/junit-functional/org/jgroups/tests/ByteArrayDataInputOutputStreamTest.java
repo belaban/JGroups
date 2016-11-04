@@ -329,7 +329,8 @@ public class ByteArrayDataInputOutputStreamTest {
             Bits.writeLongSequence(i, i + 100,out);
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(out.buffer());
         for(long i: numbers) {
-            long[] seq=Bits.readLongSequence(in);
+            long[] seq={0,0};
+            Bits.readLongSequence(in, seq, 0);
             assert Arrays.equals(seq, new long[]{i, i+100});
         }
     }

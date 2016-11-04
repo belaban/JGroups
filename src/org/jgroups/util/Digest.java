@@ -168,11 +168,8 @@ public class Digest implements SizeStreamable, Iterable<Digest.Entry>, Construct
         else
             seqnos=new long[in.readShort() *2];
 
-        for(int i=0; i < seqnos.length/2; i++) {
-            long[] tmp=Bits.readLongSequence(in);
-            seqnos[i * 2]=tmp[0];
-            seqnos[i * 2 +1]=tmp[1];
-        }
+        for(int i=0; i < seqnos.length/2; i++)
+            Bits.readLongSequence(in, seqnos, i*2);
     }
 
     public int serializedSize() {

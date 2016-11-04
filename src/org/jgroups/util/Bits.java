@@ -138,9 +138,7 @@ public final class Bits {
         byte len=buf.get();
         if(len == 0)
             return 0;
-        byte[] retval=new byte[len];
-        buf.get(retval, 0, len);
-        return makeInt(retval, 0, len);
+        return makeInt(buf, len);
     }
 
     /**
@@ -152,9 +150,7 @@ public final class Bits {
         byte len=in.readByte();
         if(len == 0)
             return 0;
-        byte[] buf=new byte[len];
-        in.readFully(buf, 0, len);
-        return makeInt(buf, 0, len);
+        return makeInt(in, len);
     }
 
     public static int readInt(byte[] buf, int offset) {
@@ -168,10 +164,7 @@ public final class Bits {
         byte len=buf[offset++];
         if(len == 0)
             return 0;
-        byte[] buffer=new byte[len];
-        for(int i=0; i < len; i++)
-            buffer[i]=buf[offset++];
-        return makeInt(buffer, 0, len);
+        return makeInt(buf, offset, len);
     }
 
 
@@ -256,9 +249,7 @@ public final class Bits {
         byte len=buf.get();
         if(len == 0)
             return 0;
-        byte[] retval=new byte[len];
-        buf.get(retval, 0, len);
-        return makeLong(retval, 0, len);
+        return makeLong(buf, len);
     }
 
     /**
@@ -272,9 +263,7 @@ public final class Bits {
         byte len=in.readByte();
         if(len == 0)
             return 0;
-        byte[] buf=new byte[len];
-        in.readFully(buf, 0, len);
-        return makeLong(buf, 0, len);
+        return makeLong(in, len);
     }
 
     public static long readLong(byte[] buf, int offset) {
@@ -292,10 +281,7 @@ public final class Bits {
         byte len=buf[offset++];
         if(len == 0)
             return 0;
-        byte[] buffer=new byte[len];
-        for(int i=0; i < len; i++)
-            buffer[i]=buf[offset++];
-        return makeLong(buffer, 0, len);
+        return makeLong(buf, offset, len);
     }
 
     /**
@@ -381,48 +367,42 @@ public final class Bits {
     }
 
     /**
-     * Reads 2 compressed longs from buf.
+     * Reads 2 compressed longs from buf into seqnos
      * <p/>
      * Once variable-length encoding has been implemented, this method will probably get dropped as we can simply
      * read the 2 longs individually.
      * @param buf the buffer to read from
-     * @return an array of 2 longs (hd and hr)
+     * @param seqnos the array to read the seqnos into, needs to have a length of 2
      */
-    public static long[] readLongSequence(ByteBuffer buf) {
+    public static void readLongSequence(ByteBuffer buf, long seqnos[]) {
         byte len=buf.get();
-        if(len == 0)
-            return new long[]{0,0};
-
-        byte[] lengths=decodeLength(len);
-        long[] seqnos=new long[2];
-        byte[] retval=new byte[lengths[0] + lengths[1]];
-        buf.get(retval, 0, retval.length);
-        seqnos[0]=makeLong(retval, 0, lengths[0]);
-        seqnos[1]=makeLong(retval, lengths[0], lengths[1]) + seqnos[0];
-        return seqnos;
+        if(len == 0) {
+            seqnos[0]=seqnos[1]=0;
+            return;
+        }
+        byte len1=firstNibble(len), len2=secondNibble(len);
+        seqnos[0]=makeLong(buf, len1);
+        seqnos[1]=makeLong(buf, len2) + seqnos[0];
     }
 
     /**
-     * Reads 2 compressed longs from in.
-     * Reads 2 compressed longs from buf.
+     * Reads 2 compressed longs into an array of 2 longs.
      * <p/>
      * Once variable-length encoding has been implemented, this method will probably get dropped as we can simply
      * read the 2 longs individually.
      * @param in the input stream to read from
-     * @return an array of 2 longs (hd and hr)
+     * @param seqnos the array to read the seqnos into, needs to have a length of 2
+     * @param index the index of the first element to be written; the seqnos are written to seqnos[index] and seqnos[index+1]
      */
-    public static long[] readLongSequence(DataInput in) throws IOException {
+    public static void readLongSequence(DataInput in, long[] seqnos, int index) throws IOException {
         byte len=in.readByte();
-        if(len == 0)
-            return new long[]{0,0};
-
-        byte[] lengths=decodeLength(len);
-        long[] seqnos=new long[2];
-        byte[] buf=new byte[lengths[0] + lengths[1]];
-        in.readFully(buf, 0, buf.length);
-        seqnos[0]=makeLong(buf, 0, lengths[0]);
-        seqnos[1]=makeLong(buf, lengths[0], lengths[1]) + seqnos[0];
-        return seqnos;
+        if(len == 0) {
+            seqnos[index]=seqnos[index+1]=0;
+            return;
+        }
+        byte len1=firstNibble(len), len2=secondNibble(len);
+        seqnos[index]=makeLong(in, len1);
+        seqnos[index+1]=makeLong(in, len2) + seqnos[index];
     }
 
 
@@ -435,14 +415,6 @@ public final class Bits {
         return (byte)(num_bytes_for_hd + num_bytes_for_delta + 1);
     }
 
-    public static long makeLong(byte[] buf, int offset, int bytes_to_read) {
-        long retval=0;
-        for(int i=0; i < bytes_to_read; i++) {
-            byte b=buf[offset + i];
-            retval |= ((long)b & 0xff) << (i * 8);
-        }
-        return retval;
-    }
 
     public static int makeInt(byte[] buf, int offset, int bytes_to_read) {
         int retval=0;
@@ -453,7 +425,51 @@ public final class Bits {
         return retval;
     }
 
+    public static int makeInt(ByteBuffer buffer, int bytes_to_read) {
+        int retval=0;
+        for(int i=0; i < bytes_to_read; i++) {
+            byte b=buffer.get();
+            retval |= ((int)b & 0xff) << (i * 8);
+        }
+        return retval;
+    }
 
+    public static int makeInt(DataInput in, int bytes_to_read) throws IOException {
+        int retval=0;
+        for(int i=0; i < bytes_to_read; i++) {
+            byte b=in.readByte();
+            retval |= ((int)b & 0xff) << (i * 8);
+        }
+        return retval;
+    }
+
+    public static long makeLong(byte[] buf, int offset, int bytes_to_read) {
+        long retval=0;
+        for(int i=0; i < bytes_to_read; i++) {
+            byte b=buf[offset + i];
+            retval |= ((long)b & 0xff) << (i * 8);
+        }
+        return retval;
+    }
+
+
+    public static long makeLong(ByteBuffer buffer, int bytes_to_read) {
+        long retval=0;
+        for(int i=0; i < bytes_to_read; i++) {
+            byte b=buffer.get();
+            retval |= ((long)b & 0xff) << (i * 8);
+        }
+        return retval;
+    }
+
+    public static long makeLong(DataInput in, int bytes_to_read) throws IOException {
+        long retval=0;
+        for(int i=0; i < bytes_to_read; i++) {
+            byte b=in.readByte();
+            retval |= ((long)b & 0xff) << (i * 8);
+        }
+        return retval;
+    }
 
     // -------------------- float ----------------------- //
 
@@ -615,9 +631,15 @@ public final class Bits {
         if(buf.get() == 0)
             return null;
         int len=readInt(buf);
-        byte[] bytes=new byte[len];
-        buf.get(bytes);
-        return new String(bytes);
+        if(buf.isDirect()) {
+            byte[] bytes=new byte[len];
+            buf.get(bytes);
+            return new String(bytes);
+        }
+        else {
+            byte[] bytes=buf.array();
+            return new String(bytes, buf.arrayOffset() + buf.position(), len);
+        }
     }
 
     /**
@@ -742,8 +764,16 @@ public final class Bits {
         return retval;
     }
 
-    protected static byte[] decodeLength(byte len) {
+/*    protected static byte[] decodeLength(byte len) {
         return new byte[]{(byte)((len & 0xff) >> 4),(byte)(len & ~0xf0)}; // 0xf0 is the first nibble set (11110000)
+    }*/
+
+    protected static byte firstNibble(byte len) {
+        return (byte)((len & 0xff) >> 4); // 0xf0 is the first nibble set (11110000)
+    }
+
+    protected static byte secondNibble(byte len) {
+        return (byte)(len & ~0xf0); // 0xf0 is the first nibble set (11110000)
     }
 
     protected static byte bytesRequiredFor(long number) {

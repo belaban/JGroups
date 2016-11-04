@@ -48,7 +48,8 @@ public class Range implements SizeStreamable, Comparable<Range> {
     }
 
     public void readFrom(DataInput in) throws Exception {
-        long[] seqnos=Bits.readLongSequence(in);
+        long[] seqnos={0,0};
+        Bits.readLongSequence(in, seqnos, 0);
         low=seqnos[0];
         high=seqnos[1];
     }

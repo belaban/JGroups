@@ -486,7 +486,7 @@ public class SizeTest {
     }
 
 
-    public static void testJoinRsp() throws Exception {
+    public void testJoinRsp() throws Exception {
         JoinRsp rsp;
         Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B"), c=Util.createRandomAddress("C");
         View v=View.create(a, 55, a, b, c);
