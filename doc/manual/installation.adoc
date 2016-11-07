@@ -316,7 +316,7 @@ releases. However, they were not removed since some people used them in their pr
     
 
 The following tables list unsupported and experimental classes. These classes are not actively maintained, and
-we will not work to resolve potential issues you might find. Their final faith is not yet determined; they
+we will not work to resolve potential issues you might find. Their final fate is not yet determined; they
 might even be removed altogether in the next major release. Weight your risks if you decide to use them anyway.
     
 
