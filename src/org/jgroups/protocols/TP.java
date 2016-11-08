@@ -1803,11 +1803,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             for(Message msg: oob_batch) {
                 if(msg.isFlagSet(Message.Flag.DONT_BUNDLE) && msg.isFlagSet(Message.Flag.OOB)) {
                     boolean oob=msg.isFlagSet(Message.Flag.OOB), internal=msg.isFlagSet(Message.Flag.INTERNAL);
-                    msg.putHeader(id, new TpHeader(oob_batch.clusterName()));
+                    AsciiString cname=oob_batch.clusterName();
                     Executor pool=pickThreadPool(oob, internal);
                     try {
                         oob_batch.remove(msg);
-                        pool.execute(new SingleMessageHandler(msg));
+                        pool.execute(new SingleMessageHandlerWithClusterName(msg, cname));
                         num_oob_msgs_received++;
                     }
                     catch(RejectedExecutionException ex) {
@@ -1868,13 +1868,30 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     num_bytes_received+=msg.getLength();
                 }
 
-                TpHeader hdr=(TpHeader)msg.getHeader(id);
-                AsciiString cname=new AsciiString(hdr.cluster_name);
+                AsciiString cname=getClusterName();
                 passMessageUp(msg, cname, true, multicast, true);
             }
             catch(Throwable t) {
                 log.error(Util.getMessage("PassUpFailure"), t);
             }
+        }
+
+        protected AsciiString getClusterName() {
+            TpHeader hdr=(TpHeader)msg.getHeader(id);
+            return new AsciiString(hdr.cluster_name);
+        }
+    }
+
+    protected class SingleMessageHandlerWithClusterName extends SingleMessageHandler {
+        protected final AsciiString cluster;
+
+        @Override protected AsciiString getClusterName() {
+            return cluster;
+        }
+
+        protected SingleMessageHandlerWithClusterName(Message msg, AsciiString cluster_name) {
+            super(msg);
+            this.cluster=cluster_name;
         }
     }
 
