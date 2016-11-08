@@ -1,5 +1,7 @@
 package org.jgroups.util;
 
+import java.util.Arrays;
+
 /**
  * Simple string implemented as a byte[] array. Each character's higher 8 bits are truncated and
  * only the lower 8 bits are stored. AsciiString is mutable for efficiency reasons, but the chars array should never
@@ -47,13 +49,11 @@ public class AsciiString implements Comparable<AsciiString> {
         int len1=val.length;
         int len2=str.val.length;
         int lim=Math.min(len1, len2);
-        byte[] v1=val;
-        byte[] v2=str.val;
 
         int k = 0;
         while (k < lim) {
-            byte c1 =v1[k];
-            byte c2 =v2[k];
+            byte c1 =val[k];
+            byte c2 =str.val[k];
             if (c1 != c2)
                 return c1 > c2? 1 : -1;
             k++;
@@ -64,8 +64,13 @@ public class AsciiString implements Comparable<AsciiString> {
 
 
     public boolean equals(Object obj) {
-        return obj instanceof AsciiString && compareTo((AsciiString)obj) == 0;
+        return obj instanceof AsciiString && equals(((AsciiString)obj).val);
     }
+
+    public boolean equals(byte[] other) {
+        return Arrays.equals(val, other);
+    }
+
 
     public int hashCode() {
         int h=0;
@@ -78,6 +83,7 @@ public class AsciiString implements Comparable<AsciiString> {
     public String toString() {
         return new String(val);
     }
+
 
 
 

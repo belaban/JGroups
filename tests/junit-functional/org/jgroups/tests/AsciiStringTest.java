@@ -25,9 +25,16 @@ public class AsciiStringTest {
         assert str2.equals(str);
         assert str2.length() == str.length();
 
-        str2=new AsciiString(new byte[]{'h', 'e', 'l', 'l', 'o'});
+        byte[] tmp={'h', 'e', 'l', 'l', 'o'};
+        str2=new AsciiString(tmp);
         assert str2.equals(str);
         assert str2.length() == str.length();
+
+        assert str.equals(tmp);
+        assert str.equals(str.chars());
+
+        tmp=null;
+        assert !str.equals(tmp);
     }
 
     public void testCompareTo() {
