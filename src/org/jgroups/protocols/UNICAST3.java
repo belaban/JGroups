@@ -8,8 +8,6 @@ import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
@@ -18,7 +16,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 
 /**
@@ -402,12 +399,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(msg.getDest() == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY))  // only handle unicast messages
             return up_prot.up(msg);  // pass up
 
-        Header hdr=msg.getHeader(this.id);
+        UnicastHeader3 hdr=msg.getHeader(this.id);
         if(hdr == null)
             return up_prot.up(msg);
         Address sender=msg.getSrc();
         switch(hdr.type) {
-            case Header.DATA:      // received regular message
+            case UnicastHeader3.DATA:      // received regular message
                 if(log.isTraceEnabled())
                     log.trace("%s <-- DATA(%s: #%d, conn_id=%d%s)", local_addr, sender, hdr.seqno, hdr.conn_id, hdr.first? ", first" : "");
                 if(Objects.equals(local_addr, sender))
@@ -423,21 +420,21 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
 
-    protected void handleUpEvent(Address sender, Message msg, Header hdr) {
+    protected void handleUpEvent(Address sender, Message msg, UnicastHeader3 hdr) {
         try {
             switch(hdr.type) {
-                case Header.DATA:  // received regular message
+                case UnicastHeader3.DATA:  // received regular message
                     throw new IllegalStateException("header of type DATA is not supposed to be handled by this method");
-                case Header.ACK:   // received ACK for previously sent message
+                case UnicastHeader3.ACK:   // received ACK for previously sent message
                     handleAckReceived(sender, hdr.seqno, hdr.conn_id, hdr.timestamp());
                     break;
-                case Header.SEND_FIRST_SEQNO:
+                case UnicastHeader3.SEND_FIRST_SEQNO:
                     handleResendingOfFirstMessage(sender, hdr.timestamp());
                     break;
-                case Header.XMIT_REQ:  // received ACK for previously sent message
+                case UnicastHeader3.XMIT_REQ:  // received ACK for previously sent message
                     handleXmitRequest(sender, Util.streamableFromBuffer(SeqnoList.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
                     break;
-                case Header.CLOSE:
+                case UnicastHeader3.CLOSE:
                     log.trace(local_addr + "%s <-- CLOSE(%s: conn-id=%s)", local_addr, sender, hdr.conn_id);
                     ReceiverEntry entry=recv_table.get(sender);
                     if(entry != null && entry.connId() == hdr.conn_id) {
@@ -474,12 +471,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         ReceiverEntry entry=recv_table.get(batch.sender());
 
         for(Message msg: batch) {
-            Header hdr;
+            UnicastHeader3 hdr;
             if(msg == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY) || (hdr=msg.getHeader(id)) == null)
                 continue;
             batch.remove(msg); // remove the message from the batch, so it won't be passed up the stack
 
-            if(hdr.type != Header.DATA) {
+            if(hdr.type != UnicastHeader3.DATA) {
                 handleUpEvent(msg.getSrc(), msg, hdr);
                 continue;
             }
@@ -514,12 +511,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         List<LongTuple<Message>> list=new ArrayList<>(batch.size());
 
         for(Message msg: batch) {
-            Header hdr;
+            UnicastHeader3 hdr;
             if(msg == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY) || (hdr=msg.getHeader(id)) == null)
                 continue;
             batch.remove(msg); // remove the message from the batch, so it won't be passed up the stack
 
-            if(hdr.type != Header.DATA) {
+            if(hdr.type != UnicastHeader3.DATA) {
                 handleUpEvent(msg.getSrc(), msg, hdr);
                 continue;
             }
@@ -625,7 +622,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         long sleep=10;
         do {
             try {
-                msg.putHeader(this.id,Header.createDataHeader(seqno,send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
+                msg.putHeader(this.id,UnicastHeader3.createDataHeader(seqno,send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
                 entry.msgs.add(seqno, msg, dont_loopback_set? dont_loopback_filter : null);  // add *including* UnicastHeader, adds to retransmitter
                 if(conn_expiry_timeout > 0)
                     entry.update();
@@ -707,7 +704,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     /** Sends a retransmit request to the given sender */
     protected void retransmit(SeqnoList missing, Address sender) {
         Message xmit_msg=new Message(sender).setBuffer(Util.streamableToBuffer(missing))
-          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL).putHeader(id, Header.createXmitReqHeader());
+          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL).putHeader(id, UnicastHeader3.createXmitReqHeader());
         if(log.isTraceEnabled())
             log.trace("%s: sending XMIT_REQ (%s) to %s", local_addr, missing, sender);
         down_prot.down(xmit_msg);
@@ -718,7 +715,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     /** Called by the sender to resend messages for which no ACK has been received yet */
     protected void retransmit(Message msg) {
         if(log.isTraceEnabled()) {
-            Header hdr=msg.getHeader(id);
+            UnicastHeader3 hdr=msg.getHeader(id);
             long seqno=hdr != null? hdr.seqno : -1;
             log.trace("%s --> XMIT(%s: #%d)", local_addr, msg.getDest(), seqno);
         }
@@ -885,7 +882,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         StringBuilder sb=new StringBuilder();
         int size=list.size();
         Message first=size > 0? list.get(0).getVal2() : null, second=size > 1? list.get(size-1).getVal2() : first;
-        Header hdr;
+        UnicastHeader3 hdr;
         if(first != null) {
             hdr=first.getHeader(id);
             if(hdr != null)
@@ -1008,8 +1005,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             // the headers and therefore we'd modify the original message in the sender retransmission window
             // (https://jira.jboss.org/jira/browse/JGRP-965)
             Message copy=rsp.copy();
-            Header hdr=copy.getHeader(this.id);
-            Header newhdr=hdr.copy();
+            UnicastHeader3 hdr=copy.getHeader(this.id);
+            UnicastHeader3 newhdr=hdr.copy();
             newhdr.first=true;
             copy.putHeader(this.id, newhdr);
             down_prot.down(copy);
@@ -1059,7 +1056,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 Message first=batch.first(), last=batch.last();
                 StringBuilder sb=new StringBuilder(local_addr + ": delivering");
                 if(first != null && last != null) {
-                    Header hdr1=first.getHeader(id), hdr2=last.getHeader(id);
+                    UnicastHeader3 hdr1=first.getHeader(id), hdr2=last.getHeader(id);
                     sb.append(" #").append(hdr1.seqno).append(" - #").append(hdr2.seqno);
                 }
                 sb.append(" (" + batch.size()).append(" messages)");
@@ -1094,7 +1091,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(!running) // if we are disconnected, then don't send any acks which throw exceptions on shutdown
             return;
         Message ack=new Message(dst).setFlag(Message.Flag.INTERNAL).
-          putHeader(this.id, Header.createAckHeader(seqno, conn_id, timestamper.incrementAndGet()));
+          putHeader(this.id, UnicastHeader3.createAckHeader(seqno, conn_id, timestamper.incrementAndGet()));
         if(log.isTraceEnabled())
             log.trace("%s --> ACK(%s: #%d)", local_addr, dst, seqno);
         try {
@@ -1120,14 +1117,14 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected void sendRequestForFirstSeqno(Address dest) {
         if(last_sync_sent.addIfAbsentOrExpired(dest)) {
             Message msg=new Message(dest).setFlag(Message.Flag.OOB)
-              .putHeader(this.id, Header.createSendFirstSeqnoHeader(timestamper.incrementAndGet()));
+              .putHeader(this.id, UnicastHeader3.createSendFirstSeqnoHeader(timestamper.incrementAndGet()));
             log.trace("%s --> SEND_FIRST_SEQNO(%s)", local_addr, dest);
             down_prot.down(msg);
         }
     }
 
     public void sendClose(Address dest, short conn_id) {
-        Message msg=new Message(dest).setFlag(Message.Flag.INTERNAL).putHeader(id, Header.createCloseHeader(conn_id));
+        Message msg=new Message(dest).setFlag(Message.Flag.INTERNAL).putHeader(id, UnicastHeader3.createCloseHeader(conn_id));
         log.trace("%s --> CLOSE(%s, conn-id=%d)", local_addr, dest, conn_id);
         down_prot.down(msg);
     }
@@ -1213,175 +1210,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected enum State {OPEN, CLOSING, CLOSED}
 
 
-    /**
-     * The following types and fields are serialized:
-     * <pre>
-     * | DATA | seqno | conn_id | first |
-     * | ACK  | seqno | timestamp |
-     * | SEND_FIRST_SEQNO | timestamp |
-     * | CLOSE | conn_id |
-     * </pre>
-     */
-    public static class Header extends org.jgroups.Header {
-        public static final byte DATA             = 0;
-        public static final byte ACK              = 1;
-        public static final byte SEND_FIRST_SEQNO = 2;
-        public static final byte XMIT_REQ         = 3; // SeqnoList of missing message is in the message's payload
-        public static final byte CLOSE            = 4;
 
-        byte    type;
-        long    seqno;     // DATA and ACK
-        short   conn_id;   // DATA and CLOSE
-        boolean first;     // DATA
-        long    timestamp; // SEND_FIRST_SEQNO and ACK
-
-
-        public Header() {} // used for externalization
-
-        protected Header(byte type) {
-            this.type=type;
-        }
-
-        protected Header(byte type, long seqno) {
-            this.type=type;
-            this.seqno=seqno;
-        }
-
-        protected Header(byte type, long seqno, short conn_id, boolean first) {
-            this.type=type;
-            this.seqno=seqno;
-            this.conn_id=conn_id;
-            this.first=first;
-        }
-        public short getMagicId() {return 82;}
-        public Supplier<? extends org.jgroups.Header> create() {return Header::new;}
-
-        public static Header createDataHeader(long seqno, short conn_id, boolean first) {
-            return new Header(DATA, seqno, conn_id, first);
-        }
-
-        public static Header createAckHeader(long seqno, short conn_id, long timestamp) {
-            return new Header(ACK, seqno, conn_id, false).timestamp(timestamp);
-        }
-
-        public static Header createSendFirstSeqnoHeader(long timestamp) {
-            return new Header(SEND_FIRST_SEQNO).timestamp(timestamp);
-        }
-
-        public static Header createXmitReqHeader() {
-            return new Header(XMIT_REQ);
-        }
-
-        public static Header createCloseHeader(short conn_id) {
-            return new Header(CLOSE, 0, conn_id, false);
-        }
-
-        public byte    type()             {return type;}
-        public long    seqno()            {return seqno;}
-        public short   connId()           {return conn_id;}
-        public boolean first()            {return first;}
-        public long    timestamp()        {return timestamp;}
-        public Header  timestamp(long ts) {timestamp=ts; return this;}
-
-        public String toString() {
-            StringBuilder sb=new StringBuilder();
-            sb.append(type2Str(type)).append(", seqno=").append(seqno);
-            if(conn_id != 0) sb.append(", conn_id=").append(conn_id);
-            if(first) sb.append(", first");
-            if(timestamp != 0)
-                sb.append(", ts=").append(timestamp);
-            return sb.toString();
-        }
-
-        public static String type2Str(byte t) {
-            switch(t) {
-                case DATA:             return "DATA";
-                case ACK:              return "ACK";
-                case SEND_FIRST_SEQNO: return "SEND_FIRST_SEQNO";
-                case XMIT_REQ:         return "XMIT_REQ";
-                case CLOSE:            return "CLOSE";
-                default:               return "<unknown>";
-            }
-        }
-
-        public final int serializedSize() {
-            int retval=Global.BYTE_SIZE;     // type
-            switch(type) {
-                case DATA:
-                    retval+=Bits.size(seqno) // seqno
-                      + Global.SHORT_SIZE    // conn_id
-                      + Global.BYTE_SIZE;    // first
-                    break;
-                case ACK:
-                    retval+=Bits.size(seqno)
-                      + Global.SHORT_SIZE    // conn_id
-                      + Bits.size(timestamp);
-                    break;
-                case SEND_FIRST_SEQNO:
-                    retval+=Bits.size(timestamp);
-                    break;
-                case XMIT_REQ:
-                    break;
-                case CLOSE:
-                    retval+=Global.SHORT_SIZE; // conn-id
-                    break;
-            }
-            return retval;
-        }
-
-        public Header copy() {
-            return new Header(type, seqno, conn_id, first);
-        }
-
-
-        public void writeTo(DataOutput out) throws Exception {
-            out.writeByte(type);
-            switch(type) {
-                case DATA:
-                    Bits.writeLong(seqno, out);
-                    out.writeShort(conn_id);
-                    out.writeBoolean(first);
-                    break;
-                case ACK:
-                    Bits.writeLong(seqno, out);
-                    out.writeShort(conn_id);
-                    Bits.writeLong(timestamp, out);
-                    break;
-                case SEND_FIRST_SEQNO:
-                    Bits.writeLong(timestamp, out);
-                    break;
-                case XMIT_REQ:
-                    break;
-                case CLOSE:
-                    out.writeShort(conn_id);
-                    break;
-            }
-        }
-
-        public void readFrom(DataInput in) throws Exception {
-            type=in.readByte();
-            switch(type) {
-                case DATA:
-                    seqno=Bits.readLong(in);
-                    conn_id=in.readShort();
-                    first=in.readBoolean();
-                    break;
-                case ACK:
-                    seqno=Bits.readLong(in);
-                    conn_id=in.readShort();
-                    timestamp=Bits.readLong(in);
-                    break;
-                case SEND_FIRST_SEQNO:
-                    timestamp=Bits.readLong(in);
-                    break;
-                case XMIT_REQ:
-                    break;
-                case CLOSE:
-                    conn_id=in.readShort();
-                    break;
-            }
-        }
-    }
 
     protected abstract class Entry {
         protected final Table<Message>  msgs; // stores sent or received messages
@@ -1518,7 +1347,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         // sender: only send the *highest sent* message if HA < HS and HA/HS didn't change from the prev run
         for(SenderEntry val: send_table.values()) {
             Table<Message> win=val != null? val.msgs : null;
-            if(win != null /** && !win.isEmpty() */) {
+            if(win != null) {
                 long highest_acked=win.getHighestDelivered(); // highest delivered == highest ack (sender win)
                 long highest_sent=win.getHighestReceived();   // we use table as a *sender* win, so it's highest *sent*...
 

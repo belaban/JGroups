@@ -60,7 +60,7 @@
     <class id="79"  name="org.jgroups.protocols.tom.ToaHeader"/>
     <class id="80"  name="org.jgroups.protocols.relay.RELAY2$Relay2Header"/>
     <class id="81"  name="org.jgroups.protocols.FORWARD_TO_COORD$ForwardHeader"/>
-    <class id="82"  name="org.jgroups.protocols.UNICAST3$Header"/>
+    <class id="82"  name="org.jgroups.protocols.UnicastHeader3"/>
     <class id="83"  name="org.jgroups.protocols.FORK$ForkHeader"/>
     <class id="84"  name="org.jgroups.protocols.PERF$PerfHeader"/>
     <class id="85"  name="org.jgroups.protocols.SaslHeader"/>

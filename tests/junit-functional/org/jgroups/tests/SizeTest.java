@@ -194,30 +194,30 @@ public class SizeTest {
 
 
     public void testUnicast3Header() throws Exception {
-        UNICAST3.Header hdr=UNICAST3.Header.createDataHeader(322649, (short)127, false);
+        UnicastHeader3 hdr=UnicastHeader3.createDataHeader(322649, (short)127, false);
         _testSize(hdr);
         _testMarshalling(hdr);
 
-        hdr=UNICAST3.Header.createDataHeader(322649, Short.MAX_VALUE, false);
+        hdr=UnicastHeader3.createDataHeader(322649, Short.MAX_VALUE, false);
         _testSize(hdr);
         _testMarshalling(hdr);
 
-        hdr=UNICAST3.Header.createDataHeader(322649, (short)(Short.MAX_VALUE -10), true);
+        hdr=UnicastHeader3.createDataHeader(322649, (short)(Short.MAX_VALUE -10), true);
         _testSize(hdr);
         _testMarshalling(hdr);
 
         //noinspection NumericOverflow
         for(long timestamp: new long[]{0, 100, Long.MAX_VALUE -1, Long.MAX_VALUE, Long.MAX_VALUE +100}) {
-            hdr=UNICAST3.Header.createSendFirstSeqnoHeader((int)timestamp);
+            hdr=UnicastHeader3.createSendFirstSeqnoHeader((int)timestamp);
             _testSize(hdr);
             _testMarshalling(hdr);
         }
 
-        hdr=UNICAST3.Header.createAckHeader(322649, (short)2, 500600);
+        hdr=UnicastHeader3.createAckHeader(322649, (short)2, 500600);
         _testSize(hdr);
         _testMarshalling(hdr);
 
-        hdr=UNICAST3.Header.createXmitReqHeader();
+        hdr=UnicastHeader3.createXmitReqHeader();
         _testSize(hdr);
         _testMarshalling(hdr);
     }
@@ -801,9 +801,9 @@ public class SizeTest {
     }
 
 
-    private static void _testMarshalling(UNICAST3.Header hdr) throws Exception {
+    private static void _testMarshalling(UnicastHeader3 hdr) throws Exception {
         byte[] buf=Util.streamableToByteBuffer(hdr);
-        UNICAST3.Header hdr2=Util.streamableFromByteBuffer(UNICAST3.Header.class, buf);
+        UnicastHeader3 hdr2=Util.streamableFromByteBuffer(UnicastHeader3.class, buf);
 
         assert hdr.type()       == hdr2.type();
         assert hdr.seqno()      == hdr2.seqno();

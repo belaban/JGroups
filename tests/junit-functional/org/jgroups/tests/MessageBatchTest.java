@@ -514,14 +514,14 @@ public class MessageBatchTest {
         List<Message> retval=new ArrayList<>(10);
 
         for(long seqno=1; seqno <= 5; seqno++)
-            retval.add(new Message(b).putHeader(UNICAST3_ID, UNICAST3.Header.createDataHeader(seqno, (short)22, false)));
+            retval.add(new Message(b).putHeader(UNICAST3_ID, UnicastHeader3.createDataHeader(seqno, (short)22, false)));
 
         retval.add(new Message(b).putHeader(PING_ID, new PingHeader(PingHeader.GET_MBRS_RSP).clusterName("demo-cluster")));
         retval.add(new Message(b).putHeader(FD_ID, new FD.FdHeader(org.jgroups.protocols.FD.FdHeader.HEARTBEAT)));
         retval.add(new Message(b).putHeader(MERGE_ID, MERGE3.MergeHeader.createViewResponse()));
 
         for(long seqno=6; seqno <= 10; seqno++)
-            retval.add(new Message(b).putHeader(UNICAST3_ID, UNICAST3.Header.createDataHeader(seqno, (short)22, false)));
+            retval.add(new Message(b).putHeader(UNICAST3_ID, UnicastHeader3.createDataHeader(seqno, (short)22, false)));
 
         for(Message msg: retval)
             msg.putHeader(UDP_ID, new TpHeader("demo-cluster"));

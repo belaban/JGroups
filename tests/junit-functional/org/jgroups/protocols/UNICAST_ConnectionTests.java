@@ -245,7 +245,7 @@ public class UNICAST_ConnectionTests {
 
     protected Header createDataHeader(Protocol unicast, long seqno, short conn_id, boolean first) {
         if(unicast instanceof UNICAST3)
-            return UNICAST3.Header.createDataHeader(seqno, conn_id, first);
+            return UnicastHeader3.createDataHeader(seqno, conn_id, first);
         throw new IllegalArgumentException("protocol " + unicast.getClass().getSimpleName() + " needs to be UNICAST3");
     }
 
