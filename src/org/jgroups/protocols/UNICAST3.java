@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
@@ -121,7 +122,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected TimeService                  time_service; // for aging out of receiver and send entries
 
-    protected final AtomicLong             timestamper=new AtomicLong(0); // timestamping of ACKs / SEND_FIRST-SEQNOs
+    protected final AtomicInteger          timestamper=new AtomicInteger(0); // timestamping of ACKs / SEND_FIRST-SEQNOs
 
     /** Keep track of when a SEND_FIRST_SEQNO message was sent to a given sender */
     protected ExpiryCache<Address>         last_sync_sent=null;
@@ -163,7 +164,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     @ManagedAttribute(description="Next seqno issued by the timestamper")
-    public long getTimestamper() {return timestamper.get();}
+    public int getTimestamper() {return timestamper.get();}
 
 
     @ManagedOperation
@@ -965,7 +966,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     /** Add the ACK to hashtable.sender.sent_msgs */
-    protected void handleAckReceived(Address sender, long seqno, short conn_id, long timestamp) {
+    protected void handleAckReceived(Address sender, long seqno, short conn_id, int timestamp) {
         if(log.isTraceEnabled())
             log.trace("%s <-- ACK(%s: #%d, conn-id=%d, ts=%d)", local_addr, sender, seqno, conn_id, timestamp);
         SenderEntry entry=send_table.get(sender);
@@ -987,7 +988,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
      * We need to resend the first message with our conn_id
      * @param sender
      */
-    protected void handleResendingOfFirstMessage(Address sender, long timestamp) {
+    protected void handleResendingOfFirstMessage(Address sender, int timestamp) {
         log.trace("%s <-- SEND_FIRST_SEQNO(%s)", local_addr, sender);
         SenderEntry entry=send_table.get(sender);
         Table<Message> win=entry != null? entry.msgs : null;
@@ -1201,8 +1202,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     /** Compares 2 timestamps, handles numeric overflow */
-    protected static int compare(long ts1, long ts2) {
-        long diff=ts1 - ts2;
+    protected static int compare(int ts1, int ts2) {
+        int diff=ts1 - ts2;
         return diff < 0? -1 : diff > 0? 1 : 0;
     }
 
@@ -1233,9 +1234,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     protected final class SenderEntry extends Entry {
-        final AtomicLong            sent_msgs_seqno=new AtomicLong(DEFAULT_FIRST_SEQNO);   // seqno for msgs sent by us
-        protected final long[]      watermark={0,0};   // the highest acked and highest sent seqno
-        protected long              last_timestamp; // to prevent out-of-order ACKs from a receiver
+        final AtomicLong       sent_msgs_seqno=new AtomicLong(DEFAULT_FIRST_SEQNO);   // seqno for msgs sent by us
+        protected final long[] watermark={0,0};   // the highest acked and highest sent seqno
+        protected int          last_timestamp; // to prevent out-of-order ACKs from a receiver
 
         public SenderEntry(short send_conn_id) {
             super(send_conn_id, new Table<>(xmit_table_num_rows, xmit_table_msgs_per_row, 0,
@@ -1246,7 +1247,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         SenderEntry watermark(long ha, long hs) {watermark[0]=ha; watermark[1]=hs; return this;}
 
         /** Updates last_timestamp. Returns true of the update was in order (ts > last_timestamp) */
-        protected synchronized boolean updateLastTimestamp(long ts) {
+        protected synchronized boolean updateLastTimestamp(int ts) {
             if(last_timestamp == 0) {
                 last_timestamp=ts;
                 return true;

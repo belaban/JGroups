@@ -24,7 +24,7 @@ public class UnicastHeader3 extends Header {
     long    seqno;     // DATA and ACK
     short   conn_id;   // DATA and CLOSE
     boolean first;     // DATA
-    long    timestamp; // SEND_FIRST_SEQNO and ACK
+    int     timestamp; // SEND_FIRST_SEQNO and ACK
 
 
     public UnicastHeader3() {} // used for externalization
@@ -51,11 +51,11 @@ public class UnicastHeader3 extends Header {
         return new UnicastHeader3(DATA, seqno, conn_id, first);
     }
 
-    public static UnicastHeader3 createAckHeader(long seqno, short conn_id, long timestamp) {
+    public static UnicastHeader3 createAckHeader(long seqno, short conn_id, int timestamp) {
         return new UnicastHeader3(ACK, seqno, conn_id, false).timestamp(timestamp);
     }
 
-    public static UnicastHeader3 createSendFirstSeqnoHeader(long timestamp) {
+    public static UnicastHeader3 createSendFirstSeqnoHeader(int timestamp) {
         return new UnicastHeader3(SEND_FIRST_SEQNO).timestamp(timestamp);
     }
 
@@ -71,8 +71,8 @@ public class UnicastHeader3 extends Header {
     public long           seqno()            {return seqno;}
     public short          connId()           {return conn_id;}
     public boolean        first()            {return first;}
-    public long           timestamp()        {return timestamp;}
-    public UnicastHeader3 timestamp(long ts) {timestamp=ts; return this;}
+    public int            timestamp()        {return timestamp;}
+    public UnicastHeader3 timestamp(int ts) {timestamp=ts; return this;}
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
@@ -144,10 +144,10 @@ public class UnicastHeader3 extends Header {
             case ACK:
                 Bits.writeLong(seqno, out);
                 out.writeShort(conn_id);
-                Bits.writeLong(timestamp, out);
+                Bits.writeInt(timestamp, out);
                 break;
             case SEND_FIRST_SEQNO:
-                Bits.writeLong(timestamp, out);
+                Bits.writeInt(timestamp, out);
                 break;
             case XMIT_REQ:
                 break;
@@ -168,10 +168,10 @@ public class UnicastHeader3 extends Header {
             case ACK:
                 seqno=Bits.readLong(in);
                 conn_id=in.readShort();
-                timestamp=Bits.readLong(in);
+                timestamp=Bits.readInt(in);
                 break;
             case SEND_FIRST_SEQNO:
-                timestamp=Bits.readLong(in);
+                timestamp=Bits.readInt(in);
                 break;
             case XMIT_REQ:
                 break;
