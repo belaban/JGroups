@@ -491,6 +491,21 @@ public class MessageBatchTest {
 
     }
 
+    public void testForEach() {
+        MessageBatch batch=new MessageBatch(10);
+        for(int i=0; i < 10; i++)
+            batch.add(new Message(a, i));
+        System.out.println("batch = " + batch);
+        assert batch.size() == 10;
+        batch.remove(msg -> { // removes all msgs with even-numbered payloads
+            int num=msg.getObject();
+            return num % 2 == 0;
+        });
+
+        System.out.println("batch = " + batch);
+        assert batch.size() == 5;
+    }
+
 
     protected MessageBatch remove(MessageBatch batch, int ... indices) {
         Message[] msgs=batch.array();
