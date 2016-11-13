@@ -89,6 +89,35 @@ public class RequestTableTest {
     }
 
 
+    public void testAddRemove() {
+        RequestTable<Integer> table=create(8, 0, 8);
+        System.out.println("table = " + table);
+        remove(table, 1, 8);
+        System.out.println("table = " + table);
+        table.add(8); // will trigger a growth
+        System.out.println("table = " + table);
+        assert table.size() == 2; // 0 and 8
+        assert table.capacity() == 16;
+
+        add(table, 9, 100);
+        System.out.println("table = " + table);
+        assert table.size() == 93;
+        assert table.capacity() == Util.getNextHigherPowerOfTwo(100);
+
+        table.remove(0);
+        boolean rc=table.compact();
+        assert !rc;
+        remove(table, 8, 50);
+        System.out.println("rc = " + rc);
+        assert table.size() == 50;
+
+        rc=table.compact();
+        System.out.println("table = " + table);
+        assert rc;
+        assert table.size() == 50;
+        assert table.capacity() == 64;
+    }
+
 
     public void testAddMany() {
         RequestTable<Integer> table=create(4, 0, 0);
