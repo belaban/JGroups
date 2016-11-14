@@ -107,7 +107,6 @@ public abstract class BasicTCP extends TP implements Receiver {
     }
 
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
-        if(log.isTraceEnabled()) log.trace("dest=" + dest + " (" + length + " bytes)");
         send(dest, data, offset, length);
     }
 

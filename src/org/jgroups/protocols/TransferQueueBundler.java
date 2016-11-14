@@ -1,9 +1,5 @@
 package org.jgroups.protocols;
 
-/**
- * @author Bela Ban
- * @since x.y
- */
 
 import org.jgroups.Message;
 

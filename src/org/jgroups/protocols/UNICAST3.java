@@ -94,6 +94,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="True if sending a message can block at the transport level")
     protected boolean sends_can_block=true;
 
+    @ManagedAttribute(description="tracing is enabled or disabled for the given log",writable=true)
+    protected boolean is_trace=log.isTraceEnabled();
+
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
 
@@ -166,6 +169,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Next seqno issued by the timestamper")
     public int getTimestamper() {return timestamper.get();}
 
+    public <T extends Protocol> T setLevel(String level) {
+        T retval= super.setLevel(level);
+        is_trace=log.isTraceEnabled();
+        return retval;
+    }
 
     @ManagedOperation
     public String printConnections() {
@@ -406,7 +414,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         Address sender=msg.getSrc();
         switch(hdr.type) {
             case UnicastHeader3.DATA:      // received regular message
-                if(log.isTraceEnabled())
+                if(is_trace)
                     log.trace("%s <-- DATA(%s: #%d, conn_id=%d%s)", local_addr, sender, hdr.seqno, hdr.conn_id, hdr.first? ", first" : "");
                 if(Objects.equals(local_addr, sender))
                     handleDataReceivedFromSelf(sender, hdr.seqno, msg);
@@ -530,7 +538,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         }
 
         if(!list.isEmpty()) {
-            if(log.isTraceEnabled())
+            if(is_trace)
                 log.trace("%s <-- DATA(%s: %s)", local_addr, batch.sender(), printMessageList(list));
 
             int len=list.size();
@@ -640,7 +648,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         }
         while(running);
 
-        if(log.isTraceEnabled()) {
+        if(is_trace) {
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(" --> DATA(").append(dst).append(": #").append(seqno).
               append(", conn_id=").append(send_conn_id);
@@ -706,7 +714,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected void retransmit(SeqnoList missing, Address sender) {
         Message xmit_msg=new Message(sender).setBuffer(Util.streamableToBuffer(missing))
           .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL).putHeader(id, UnicastHeader3.createXmitReqHeader());
-        if(log.isTraceEnabled())
+        if(is_trace)
             log.trace("%s: sending XMIT_REQ (%s) to %s", local_addr, missing, sender);
         down_prot.down(xmit_msg);
         xmit_reqs_sent.addAndGet(missing.size());
@@ -715,7 +723,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     /** Called by the sender to resend messages for which no ACK has been received yet */
     protected void retransmit(Message msg) {
-        if(log.isTraceEnabled()) {
+        if(is_trace) {
             UnicastHeader3 hdr=msg.getHeader(id);
             long seqno=hdr != null? hdr.seqno : -1;
             log.trace("%s --> XMIT(%s: #%d)", local_addr, msg.getDest(), seqno);
@@ -818,7 +826,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     protected void handleBatchReceived(final ReceiverEntry entry, Address sender, List<LongTuple<Message>> msgs, boolean oob) {
-        if(log.isTraceEnabled())
+        if(is_trace)
             log.trace("%s <-- DATA(%s: %s)", local_addr, sender, printMessageList(msgs));
 
         int batch_size=msgs.size();
@@ -967,7 +975,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     /** Add the ACK to hashtable.sender.sent_msgs */
     protected void handleAckReceived(Address sender, long seqno, short conn_id, int timestamp) {
-        if(log.isTraceEnabled())
+        if(is_trace)
             log.trace("%s <-- ACK(%s: #%d, conn-id=%d, ts=%d)", local_addr, sender, seqno, conn_id, timestamp);
         SenderEntry entry=send_table.get(sender);
         if(entry != null && entry.connId() != conn_id) {
@@ -1016,7 +1024,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     protected void handleXmitRequest(Address sender, SeqnoList missing) {
-        if(log.isTraceEnabled())
+        if(is_trace)
             log.trace("%s <-- XMIT(%s: #%s)", local_addr, sender, missing);
 
         SenderEntry entry=send_table.get(sender);
@@ -1038,7 +1046,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     protected void deliverMessage(final Message msg, final Address sender, final long seqno) {
-        if(log.isTraceEnabled())
+        if(is_trace)
             log.trace("%s: delivering %s#%s", local_addr, sender, seqno);
         try {
             up_prot.up(msg);
@@ -1053,7 +1061,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         try {
             if(batch.isEmpty())
                 return;
-            if(log.isTraceEnabled()) {
+            if(is_trace) {
                 Message first=batch.first(), last=batch.last();
                 StringBuilder sb=new StringBuilder(local_addr + ": delivering");
                 if(first != null && last != null) {
@@ -1093,7 +1101,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             return;
         Message ack=new Message(dst).setFlag(Message.Flag.INTERNAL).
           putHeader(this.id, UnicastHeader3.createAckHeader(seqno, conn_id, timestamper.incrementAndGet()));
-        if(log.isTraceEnabled())
+        if(is_trace)
             log.trace("%s --> ACK(%s: #%d)", local_addr, dst, seqno);
         try {
             down_prot.down(ack);

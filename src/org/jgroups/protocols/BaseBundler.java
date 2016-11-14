@@ -12,7 +12,6 @@ import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static org.jgroups.protocols.TP.BUNDLE_MSG;
 import static org.jgroups.protocols.TP.MSG_OVERHEAD;
 
 /**
@@ -67,11 +66,6 @@ public abstract class BaseBundler implements Bundler {
      * The map will be cleared when done.
      */
     @GuardedBy("lock") protected void sendBundledMessages() {
-        if(log.isTraceEnabled()) {
-            double percentage=100.0 / transport.getMaxBundleSize() * count;
-            log.trace(BUNDLE_MSG, transport.localAddress(), size(), count, percentage, msgs.size(), msgs.keySet());
-        }
-
         for(Map.Entry<Address,List<Message>> entry: msgs.entrySet()) {
             List<Message> list=entry.getValue();
             if(list.isEmpty())

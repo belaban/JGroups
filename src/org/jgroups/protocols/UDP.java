@@ -441,8 +441,7 @@ public class UDP extends TP {
                 log.trace("joined %s on %s", tmp_mcast_addr, intf.getName());
             }
             catch(IOException e) {
-                if(log.isWarnEnabled())
-                    log.warn(Util.getMessage("InterfaceJoinFailed"), tmp_mcast_addr, intf.getName());
+                log.warn(Util.getMessage("InterfaceJoinFailed"), tmp_mcast_addr, intf.getName());
             }
         }
     }

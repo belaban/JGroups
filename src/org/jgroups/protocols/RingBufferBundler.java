@@ -1,10 +1,5 @@
 package org.jgroups.protocols;
 
-/**
- * A bundler based on {@link org.jgroups.util.RingBuffer}
- * @author Bela Ban
- * @since  4.0
- */
 
 import org.jgroups.Address;
 import org.jgroups.Global;

@@ -193,9 +193,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @ManagedAttribute(description="Whether or not the task to resend the last seqno is running (depends on resend_last_seqno)")
     public boolean resendTaskRunning() {return last_seqno_resender != null;}
 
+    @ManagedAttribute(description="tracing is enabled or disabled for the given log",writable=true)
+    protected boolean is_trace=log.isTraceEnabled();
 
     /* -------------------------------------------------    Fields    ------------------------------------------------------------------------- */
-    protected volatile boolean          is_server=false;
+    protected volatile boolean          is_server;
     protected Address                   local_addr;
     protected volatile List<Address>    members=new ArrayList<>();
     protected volatile View             view;
@@ -251,6 +253,12 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
     public void    setDiscardDeliveredMsgs(boolean discard_delivered_msgs) {
         this.discard_delivered_msgs=discard_delivered_msgs;
+    }
+
+    public <T extends Protocol> T setLevel(String level) {
+        T retval=super.setLevel(level);
+        is_trace=log.isTraceEnabled();
+        return retval;
     }
 
     @ManagedAttribute(description="Actual size of the become_server_queue")
@@ -772,7 +780,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         while(running);
 
         // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
-        if(log.isTraceEnabled())
+        if(is_trace)
             log.trace("%s: sending %s#%d", local_addr, local_addr, msg_id);
         down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
         num_messages_sent++;
@@ -803,7 +811,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         // removal. Else insert the real message
         boolean added=loopback || buf.add(hdr.seqno, msg.isFlagSet(Message.Flag.OOB)? DUMMY_OOB_MSG : msg);
 
-        if(added && log.isTraceEnabled())
+        if(added && is_trace)
             log.trace("%s: received %s#%d", local_addr, sender, hdr.seqno);
 
 
@@ -832,7 +840,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         boolean loopback=local_addr.equals(sender);
         boolean added=loopback || buf.add(msgs, oob, oob? DUMMY_OOB_MSG : null);
 
-        if(added && log.isTraceEnabled())
+        if(added && is_trace)
             log.trace("%s: received %s#%d-%d (%d messages)",
                       local_addr, sender, msgs.get(0).getVal1(), msgs.get(msgs.size() -1).getVal1(), msgs.size());
 
@@ -922,14 +930,14 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     log.warn(Util.getMessage("MessageNotFound"), local_addr, original_sender, i);
                 continue;
             }
-            if(log.isTraceEnabled())
+            if(is_trace)
                 log.trace(local_addr + ": resending " + original_sender + "::" + i);
             sendXmitRsp(xmit_requester, msg);
         }
     }
 
     protected void deliver(Message msg, Address sender, long seqno, String error_msg) {
-        if(log.isTraceEnabled())
+        if(is_trace)
             log.trace("%s: delivering %s#%d", local_addr, sender, seqno);
         try {
             up_prot.up(msg);
@@ -943,7 +951,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         try {
             if(batch == null || batch.isEmpty())
                 return;
-            if(log.isTraceEnabled()) {
+            if(is_trace) {
                 Message first=batch.first(), last=batch.last();
                 StringBuilder sb=new StringBuilder(local_addr + ": delivering " + batch.sender());
                 if(first != null && last != null) {
@@ -1303,7 +1311,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             return;
 
         StringBuilder sb=log.isDebugEnabled()?
-          new StringBuilder(merge? "\n[" + local_addr + " mergeDigest()]\n" : "\n["+local_addr + " setDigest()]\n")
+          new StringBuilder("\n[" + local_addr + (merge? " mergeDigest()]\n" : " setDigest()]\n"))
             .append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest) : null;
         
         boolean set_own_seqno=false;

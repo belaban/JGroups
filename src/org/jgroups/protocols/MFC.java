@@ -55,8 +55,6 @@ public class MFC extends FlowControl {
     /** Allows to unblock a blocked sender from an external program, e.g. JMX */
     @ManagedOperation(description="Unblock a sender")
     public void unblock() {
-        if(log.isTraceEnabled())
-            log.trace("unblocking the sender and replenishing all members");
         credits.replenishAll();
     }
 

@@ -74,7 +74,7 @@ public abstract class Protocol {
     public <T extends Protocol> T  setLevel(String level)            {log.setLevel(level); return (T)this;}
     @Property(name="level", description="logger level (see javadocs)")
     public String                  getLevel()                        {return log.getLevel();}
-    public <T extends Protocol> T  level(String level)               {this.log.setLevel(level); return (T)this;}
+    public <T extends Protocol> T  level(String level)               {return setLevel(level);}
     public boolean                 isErgonomics()                    {return ergonomics;}
     public <T extends Protocol> T  setErgonomics(boolean ergonomics) {this.ergonomics=ergonomics; return (T)this;}
     public ProtocolStack           getProtocolStack()                {return stack;}

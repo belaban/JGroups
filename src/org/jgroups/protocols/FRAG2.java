@@ -150,7 +150,6 @@ public class FRAG2 extends Protocol {
         if(hdr != null) { // needs to be defragmented
             Message assembled_msg=unfragment(msg, hdr);
             if(assembled_msg != null) {
-                if(log.isTraceEnabled()) log.trace("%s: assembled_msg is %s", local_addr, assembled_msg);
                 assembled_msg.setSrc(msg.getSrc()); // needed ? YES, because fragments have a null src !!
                 up_prot.up(assembled_msg);
             }

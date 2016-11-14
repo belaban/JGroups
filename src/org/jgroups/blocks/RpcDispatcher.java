@@ -90,12 +90,10 @@ public class RpcDispatcher extends MessageDispatcher {
             return empty_rsplist;
         }
 
-        if(log.isTraceEnabled())
-            log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, opts);
-
         Buffer buf=methodCallToBuffer(method_call, marshaller);
         RspList<T> retval=super.castMessage(dests, buf, opts);
-        if(log.isTraceEnabled()) log.trace("responses: %s", retval);
+        if(log.isTraceEnabled())
+            log.trace("dests=%s, method_call=%s, options=%s, responses: %s", dests, method_call, opts, retval);
         return retval;
     }
 
@@ -116,12 +114,11 @@ public class RpcDispatcher extends MessageDispatcher {
             log.trace("destination list of %s() is empty: no need to send message", method_call.methodName());
             return CompletableFuture.completedFuture(empty_rsplist);
         }
-
+        Buffer buf=methodCallToBuffer(method_call, marshaller);
+        CompletableFuture<RspList<T>> retval=super.castMessageWithFuture(dests, buf, options);
         if(log.isTraceEnabled())
             log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, options);
-
-        Buffer buf=methodCallToBuffer(method_call, marshaller);
-        return super.castMessageWithFuture(dests, buf, options);
+        return retval;
     }
 
 
@@ -151,12 +148,10 @@ public class RpcDispatcher extends MessageDispatcher {
      * @throws Exception Thrown if the method invocation threw an exception, either at the caller or the callee
      */
     public <T> T callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Exception {
-        if(log.isTraceEnabled())
-            log.trace("dest=%s, method_call=%s, options=%s", dest, call, options);
-
         Buffer buf=methodCallToBuffer(call, marshaller);
         T retval=super.sendMessage(dest, buf, options);
-        if(log.isTraceEnabled()) log.trace("retval: %s", retval);
+        if(log.isTraceEnabled())
+            log.trace("dest=%s, method_call=%s, options=%s, retval: %s", dest, call, options, retval);
         return retval;
     }
 

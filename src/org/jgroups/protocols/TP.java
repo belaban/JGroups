@@ -57,7 +57,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public static final byte       LIST=1; // we have a list of messages rather than a single message when set
     public static final byte       MULTICAST=2; // message is a multicast (versus a unicast) message when set
     public static final int        MSG_OVERHEAD=Global.SHORT_SIZE + Global.BYTE_SIZE; // version + flags
-    public static final String     BUNDLE_MSG="%s: sending %d msgs (%d bytes (%.2f%% of max_bundle_size) to %d dests(s): %s";
     protected static final long    MIN_WAIT_BETWEEN_DISCOVERIES=TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);  // ns
     protected static final boolean can_bind_to_mcast_addr;
 
@@ -91,6 +90,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="Used to map the internal port (bind_port) to an external port. Only used if > 0",
               systemProperty=Global.EXTERNAL_PORT,writable=false)
     protected int external_port;
+
+    @ManagedAttribute(description="tracing is enabled or disabled for the given log",writable=true)
+    protected boolean is_trace=log.isTraceEnabled();
 
 
     @Property(description="If true, the transport should use all available interfaces to receive multicast messages")
@@ -317,6 +319,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public Object[] getJmxObjects() {
         return new Object[]{msg_stats};
+    }
+
+    public <T extends Protocol> T setLevel(String level) {
+        T retval=super.setLevel(level);
+        is_trace=log.isTraceEnabled();
+        return retval;
     }
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
@@ -1002,7 +1010,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
 
         Address dest=msg.getDest(), sender=msg.getSrc();
-        if(log.isTraceEnabled())
+        if(is_trace)
             log.trace("%s: sending msg to %s, src=%s, headers are %s", local_addr, dest, sender, msg.printHeaders());
 
         // Don't send if dest is local address. Instead, send it up the stack. If multicast message, loop back directly
@@ -1077,7 +1085,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected void loopback(Message msg, final boolean multicast) {
         final Message copy=loopback_copy? msg.copy() : msg;
-        if(log.isTraceEnabled()) log.trace("%s: looping back message %s", local_addr, copy);
+        if(is_trace)
+            log.trace("%s: looping back message %s", local_addr, copy);
 
         if(!loopback_separate_thread) {
             passMessageUp(copy, null, false, multicast, false);
@@ -1124,7 +1133,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected void passMessageUp(Message msg, AsciiString cluster_name, boolean perform_cluster_name_matching,
                                  boolean multicast, boolean discard_own_mcast) {
-        if(log.isTraceEnabled())
+        if(is_trace)
             log.trace("%s: received %s, headers are %s", local_addr, msg, msg.printHeaders());
 
         if(up_prot == null)
@@ -1150,7 +1159,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     protected void passBatchUp(MessageBatch batch, boolean perform_cluster_name_matching, boolean discard_own_mcast) {
-        if(log.isTraceEnabled())
+        if(is_trace)
             log.trace("%s: received message batch of %d messages from %s", local_addr, batch.size(), batch.sender());
         if(up_prot == null)
             return;
