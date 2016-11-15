@@ -1737,6 +1737,7 @@ ${ASYM_ENCRYPT}
 ==== AUTH
 Authentication is performed by AUTH. Its main use is to make sure only authenticated members can join a cluster.
 Other scenarios where a check is performed are:
+
 * Merging: make sure only authenticated members can merge into a new cluster
 * View installation (if enabled): views and merge views can only be installed by authenticated members
 
