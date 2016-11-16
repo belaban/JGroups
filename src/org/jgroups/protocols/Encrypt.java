@@ -195,8 +195,8 @@ public abstract class Encrypt extends Protocol {
         encoding_ciphers.clear();
         decoding_ciphers.clear();
         for(int i=0; i < cipher_pool_size; i++ ) {
-            encoding_ciphers.add(createCipher(Cipher.ENCRYPT_MODE, secret, algorithm));
-            decoding_ciphers.add(createCipher(Cipher.DECRYPT_MODE, secret, algorithm));
+            encoding_ciphers.offer(createCipher(Cipher.ENCRYPT_MODE, secret, algorithm));
+            decoding_ciphers.offer(createCipher(Cipher.DECRYPT_MODE, secret, algorithm));
         };
 
         //set the version

@@ -1,0 +1,16 @@
+
+
+## Send unicast message to joiner *before* JOIN-RSP (https://issues.jboss.org/browse/JGRP-2131)
+RULE InjectAdditionalUnicast
+CLASS GMS
+METHOD sendJoinResponse
+HELPER org.jgroups.tests.helpers.SendUnicast
+AT ENTRY
+BIND gms=$0;
+     dest=$2;
+IF TRUE
+     DO System.out.println("** sending unicast message to " + dest);
+        sendUnicast(gms, dest);
+ENDRULE
+
+

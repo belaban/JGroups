@@ -1,15 +1,17 @@
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.MergeView;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.util.AsciiString;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.Util;
+import org.jgroups.protocols.pbcast.JoinRsp;
+import org.jgroups.util.*;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -82,7 +84,7 @@ public class ASYM_ENCRYPT extends Encrypt {
     @ManagedOperation(description="Triggers a request for the secret key to the current keyserver")
     public void sendKeyRequest() {
         if(key_server_addr == null) {
-            log.debug("%s: key server is currently not set", local_addr);
+            log.debug("%s: sending secret key request failed as the key server is currently not set", local_addr);
             return;
         }
         sendKeyRequest(key_server_addr);
@@ -105,8 +107,13 @@ public class ASYM_ENCRYPT extends Encrypt {
     }
 
     public Object up(Message msg) {
-        if(skip(msg))
+        if(skip(msg)) {
+            GMS.GmsHeader hdr=msg.getHeader(GMS_ID);
+            Address key_server=getCoordinator(msg, hdr);
+            if(key_server != null)
+                sendKeyRequest(key_server);
             return up_prot.up(msg);
+        }
         return super.up(msg);
     }
 
@@ -116,6 +123,10 @@ public class ASYM_ENCRYPT extends Encrypt {
                 try {
                     up_prot.up(msg);
                     batch.remove(msg);
+                    GMS.GmsHeader hdr=msg.getHeader(GMS_ID);
+                    Address key_server=getCoordinator(msg, hdr);
+                    if(key_server != null)
+                        sendKeyRequest(key_server);
                 }
                 catch(Throwable t) {
                     log.error("failed passing up message from %s: %s, ex=%s", msg.src(), msg.printHeaders(), t);
@@ -126,6 +137,32 @@ public class ASYM_ENCRYPT extends Encrypt {
             super.up(batch); // decrypt the rest of the messages in the batch (if any)
     }
 
+    /** Tries to find out if this is a JOIN_RSP or INSTALL_MERGE_VIEW message and returns the coordinator of the view */
+    protected Address getCoordinator(Message msg, GMS.GmsHeader hdr) {
+        switch(hdr.getType()) {
+            case GMS.GmsHeader.JOIN_RSP:
+                try {
+                    JoinRsp join_rsp=Util.streamableFromBuffer(JoinRsp.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    View new_view=join_rsp != null? join_rsp.getView() : null;
+                    return new_view != null? new_view.getCoord() : null;
+                }
+                catch(Throwable t) {
+                    log.error("%s: failed getting coordinator (keyserver) from JoinRsp: %s", local_addr, t);
+                }
+                break;
+            case GMS.GmsHeader.INSTALL_MERGE_VIEW:
+                try {
+                    Tuple<View,Digest> tuple=GMS._readViewAndDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    View new_view=tuple != null? tuple.getVal1() : null;
+                    return new_view != null? new_view.getCoord() : null;
+                }
+                catch(Throwable t) {
+                    log.error("%s: failed getting coordinator (keyserver) from INSTALL_MERGE_VIEW: %s", local_addr, t);
+                }
+                break;
+        }
+        return null;
+    }
 
 
     /** Checks if a message needs to be encrypted/decrypted. Join and merge requests/responses don't need to be
@@ -141,6 +178,8 @@ public class ASYM_ENCRYPT extends Encrypt {
             case GMS.GmsHeader.MERGE_RSP:
             case GMS.GmsHeader.VIEW_ACK:
             case GMS.GmsHeader.INSTALL_MERGE_VIEW:
+            case GMS.GmsHeader.GET_DIGEST_REQ:
+            case GMS.GmsHeader.GET_DIGEST_RSP:
                 return true;
         }
         return false;
@@ -280,8 +319,8 @@ public class ASYM_ENCRYPT extends Encrypt {
     /** If the keyserver changed, send a request for the secret key to the keyserver */
     protected void handleNewKeyServer(Address newKeyServer, boolean merge_view, boolean left_mbrs) {
         if(keyServerChanged(newKeyServer) || merge_view || left_mbrs) {
-            secret_key=null;
-            sym_version=null;
+            // secret_key=null;
+            // sym_version=null;
             queue_up_msgs=true;
             key_server_addr=newKeyServer;
             is_key_server=false;
@@ -297,16 +336,18 @@ public class ASYM_ENCRYPT extends Encrypt {
 
 
     protected void setKeys(SecretKey key, byte[] version) throws Exception {
-        if(Arrays.equals(this.sym_version, version))
-            return;
+        synchronized(this) {
+            if(Arrays.equals(this.sym_version, version))
+                return;
 
-        Cipher decoding_cipher=secret_key != null? decoding_ciphers.take() : null;
-        // put the previous key into the map, keep the cipher: no leak, as we'll clear decoding_ciphers in initSymCiphers()
-        if(decoding_cipher != null)
-            key_map.put(new AsciiString(version), decoding_cipher);
-        secret_key=key;
-        initSymCiphers(key.getAlgorithm(), key);
-        sym_version=version;
+            Cipher decoding_cipher=secret_key != null? decoding_ciphers.take() : null;
+            // put the previous key into the map, keep the cipher: no leak, as we'll clear decoding_ciphers in initSymCiphers()
+            if(decoding_cipher != null)
+                key_map.put(new AsciiString(version), decoding_cipher);
+            secret_key=key;
+            initSymCiphers(key.getAlgorithm(), key);
+            sym_version=version;
+        }
         drainUpQueue();
     }
 
@@ -335,8 +376,10 @@ public class ASYM_ENCRYPT extends Encrypt {
 
     /** send client's public key to server and request server's public key */
     protected void sendKeyRequest(Address key_server) {
+        if(key_server == null)
+            return;
         Message newMsg=new Message(key_server, key_pair.getPublic().getEncoded()).src(local_addr)
-          .putHeader(this.id,new EncryptHeader(EncryptHeader.SECRET_KEY_REQ, sym_version));
+          .putHeader(this.id,new EncryptHeader(EncryptHeader.SECRET_KEY_REQ, null));
         down_prot.down(newMsg);
     }
 
