@@ -1,9 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.MergeView;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
@@ -19,10 +16,14 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Encrypts and decrypts communication in JGroups by using a secret key distributed to all cluster members by the
@@ -64,9 +65,11 @@ public class ASYM_ENCRYPT extends Encrypt {
     protected volatile boolean                     is_key_server;
     protected KeyPair                              key_pair; // to store own's public/private Key
     protected Cipher                               asym_cipher;  // decrypting cypher for secret key requests
+    protected final Lock                           queue_lock=new ReentrantLock();
+
     // queue all up msgs until the secret key has been received/created
     @ManagedAttribute(description="whether or not to queue received messages (until the secret key was received)")
-    protected volatile boolean                     queue_up_msgs=true;
+    protected boolean                              queue_up_msgs=true;
     // queues a bounded number of messages received during a null secret key (or fetching the key from a new coord)
     protected final BlockingQueue<Message>         up_queue=new ArrayBlockingQueue<>(100);
 
@@ -96,7 +99,7 @@ public class ASYM_ENCRYPT extends Encrypt {
     }
 
     public void stop() {
-        drainUpQueue();
+        stopQueueing();
         super.stop();
     }
 
@@ -202,8 +205,7 @@ public class ASYM_ENCRYPT extends Encrypt {
     }
 
     @Override protected boolean process(Message msg) {
-        if(queue_up_msgs || secret_key == null) {
-            up_queue.offer(msg);
+        if(enqueue(msg)) {
             log.trace("%s: queuing %s message from %s as secret key hasn't been retrieved from keyserver %s yet, hdrs: %s",
                       local_addr, msg.dest() == null? "mcast" : "unicast", msg.src(), key_server_addr, msg.printHeaders());
             if(last_key_request == 0 || System.currentTimeMillis() - last_key_request > 2000) {
@@ -309,7 +311,7 @@ public class ASYM_ENCRYPT extends Encrypt {
         try {
             this.secret_key=createSecretKey();
             initSymCiphers(sym_algorithm, secret_key);
-            drainUpQueue();
+            stopQueueing();
         }
         catch(Exception ex) {
             log.error("%s: failed creating secret key and initializing ciphers", local_addr, ex);
@@ -321,7 +323,8 @@ public class ASYM_ENCRYPT extends Encrypt {
         if(keyServerChanged(newKeyServer) || merge_view || left_mbrs) {
             // secret_key=null;
             // sym_version=null;
-            queue_up_msgs=true;
+            // queue_up_msgs=true;
+            startQueueing();
             key_server_addr=newKeyServer;
             is_key_server=false;
             log.debug("%s: sending request for secret key to the new keyserver %s", local_addr, key_server_addr);
@@ -337,9 +340,10 @@ public class ASYM_ENCRYPT extends Encrypt {
 
     protected void setKeys(SecretKey key, byte[] version) throws Exception {
         synchronized(this) {
-            if(Arrays.equals(this.sym_version, version))
+            if(Arrays.equals(this.sym_version, version)) {
+                stopQueueing();
                 return;
-
+            }
             Cipher decoding_cipher=secret_key != null? decoding_ciphers.take() : null;
             // put the previous key into the map, keep the cipher: no leak, as we'll clear decoding_ciphers in initSymCiphers()
             if(decoding_cipher != null)
@@ -348,7 +352,7 @@ public class ASYM_ENCRYPT extends Encrypt {
             initSymCiphers(key.getAlgorithm(), key);
             sym_version=version;
         }
-        drainUpQueue();
+        stopQueueing();
     }
 
 
@@ -407,12 +411,41 @@ public class ASYM_ENCRYPT extends Encrypt {
         }
     }
 
-    // doesn't have to be 100% correct: leftover messages wll be delivered later and will be discarded as dupes, as
-    // retransmission is likely to have kicked in before anyway
-    protected void drainUpQueue() {
-        queue_up_msgs=false;
-        Message queued_msg;
-        while((queued_msg=up_queue.poll()) != null) {
+    protected void startQueueing() {
+        queue_lock.lock();
+        try {
+            queue_up_msgs=true;
+        }
+        finally {
+            queue_lock.unlock();
+        }
+    }
+
+    protected boolean enqueue(Message msg) {
+        queue_lock.lock();
+        try {
+            return queue_up_msgs && up_queue.offer(msg);
+        }
+        finally {
+            queue_lock.unlock();
+        }
+    }
+
+
+    // Drains the queued messages. Doesn't have to be 100% correct: leftover messages wll be delivered later and will
+    // be discarded as dupes, as retransmission is likely to have kicked in before, anyway
+    protected void stopQueueing() {
+        List<Message> sink=new ArrayList<>(up_queue.size());
+        queue_lock.lock();
+        try {
+            queue_up_msgs=false;
+            up_queue.drainTo(sink);
+        }
+        finally {
+            queue_lock.unlock();
+        }
+
+        for(Message queued_msg: sink) {
             try {
                 Message decrypted_msg=decryptMessage(null, queued_msg.copy());
                 if(decrypted_msg != null)
