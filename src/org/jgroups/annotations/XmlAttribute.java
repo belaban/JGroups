@@ -1,5 +1,11 @@
 package org.jgroups.annotations;
 
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 /**
  * Annotation to add attributes to the schema created by {@link org.jgroups.util.XMLSchemaGenerator}. Example: <br/>
  * <pre>
@@ -13,12 +19,6 @@ package org.jgroups.annotations;
  * @author Bela Ban
  * @since  3.5
  */
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
 @Retention(value=RetentionPolicy.RUNTIME)
 @Target(value=ElementType.TYPE)
 public @interface XmlAttribute {
