@@ -24,6 +24,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiPredicate;
 
 /**
  * Encrypts and decrypts communication in JGroups by using a secret key distributed to all cluster members by the
@@ -73,6 +74,9 @@ public class ASYM_ENCRYPT extends Encrypt {
     // queues a bounded number of messages received during a null secret key (or fetching the key from a new coord)
     protected final BlockingQueue<Message>         up_queue=new ArrayBlockingQueue<>(100);
 
+    // use registerBypasser to add code that is called to check if a message should bypass ASYM_ENCRYPT
+    protected volatile List<BiPredicate<Message,Boolean>> bypassers;
+
     protected volatile long                        last_key_request;
 
 
@@ -80,6 +84,23 @@ public class ASYM_ENCRYPT extends Encrypt {
     public Cipher       asymCipher()                      {return asym_cipher;}
     public Address      keyServerAddr()                   {return key_server_addr;}
     public ASYM_ENCRYPT keyServerAddr(Address key_srv)    {this.key_server_addr=key_srv; return this;}
+
+    public synchronized ASYM_ENCRYPT registerBypasser(BiPredicate<Message,Boolean> bypasser) {
+        if(bypasser != null) {
+            if(bypassers == null)
+                bypassers=new ArrayList<>();
+            bypassers.add(bypasser);
+        }
+        return this;
+    }
+
+    public synchronized ASYM_ENCRYPT unregisterBypasser(BiPredicate<Message,Boolean> bypasser) {
+        if(bypasser != null && bypassers != null) {
+            if(bypassers.remove(bypasser) && bypassers.isEmpty())
+                bypassers=null;
+        }
+        return this;
+    }
 
     @ManagedAttribute(description="Number of received messages currently queued")
     public int numQueuedMessages() {return up_queue.size();}
@@ -104,12 +125,14 @@ public class ASYM_ENCRYPT extends Encrypt {
     }
 
     public Object down(Message msg) {
-        if(skip(msg))
+        if(skip(msg) || bypass(msg, false))
             return down_prot.down(msg);
         return super.down(msg);
     }
 
     public Object up(Message msg) {
+        if(bypass(msg, true))
+            return up_prot.up(msg);
         if(skip(msg)) {
             GMS.GmsHeader hdr=msg.getHeader(GMS_ID);
             Address key_server=getCoordinator(msg, hdr);
@@ -122,6 +145,11 @@ public class ASYM_ENCRYPT extends Encrypt {
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
+            if(bypass(msg, false)) {
+                up_prot.up(msg);
+                batch.remove(msg);
+                continue;
+            }
             if(skip(msg)) {
                 try {
                     up_prot.up(msg);
@@ -172,7 +200,8 @@ public class ASYM_ENCRYPT extends Encrypt {
      * encrypted as they're authenticated by {@link AUTH} */
     protected static boolean skip(Message msg) {
         GMS.GmsHeader hdr=msg.getHeader(GMS_ID);
-        if(hdr == null) return false;
+        if(hdr == null)
+            return false;
         switch(hdr.getType()) {
             case GMS.GmsHeader.JOIN_REQ:
             case GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
@@ -183,6 +212,17 @@ public class ASYM_ENCRYPT extends Encrypt {
             case GMS.GmsHeader.INSTALL_MERGE_VIEW:
             case GMS.GmsHeader.GET_DIGEST_REQ:
             case GMS.GmsHeader.GET_DIGEST_RSP:
+                return true;
+        }
+        return false;
+    }
+
+    protected boolean bypass(Message msg, boolean up) {
+        List<BiPredicate<Message,Boolean>> tmp=bypassers;
+        if(tmp == null)
+            return false;
+        for(BiPredicate<Message,Boolean> pred: tmp) {
+            if(pred.test(msg, up))
                 return true;
         }
         return false;

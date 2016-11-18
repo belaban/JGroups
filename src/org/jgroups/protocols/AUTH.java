@@ -28,7 +28,7 @@ import java.util.List;
 @XmlAttribute(attrs={
   "auth_value",                                                         // SimpleToken, MD5Token, X509Token
   "fixed_members_value", "fixed_members_seperator",                     // FixedMembershipToken
-  "block_time",                                                         // DemoToken
+  "block_time", "challenge_size",                                       // ChallengeResponseToken
   "client_principal_name", "client_password", "service_principal_name", // Krb5Token
   "token_hash",                                                         // MD5Token
   "match_string", "match_ip_address", "match_logical_name",             // RegexMembership

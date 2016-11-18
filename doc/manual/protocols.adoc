@@ -1754,18 +1754,32 @@ actual authentication mechanism.  Some basic implementations of AuthToken are pr
 org.jgroups.auth package (SimpleToken, MD5Token and X509Token).  Effectivly all these implementations
 do is encrypt a string (found in the jgroups config) and pass that on the JOIN REQUEST.
 
-
 When authentication is successful, the message is simply passed up the stack to the GMS protocol.
 When it fails, the AUTH protocol creates a JOIN RESPONSE message with a failure string and passes
 it back down the stack.  This failure string informs the client of the reason for failure.
 Clients will then fail to join the group and will throw a SecurityException.
 If this error string is null then authentication is considered to have passed.
 
-
 For more information refer to the wiki at http://community.jboss.org/wiki/JGroupsAUTH[AUTH].
 
-
 ${AUTH}
+
+===== AuthToken implementations
+
+The AuthToken implememntations are listed below. Check the javadoc for details.
+
+[align="left",width="90%",cols="2,10",options="header"]
+|=================
+|Name|Description
+|SimpleToken | Uses a simple string (password) which is shared, and sent along with the authentication request
+| FixedMembershipToken | A fixed list of IP address:port pairs. If the requester is not in this list, authentication fails
+| RegexpMembership| Uses a regular expression to match against IP address or hostname
+| Krb5Token | Uses Kerberos for authentication
+| MD5Token | Uses an MD5 hash of a simple string (similar to SimpleString above, but hashed instead of plaintext)
+| X509Token | Uses a shared X.509 certificate
+| ChallengeResponseToken | Uses a challenge-response mechanism
+|=================
+
 
 [[SASL]]
 

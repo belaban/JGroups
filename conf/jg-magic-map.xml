@@ -68,5 +68,6 @@
     <class id="87"  name="org.jgroups.protocols.ABP$ABPHeader"/>
     <class id="88"  name="org.jgroups.protocols.EncryptHeader"/>
     <class id="89"  name="org.jgroups.protocols.NAMING$Header"/>
+    <class id="90"  name="org.jgroups.auth.ChallengeResponseHeader"/>
 </magic-number-class-mapping>
 
