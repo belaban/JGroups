@@ -13,7 +13,6 @@ public class Runner implements Runnable {
     protected volatile boolean    running=true;
     protected Thread              thread;
 
-    public Thread getThread() {return thread;}
 
     public Runner(ThreadFactory factory, String thread_name, Runnable function, Runnable stop_function) {
         this.factory=factory;
@@ -21,6 +20,9 @@ public class Runner implements Runnable {
         this.function=function;
         this.stop_function=stop_function;
     }
+
+    public Thread  getThread()  {return thread;}
+    public boolean isRunning()  {return running;}
 
 
     public synchronized void start() {
