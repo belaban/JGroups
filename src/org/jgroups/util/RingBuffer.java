@@ -1,9 +1,11 @@
 package org.jgroups.util;
 
 import java.lang.reflect.Array;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
+
 
 /**
  * Ring buffer of fixed capacity designed for multiple writers but only a single reader. Advancing the read or
@@ -12,12 +14,12 @@ import java.util.function.BiConsumer;
  * @since  4.0
  */
 public class RingBuffer<T> {
-    protected final T[]                                  buf;
-    protected int                                        ri, wi;   // read and write indices
-    protected int                                        count;    // number of elements available to be read
-    protected final Lock                                 lock=new ReentrantLock();
-    protected final java.util.concurrent.locks.Condition not_empty=lock.newCondition(); // reader can block on this
-    protected final java.util.concurrent.locks.Condition not_full=lock.newCondition();  // writes can block on this
+    protected final T[]          buf;
+    protected int                ri, wi;   // read and write indices
+    protected int                count;    // number of elements available to be read
+    protected final Lock         lock=new ReentrantLock();
+    protected final Condition    not_empty=lock.newCondition(); // reader can block on this
+    protected final Condition    not_full=lock.newCondition();  // writes can block on this
 
     public RingBuffer(Class<T> element_type, int capacity) {
         int c=Util.getNextHigherPowerOfTwo(capacity); // power of 2 for faster mod operation
