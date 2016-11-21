@@ -122,11 +122,11 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
 
     public void paint(Graphics g) {
         Rectangle bounds=panel.getBounds();
-        Color old=graphics.getColor();
 
         if(bounds == null || graphics == null)
             return;
 
+        Color old=graphics.getColor();
         graphics.setColor(Color.black);
         graphics.drawRect(0, 0, bounds.width - 1, bounds.height - 1);
         graphics.setColor(old);

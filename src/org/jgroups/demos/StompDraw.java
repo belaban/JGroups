@@ -256,7 +256,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
         }
     }
 
-    
+
 
 
     /* --------------- Callbacks --------------- */
@@ -335,21 +335,21 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
 
 
         public void writeState(OutputStream outstream) throws IOException {
+            if(state == null)
+                return;
             synchronized(state) {
-                if(state != null) {
-                    DataOutputStream dos=new DataOutputStream(outstream);
-                    dos.writeInt(state.size());
-                    Point point;
-                    Color col;
-                    for(Map.Entry<Point,Color> entry: state.entrySet()) {
-                        point=entry.getKey();
-                        col=entry.getValue();
-                        dos.writeInt(point.x);
-                        dos.writeInt(point.y);
-                        dos.writeInt(col.getRGB());
-                    }
-                    dos.flush();
+                DataOutputStream dos = new DataOutputStream(outstream);
+                dos.writeInt(state.size());
+                Point point;
+                Color col;
+                for (Map.Entry<Point, Color> entry : state.entrySet()) {
+                    point = entry.getKey();
+                    col = entry.getValue();
+                    dos.writeInt(point.x);
+                    dos.writeInt(point.y);
+                    dos.writeInt(col.getRGB());
                 }
+                dos.flush();
             }
         }
 
