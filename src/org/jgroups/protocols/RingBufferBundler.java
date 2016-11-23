@@ -120,7 +120,7 @@ public class RingBufferBundler extends BaseBundler {
                     transport.incrBatchesSent(num_msgs);
             }
             catch(Exception ex) {
-                log.error("failed to send message(s)", ex);
+                log.error("failed to send message(s) to %s: %s", dest == null? "group" : dest, ex.getMessage());
             }
 
             if(start == end)
