@@ -91,6 +91,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Number of retransmit responses sent")
     protected final AtomicLong xmit_rsps_sent=new AtomicLong(0);
 
+    protected final AverageMinMax avg_delivery_batch_size=new AverageMinMax();
+
     @ManagedAttribute(description="True if sending a message can block at the transport level")
     protected boolean sends_can_block=true;
 
@@ -168,6 +170,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     @ManagedAttribute(description="Next seqno issued by the timestamper")
     public int getTimestamper() {return timestamper.get();}
+
+    @ManagedAttribute(description="Average batch size of messages removed from the table and delivered to the application")
+    public String getAvgBatchDeliverySize() {
+        return avg_delivery_batch_size != null? avg_delivery_batch_size.toString() : "n/a";
+    }
 
     public <T extends Protocol> T setLevel(String level) {
         T retval= super.setLevel(level);
@@ -356,6 +363,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     public void resetStats() {
         num_msgs_sent=num_msgs_received=num_acks_sent=num_acks_received=num_xmits=0;
+        avg_delivery_batch_size.clear();
     }
 
 
@@ -870,8 +878,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         try {
             while(true) {
                 List<Message> list=win.removeMany(processing, true, max_msg_batch_size, drop_oob_and_dont_loopback_msgs_filter);
-                if(list != null) // list is guaranteed to NOT contain any OOB messages as the drop_oob_msgs_filter removed them
+                if(list != null) { // list is guaranteed to NOT contain any OOB messages as the drop_oob_msgs_filter removed them
+                    if(stats)
+                        avg_delivery_batch_size.add(list.size());
                     deliverBatch(new MessageBatch(local_addr, sender, null, false, list));
+                }
                 else {
                     released_processing=true;
                     return;
