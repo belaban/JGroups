@@ -190,11 +190,11 @@ public class RequestTableTest {
     }
 
     public void testRemoveMany() {
-        RequestTable<Integer> table=create(40, 0, 40);
+        RequestTable<Integer> table=create(40, 0, 41); // exclusive 41
         remove(table, 0, 4);
         table.removeMany(LongStream.rangeClosed(4, 40), seqno -> System.out.printf("seqno=%d\n", seqno));
         assert table.size() == 0;
-        assert table.low() == 40 && table.high() == 40;
+        assert table.low() == 41 && table.high() == 41;
     }
 
     public void testClear() {
