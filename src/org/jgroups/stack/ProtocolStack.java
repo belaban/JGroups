@@ -66,7 +66,7 @@ public class ProtocolStack extends Protocol {
                     map.put(max_list_print_size, String.valueOf(Util.MAX_LIST_PRINT_SIZE));
                     return map;
                 }
-                if(key.startsWith("print-protocols")) {
+                if(key.equals("pp") || key.startsWith("print-protocols")) {
                     List<Protocol> prots=getProtocols();
                     Collections.reverse(prots);
                     StringBuilder sb=new StringBuilder();
@@ -76,7 +76,7 @@ public class ProtocolStack extends Protocol {
                     map.put("protocols", sb.toString());
                     return map;
                 }
-                if(key.startsWith("remove-protocol")) {
+                if(key.equals("rp") || key.startsWith("remove-protocol")) {
                     key=key.substring("remove-protocol".length());
                     int index=key.indexOf('=');
                     if(index != -1) {
