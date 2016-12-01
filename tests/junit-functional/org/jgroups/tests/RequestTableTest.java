@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.LongStream;
 
 /**
  * Tests {@link RequestTable}
@@ -186,6 +187,14 @@ public class RequestTableTest {
         table.remove(3);
         assertBounds(table, 4, 0);
         assert table.low() == 4 && table.high() == 4;
+    }
+
+    public void testRemoveMany() {
+        RequestTable<Integer> table=create(40, 0, 40);
+        remove(table, 0, 4);
+        table.removeMany(LongStream.rangeClosed(4, 40), seqno -> System.out.printf("seqno=%d\n", seqno));
+        assert table.size() == 0;
+        assert table.low() == 40 && table.high() == 40;
     }
 
     public void testClear() {

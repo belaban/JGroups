@@ -2,8 +2,11 @@ package org.jgroups.util;
 
 import org.jgroups.annotations.GuardedBy;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
+import java.util.stream.LongStream;
 
 /**
  * Table for storing requests associated with monotonically increasing sequence numbers (seqnos).<p/>
@@ -107,6 +110,49 @@ public class RequestTable<T> {
             lock.unlock();
         }
     }
+
+    /**
+     * Removes all elements in the stream. Calls the consumer (if not null) on non-null elements
+     */
+    public RequestTable<T> removeMany(LongStream seqnos, Consumer<T> consumer) {
+        if(seqnos == null) return this;
+        AtomicBoolean advance=new AtomicBoolean(false);
+
+        seqnos.forEach(seqno -> {
+            T element=null;
+            lock.lock();
+            try {
+                if(seqno < low || seqno > high)
+                    return;
+                int index=index(seqno);
+                if((element=buffer[index]) != null && removes_till_compaction > 0)
+                    num_removes++;
+                buffer[index]=null;
+                if(seqno == low)
+                    advance.set(true);
+            }
+            finally {
+                lock.unlock();
+            }
+            if(consumer != null)
+                consumer.accept(element);
+        });
+
+        lock.lock();
+        try {
+            if(advance.get())
+                advanceLow();
+            if(removes_till_compaction > 0 && num_removes >= removes_till_compaction) {
+                _compact();
+                num_removes=0;
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+        return this;
+    }
+
 
     /** Removes all elements, compacts the buffer and sets low=high=0 */
     public RequestTable<T> clear() {return clear(0);}
