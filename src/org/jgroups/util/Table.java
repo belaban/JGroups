@@ -623,7 +623,7 @@ public class Table<T> implements Iterable<T> {
     /** Iterate from low to hr and add up non-null values. Caller must hold the lock. */
     @GuardedBy("lock")
     public int computeSize() {
-        return (int)stream().filter(el -> el != null).count();
+        return (int)stream().filter(Objects::nonNull).count();
     }
 
 
@@ -694,7 +694,7 @@ public class Table<T> implements Iterable<T> {
     public String dump() {
         lock.lock();
         try {
-            return stream(low, hr).filter(el -> el != null).map(Object::toString)
+            return stream(low, hr).filter(Objects::nonNull).map(Object::toString)
               .collect(Collectors.joining(", "));
         }
         finally {

@@ -51,7 +51,7 @@ public class ProtocolStack extends Protocol {
 
         public Map<String, String> handleProbe(String... keys) {
             for(String key: keys) {
-                if(key.equals("props")) {
+                if(Objects.equals(key, "props")) {
                     String tmp=printProtocolSpec(true);
                     HashMap<String, String> map=new HashMap<>(1);
                     map.put("props", tmp);
@@ -348,7 +348,7 @@ public class ProtocolStack extends Protocol {
         int len, max_len=30;
 
         sb.append("<config>\n");
-        while(prot != null && !prot.getClass().equals(ProtocolStack.class)) {
+        while(prot != null && !Objects.equals(prot.getClass(), ProtocolStack.class)) {
             String prot_name=prot.getClass().getName();
             if(prot_name != null) {
                 sb.append("  <").append(prot_name).append(" ");
