@@ -76,8 +76,9 @@ public class ProtocolStack extends Protocol {
                     map.put("protocols", sb.toString());
                     return map;
                 }
-                if(key.equals("rp") || key.startsWith("remove-protocol")) {
-                    key=key.substring("remove-protocol".length());
+                if(key.startsWith("rp") || key.startsWith("remove-protocol")) {
+                    int len=key.startsWith("rp")? "rp".length() : "remove-protocol".length();
+                    key=key.substring(len);
                     int index=key.indexOf('=');
                     if(index != -1) {
                         String rest=key.substring(index +1);
