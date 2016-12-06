@@ -380,13 +380,11 @@ public class TcpConnection extends Connection {
                     break;
                 }
 
-                if(data != null) {
-                    try {
-                        _send(data.getBuf(), 0, data.getLength(), false, send_queue.isEmpty());
-                    }
-                    catch(Throwable ignored) {
-                        t=ignored;
-                    }
+                try {
+                    _send(data.getBuf(), 0, data.getLength(), false, send_queue.isEmpty());
+                }
+                catch(Throwable ignored) {
+                    t=ignored;
                 }
             }
             server.notifyConnectionClosed(TcpConnection.this, String.format("%s: %s", getClass().getSimpleName(),
