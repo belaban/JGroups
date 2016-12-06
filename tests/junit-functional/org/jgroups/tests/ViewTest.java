@@ -49,26 +49,17 @@ public class ViewTest {
 
     public void testGetMembers() throws Exception {
         List<Address> mbrs=view.getMembers();
-        try {
-            mbrs.add(a);
-            assert false: "adding a member to a view should throw an exception";
-        }
-        catch(UnsupportedOperationException ex) {
-            System.out.println("adding a member threw " + ex.getClass().getSimpleName() + " as expected");
-        }
+        Address x=Util.createRandomAddress("X");
+        mbrs.add(x);
+        assert !view.containsMember(x);
 
         byte[] buf=Util.objectToByteBuffer(view);
         View view2=(View)Util.objectFromByteBuffer(buf);
         System.out.println("view2 = " + view2);
 
         mbrs=view2.getMembers();
-        try {
-            mbrs.add(a);
-            assert false: "adding a member to a view should throw an exception";
-        }
-        catch(UnsupportedOperationException ex) {
-            System.out.println("adding a member threw " + ex.getClass().getSimpleName() + " as expected");
-        }
+        mbrs.add(x);
+        assert !view2.containsMember(x);
     }
 
     public void testContainsMember() {
@@ -81,13 +72,25 @@ public class ViewTest {
         assert !view.containsMember(i) : "Member should not be in view";
     }
 
+    public void testContainsMembers() {
+        assert view.containsMembers(b,a,d,c);
+        assert !view.containsMembers(a,b,d,f, Util.createRandomAddress("X"));
+
+        View v=View.create(a,1,a,b,c);
+        assert v.containsMembers(a,b);
+
+        v=View.create(a,2,a,b);
+        assert !v.containsMembers(a,b,c);
+    }
+
     public void testEqualsCreator() {
         assert a.equals(view.getCreator()) : "Creator should be a";
         assert !view.getCreator().equals(d) : "Creator should not be d";
     }
 
     public void testEquals() {
-        assert view.equals(view);
+        View tmp=view;
+        assert view.equals(tmp); // tests '=='
     }
 
     public void testEquals2() {
@@ -97,7 +100,7 @@ public class ViewTest {
         View v3=new View(a, 12543, new ArrayList<>(members));
         assert !v1.equals(v3);
     }
- 
+
 
     public void testCopy() throws Exception {
         View view2=view;
@@ -105,14 +108,12 @@ public class ViewTest {
         System.out.println("view2 = " + view2);
         assert view.equals(view2);
 
+        Address x=Util.createRandomAddress("X");
         List<Address> mbrs=view2.getMembers();
-        try {
-            mbrs.add(a);
-            assert false: "adding a member to a view should throw an exception";
-        }
-        catch(UnsupportedOperationException ex) {
-            System.out.println("adding a member threw " + ex.getClass().getSimpleName() + " as expected");
-        }
+        mbrs.add(x); // no effect as it won't change the original view
+
+        assert !view2.containsMember(x);
+        assert !view.containsMember(x);
     }
 
 

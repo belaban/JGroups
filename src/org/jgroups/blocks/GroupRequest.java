@@ -11,7 +11,6 @@ import org.jgroups.util.RspList;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -197,22 +196,17 @@ public class GroupRequest<T> extends Request {
      * response.
      * </ul>
      */
-    public void viewChange(View new_view) {
-        if(new_view == null || requests == null || requests.isEmpty())
-            return;
-
-        List<Address> mbrs=new_view.getMembers();
-        if(mbrs == null)
+    public void viewChange(View view) {
+        if(view == null || requests == null || requests.isEmpty())
             return;
 
         boolean changed=false;
-
         lock.lock();
         try {
             for(Map.Entry<Address,Rsp<T>> entry: requests.entrySet()) {
                 Address mbr=entry.getKey();
                 // SiteAddresses are not checked as they might be in a different cluster
-                if(!(mbr instanceof SiteAddress) && !mbrs.contains(mbr)) {
+                if(!(mbr instanceof SiteAddress) && !view.containsMember(mbr)) {
                     Rsp<T> rsp=entry.getValue();
                     if(rsp.setSuspected()) {
                         if(!(rsp.wasReceived() || rsp.wasUnreachable()))

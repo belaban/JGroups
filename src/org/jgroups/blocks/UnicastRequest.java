@@ -6,7 +6,6 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.protocols.relay.SiteAddress;
 import org.jgroups.util.Rsp;
 
-import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -133,15 +132,14 @@ public class UnicastRequest<T> extends Request {
      * If the target address is not a member of the new view, we'll mark the response as not received and unblock
      * the caller of execute()
      */
-    public void viewChange(View new_view) {
-        Collection<Address> mbrs=new_view != null? new_view.getMembers() : null;
-        if(mbrs == null)
+    public void viewChange(View view) {
+        if(view == null)
             return;
 
         lock.lock();
         try {
             // SiteAddresses are not checked as they might be in a different cluster
-            if(!(target instanceof SiteAddress) && !mbrs.contains(target)) {
+            if(!(target instanceof SiteAddress) && !view.containsMember(target)) {
                 result.setSuspected();
                 done=true;
                 if(corr != null && this.req_id > 0)

@@ -113,10 +113,12 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
 
     /**
      * Returns the member list
-     * @return an unmodifiable list
+     * @return a copy of the members array
      */
     public List<Address> getMembers() {
-        return Collections.unmodifiableList(Arrays.asList(members));
+        List<Address> retval=new ArrayList<>(members.length);
+        Collections.addAll(retval, members);
+        return retval;
     }
 
     /** Returns the underlying array. The caller <em>must not</em> modify the contents. Should not be used by
