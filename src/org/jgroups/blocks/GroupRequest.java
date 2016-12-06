@@ -10,7 +10,6 @@ import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -164,22 +163,17 @@ public class GroupRequest<T> extends Request<RspList<T>> {
      * response.
      * </ul>
      */
-    public void viewChange(View new_view) {
-        if(new_view == null || rsps == null || rsps.isEmpty())
-            return;
-
-        List<Address> mbrs=new_view.getMembers();
-        if(mbrs == null)
+    public void viewChange(View view) {
+        if(view == null || rsps == null || rsps.isEmpty())
             return;
 
         boolean changed=false;
-
         lock.lock();
         try {
             for(Map.Entry<Address,Rsp<T>> entry: rsps.entrySet()) {
                 Address mbr=entry.getKey();
                 // SiteAddresses are not checked as they might be in a different cluster
-                if(!(mbr instanceof SiteAddress) && !mbrs.contains(mbr)) {
+                if(!(mbr instanceof SiteAddress) && !view.containsMember(mbr)) {
                     Rsp<T> rsp=entry.getValue();
                     if(rsp.setSuspected()) {
                         if(!(rsp.wasReceived() || rsp.wasUnreachable()))

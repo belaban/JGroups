@@ -15,10 +15,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.NotSerializableException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -271,7 +268,7 @@ public class RequestCorrelator {
 
     /** An entire site is down; mark all requests that point to that site as unreachable (used by RELAY2) */
     public void setSiteUnreachable(String site) {
-        requests.values().stream().filter(req -> req != null).forEach(req -> req.siteUnreachable(site));
+        requests.values().stream().filter(Objects::nonNull).forEach(req -> req.siteUnreachable(site));
     }
 
 
@@ -280,7 +277,7 @@ public class RequestCorrelator {
      */
     public void receiveView(View new_view) {
         view=new_view; // move this before the iteration (JGRP-1428)
-        requests.values().stream().filter(req -> req != null).forEach(req -> req.viewChange(new_view));
+        requests.values().stream().filter(Objects::nonNull).forEach(req -> req.viewChange(new_view));
     }
 
 

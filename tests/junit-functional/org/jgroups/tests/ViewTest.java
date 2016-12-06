@@ -49,26 +49,17 @@ public class ViewTest {
 
     public void testGetMembers() throws Exception {
         List<Address> mbrs=view.getMembers();
-        try {
-            mbrs.add(a);
-            assert false: "adding a member to a view should throw an exception";
-        }
-        catch(UnsupportedOperationException ex) {
-            System.out.println("adding a member threw " + ex.getClass().getSimpleName() + " as expected");
-        }
+        Address x=Util.createRandomAddress("X");
+        mbrs.add(x);
+        assert !view.containsMember(x);
 
         byte[] buf=Util.objectToByteBuffer(view);
         View view2=Util.objectFromByteBuffer(buf);
         System.out.println("view2 = " + view2);
 
         mbrs=view2.getMembers();
-        try {
-            mbrs.add(a);
-            assert false: "adding a member to a view should throw an exception";
-        }
-        catch(UnsupportedOperationException ex) {
-            System.out.println("adding a member threw " + ex.getClass().getSimpleName() + " as expected");
-        }
+        mbrs.add(x);
+        assert !view2.containsMember(x);
     }
 
     public void testContainsMember() {
@@ -127,14 +118,12 @@ public class ViewTest {
         System.out.println("view2 = " + view2);
         assert view.equals(view2);
 
+        Address x=Util.createRandomAddress("X");
         List<Address> mbrs=view2.getMembers();
-        try {
-            mbrs.add(a);
-            assert false: "adding a member to a view should throw an exception";
-        }
-        catch(UnsupportedOperationException ex) {
-            System.out.println("adding a member threw " + ex.getClass().getSimpleName() + " as expected");
-        }
+        mbrs.add(x); // no effect as it won't change the original view
+
+        assert !view2.containsMember(x);
+        assert !view.containsMember(x);
     }
 
 
