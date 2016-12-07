@@ -329,7 +329,7 @@
 
     <target name="jgroups.jar"
             description="Creates the jgroups.jar (includes everything)"
-            depends="clean,compile-no-unittests,compile-essential-unittests,make-schema,make-keystore-no-compile">
+            depends="compile-no-unittests,compile-essential-unittests,make-schema,make-keystore-no-compile">
         <mkdir dir="${dist.dir}"/>
         <xmlproperty file="${ant.file}" collapseAttributes="true" prefix="bnd"/>
         <property name="bndclasspath" refid="jg.classpath"/>

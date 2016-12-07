@@ -9,10 +9,7 @@ import org.jgroups.conf.PropertyConverters;
 import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.stack.DiagnosticsHandler;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.IpAddressUUID;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.*;
 import org.jgroups.util.*;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.UUID;
@@ -24,6 +21,7 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -133,6 +131,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="Loop back the message on a separate thread or use the current thread. Don't use this; " +
       "might get removed without warning")
     protected boolean loopback_separate_thread=true;
+
+    @Property(description="The fully qualified name of a class implementing MessageProcessingPolicy")
+    protected String message_processing_policy;
 
     @Property(description="Thread naming pattern for threads in this channel. Valid values are \"pcl\": " +
       "\"p\": includes the thread name, e.g. \"Incoming thread-1\", \"UDP ucast receiver\", " +
@@ -287,6 +288,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return avg_batch_size.getAverage();
     }
 
+    public Average avgBatchSize() {return avg_batch_size;}
+
 
     public TP setThreadPoolMinThreads(int size) {
         thread_pool_min_threads=size;
@@ -325,6 +328,22 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         T retval=super.setLevel(level);
         is_trace=log.isTraceEnabled();
         return retval;
+    }
+
+    @ManagedOperation(description="Changes the message processing policy. The fully qualified name of a class " +
+      "implementing MessageProcessingPolicy needs to be given")
+    public void setMessageProcessingPolicy(String policy) {
+        if(policy == null)
+            return;
+        try {
+            Class<MessageProcessingPolicy> clazz=Util.loadClass(policy, getClass());
+            msg_processing_policy=clazz.newInstance();
+            message_processing_policy=policy;
+            msg_processing_policy.init(this);
+        }
+        catch(Exception e) {
+            log.error("failed setting message_processing_policy", e);
+        }
     }
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
@@ -432,6 +451,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected Bundler                 bundler;
 
+    protected MessageProcessingPolicy msg_processing_policy=new SubmitToThreadPool();
+
     protected DiagnosticsHandler      diag_handler;
     protected final List<DiagnosticsHandler.ProbeHandler> preregistered_probe_handlers=new LinkedList<>();
 
@@ -439,6 +460,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /** The header including the cluster name, sent with each message. Not used with a shared transport (instead
      * TP.ProtocolAdapter attaches the header to the message */
     protected TpHeader                header;
+
+
+    protected final ConcurrentMap<Address,Entry> unicast_threads=new ConcurrentHashMap<>();
 
 
     /**
@@ -452,7 +476,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     // last time (in ns) we sent a discovery request
     protected long last_discovery_request;
 
-    Future<?> logical_addr_cache_reaper;
+    protected Future<?> logical_addr_cache_reaper;
 
     protected final Average avg_batch_size=new Average();
 
@@ -836,6 +860,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 }
             }, logical_addr_cache_reaper_interval, logical_addr_cache_reaper_interval, TimeUnit.MILLISECONDS, false);
         }
+
+        if(message_processing_policy != null) {
+            Class<MessageProcessingPolicy> clazz=Util.loadClass(message_processing_policy, getClass());
+            msg_processing_policy=clazz.newInstance();
+            msg_processing_policy.init(this);
+        }
+        else
+            msg_processing_policy.init(this);
     }
 
 
@@ -1131,8 +1163,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-    protected void passMessageUp(Message msg, AsciiString cluster_name, boolean perform_cluster_name_matching,
-                                 boolean multicast, boolean discard_own_mcast) {
+    public void passMessageUp(Message msg, byte[] cluster_name, boolean perform_cluster_name_matching,
+                              boolean multicast, boolean discard_own_mcast) {
         if(is_trace)
             log.trace("%s: received %s, headers are %s", local_addr, msg, msg.printHeaders());
 
@@ -1145,9 +1177,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 if(suppress_log_different_cluster != null)
                     suppress_log_different_cluster.log(SuppressLog.Level.warn, sender,
                                                        suppress_time_different_cluster_warnings,
-                                                       cluster_name,this.cluster_name, sender);
+                                                       new AsciiString(cluster_name),this.cluster_name, sender);
                 else
-                    log.warn(Util.getMessage("MsgDroppedDiffCluster"), cluster_name,this.cluster_name, sender);
+                    log.warn(Util.getMessage("MsgDroppedDiffCluster"), new AsciiString(cluster_name),this.cluster_name, sender);
             }
             return;
         }
@@ -1158,7 +1190,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-    protected void passBatchUp(MessageBatch batch, boolean perform_cluster_name_matching, boolean discard_own_mcast) {
+    public void passBatchUp(MessageBatch batch, boolean perform_cluster_name_matching, boolean discard_own_mcast) {
         if(is_trace)
             log.trace("%s: received message batch of %d messages from %s", local_addr, batch.size(), batch.sender());
         if(up_prot == null)
@@ -1204,7 +1236,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-    protected void handleMessageBatch(Address sender, byte[] data, int offset, int length) {
+   /* protected void handleMessageBatch(Address sender, byte[] data, int offset, int length) {
         try {
             ByteArrayDataInputStream in=new ByteArrayDataInputStream(data, offset, length);
             short version=in.readShort();
@@ -1221,8 +1253,25 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
             if(oob_batch != null && !oob_batch.isEmpty())
                 submitToThreadPool(new BatchHandler(oob_batch), false);
-            if(batch != null)
-                submitToThreadPool(new BatchHandler(batch), false);
+            if(batch != null) {
+
+                if(batch.dest() != null) {
+                    Entry entry=getEntry(unicast_threads, batch.sender());
+                    int num=entry.increment();
+                    if(num > 0) {
+                        entry.add(batch);
+                        entry.decrement();
+                    }
+                    else {
+                        if(!submitToThreadPool(new BatchHandlerX(batch), false)) {
+                            entry.add(batch);
+                            entry.decrement();
+                        }
+                    }
+                }
+                else
+                    submitToThreadPool(new BatchHandler(batch), false);
+            }
             if(internal_batch_oob != null && !internal_batch_oob.isEmpty())
                 submitToThreadPool(new BatchHandler(internal_batch_oob), true);
             if(internal_batch != null)
@@ -1231,9 +1280,70 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         catch(Throwable t) {
             log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
         }
+    }*/
+
+    protected void handleMessageBatch(Address sender, byte[] data, int offset, int length) {
+        try {
+            ByteArrayDataInputStream in=new ByteArrayDataInputStream(data, offset, length);
+            short version=in.readShort();
+            if(!versionMatch(version, sender))
+                return;
+
+            byte flags=in.readByte();
+            final boolean multicast=(flags & MULTICAST) == MULTICAST;
+
+            final MessageBatch[] batches=Util.readMessageBatch(in, multicast);
+            final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch_oob=batches[2], internal_batch=batches[3];
+
+            processBatch(oob_batch,          true, false);
+            processBatch(batch,              false, false);
+            processBatch(internal_batch_oob, true, true);
+            processBatch(internal_batch,     false, true);
+
+
+           /* removeAndDispatchNonBundledMessages(oob_batch, internal_batch_oob);
+
+            if(oob_batch != null && !oob_batch.isEmpty())
+                submitToThreadPool(new BatchHandler(oob_batch), false);
+            if(batch != null) {
+
+                if(batch.dest() != null) {
+                    Entry entry=getEntry(unicast_threads, batch.sender());
+                    int num=entry.increment();
+                    if(num > 0) {
+                        entry.add(batch);
+                        entry.decrement();
+                    }
+                    else {
+                        if(!submitToThreadPool(new BatchHandlerX(batch), false)) {
+                            entry.add(batch);
+                            entry.decrement();
+                        }
+                    }
+                }
+                else
+                    submitToThreadPool(new BatchHandler(batch), false);
+            }
+            if(internal_batch_oob != null && !internal_batch_oob.isEmpty())
+                submitToThreadPool(new BatchHandler(internal_batch_oob), true);
+            if(internal_batch != null)
+                submitToThreadPool(new BatchHandler(internal_batch), true);*/
+        }
+        catch(Throwable t) {
+            log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
+        }
     }
 
 
+    protected void processBatch(MessageBatch batch, boolean oob, boolean internal) {
+        try {
+            if(batch != null && !batch.isEmpty())
+                msg_processing_policy.process(batch, oob, internal);
+        }
+        catch(Throwable t) {
+            log.error("processing batch failed", t);
+        }
+    }
 
     protected void handleSingleMessage(Address sender, byte[] data, int offset, int length) {
         try {
@@ -1247,18 +1357,37 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             Message msg=new Message(false); // don't create headers, readFrom() will do this
             msg.readFrom(in);
 
-            if(!multicast) {
-                Address dest=msg.getDest();
-                if(dest != null && !(Objects.equals(dest, local_addr) || Objects.equals(dest, local_physical_addr)))
-                    return;
-            }
+            if(!multicast && unicastDestMismatch(msg.getDest()))
+                return;
 
-            boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
-            submitToThreadPool(new SingleMessageHandler(msg), internal);
+            msg_processing_policy.process(msg);
+
+            /*boolean internal=msg.isFlagSet(Message.Flag.INTERNAL), oob=msg.isFlagSet(Message.Flag.OOB);
+            if(!internal && !oob && msg.dest() != null) {
+                Entry entry=getEntry(unicast_threads, msg.src());
+                int num=entry.increment();
+                if(num > 0) {
+                    entry.add(msg);
+                    entry.decrement();
+                }
+                else {
+                    if(!submitToThreadPool(new SingleMessageHandlerX(msg), false)) {
+                        entry.add(msg);
+                        entry.decrement();
+                    }
+                }
+            }
+            else
+                submitToThreadPool(new SingleMessageHandler(msg), internal);*/
+
         }
         catch(Throwable t) {
             log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
         }
+    }
+
+    public boolean unicastDestMismatch(Address dest) {
+        return dest != null && !(Objects.equals(dest, local_addr) || Objects.equals(dest, local_physical_addr));
     }
 
     /**
@@ -1268,7 +1397,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         for(MessageBatch oob_batch: oob_batches) {
             if(oob_batch == null)
                 continue;
-            AsciiString cname=oob_batch.clusterName();
+            AsciiString tmp=oob_batch.clusterName();
+            byte[] cname=tmp != null? tmp.chars() : null;
             for(Message msg: oob_batch) {
                 if(msg.isFlagSet(Message.Flag.DONT_BUNDLE) && msg.isFlagSet(Message.Flag.OOB)) {
                     boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
@@ -1281,38 +1411,46 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
     }
 
-    public void submitToThreadPool(Runnable task, boolean spawn_thread_on_rejection) {
-        submitToThreadPool(thread_pool, task, spawn_thread_on_rejection, true);
+    public boolean submitToThreadPool(Runnable task, boolean spawn_thread_on_rejection) {
+        return submitToThreadPool(thread_pool, task, spawn_thread_on_rejection, true);
     }
 
-    public void submitToThreadPool(Executor pool, Runnable task, boolean spawn_thread_on_rejection, boolean forward_to_internal_pool) {
+    public boolean submitToThreadPool(Executor pool, Runnable task, boolean spawn_thread_on_rejection, boolean forward_to_internal_pool) {
         try {
             pool.execute(task);
         }
         catch(RejectedExecutionException ex) {
             if(!spawn_thread_on_rejection) {
                 msg_stats.incrNumRejectedMsgs(1);
-                return;
+                return false;
             }
 
-            if(forward_to_internal_pool && internal_pool != null) {
-                submitToThreadPool(internal_pool, task, true, false);
-            }
+            if(forward_to_internal_pool && internal_pool != null)
+                return submitToThreadPool(internal_pool, task, true, false);
             else {
                 msg_stats.incrNumThreadsSpawned(1);
-                runInNewThread(task);
+                return runInNewThread(task);
             }
         }
         catch(Throwable t) {
             log.error("failure submitting task to thread pool", t);
+            return false;
         }
+        return true;
     }
 
 
-    protected void runInNewThread(Runnable task) {
-        Thread thread=thread_factory != null? thread_factory.newThread(task, "jgroups-temp-thread")
-          : new Thread(task, "jgroups-temp-thread");
-        thread.start();
+    protected boolean runInNewThread(Runnable task) {
+        try {
+            Thread thread=thread_factory != null? thread_factory.newThread(task, "jgroups-temp-thread")
+              : new Thread(task, "jgroups-temp-thread");
+            thread.start();
+            return true;
+        }
+        catch(Throwable t) {
+            log.error("failed spawning new thread", t);
+            return false;
+        }
     }
 
 
@@ -1331,6 +1469,46 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
+    protected class Entry {
+        protected final AtomicInteger count=new AtomicInteger(0);
+        protected MessageBatch        batch;
+        protected final Address       sender;
+
+        protected Entry(Address sender) {
+            this.sender=sender;
+            batch=createBatch(16);
+        }
+
+
+        protected int increment() {return count.getAndIncrement();}
+        protected int decrement() {return count.decrementAndGet();}
+
+        protected synchronized boolean isDataAvailable() {return !batch.isEmpty();}
+
+        protected synchronized MessageBatch getBatch() {
+            if(batch.isEmpty())
+                return null;
+            MessageBatch retval=batch;
+            batch=createBatch(batch.size());
+            return retval;
+        }
+
+        protected synchronized void add(Message msg) {
+            batch.add(msg);
+        }
+
+        protected synchronized void add(MessageBatch b) {
+            batch.add(b);
+        }
+
+        public String toString() {
+            return String.format("count=%d, batch size: %d", count.get(), batch.size());
+        }
+
+        protected MessageBatch createBatch(int capacity) {
+            return new MessageBatch(capacity).dest(local_addr).clusterName(cluster_name).sender(sender);
+        }
+    }
 
 
     protected class SingleMessageHandler implements Runnable {
@@ -1353,7 +1531,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                         msg_stats.incrNumMsgsReceived(1);
                     msg_stats.incrNumBytesReceived(msg.getLength());
                 }
-                AsciiString cname=getClusterName();
+                byte[] cname=getClusterName();
                 passMessageUp(msg, cname, true, multicast, true);
             }
             catch(Throwable t) {
@@ -1361,29 +1539,59 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
         }
 
-        protected AsciiString getClusterName() {
+        protected byte[] getClusterName() {
             TpHeader hdr=msg.getHeader(id);
-            return new AsciiString(hdr.cluster_name);
+            return hdr.cluster_name;
         }
     }
 
     protected class SingleMessageHandlerWithClusterName extends SingleMessageHandler {
-        protected final AsciiString cluster;
+        protected final byte[] cluster;
 
-        @Override protected AsciiString getClusterName() {
+        @Override protected byte[] getClusterName() {
             return cluster;
         }
 
-        protected SingleMessageHandlerWithClusterName(Message msg, AsciiString cluster_name) {
+        protected SingleMessageHandlerWithClusterName(Message msg, byte[] cluster_name) {
             super(msg);
             this.cluster=cluster_name;
+        }
+    }
+
+    protected Entry getEntry(Map<Address,Entry> m, final Address sender) {
+        return m.computeIfAbsent(sender, k -> new Entry(sender));
+    }
+
+    protected class SingleMessageHandlerX extends SingleMessageHandler {
+
+        protected SingleMessageHandlerX(Message msg) {
+            super(msg);
+        }
+
+        public void run() {
+            super.run();
+            Entry entry=getEntry(unicast_threads, msg.src());
+            // System.out.printf("handle single message from %s, entry: %s\n", msg.src(), entry);
+            int num=entry.decrement();
+            if(num > 0)
+                return;
+            num=entry.increment();
+            if(num == 0) { // I'm the one to send the data up in a thread from thread_pool
+                MessageBatch batch=entry.getBatch();
+                if(batch != null) {
+                    BatchHandlerX batch_handler=new BatchHandlerX(batch);
+                    if(submitToThreadPool(batch_handler, false))
+                        return;
+                }
+            }
+            entry.decrement();
         }
     }
 
 
 
     protected class BatchHandler implements Runnable {
-        protected final MessageBatch batch;
+        protected MessageBatch batch;
 
         public BatchHandler(final MessageBatch batch) {
             this.batch=batch;
@@ -1403,13 +1611,46 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 avg_batch_size.add(batch_size);
             }
 
-            if(!batch.multicast()) {
-                Address dest=batch.dest();
-                if(dest != null && !(Objects.equals(dest, local_addr) || Objects.equals(dest, local_physical_addr)))
-                    return;
-            }
-
+            if(!batch.multicast() && unicastDestMismatch(batch.dest()))
+                return;
             passBatchUp(batch, true, true);
+        }
+    }
+
+    protected class BatchHandlerX extends BatchHandler {
+
+        public BatchHandlerX(MessageBatch batch) {
+            super(batch);
+        }
+
+        public void run() {
+            Entry entry=getEntry(unicast_threads, batch.sender());
+
+            // we start out with our entry incremented by the thread creator
+            for(;;) {
+                try {
+                    super.run();
+                }
+                catch(Throwable t) {
+                    log.error("failed processing batch", t);
+                }
+
+                // more work, simply continue (our entry is still incremented)
+                if((batch=entry.getBatch()) != null)
+                    continue;
+
+                // let's decrement and see if we're really done
+                int num=entry.decrement();
+                if(num > 0)
+                    break;
+
+                // try to get more work
+                num=entry.increment();
+                if(num == 0 && (batch=entry.getBatch()) != null)
+                    continue;
+                entry.decrement();
+                break;
+            }
         }
     }
 
@@ -1537,6 +1778,21 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
+    @ManagedOperation
+    public String dumpUnicastThreads() {
+        StringBuilder sb=new StringBuilder("\n");
+        unicast_threads.entrySet().forEach(entry -> {
+            Address key=entry.getKey();
+            Entry val=entry.getValue();
+            sb.append(key).append(": ").append(val).append("\n");
+        });
+        return sb.toString();
+    }
+
+    @ManagedOperation
+    public void clearUnicastThreads() {
+        unicast_threads.clear();
+    }
 
     @SuppressWarnings("unchecked")
     protected Object handleDownEvent(Event evt) {
@@ -1568,6 +1824,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 who_has_cache.removeExpiredElements();
                 if(bundler != null)
                     bundler.viewChange(evt.getArg());
+                unicast_threads.keySet().retainAll(view);
                 break;
 
             case Event.CONNECT:

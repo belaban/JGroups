@@ -43,6 +43,8 @@ public class TpHeader extends Header {
         return String.format("[cluster_name=%s]", new String(cluster_name));
     }
 
+    public byte[] getClusterName() {return cluster_name;}
+
     public int serializedSize() {
         return cluster_name != null? Global.SHORT_SIZE + cluster_name.length : Global.SHORT_SIZE;
     }

@@ -129,6 +129,17 @@ public class MessageBatch implements Iterable<Message> {
         return this;
     }
 
+    public MessageBatch add(final MessageBatch batch) {
+        if(batch == null) return this;
+        int batch_size=batch.size();
+        if(index+batch_size >= messages.length)
+            resize(batch_size+1);
+
+        for(Message msg: batch)
+            messages[index++]=msg;
+        return this;
+    }
+
     /**
      * Replaces a message in the batch with another one
      * @param existing_msg The message to be replaced. The message has to be non-null and is found by identity (==)
@@ -328,11 +339,14 @@ public class MessageBatch implements Iterable<Message> {
     }
 
     protected void resize() {
-        Message[] tmp=new Message[messages.length + INCR];
+        resize(INCR);
+    }
+
+    protected void resize(int additional_size_required) {
+        Message[] tmp=new Message[messages.length + additional_size_required];
         System.arraycopy(messages,0,tmp,0,messages.length);
         messages=tmp;
     }
-
 
 
     public enum Mode {OOB, REG, INTERNAL, MIXED}
