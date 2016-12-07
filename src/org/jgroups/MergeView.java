@@ -197,8 +197,5 @@ public class MergeView extends View {
         return -1;
     }
 
-    protected Address get(int index) {
-        return members != null && index >= 0 && index < members.length? members[index] : null;
-    }
 
 }
