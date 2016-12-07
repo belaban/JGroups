@@ -22,7 +22,7 @@ import java.util.*;
  * @author Bela Ban
  */
 @Immutable
-public class View implements Comparable<View>, Streamable, Iterable<Address> {
+public class View extends AbstractList<Address> implements Comparable<View>, Streamable, Iterable<Address> {
 
    /**
     * A view is uniquely identified by its ViewID. The view id contains the creator address and a
@@ -113,12 +113,10 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
 
     /**
      * Returns the member list
-     * @return a copy of the members array
+     * @return an immutable list of the members
      */
     public List<Address> getMembers() {
-        List<Address> retval=new ArrayList<>(members.length);
-        Collections.addAll(retval, members);
-        return retval;
+        return this;
     }
 
     /** Returns the underlying array. The caller <em>must not</em> modify the contents. Should not be used by
@@ -280,6 +278,11 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
 
     public Iterator<Address> iterator() {
         return new ArrayIterator(this.members);
+    }
+
+    ///// List impl
+    public Address get(int index) {
+        return members != null && index >= 0 && index < members.length? members[index] : null;
     }
 
 }
