@@ -168,6 +168,27 @@
             </listitem>
         </orderedlist>
     </section>
+	<section id="CustomLoggers">
+            <title>Support for custom logging frameworks</title>
+            <para>
+                JGroups allows custom loggers to be used instead of the ones supported by default. To do this, interface
+                CustomLogFactory has to be implemented:
+            </para>
+            <programlisting language="Java">
+public interface CustomLogFactory {
+    Log getLog(Class clazz);
+    Log getLog(String category);
+}
+            </programlisting>
+            <para>
+                The implementation needs to return an implementation of org.jgroups.logging.Log.
+            </para>
+            <para>
+                To force using the custom log implementation, implementation has to be passed to
+		LogFactory#setCustomLogFactory
+            </para>
+        </section>
+    </section>
 
     <section id="TestingTheSetup">
         <title>Testing your Setup</title>

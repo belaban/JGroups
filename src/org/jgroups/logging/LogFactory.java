@@ -12,22 +12,12 @@ import org.jgroups.Global;
  */
 public class LogFactory {
     public static final boolean IS_LOG4J_AVAILABLE;
+    protected static boolean USE_JDK_LOGGER;
 
-    private static final CustomLogFactory custom_log_factory;
+    private static CustomLogFactory custom_log_factory;
 
     static {
-        String customLogFactoryClass=System.getProperty(Global.CUSTOM_LOG_FACTORY);
-        CustomLogFactory customLogFactoryX=null;
-        if(customLogFactoryClass != null) {
-            try {
-                // customLogFactoryX=(CustomLogFactory)Util.loadClass(customLogFactoryClass, null).newInstance();
-                customLogFactoryX=(CustomLogFactory)Class.forName(customLogFactoryClass).newInstance();
-            }
-            catch(Exception e) {
-                // failed to create the custom log factory, ignore?
-            }
-        }
-        custom_log_factory=customLogFactoryX;
+        USE_JDK_LOGGER=isPropertySet(Global.USE_JDK_LOGGER);
         boolean available;
         try {
             Class.forName("org.apache.log4j.Logger");
@@ -38,6 +28,11 @@ public class LogFactory {
         }
         IS_LOG4J_AVAILABLE=available;
     }
+
+    public static CustomLogFactory getCustomLogFactory()                         {return custom_log_factory;}
+    public static void             setCustomLogFactory(CustomLogFactory factory) {custom_log_factory=factory;}
+    public static boolean          useJdkLogger()                                {return USE_JDK_LOGGER;}
+    public static void             useJdkLogger(boolean flag)                    {USE_JDK_LOGGER=flag;}
 
     public static Log getLog(Class clazz) {
         if(custom_log_factory != null)
@@ -63,6 +58,15 @@ public class LogFactory {
         }
         else {
             return new JDKLogImpl(category);
+        }
+    }
+
+    protected static boolean isPropertySet(String property_name) {
+        try {
+            return Boolean.parseBoolean(System.getProperty(property_name));
+        }
+        catch(Throwable t) {
+            return false;
         }
     }
 }
