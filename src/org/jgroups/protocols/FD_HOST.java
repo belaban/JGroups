@@ -400,7 +400,7 @@ public class FD_HOST extends Protocol {
                     }
                 }
                 catch(Exception e) {
-                    log.error("%s: ping command failed: %s", local_addr, e);
+                    log.error(local_addr + ": ping command failed", e);
                 }
             }
         }
