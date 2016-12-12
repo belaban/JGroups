@@ -98,6 +98,14 @@ public class UDP extends TP {
       "a datagram packet")
     protected long suppress_time_out_of_buffer_space=60000;
 
+    @Property(description="Number of unicast receiver threads, all reading from the same DatagramSocket. " +
+      "If de-serialization is slow, increasing the number of receiver threads might yield better performance.")
+    protected int ucast_receiver_threads=1;
+
+    @Property(description="Number of multicast receiver threads, all reading from the same MulticastSocket. " +
+      "If de-serialization is slow, increasing the number of receiver threads might yield better performance.")
+    protected int mcast_receiver_threads=1;
+
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
@@ -117,13 +125,13 @@ public class UDP extends TP {
     protected MulticastSocket  sock;
 
     /** IP multicast socket for <em>receiving</em> multicast packets */
-    protected MulticastSocket mcast_sock=null;
+    protected MulticastSocket   mcast_sock;
 
     /** Runnable to receive multicast packets */
-    protected PacketReceiver  mcast_receiver=null;
+    protected PacketReceiver[]  mcast_receivers;
 
     /** Runnable to receive unicast packets */
-    protected PacketReceiver  ucast_receiver=null;
+    protected PacketReceiver[]  ucast_receivers;
 
     protected SuppressLog<InetAddress> suppress_log_out_of_buffer_space;
 
@@ -256,15 +264,20 @@ public class UDP extends TP {
             destroySockets();
             throw ex;
         }
-        ucast_receiver=new PacketReceiver(sock, "unicast receiver", this::closeUnicastSocket);
+        ucast_receivers=new PacketReceiver[ucast_receiver_threads];
+        for(int i=0; i < ucast_receivers.length; i++)
+            ucast_receivers[i]=new PacketReceiver(sock, "unicast receiver", this::closeUnicastSocket);
 
-        if(ip_mcast)
-            mcast_receiver=new PacketReceiver(mcast_sock, "multicast receiver", this::closeMulticastSocket);
+        if(ip_mcast) {
+            mcast_receivers=new PacketReceiver[mcast_receiver_threads];
+            for(int i=0; i < mcast_receivers.length; i++)
+                mcast_receivers[i]=new PacketReceiver(mcast_sock, "multicast receiver", this::closeMulticastSocket);
+        }
     }
 
 
     public void stop() {
-        if(log.isDebugEnabled()) log.debug("closing sockets and stopping threads");
+        log.debug("closing sockets and stopping threads");
         stopThreads();  // will close sockets, closeSockets() is not really needed anymore, but...
         super.stop();
     }
@@ -559,25 +572,22 @@ public class UDP extends TP {
     }
 
 
-
-    /**
-     * Starts the unicast and multicast receiver threads
-     */
-    void startThreads() throws Exception {
-        ucast_receiver.start();
-        if(mcast_receiver != null)
-            mcast_receiver.start();
+    protected void startThreads() throws Exception {
+        for(PacketReceiver r: ucast_receivers)
+            r.start();
+        if(mcast_receivers != null)
+            for(PacketReceiver r: mcast_receivers)
+                r.start();
     }
 
 
-    /**
-     * Stops unicast and multicast receiver threads
-     */
-    void stopThreads() {
-        if(mcast_receiver != null)
-            mcast_receiver.stop();
-        if(ucast_receiver != null)
-            ucast_receiver.stop();
+    protected void stopThreads() {
+        if(mcast_receivers != null)
+            for(PacketReceiver r: mcast_receivers)
+                r.stop();
+        if(ucast_receivers != null)
+            for(PacketReceiver r: ucast_receivers)
+                r.stop();
     }
 
 
