@@ -17,7 +17,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 
 /**
@@ -64,9 +64,9 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
     /*
      * --------------------------------------------- JMX statistics -------------------------------
      */
-    protected final AtomicInteger num_state_reqs=new AtomicInteger(0);
+    protected final LongAdder     num_state_reqs=new LongAdder();
 
-    protected final AtomicLong    num_bytes_sent=new AtomicLong(0);
+    protected final LongAdder     num_bytes_sent=new LongAdder();
 
     protected double              avg_state_size;
 
@@ -94,8 +94,8 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
     protected final ProcessingQueue<Address> state_requesters=new ProcessingQueue<Address>().setHandler(this);
 
 
-    @ManagedAttribute public int    getNumberOfStateRequests()    {return num_state_reqs.get();}
-    @ManagedAttribute public long   getNumberOfStateBytesSent()   {return num_bytes_sent.get();}
+    @ManagedAttribute public long   getNumberOfStateRequests()    {return num_state_reqs.sum();}
+    @ManagedAttribute public long   getNumberOfStateBytesSent()   {return num_bytes_sent.sum();}
     @ManagedAttribute public double getAverageStateSize()         {return avg_state_size;}
     @ManagedAttribute public int    getThreadPoolSize()           {return thread_pool.getPoolSize();}
     @ManagedAttribute public long   getThreadPoolCompletedTasks() {return thread_pool.getCompletedTaskCount();}
@@ -109,8 +109,8 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
     public void resetStats() {
         super.resetStats();
-        num_state_reqs.set(0);
-        num_bytes_sent.set(0);
+        num_state_reqs.reset();
+        num_bytes_sent.reset();
         avg_state_size=0;
     }
 
@@ -420,7 +420,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
         log.debug("%s: responding to state requester %s", local_addr, requester);
         down_prot.down(state_rsp);
         if(stats)
-            num_state_reqs.incrementAndGet();
+            num_state_reqs.increment();
 
         try {
             createStreamToRequester(requester);

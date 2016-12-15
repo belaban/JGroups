@@ -8,7 +8,7 @@ import java.net.*;
 import java.util.Date;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Dynamic tool to measure multicast performance of JGroups; every member sends N messages and we measure how long it
@@ -31,9 +31,9 @@ public class UdpPerf {
 
 
     /** Maintains stats per sender, will be sent to perf originator when all messages have been received */
-    protected final AtomicLong                    total_received_msgs=new AtomicLong(0);
-    protected boolean                             looping=true;
-    protected long                                last_interval=0;
+    protected final LongAdder total_received_msgs=new LongAdder();
+    protected boolean         looping=true;
+    protected long            last_interval;
 
 
 
@@ -101,7 +101,8 @@ public class UdpPerf {
         if(last_interval == 0)
             last_interval=System.currentTimeMillis();
 
-        long received_so_far=total_received_msgs.incrementAndGet();
+        total_received_msgs.increment();
+        long received_so_far=total_received_msgs.sum();
         if(received_so_far % receive_log_interval == 0) {
             long curr_time=System.currentTimeMillis();
             long diff=curr_time - last_interval;
@@ -115,7 +116,7 @@ public class UdpPerf {
 
 
     void reset() {
-        total_received_msgs.set(0);
+        total_received_msgs.reset();
         last_interval=0;
     }
 

@@ -15,6 +15,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -151,16 +152,16 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
 
     @ManagedAttribute(description="Number of retransmit requests received")
-    protected final AtomicLong xmit_reqs_received=new AtomicLong(0);
+    protected final LongAdder xmit_reqs_received=new LongAdder();
 
     @ManagedAttribute(description="Number of retransmit requests sent")
-    protected final AtomicLong xmit_reqs_sent=new AtomicLong(0);
+    protected final LongAdder xmit_reqs_sent=new LongAdder();
 
     @ManagedAttribute(description="Number of retransmit responses received")
-    protected final AtomicLong xmit_rsps_received=new AtomicLong(0);
+    protected final LongAdder xmit_rsps_received=new LongAdder();
 
     @ManagedAttribute(description="Number of retransmit responses sent")
-    protected final AtomicLong xmit_rsps_sent=new AtomicLong(0);
+    protected final LongAdder xmit_rsps_sent=new LongAdder();
 
     @ManagedAttribute(description="Is the retransmit task running")
     public boolean isXmitTaskRunning() {return xmit_task != null && !xmit_task.isDone();}
@@ -236,10 +237,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected SuppressLog<Address>      suppress_log_non_member;
 
 
-    public long    getXmitRequestsReceived()  {return xmit_reqs_received.get();}
-    public long    getXmitRequestsSent()      {return xmit_reqs_sent.get();}
-    public long    getXmitResponsesReceived() {return xmit_rsps_received.get();}
-    public long    getXmitResponsesSent()     {return xmit_rsps_sent.get();}
+    public long    getXmitRequestsReceived()  {return xmit_reqs_received.sum();}
+    public long    getXmitRequestsSent()      {return xmit_reqs_sent.sum();}
+    public long    getXmitResponsesReceived() {return xmit_rsps_received.sum();}
+    public long    getXmitResponsesSent()     {return xmit_rsps_sent.sum();}
     public boolean isUseMcastXmit()           {return use_mcast_xmit;}
     public boolean isXmitFromRandomMember()   {return xmit_from_random_member;}
     public boolean isDiscardDeliveredMsgs()   {return discard_delivered_msgs;}
@@ -392,10 +393,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @ManagedOperation(description="Resets all statistics")
     public void resetStats() {
         num_messages_sent=num_messages_received=0;
-        xmit_reqs_received.set(0);
-        xmit_reqs_sent.set(0);
-        xmit_rsps_received.set(0);
-        xmit_rsps_sent.set(0);
+        xmit_reqs_received.reset();
+        xmit_reqs_sent.reset();
+        xmit_rsps_received.reset();
+        xmit_rsps_sent.reset();
         stability_msgs.clear();
         digest_history.clear();
         Table<Message> table=local_addr != null? xmit_table.get(local_addr) : null;
@@ -915,7 +916,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         log.trace("%s: received xmit request from %s for %s%s", local_addr, xmit_requester, original_sender, missing_msgs);
 
         if(stats)
-            xmit_reqs_received.addAndGet(missing_msgs.size());
+            xmit_reqs_received.add(missing_msgs.size());
 
         Table<Message> buf=xmit_table.get(original_sender);
         if(buf == null) {
@@ -1017,7 +1018,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             return;
 
         if(stats)
-            xmit_rsps_sent.incrementAndGet();
+            xmit_rsps_sent.increment();
 
         if(msg.getSrc() == null)
             msg.setSrc(local_addr);
@@ -1042,7 +1043,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
         try {
             if(stats)
-                xmit_rsps_received.incrementAndGet();
+                xmit_rsps_received.increment();
 
             msg.setDest(null);
             NakAckHeader2 newhdr=hdr.copy();
@@ -1082,7 +1083,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             return null;
 
         if(stats)
-            xmit_rsps_received.incrementAndGet();
+            xmit_rsps_received.increment();
 
         msg.setDest(null);
         NakAckHeader2 newhdr=hdr.copy();
@@ -1428,7 +1429,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         log.trace("%s: sending XMIT_REQ (%s) to %s", local_addr, missing_msgs, dest);
         down_prot.down(retransmit_msg);
         if(stats)
-            xmit_reqs_sent.addAndGet(missing_msgs.size());
+            xmit_reqs_sent.add(missing_msgs.size());
     }
 
 

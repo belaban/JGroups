@@ -16,7 +16,7 @@ import java.io.DataOutput;
 import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 
 /**
@@ -106,26 +106,26 @@ public class RELAY2 extends Protocol {
     protected volatile RouteStatusListener             route_status_listener;
 
     /** Number of messages forwarded to the local SiteMaster */
-    protected final AtomicLong                         forward_to_site_master=new AtomicLong(0);
+    protected final LongAdder                          forward_to_site_master=new LongAdder();
 
-    protected final AtomicLong                         forward_sm_time=new AtomicLong(0);
+    protected final LongAdder                          forward_sm_time=new LongAdder();
 
     /** Number of messages relayed by the local SiteMaster to a remote SiteMaster */
-    protected final AtomicLong                         relayed=new AtomicLong(0);
+    protected final LongAdder                          relayed=new LongAdder();
 
     /** Total time spent relaying messages from the local SiteMaster to remote SiteMasters (in ns) */
-    protected final AtomicLong                         relayed_time=new AtomicLong(0);
+    protected final LongAdder                          relayed_time=new LongAdder();
 
     /** Number of messages (received from a remote Sitemaster and) delivered by the local SiteMaster to a local node */
-    protected final AtomicLong                         forward_to_local_mbr=new AtomicLong(0);
+    protected final LongAdder                          forward_to_local_mbr=new LongAdder();
 
-    protected final AtomicLong                         forward_to_local_mbr_time=new AtomicLong(0);
+    protected final LongAdder                          forward_to_local_mbr_time=new LongAdder();
 
     /** Number of messages delivered locally, e.g. received and delivered to self */
-    protected final AtomicLong                         local_deliveries=new AtomicLong(0);
+    protected final LongAdder                          local_deliveries=new LongAdder();
 
     /** Total time (ms) for received messages that are delivered locally */
-    protected final AtomicLong                         local_delivery_time=new AtomicLong(0);
+    protected final LongAdder                          local_delivery_time=new LongAdder();
 
 
 
@@ -147,18 +147,18 @@ public class RELAY2 extends Protocol {
     public boolean asyncRelayCreation()                {return async_relay_creation;}
     public Address getLocalAddress()                   {return local_addr;}
     public TimeScheduler getTimer()                    {return timer;}
-    public void incrementRelayed()                     {relayed.incrementAndGet();}
-    public void addToRelayedTime(long delta)           {relayed_time.addAndGet(delta);}
+    public void incrementRelayed()                     {relayed.increment();}
+    public void addToRelayedTime(long delta)           {relayed_time.add(delta);}
 
 
     public RouteStatusListener getRouteStatusListener()       {return route_status_listener;}
     public void setRouteStatusListener(RouteStatusListener l) {this.route_status_listener=l;}
 
     @ManagedAttribute(description="Number of messages forwarded to the local SiteMaster")
-    public long getNumForwardedToSiteMaster() {return forward_to_site_master.get();}
+    public long getNumForwardedToSiteMaster() {return forward_to_site_master.sum();}
 
     @ManagedAttribute(description="The total time (in ms) spent forwarding messages to the local SiteMaster")
-    public long getTimeForwardingToSM() {return TimeUnit.MILLISECONDS.convert(forward_sm_time.get(),TimeUnit.NANOSECONDS);}
+    public long getTimeForwardingToSM() {return TimeUnit.MILLISECONDS.convert(forward_sm_time.sum(),TimeUnit.NANOSECONDS);}
 
     @ManagedAttribute(description="The average number of messages / s for forwarding messages to the local SiteMaster")
     public long getAvgMsgsForwardingToSM() {return getTimeForwardingToSM() > 0?
@@ -167,10 +167,10 @@ public class RELAY2 extends Protocol {
 
 
     @ManagedAttribute(description="Number of messages sent by this SiteMaster to a remote SiteMaster")
-    public long getNumRelayed() {return relayed.get();}
+    public long getNumRelayed() {return relayed.sum();}
 
     @ManagedAttribute(description="The total time (ms) spent relaying messages from this SiteMaster to remote SiteMasters")
-    public long getTimeRelaying() {return TimeUnit.MILLISECONDS.convert(relayed_time.get(), TimeUnit.NANOSECONDS);}
+    public long getTimeRelaying() {return TimeUnit.MILLISECONDS.convert(relayed_time.sum(), TimeUnit.NANOSECONDS);}
 
     @ManagedAttribute(description="The average number of messages / s for relaying messages from this SiteMaster to remote SiteMasters")
     public long getAvgMsgsRelaying() {return getTimeRelaying() > 0? (long)(getNumRelayed() / (getTimeRelaying()/1000.0)) : 0;}
@@ -179,10 +179,10 @@ public class RELAY2 extends Protocol {
 
     @ManagedAttribute(description="Number of messages (received from a remote Sitemaster and) delivered " +
       "by this SiteMaster to a local node")
-    public long getNumForwardedToLocalMbr() {return forward_to_local_mbr.get();}
+    public long getNumForwardedToLocalMbr() {return forward_to_local_mbr.sum();}
 
     @ManagedAttribute(description="The total time (in ms) spent forwarding messages to a member in the same site")
-    public long getTimeForwardingToLocalMbr() {return TimeUnit.MILLISECONDS.convert(forward_to_local_mbr_time.get(),TimeUnit.NANOSECONDS);}
+    public long getTimeForwardingToLocalMbr() {return TimeUnit.MILLISECONDS.convert(forward_to_local_mbr_time.sum(),TimeUnit.NANOSECONDS);}
 
     @ManagedAttribute(description="The average number of messages / s for forwarding messages to a member in the same site")
     public long getAvgMsgsForwardingToLocalMbr() {return getTimeForwardingToLocalMbr() > 0?
@@ -192,10 +192,10 @@ public class RELAY2 extends Protocol {
 
 
     @ManagedAttribute(description="Number of messages delivered locally, e.g. received and delivered to self")
-    public long getNumLocalDeliveries() {return local_deliveries.get();}
+    public long getNumLocalDeliveries() {return local_deliveries.sum();}
 
     @ManagedAttribute(description="The total time (ms) spent delivering received messages locally")
-    public long getTimeDeliveringLocally() {return TimeUnit.MILLISECONDS.convert(local_delivery_time.get(),TimeUnit.NANOSECONDS);}
+    public long getTimeDeliveringLocally() {return TimeUnit.MILLISECONDS.convert(local_delivery_time.sum(),TimeUnit.NANOSECONDS);}
 
     @ManagedAttribute(description="The average number of messages / s for delivering received messages locally")
     public long getAvgMsgsDeliveringLocally() {return getTimeDeliveringLocally() > 0?
@@ -207,14 +207,14 @@ public class RELAY2 extends Protocol {
 
     public void resetStats() {
         super.resetStats();
-        forward_to_site_master.set(0);
-        forward_sm_time.set(0);
-        relayed.set(0);
-        relayed_time.set(0);
-        forward_to_local_mbr.set(0);
-        forward_to_local_mbr_time.set(0);
-        local_deliveries.set(0);
-        local_delivery_time.set(0);
+        forward_to_site_master.reset();
+        forward_sm_time.reset();
+        relayed.reset();
+        relayed_time.reset();
+        forward_to_local_mbr.reset();
+        forward_to_local_mbr_time.reset();
+        local_deliveries.reset();
+        local_delivery_time.reset();
     }
 
     public View getBridgeView(String cluster_name) {
@@ -388,8 +388,8 @@ public class RELAY2 extends Protocol {
                 long start=stats? System.nanoTime() : 0;
                 forwardTo(local_addr, target, sender, msg, false);
                 if(stats) {
-                    local_delivery_time.addAndGet(System.nanoTime() - start);
-                    local_deliveries.incrementAndGet();
+                    local_delivery_time.add(System.nanoTime() - start);
+                    local_deliveries.increment();
                 }
             }
             else
@@ -405,8 +405,8 @@ public class RELAY2 extends Protocol {
                 throw new IllegalStateException("site master is null");
             forwardTo(site_master, target, sender, msg, max_site_masters == 1);
             if(stats) {
-                forward_sm_time.addAndGet(System.nanoTime() - start);
-                forward_to_site_master.incrementAndGet();
+                forward_sm_time.add(System.nanoTime() - start);
+                forward_to_site_master.increment();
             }
         }
         else
@@ -630,8 +630,8 @@ public class RELAY2 extends Protocol {
         long start=stats? System.nanoTime() : 0;
         forwardTo(local_dest, dest, sender, msg, send_to_coord);
         if(stats) {
-            forward_to_local_mbr_time.addAndGet(System.nanoTime() - start);
-            forward_to_local_mbr.incrementAndGet();
+            forward_to_local_mbr_time.add(System.nanoTime() - start);
+            forward_to_local_mbr.increment();
         }
     }
 
@@ -644,8 +644,8 @@ public class RELAY2 extends Protocol {
             long start=stats? System.nanoTime() : 0;
             up_prot.up(copy);
             if(stats) {
-                local_delivery_time.addAndGet(System.nanoTime() - start);
-                local_deliveries.incrementAndGet();
+                local_delivery_time.add(System.nanoTime() - start);
+                local_deliveries.increment();
             }
         }
         catch(Exception e) {

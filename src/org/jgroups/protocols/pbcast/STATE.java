@@ -102,7 +102,7 @@ public class STATE extends StreamingStateTransfer {
     protected class StateOutputStream extends OutputStream {
         protected final Address        stateRequester;
         protected final AtomicBoolean  closed;
-        protected long                 bytesWrittenCounter=0;
+        protected long                 bytesWrittenCounter;
 
         public StateOutputStream(Address stateRequester) {
             this.stateRequester=stateRequester;
@@ -110,8 +110,10 @@ public class STATE extends StreamingStateTransfer {
         }
 
         public void close() throws IOException {
-            if(closed.compareAndSet(false, true) && stats)
-                avg_state_size=num_bytes_sent.addAndGet(bytesWrittenCounter) / num_state_reqs.doubleValue();
+            if(closed.compareAndSet(false, true) && stats) {
+                num_bytes_sent.add(bytesWrittenCounter);
+                avg_state_size=num_bytes_sent.sum() / num_state_reqs.doubleValue();
+            }
         }
 
         public void write(byte[] b, int off, int len) throws IOException {

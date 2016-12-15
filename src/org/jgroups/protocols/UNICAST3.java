@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
@@ -83,13 +84,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected long    num_acks_sent=0, num_acks_received=0, num_xmits=0;
 
     @ManagedAttribute(description="Number of retransmit requests received")
-    protected final AtomicLong xmit_reqs_received=new AtomicLong(0);
+    protected final LongAdder  xmit_reqs_received=new LongAdder();
 
     @ManagedAttribute(description="Number of retransmit requests sent")
-    protected final AtomicLong xmit_reqs_sent=new AtomicLong(0);
+    protected final LongAdder  xmit_reqs_sent=new LongAdder();
 
     @ManagedAttribute(description="Number of retransmit responses sent")
-    protected final AtomicLong xmit_rsps_sent=new AtomicLong(0);
+    protected final LongAdder  xmit_rsps_sent=new LongAdder();
 
     protected final AverageMinMax avg_delivery_batch_size=new AverageMinMax();
 
@@ -725,7 +726,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(is_trace)
             log.trace("%s: sending XMIT_REQ (%s) to %s", local_addr, missing, sender);
         down_prot.down(xmit_msg);
-        xmit_reqs_sent.addAndGet(missing.size());
+        xmit_reqs_sent.add(missing.size());
     }
 
 
@@ -1039,7 +1040,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             log.trace("%s <-- XMIT(%s: #%s)", local_addr, sender, missing);
 
         SenderEntry entry=send_table.get(sender);
-        xmit_reqs_received.addAndGet(missing.size());
+        xmit_reqs_received.add(missing.size());
         Table<Message> win=entry != null? entry.msgs : null;
         if(win != null) {
             for(long seqno: missing) {
@@ -1051,7 +1052,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 }
 
                 down_prot.down(msg);
-                xmit_rsps_sent.incrementAndGet();
+                xmit_rsps_sent.increment();
             }
         }
     }

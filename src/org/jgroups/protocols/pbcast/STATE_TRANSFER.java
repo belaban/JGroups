@@ -15,8 +15,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.EOFException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 
 /**
@@ -32,8 +31,8 @@ import java.util.function.Supplier;
 @MBean(description="State transfer protocol based on byte array transfer")
 public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<Address> {
     protected long                           start, stop; // to measure state transfer time
-    protected final AtomicInteger            num_state_reqs=new AtomicInteger(0);
-    protected final AtomicLong               num_bytes_sent=new AtomicLong(0);
+    protected final LongAdder                num_state_reqs=new LongAdder();
+    protected final LongAdder                num_bytes_sent=new LongAdder();
     protected double                         avg_state_size=0;
     protected Address                        local_addr;
     protected volatile View                  view;
@@ -47,8 +46,8 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
 
     protected boolean                        flushProtocolInStack=false;
 
-    @ManagedAttribute public int    getNumberOfStateRequests()  {return num_state_reqs.get();}
-    @ManagedAttribute public long   getNumberOfStateBytesSent() {return num_bytes_sent.get();}
+    @ManagedAttribute public long   getNumberOfStateRequests()  {return num_state_reqs.sum();}
+    @ManagedAttribute public long   getNumberOfStateBytesSent() {return num_bytes_sent.sum();}
     @ManagedAttribute public double getAverageStateSize()       {return avg_state_size;}
 
     public List<Integer> requiredDownServices() {
@@ -57,8 +56,8 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
 
     public void resetStats() {
         super.resetStats();
-        num_state_reqs.set(0);
-        num_bytes_sent.set(0);
+        num_state_reqs.reset();
+        num_bytes_sent.reset();
         avg_state_size=0;
     }
 
@@ -330,9 +329,9 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
         byte[] state=rsp.state;
 
         if(stats) {
-            num_state_reqs.incrementAndGet();
+            num_state_reqs.increment();
             if(state != null)
-                num_bytes_sent.addAndGet(state.length);
+                num_bytes_sent.add(state.length);
             avg_state_size=num_bytes_sent.doubleValue() / num_state_reqs.doubleValue();
         }
 

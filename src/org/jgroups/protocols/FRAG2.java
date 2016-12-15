@@ -4,15 +4,21 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.annotations.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -63,14 +69,14 @@ public class FRAG2 extends Protocol {
     protected Address             local_addr;
 
     @ManagedAttribute(description="Number of sent fragments")
-    AtomicLong                    num_frags_sent=new AtomicLong(0);
+    protected LongAdder           num_frags_sent=new LongAdder();
     @ManagedAttribute(description="Number of received fragments")
-    AtomicLong                    num_frags_received=new AtomicLong(0);
+    protected LongAdder           num_frags_received=new LongAdder();
 
     public int   getFragSize()                  {return frag_size;}
     public void  setFragSize(int s)             {frag_size=s;}
-    public long  getNumberOfSentFragments()     {return num_frags_sent.get();}
-    public long  getNumberOfReceivedFragments() {return num_frags_received.get();}
+    public long  getNumberOfSentFragments()     {return num_frags_sent.sum();}
+    public long  getNumberOfReceivedFragments() {return num_frags_received.sum();}
     public int   fragSize()                     {return frag_size;}
     public FRAG2 fragSize(int size)             {frag_size=size; return this;}
 
@@ -102,8 +108,8 @@ public class FRAG2 extends Protocol {
 
     public void resetStats() {
         super.resetStats();
-        num_frags_sent.set(0);
-        num_frags_received.set(0);
+        num_frags_sent.reset();
+        num_frags_received.reset();
     }
 
 
@@ -217,7 +223,7 @@ public class FRAG2 extends Protocol {
             byte[] buffer=msg.getRawBuffer();
             final List<Range> fragments=Util.computeFragOffsets(msg.getOffset(), msg.getLength(), frag_size);
             int num_frags=fragments.size();
-            num_frags_sent.addAndGet(num_frags);
+            num_frags_sent.add(num_frags);
 
             if(log.isTraceEnabled()) {
                 Address dest=msg.getDest();
@@ -260,7 +266,7 @@ public class FRAG2 extends Protocol {
             if(tmp != null) // value was already present
                 frag_table=tmp;
         }
-        num_frags_received.incrementAndGet();
+        num_frags_received.increment();
 
         FragEntry entry=frag_table.get(hdr.id);
         if(entry == null) {

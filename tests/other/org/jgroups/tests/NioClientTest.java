@@ -8,7 +8,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * NIO based client for measuring heap-based vs direct byte buffers. Use {@link NioServerPerfTest} as server
@@ -17,8 +17,8 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class NioClientTest {
     protected volatile boolean    running=true;
-    protected final AtomicLong    total_bytes_sent=new AtomicLong(0);
-    protected final AtomicLong    total_msgs=new AtomicLong(0);
+    protected final LongAdder     total_bytes_sent=new LongAdder();
+    protected final LongAdder     total_msgs=new LongAdder();
     protected Sender[]            senders;
 
 
@@ -44,8 +44,8 @@ public class NioClientTest {
 
 
     protected void sendMessages(InetAddress host, boolean direct, int num_threads) throws Exception {
-        total_msgs.set(0);
-        total_bytes_sent.set(0);
+        total_msgs.reset();
+        total_bytes_sent.reset();
         senders=new Sender[num_threads];
         final CountDownLatch latch=new CountDownLatch(1);
         for(int i=0; i < senders.length; i++)
@@ -84,12 +84,13 @@ public class NioClientTest {
                 e.printStackTrace();
             }
             for(;;) {
-                if(total_bytes_sent.addAndGet(NioServerPerfTest.SIZE) > NioServerPerfTest.BYTES_TO_SEND)
+                total_bytes_sent.add(NioServerPerfTest.SIZE);
+                if(total_bytes_sent.sum() > NioServerPerfTest.BYTES_TO_SEND)
                     break;
                 buf.rewind();
                 try {
                     ch.write(buf);
-                    total_msgs.incrementAndGet();
+                    total_msgs.increment();
                 }
                 catch(IOException e) {
                     e.printStackTrace();
