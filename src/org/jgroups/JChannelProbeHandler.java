@@ -15,7 +15,6 @@ import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * @author Bela Ban
@@ -57,10 +56,10 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                 ThreadMXBean bean=ManagementFactory.getThreadMXBean();
                 boolean cpu_supported=bean.isThreadCpuTimeSupported();
                 boolean contention_supported=bean.isThreadContentionMonitoringSupported();
-                Comparator<ThreadEntry> comp=Comparator.comparing(e -> e.thread_name);
-                Set<ThreadEntry> entries=new ConcurrentSkipListSet<>(comp);
                 int max_name=0;
                 long[] ids=bean.getAllThreadIds();
+                List<ThreadEntry> entries=new ArrayList<>(ids.length);
+
                 for(long id : ids) {
                     ThreadInfo info=bean.getThreadInfo(id);
                     if(info == null) continue;
@@ -83,14 +82,35 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                     entries.add(entry);
                 }
 
-                max_name=Math.min(max_name, 50)+1;
+                int index=key.indexOf('=');
+                if(index >= 0) {
+                    Comparator<ThreadEntry> comp=Comparator.comparing(e -> e.thread_name);
+                    String val=key.substring(index+1);
+                    if(val.startsWith("state"))
+                        comp=Comparator.comparing(e -> e.state);
+                    else if(val.startsWith("cpu"))
+                        comp=Comparator.comparing((ThreadEntry e) -> e.cpu_time).reversed();
+                    else if(val.startsWith("user"))
+                        comp=Comparator.comparing((ThreadEntry e) -> e.user_time).reversed();
+                    else if(val.startsWith("block"))
+                        comp=Comparator.comparing((ThreadEntry e) -> e.blocks).reversed();
+                    else if(val.startsWith("btime"))
+                        comp=Comparator.comparing((ThreadEntry e) -> e.block_time).reversed();
+                    else if(val.startsWith("wait"))
+                        comp=Comparator.comparing((ThreadEntry e) -> e.waits).reversed();
+                    else if(val.startsWith("wtime"))
+                        comp=Comparator.comparing((ThreadEntry e) -> e.wait_time).reversed();
+                    entries.sort(comp);
+                }
 
+
+                max_name=Math.min(max_name, 50)+1;
                 String title="\n[%s]   \t%-" + max_name+"s: %10s %10s %6s %8s %10s %10s\n";
                 String line="[%s]\t%-"+max_name+"s: %,8.0f %,8.0f %,10d %,8.0f %,10d %,10.0f\n";
 
                 StringBuilder sb=new StringBuilder(String.format(title,
                                                                  "state", "thread-name", "cpu (ms)", "user (ms)",
-                                                                 "block", "(btime)", "wait", "(wtime)"));
+                                                                 "block", "btime (ms)", "wait", "wtime (ms)"));
                 entries.forEach(e -> sb.append(e.print(line)));
                 map.put(key, sb.toString());
                 continue;
@@ -330,7 +350,7 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
        public String toString() {
            StringBuilder sb=new StringBuilder(String.format("[%s] %s:", state, thread_name));
            sb.append(String.format(" blocks=%d (%.2f ms) waits=%d (%.2f ms)", blocks, block_time, waits, wait_time));
-           sb.append(String.format(" sys=%.2f ms user=%.2f ms", cpu_time, user_time));
+           sb.append(String.format(" sys=%.2f ms user=%.2f ms\n", cpu_time, user_time));
            return sb.toString();
        }
 
