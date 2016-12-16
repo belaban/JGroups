@@ -148,7 +148,7 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
 
     public String[] supportedKeys() {
         return new String[]{"reset-stats", "jmx", "op=<operation>[<args>]",
-          "threads", "enable-cpu", "enable-contention", "disable-cpu", "disable-contention"};
+          "threads[=<filter>[=<limit>]]", "enable-cpu", "enable-contention", "disable-cpu", "disable-contention"};
     }
 
 
