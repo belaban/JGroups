@@ -6,6 +6,7 @@ import org.jgroups.*;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -14,91 +15,91 @@ import java.util.List;
  * Tests various methods in JChannel
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=false)
+@Test(groups=Global.STACK_DEPENDENT)
 public class ChannelTest extends ChannelTestBase {       
 
     public void testBasicOperations() throws Exception {
-        JChannel c1 = createChannel(true,1);
-        JChannel c2=null;
+        JChannel a = createChannel(true,1).name("A");
+        JChannel b=null;
 
         try {
-            c1.connect("testBasicOperations");
-            assert c1.isOpen();
-            assert c1.isConnected();
+            a.connect("testBasicOperations");
+            assert a.isOpen();
+            assert a.isConnected();
        
-            assert c1.getAddress() != null;
-            assert c1.getView() != null;
-            assert c1.getView().getMembers().contains(c1.getAddress());
+            assert a.getAddress() != null;
+            assert a.getView() != null;
+            assert a.getView().getMembers().contains(a.getAddress());
        
-            c1.connect("testBasicOperations");
-            c1.disconnect();
-            assert c1.isConnected() == false;
-            assert c1.isOpen();
-            assert c1.getAddress() == null;
-            assert c1.getView() == null;
-            assert c1.getClusterName() == null;
+            a.connect("testBasicOperations");
+            a.disconnect();
+            assert a.isConnected() == false;
+            assert a.isOpen();
+            assert a.getAddress() == null;
+            assert a.getView() == null;
+            assert a.getClusterName() == null;
        
-            c1.connect("testBasicOperations");
+            a.connect("testBasicOperations");
 
-            c1.close();
+            a.close();
        
             try {
-                c1.connect("testBasicOperations");
+                a.connect("testBasicOperations");
                 assert false : "Should have generated exception, and it has not";
             }
             catch (Exception e) {
                 assert e instanceof IllegalStateException;
             }
        
-            assert c1.isConnected() == false;
-            assert c1.isOpen() == false;
-            assert c1.getAddress() == null;
-            assert c1.getView() == null;
+            assert a.isConnected() == false;
+            assert a.isOpen() == false;
+            assert a.getAddress() == null;
+            assert a.getView() == null;
        
-            assert c1.getClusterName() == null;
+            assert a.getClusterName() == null;
        
-            c1 = createChannel(true,2);
-            c1.connect("testBasicOperations");
-            c2 = createChannel(c1);
-            c2.connect("testBasicOperations");
+            a = createChannel(true,2);
+            a.connect("testBasicOperations");
+            b = createChannel(a);
+            b.connect("testBasicOperations");
        
             Util.sleep(1000);
        
-            assert c1.isOpen();
-            assert c1.isConnected();
+            assert a.isOpen();
+            assert a.isConnected();
        
-            assert c1.getAddress() != null;
-            assert c1.getView() != null;
-            assert c1.getView().getMembers().contains(c1.getAddress());
-            assert c1.getView().getMembers().contains(c2.getAddress());
+            assert a.getAddress() != null;
+            assert a.getView() != null;
+            assert a.getView().getMembers().contains(a.getAddress());
+            assert a.getView().getMembers().contains(b.getAddress());
        
-            assert c2.isOpen();
-            assert c2.isConnected();
+            assert b.isOpen();
+            assert b.isConnected();
        
-            assert c2.getAddress() != null;
-            assert c2.getView() != null;
-            assert c2.getView().getMembers().contains(c2.getAddress());
-            assert c2.getView().getMembers().contains(c1.getAddress());
+            assert b.getAddress() != null;
+            assert b.getView() != null;
+            assert b.getView().getMembers().contains(b.getAddress());
+            assert b.getView().getMembers().contains(a.getAddress());
        
-            c2.close();
+            b.close();
             Util.sleep(1000);
        
-            assert c2.isOpen() == false;
-            assert c2.isConnected() == false;
+            assert b.isOpen() == false;
+            assert b.isConnected() == false;
        
-            assert c2.getAddress() == null;
-            assert c2.getView() == null;
+            assert b.getAddress() == null;
+            assert b.getView() == null;
        
-            assert c1.isOpen();
-            assert c1.isConnected();
+            assert a.isOpen();
+            assert a.isConnected();
        
-            assert c1.getAddress() != null;
-            assert c1.getView() != null;
-            assert c1.getView().getMembers().contains(c1.getAddress());
-            assert c1.getView().getMembers().contains(c2.getAddress()) == false;
+            assert a.getAddress() != null;
+            assert a.getView() != null;
+            assert a.getView().getMembers().contains(a.getAddress());
+            assert a.getView().getMembers().contains(b.getAddress()) == false;
         }
         finally {
-            Util.close(c1,c2);
+            Util.close(a,b);
         }
     }
 
@@ -143,6 +144,18 @@ public class ChannelTest extends ChannelTestBase {
         finally {
             Util.close(ch1,ch2);
         }
+    }
+
+    public void testViewChange2() throws Exception {
+        JChannel a=createChannel(true, 2).name("A");
+        JChannel b=createChannel(a).name("B");
+        a.connect("testViewChange2");
+        b.connect("testViewChange2");
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b);
+        List<Address> expectedMembers = Arrays.asList(a.getAddress(), b.getAddress());
+        List<Address> mbrs=a.getView().getMembers();
+        assert expectedMembers.equals(mbrs);
+        assert mbrs.equals(expectedMembers);
     }
 
 

@@ -24,7 +24,7 @@ import java.util.stream.Stream;
  * @author Bela Ban
  */
 @Immutable
-public class View extends AbstractList<Address> implements Comparable<View>, SizeStreamable, Iterable<Address>, Constructable<View> {
+public class View implements Comparable<View>, SizeStreamable, Iterable<Address>, Constructable<View> {
 
    /**
     * A view is uniquely identified by its ViewID. The view id contains the creator address and a
@@ -118,7 +118,7 @@ public class View extends AbstractList<Address> implements Comparable<View>, Siz
      * @return an immutable list of the members
      */
     public List<Address> getMembers() {
-        return this;
+        return Collections.unmodifiableList(Arrays.asList(members));
     }
 
     /** Returns the underlying array. The caller <em>must not</em> modify the contents. Should not be used by
@@ -292,9 +292,5 @@ public class View extends AbstractList<Address> implements Comparable<View>, Siz
         return new ArrayIterator(this.members);
     }
 
-    ///// List impl
-    public Address get(int index) {
-        return members != null && index >= 0 && index < members.length? members[index] : null;
-    }
 
 }
