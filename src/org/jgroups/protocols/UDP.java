@@ -63,8 +63,8 @@ public class UDP extends TP {
     @Property(description="Traffic class for sending unicast and multicast datagrams. Default is 8")
     protected int tos=8; // valid values: 2, 4, 8 (default), 16
 
-    protected static final String UCAST_NAME="unicast receiver";
-    protected static final String MCAST_NAME="multicast receiver";
+    protected static final String UCAST_NAME="ucast-receiver";
+    protected static final String MCAST_NAME="mcast-receiver";
 
     @Property(name="mcast_addr", description="The multicast address used for sending and receiving packets",
               defaultValueIPv4="228.8.8.8", defaultValueIPv6="ff0e::8:8:8",

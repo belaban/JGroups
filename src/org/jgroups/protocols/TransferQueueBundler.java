@@ -17,7 +17,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     protected List<Message>          remove_queue;
     protected volatile     Thread    bundler_thread;
     protected volatile boolean       running=true;
-    protected static final String    THREAD_NAME="TransferQueueBundler";
+    protected static final String    THREAD_NAME="TQ-Bundler";
 
     public TransferQueueBundler() {
         this.remove_queue=new ArrayList<>(16);

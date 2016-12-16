@@ -1008,7 +1008,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                               local_addr, client_sock.getInetAddress(), client_sock.getPort());
                     client_sock.setKeepAlive(keep_alive);
                     ClientConnectionHandler client_conn_handler=new ClientConnectionHandler(client_sock, clients);
-                    Thread t = getThreadFactory().newThread(client_conn_handler, "FD_SOCK client connection handler");
+                    Thread t = getThreadFactory().newThread(client_conn_handler, "FD_SOCK conn-handler");
                     t.setDaemon(true);
 
                     synchronized(clients) {

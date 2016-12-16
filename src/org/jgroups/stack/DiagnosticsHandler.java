@@ -24,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 
 public class DiagnosticsHandler implements Runnable {
-    public static final String        THREAD_NAME="DiagnosticsHandler";
+    public static final String        THREAD_NAME="DiagHandler";
     protected TP                      transport;
     protected Thread                  thread;
     protected MulticastSocket         diag_sock;

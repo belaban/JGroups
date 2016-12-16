@@ -9,20 +9,21 @@ import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * @author Bela Ban
  * @since  4.0
  */
 public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
-    protected final JChannel ch;
-    protected final Log log;
+    protected final JChannel      ch;
+    protected final Log           log;
 
     public JChannelProbeHandler(JChannel ch) {
         this.ch=ch;
@@ -30,8 +31,8 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
     }
 
     public Map<String, String> handleProbe(String... keys) {
-        Map<String, String> map=new TreeMap<>();
-        for(String key: keys) {
+        Map<String,String> map=new TreeMap<>();
+        for(String key : keys) {
             if(key.startsWith("jmx")) {
                 handleJmx(map, key);
                 continue;
@@ -44,19 +45,96 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                 int index=key.indexOf('=');
                 if(index != -1) {
                     try {
-                        handleOperation(map, key.substring(index+1));
+                        handleOperation(map, key.substring(index + 1));
                     }
                     catch(Throwable throwable) {
-                        log.error(Util.getMessage("OperationInvocationFailure"), key.substring(index+1), throwable);
+                        log.error(Util.getMessage("OperationInvocationFailure"), key.substring(index + 1), throwable);
                     }
                 }
+                continue;
+            }
+            if(key.startsWith("threads")) {
+                ThreadMXBean bean=ManagementFactory.getThreadMXBean();
+                boolean cpu_supported=bean.isThreadCpuTimeSupported();
+                boolean contention_supported=bean.isThreadContentionMonitoringSupported();
+                Comparator<ThreadEntry> comp=Comparator.comparing(e -> e.thread_name);
+                Set<ThreadEntry> entries=new ConcurrentSkipListSet<>(comp);
+                int max_name=0;
+                long[] ids=bean.getAllThreadIds();
+                for(long id : ids) {
+                    ThreadInfo info=bean.getThreadInfo(id);
+                    if(info == null) continue;
+                    String thread_name=info.getThreadName();
+                    max_name=Math.max(max_name, thread_name.length());
+                    Thread.State state=info.getThreadState();
+                    long blocked=info.getBlockedCount();
+                    long blocked_time=contention_supported? info.getBlockedTime() : -1;
+                    long waited=info.getWaitedCount();
+                    long waited_time=contention_supported? info.getWaitedTime() : -1;
+                    double cpu_time=cpu_supported? bean.getThreadCpuTime(id) : -1;
+                    if(cpu_time > 0)
+                        cpu_time/=1_000_000;
+                    double user_time=cpu_supported? bean.getThreadUserTime(id) : -1;
+                    if(user_time > 0)
+                        user_time/=1_000_000;
+
+                    ThreadEntry entry=new ThreadEntry(state, thread_name, blocked, waited, blocked_time, waited_time,
+                                                      cpu_time, user_time);
+                    entries.add(entry);
+                }
+
+                max_name=Math.min(max_name, 50)+1;
+
+                String title="\n[%s]   \t%-" + max_name+"s: %10s %10s %6s %8s %10s %10s\n";
+                String line="[%s]\t%-"+max_name+"s: %,8.0f %,8.0f %,10d %,8.0f %,10d %,10.0f\n";
+
+                StringBuilder sb=new StringBuilder(String.format(title,
+                                                                 "state", "thread-name", "cpu (ms)", "user (ms)",
+                                                                 "block", "(btime)", "wait", "(wtime)"));
+                entries.forEach(e -> sb.append(e.print(line)));
+                map.put(key, sb.toString());
+                continue;
+            }
+            if(key.equals("enable-cpu")) {
+                map.put(key, enable(1, true));
+                continue;
+            }
+            if(key.startsWith("enable-cont")) {
+                map.put(key, enable(2, true));
+                continue;
+            }
+            if(key.equals("disable-cpu")) {
+                map.put(key, enable(1, false));
+                continue;
+            }
+            if(key.startsWith("disable-cont")) {
+                map.put(key, enable(2, false));
             }
         }
         return map;
     }
 
     public String[] supportedKeys() {
-        return new String[]{"reset-stats", "jmx", "op=<operation>[<args>]"};
+        return new String[]{"reset-stats", "jmx", "op=<operation>[<args>]",
+          "threads", "enable-cpu", "enable-contention", "disable-cpu", "disable-contention"};
+    }
+
+
+    protected static String enable(int type, boolean flag) {
+        ThreadMXBean bean=ManagementFactory.getThreadMXBean();
+        boolean supported=false;
+        if(type == 1) { // cpu
+            supported=bean.isThreadCpuTimeSupported();
+            if(supported)
+                bean.setThreadCpuTimeEnabled(flag);
+        }
+        else if(type == 2) {
+            supported=bean.isThreadContentionMonitoringSupported();
+            if(supported)
+                bean.setThreadContentionMonitoringEnabled(flag);
+        }
+        String tmp=type == 1? "CPU" : "contention";
+        return String.format("%s monitoring supported: %b, %s monitoring supported: %b", tmp, supported, tmp, supported && flag);
     }
 
     protected JChannel resetAllStats() {
@@ -229,5 +307,38 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
         if(retval != null)
             map.put(prot_name + "." + method_name, retval.toString());
     }
+
+   protected static class ThreadEntry {
+       protected final Thread.State state;
+       protected final String       thread_name;
+       protected final long         blocks, waits;
+       protected final double       block_time, wait_time;  // ms
+       protected final double       cpu_time, user_time;    // ms
+
+       public ThreadEntry(Thread.State state, String thread_name, long blocks, long waits, double block_time, double wait_time,
+                          double cpu_time, double user_time) {
+           this.state=state;
+           this.thread_name=thread_name;
+           this.blocks=blocks;
+           this.waits=waits;
+           this.block_time=block_time;
+           this.wait_time=wait_time;
+           this.cpu_time=cpu_time;
+           this.user_time=user_time;
+       }
+
+       public String toString() {
+           StringBuilder sb=new StringBuilder(String.format("[%s] %s:", state, thread_name));
+           sb.append(String.format(" blocks=%d (%.2f ms) waits=%d (%.2f ms)", blocks, block_time, waits, wait_time));
+           sb.append(String.format(" sys=%.2f ms user=%.2f ms", cpu_time, user_time));
+           return sb.toString();
+       }
+
+       protected String print(String format) {
+           return String.format(format, state, thread_name, cpu_time, user_time, blocks, block_time, waits, wait_time);
+       }
+
+
+   }
 
 }
