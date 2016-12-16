@@ -15,6 +15,7 @@ import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * @author Bela Ban
@@ -103,15 +104,26 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                     entries.sort(comp);
                 }
 
+                // see if we need to limit the displayed data
+                index=key.indexOf('=', index+1);
+                int limit=0;
+                if(index >= 0) {
+                    String val=key.substring(index+1);
+                    limit=Integer.valueOf(val);
+                }
+
 
                 max_name=Math.min(max_name, 50)+1;
-                String title="\n[%s]   \t%-" + max_name+"s: %10s %10s %6s %8s %10s %10s\n";
-                String line="[%s]\t%-"+max_name+"s: %,8.0f %,8.0f %,10d %,8.0f %,10d %,10.0f\n";
+                String title="\n[%s]   \t%-" + max_name+"s: %10s %10s %6s %9s %10s %10s\n";
+                String line="[%s]\t%-"+max_name+"s: %,8.0f %,8.0f %,10d %,9.0f %,10d %,10.0f\n";
 
                 StringBuilder sb=new StringBuilder(String.format(title,
                                                                  "state", "thread-name", "cpu (ms)", "user (ms)",
                                                                  "block", "btime (ms)", "wait", "wtime (ms)"));
-                entries.forEach(e -> sb.append(e.print(line)));
+                Stream<ThreadEntry> stream=entries.stream();
+                if(limit > 0)
+                    stream=stream.limit(limit);
+                stream.forEach(e -> sb.append(e.print(line)));
                 map.put(key, sb.toString());
                 continue;
             }
@@ -154,7 +166,7 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                 bean.setThreadContentionMonitoringEnabled(flag);
         }
         String tmp=type == 1? "CPU" : "contention";
-        return String.format("%s monitoring supported: %b, %s monitoring supported: %b", tmp, supported, tmp, supported && flag);
+        return String.format("%s monitoring supported: %b, %s monitoring enabled: %b", tmp, supported, tmp, supported && flag);
     }
 
     protected JChannel resetAllStats() {
