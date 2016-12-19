@@ -1824,7 +1824,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 who_has_cache.removeExpiredElements();
                 if(bundler != null)
                     bundler.viewChange(evt.getArg());
-                unicast_threads.keySet().retainAll(view);
+                // unicast_threads.keySet().retainAll(view);
                 break;
 
             case Event.CONNECT:
