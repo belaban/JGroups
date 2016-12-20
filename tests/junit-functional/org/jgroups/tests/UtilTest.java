@@ -12,6 +12,7 @@ import org.testng.annotations.Test;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -20,6 +21,24 @@ import java.util.stream.LongStream;
 @Test(groups=Global.FUNCTIONAL)
 public class UtilTest {
 
+
+    public void testPermutations() {
+        List<Integer> list=Arrays.asList(1,2,3,4);
+        List<List<Integer>> permutations=new ArrayList<>(Util.factorial(list.size()));
+        Util.permute(list, permutations);
+
+        int expected_permutations=Util.factorial(list.size());
+        int permutation_size=permutations.size();
+        AtomicInteger count=new AtomicInteger(1);
+        permutations.forEach(l -> System.out.printf("%-5d: %s\n", count.getAndIncrement(), l));
+
+        assert expected_permutations == permutation_size:
+          String.format("expected %d combinations, got %d\n", expected_permutations, permutation_size);
+
+        Set<List<Integer>> set=new HashSet<>();
+        set.addAll(permutations);
+        assert set.size() == permutations.size();
+    }
 
 
     public static void testGetProperty() {

@@ -1860,6 +1860,69 @@ public class Util {
         return nanoTime() / 1000;
     }
 
+    public static int factorial(int n) {
+        if(n == 1) return n;
+        return n * factorial(n-1);
+    }
+
+    /**
+     * Inefficient permutation of a generic list; uses too much copying among other things. PR welcome! :-)
+     * @param list The list
+     * @param permutations All permutations will be added to this list (as copies)
+     * @param <E> the type of the list elements
+     */
+    public static <E> void permute(List<E> list, List<List<E>> permutations) {
+        if(list.size() == 1) {
+            permutations.add(list);
+            return;
+        }
+        for(int i=0; i < list.size(); i++) {
+            permute(null, list, i, permutations);
+        }
+    }
+
+    protected static <E> void permute(List<E> prefix, List<E> list, int index, final List<List<E>> permutations) {
+        if(list.size() <= 1)
+            permutations.add(combine(prefix, list));
+        else {
+            List<E> swapped=swap(list, index);
+            List<E> first=car(swapped);
+            List<E> rest=cdr(swapped);
+            for(int i=0; i < rest.size(); i++)
+                permute(combine(prefix, first), rest, i, permutations);
+        }
+    }
+
+    public static <E> List<E> car(List<E> l) {
+        return l.isEmpty()? Collections.emptyList() : Collections.singletonList(l.get(0));
+    }
+
+    public static <E> List<E> cdr(List<E> l) {
+        return l.isEmpty()? Collections.emptyList() : l.subList(1, l.size());
+    }
+
+    public static <E> List<E> combine(List<E> l1, List<E> l2) {
+        ArrayList<E> retval=new ArrayList<>();
+        if(l1 != null)
+            retval.addAll(l1);
+        if(l2 != null)
+            retval.addAll(l2);
+        return retval;
+    }
+
+    // moves el at index to the front, returns a copy
+    protected static <E> List<E> swap(List<E> l, int index) {
+        List<E> swapped=new ArrayList<>();
+        E el=l.get(index);
+        swapped.add(el);
+        for(int i=0; i < l.size(); i++) {
+            el=l.get(i);
+            if(i != index)
+                swapped.add(el);
+        }
+        return swapped;
+    }
+
 
     /** Returns a random value in the range [1 - range]. If range is 0, 1 will be returned. If range is negative, an
      * exception will be thrown */
