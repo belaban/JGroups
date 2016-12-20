@@ -13,10 +13,12 @@ import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -225,11 +227,8 @@ public class BARRIER extends Protocol {
             while(barrier_closed.get() && !in_flight_threads.isEmpty()) {
                 if(target_time == 0 && flush_timeout > 0)
                     target_time=System.currentTimeMillis() + flush_timeout;
-                for(Iterator<Thread> it=in_flight_threads.keySet().iterator(); it.hasNext();) {
-                    Thread thread=it.next();
-                    if(!thread.isAlive() || thread.getState() == Thread.State.TERMINATED) // should be the same
-                        it.remove();
-                }
+                // should be the same
+                in_flight_threads.keySet().removeIf(thread -> !thread.isAlive() || thread.getState() == Thread.State.TERMINATED);
                 if(in_flight_threads.isEmpty())
                     break;
                 try {
@@ -287,8 +286,10 @@ public class BARRIER extends Protocol {
         if(queue.isEmpty())
             return;
 
-        for(Message msg: queue.values())
-            transport.submitToThreadPool(transport.new SingleMessageHandler(msg), true);
+        for(Message msg: queue.values()) {
+            boolean oob=msg.isFlagSet(Message.Flag.OOB), internal=msg.isFlagSet(Message.Flag.INTERNAL);
+            transport.msg_processing_policy.process(msg, oob, internal);
+        }
         queue.clear();
     }
 

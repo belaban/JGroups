@@ -1924,6 +1924,75 @@ public class Util {
     }
 
 
+    /**
+     * Performs an ordered permutation of the elements of a and b such that the order of elements in list a and b is
+     * preserved. Example: {A1,A2} and {B1,B2} -> {A1,B1,A2,B2} but not {A1,B2,B1,A2}
+     */
+    public static <E> Collection<List<E>> orderedPermutation(List<E> a, List<E> b) {
+        Collection<List<E>> perms=new LinkedHashSet<>();
+        for(int i=0; i <= a.size(); i++) {
+            for(int j=0; j <= b.size(); j++) {
+                if(i == 0 && j == 0)
+                    continue;
+                List<E> l1=new ArrayList<>(a), l2=new ArrayList<>(b);
+                List<E> perm=permute(l1, l2, i, j);
+                perms.add(perm);
+            }
+        }
+
+        for(int i=0; i <= b.size(); i++) {
+            for(int j=0; j <= a.size(); j++) {
+                if(i == 0 && j == 0)
+                    continue;
+                List<E> l1=new ArrayList<>(b), l2=new ArrayList<>(a);
+                List<E> perm=permute(l1, l2, i, j);
+                perms.add(perm);
+            }
+        }
+        return perms;
+    }
+
+    protected static <E> List<E> permute(List<E> l1, List<E> l2, int remove_from_l1, int remove_from_l2) {
+        List<E> retval=new ArrayList<>();
+        while(!(l1.isEmpty() || l2.isEmpty())) {
+            int a=remove_from_l1, b=remove_from_l2;
+            while(a-- > 0 && !l1.isEmpty())
+                retval.add(l1.remove(0));
+            while(b-- > 0 && !l2.isEmpty())
+                retval.add(l2.remove(0));
+        }
+        retval.addAll(l1);
+        retval.addAll(l2);
+        return retval;
+    }
+
+    @SafeVarargs
+    public static <E> boolean checkOrder(Collection<E> perm, List<E> ... lists) {
+        for(List<E> list: lists) {
+            if(!perm.containsAll(list))
+                return false;
+            int pos=0;
+            for(E el: list) {
+                int index=index(perm, el);
+                if(index < pos)
+                    return false;
+                pos=index;
+            }
+        }
+        return true;
+    }
+
+    protected static <E> int index(Collection<E> list, E el) {
+        int index=0;
+        for(E element: list) {
+            if(element.equals(el))
+                return index;
+            index++;
+        }
+        return -1;
+    }
+
+
     /** Returns a random value in the range [1 - range]. If range is 0, 1 will be returned. If range is negative, an
      * exception will be thrown */
     public static long random(long range) {

@@ -241,12 +241,63 @@ public class MessageBatchTest {
     }
 
 
+    public void testTransfer() {
+        MessageBatch other=new MessageBatch(3);
+        List<Message> msgs=createMessages();
+        msgs.forEach(other::add);
+        int other_size=other.size();
+
+        MessageBatch batch=new MessageBatch(5);
+        int num=batch.transferFrom(other, true);
+        assert num == other_size;
+        assert batch.size() == other_size;
+        assert other.isEmpty();
+    }
+
+    public void testTransfer2() {
+        MessageBatch other=new MessageBatch(3);
+        List<Message> msgs=createMessages();
+        msgs.forEach(other::add);
+        int other_size=other.size();
+
+        MessageBatch batch=new MessageBatch(5);
+        msgs.forEach(batch::add);
+        msgs.forEach(batch::add);
+        System.out.println("batch = " + batch);
+
+        int num=batch.transferFrom(other, true);
+        assert num == other_size;
+        assert batch.size() == other_size;
+        assert other.isEmpty();
+    }
+
+    public void testTransfer3() {
+        MessageBatch other=new MessageBatch(30);
+        MessageBatch batch=new MessageBatch(10);
+        int num=batch.transferFrom(other, true);
+        assert num == 0;
+        assert batch.capacity() == 10;
+    }
+
     public void testAdd() {
         MessageBatch batch=new MessageBatch(3);
         List<Message> msgs=createMessages();
         msgs.forEach(batch::add);
         System.out.println("batch = " + batch);
         assert batch.size() == msgs.size() : "batch: " + batch;
+    }
+
+    public void testAddBatch() {
+        MessageBatch other=new MessageBatch(3);
+        List<Message> msgs=createMessages();
+        msgs.forEach(other::add);
+        int other_size=other.size();
+
+        MessageBatch batch=new MessageBatch(5);
+        batch.add(other);
+        System.out.println("batch = " + batch);
+        assert batch.size() == other_size;
+        assert batch.capacity() >= other.capacity();
     }
 
     public void testGetMatchingMessages() {

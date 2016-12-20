@@ -13,13 +13,16 @@ import org.jgroups.util.MessageBatch;
  */
 public interface MessageProcessingPolicy {
     /** Called after creation. Implementations may want to cache the transport reference to get access to thread pools,
-     * message counters etc */
+        message counters etc */
     void init(TP transport);
+
+    /** To reset stats */
+    default void reset() {}
 
     /** Called before the transport is destroyed */
     default void destroy() {}
 
-    void process(Message msg);
+    void process(Message msg, boolean oob, boolean internal);
 
     void process(MessageBatch batch, boolean oob, boolean internal);
 }

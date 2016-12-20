@@ -21,7 +21,6 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -321,7 +320,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public long getThreadPoolKeepAliveTime() {return thread_pool_keep_alive_time;}
 
     public Object[] getJmxObjects() {
-        return new Object[]{msg_stats};
+        return new Object[]{msg_stats, msg_processing_policy};
     }
 
     public <T extends Protocol> T setLevel(String level) {
@@ -335,6 +334,16 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void setMessageProcessingPolicy(String policy) {
         if(policy == null)
             return;
+        if(policy.startsWith("submit")) {
+            msg_processing_policy=new SubmitToThreadPool();
+            msg_processing_policy.init(this);
+            return;
+        }
+        else if(policy.startsWith("max")) {
+            msg_processing_policy=new MaxOneThreadPerSender();
+            msg_processing_policy.init(this);
+            return;
+        }
         try {
             Class<MessageProcessingPolicy> clazz=Util.loadClass(policy, getClass());
             msg_processing_policy=clazz.newInstance();
@@ -462,13 +471,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected TpHeader                header;
 
 
-    protected final ConcurrentMap<Address,Entry> unicast_threads=new ConcurrentHashMap<>();
-
-
     /**
      * Cache which maintains mappings between logical and physical addresses. When sending a message to a logical
-     * address,  we look up the physical address from logical_addr_cache and send the message to the physical address
-     * <br/>
+     * address,  we look up the physical address from logical_addr_cache and send the message to the physical address<br/>
      * The keys are logical addresses, the values physical addresses
      */
     protected LazyRemovalCache<Address,PhysicalAddress> logical_addr_cache;
@@ -539,6 +544,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void resetStats() {
         msg_stats.reset();
         avg_batch_size.clear();
+        msg_processing_policy.reset();
     }
 
     public TP registerProbeHandler(DiagnosticsHandler.ProbeHandler handler) {
@@ -861,11 +867,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }, logical_addr_cache_reaper_interval, logical_addr_cache_reaper_interval, TimeUnit.MILLISECONDS, false);
         }
 
-        if(message_processing_policy != null) {
-            Class<MessageProcessingPolicy> clazz=Util.loadClass(message_processing_policy, getClass());
-            msg_processing_policy=clazz.newInstance();
-            msg_processing_policy.init(this);
-        }
+        if(message_processing_policy != null)
+            setMessageProcessingPolicy(message_processing_policy);
         else
             msg_processing_policy.init(this);
     }
@@ -1236,52 +1239,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-   /* protected void handleMessageBatch(Address sender, byte[] data, int offset, int length) {
-        try {
-            ByteArrayDataInputStream in=new ByteArrayDataInputStream(data, offset, length);
-            short version=in.readShort();
-            if(!versionMatch(version, sender))
-                return;
-
-            byte flags=in.readByte();
-            final boolean multicast=(flags & MULTICAST) == MULTICAST;
-
-            final MessageBatch[] batches=Util.readMessageBatch(in, multicast);
-            final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch_oob=batches[2], internal_batch=batches[3];
-
-            removeAndDispatchNonBundledMessages(oob_batch, internal_batch_oob);
-
-            if(oob_batch != null && !oob_batch.isEmpty())
-                submitToThreadPool(new BatchHandler(oob_batch), false);
-            if(batch != null) {
-
-                if(batch.dest() != null) {
-                    Entry entry=getEntry(unicast_threads, batch.sender());
-                    int num=entry.increment();
-                    if(num > 0) {
-                        entry.add(batch);
-                        entry.decrement();
-                    }
-                    else {
-                        if(!submitToThreadPool(new BatchHandlerX(batch), false)) {
-                            entry.add(batch);
-                            entry.decrement();
-                        }
-                    }
-                }
-                else
-                    submitToThreadPool(new BatchHandler(batch), false);
-            }
-            if(internal_batch_oob != null && !internal_batch_oob.isEmpty())
-                submitToThreadPool(new BatchHandler(internal_batch_oob), true);
-            if(internal_batch != null)
-                submitToThreadPool(new BatchHandler(internal_batch), true);
-        }
-        catch(Throwable t) {
-            log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
-        }
-    }*/
-
     protected void handleMessageBatch(Address sender, byte[] data, int offset, int length) {
         try {
             ByteArrayDataInputStream in=new ByteArrayDataInputStream(data, offset, length);
@@ -1295,39 +1252,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             final MessageBatch[] batches=Util.readMessageBatch(in, multicast);
             final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch_oob=batches[2], internal_batch=batches[3];
 
-            processBatch(oob_batch,          true, false);
+            processBatch(oob_batch,          true,  false);
             processBatch(batch,              false, false);
-            processBatch(internal_batch_oob, true, true);
+            processBatch(internal_batch_oob, true,  true);
             processBatch(internal_batch,     false, true);
-
-
-           /* removeAndDispatchNonBundledMessages(oob_batch, internal_batch_oob);
-
-            if(oob_batch != null && !oob_batch.isEmpty())
-                submitToThreadPool(new BatchHandler(oob_batch), false);
-            if(batch != null) {
-
-                if(batch.dest() != null) {
-                    Entry entry=getEntry(unicast_threads, batch.sender());
-                    int num=entry.increment();
-                    if(num > 0) {
-                        entry.add(batch);
-                        entry.decrement();
-                    }
-                    else {
-                        if(!submitToThreadPool(new BatchHandlerX(batch), false)) {
-                            entry.add(batch);
-                            entry.decrement();
-                        }
-                    }
-                }
-                else
-                    submitToThreadPool(new BatchHandler(batch), false);
-            }
-            if(internal_batch_oob != null && !internal_batch_oob.isEmpty())
-                submitToThreadPool(new BatchHandler(internal_batch_oob), true);
-            if(internal_batch != null)
-                submitToThreadPool(new BatchHandler(internal_batch), true);*/
         }
         catch(Throwable t) {
             log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
@@ -1360,26 +1288,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(!multicast && unicastDestMismatch(msg.getDest()))
                 return;
 
-            msg_processing_policy.process(msg);
-
-            /*boolean internal=msg.isFlagSet(Message.Flag.INTERNAL), oob=msg.isFlagSet(Message.Flag.OOB);
-            if(!internal && !oob && msg.dest() != null) {
-                Entry entry=getEntry(unicast_threads, msg.src());
-                int num=entry.increment();
-                if(num > 0) {
-                    entry.add(msg);
-                    entry.decrement();
-                }
-                else {
-                    if(!submitToThreadPool(new SingleMessageHandlerX(msg), false)) {
-                        entry.add(msg);
-                        entry.decrement();
-                    }
-                }
-            }
-            else
-                submitToThreadPool(new SingleMessageHandler(msg), internal);*/
-
+            boolean oob=msg.isFlagSet(Message.Flag.OOB), internal=msg.isFlagSet(Message.Flag.INTERNAL);
+            msg_processing_policy.process(msg, oob, internal);
         }
         catch(Throwable t) {
             log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
@@ -1390,26 +1300,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return dest != null && !(Objects.equals(dest, local_addr) || Objects.equals(dest, local_physical_addr));
     }
 
-    /**
-     * Removes messages with flags DONT_BUNDLE and OOB set and executes them in the oob or internal thread pool. JGRP-1737
-     */
-    protected void removeAndDispatchNonBundledMessages(MessageBatch ... oob_batches) {
-        for(MessageBatch oob_batch: oob_batches) {
-            if(oob_batch == null)
-                continue;
-            AsciiString tmp=oob_batch.clusterName();
-            byte[] cname=tmp != null? tmp.chars() : null;
-            for(Message msg: oob_batch) {
-                if(msg.isFlagSet(Message.Flag.DONT_BUNDLE) && msg.isFlagSet(Message.Flag.OOB)) {
-                    boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
-                    oob_batch.remove(msg);
-                    if(stats)
-                        msg_stats.incrNumOOBMsgsReceived(1);
-                    submitToThreadPool(new SingleMessageHandlerWithClusterName(msg, cname), internal);
-                }
-            }
-        }
-    }
 
     public boolean submitToThreadPool(Runnable task, boolean spawn_thread_on_rejection) {
         return submitToThreadPool(thread_pool, task, spawn_thread_on_rejection, true);
@@ -1454,7 +1344,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-
     protected boolean versionMatch(short version, Address sender) {
         boolean match=Version.isBinaryCompatible(version);
         if(!match && log_discard_msgs_version && log.isWarnEnabled()) {
@@ -1468,191 +1357,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return match;
     }
 
-
-    protected class Entry {
-        protected final AtomicInteger count=new AtomicInteger(0);
-        protected MessageBatch        batch;
-        protected final Address       sender;
-
-        protected Entry(Address sender) {
-            this.sender=sender;
-            batch=createBatch(16);
-        }
-
-
-        protected int increment() {return count.getAndIncrement();}
-        protected int decrement() {return count.decrementAndGet();}
-
-        protected synchronized boolean isDataAvailable() {return !batch.isEmpty();}
-
-        protected synchronized MessageBatch getBatch() {
-            if(batch.isEmpty())
-                return null;
-            MessageBatch retval=batch;
-            batch=createBatch(batch.size());
-            return retval;
-        }
-
-        protected synchronized void add(Message msg) {
-            batch.add(msg);
-        }
-
-        protected synchronized void add(MessageBatch b) {
-            batch.add(b);
-        }
-
-        public String toString() {
-            return String.format("count=%d, batch size: %d", count.get(), batch.size());
-        }
-
-        protected MessageBatch createBatch(int capacity) {
-            return new MessageBatch(capacity).dest(local_addr).clusterName(cluster_name).sender(sender);
-        }
-    }
-
-
-    protected class SingleMessageHandler implements Runnable {
-        protected final Message msg;
-
-        protected SingleMessageHandler(final Message msg) {
-            this.msg=msg;
-        }
-
-        public void run() {
-            Address dest=msg.getDest();
-            boolean multicast=dest == null;
-            try {
-                if(stats) {
-                    if(msg.isFlagSet(Message.Flag.OOB))
-                        msg_stats.incrNumOOBMsgsReceived(1);
-                    else if(msg.isFlagSet(Message.Flag.INTERNAL))
-                        msg_stats.incrNumInternalMsgsReceived(1);
-                    else
-                        msg_stats.incrNumMsgsReceived(1);
-                    msg_stats.incrNumBytesReceived(msg.getLength());
-                }
-                byte[] cname=getClusterName();
-                passMessageUp(msg, cname, true, multicast, true);
-            }
-            catch(Throwable t) {
-                log.error(Util.getMessage("PassUpFailure"), t);
-            }
-        }
-
-        protected byte[] getClusterName() {
-            TpHeader hdr=msg.getHeader(id);
-            return hdr.cluster_name;
-        }
-    }
-
-    protected class SingleMessageHandlerWithClusterName extends SingleMessageHandler {
-        protected final byte[] cluster;
-
-        @Override protected byte[] getClusterName() {
-            return cluster;
-        }
-
-        protected SingleMessageHandlerWithClusterName(Message msg, byte[] cluster_name) {
-            super(msg);
-            this.cluster=cluster_name;
-        }
-    }
-
-    protected Entry getEntry(Map<Address,Entry> m, final Address sender) {
-        return m.computeIfAbsent(sender, k -> new Entry(sender));
-    }
-
-    protected class SingleMessageHandlerX extends SingleMessageHandler {
-
-        protected SingleMessageHandlerX(Message msg) {
-            super(msg);
-        }
-
-        public void run() {
-            super.run();
-            Entry entry=getEntry(unicast_threads, msg.src());
-            // System.out.printf("handle single message from %s, entry: %s\n", msg.src(), entry);
-            int num=entry.decrement();
-            if(num > 0)
-                return;
-            num=entry.increment();
-            if(num == 0) { // I'm the one to send the data up in a thread from thread_pool
-                MessageBatch batch=entry.getBatch();
-                if(batch != null) {
-                    BatchHandlerX batch_handler=new BatchHandlerX(batch);
-                    if(submitToThreadPool(batch_handler, false))
-                        return;
-                }
-            }
-            entry.decrement();
-        }
-    }
-
-
-
-    protected class BatchHandler implements Runnable {
-        protected MessageBatch batch;
-
-        public BatchHandler(final MessageBatch batch) {
-            this.batch=batch;
-        }
-
-        public void run() {
-            if(stats) {
-                int batch_size=batch.size();
-                if(batch.getMode() == MessageBatch.Mode.OOB)
-                    msg_stats.incrNumOOBMsgsReceived(batch_size);
-                else if(batch.getMode() == MessageBatch.Mode.INTERNAL)
-                    msg_stats.incrNumInternalMsgsReceived(batch_size);
-                else
-                    msg_stats.incrNumMsgsReceived(batch_size);
-                msg_stats.incrNumBatchesReceived(1);
-                msg_stats.incrNumBytesReceived(batch.length());
-                avg_batch_size.add(batch_size);
-            }
-
-            if(!batch.multicast() && unicastDestMismatch(batch.dest()))
-                return;
-            passBatchUp(batch, true, true);
-        }
-    }
-
-    protected class BatchHandlerX extends BatchHandler {
-
-        public BatchHandlerX(MessageBatch batch) {
-            super(batch);
-        }
-
-        public void run() {
-            Entry entry=getEntry(unicast_threads, batch.sender());
-
-            // we start out with our entry incremented by the thread creator
-            for(;;) {
-                try {
-                    super.run();
-                }
-                catch(Throwable t) {
-                    log.error("failed processing batch", t);
-                }
-
-                // more work, simply continue (our entry is still incremented)
-                if((batch=entry.getBatch()) != null)
-                    continue;
-
-                // let's decrement and see if we're really done
-                int num=entry.decrement();
-                if(num > 0)
-                    break;
-
-                // try to get more work
-                num=entry.increment();
-                if(num == 0 && (batch=entry.getBatch()) != null)
-                    continue;
-                entry.decrement();
-                break;
-            }
-        }
-    }
 
 
     /** Serializes and sends a message. This method is not reentrant */
@@ -1778,21 +1482,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-    @ManagedOperation
-    public String dumpUnicastThreads() {
-        StringBuilder sb=new StringBuilder("\n");
-        unicast_threads.entrySet().forEach(entry -> {
-            Address key=entry.getKey();
-            Entry val=entry.getValue();
-            sb.append(key).append(": ").append(val).append("\n");
-        });
-        return sb.toString();
-    }
-
-    @ManagedOperation
-    public void clearUnicastThreads() {
-        unicast_threads.clear();
-    }
 
     @SuppressWarnings("unchecked")
     protected Object handleDownEvent(Event evt) {
@@ -1824,7 +1513,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 who_has_cache.removeExpiredElements();
                 if(bundler != null)
                     bundler.viewChange(evt.getArg());
-                // unicast_threads.keySet().retainAll(view);
+                if(msg_processing_policy instanceof MaxOneThreadPerSender)
+                    ((MaxOneThreadPerSender)msg_processing_policy).viewChange(view.getMembers());
                 break;
 
             case Event.CONNECT:

@@ -94,6 +94,7 @@ public class MessageBatch implements Iterable<Message> {
     public MessageBatch clusterName(AsciiString name)    {this.cluster_name=name; return this;}
     public boolean      isMulticast()                    {return multicast;}
     public boolean      multicast()                      {return multicast;}
+    public MessageBatch multicast(boolean flag)          {multicast=flag; return this;}
     public Mode         getMode()                        {return mode;}
     public Mode         mode()                           {return mode;}
     public MessageBatch setMode(Mode mode)               {this.mode=mode; return this;}
@@ -133,7 +134,7 @@ public class MessageBatch implements Iterable<Message> {
         if(batch == null) return this;
         int batch_size=batch.size();
         if(index+batch_size >= messages.length)
-            resize(batch_size+1);
+            resize(messages.length + batch_size+1);
 
         for(Message msg: batch)
             messages[index++]=msg;
@@ -177,6 +178,30 @@ public class MessageBatch implements Iterable<Message> {
             }
         }
         return this;
+    }
+
+    /**
+     * Transfers messages from other to this batch. Optionally clears the other batch after the transfer
+     * @param other the other batch
+     * @param clear If true, the transferred messages are removed from the other batch
+     * @return the number of transferred messages (may be 0 if the other batch was empty)
+     */
+    public int transferFrom(MessageBatch other, boolean clear) {
+        if(other == null || this == other)
+            return 0;
+        int capacity=messages.length, other_size=other.size();
+        if(other_size == 0)
+            return 0;
+        if(capacity < other_size)
+            messages=new Message[other_size];
+        System.arraycopy(other.messages, 0, this.messages, 0, other_size);
+        if(this.index > other_size)
+            for(int i=other_size; i < this.index; i++)
+                messages[i]=null;
+        this.index=other_size;
+        if(clear)
+            other.clear();
+        return other_size;
     }
 
     /**
@@ -339,11 +364,13 @@ public class MessageBatch implements Iterable<Message> {
     }
 
     protected void resize() {
-        resize(INCR);
+        resize(messages.length + INCR);
     }
 
-    protected void resize(int additional_size_required) {
-        Message[] tmp=new Message[messages.length + additional_size_required];
+    protected void resize(int new_capacity) {
+        if(new_capacity <= messages.length)
+            return;
+        Message[] tmp=new Message[new_capacity];
         System.arraycopy(messages,0,tmp,0,messages.length);
         messages=tmp;
     }

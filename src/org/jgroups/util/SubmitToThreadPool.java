@@ -25,8 +25,7 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
     }
 
 
-    public void process(Message msg) {
-        boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
+    public void process(Message msg, boolean oob, boolean internal) {
         tp.submitToThreadPool(new SingleMessageHandler(msg), internal);
     }
 
@@ -37,7 +36,9 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
     }
 
 
-
+    /**
+     * Removes messages with flags DONT_BUNDLE and OOB set and executes them in the oob or internal thread pool. JGRP-1737
+     */
     protected void removeAndDispatchNonBundledMessages(MessageBatch oob_batch) {
         if(oob_batch == null)
             return;
@@ -67,13 +68,14 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
             boolean multicast=dest == null;
             try {
                 if(tp.statsEnabled()) {
+                    MsgStats msg_stats=tp.getMessageStats();
                     if(msg.isFlagSet(Message.Flag.OOB))
-                        tp.getMessageStats().incrNumOOBMsgsReceived(1);
+                        msg_stats.incrNumOOBMsgsReceived(1);
                     else if(msg.isFlagSet(Message.Flag.INTERNAL))
-                        tp.getMessageStats().incrNumInternalMsgsReceived(1);
+                        msg_stats.incrNumInternalMsgsReceived(1);
                     else
-                        tp.getMessageStats().incrNumMsgsReceived(1);
-                    tp.getMessageStats().incrNumBytesReceived(msg.getLength());
+                        msg_stats.incrNumMsgsReceived(1);
+                    msg_stats.incrNumBytesReceived(msg.getLength());
                 }
                 byte[] cname=getClusterName();
                 tp.passMessageUp(msg, cname, true, multicast, true);
@@ -110,6 +112,8 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
         }
 
         public void run() {
+            if(batch == null || (!batch.multicast() && tp.unicastDestMismatch(batch.dest())))
+                return;
             if(tp.statsEnabled()) {
                 int batch_size=batch.size();
                 MsgStats msg_stats=tp.getMessageStats();
@@ -123,9 +127,6 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
                 msg_stats.incrNumBytesReceived(batch.length());
                 tp.avgBatchSize().add(batch_size);
             }
-
-            if(!batch.multicast() && tp.unicastDestMismatch(batch.dest()))
-                return;
             tp.passBatchUp(batch, true, true);
         }
     }

@@ -79,6 +79,37 @@ public class UtilTest {
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
     }
 
+    public void testOrderedPermutation() {
+        List<String> a=Arrays.asList("A1", "A2", "A3");
+        List<String> b=Arrays.asList("B1", "B2");
+        Collection<List<String>> perms=Util.orderedPermutation(a, b);
+        int cnt=0;
+        for(List<String> perm: perms) {
+            System.out.printf("%d: %s ", ++cnt, perm);
+            if(Util.checkOrder(perm, a, b))
+                System.out.printf("OK\n");
+            else
+                assert false : String.format("%s is not in correct order (a: %s, b: %s)", perm, a, b);
+        }
+    }
+
+    public void testOrder() {
+        List<Integer> perm=Arrays.asList(1,2,4,3,5);
+        List<Integer> l=Arrays.asList(2,3,6);
+        assert !Util.checkOrder(perm, l);
+
+        l=Arrays.asList(1,2,5);
+        assert Util.checkOrder(perm, l);
+
+        l=Arrays.asList(1,2,3);
+        assert Util.checkOrder(perm, l);
+
+        l=Arrays.asList(1,3,2);
+        assert !Util.checkOrder(perm, l);
+    }
+
+
+
     public static void testGetProperty2() {
         String input="foo, bar,  foobar: 1000";
         String result=Util.getProperty(input);
