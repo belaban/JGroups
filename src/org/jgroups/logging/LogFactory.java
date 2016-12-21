@@ -1,9 +1,9 @@
 package org.jgroups.logging;
 
+import java.lang.reflect.Constructor;
+
 import org.jgroups.Global;
 import org.jgroups.util.Util;
-
-import java.lang.reflect.Constructor;
 
 
 /**
@@ -91,16 +91,16 @@ public final class LogFactory {
             }
         }
 
-        if(use_jdk_logger)
+//        if(use_jdk_logger)
             return new JDKLogImpl(clazz);
 
-        if(IS_LOG4J2_AVAILABLE)
-            return new Log4J2LogImpl(clazz);
-
-        if (IS_SLF4J_AVAILABLE)
-            return new Slf4jLogImpl(clazz);
-
-        return new JDKLogImpl(clazz);
+//        if(IS_LOG4J2_AVAILABLE)
+//            return new Log4J2LogImpl(clazz);
+//
+//        if (IS_SLF4J_AVAILABLE)
+//            return new Slf4jLogImpl(clazz);
+//
+//        return new JDKLogImpl(clazz);
     }
 
     public static Log getLog(String category) {
