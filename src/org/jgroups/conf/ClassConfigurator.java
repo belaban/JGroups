@@ -225,6 +225,9 @@ public class ClassConfigurator {
             }
 
             Object inst=magicMap[m].get();
+            if(inst == null)
+                continue;
+
             // test to confirm that the Constructable impl returns an instance of the correct type
             if(!inst.getClass().equals(clazz))
                 throw new IllegalStateException(String.format("%s.create() returned the wrong class: %s\n",
