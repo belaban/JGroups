@@ -460,7 +460,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected Bundler                 bundler;
 
-    protected MessageProcessingPolicy msg_processing_policy=new SubmitToThreadPool();
+    protected MessageProcessingPolicy msg_processing_policy=new MaxOneThreadPerSender();
 
     protected DiagnosticsHandler      diag_handler;
     protected final List<DiagnosticsHandler.ProbeHandler> preregistered_probe_handlers=new LinkedList<>();
