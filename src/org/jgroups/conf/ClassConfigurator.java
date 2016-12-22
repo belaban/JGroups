@@ -2,6 +2,19 @@
 package org.jgroups.conf;
 
 
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
 import org.jgroups.Constructable;
 import org.jgroups.Global;
 import org.jgroups.Header;
@@ -11,13 +24,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.util.*;
-import java.util.function.Supplier;
 
 /**
  * Maintains a mapping between magic IDs and classes (defined in jg-magic-map.xml), and between protocol IDs and
@@ -225,6 +231,11 @@ public class ClassConfigurator {
             }
 
             Object inst=magicMap[m].get();
+
+            if(inst == null) {
+                continue;
+            }
+
             // test to confirm that the Constructable impl returns an instance of the correct type
             if(!inst.getClass().equals(clazz))
                 throw new IllegalStateException(String.format("%s.create() returned the wrong class: %s\n",
