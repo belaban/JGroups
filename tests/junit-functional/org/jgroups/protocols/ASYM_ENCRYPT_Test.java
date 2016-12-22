@@ -197,7 +197,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
             Util.sleep(500);
         }
         Stream.of(a,b,c).forEach(ch -> System.out.printf("%s: %s\n", ch.getAddress(), ch.getView()));
-        assert !Stream.of(a,b,c).anyMatch(ch -> ch.getView().containsMember(rogue.getAddress()));
+        assert Stream.of(a, b, c).noneMatch(ch -> ch.getView().containsMember(rogue.getAddress()));
     }
 
 

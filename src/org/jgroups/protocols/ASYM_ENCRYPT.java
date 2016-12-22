@@ -163,6 +163,11 @@ public class ASYM_ENCRYPT extends Encrypt {
                     log.error("failed passing up message from %s: %s, ex=%s", msg.src(), msg.printHeaders(), t);
                 }
             }
+            EncryptHeader hdr=msg.getHeader(this.id);
+            if(hdr != null && hdr.type != EncryptHeader.ENCRYPT) {
+                handleUpEvent(msg,hdr);
+                batch.remove(msg);
+            }
         }
         if(!batch.isEmpty())
             super.up(batch); // decrypt the rest of the messages in the batch (if any)
@@ -236,9 +241,6 @@ public class ASYM_ENCRYPT extends Encrypt {
                 break;
             case EncryptHeader.SECRET_KEY_RSP:
                 handleSecretKeyResponse(msg, hdr.version());
-                break;
-            default:
-                log.warn("%s: received unknown encrypt header of type %d", local_addr, hdr.type());
                 break;
         }
         return null;
