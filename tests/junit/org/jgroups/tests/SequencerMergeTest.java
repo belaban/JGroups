@@ -60,7 +60,6 @@ public class SequencerMergeTest {
         d.connect(GROUP);
 
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, b, c, d);
-        removeDiscard(a,b,c,d);
         System.out.println("Channels:\n" + printChannels(a,b,c,d));
         MyReceiver ra=new MyReceiver("A");
         MyReceiver rb=new MyReceiver("B");
@@ -70,6 +69,8 @@ public class SequencerMergeTest {
         b.setReceiver(rb);
         c.setReceiver(rc);
         d.setReceiver(rd);
+
+        removeDiscard(a,b,c,d);
 
         final View new_view=View.create(a.getAddress(), 5, a.getAddress(),b.getAddress(),c.getAddress(),d.getAddress());
         final Digest digest=getDigest(new_view, a,b,c,d);
@@ -82,15 +83,13 @@ public class SequencerMergeTest {
         assert !Util.isCoordinator(c);
         assert !Util.isCoordinator(d);
 
-        Thread thread=new Thread() {
-            public void run() {
-                Util.sleep(1000);
+        Thread thread=new Thread(() -> {
+            Util.sleep(1000);
 
-                // Finally installing the new view at A; this simulates a delayed view installation
-                System.out.println("Installing " + new_view + " in A");
-                injectViewAndDigest(new_view, getDigest(new_view), a);
-            }
-        };
+            // Finally installing the new view at A; this simulates a delayed view installation
+            System.out.println("Installing " + new_view + " in A");
+            injectViewAndDigest(new_view, getDigest(new_view), a);
+        });
         thread.start();
 
         System.out.println("D sends a multicast message M");
@@ -104,7 +103,7 @@ public class SequencerMergeTest {
         List<String> list_d=rd.getList();
         final List<String> expected=Arrays.asList("V5", "M");
 
-        for(int i=0; i < 20; i++) {
+        for(int i=0; i < 40; i++) {
             boolean all_ok=true;
             for(List<String> list: new ArrayList<>(Arrays.asList(list_a, list_b, list_c, list_d))) {
                 if(!list.equals(expected)) {
@@ -213,7 +212,7 @@ public class SequencerMergeTest {
 
     protected static void injectViewAndDigest(View view, Digest digest, JChannel ... channels) {
         for(JChannel ch: channels) {
-            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.installView(view);
 
             Protocol nak=ch.getProtocolStack().findProtocol(NAKACK2.class);
@@ -224,7 +223,7 @@ public class SequencerMergeTest {
 
     private static void injectMergeEvent(Event evt, JChannel ... channels) {
         for(JChannel ch: channels) {
-            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.up(evt);
         }
     }
@@ -241,7 +240,7 @@ public class SequencerMergeTest {
     }
 
     protected static void makeCoordinator(JChannel ch) {
-        GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+        GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
         gms.becomeCoordinator();
     }
 

@@ -7,7 +7,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -245,10 +247,10 @@ public class Table<T> implements Iterable<T> {
         if(list == null || list.isEmpty())
             return false;
         boolean added=false;
+        // find the highest seqno (unfortunately, the list is not ordered by seqno)
+        long highest_seqno=findHighestSeqno(list);
         lock.lock();
         try {
-            // find the highest seqno (unfortunately, the list is not ordered by seqno)
-            long highest_seqno=findHighestSeqno(list);
             if(highest_seqno != -1 && computeRow(highest_seqno) >= matrix.length)
                 resize(highest_seqno);
 
@@ -353,28 +355,37 @@ public class Table<T> implements Iterable<T> {
 
 
     public List<T> removeMany(boolean nullify, int max_results) {
-        return removeMany(null, nullify, max_results);
+        return removeMany(null, nullify, max_results, null);
     }
 
-    public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results) {
-        return removeMany(processing, nullify, max_results, null);
+    public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results, Predicate<T> filter) {
+        return removeMany(processing, nullify, max_results, filter,
+                          LinkedList::new, LinkedList::add, l -> l != null && !l.isEmpty());
     }
 
 
     /**
-     * Removes between 0 and max_results elements from the table and returns them in a list. If filter is non-null,
-     * only elements which the filter accepts are returned. Note that elements are always removed from the table,
-     * but may or may not get added to the returned list.
-     * @return A list of element. A null list means no more elements are in the table and processing (if set)
-     * will be set to false
+     * Removes elements from the table and adds them to the result created by result_creator. Between 0 and max_results
+     * elements are removed. If no elements were removed, processing will be set to true while the table lock is held.
+     * @param processing will be set to false if no elements were removed
+     * @param nullify if true, the x,y location of the removed element in the matrix will be nulled
+     * @param max_results the max number of results to be returned, even if more elements would be removable
+     * @param filter a filter which accepts (or rejects) elements into the result. If null, all elements will be accepted
+     * @param result_creator a supplier required to create the result, e.g. ArrayList::new
+     * @param accumulator an accumulator accepting the result and an element, e.g. ArrayList::add
+     * @param result_validator a validator on the result which checks if no elements were returned. Needs to return true
+     *                         if elements were returned, false otherwise.
+     * @param <R> the type of the result
+     * @return the result
      */
-    public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results, Predicate<T> filter) {
+    public <R> R removeMany(final AtomicBoolean processing, boolean nullify, int max_results, Predicate<T> filter,
+                            Supplier<R> result_creator, BiConsumer<R,T> accumulator, Predicate<R> result_validator) {
         lock.lock();
         try {
-            Remover remover=new Remover(nullify, max_results, filter);
+            Remover<R> remover=new Remover<>(nullify, max_results, filter, result_creator, accumulator);
             forEach(hd+1, hr, remover);
-            List<T> retval=remover.getList();
-            if(processing != null && (retval == null || retval.isEmpty()))
+            R retval=remover.getResult();
+            if(processing != null && !result_validator.test(retval))
                 processing.set(false);
             return retval;
         }
@@ -792,32 +803,32 @@ public class Table<T> implements Iterable<T> {
 
 
 
-    protected class Remover implements Visitor<T> {
+    protected class Remover<R> implements Visitor<T> {
         protected final boolean      nullify;
         protected final int          max_results;
-        protected List<T>            list;
         protected int                num_results;
         protected final Predicate<T> filter;
+        protected R                  result;
+        protected Supplier<R>        result_creator;
+        protected BiConsumer<R,T>    result_accumulator;
 
-        public Remover(boolean nullify, int max_results) {
-            this(nullify, max_results, null);
-        }
-
-        public Remover(boolean nullify, int max_results, Predicate<T> filter) {
+        public Remover(boolean nullify, int max_results, Predicate<T> filter, Supplier<R> creator, BiConsumer<R,T> accumulator) {
             this.nullify=nullify;
             this.max_results=max_results;
             this.filter=filter;
+            this.result_creator=creator;
+            this.result_accumulator=accumulator;
         }
 
-        public List<T> getList() {return list;}
+        public R getResult() {return result;}
 
         @GuardedBy("lock")
         public boolean visit(long seqno, T element, int row, int column) {
             if(element != null) {
                 if(filter == null || filter.test(element)) {
-                    if(list == null)
-                        list=new LinkedList<>();
-                    list.add(element);
+                    if(result == null)
+                        result=result_creator.get();
+                    result_accumulator.accept(result, element);
                     num_results++;
                 }
                 if(seqno - hd > 0)

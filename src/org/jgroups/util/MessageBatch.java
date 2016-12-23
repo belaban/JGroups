@@ -170,16 +170,30 @@ public class MessageBatch implements Iterable<Message> {
      * @return the MessageBatch
      */
     public MessageBatch replace(Predicate<Message> filter, Message replacement, boolean match_all) {
+        replaceIf(filter, replacement, match_all);
+        return this;
+    }
+
+    /**
+     * Replaces all messages that match a given filter with a replacement message
+     * @param filter the filter. If null, no changes take place. Note that filter needs to be able to handle null msgs
+     * @param replacement the replacement message. Can be null, which essentially removes all messages matching filter
+     * @param match_all whether to replace the first or all matches
+     * @return the number of matched messages
+     */
+    public int replaceIf(Predicate<Message> filter, Message replacement, boolean match_all) {
         if(filter == null)
-            return this;
+            return 0;
+        int matched=0;
         for(int i=0; i < index; i++) {
             if(filter.test(messages[i])) {
                 messages[i]=replacement;
+                matched++;
                 if(!match_all)
                     break;
             }
         }
-        return this;
+        return matched;
     }
 
     /**
@@ -227,6 +241,11 @@ public class MessageBatch implements Iterable<Message> {
     public MessageBatch clear() {
         for(int i=0; i < index; i++)
             messages[i]=null;
+        index=0;
+        return this;
+    }
+
+    public MessageBatch reset() {
         index=0;
         return this;
     }

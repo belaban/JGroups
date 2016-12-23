@@ -11,7 +11,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 /** Tests {@link org.jgroups.util.Table<Integer>}
@@ -479,7 +481,7 @@ public class TableTest {
     }
 
 
-    public static void testComputeSize() {
+    public void testComputeSize() {
         Table<Integer> table=new Table<>(3, 10, 0);
         for(int num: Arrays.asList(1,2,3,4,5,6,7,8,9,10))
             table.add(num, num);
@@ -695,6 +697,53 @@ public class TableTest {
         System.out.println("table = " + table);
         assert list.size() == 2;
         assert table.isEmpty();
+    }
+
+
+    public void testRemoveMany3() {
+        Table<Integer> table=new Table<>(3, 10, 0);
+        for(int i=1; i <= 10; i++)
+            table.add(i, i);
+
+        List<Integer> result=table.removeMany(null, true, 0, null,
+                                              ArrayList::new, ArrayList::add,
+                                              l -> l != null && !l.isEmpty());
+        assert result != null && result.size() == 10;
+        assert table.isEmpty();
+    }
+
+    public void testRemoveManyIntoMessageBatch() {
+        Table<Message> table=new Table<>(3, 10, 0);
+        for(int i=1; i <= 10; i++)
+            table.add(i, new Message(null, "hello"));
+
+        MessageBatch batch=new MessageBatch(table.size());
+        final AtomicBoolean processing=new AtomicBoolean(true);
+        Supplier<MessageBatch> batch_creator=() -> batch;
+        BiConsumer<MessageBatch,Message> accumulator=MessageBatch::add;
+        Predicate<MessageBatch> is_valid=mb -> mb != null && !mb.isEmpty();
+
+        MessageBatch result=table.removeMany(processing, true, 0, null, batch_creator, accumulator, is_valid);
+        assert !batch.isEmpty();
+        assert table.isEmpty();
+        assert batch.size() == 10;
+        assert result != null && result == batch;
+        assert processing.get();
+
+        IntStream.rangeClosed(11,15).forEach(seqno -> table.add(seqno, new Message(null, "test")));
+
+        batch.reset();
+        result=table.removeMany(processing, true, 0, null, batch_creator, accumulator, is_valid);
+        assert !batch.isEmpty();
+        assert table.isEmpty();
+        assert batch.size() == 5;
+        assert result != null && result == batch;
+        assert processing.get();
+
+
+        result=table.removeMany(processing, true, 0, null, batch_creator, accumulator, is_valid);
+        assert result == null;
+        assert !processing.get();
     }
 
 
@@ -1391,7 +1440,7 @@ public class TableTest {
         assertIndices(win, orig_seqno, orig_seqno, seqno);
 
         final AtomicBoolean processing=new AtomicBoolean(false);
-        List<Message> msgs=win.removeMany(processing, true, 200);
+        List<Message> msgs=win.removeMany(processing, true, 200, null);
         System.out.printf("removed %d msgs\n", msgs.size());
         assert win.isEmpty();
         assertIndices(win, seqno, seqno, seqno);

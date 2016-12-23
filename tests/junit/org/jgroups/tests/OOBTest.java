@@ -153,9 +153,7 @@ public class OOBTest extends ChannelTestBase {
     @Test(invocationCount=5)
     @SuppressWarnings("unchecked")
     public void testRandomRegularAndOOBMulticasts() throws Exception {
-        DISCARD discard=new DISCARD();
-        discard.setLocalAddress(a.getAddress());
-        discard.setUpDiscardRate(0.5);
+        DISCARD discard=new DISCARD().setLocalAddress(a.getAddress()).setUpDiscardRate(0.5);
         ProtocolStack stack=a.getProtocolStack();
         stack.insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
         MyReceiver r1=new MyReceiver("A"), r2=new MyReceiver("B");
@@ -165,9 +163,10 @@ public class OOBTest extends ChannelTestBase {
         final int NUM_THREADS=10;
 
         send(null, NUM_MSGS, NUM_THREADS, 0.5); // send on random channel (a or b)
-        
+        discard.setUpDiscardRate(0.1);
+
         Collection<Integer> one=r1.getMsgs(), two=r2.getMsgs();
-        for(int i=0; i < 20; i++) {
+        for(int i=0; i < 30; i++) {
             if(one.size() == NUM_MSGS && two.size() == NUM_MSGS)
                 break;
             System.out.println("A: size=" + one.size() + ", B: size=" + two.size());
@@ -255,24 +254,22 @@ public class OOBTest extends ChannelTestBase {
             Thread[] threads=new Thread[num_threads];
             final AtomicInteger counter=new AtomicInteger(0);
             for(int i=0; i < threads.length; i++) {
-                threads[i]=new Thread() {
-                    public void run() {
-                        for(int j=0; j < msgs_per_thread; j++) {
-                            JChannel sender=Util.tossWeightedCoin(0.5) ? a : b;
-                            boolean oob=Util.tossWeightedCoin(oob_prob);
-                            int num=counter.incrementAndGet();
-                            Message msg=new Message(dest, num);
-                            if(oob)
-                               msg.setFlag(Message.Flag.OOB);
-                            try {
-                                sender.send(msg);
-                            }
-                            catch(Exception e) {
-                                e.printStackTrace();
-                            }
+                threads[i]=new Thread(() -> {
+                    for(int j=0; j < msgs_per_thread; j++) {
+                        JChannel sender=Util.tossWeightedCoin(0.5) ? a : b;
+                        boolean oob=Util.tossWeightedCoin(oob_prob);
+                        int num=counter.incrementAndGet();
+                        Message msg=new Message(dest, num);
+                        if(oob)
+                           msg.setFlag(Message.Flag.OOB);
+                        try {
+                            sender.send(msg);
+                        }
+                        catch(Exception e) {
+                            e.printStackTrace();
                         }
                     }
-                };
+                });
                 threads[i].start();
             }           
             for(int i=0; i < threads.length; i++) {

@@ -279,7 +279,7 @@ public class ServerUnitTest {
     }
 
     protected void waitForOpenConns(int expected, BaseServer... servers) {
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < 20; i++) {
             boolean all_ok=true;
             for(BaseServer server: servers) {
                 if(server.getNumOpenConnections() != expected) {

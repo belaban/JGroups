@@ -17,7 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 
 /**
@@ -143,6 +145,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected static final Predicate<Message> dont_loopback_filter=
       msg -> msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
 
+    protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
+    protected static final Predicate<MessageBatch>          BATCH_VALIDATOR=mb -> mb != null && !mb.isEmpty();
 
     public void setMaxMessageBatchSize(int size) {
         if(size >= 1)
@@ -488,11 +492,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         Map<Short,List<LongTuple<Message>>> msgs=new LinkedHashMap<>();
         ReceiverEntry entry=recv_table.get(batch.sender());
 
-        for(Message msg: batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
             UnicastHeader3 hdr;
             if(msg == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY) || (hdr=msg.getHeader(id)) == null)
                 continue;
-            batch.remove(msg); // remove the message from the batch, so it won't be passed up the stack
+            it.remove(); // remove the message from the batch, so it won't be passed up the stack
 
             if(hdr.type != UnicastHeader3.DATA) {
                 handleUpEvent(msg.getSrc(), msg, hdr);
@@ -528,11 +533,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected void handleBatchFromSelf(MessageBatch batch, Entry entry) {
         List<LongTuple<Message>> list=new ArrayList<>(batch.size());
 
-        for(Message msg: batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
             UnicastHeader3 hdr;
             if(msg == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY) || (hdr=msg.getHeader(id)) == null)
                 continue;
-            batch.remove(msg); // remove the message from the batch, so it won't be passed up the stack
+            it.remove(); // remove the message from the batch, so it won't be passed up the stack
 
             if(hdr.type != UnicastHeader3.DATA) {
                 handleUpEvent(msg.getSrc(), msg, hdr);
@@ -540,7 +546,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             }
 
             if(entry.conn_id != hdr.conn_id) {
-                batch.remove(msg);
+                it.remove();
                 continue;
             }
             list.add(new LongTuple<>(hdr.seqno(), msg));
@@ -875,26 +881,20 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
      * order in which they were sent
      */
     protected void removeAndDeliver(final AtomicBoolean processing, Table<Message> win, Address sender) {
-        boolean released_processing=false;
-        try {
-            while(true) {
-                List<Message> list=win.removeMany(processing, true, max_msg_batch_size, drop_oob_and_dont_loopback_msgs_filter);
-                if(list != null) { // list is guaranteed to NOT contain any OOB messages as the drop_oob_msgs_filter removed them
-                    if(stats)
-                        avg_delivery_batch_size.add(list.size());
-                    deliverBatch(new MessageBatch(local_addr, sender, null, false, list));
-                }
-                else {
-                    released_processing=true;
-                    return;
-                }
-            }
-        }
-        finally {
-            // processing is always set in win.remove(processing) above and never here ! This code is just a
-            // 2nd line of defense should there be an exception before win.removeMany(processing) sets processing
-            if(!released_processing)
-                processing.set(false);
+        final MessageBatch batch=new MessageBatch(max_msg_batch_size).dest(local_addr).sender(sender).multicast(false);
+        Supplier<MessageBatch> batch_creator=() -> batch;
+
+        while(true) {
+            batch.reset(); // sets index to 0: important as batch delivery may not remove messages from batch!
+            win.removeMany(processing, true, max_msg_batch_size, drop_oob_and_dont_loopback_msgs_filter,
+                           batch_creator, BATCH_ACCUMULATOR, BATCH_VALIDATOR);
+            if(batch.isEmpty())
+                return;
+
+            // batch is guaranteed to NOT contain any OOB messages as the drop_oob_msgs_filter removed them
+            if(stats)
+                avg_delivery_batch_size.add(batch.size());
+            deliverBatch(batch);
         }
     }
 

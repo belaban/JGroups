@@ -19,7 +19,9 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 
 /**
@@ -149,6 +151,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         && !(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK) && this.local_addr != null && this.local_addr.equals(msg.getSrc()));
 
     protected static final Predicate<Message> dont_loopback_filter=msg -> msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+
+    protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
+    protected static final Predicate<MessageBatch>          BATCH_VALIDATOR=mb -> mb != null && !mb.isEmpty();
 
 
     @ManagedAttribute(description="Number of retransmit requests received")
@@ -870,37 +875,30 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     /** Efficient way of checking whether another thread is already processing messages from sender. If that's the case,
      *  we return immediately and let the existing thread process our message (https://jira.jboss.org/jira/browse/JGRP-829).
-     *  Benefit: fewer threads blocked on the same lock, these threads an be returned to the thread pool */
+     *  Benefit: fewer threads blocked on the same lock, these threads can be returned to the thread pool */
     protected void removeAndPassUp(Table<Message> buf, Address sender, boolean loopback, AsciiString cluster_name) {
         final AtomicBoolean processing=buf.getProcessing();
         if(!processing.compareAndSet(false, true))
             return;
 
         boolean remove_msgs=discard_delivered_msgs && !loopback;
-        boolean released_processing=false;
-        try {
-            while(true) {
-                // We're removing as many msgs as possible and set processing to false (if null) *atomically* (wrt to add())
-                // Don't include DUMMY and OOB_DELIVERED messages in the removed set
-                List<Message> msgs=buf.removeMany(processing, remove_msgs, max_msg_batch_size,
-                                                  no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs);
-                if(msgs == null || msgs.isEmpty()) {
-                    released_processing=true;
-                    if(rebroadcasting)
-                        checkForRebroadcasts();
-                    return;
-                }
-
-                MessageBatch batch=new MessageBatch(null, sender, cluster_name, true, msgs);
-                deliverBatch(batch);
+        MessageBatch batch=new MessageBatch(max_msg_batch_size).dest(null).sender(sender).clusterName(cluster_name).multicast(true);
+        Supplier<MessageBatch> batch_creator=() -> batch;
+        while(true) {
+            batch.reset();
+            // We're removing as many msgs as possible and set processing to false (if null) *atomically* (wrt to add())
+            // Don't include DUMMY and OOB_DELIVERED messages in the removed set
+            buf.removeMany(processing, remove_msgs, max_msg_batch_size,
+                           no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs,
+                           batch_creator, BATCH_ACCUMULATOR, BATCH_VALIDATOR);
+            if(batch.isEmpty()) {
+                if(rebroadcasting)
+                    checkForRebroadcasts();
+                return;
             }
+            deliverBatch(batch);
         }
-        finally {
-            // processing is always set in win.remove(processing) above and never here ! This code is just a
-            // 2nd line of defense should there be an exception before win.remove(processing) sets processing
-            if(!released_processing)
-                processing.set(false);
-        }
+
     }
 
 

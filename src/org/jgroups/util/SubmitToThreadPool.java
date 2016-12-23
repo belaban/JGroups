@@ -8,6 +8,8 @@ import org.jgroups.protocols.TP;
 import org.jgroups.protocols.TpHeader;
 import org.jgroups.stack.MessageProcessingPolicy;
 
+import java.util.Iterator;
+
 /**
  * Default message processing policy. Submits all received messages and batches to the thread pool
  * @author Bela Ban
@@ -44,10 +46,11 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
             return;
         AsciiString tmp=oob_batch.clusterName();
         byte[] cname=tmp != null? tmp.chars() : null;
-        for(Message msg: oob_batch) {
+        for(Iterator<Message> it=oob_batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
             if(msg.isFlagSet(Message.Flag.DONT_BUNDLE) && msg.isFlagSet(Message.Flag.OOB)) {
                 boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
-                oob_batch.remove(msg);
+                it.remove();
                 if(tp.statsEnabled())
                     tp.getMessageStats().incrNumOOBMsgsReceived(1);
                 tp.submitToThreadPool(new SingleMessageHandlerWithClusterName(msg, cname), internal);

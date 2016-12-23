@@ -14,6 +14,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
@@ -86,7 +87,7 @@ public class FD_ALL extends Protocol {
     
     protected final Lock                             lock=new ReentrantLock();
 
-
+    protected final Predicate<Message>               HAS_HEADER=msg -> msg.getHeader(this.id) != null;
 
 
     public FD_ALL() {}
@@ -198,8 +199,8 @@ public class FD_ALL extends Protocol {
 
 
     public void up(MessageBatch batch) {
-        Collection<Message> msgs=batch.getMatchingMessages(id, true);
-        if((msgs != null && !msgs.isEmpty()) || msg_counts_as_heartbeat) {
+        int matching_msgs=batch.replaceIf(HAS_HEADER, null, true);
+        if(matching_msgs > 0 || msg_counts_as_heartbeat) {
             update(batch.sender());
             num_heartbeats_received++;
             if(has_suspected_mbrs)

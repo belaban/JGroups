@@ -180,6 +180,16 @@ public class MessageBatchTest {
         }
     }
 
+    public void testReplaceIf() {
+        List<Message> msgs=createMessages();
+        MessageBatch batch=new MessageBatch(msgs);
+        System.out.println("batch = " + batch);
+        int size=batch.size();
+        int removed=batch.replaceIf(msg -> msg.getHeader(UNICAST3_ID) != null, null, true);
+        System.out.println("batch = " + batch);
+        assert batch.size() == size - removed;
+    }
+
 
     public void testReplaceDuplicates() {
         final Set<Integer> dupes=new HashSet<>(5);

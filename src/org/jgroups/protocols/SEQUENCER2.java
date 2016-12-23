@@ -21,6 +21,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 
@@ -53,6 +55,9 @@ public class SEQUENCER2 extends Protocol {
 
 
     protected volatile boolean                  running=true;
+
+    protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
+    protected static final Predicate<MessageBatch>          BATCH_VALIDATOR=mb -> mb != null && !mb.isEmpty();
 
 
     @ManagedAttribute protected long request_msgs;
@@ -367,23 +372,16 @@ public class SEQUENCER2 extends Protocol {
     
     
     protected void removeAndDeliver(final AtomicBoolean processing, Table<Message> win, Address sender) {
-        boolean released_processing=false;
-        try {
-            while(true) {
-                List<Message> list=win.removeMany(processing, true, max_msg_batch_size);
-                if(list != null) // list is guaranteed to NOT contain any OOB messages as the drop_oob_msgs_filter removed them
-                    deliverBatch(new MessageBatch(local_addr, sender, null, false, list));
-                else {
-                    released_processing=true;
-                    return;
-                }
-            }
-        }
-        finally {
-            // processing is always set in win.remove(processing) above and never here ! This code is just a
-            // 2nd line of defense should there be an exception before win.removeMany(processing) sets processing
-            if(!released_processing)
-                processing.set(false);
+        final MessageBatch     batch=new MessageBatch(max_msg_batch_size).dest(local_addr).sender(sender).multicast(false);
+        Supplier<MessageBatch> batch_creator=() -> batch;
+        while(true) {
+            batch.reset();
+            win.removeMany(processing, true, max_msg_batch_size, null,
+                           batch_creator, BATCH_ACCUMULATOR, BATCH_VALIDATOR);
+            if(batch.isEmpty())
+                return;
+            // batch is guaranteed to NOT contain any OOB messages as the drop_oob_msgs_filter removed them
+            deliverBatch(batch);
         }
     }
     
