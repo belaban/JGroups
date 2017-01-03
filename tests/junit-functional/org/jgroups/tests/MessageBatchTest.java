@@ -300,6 +300,19 @@ public class MessageBatchTest {
         assert batch.capacity() >= other.capacity();
     }
 
+    public void testAddBatchToItself() {
+        MessageBatch batch=new MessageBatch(16);
+        for(Message msg: createMessages())
+            batch.add(msg);
+        try {
+            batch.add(batch);
+            assert false: "should throw IllegalArumentException as a batch cannot be added to itself";
+        }
+        catch(IllegalArgumentException ex) {
+            System.out.printf("caught %s as expected: %s\n", ex.getClass().getSimpleName(), ex.getCause());
+        }
+    }
+
     public void testGetMatchingMessages() {
         List<Message> msgs=createMessages();
         MessageBatch batch=new MessageBatch(msgs);

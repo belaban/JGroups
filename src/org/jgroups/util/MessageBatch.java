@@ -132,6 +132,8 @@ public class MessageBatch implements Iterable<Message> {
 
     public MessageBatch add(final MessageBatch batch) {
         if(batch == null) return this;
+        if(this == batch)
+            throw new IllegalArgumentException("cannot add batch to itself");
         int batch_size=batch.size();
         if(index+batch_size >= messages.length)
             resize(messages.length + batch_size+1);
