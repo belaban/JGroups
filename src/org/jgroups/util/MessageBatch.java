@@ -123,24 +123,40 @@ public class MessageBatch implements Iterable<Message> {
     }
 
     public MessageBatch add(final Message msg) {
-        if(msg == null) return this;
-        if(index >= messages.length)
-            resize();
-        messages[index++]=msg;
+        add(msg, true);
         return this;
     }
 
+    public boolean add(final Message msg, boolean resize) {
+        if(msg == null) return false;
+        if(index >= messages.length) {
+            if(!resize)
+                return false;
+            resize();
+        }
+        messages[index++]=msg;
+        return true;
+    }
+
     public MessageBatch add(final MessageBatch batch) {
-        if(batch == null) return this;
+        add(batch, true);
+        return this;
+    }
+
+    public boolean add(final MessageBatch batch, boolean resize) {
+        if(batch == null) return false;
         if(this == batch)
             throw new IllegalArgumentException("cannot add batch to itself");
         int batch_size=batch.size();
-        if(index+batch_size >= messages.length)
-            resize(messages.length + batch_size+1);
+        if(index+batch_size >= messages.length && resize)
+            resize(messages.length + batch_size + 1);
 
-        for(Message msg: batch)
+        for(Message msg: batch) {
+            if(index >= messages.length)
+                return false;
             messages[index++]=msg;
-        return this;
+        }
+        return true;
     }
 
     /**

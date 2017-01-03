@@ -298,6 +298,56 @@ public class MessageBatchTest {
     }
 
     public void testAddBatch() {
+        MessageBatch batch=new MessageBatch(3), other=new MessageBatch(3);
+        List<Message> msgs=createMessages();
+        msgs.forEach(other::add);
+        assert other.size() == msgs.size();
+        batch.add(other);
+        assert batch.size() == msgs.size() : "batch: " + batch;
+        assert batch.size() == other.size();
+    }
+
+    public void testAddNoResize() {
+        MessageBatch batch=new MessageBatch(3);
+        List<Message> msgs=createMessages();
+        for(int i=0; i < 3; i++)
+            batch.add(msgs.get(0));
+        assert batch.size() == 3;
+        assert batch.capacity() == 3;
+        boolean added=batch.add(msgs.get(3), false);
+        assert !added && batch.size() == 3 && batch.capacity() == 3;
+    }
+
+
+    public void testAddBatchNoResizeOK() {
+        MessageBatch  batch=new MessageBatch(16);
+        List<Message> msgs=createMessages();
+        MessageBatch other=new MessageBatch(3);
+        msgs.forEach(other::add);
+        assert other.size() == msgs.size();
+        assert batch.isEmpty();
+
+        boolean added=batch.add(other, false);
+        assert added;
+        assert batch.size() == msgs.size() && batch.capacity() == 16;
+        assert other.size() == msgs.size();
+    }
+
+    public void testAddBatchNoResizeFail() {
+        MessageBatch  batch=new MessageBatch(3);
+        List<Message> msgs=createMessages();
+        MessageBatch other=new MessageBatch(3);
+        msgs.forEach(other::add);
+        assert other.size() == msgs.size();
+        assert batch.isEmpty();
+
+        boolean added=batch.add(other, false);
+        assert !added;
+        assert batch.size() == 3 && batch.capacity() == 3;
+        assert other.size() == msgs.size();
+    }
+
+    public void testAddBatch2() {
         MessageBatch other=new MessageBatch(3);
         List<Message> msgs=createMessages();
         msgs.forEach(other::add);

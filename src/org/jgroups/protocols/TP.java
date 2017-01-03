@@ -134,6 +134,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="The fully qualified name of a class implementing MessageProcessingPolicy")
     protected String message_processing_policy;
 
+
+    @Property(name="message_processing_policy.max_buffer_size",
+      description="Max number of messages buffered for consumption of the delivery thread in MaxOneThreadPerSender. 0 creates an unbounded buffer")
+    protected int msg_processing_max_buffer_size=500;
+
     @Property(description="Thread naming pattern for threads in this channel. Valid values are \"pcl\": " +
       "\"p\": includes the thread name, e.g. \"Incoming thread-1\", \"UDP ucast receiver\", " +
       "\"c\": includes the cluster name, e.g. \"MyCluster\", " +
@@ -238,8 +243,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         max_bundle_size=size;
         return this;
     }
-    public final int getMaxBundleSize() {return max_bundle_size;}
-    public int getBundlerCapacity()     {return bundler_capacity;}
+    public final int getMaxBundleSize()            {return max_bundle_size;}
+    public int getBundlerCapacity()                {return bundler_capacity;}
+    public int getMessageProcessingMaxBufferSize() {return msg_processing_max_buffer_size;}
 
     @ManagedAttribute public int getBundlerBufferSize() {
         if(bundler instanceof TransferQueueBundler)

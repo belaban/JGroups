@@ -3,6 +3,7 @@ package org.jgroups.util;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.protocols.TP;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,6 +25,8 @@ import java.util.stream.Stream;
 public class MaxOneThreadPerSender extends SubmitToThreadPool {
     protected final MessageTable mcasts=new MessageTable();
     protected final MessageTable ucasts=new MessageTable();
+    protected int                max_buffer_size;
+    protected boolean            resize=true;
 
     @ManagedOperation(description="Dumps unicast and multicast tables")
     public String dump() {
@@ -35,6 +38,11 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         ucasts.map.values().forEach(Entry::reset);
     }
 
+    public void init(TP transport) {
+        super.init(transport);
+        max_buffer_size=tp.getMessageProcessingMaxBufferSize();
+        resize=max_buffer_size == 0;
+    }
 
     public void process(Message msg, boolean oob, boolean internal) {
         if(oob || internal) {
@@ -112,7 +120,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
 
         protected Entry(IntFunction<MessageBatch> creator) {
             batch_creator=creator;
-            batch=batch_creator.apply(16); // initial capacity
+            batch=batch_creator.apply(max_buffer_size > 0? max_buffer_size : 16); // initial capacity
         }
 
 
@@ -167,7 +175,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             try {
                 if(!running)
                     return running=true; // the caller can submit a new BatchHandlerLoop task to the thread pool
-                this.batch.add(msg);
+                this.batch.add(msg, resize);
                 return false;
             }
             finally {
@@ -180,7 +188,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             try {
                 if(!running)
                     return running=true; // the caller can submit a new BatchHandlerLoop task to the thread pool
-                this.batch.add(msg_batch);
+                this.batch.add(msg_batch, resize);
                 return false;
             }
             finally {
