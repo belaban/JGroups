@@ -44,13 +44,22 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         resize=max_buffer_size == 0;
     }
 
+    public void loopback(Message msg, boolean oob, boolean internal) {
+        if(oob || internal) {
+            super.loopback(msg, oob, internal);
+            return;
+        }
+        MessageTable table=msg.dest() == null? mcasts : ucasts;
+        table.process(msg, true);
+    }
+
     public void process(Message msg, boolean oob, boolean internal) {
         if(oob || internal) {
             super.process(msg, oob, internal);
             return;
         }
         MessageTable table=msg.dest() == null? mcasts : ucasts;
-        table.process(msg);
+        table.process(msg, false);
     }
 
     public void process(MessageBatch batch, boolean oob, boolean internal) {
@@ -86,9 +95,9 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             return entry;
         }
 
-        protected void process(Message msg) {
+        protected void process(Message msg, boolean loopback) {
             Address dest=msg.dest(), sender=msg.src();
-            get(dest, sender).process(msg);
+            get(dest, sender).process(msg, loopback);
         }
 
         protected void process(MessageBatch batch) {
@@ -130,7 +139,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         }
 
 
-        protected void process(Message msg) {
+        protected void process(Message msg, boolean loopback) {
             if(!allowedToSubmitToThreadPool(msg)) {
                 queued_msgs.increment();
                 return;
@@ -138,7 +147,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
 
             submitted_msgs.increment();
             // running is true, we didn't queue msg and need to submit a task to the thread pool
-            submit(new BatchHandlerLoop(batch_creator.apply(16).add(msg), this));
+            submit(new BatchHandlerLoop(batch_creator.apply(16).add(msg), this, loopback));
         }
 
         protected void process(MessageBatch batch) {
@@ -149,10 +158,10 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
 
             submitted_batches.increment();
             // running is true, we didn't queue msg and need to submit a task to the thread pool
-            submit(new BatchHandlerLoop(batch_creator.apply(batch.size()).add(batch), this));
+            submit(new BatchHandlerLoop(batch_creator.apply(batch.size()).add(batch), this, false));
         }
 
-        protected void submit(BatchHandlerLoop batch_handler) {
+        protected void submit(Runnable batch_handler) {
             // running is true, we didn't queue msg and need to submit a task to the thread pool
             try {
                 if(!tp.submitToThreadPool(batch_handler, false))
@@ -231,11 +240,13 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
 
 
     protected class BatchHandlerLoop extends BatchHandler {
-        protected final Entry entry;
+        protected final Entry   entry;
+        protected final boolean loopback;
 
-        public BatchHandlerLoop(MessageBatch batch, Entry entry) {
+        public BatchHandlerLoop(MessageBatch batch, Entry entry, boolean loopback) {
             super(batch);
             this.entry=entry;
+            this.loopback=loopback;
         }
 
         public void run() {
@@ -249,6 +260,10 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             }
             while(entry.workAvailable(this.batch)); // transfers msgs from entry.batch --> this.batch
             // worker termination: workAvailable() already set running=false
+        }
+
+        @Override protected void passBatchUp() {
+            tp.passBatchUp(batch, !loopback, !loopback);
         }
     }
 }

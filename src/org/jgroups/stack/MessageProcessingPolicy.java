@@ -22,7 +22,30 @@ public interface MessageProcessingPolicy {
     /** Called before the transport is destroyed */
     default void destroy() {}
 
+    /**
+     * Process a message that was not received from the transport but from above (e.g. the channel or a protocol), and
+     * needs to be looped back up because (1) the destination address is null (every multicast message is looped back)
+     * or (2) the destination address is the sender's address (unicast message to self).<br/>
+     * A message that is looped back can bypass cluster name matching.
+     * @param msg the message to be looped back up the stack.
+     * @param oob true if the message is an OOB message
+     * @param internal true if the message is internal
+     */
+    void loopback(Message msg, boolean oob, boolean internal);
+
+    /**
+     * Process a message received from the transport
+     * @param msg the message
+     * @param oob true if the message is an OOB message
+     * @param internal true if the message is internal
+     */
     void process(Message msg, boolean oob, boolean internal);
 
+    /**
+     * Process a batch received from the transport
+     * @param batch the batch
+     * @param oob true if the batch contains only OOB messages
+     * @param internal true if the batch contains only internal messages (or internal and OOB messages)
+     */
     void process(MessageBatch batch, boolean oob, boolean internal);
 }

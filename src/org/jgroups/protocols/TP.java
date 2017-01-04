@@ -1136,7 +1136,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         // changed to fix http://jira.jboss.com/jira/browse/JGRP-506
         boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
-        submitToThreadPool(() -> passMessageUp(copy, null, false, multicast, false), internal);
+        boolean oob=msg.isFlagSet(Message.Flag.OOB);
+        // submitToThreadPool(() -> passMessageUp(copy, null, false, multicast, false), internal);
+        msg_processing_policy.loopback(msg, oob, internal);
     }
 
     protected void _send(Message msg, Address dest) {
@@ -1179,6 +1181,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         if(up_prot == null)
             return;
+
+        if(multicast && discard_own_mcast && local_addr != null && local_addr.equals(msg.getSrc()))
+            return;
+
         // Discard if message's cluster name is not the same as our cluster name
         if(perform_cluster_name_matching && this.cluster_name != null && !this.cluster_name.equals(cluster_name)) {
             if(log_discard_msgs && log.isWarnEnabled()) {
@@ -1192,9 +1198,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
             return;
         }
-
-        if(multicast && discard_own_mcast && local_addr != null && local_addr.equals(msg.getSrc()))
-            return;
         up_prot.up(msg);
     }
 

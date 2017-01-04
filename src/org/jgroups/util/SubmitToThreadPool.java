@@ -26,6 +26,9 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
         this.log=tp.getLog();
     }
 
+    public void loopback(Message msg, boolean oob, boolean internal) {
+        tp.submitToThreadPool(() -> tp.passMessageUp(msg, null, false, msg.dest() == null,false), internal);
+    }
 
     public void process(Message msg, boolean oob, boolean internal) {
         tp.submitToThreadPool(new SingleMessageHandler(msg), internal);
@@ -130,6 +133,10 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
                 msg_stats.incrNumBytesReceived(batch.length());
                 tp.avgBatchSize().add(batch_size);
             }
+            passBatchUp();
+        }
+
+        protected void passBatchUp() {
             tp.passBatchUp(batch, true, true);
         }
     }
