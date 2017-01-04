@@ -280,8 +280,18 @@
             <src path="${perf.dir}"/>
             <src path="${util.dir}"/>
         </javac>
+        <antcall target="copy-conf-dir"/>
     </target>
 
+    <target name="copy-conf-dir" description="Copies the relevant files from ./conf to ./classes">
+        <copy todir="${compile.dir}/">
+            <fileset dir="${conf.dir}" includes="*.xml, *.properties, *.btm">
+                <include name="scripts/**"/>
+                <exclude name="log4j*.xml"/>
+                <exclude name="settings.xml"/>
+            </fileset>
+        </copy>
+    </target>
 
     <target name="compile-no-unittests" depends="prepare" description="Compiles all Java files except unit tests">
         <javac srcdir="${src.dir}"
@@ -297,6 +307,7 @@
                includes="org/jgroups/**">
             <exclude name="**/obsolete/**"/>
         </javac>
+        <antcall target="copy-conf-dir"/>
     </target>
 
     <target name="compile-essential-unittests"
@@ -316,6 +327,7 @@
             <src path="${tests.dir}/other"/>
             <exclude name="**/obsolete/**"/>
         </javac>
+        <antcall target="copy-conf-dir"/>
     </target>
 
 

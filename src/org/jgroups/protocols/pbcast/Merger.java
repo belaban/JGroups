@@ -556,7 +556,7 @@ public class Merger {
 
             log.debug("%s: merge task %s started with %d participants", gms.local_addr, merge_id, coords.keySet().size());
 
-            /* 2. Fetch the current views and digests from all subgroup coordinators into merge_rsps */
+            // Fetch the current views and digests from all subgroup coordinators into merge_rsps
             success=getMergeDataFromSubgroupCoordinators(coords, new_merge_id, gms.merge_timeout);
             List<Address> missing=null;
             if(!success) {
@@ -567,8 +567,8 @@ public class Merger {
                 merge_rsps.remove(missing);
             }
 
-            /* 3. Remove null or rejected merge responses from merge_rsp and coords (so we'll send the new view
-                 * only to members who accepted the merge request) */
+            // Remove null or rejected merge responses from merge_rsp and coords (so we'll send the new view
+            // only to members who accepted the merge request)
             if(missing != null && !missing.isEmpty()) {
                 coords.keySet().removeAll(missing);
                 coordsCopy.removeAll(missing);
@@ -581,14 +581,25 @@ public class Merger {
             if(!coords.keySet().contains(gms.local_addr)) // another member might have invoked a merge req on us before we got there...
                 throw new Exception("merge leader rejected merge request");
 
-            /* 4. Combine all views and digests into 1 View/1 Digest */
+            // Combine all views and digests into 1 View/1 Digest
             List<MergeData> merge_data=new ArrayList<>(merge_rsps.getResults().values());
             MergeData combined_merge_data=consolidateMergeData(merge_data, new ArrayList<>(subviews));
             if(combined_merge_data == null)
                 throw new Exception("could not consolidate merge");
 
-            /* 4. Send the new View/Digest to all coordinators (including myself). On reception, they will
-                   install the digest and view in all of their subgroup members */
+            // If we have a duplicate MergeView, throw an exception (https://issues.jboss.org/browse/JGRP-2136)
+            // Reverted - see JGRP-2136 for details
+            /*if(gms.view != null && combined_merge_data.view != null && View.sameMembersOrdered(gms.view, combined_merge_data.view)) {
+                List<Address> existing=gms.view.getMembers(), merge_mbrs=combined_merge_data.view.getMembers();
+                String ex=String.format("merge view has same members as existing view, aborting merge view installation;" +
+                                          "\nexisting view: %s\nmerge view:    %s\n",
+                                        Util.printListWithDelimiter(existing, ", ", Util.MAX_LIST_PRINT_SIZE),
+                                        Util.printListWithDelimiter(merge_mbrs, ", ", Util.MAX_LIST_PRINT_SIZE));
+                throw new Exception(ex);
+            }*/
+
+            // Send the new View/Digest to all coordinators (including myself). On reception, they will
+            // install the digest and view in all of their subgroup members
             log.debug("%s: installing merge view %s (%d members) in %d coords",
                       gms.local_addr, combined_merge_data.view.getViewId(), combined_merge_data.view.size(), coords.keySet().size());
             sendMergeView(coords.keySet(), combined_merge_data, new_merge_id);

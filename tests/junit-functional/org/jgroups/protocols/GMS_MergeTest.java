@@ -94,7 +94,7 @@ public class GMS_MergeTest {
         _testMergeAsymmetricPartitions(true, "testMergeAsymmetricPartitionsWithFlush");
     }
 
-    public static void testMergeAsymmetricPartitions2() throws Exception {
+    public void testMergeAsymmetricPartitions2() throws Exception {
         _testMergeAsymmetricPartitions2(false, "testMergeAsymmetricPartitions2");
     }
 
@@ -385,14 +385,13 @@ public class GMS_MergeTest {
      }
 
 
-/**
+    /**
      * Tests the merge of the following partitions:
      * <ul>
      * <li>A: {A,B}
      * <li>B: {B}
      * </ol>
      * JIRA: https://jira.jboss.org/jira/browse/JGRP-1031
-     * @throws Exception
      */
     static void _testMergeAsymmetricPartitions2(boolean use_flush_props, String cluster_name) throws Exception {
         JChannel[] channels=null;

@@ -185,6 +185,44 @@ public class ViewTest {
         assert left[0].equals(a) && left[1].equals(e) && left[2].equals(f);
     }
 
+    public void testSameMembers() {
+        View one=View.create(a, 1, a,b,c,d,e);
+        View two=View.create(a, 2, a,b,c);
+        assert !View.sameMembers(one, two);
+
+        two=View.create(a, 20, a,b,c,d,e);
+        assert View.sameMembers(one, two);
+        assert View.sameMembers(two, one);
+
+        one=two;
+        assert View.sameMembers(one, two);
+
+        one=View.create(b, 5, a,b,c);
+        two=View.create(c, 5, b,a,c);
+        assert View.sameMembers(one,two);
+
+        two=View.create(c, 5, b,a,c,d);
+        assert !View.sameMembers(one,two);
+
+        one=View.create(b, 5, d,b,c,a);
+        two=View.create(c, 5, b,a,c);
+
+        assert !View.sameMembers(one, two);
+        assert !View.sameMembers(two, one);
+    }
+
+    public void testSameMembersOrdered() {
+        View one=View.create(a, 1, a, b, c, d, e);
+        View two=View.create(a, 2, a, b, c);
+        assert !View.sameMembersOrdered(one, two);
+        two=one;
+        assert View.sameMembersOrdered(one, two);
+
+        one=View.create(a, 1, a, b, c, d, e);
+        two=View.create(a, 5, a, b, c, d, e); // view id is not matched
+        assert View.sameMembersOrdered(one, two);
+    }
+
 
     public void testLeftMembers() {
         View one=View.create(a, 1, a,b,c,d),

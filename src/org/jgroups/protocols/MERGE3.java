@@ -92,6 +92,8 @@ public class MERGE3 extends Protocol {
     @ManagedAttribute(description="Number of times a MERGE event was sent up the stack")
     protected int           num_merge_events;
 
+    public int getNumMergeEvents() {return num_merge_events;}
+
     @ManagedAttribute(description="Is the view consistency checker task running")
     public synchronized boolean isViewConsistencyCheckerRunning() {
         return view_consistency_checker != null && !view_consistency_checker.isDone();

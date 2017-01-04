@@ -353,13 +353,23 @@ NOTE: Note that the latter 2 methods only take the ID into account.
 ==== MergeView
 
 Whenever a group splits into subgroups, e.g. due to a network partition, and later the subgroups merge
-back together, a `MergeView` instead of a View will be received by the application. The MergeView is
-a subclass of View and contains as additional instance variable the list of views that were merged. As
-an example if the group denoted by view +V1:(p,q,r,s,t)+ split into subgroups
-+V2:(p,q,r)+ and +V2:(s,t)+, the merged view might be
-+V3:(p,q,r,s,t)+. In this case the MergeView would contains a list of 2 views:
-+V2:(p,q,r)+ and +V2:(s,t)+.
-            
+back together, a `MergeView` instead of a View will be received by the application. MergeView is
+a subclass of View and contains as additional instance variables the list of views that were merged.
+
+As an example if the cluster with view V1={P,Q,R,S,T} split into subgroups
+V2={P,Q,R} and V2={S,T}, the merged view might be V3={P,Q,R,S,T}. In this case the MergeView contains a list of
+two views: V2={P,Q,R}) and V2={S,T}.
+
+NOTE: Because the default merge policy adds members from subgroups into a common group and sorts the resulting list, the
+membership order might change on a merge event. Thus a view V1={P,Q,R,S,T}, followed by view V2={P,Q,R} and V2={S,T}
+might result in a merge view V3={P,T,Q,S,R}. To prevent this, the task of creating new views can be delegated to
+custom code (see <<MembershipChangePolicy>>).
+
+WARNING: Because merging needs to handle all edge cases, it is *not* guaranteed that subsequent MergeViews won't have
+identical membership. For example, we we have view A2={A,B} in A and B3={B} in B, then a subsequent merge might install
+view A4={A,B} in both A and B. In A's case, the membership between A2 and A4 doesn't change. An application has to be
+able to handle duplicate subsequent merge views. Note that adjacent _regular_ views will never have duplicate members.
+
 
 [[JChannel]]
 === JChannel

@@ -239,6 +239,8 @@ public class View implements Comparable<View>, SizeStreamable, Iterable<Address>
     public static Address[][] diff(final View from, final View to) {
         if(to == null)
             throw new IllegalArgumentException("the second view cannot be null");
+        if(from == to)
+            return new Address[][]{{},{}};
         if(from == null) {
             Address[] joined=new Address[to.size()];
             int index=0;
@@ -286,6 +288,22 @@ public class View implements Comparable<View>, SizeStreamable, Iterable<Address>
     public static boolean sameViews(Collection<View> views) {
         ViewId first_view_id=views.iterator().next().getViewId();
         return views.stream().allMatch(v -> v.getViewId().equals(first_view_id));
+    }
+
+    /** Checks if two views have the same members regardless of order. E.g. {A,B,C} and {B,A,C} returns true */
+    public static boolean sameMembers(View v1, View v2) {
+        if(v1 == v2)
+            return true;
+        if(v1.size() != v2.size())
+            return false;
+        Address[][] diff=diff(v1, v2);
+        return diff[0].length == 0 && diff[1].length == 0;
+    }
+
+    /** Checks if two views have the same members observing order. E.g. {A,B,C} and {B,A,C} returns false,
+     * {A,C,B} and {A,C,B} returns true */
+    public static boolean sameMembersOrdered(View v1, View v2) {
+        return Arrays.equals(v1.getMembersRaw(), v2.getMembersRaw());
     }
 
     public Iterator<Address> iterator() {

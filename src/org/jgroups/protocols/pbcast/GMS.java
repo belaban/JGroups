@@ -194,7 +194,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public long getMergeTimeout() {return merge_timeout;}
     public void setMergeTimeout(long timeout) {merge_timeout=timeout;}
     public long getMaxJoinAttempts() {return max_join_attempts;}
-    public void setMaxJoinAttempts(long t) {max_join_attempts=t;}
+    public GMS setMaxJoinAttempts(long t) {max_join_attempts=t; return this;}
 
     @ManagedAttribute(description="impl")
     public String getImplementation() {
