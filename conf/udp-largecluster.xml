@@ -36,14 +36,12 @@
                     xmit_table_num_rows="100"
                     xmit_table_msgs_per_row="2000"
                     xmit_table_max_compaction_time="30000"
-                    max_msg_batch_size="500"
                     use_mcast_xmit="true"
                     discard_delivered_msgs="true"/>
     <UNICAST3
               xmit_table_num_rows="100"
               xmit_table_msgs_per_row="1000"
-              xmit_table_max_compaction_time="30000"
-              max_msg_batch_size="500"/>
+              xmit_table_max_compaction_time="30000"/>
     <pbcast.STABLE desired_avg_gossip="60000"
                    max_bytes="4M"/>
     <pbcast.GMS print_local_addr="true"

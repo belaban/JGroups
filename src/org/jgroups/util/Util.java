@@ -1991,6 +1991,28 @@ public class Util {
         return -1;
     }
 
+    /**
+     * Reorders elements of an array in-place. No bounds checking is performed. Null elements are shuffled, too
+     * @param array the array to be shuffled; the array will be modified
+     * @param from the start index inclusive
+     * @param to the end index (exclusive), must be >= from (not checked)
+     * @param <T> the type of the array's elements
+     */
+    public static <T> void shuffle(T[] array, int from, int to) {
+        if(array == null)
+            return;
+        for(int i=from; i < to; i++) {
+            int random=(int)random(to);
+            int other=random -1 + from;
+            // int other=(int)(random(to)-1 + from);
+            if(i != other) {
+                T tmp=array[i];
+                array[i]=array[other];
+                array[other]=tmp;
+            }
+        }
+    }
+
 
     /** Returns a random value in the range [1 - range]. If range is 0, 1 will be returned. If range is negative, an
      * exception will be thrown */

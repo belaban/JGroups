@@ -311,11 +311,11 @@ public class MessageBatchTest {
         MessageBatch batch=new MessageBatch(3);
         List<Message> msgs=createMessages();
         for(int i=0; i < 3; i++)
-            batch.add(msgs.get(0));
+            batch.add(msgs.get(i));
         assert batch.size() == 3;
         assert batch.capacity() == 3;
-        boolean added=batch.add(msgs.get(3), false);
-        assert !added && batch.size() == 3 && batch.capacity() == 3;
+        int added=batch.add(msgs.get(3), false);
+        assert added == 0 && batch.size() == 3 && batch.capacity() == 3;
     }
 
 
@@ -327,8 +327,8 @@ public class MessageBatchTest {
         assert other.size() == msgs.size();
         assert batch.isEmpty();
 
-        boolean added=batch.add(other, false);
-        assert added;
+        int added=batch.add(other, false);
+        assert added == other.size();
         assert batch.size() == msgs.size() && batch.capacity() == 16;
         assert other.size() == msgs.size();
     }
@@ -341,8 +341,8 @@ public class MessageBatchTest {
         assert other.size() == msgs.size();
         assert batch.isEmpty();
 
-        boolean added=batch.add(other, false);
-        assert !added;
+        int  added=batch.add(other, false);
+        assert added == batch.size();
         assert batch.size() == 3 && batch.capacity() == 3;
         assert other.size() == msgs.size();
     }

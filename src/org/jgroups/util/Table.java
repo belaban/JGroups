@@ -4,7 +4,7 @@ import org.jgroups.annotations.GuardedBy;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
@@ -62,7 +62,7 @@ public class Table<T> implements Iterable<T> {
 
     protected final Lock           lock=new ReentrantLock();
 
-    protected final AtomicBoolean  processing=new AtomicBoolean(false);
+    protected final AtomicInteger  adders=new AtomicInteger(0);
 
     protected int                  num_compactions=0, num_resizes=0, num_moves=0, num_purges=0;
     
@@ -123,8 +123,7 @@ public class Table<T> implements Iterable<T> {
             throw new IllegalArgumentException("resize_factor needs to be > 1");
     }
 
-
-    public AtomicBoolean getProcessing() {return processing;}
+    public AtomicInteger getAdders()     {return adders;}
 
     public long getOffset()              {return offset;}
     public int  getElementsPerRow()      {return elements_per_row;}
@@ -137,7 +136,7 @@ public class Table<T> implements Iterable<T> {
     public int getNumResizes()           {return num_resizes;}
     public int getNumPurges()            {return num_purges;}
 
-    /** Returns the numbers of elements in the table */
+    /** Returns an appromximation of the number of elements in the table */
     public int size()                    {return size;}
     public boolean isEmpty()             {return size <= 0;}
     public long getLow()                 {return low;}
@@ -355,45 +354,37 @@ public class Table<T> implements Iterable<T> {
 
 
     public List<T> removeMany(boolean nullify, int max_results) {
-        return removeMany(null, nullify, max_results, null);
+        return removeMany(nullify, max_results, null);
     }
 
-    public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results, Predicate<T> filter) {
-        return removeMany(processing, nullify, max_results, filter,
-                          LinkedList::new, LinkedList::add, l -> l != null && !l.isEmpty());
+    public List<T> removeMany(boolean nullify, int max_results, Predicate<T> filter) {
+        return removeMany(nullify, max_results, filter, LinkedList::new, LinkedList::add);
     }
 
 
     /**
      * Removes elements from the table and adds them to the result created by result_creator. Between 0 and max_results
      * elements are removed. If no elements were removed, processing will be set to true while the table lock is held.
-     * @param processing will be set to false if no elements were removed
      * @param nullify if true, the x,y location of the removed element in the matrix will be nulled
      * @param max_results the max number of results to be returned, even if more elements would be removable
      * @param filter a filter which accepts (or rejects) elements into the result. If null, all elements will be accepted
      * @param result_creator a supplier required to create the result, e.g. ArrayList::new
      * @param accumulator an accumulator accepting the result and an element, e.g. ArrayList::add
-     * @param result_validator a validator on the result which checks if no elements were returned. Needs to return true
-     *                         if elements were returned, false otherwise.
      * @param <R> the type of the result
      * @return the result
      */
-    public <R> R removeMany(final AtomicBoolean processing, boolean nullify, int max_results, Predicate<T> filter,
-                            Supplier<R> result_creator, BiConsumer<R,T> accumulator, Predicate<R> result_validator) {
+    public <R> R removeMany(boolean nullify, int max_results, Predicate<T> filter,
+                            Supplier<R> result_creator, BiConsumer<R,T> accumulator) {
         lock.lock();
         try {
             Remover<R> remover=new Remover<>(nullify, max_results, filter, result_creator, accumulator);
             forEach(hd+1, hr, remover);
-            R retval=remover.getResult();
-            if(processing != null && !result_validator.test(retval))
-                processing.set(false);
-            return retval;
+            return remover.getResult();
         }
         finally {
             lock.unlock();
         }
     }
-
 
     /**
      * Removes all elements less than or equal to seqno from the table. Does this by nulling entire rows in the matrix

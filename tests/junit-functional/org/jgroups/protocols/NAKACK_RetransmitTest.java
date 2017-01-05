@@ -116,7 +116,6 @@ public class NAKACK_RetransmitTest {
             if(nak == null)
                 throw new IllegalStateException("NAKACK2 not present in the stack");
             nak.setValue("max_xmit_req_size", 5000);
-            nak.setValue("max_msg_batch_size", 10000);
         }
     }
 

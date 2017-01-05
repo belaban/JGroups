@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Condition;
@@ -43,10 +44,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
 
 
-    @Property(description="Max number of messages to be removed from a RingBuffer. This property might " +
-      "get removed anytime, so don't use it !")
-    protected int     max_msg_batch_size=100;
-    
     /**
      * Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers
      * lost a message, the sender only retransmits once
@@ -153,7 +150,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected static final Predicate<Message> dont_loopback_filter=msg -> msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
 
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
-    protected static final Predicate<MessageBatch>          BATCH_VALIDATOR=mb -> mb != null && !mb.isEmpty();
 
 
     @ManagedAttribute(description="Number of retransmit requests received")
@@ -832,7 +828,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 deliver(msg, sender, hdr.seqno, "OOB message");
         }
 
-        removeAndPassUp(buf, sender, loopback, null); // at most 1 thread will execute this at any given time
+        removeAndDeliver(buf, sender, loopback, null); // at most 1 thread will execute this at any given time
     }
 
 
@@ -869,36 +865,37 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             deliverBatch(oob_batch);
         }
 
-        removeAndPassUp(buf,sender,loopback,cluster_name); // at most 1 thread will execute this at any given time
+        removeAndDeliver(buf, sender, loopback, cluster_name); // at most 1 thread will execute this at any given time
     }
 
 
     /** Efficient way of checking whether another thread is already processing messages from sender. If that's the case,
      *  we return immediately and let the existing thread process our message (https://jira.jboss.org/jira/browse/JGRP-829).
-     *  Benefit: fewer threads blocked on the same lock, these threads can be returned to the thread pool */
-    protected void removeAndPassUp(Table<Message> buf, Address sender, boolean loopback, AsciiString cluster_name) {
-        final AtomicBoolean processing=buf.getProcessing();
-        if(!processing.compareAndSet(false, true))
+     *  Benefit: fewer threads blocked on the same lock, these threads can be returned to the thread pool
+     */
+    protected void removeAndDeliver(Table<Message> buf, Address sender, boolean loopback, AsciiString cluster_name) {
+        AtomicInteger adders=buf.getAdders();
+        if(adders.getAndIncrement() != 0)
             return;
-
         boolean remove_msgs=discard_delivered_msgs && !loopback;
-        MessageBatch batch=new MessageBatch(max_msg_batch_size).dest(null).sender(sender).clusterName(cluster_name).multicast(true);
+        MessageBatch batch=new MessageBatch(buf.size()).dest(null).sender(sender).clusterName(cluster_name).multicast(true);
         Supplier<MessageBatch> batch_creator=() -> batch;
-        while(true) {
-            batch.reset();
-            // We're removing as many msgs as possible and set processing to false (if null) *atomically* (wrt to add())
-            // Don't include DUMMY and OOB_DELIVERED messages in the removed set
-            buf.removeMany(processing, remove_msgs, max_msg_batch_size,
-                           no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs,
-                           batch_creator, BATCH_ACCUMULATOR, BATCH_VALIDATOR);
-            if(batch.isEmpty()) {
-                if(rebroadcasting)
-                    checkForRebroadcasts();
-                return;
+        do {
+            try {
+                batch.reset();
+                // Don't include DUMMY and OOB_DELIVERED messages in the removed set
+                buf.removeMany(remove_msgs, 0, no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs,
+                               batch_creator, BATCH_ACCUMULATOR);
             }
-            deliverBatch(batch);
+            catch(Throwable t) {
+                log.error("failed removing messages from table for " + sender, t);
+            }
+            if(!batch.isEmpty())
+                deliverBatch(batch);
         }
-
+        while(adders.decrementAndGet() != 0);
+        if(rebroadcasting)
+            checkForRebroadcasts();
     }
 
 
@@ -1161,17 +1158,19 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     protected void checkForRebroadcasts() {
         Digest tmp=getDigest();
-        boolean cancel_rebroadcasting;
+        boolean cancel_rebroadcasting=false;
         rebroadcast_digest_lock.lock();
         try {
             cancel_rebroadcasting=isGreaterThanOrEqual(tmp, rebroadcast_digest);
         }
+        catch(Throwable t) {
+            ;
+        }
         finally {
             rebroadcast_digest_lock.unlock();
         }
-        if(cancel_rebroadcasting) {
+        if(cancel_rebroadcasting)
             cancelRebroadcasting();
-        }
     }
 
     /**

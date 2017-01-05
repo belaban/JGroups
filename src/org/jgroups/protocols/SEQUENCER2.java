@@ -18,11 +18,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 
@@ -57,7 +55,6 @@ public class SEQUENCER2 extends Protocol {
     protected volatile boolean                  running=true;
 
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
-    protected static final Predicate<MessageBatch>          BATCH_VALIDATOR=mb -> mb != null && !mb.isEmpty();
 
 
     @ManagedAttribute protected long request_msgs;
@@ -73,7 +70,6 @@ public class SEQUENCER2 extends Protocol {
     @ManagedAttribute protected long received_responses;
 
     protected Table<Message>  received_msgs = new Table<>();
-    protected int             max_msg_batch_size = 100;
 
     @ManagedAttribute
     public boolean isCoordinator()   {return is_coord;}
@@ -364,27 +360,34 @@ public class SEQUENCER2 extends Protocol {
         
         final Table<Message> win=received_msgs;
         win.add(hdr.seqno, msg);
+        removeAndDeliver(win, sender);
+    }
+    
+    
+    protected void removeAndDeliver(Table<Message> win, Address sender) {
+        AtomicInteger adders=win.getAdders();
+        if(adders.getAndIncrement() != 0)
+            return;
 
-        final AtomicBoolean processing=win.getProcessing();
-        if(processing.compareAndSet(false, true)) 
-            removeAndDeliver(processing, win, sender);
-    }
-    
-    
-    protected void removeAndDeliver(final AtomicBoolean processing, Table<Message> win, Address sender) {
-        final MessageBatch     batch=new MessageBatch(max_msg_batch_size).dest(local_addr).sender(sender).multicast(false);
+        final MessageBatch     batch=new MessageBatch(win.size()).dest(local_addr).sender(sender).multicast(false);
         Supplier<MessageBatch> batch_creator=() -> batch;
-        while(true) {
-            batch.reset();
-            win.removeMany(processing, true, max_msg_batch_size, null,
-                           batch_creator, BATCH_ACCUMULATOR, BATCH_VALIDATOR);
-            if(batch.isEmpty())
-                return;
-            // batch is guaranteed to NOT contain any OOB messages as the drop_oob_msgs_filter removed them
-            deliverBatch(batch);
+        do {
+            try {
+                batch.reset();
+                win.removeMany(true, 0, null, batch_creator, BATCH_ACCUMULATOR);
+            }
+            catch(Throwable t) {
+                log.error("failed removing messages from table for " + sender, t);
+            }
+            if(!batch.isEmpty()) {
+                // batch is guaranteed to NOT contain any OOB messages as the drop_oob_msgs_filter removed them
+                deliverBatch(batch);
+            }
         }
+        while(adders.decrementAndGet() != 0);
     }
-    
+
+
     protected void deliverBatch(MessageBatch batch) {
         try {
             if(batch.isEmpty())

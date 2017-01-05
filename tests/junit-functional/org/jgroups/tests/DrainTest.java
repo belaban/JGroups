@@ -13,6 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
+ * Tests an algorithm that has multiple threads adding to a queue but only one thread at a time consuming the queue's
+ * elements, using a simple CAS counter and a (lock-synchronized) queue. The Pluscal code is at
+ * https://github.com/belaban/pluscal/blob/master/add.tla
  * @author Bela Ban
  * @since  4.0
  */
@@ -26,7 +29,7 @@ public class DrainTest {
     protected final AverageMinMax  avg_removed=new AverageMinMax();
 
     public void testDraining() throws InterruptedException {
-        MyThread[] threads=new MyThread[50];
+        MyThread[] threads=new MyThread[10];
         final CountDownLatch latch=new CountDownLatch(1);
         for(int i=0; i < threads.length; i++) {
             threads[i]=new MyThread(latch);
@@ -48,6 +51,7 @@ public class DrainTest {
 
         assert added.sum() == removed.sum();
         assert counter.get() == 0;
+        assert this.queue.isEmpty();
     }
 
     protected void add(Message msg) {

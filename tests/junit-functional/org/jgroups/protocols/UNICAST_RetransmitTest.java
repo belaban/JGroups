@@ -82,7 +82,6 @@ public class UNICAST_RetransmitTest {
             if(ucast == null)
                 throw new IllegalStateException("UNICAST3 not present in the stack");
             ucast.setValue("max_xmit_req_size", 5000);
-            ucast.setValue("max_msg_batch_size", 2000);
         }
     }
 

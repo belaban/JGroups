@@ -13,11 +13,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Tests the concurrent stack (TP)
+ * Verifies that messages sent by P are delivered in the order in which P sent them
  * @author Bela Ban
  */
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
@@ -28,18 +27,14 @@ public class FifoOrderTest extends ChannelTestBase {
     final static long SLEEPTIME=50;
 
 
-    @BeforeMethod
-    void setUp() throws Exception {
+    @BeforeMethod void setUp() throws Exception {
         latch=new CountDownLatch(1);
         a=createChannel(true,3, "A");
         b=createChannel(a,    "B");
         c=createChannel(a,    "C");
     }
 
-    @AfterMethod
-    protected void tearDown() throws Exception {
-        Util.close(c,b,a);
-    }
+    @AfterMethod protected void tearDown() throws Exception {Util.close(c,b,a);}
 
 
     public void testFifoDelivery() throws Exception {
@@ -128,7 +123,7 @@ public class FifoOrderTest extends ChannelTestBase {
         public void run() {
             Message msg;
             try {
-                latch.await(30,TimeUnit.SECONDS);
+                latch.await();
             }
             catch(Throwable t) {
                 return;
@@ -167,7 +162,7 @@ public class FifoOrderTest extends ChannelTestBase {
                 if(tmp != null)
                     list=tmp;
             }
-            Integer num=(Integer)msg.getObject();
+            Integer num=msg.getObject();
             list.add(num); // no concurrent access: FIFO per sender ! (No need to synchronize on list)
             count.incrementAndGet();
         }

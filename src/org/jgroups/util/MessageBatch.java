@@ -101,6 +101,7 @@ public class MessageBatch implements Iterable<Message> {
     public MessageBatch mode(Mode mode)                  {this.mode=mode; return this;}
     public int          getCapacity()                    {return messages.length;}
     public int          capacity()                       {return messages.length;}
+    public int          index()                          {return index;}
 
 
     /** Returns the underlying message array. This is only intended for testing ! */
@@ -127,15 +128,20 @@ public class MessageBatch implements Iterable<Message> {
         return this;
     }
 
-    public boolean add(final Message msg, boolean resize) {
-        if(msg == null) return false;
+    /** Adds a message to the table
+     * @param msg the message
+     * @param resize whether or not to resize the table. If true, the method will always return 1
+     * @return always 1 if resize==true, else 1 if the message was added or 0 if not
+     */
+    public int add(final Message msg, boolean resize) {
+        if(msg == null) return 0;
         if(index >= messages.length) {
             if(!resize)
-                return false;
+                return 0;
             resize();
         }
         messages[index++]=msg;
-        return true;
+        return 1;
     }
 
     public MessageBatch add(final MessageBatch batch) {
@@ -143,20 +149,29 @@ public class MessageBatch implements Iterable<Message> {
         return this;
     }
 
-    public boolean add(final MessageBatch batch, boolean resize) {
-        if(batch == null) return false;
+    /**
+     * Adds another batch to this one
+     * @param batch the batch to add to this batch
+     * @param resize when true, this batch will be resized to accommodate the other batch
+     * @return the number of messages from the other batch that were added successfully. Will always be batch.size()
+     * unless resize==0: in this case, the number of messages that were added successfully is returned
+     */
+    public int add(final MessageBatch batch, boolean resize) {
+        if(batch == null) return 0;
         if(this == batch)
             throw new IllegalArgumentException("cannot add batch to itself");
         int batch_size=batch.size();
         if(index+batch_size >= messages.length && resize)
             resize(messages.length + batch_size + 1);
 
+        int cnt=0;
         for(Message msg: batch) {
             if(index >= messages.length)
-                return false;
+                return cnt;
             messages[index++]=msg;
+            cnt++;
         }
-        return true;
+        return cnt;
     }
 
     /**

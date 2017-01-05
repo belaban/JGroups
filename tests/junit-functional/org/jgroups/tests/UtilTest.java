@@ -22,6 +22,24 @@ import java.util.stream.LongStream;
 public class UtilTest {
 
 
+    public void testShuffle() {
+        Integer[] array={1,2,3,4,5};
+        System.out.println("array = " + Arrays.toString(array));
+        Util.shuffle(array, 0, array.length);
+        System.out.println("array = " + Arrays.toString(array));
+
+
+        array=new Integer[]{1,2,3,4,5};
+
+        // only elements at indices 0-2 can be modified
+        for(int i=0; i < 100; i++) {
+            Util.shuffle(array, 0, 3);
+            System.out.println("array = " + Arrays.toString(array));
+            assert array[3] == 4 : String.format("element at index %d was supposed to be %d: %s", 3, 4, Arrays.toString(array));
+            assert array[4] == 5 : String.format("element at index %d was supposed to be %d: %s", 4, 5, Arrays.toString(array));
+        }
+    }
+
     public void testPermutations() {
         List<Integer> list=Arrays.asList(1,2,3,4);
         List<List<Integer>> permutations=new ArrayList<>(Util.factorial(list.size()));

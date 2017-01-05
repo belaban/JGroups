@@ -12,7 +12,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -33,10 +32,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
-
-    @Property(description="Max number of messages to be removed from a retransmit window. This property might " +
-            "get removed anytime, so don't use it !")
-    protected int     max_msg_batch_size=500;
 
     @Property(description="Time (in milliseconds) after which an idle incoming or outgoing connection is closed. The " +
       "connection will get re-established when used again. 0 disables connection reaping")
@@ -146,12 +141,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
       msg -> msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
 
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
-    protected static final Predicate<MessageBatch>          BATCH_VALIDATOR=mb -> mb != null && !mb.isEmpty();
 
-    public void setMaxMessageBatchSize(int size) {
-        if(size >= 1)
-            max_msg_batch_size=size;
-    }
 
     @ManagedAttribute
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
@@ -571,12 +561,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 }
                 deliverBatch(oob_batch);
             }
-
-            final AtomicBoolean processing=win.getProcessing();
-            if(processing.compareAndSet(false, true))
-                removeAndDeliver(processing, win, batch.sender());
+            removeAndDeliver(win, batch.sender());
         }
-
         if(!batch.isEmpty())
             up_prot.up(batch);
     }
@@ -790,10 +776,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 return;
             }
         }
-
-        final AtomicBoolean processing=win.getProcessing();
-        if(processing.compareAndSet(false, true))
-            removeAndDeliver(processing, win, sender);
+        removeAndDeliver(win, sender);
     }
 
     /** Called when the sender of a message is the local member. In this case, we don't need to add the message
@@ -821,21 +804,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 return;
             }
         }
-
-        final AtomicBoolean processing=win.getProcessing();
-        if(processing.compareAndSet(false, true))
-            removeAndDeliver(processing, win, sender);
+        removeAndDeliver(win, sender);
     }
 
     protected void processInternalMessage(final Table<Message> win, final Address sender) {
         // If there are other msgs, tell the regular thread pool to handle them (https://issues.jboss.org/browse/JGRP-1732)
-        final AtomicBoolean processing=win.getProcessing();
-        if(!win.isEmpty() && !processing.get() /* && seqno < win.getHighestReceived() */) { // commented to handle hd == hr !
-            getTransport().submitToThreadPool(() -> {
-                if(processing.compareAndSet(false, true))
-                    removeAndDeliver(processing, win, sender);
-            }, true);
-        }
+        if(!win.isEmpty() && win.getAdders().get() == 0) // just a quick&dirty check, can also be incorrect
+            getTransport().submitToThreadPool(() -> removeAndDeliver(win, sender), true);
     }
 
 
@@ -864,10 +839,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
             deliverBatch(oob_batch);
         }
-
-        final AtomicBoolean processing=win.getProcessing();
-        if(processing.compareAndSet(false, true))
-            removeAndDeliver(processing, win, sender);
+        removeAndDeliver(win, sender);
     }
 
 
@@ -880,22 +852,30 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
      * delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered in the
      * order in which they were sent
      */
-    protected void removeAndDeliver(final AtomicBoolean processing, Table<Message> win, Address sender) {
-        final MessageBatch batch=new MessageBatch(max_msg_batch_size).dest(local_addr).sender(sender).multicast(false);
+    protected void removeAndDeliver(Table<Message> win, Address sender) {
+        AtomicInteger adders=win.getAdders();
+        if(adders.getAndIncrement() != 0)
+            return;
+
+        final MessageBatch batch=new MessageBatch(win.size()).dest(local_addr).sender(sender).multicast(false);
         Supplier<MessageBatch> batch_creator=() -> batch;
-
-        while(true) {
-            batch.reset(); // sets index to 0: important as batch delivery may not remove messages from batch!
-            win.removeMany(processing, true, max_msg_batch_size, drop_oob_and_dont_loopback_msgs_filter,
-                           batch_creator, BATCH_ACCUMULATOR, BATCH_VALIDATOR);
-            if(batch.isEmpty())
-                return;
-
-            // batch is guaranteed to NOT contain any OOB messages as the drop_oob_msgs_filter removed them
-            if(stats)
-                avg_delivery_batch_size.add(batch.size());
-            deliverBatch(batch);
+        do {
+            try {
+                batch.reset(); // sets index to 0: important as batch delivery may not remove messages from batch!
+                win.removeMany(true, 0, drop_oob_and_dont_loopback_msgs_filter,
+                               batch_creator, BATCH_ACCUMULATOR);
+            }
+            catch(Throwable t) {
+                log.error("failed removing messages from table for " + sender, t);
+            }
+            if(!batch.isEmpty()) {
+                // batch is guaranteed to NOT contain any OOB messages as the drop_oob_msgs_filter above removed them
+                if(stats)
+                    avg_delivery_batch_size.add(batch.size());
+                deliverBatch(batch); // catches Throwable
+            }
         }
+        while(adders.decrementAndGet() != 0);
     }
 
 
