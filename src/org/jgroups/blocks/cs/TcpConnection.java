@@ -181,6 +181,8 @@ public class TcpConnection extends Connection {
     }
 
     protected void doSend(byte[] data, int offset, int length, boolean acquire_lock, boolean flush) throws Exception {
+        if(out == null)
+            return;
         out.writeInt(length); // write the length of the data buffer first
         out.write(data,offset,length);
         if(!flush || (acquire_lock && send_lock.hasQueuedThreads()))
