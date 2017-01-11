@@ -1,8 +1,6 @@
 package org.jgroups.protocols.dns;
 
-import java.io.IOException;
 import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -82,10 +80,4 @@ public class DNSDiscoveryTester {
       return viewReceived;
    }
 
-   private int findUnusedPort() throws IOException {
-      ServerSocket s = new ServerSocket(0);
-      int port = s.getLocalPort();
-      s.close();
-      return port;
-   }
 }
