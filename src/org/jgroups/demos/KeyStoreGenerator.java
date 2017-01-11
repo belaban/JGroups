@@ -34,6 +34,7 @@ public final class KeyStoreGenerator {
     static String keyStoreName="defaultStore.keystore";
     static String storePass="changeit";
     static String alias="myKey";
+    static String storeType="JCEKS";
 
 	private KeyStoreGenerator() {
 		throw new InstantiationError( "Must not instantiate this class" );
@@ -57,6 +58,10 @@ public final class KeyStoreGenerator {
                 keyStoreName=args[i++];
                 continue;
             }
+            if(arg.equalsIgnoreCase("--storeType")) {
+                storeType=args[i++];
+                continue;
+            }
             if(arg.equalsIgnoreCase("--storePass")) {
                     storePass=args[i++];
                 continue;
@@ -72,7 +77,7 @@ public final class KeyStoreGenerator {
 
         try(OutputStream stream=new FileOutputStream(keyStoreName)) {
             SecretKey key=createSecretKey();
-            KeyStore store=KeyStore.getInstance("JCEKS");
+            KeyStore store=KeyStore.getInstance(storeType);
             store.load(null, null);
             store.setKeyEntry(alias, key, storePass.toCharArray(), null);
             store.store(stream, storePass.toCharArray());
@@ -86,7 +91,7 @@ public final class KeyStoreGenerator {
 
     protected static void help() {
         System.out.println("KeyStoreGenerator [-help] [--alg algorithm] [--size size] [--storeName name] " +
-                             "[--storePass password] [--alias alias]");
+                             "[--storeType type (e.g. JKS)] [--storePass password] [--alias alias]");
     }
 
     public static SecretKey createSecretKey() throws Exception {
