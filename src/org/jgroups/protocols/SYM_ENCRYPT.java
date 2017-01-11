@@ -42,6 +42,10 @@ public class SYM_ENCRYPT extends EncryptBase {
     @Property(description="File on classpath that contains keystore repository")
     protected String   keystore_name;
 
+    @Property(description="The type of the keystore. " +
+      "Types are listed in http://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html")
+    protected String   keystore_type="JCEKS";
+
     @Property(description="Password used to check the integrity/unlock the keystore. Change the default",
       exposeAsManagedAttribute=false)
     protected String   store_password="changeit"; // JDK default
@@ -80,7 +84,7 @@ public class SYM_ENCRYPT extends EncryptBase {
     protected void readSecretKeyFromKeystore() throws Exception {
         InputStream inputStream=null;
         // must not use default keystore type - as it does not support secret keys
-        KeyStore store=KeyStore.getInstance("JCEKS");
+        KeyStore store=KeyStore.getInstance(keystore_type != null? keystore_type : KeyStore.getDefaultType());
 
         SecretKey tempKey=null;
         try {
