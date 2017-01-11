@@ -28,6 +28,16 @@ class DefaultDNSResolver implements DNSResolver {
    final String dnsAddress;
    final DirContext dnsContext;
 
+   /**
+    * @deprecated Implemented for testing.
+    */
+   @Deprecated
+   DefaultDNSResolver(DirContext direcoryContextForTests) {
+      this.dnsContext = direcoryContextForTests;
+      dnsAddress = null;
+      dnsContextFactory = null;
+   }
+
    public DefaultDNSResolver(String dnsContextFactory, String dnsAddress) {
       this.dnsContextFactory = dnsContextFactory;
       this.dnsAddress = dnsAddress;
