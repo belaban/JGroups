@@ -75,7 +75,7 @@ public class AverageMinMax extends Average {
     }
 
     public String toString() {
-        return count == 0? "n/a" : String.format("min/avg/max=%d/%.2f/%d", min, getAverage(), max);
+        return count == 0? "n/a" : String.format("min/avg/max=%,d/%,.2f/%,d", min, getAverage(), max);
     }
 
     public void writeTo(DataOutput out) throws Exception {
