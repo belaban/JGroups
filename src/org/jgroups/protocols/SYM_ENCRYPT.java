@@ -4,10 +4,10 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.Util;
 
-import javax.crypto.SecretKey;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.Key;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
@@ -86,7 +86,7 @@ public class SYM_ENCRYPT extends Encrypt {
         // must not use default keystore type - as it does not support secret keys
         KeyStore store=KeyStore.getInstance(keystore_type != null? keystore_type : KeyStore.getDefaultType());
 
-        SecretKey tempKey=null;
+        Key tempKey=null;
         try {
             if(this.secret_key == null) { // in case the secret key was set before, e.g. via injection in a unit test
                 // load in keystore using this thread's classloader
@@ -100,7 +100,7 @@ public class SYM_ENCRYPT extends Encrypt {
                 try {
                     store.load(inputStream, store_password.toCharArray());
                     // loaded keystore - get the key
-                    tempKey=(SecretKey)store.getKey(alias, key_password.toCharArray());
+                    tempKey=store.getKey(alias, key_password.toCharArray());
                 }
                 catch(IOException e) {
                     throw new Exception("Unable to load keystore " + keystore_name + ": " + e);

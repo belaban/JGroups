@@ -7,7 +7,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
+import java.security.Key;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Map;
@@ -70,7 +70,7 @@ public abstract class Encrypt extends Protocol {
     protected volatile byte[]               sym_version;
 
     // shared secret key to encrypt/decrypt messages
-    protected volatile SecretKey            secret_key;
+    protected volatile Key                  secret_key;
 
     // map to hold previous keys so we can decrypt some earlier messages if we need to
     protected Map<AsciiString,Cipher>       key_map;
@@ -81,8 +81,8 @@ public abstract class Encrypt extends Protocol {
     public <T extends Encrypt> T    asymKeylength(int len)          {this.asym_keylength=len; return (T)this;}
     public int                      symKeylength()                  {return sym_keylength;}
     public <T extends Encrypt> T    symKeylength(int len)           {this.sym_keylength=len; return (T)this;}
-    public SecretKey                secretKey()                     {return secret_key;}
-    public <T extends Encrypt> T    secretKey(SecretKey key)        {this.secret_key=key; return (T)this;}
+    public Key                      secretKey()                     {return secret_key;}
+    public <T extends Encrypt> T    secretKey(Key key)              {this.secret_key=key; return (T)this;}
     public String                   symAlgorithm()                  {return sym_algorithm;}
     public <T extends Encrypt> T    symAlgorithm(String alg)        {this.sym_algorithm=alg; return (T)this;}
     public String                   asymAlgorithm()                 {return asym_algorithm;}
@@ -189,7 +189,7 @@ public abstract class Encrypt extends Protocol {
 
 
     /** Initialises the ciphers for both encryption and decryption using the generated or supplied secret key */
-    protected synchronized void initSymCiphers(String algorithm, SecretKey secret) throws Exception {
+    protected synchronized void initSymCiphers(String algorithm, Key secret) throws Exception {
         if(secret == null)
             return;
         encoding_ciphers.clear();
@@ -210,7 +210,7 @@ public abstract class Encrypt extends Protocol {
     }
 
 
-    protected Cipher createCipher(int mode, SecretKey secret_key, String algorithm) throws Exception {
+    protected Cipher createCipher(int mode, Key secret_key, String algorithm) throws Exception {
         Cipher cipher=provider != null && !provider.trim().isEmpty()?
           Cipher.getInstance(algorithm, provider) : Cipher.getInstance(algorithm);
         cipher.init(mode, secret_key);

@@ -398,7 +398,7 @@ public class ASYM_ENCRYPT extends Encrypt {
     }
 
 
-    protected void sendSecretKey(SecretKey secret_key, PublicKey public_key, Address source) throws Exception {
+    protected void sendSecretKey(Key secret_key, PublicKey public_key, Address source) throws Exception {
         byte[] encryptedKey=encryptSecretKey(secret_key, public_key);
         Message newMsg=new Message(source, encryptedKey).src(local_addr)
           .putHeader(this.id, new EncryptHeader(EncryptHeader.SECRET_KEY_RSP, symVersion()));
@@ -407,7 +407,7 @@ public class ASYM_ENCRYPT extends Encrypt {
     }
 
     /** Encrypts the current secret key with the requester's public key (the requester will decrypt it with its private key) */
-    protected byte[] encryptSecretKey(SecretKey secret_key, PublicKey public_key) throws Exception {
+    protected byte[] encryptSecretKey(Key secret_key, PublicKey public_key) throws Exception {
         Cipher tmp;
         if (provider != null && !provider.trim().isEmpty())
             tmp=Cipher.getInstance(asym_algorithm, provider);
