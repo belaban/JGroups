@@ -29,7 +29,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
@@ -46,7 +45,7 @@ import static org.jgroups.protocols.TP.MULTICAST;
  */
 public class Util {
 
-    private static final NumberFormat f;
+    // private static final NumberFormat f;
 
     private static final Map<Class<? extends Object>,Byte> PRIMITIVE_TYPES=new HashMap<>(15);
     private static final byte TYPE_NULL         =  0;
@@ -98,10 +97,10 @@ public class Util {
     static {
         resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Util.class.getClassLoader());
 
-        f=NumberFormat.getNumberInstance();
-        f.setGroupingUsed(false);
+        /*f=NumberFormat.getNumberInstance();
+        f.setGroupingUsed(true);
         // f.setMinimumFractionDigits(2);
-        f.setMaximumFractionDigits(2);
+        f.setMaximumFractionDigits(2);*/
 
         PRIMITIVE_TYPES.put(Boolean.class,TYPE_BOOLEAN);
         PRIMITIVE_TYPES.put(Byte.class,TYPE_BYTE);
@@ -2099,30 +2098,6 @@ public class Util {
     }
 
 
-    /**
-     * MByte nowadays doesn't mean 1024 * 1024 bytes, but 1 million bytes, see http://en.wikipedia.org/wiki/Megabyte
-     * @param bytes
-     * @return
-     */
-    public static String printBytes(long bytes) {
-        double tmp;
-
-        if(bytes < 1000)
-            return bytes + "b";
-        if(bytes < 1000000) {
-            tmp=bytes / 1000.0;
-            return f.format(tmp) + "KB";
-        }
-        if(bytes < 1000000000) {
-            tmp=bytes / 1000000.0;
-            return f.format(tmp) + "MB";
-        }
-        else {
-            tmp=bytes / 1000000000.0;
-            return f.format(tmp) + "GB";
-        }
-    }
-
     public static String printNanos(long time_ns) {
         double us=time_ns / 1_000.0;
         return String.format("%d ns (%.2f us)", time_ns, us);
@@ -2175,34 +2150,58 @@ public class Util {
         else if((index=input.indexOf("kb")) != -1)
             factor=1000;
         else if((index=input.indexOf('m')) != -1)
-            factor=1000000;
+            factor=1_000_000;
         else if((index=input.indexOf("mb")) != -1)
-            factor=1000000;
+            factor=1_000_000;
         else if((index=input.indexOf('g')) != -1)
-            factor=1000000000;
+            factor=1_000_000_000;
         else if((index=input.indexOf("gb")) != -1)
-            factor=1000000000;
+            factor=1_000_000_000;
 
         String str=index != -1? input.substring(0,index) : input;
         return new Tuple<>(str,factor);
+    }
+
+    /**
+     * MByte nowadays doesn't mean 1024 * 1024 bytes, but 1 million bytes, see http://en.wikipedia.org/wiki/Megabyte
+     * @param bytes
+     * @return
+     */
+    public static String printBytes(long bytes) {
+        double tmp;
+
+        if(bytes < 1000)
+            return String.format("%db", bytes);
+        if(bytes < 1_000_000) {
+            tmp=bytes / 1000.0;
+            return String.format("%,.2fKB", tmp);
+        }
+        if(bytes < 1_000_000_000) {
+            tmp=bytes / 1_000_000.0;
+            return String.format("%,.2fMB", tmp);
+        }
+        else {
+            tmp=bytes / 1_000_000_000.0;
+            return String.format("%,.2fGB", tmp);
+        }
     }
 
     public static String printBytes(double bytes) {
         double tmp;
 
         if(bytes < 1000)
-            return bytes + "b";
-        if(bytes < 1000000) {
+            return String.format("%.2fb", bytes);
+        if(bytes < 1_000_000) {
             tmp=bytes / 1000.0;
-            return f.format(tmp) + "KB";
+            return String.format("%,.2fKB", tmp);
         }
-        if(bytes < 1000000000) {
-            tmp=bytes / 1000000.0;
-            return f.format(tmp) + "MB";
+        if(bytes < 1_000_000_000) {
+            tmp=bytes / 1000_000.0;
+            return String.format("%,.2fMB", tmp);
         }
         else {
-            tmp=bytes / 1000000000.0;
-            return f.format(tmp) + "GB";
+            tmp=bytes / 1_000_000_000.0;
+            return String.format("%,.2fGB", tmp);
         }
     }
 

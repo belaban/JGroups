@@ -61,7 +61,7 @@ public class MPerf extends ReceiverAdapter {
     protected volatile Address                    result_collector=null;
     protected volatile boolean                    initiator=false;
 
-    protected static  final NumberFormat          format=NumberFormat.getNumberInstance();
+    protected static  final NumberFormat          format=NumberFormat.getInstance();
     protected static final short                  ID=ClassConfigurator.getProtocolId(MPerf.class);
 
 
@@ -102,7 +102,7 @@ public class MPerf extends ReceiverAdapter {
         int c;
 
         final String INPUT="[1] Send [2] View\n" +
-          "[3] Set num msgs (%d) [4] Set msg size (%s) [5] Set threads (%d) [6] New config (%s)\n" +
+          "[3] Set num msgs (%,d) [4] Set msg size (%s) [5] Set threads (%d) [6] New config (%s)\n" +
           "[7] Number of senders (%s) [o] Toggle OOB (%s)\n" +
           "[x] Exit this [X] Exit all [c] Cancel sending";
 
@@ -412,8 +412,8 @@ public class MPerf extends ReceiverAdapter {
             double msgs_sec=receive_log_interval / (diff / 1000.0);
             double throughput=msgs_sec * msg_size;
             last_interval=curr_time;
-            System.out.println("-- received " + received_so_far + " msgs " + "(" + diff + " ms, " +
-                                 format.format(msgs_sec) + " msgs/sec, " + Util.printBytes(throughput) + "/sec)");
+            System.out.printf("-- received %,d msgs (%,d ms, %,.2f msgs/sec, %s /sec)\n",
+                              received_so_far, diff, msgs_sec, Util.printBytes(throughput));
         }
     }
 
@@ -429,27 +429,25 @@ public class MPerf extends ReceiverAdapter {
 
     protected void applyNewConfig(byte[] buffer) {
         final InputStream in=new ByteArrayInputStream(buffer);
-        Thread thread=new Thread() {
-            public void run() {
-                try {
-                    JChannel ch=new JChannel(in);
-                    Util.sleepRandom(1000, 5000);
-                    channel.disconnect();
-                    JChannel tmp=channel;
-                    channel=ch;
-                    channel.setName(name);
-                    channel.setReceiver(MPerf.this);
-                    channel.connect("mperf");
-                    local_addr=channel.getAddress();
-                    JmxConfigurator.unregisterChannel(tmp, Util.getMBeanServer(), "jgroups", "mperf");
-                    Util.close(tmp);
-                    JmxConfigurator.registerChannel(channel, Util.getMBeanServer(), "jgroups", "mperf", true);
-                }
-                catch(Exception e) {
-                    System.err.println("failed creating new channel");
-                }
+        Thread thread=new Thread(() -> {
+            try {
+                JChannel ch=new JChannel(in);
+                Util.sleepRandom(1000, 5000);
+                channel.disconnect();
+                JChannel tmp=channel;
+                channel=ch;
+                channel.setName(name);
+                channel.setReceiver(MPerf.this);
+                channel.connect("mperf");
+                local_addr=channel.getAddress();
+                JmxConfigurator.unregisterChannel(tmp, Util.getMBeanServer(), "jgroups", "mperf");
+                Util.close(tmp);
+                JmxConfigurator.registerChannel(channel, Util.getMBeanServer(), "jgroups", "mperf", true);
             }
-        };
+            catch(Exception e) {
+                System.err.println("failed creating new channel");
+            }
+        });
 
         System.out.println("<< restarting channel");
         thread.start();
@@ -520,7 +518,7 @@ public class MPerf extends ReceiverAdapter {
             senders[i].start();
         }
         try {
-            System.out.println("-- sending " + num_msgs + (oob? " OOB msgs" : " msgs"));
+            System.out.printf("-- sending %,d %s\n", num_msgs, (oob? " OOB msgs" : " msgs"));
             barrier.await();
         }
         catch(Exception e) {
@@ -530,16 +528,11 @@ public class MPerf extends ReceiverAdapter {
 
 
     protected static String computeStats(long time, long msgs, int size) {
-        StringBuilder sb=new StringBuilder();
         double msgs_sec, throughput=0;
         msgs_sec=msgs / (time/1000.0);
         throughput=(msgs * size) / (time / 1000.0);
-        sb.append(msgs).append(" msgs, ");
-        sb.append(Util.printBytes(msgs * size)).append(" received");
-        sb.append(", time=").append(format.format(time)).append("ms");
-        sb.append(", msgs/sec=").append(format.format(msgs_sec));
-        sb.append(", throughput=").append(Util.printBytes(throughput));
-        return sb.toString();
+        return String.format("%,d msgs, %s received, time=%,d ms, msgs/sec=%,.2f, throughput=%s",
+                             msgs, Util.printBytes(msgs * size), time, msgs_sec, Util.printBytes(throughput));
     }
     
     protected class Sender extends Thread {
@@ -577,7 +570,7 @@ public class MPerf extends ReceiverAdapter {
                         msg.setFlag(Message.Flag.OOB);
                     channel.send(msg);
                     if(tmp % log_interval == 0)
-                        System.out.println("++ sent " + tmp);
+                        System.out.printf("++ sent %,d\n", tmp);
 
                     // if we used num_msgs_sent, we might have thread T3 which reaches the condition below, but
                     // actually didn't send the *last* message !

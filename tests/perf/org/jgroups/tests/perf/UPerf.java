@@ -63,7 +63,7 @@ public class UPerf extends ReceiverAdapter {
     private final AtomicInteger COUNTER=new AtomicInteger(1);
     private byte[] BUFFER=new byte[msg_size];
     protected static final String format=
-      "[1] Invoke RPCs [6] Sender threads (%d) [7] Num msgs (%d) [8] Msg size (%s)" +
+      "[1] Invoke RPCs [6] Sender threads (%d) [7] Num msgs (%,d) [8] Msg size (%s)" +
         "\n[s] Sync (%b) [o] OOB (%b) [b] Msg bundling (%b)" +
         "\n[a] Anycast count (%d) [r] Read percentage (%.2f) " +
         "\n[l] local gets (%b) [d] print details (%b)  [i] print invokers (%b)" +
@@ -178,7 +178,7 @@ public class UPerf extends ReceiverAdapter {
         BUFFER=new byte[msg_size];
         addSiteMastersToMembers();
 
-        System.out.printf("invoking %d RPCs of %s, sync=%b, oob=%b, msg_bundling=%b\n",
+        System.out.printf("invoking %,d RPCs of %s, sync=%b, oob=%b, msg_bundling=%b\n",
                           num_msgs, Util.printBytes(BUFFER.length), sync, oob, msg_bundling);
         int total_gets=0, total_puts=0;
         final AtomicInteger num_msgs_sent=new AtomicInteger(0);
@@ -383,7 +383,7 @@ public class UPerf extends ReceiverAdapter {
         double total_reqs_sec=total_reqs / ( total_time/ 1000.0);
         double throughput=total_reqs_sec * BUFFER.length;
         System.out.println("\n");
-        System.out.println(Util.bold(String.format("Throughput: %.2f reqs/sec/node (%s/sec)\n" +
+        System.out.println(Util.bold(String.format("Throughput: %,.2f reqs/sec/node (%s/sec)\n" +
                                                    "Roundtrip:  gets %s, puts %s\n",
                                                    total_reqs_sec, Util.printBytes(throughput),
                                                    print(avg_gets, print_details), print(avg_puts, print_details))));
@@ -427,9 +427,9 @@ public class UPerf extends ReceiverAdapter {
     }
 
     protected static String print(AverageMinMax avg, boolean details) {
-        return details? String.format("min/avg/max = %.2f/%.2f/%.2f us",
+        return details? String.format("min/avg/max = %,.2f/%,.2f/%,.2f us",
                                       avg.min() / 1000.0, avg.average() / 1000.0, avg.max() / 1000.0) :
-          String.format("avg = %.2f us", avg.average() / 1000.0);
+          String.format("avg = %,.2f us", avg.average() / 1000.0);
     }
 
     protected static List<String> getSites(JChannel channel) {
@@ -618,7 +618,7 @@ public class UPerf extends ReceiverAdapter {
         public String toString() {
             long total_reqs=num_gets + num_puts;
             double total_reqs_per_sec=total_reqs / (time / 1000.0);
-            return String.format("%.2f reqs/sec (%d gets, %d puts, get RTT %.2f us, put RTT %.2f us)",
+            return String.format("%,.2f reqs/sec (%,d gets, %,d puts, get RTT %,.2f us, put RTT %,.2f us)",
                                  total_reqs_per_sec, num_gets, num_puts, avg_gets.average() / 1000.0,
                                  avg_puts.getAverage()/1000.0);
         }

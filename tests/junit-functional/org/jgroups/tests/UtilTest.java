@@ -113,7 +113,7 @@ public class UtilTest {
     public static void testGetProperty2() {
         String input="foo, bar,  foobar: 1000";
         String result=Util.getProperty(input);
-        assert result != null && result.equals("1000");
+        assert Objects.equals(result, "1000");
 
         input="foo, bar,  foobar";
         result=Util.getProperty(input);
@@ -123,31 +123,31 @@ public class UtilTest {
 
         input="foo, bar,  foobar: 1000";
         result=Util.getProperty(input);
-        assert result != null && result.equals("900");
+        assert Objects.equals(result, "900");
 
         input="foo, bar,  foobar";
         result=Util.getProperty(input);
-        assert result != null && result.equals("900");
+        assert Objects.equals(result, "900");
 
 
         System.setProperty("bar", "500");
         input="foo, bar,  foobar: 1000";
         result=Util.getProperty(input);
-        assert result != null && result.equals("500");
+        assert Objects.equals(result, "500");
 
         input="foo, bar,  foobar";
         result=Util.getProperty(input);
-        assert result != null && result.equals("500");
+        assert Objects.equals(result, "500");
 
 
         System.setProperty("foo", "200");
         input="foo, bar,  foobar: 1000";
         result=Util.getProperty(input);
-        assert result != null && result.equals("200");
+        assert Objects.equals(result, "200");
 
         input="foo, bar,  foobar";
         result=Util.getProperty(input);
-        assert result != null && result.equals("200");
+        assert Objects.equals(result, "200");
     }
 
     public void testReplaceProperties() {
@@ -253,12 +253,12 @@ public class UtilTest {
         num=1000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1KB", s);
+        Assert.assertEquals("1.00KB", s);
 
         num=1001;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1KB", s);
+        Assert.assertEquals("1.00KB", s);
 
         num=1010;
         s=Util.printBytes(num);
@@ -273,12 +273,12 @@ public class UtilTest {
         num=10000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("10KB", s);
+        Assert.assertEquals("10.00KB", s);
 
         num=150000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("150KB", s);
+        Assert.assertEquals("150.00KB", s);
 
         num=150023;
         s=Util.printBytes(num);
@@ -288,12 +288,12 @@ public class UtilTest {
         num=1200000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1.2MB", s);
+        Assert.assertEquals("1.20MB", s);
 
         num=150000000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("150MB", s);
+        Assert.assertEquals("150.00MB", s);
 
         num=150030000;
         s=Util.printBytes(num);
@@ -303,7 +303,7 @@ public class UtilTest {
         num=1200000000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1.2GB", s);
+        Assert.assertEquals("1.20GB", s);
     }
 
 
