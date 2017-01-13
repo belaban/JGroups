@@ -747,6 +747,51 @@ This will use a bucket "jgroups-bucket" or create one if it doesn't exist, then 
 ${GOOGLE_PING}
 
 
+==== DNS_PING
+
+DNS_PING uses DNS `A` or `SRV` entries to perform discovery. Initially this protocol was designed for
+https://kubernetes.io[Kubernetes] and https://www.openshift.org[OpenShift] but it suitable for any type of DNS discovery.
+
+In order to enable DNS discovery for application deployed on Kubernetes/OpenShift one must create a
+https://kubernetes.io/docs/user-guide/services/#headless-services[Governing Headless Service] with proper
+selector covering desired Pods. The Service will ensure that DNS entries are populated as soon as Pods are in Ready state.
+
+
+The snippet below shows a sample config:
+
+
+
+[source,xml]
+----
+
+<dns.DNS_PING
+            dns_address="192.168.0.17"
+            dns_query="jgroups-dns-ping.myproject.svc.cluster.local" />
+
+----
+
+This will turn on DNS discovery using DNS server at address `192.168.0.17` and DNS query `jgroups-dns-ping.myproject.svc.cluster.local`.
+
+It is also possible to use `SRV` entries for discovery as shown below:
+
+
+
+[source,xml]
+----
+
+<dns.DNS_PING
+            dns_address="192.168.0.17"
+            dns_query="_ping._tcp.jgroups-dns-ping.myproject.svc.cluster.local"
+            dns_record_type="SRV" />
+
+----
+
+Kubernetes SRV entries are created using the following scheme: `_my-port-name._my-port-protocol.my-svc.my-namespace.svc.cluster.local`.
+For more information, please refer to https://kubernetes.io/docs/admin/dns[Kubernetes DNS Admin Guide].
+
+
+${GOOGLE_PING}
+
 
 ==== SWIFT_PING
 
@@ -780,6 +825,7 @@ ${SWIFT_PING}
 
 
 ==== KUBE_PING
+
 This discovery protocol can be used with OpenShift [2] and uses an OpenShift internal mechanism to discover cluster
 members. `KUBE_PING` is hosted on jgroups-extras; refer to [1] for details.
 
