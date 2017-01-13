@@ -513,6 +513,7 @@
 		<mkdir dir="${compile.dir}/schema"/>
 		<java classname="org.jgroups.util.XMLSchemaGenerator" classpathref="jg.classpath" fork="true">
 			<arg line="-o ${compile.dir}/schema"/>
+			<jvmarg value="-Djava.awt.headless=true"/>
 		</java>
         <copy todir="${compile.dir}/schema">
             <fileset dir="${conf.dir}">
