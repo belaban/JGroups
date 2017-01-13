@@ -789,8 +789,13 @@ It is also possible to use `SRV` entries for discovery as shown below:
 Kubernetes SRV entries are created using the following scheme: `_my-port-name._my-port-protocol.my-svc.my-namespace.svc.cluster.local`.
 For more information, please refer to https://kubernetes.io/docs/admin/dns[Kubernetes DNS Admin Guide].
 
+NOTE: Note that both <<KUBE_PING>> and <<DNS_PING>> can be used in Kubernetes/OpenShift. The main difference between them is that
+      <<KUBE_PING>> uses Kubernetes API for discovery whereas <<DNS_PING>> uses DNS entries. Having said that, <<DNS_PING>> should
+      be used together with a Governing Service, which makes it perfect fit for
+      https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set[Stateful Sets].
 
-${GOOGLE_PING}
+
+${DNS_PING}
 
 
 ==== SWIFT_PING
