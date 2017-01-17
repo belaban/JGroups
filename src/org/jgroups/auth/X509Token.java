@@ -110,7 +110,6 @@ public class X509Token extends AuthToken {
             }
 
             try {
-                log.debug("setting cipher to decrypt mode");
                 this.cipher.init(Cipher.DECRYPT_MODE, this.certPrivateKey);
                 String serverBytes = new String(this.cipher.doFinal(serverToken.encryptedToken));
                 if ((serverBytes.equalsIgnoreCase(this.auth_value))) {
@@ -125,16 +124,10 @@ public class X509Token extends AuthToken {
     }
 
     public void writeTo(DataOutput out) throws Exception {
-        if (log.isDebugEnabled()) {
-            log.debug("X509Token writeTo()");
-        }
         Util.writeByteBuffer(this.encryptedToken, out);
     }
 
     public void readFrom(DataInput in) throws Exception {
-        if (log.isDebugEnabled()) {
-            log.debug("X509Token readFrom()");
-        }
         this.encryptedToken = Util.readByteBuffer(in);
         this.valueSet = true;
     }
@@ -151,20 +144,15 @@ public class X509Token extends AuthToken {
                     CertificateException, NoSuchPaddingException, InvalidKeyException,
                     IllegalBlockSizeException, BadPaddingException, UnrecoverableEntryException {
         KeyStore store = KeyStore.getInstance(this.keystore_type);
-        InputStream inputStream=null;
-        inputStream=Thread.currentThread()
-                          .getContextClassLoader()
-                          .getResourceAsStream(this.keystore_path);
+        InputStream inputStream=Thread.currentThread().getContextClassLoader().getResourceAsStream(this.keystore_path);
         if(inputStream == null)
-          inputStream=new FileInputStream(this.keystore_path);
+            inputStream=new FileInputStream(this.keystore_path);
         store.load(inputStream, this.keystore_password);
 
         this.cipher = Cipher.getInstance(this.cipher_type);
         this.certificate = (X509Certificate) store.getCertificate(this.cert_alias);
 
-        if (log.isDebugEnabled()) {
-            log.debug("certificate = " + this.certificate.toString());
-        }
+        log.debug("certificate = " + this.certificate.toString());
 
         this.cipher.init(Cipher.ENCRYPT_MODE, this.certificate);
         this.encryptedToken = this.cipher.doFinal(this.auth_value.getBytes());
