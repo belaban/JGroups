@@ -368,7 +368,7 @@ custom code (see <<MembershipChangePolicy>>).
 WARNING: Because merging needs to handle all edge cases, it is *not* guaranteed that subsequent MergeViews won't have
 identical membership. For example, we we have view A2={A,B} in A and B3={B} in B, then a subsequent merge might install
 view A4={A,B} in both A and B. In A's case, the membership between A2 and A4 doesn't change. An application has to be
-able to handle duplicate subsequent merge views. Note that adjacent _regular_ views will never have duplicate members.
+able to handle duplicate subsequent merge views. Note that consecutive _regular_ views will never have duplicate members.
 
 
 [[JChannel]]
