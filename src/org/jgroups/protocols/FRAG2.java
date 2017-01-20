@@ -9,6 +9,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.AverageMinMax;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
@@ -73,6 +74,9 @@ public class FRAG2 extends Protocol {
     @ManagedAttribute(description="Number of received fragments")
     protected LongAdder           num_frags_received=new LongAdder();
 
+    protected final AverageMinMax avg_size_down=new AverageMinMax();
+    protected final AverageMinMax avg_size_up=new AverageMinMax();
+
     public int   getFragSize()                  {return frag_size;}
     public void  setFragSize(int s)             {frag_size=s;}
     public long  getNumberOfSentFragments()     {return num_frags_sent.sum();}
@@ -80,6 +84,11 @@ public class FRAG2 extends Protocol {
     public int   fragSize()                     {return frag_size;}
     public FRAG2 fragSize(int size)             {frag_size=size; return this;}
 
+    @ManagedAttribute(description="min/avg/max size (in bytes) for messages sent down that needed to be fragmented")
+    public String getAvgSizeDown() {return avg_size_down.toString();}
+
+    @ManagedAttribute(description="min/avg/max size (in bytes) of messages re-assembled from fragments")
+    public String getAvgSizeUp()   {return avg_size_up.toString();}
 
     synchronized int getNextId() {
         return curr_id++;
@@ -110,6 +119,8 @@ public class FRAG2 extends Protocol {
         super.resetStats();
         num_frags_sent.reset();
         num_frags_received.reset();
+        avg_size_down.clear();
+        avg_size_up.clear();
     }
 
 
@@ -134,6 +145,7 @@ public class FRAG2 extends Protocol {
         long size=msg.getLength();
         if(size > frag_size) {
             fragment(msg);  // Fragment and pass down
+            avg_size_down.add(size);
             return null;
         }
         return down_prot.down(msg);
@@ -158,6 +170,7 @@ public class FRAG2 extends Protocol {
             if(assembled_msg != null) {
                 assembled_msg.setSrc(msg.getSrc()); // needed ? YES, because fragments have a null src !!
                 up_prot.up(assembled_msg);
+                avg_size_up.add(assembled_msg.length());
             }
             return null;
         }
@@ -169,10 +182,12 @@ public class FRAG2 extends Protocol {
             FragHeader hdr=msg.getHeader(this.id);
             if(hdr != null) { // needs to be defragmented
                 Message assembled_msg=unfragment(msg,hdr);
-                if(assembled_msg != null)
+                if(assembled_msg != null) {
                     // the reassembled msg has to be add in the right place (https://issues.jboss.org/browse/JGRP-1648),
                     // and canot be added to the tail of the batch !
                     batch.replace(msg, assembled_msg);
+                    avg_size_up.add(assembled_msg.length());
+                }
                 else
                     batch.remove(msg);
             }
@@ -357,7 +372,7 @@ public class FRAG2 extends Protocol {
                 if(msg == null)
                     return false;
             }
-            /*all fragmentations have been received*/
+            /* have all fragments been received */
             return true;
         }
 
