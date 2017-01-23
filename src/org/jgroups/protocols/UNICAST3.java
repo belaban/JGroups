@@ -277,6 +277,17 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return retval;
     }
 
+    @ManagedAttribute(description="Total number of deliverable messages in all receive windows")
+    public int getXmitTableDeliverableMessages() {
+        int retval=0;
+        for(Entry entry: recv_table.values()) {
+            if(entry.msgs != null)
+                retval+=entry.msgs.getNumDeliverable();
+        }
+        return retval;
+    }
+
+
     @ManagedAttribute(description="Number of compactions in all (receive and send) windows")
     public int getXmitTableNumCompactions() {
         int retval=0;

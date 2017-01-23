@@ -164,6 +164,19 @@ public class Table<T> implements Iterable<T> {
         }
     }
 
+    /** Returns the number of messages that can be delivered */
+    public int getNumDeliverable() {
+        NumDeliverable visitor=new NumDeliverable();
+        lock.lock();
+        try {
+            forEach(hd+1, hr, visitor);
+            return visitor.getResult();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
     /**
      * Only used internally by JGroups on a state transfer. Please don't use this in application code, or you're on
      * your own !
@@ -873,6 +886,19 @@ public class Table<T> implements Iterable<T> {
             if(element == null)
                 return false;
             highest_deliverable=seqno;
+            return true;
+        }
+    }
+
+    protected class NumDeliverable implements Visitor<T> {
+        protected int num_deliverable=0;
+
+        public int getResult() {return num_deliverable;}
+
+        public boolean visit(long seqno, T element, int row, int column) {
+            if(element == null)
+                return false;
+            num_deliverable++;
             return true;
         }
     }
