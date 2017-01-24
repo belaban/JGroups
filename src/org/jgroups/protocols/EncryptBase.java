@@ -345,8 +345,7 @@ public abstract class EncryptBase extends Protocol {
 
         // copy neeeded because same message (object) may be retransmitted -> prevent double encryption
         Message msgEncrypted=msg.copy(false).putHeader(this.id, hdr);
-        if(msg.getLength() > 0)
-            msgEncrypted.setBuffer(code(msg.getRawBuffer(),msg.getOffset(),msg.getLength(),false));
+        msgEncrypted.setBuffer(code(msg.getRawBuffer(),msg.getOffset(),msg.getLength(),false));
         down_prot.down(new Event(Event.MSG,msgEncrypted));
     }
 
