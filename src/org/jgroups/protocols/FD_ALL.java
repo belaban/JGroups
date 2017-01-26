@@ -87,7 +87,7 @@ public class FD_ALL extends Protocol {
     
     protected final Lock                             lock=new ReentrantLock();
 
-    protected final Predicate<Message>               HAS_HEADER=msg -> msg.getHeader(this.id) != null;
+    protected final Predicate<Message>               HAS_HEADER=msg -> msg != null && msg.getHeader(this.id) != null;
 
 
     public FD_ALL() {}
