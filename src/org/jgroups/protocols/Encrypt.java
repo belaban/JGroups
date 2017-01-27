@@ -352,7 +352,7 @@ public abstract class Encrypt extends Protocol {
         else { // length is 0
             byte[] payload=msg.getRawBuffer();
             if(payload != null) // we don't encrypt empty buffers (https://issues.jboss.org/browse/JGRP-2153)
-                msgEncrypted.setBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                msgEncrypted.setBuffer(payload, msg.getOffset(), msg.getLength());
         }
         down_prot.down(msgEncrypted);
     }
