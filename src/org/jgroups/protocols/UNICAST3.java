@@ -868,7 +868,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(adders.getAndIncrement() != 0)
             return;
 
-        final MessageBatch batch=new MessageBatch(win.size()).dest(local_addr).sender(sender).multicast(false);
+        final MessageBatch batch=new MessageBatch(win.getNumDeliverable())
+          .dest(local_addr).sender(sender).multicast(false);
         Supplier<MessageBatch> batch_creator=() -> batch;
         do {
             try {
