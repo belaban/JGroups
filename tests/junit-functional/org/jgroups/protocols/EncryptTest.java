@@ -14,6 +14,7 @@ import org.testng.annotations.Test;
 
 import javax.crypto.SecretKey;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -24,7 +25,6 @@ import static java.util.Arrays.asList;
  * @author Bela Ban
  * @since  4.0
  */
-
 @Test(enabled=false)
 public abstract class EncryptTest {
     protected JChannel            a,b,c,rogue;
@@ -82,9 +82,8 @@ public abstract class EncryptTest {
         assertSize(3);
     }
 
-    /** Same as above, but all messages are 0-length */
-    // @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
-    public void testRegularMessageReceptionWithEmptyMessages() throws Exception {
+    /** Same as above, but all message payloads are null */
+    public void testRegularMessageReceptionWithNullMessages() throws Exception {
         a.send(new Message(null));
         b.send(new Message(null));
         c.send(new Message(null));
@@ -96,6 +95,34 @@ public abstract class EncryptTest {
         for(MyReceiver r: asList(ra,rb,rc))
             System.out.printf("%s: %s\n", r.name(), print(r.list()));
         assertSize(3);
+        assertForEachMessage(new Pred<Message>() {
+            public boolean test(Message msg) {
+                return msg.getRawBuffer() == null;
+            }
+        });
+    }
+
+    /** Same as above, but all message payloads are empty (0-length String) */
+    public void testRegularMessageReceptionWithEmptyMessages() throws Exception {
+        a.send(new Message(null).setBuffer(new byte[0]));
+        b.send(new Message(null).setBuffer(new byte[0]));
+        c.send(new Message(null).setBuffer(new byte[0]));
+        for(int i=0; i < 10; i++) {
+            if(ra.size() == 3 && rb.size() == 3 && rc.size() == 3)
+                break;
+            Util.sleep(500);
+        }
+        assertSize(3);
+        assertForEachMessage(new Pred<Message>() {
+            public boolean test(Message msg) {
+                return msg.getLength() == 0;
+            }
+        });
+        assertForEachMessage(new Pred<Message>() {
+            public boolean test(Message msg) {
+                return Arrays.equals(msg.getRawBuffer(), new byte[0]);
+            }
+        });
     }
 
     // @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
@@ -326,6 +353,14 @@ public abstract class EncryptTest {
         assert r.size() == expected_size : String.format("expected size: %d, actual size of %s: %d", expected_size, r.name(), r.size());
     }
 
+    protected void assertForEachMessage(Pred<Message> pred) {
+        for(MyReceiver<Message> r: Arrays.asList(ra,rb,rc)) {
+            List<Message> list=r.list();
+            for(Message msg: list)
+                assert pred.test(msg);
+        }
+    }
+
     protected static String print(List<Message> msgs) {
         StringBuilder sb=new StringBuilder();
         for(Message msg: msgs)
@@ -342,5 +377,8 @@ public abstract class EncryptTest {
         return sb.toString();
     }
 
+    protected interface Pred<T> {
+        boolean test(T el);
+    }
 
 }

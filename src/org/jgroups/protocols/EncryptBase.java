@@ -347,7 +347,12 @@ public abstract class EncryptBase extends Protocol {
         Message msgEncrypted=msg.copy(false).putHeader(this.id, hdr);
         if(msg.getLength() > 0)
             msgEncrypted.setBuffer(code(msg.getRawBuffer(),msg.getOffset(),msg.getLength(),false));
-        down_prot.down(new Event(Event.MSG,msgEncrypted));
+        else { // length is 0
+            byte[] payload=msg.getRawBuffer();
+            if(payload != null) // we don't encrypt empty buffers (https://issues.jboss.org/browse/JGRP-2153)
+                msgEncrypted.setBuffer(payload, msg.getOffset(), msg.getLength());
+        }
+        down_prot.down(new Event(Event.MSG, msgEncrypted));
     }
 
 
