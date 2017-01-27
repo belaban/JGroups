@@ -1438,8 +1438,10 @@ Contrary to FRAG, FRAG2 does not need to serialize a message in order to break i
                 serialize the message, so we add a constant (by default 200 bytes). Because of the efficiency gained by
                 not having to serialize the message just to determine its size, FRAG2 is generally recommended over FRAG.
             
+${FRAG3}
 
-
+FRAG2 needs only half the memory than FRAG2 to handle fragments and the final full message. See
+https://issues.jboss.org/browse/JGRP-2154 for details.
 
 === Ordering
 

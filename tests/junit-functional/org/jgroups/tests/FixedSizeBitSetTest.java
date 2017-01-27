@@ -28,7 +28,7 @@ public class FixedSizeBitSetTest {
         set.set(10);
     }
 
-    public static void testSet() {
+    public void testSet() {
         FixedSizeBitSet set=new FixedSizeBitSet(10);
         assert set.set(4) && set.cardinality() == 1;
         assert !set.set(4);
@@ -37,7 +37,7 @@ public class FixedSizeBitSetTest {
         assert set.set(4) && set.cardinality() == 1;
     }
 
-    public static void testSetMultiple() {
+    public void testSetMultiple() {
         FixedSizeBitSet set=new FixedSizeBitSet(10);
         set.set(4, 7);
         assert set.cardinality() == 4;
@@ -179,7 +179,7 @@ public class FixedSizeBitSetTest {
         assert index == 0 : "expected 0 but got " + index;
     }
 
-    public static void testCardinality() {
+    public void testCardinality() {
         FixedSizeBitSet set=new FixedSizeBitSet(20);
         for(int i=0; i < 20; i++)
             set.set(i);

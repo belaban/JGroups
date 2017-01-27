@@ -26,8 +26,8 @@ public class FixedSizeBitSet {
     }
 
     /**
-     * Creates a bit set whose initial size is the range <code>0</code> through
-     * <code>size-1</code>. All bits are initially <code>false</code>.
+     * Creates a bit set whose initial size is the range {@code 0} through
+     * {@code size-1}. All bits are initially {@code false}.
      * @param size the initial size of the bit set (in bits).
      * @throws NegativeArraySizeException if the specified initial size is negative
      */
@@ -42,7 +42,7 @@ public class FixedSizeBitSet {
 
 
     /**
-     * Sets the bit at the specified index to <code>true</code>.
+     * Sets the bit at the specified index to {@code true}.
      * @param index a bit index.
      * @return true if the bit was 0 before, false otherwise
      * @throws IndexOutOfBoundsException if the specified index is negative.
@@ -95,7 +95,7 @@ public class FixedSizeBitSet {
    
 
     /**
-     * Sets the bit specified by the index to <code>false</code>.
+     * Sets the bit specified by the index to {@code false}.
      * @param index the index of the bit to be cleared.
      * @throws IndexOutOfBoundsException if the specified index is negative.
      */
@@ -146,8 +146,8 @@ public class FixedSizeBitSet {
 
     /**
      * Returns the value of the bit with the specified index. The value
-     * is <code>true</code> if the bit with the index <code>index</code>
-     * is currently set in this bit set; otherwise, the result is <code>false</code>.
+     * is {@code true} if the bit with the index {@code index}
+     * is currently set in this bit set; otherwise, the result is {@code false}.
      * @param index the bit index.
      * @return the value of the bit with the specified index.
      * @throws IndexOutOfBoundsException if the specified index is negative.
@@ -163,10 +163,10 @@ public class FixedSizeBitSet {
 
 
     /**
-     * Returns the index of the first bit that is set to <code>true</code> that occurs on or after
+     * Returns the index of the first bit that is set to {@code true} that occurs on or after
      * the specified starting index. If no such bit exists then -1 is returned.
      * <p/>
-     * To iterate over the <code>true</code> bits in a <code>BitSet</code>,
+     * To iterate over the {@code true} bits in a {@code BitSet},
      * use the following loop:
      * <p/>
      * <pre>
@@ -196,7 +196,7 @@ public class FixedSizeBitSet {
     }
 
     /**
-     * Returns the index of the first bit that is set to <code>false</code>
+     * Returns the index of the first bit that is set to {@code false}
      * that occurs on or after the specified starting index.
      * @param fromIndex the index to start checking from (inclusive).
      * @return the index of the next clear bit.
@@ -302,24 +302,24 @@ public class FixedSizeBitSet {
 
     /**
      * Returns a string representation of this bit set. For every index
-     * for which this <code>BitSet</code> contains a bit in the set
+     * for which this {@code BitSet} contains a bit in the set
      * state, the decimal representation of that index is included in
      * the result. Such indices are listed in order from lowest to
      * highest, separated by ",&nbsp;" (a comma and a space) and
      * surrounded by braces, resulting in the usual mathematical
      * notation for a set of integers.<p>
-     * Overrides the <code>toString</code> method of <code>Object</code>.
+     * Overrides the {@code toString} method of {@code Object}.
      * <p>Example:
      * <pre>
      * BitSet drPepper = new BitSet();</pre>
-     * Now <code>drPepper.toString()</code> returns "<code>{}</code>".<p>
+     * Now {@code drPepper.toString()} returns "{@code {}}".<p>
      * <pre>
      * drPepper.set(2);</pre>
-     * Now <code>drPepper.toString()</code> returns "<code>{2}</code>".<p>
+     * Now {@code drPepper.toString()} returns "{@code {2}}".<p>
      * <pre>
      * drPepper.set(4);
      * drPepper.set(10);</pre>
-     * Now <code>drPepper.toString()</code> returns "<code>{2, 4, 10}</code>".
+     * Now {@code drPepper.toString()} returns "{@code {2, 4, 10}}".
      * @return a string representation of this bit set.
      */
     public String toString() {

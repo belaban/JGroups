@@ -69,5 +69,6 @@
     <class id="88"  name="org.jgroups.protocols.EncryptHeader"/>
     <class id="89"  name="org.jgroups.protocols.NAMING$Header"/>
     <class id="90"  name="org.jgroups.auth.ChallengeResponseHeader"/>
+    <class id="91"  name="org.jgroups.protocols.Frag3Header"/>
 </magic-number-class-mapping>
 

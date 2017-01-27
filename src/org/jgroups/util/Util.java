@@ -2284,18 +2284,18 @@ public class Util {
      * @return List. A List<Range> of offset/length pairs
      */
     public static List<Range> computeFragOffsets(int offset,int length,int frag_size) {
-        List<Range> retval=new ArrayList<>();
+        int num_frags=(int)Math.ceil(length / (double)frag_size);
+        List<Range> retval=new ArrayList<>(num_frags);
         long total_size=(long)length + offset;
         int index=offset;
         int tmp_size=0;
-        Range r;
 
         while(index < total_size) {
             if(index + frag_size <= total_size)
                 tmp_size=frag_size;
             else
                 tmp_size=(int)(total_size - index);
-            r=new Range(index,tmp_size);
+            Range r=new Range(index,tmp_size);
             retval.add(r);
             index+=tmp_size;
         }

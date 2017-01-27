@@ -271,82 +271,78 @@ public class MessageTest {
     }
 
 
-    public static void testComputeFragOffsets() {
-        Range r;
+    public void testComputeFragOffsets() {
         byte[] buf={0,1,2,3,4,5,6,7,8,9};
-        java.util.List retval=Util.computeFragOffsets(buf, 4);
+        java.util.List<Range> retval=Util.computeFragOffsets(buf, 4);
         System.out.println("list is " + retval);
         Assert.assertEquals(3, retval.size());
-        r=(Range)retval.get(0);
+        Range r=retval.get(0);
         Assert.assertEquals(0, r.low);
         Assert.assertEquals(4, r.high);
 
-        r=(Range)retval.get(1);
+        r=retval.get(1);
         Assert.assertEquals(4, r.low);
         Assert.assertEquals(4, r.high);
 
-        r=(Range)retval.get(2);
+        r=retval.get(2);
         Assert.assertEquals(8, r.low);
         Assert.assertEquals(2, r.high);
     }
 
 
 
-    public static void testComputeFragOffsetsWithOffsets() {
+    public void testComputeFragOffsetsWithOffsets() {
         Range r;
         // byte[] buf={'p', 'a', 'd', 0,1,2,3,4,5,6,7,8,9, 'p', 'a', 'd', 'd', 'i', 'e'};
-        java.util.List retval=Util.computeFragOffsets(3, 10, 4);
+        java.util.List<Range> retval=Util.computeFragOffsets(3, 10, 4);
         System.out.println("list is " + retval);
         Assert.assertEquals(3, retval.size());
-        r=(Range)retval.get(0);
+        r=retval.get(0);
         Assert.assertEquals(3, r.low);
         Assert.assertEquals(4, r.high);
 
-        r=(Range)retval.get(1);
+        r=retval.get(1);
         Assert.assertEquals(7, r.low);
         Assert.assertEquals(4, r.high);
 
-        r=(Range)retval.get(2);
+        r=retval.get(2);
         Assert.assertEquals(11, r.low);
         Assert.assertEquals(2, r.high);
     }
 
 
-    public static void testComputeFragOffsets2() {
-        Range r;
+    public void testComputeFragOffsets2() {
         byte[] buf={0,1,2,3,4,5,6,7,8,9};
-        java.util.List retval=Util.computeFragOffsets(buf, 10);
+        java.util.List<Range> retval=Util.computeFragOffsets(buf, 10);
         System.out.println("list is " + retval);
         Assert.assertEquals(1, retval.size());
-        r=(Range)retval.get(0);
+        Range r=retval.get(0);
         Assert.assertEquals(0, r.low);
         Assert.assertEquals(10, r.high);
     }
 
 
-    public static void testComputeFragOffsets3() {
-        Range r;
+    public void testComputeFragOffsets3() {
         byte[] buf={0,1,2,3,4,5,6,7,8,9};
-        java.util.List retval=Util.computeFragOffsets(buf, 100);
+        java.util.List<Range> retval=Util.computeFragOffsets(buf, 100);
         System.out.println("list is " + retval);
         Assert.assertEquals(1, retval.size());
-        r=(Range)retval.get(0);
+        Range r=retval.get(0);
         Assert.assertEquals(0, r.low);
         Assert.assertEquals(10, r.high);
     }
 
 
-    public static void testComputeFragOffsets4() {
-        Range r;
+    public void testComputeFragOffsets4() {
         byte[] buf={0,1,2,3,4,5,6,7,8,9};
-        java.util.List retval=Util.computeFragOffsets(buf, 5);
+        java.util.List<Range> retval=Util.computeFragOffsets(buf, 5);
         System.out.println("list is " + retval);
         Assert.assertEquals(2, retval.size());
-        r=(Range)retval.get(0);
+        Range r=retval.get(0);
         Assert.assertEquals(0, r.low);
         Assert.assertEquals(5, r.high);
 
-        r=(Range)retval.get(1);
+        r=retval.get(1);
         Assert.assertEquals(5, r.low);
         Assert.assertEquals(5, r.high);
     }
