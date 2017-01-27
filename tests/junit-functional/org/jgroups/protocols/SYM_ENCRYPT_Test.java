@@ -9,6 +9,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.stream.Stream;
+
 /**
  * Tests use cases for {@link SYM_ENCRYPT} described in https://issues.jboss.org/browse/JGRP-2021.
  * Make sure you create the keystore before running this test (ant make-keystore).
@@ -33,7 +35,28 @@ public class SYM_ENCRYPT_Test extends EncryptTest {
         super.testRegularMessageReception();
     }
 
+    public void testRegularMessageReceptionWithNullMessages() throws Exception {
+        super.testRegularMessageReceptionWithNullMessages();
+    }
+
+    /** Same as above, but don't encrypt entire message, but just payload */
+    public void testRegularMessageReceptionWithNullMessagesEncryptOnlyPayload() throws Exception {
+        Stream.of(a,b,c).forEach(ch -> {
+            Encrypt encr=ch.getProtocolStack().findProtocol(Encrypt.class);
+            encr.encryptEntireMessage(false);
+        });
+        super.testRegularMessageReceptionWithNullMessages();
+    }
+
     public void testRegularMessageReceptionWithEmptyMessages() throws Exception {
+        super.testRegularMessageReceptionWithEmptyMessages();
+    }
+
+    public void testRegularMessageReceptionWithEmptyMessagesEncryptOnlyPayload() throws Exception {
+        Stream.of(a,b,c).forEach(ch -> {
+            Encrypt encr=ch.getProtocolStack().findProtocol(Encrypt.class);
+            encr.encryptEntireMessage(false);
+        });
         super.testRegularMessageReceptionWithEmptyMessages();
     }
 

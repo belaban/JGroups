@@ -16,6 +16,7 @@ import javax.crypto.SecretKey;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -25,7 +26,6 @@ import java.util.stream.Stream;
  * @author Bela Ban
  * @since  4.0
  */
-
 @Test(enabled=false)
 public abstract class EncryptTest {
     protected JChannel            a,b,c,rogue;
@@ -70,9 +70,8 @@ public abstract class EncryptTest {
         assertForEachReceiver(r -> r.size() == 3);
     }
 
-    /** Same as above, but all messages are 0-length */
-    //@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
-    public void testRegularMessageReceptionWithEmptyMessages() throws Exception {
+    /** Same as above, but all message payloads are null */
+    public void testRegularMessageReceptionWithNullMessages() throws Exception {
         a.send(new Message(null));
         b.send(new Message(null));
         c.send(new Message(null));
@@ -84,6 +83,22 @@ public abstract class EncryptTest {
         Stream.of(ra, rb, rc).map(MyReceiver::list).map(l -> l.stream().map(msg -> (String)msg.getObject())
           .collect(ArrayList::new, ArrayList::add, (x, y) -> {})).forEach(System.out::println);
         assertForEachReceiver(r -> r.size() == 3);
+        assertForEachMessage(msg -> msg.getRawBuffer() == null);
+    }
+
+    /** Same as above, but all message payloads are empty (0-length String) */
+    public void testRegularMessageReceptionWithEmptyMessages() throws Exception {
+        a.send(new Message(null).setBuffer(new byte[0]));
+        b.send(new Message(null).setBuffer(new byte[0]));
+        c.send(new Message(null).setBuffer(new byte[0]));
+        for(int i=0; i < 10; i++) {
+            if(ra.size() == 3 && rb.size() == 3 && rc.size() == 3)
+                break;
+            Util.sleep(500);
+        }
+        assertForEachReceiver(r -> r.size() == 3);
+        assertForEachMessage(msg -> msg.getLength() == 0);
+        assertForEachMessage(msg -> Arrays.equals(msg.getRawBuffer(), new byte[0]));
     }
 
     //@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
@@ -207,7 +222,7 @@ public abstract class EncryptTest {
                                 "the contents (this should throw exceptions below):\n", r_rogue.size());
             r_rogue.list().forEach(msg -> {
                 try {
-                    String payload=(String)msg.getObject();
+                    String payload=msg.getObject();
                     assert !payload.startsWith("Hello from");
                 }
                 catch(Exception t) {
@@ -308,6 +323,13 @@ public abstract class EncryptTest {
 
     protected void assertForEachReceiver(Predicate<MyReceiver<Message>> predicate) {
         Stream.of(ra, rb, rc).forEach(receiver -> {assert predicate.test(receiver);});
+    }
+
+    protected void assertForEachMessage(Predicate<Message> predicate) {
+        Stream.of(ra, rb, rc)
+          .map(MyReceiver::list)
+          .flatMap(Collection::stream)
+          .forEach(msg -> {assert predicate.test(msg);});
     }
 
     protected static String print(List<Message> msgs) {

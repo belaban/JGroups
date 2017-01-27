@@ -46,6 +46,10 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         super.testRegularMessageReception();
     }
 
+    public void testRegularMessageReceptionWithNullMessages() throws Exception {
+        super.testRegularMessageReceptionWithNullMessages();
+    }
+
     public void testRegularMessageReceptionWithEmptyMessages() throws Exception {
         super.testRegularMessageReceptionWithEmptyMessages();
     }
