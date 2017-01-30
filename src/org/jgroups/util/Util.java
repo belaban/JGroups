@@ -2862,6 +2862,15 @@ public class Util {
     }
 
     public static Field getField(final Class clazz, String field_name) {
+        try {
+            return getField(clazz, field_name, false);
+        }
+        catch(NoSuchFieldException e) {
+            return null;
+        }
+    }
+
+    public static Field getField(final Class clazz, String field_name, boolean throw_exception) throws NoSuchFieldException {
         if(clazz == null || field_name == null)
             return null;
 
@@ -2873,6 +2882,8 @@ public class Util {
             catch(NoSuchFieldException e) {
             }
         }
+        if(field == null && throw_exception)
+            throw new NoSuchFieldException(String.format("%s not found in %s or superclasses", field_name, clazz.getName()));
         return field;
     }
 
