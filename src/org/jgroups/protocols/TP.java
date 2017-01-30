@@ -1267,7 +1267,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             processBatch(internal_batch,     false, true);
         }
         catch(Throwable t) {
-            log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
+            log.error(String.format(Util.getMessage("IncomingMsgFailure"), local_addr), t);
         }
     }
 
@@ -1301,7 +1301,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             msg_processing_policy.process(msg, oob, internal);
         }
         catch(Throwable t) {
-            log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
+            log.error(String.format(Util.getMessage("IncomingMsgFailure"), local_addr), t);
         }
     }
 
