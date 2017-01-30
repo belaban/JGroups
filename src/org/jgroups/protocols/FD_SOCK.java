@@ -269,7 +269,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             // If I have the sock for 'hdr.mbr', return it. Otherwise look it up in my cache and return it
             case FdHeader.WHO_HAS_SOCK:
-                if(local_addr != null && local_addr.equals(msg.getSrc()))
+                if(Objects.equals(local_addr, msg.getSrc()))
                     return null; // don't reply to WHO_HAS bcasts sent by me !
 
                 if(hdr.mbr == null)
@@ -499,7 +499,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     protected void handleSocketClose(Exception ex) {
         teardownPingSocket();     // make sure we have no leftovers
         if(!regular_sock_close) { // only suspect if socket was not closed regularly (by interruptPingerThread())
-            log.debug("%s: peer %s closed socket (%s)", local_addr, ping_dest, (ex != null ? ex.toString() : "eof"));
+            log.warn("%s: peer %s closed socket (%s)", local_addr, ping_dest, (ex != null ? ex.toString() : "eof"));
             broadcastSuspectMessage(ping_dest);
             pingable_mbrs.remove(ping_dest);
         }

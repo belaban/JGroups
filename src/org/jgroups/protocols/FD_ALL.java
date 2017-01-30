@@ -362,7 +362,7 @@ public class FD_ALL extends Protocol {
         if(local_addr != null && !eligible_mbrs.isEmpty()) {
             Address first=eligible_mbrs.get(0);
             if(local_addr.equals(first)) {
-                log.debug("suspecting " + getSuspectedMembers());
+                log.warn("suspecting " + getSuspectedMembers());
                 for(Address suspect: suspects) {
                     up_prot.up(new Event(Event.SUSPECT, suspect));
                     down_prot.down(new Event(Event.SUSPECT, suspect));
