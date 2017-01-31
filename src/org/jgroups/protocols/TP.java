@@ -1333,6 +1333,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
         catch(Throwable t) {
             log.error("failure submitting task to thread pool", t);
+            msg_stats.incrNumRejectedMsgs(1);
             return false;
         }
         return true;
