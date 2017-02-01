@@ -1252,8 +1252,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected final class SenderEntry extends Entry {
         final AtomicLong       sent_msgs_seqno=new AtomicLong(DEFAULT_FIRST_SEQNO);   // seqno for msgs sent by us
-        protected final long[] watermark={0,0};   // the highest acked and highest sent seqno
-        protected int          last_timestamp; // to prevent out-of-order ACKs from a receiver
+        protected final long[] watermark={0,0}; // the highest acked and highest sent seqno
+        protected int          last_timestamp;  // to prevent out-of-order ACKs from a receiver
 
         public SenderEntry(short send_conn_id) {
             super(send_conn_id, new Table<>(xmit_table_num_rows, xmit_table_msgs_per_row, 0,
