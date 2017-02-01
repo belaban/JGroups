@@ -50,7 +50,24 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         super.testRegularMessageReceptionWithNullMessages();
     }
 
+    /** Same as above, but don't encrypt entire message, but just payload */
+    public void testRegularMessageReceptionWithNullMessagesEncryptOnlyPayload() throws Exception {
+        Stream.of(a,b,c).forEach(ch -> {
+            Encrypt encr=ch.getProtocolStack().findProtocol(Encrypt.class);
+            encr.encryptEntireMessage(false);
+        });
+        super.testRegularMessageReceptionWithNullMessages();
+    }
+
     public void testRegularMessageReceptionWithEmptyMessages() throws Exception {
+        super.testRegularMessageReceptionWithEmptyMessages();
+    }
+
+    public void testRegularMessageReceptionWithEmptyMessagesEncryptOnlyPayload() throws Exception {
+        Stream.of(a,b,c).forEach(ch -> {
+            Encrypt encr=ch.getProtocolStack().findProtocol(Encrypt.class);
+            encr.encryptEntireMessage(false);
+        });
         super.testRegularMessageReceptionWithEmptyMessages();
     }
 
