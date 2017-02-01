@@ -384,6 +384,10 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         last_sync_sent=new ExpiryCache<>(sync_min_interval);
 
         // max bundle size (minus overhead) divided by <long size> times bits per long
+        // Example: for 8000 missing messages, SeqnoList has a serialized size of 1012 bytes, for 64000 messages, the
+        // serialized size is 8012 bytes. Therefore, for a serialized size of 64000 bytes, we can retransmit a max of
+        // 8 * 64000 = 512'000 seqnos
+        // see SeqnoListTest.testSerialization3()
         int estimated_max_msgs_in_xmit_req=(transport.getMaxBundleSize() -50) * Global.LONG_SIZE;
         int old_max_xmit_size=max_xmit_req_size;
         if(max_xmit_req_size <= 0)
@@ -644,7 +648,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         do {
             try {
                 msg.putHeader(this.id,UnicastHeader3.createDataHeader(seqno,send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
-                entry.msgs.add(seqno, msg, dont_loopback_set? dont_loopback_filter : null);  // add *including* UnicastHeader, adds to retransmitter
+                // add *including* UnicastHeader, adds to retransmitter
+                entry.msgs.add(seqno, msg, dont_loopback_set? dont_loopback_filter : null);
                 if(conn_expiry_timeout > 0)
                     entry.update();
                 if(dont_loopback_set)
@@ -1339,8 +1344,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             if(win != null && val.sendAck()) // sendAck() resets send_ack to false
                 sendAck(target, win.getHighestDeliverable(), val.connId());
 
-            // receiver: retransmit missing messages
-            if(win != null && win.getNumMissing() > 0 && (missing=win.getMissing(max_xmit_req_size)) != null) { // getNumMissing() is fast
+            // receiver: retransmit missing messages (getNumMissing() is fast)
+            if(win != null && win.getNumMissing() > 0 && (missing=win.getMissing(max_xmit_req_size)) != null) {
                 long highest=missing.getLast();
                 Long prev_seqno=xmit_task_map.get(target);
                 if(prev_seqno == null)

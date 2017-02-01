@@ -137,6 +137,22 @@ public class SeqnoListTest {
         System.out.println("serialized_size = " + serialized_size);
     }
 
+    public void testSerialization3() {
+        int max_bundle_size=64000;
+        int estimated_max_msgs_in_xmit_req=(max_bundle_size -50) * Global.LONG_SIZE;
+
+        SeqnoList list=new SeqnoList(estimated_max_msgs_in_xmit_req);
+        for(int i=0; i < estimated_max_msgs_in_xmit_req; i++)
+            list.add(i);
+        System.out.println("list = " + list);
+        assert list.size() == estimated_max_msgs_in_xmit_req;
+        int serialized_size=list.serializedSize();
+        System.out.println("serialized_size = " + serialized_size);
+        assert serialized_size <= max_bundle_size;
+    }
+
+
+
     protected static void _testIteration(SeqnoList list, List<Long> expected) {
         System.out.println("list = " + list);
         assert list.size() == expected.size();
