@@ -127,6 +127,16 @@ public class SeqnoListTest {
         }
     }
 
+    public void testSerialization2() {
+        SeqnoList list=new SeqnoList(8000);
+        for(int i=0; i < 8000; i++)
+            list.add(i);
+        System.out.println("list = " + list);
+        assert list.size() == 8000;
+        int serialized_size=list.serializedSize();
+        System.out.println("serialized_size = " + serialized_size);
+    }
+
     protected static void _testIteration(SeqnoList list, List<Long> expected) {
         System.out.println("list = " + list);
         assert list.size() == expected.size();
