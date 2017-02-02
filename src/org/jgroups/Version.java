@@ -40,34 +40,36 @@ public class Version {
     private static final int     MINOR_MASK  = 0x0007c0; //      11111000000 bit mask
     private static final int     MICRO_MASK  = 0x00003f; //           111111 bit mask
 
-    public static final String  VERSION_FILE="JGROUPS_VERSION.properties";
-    public static final String  VERSION_PROPERTY = "jgroups.version";
-    private static final Pattern VERSION_REGEXP = Pattern.compile("((\\d+)\\.(\\d+)\\.(\\d+).*)");
+    public static final String   VERSION_FILE     = "JGROUPS_VERSION.properties";
+    public static final String   VERSION_PROPERTY = "jgroups.version";
+    public static final String   CODENAME         = "jgroups.codename";
+    private static final Pattern VERSION_REGEXP   = Pattern.compile("((\\d+)\\.(\\d+)\\.(\\d+).*)");
 
     
 
     static {
         Properties properties=new Properties();
-        String value=null;
+        String ver=null, codename="n/a";
         InputStream manifestAsStream=null;
         try {
             manifestAsStream=Util.getResourceAsStream(VERSION_FILE, Version.class);
             if(manifestAsStream == null)
                 throw new FileNotFoundException(VERSION_FILE);
             properties.load(manifestAsStream);
-            value=properties.getProperty(VERSION_PROPERTY);
-            if(value == null)
+            ver=properties.getProperty(VERSION_PROPERTY);
+            if(ver == null)
                 throw new Exception("value for " + VERSION_PROPERTY + " not found in " + VERSION_FILE);
+            codename=properties.getProperty(CODENAME, "n/a");
         } catch(Exception e) {
             throw new IllegalStateException("Could not initialize version", e);
         } finally {
             Util.close(manifestAsStream);
         }
 
-        Matcher versionMatcher = VERSION_REGEXP.matcher(value);
+        Matcher versionMatcher = VERSION_REGEXP.matcher(ver);
         versionMatcher.find();
 
-        description = value;
+        description = String.format("%s (%s)", ver, codename);
         major = Short.parseShort(versionMatcher.group(2));
         minor = Short.parseShort(versionMatcher.group(3));
         micro = Short.parseShort(versionMatcher.group(4));
