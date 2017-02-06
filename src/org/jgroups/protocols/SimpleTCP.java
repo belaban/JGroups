@@ -32,6 +32,15 @@ public class SimpleTCP extends TP {
     @Property(description="size in bytes of TCP send window")
     protected int send_buf_size=500000;
 
+    @Property(description="Size of the buffer of the BufferedInputStream in TcpConnection. A read always tries to read " +
+      "ahead as much data as possible into the buffer. 0: default size")
+    protected int buffered_input_stream_size=8192;
+
+    @Property(description="Size of the buffer of the BufferedOutputStream in TcpConnection. Smaller messages are " +
+      " buffered until this size is exceeded or flush() is called. Bigger messages are sent immediately. 0: default size")
+    protected int buffered_output_stream_size=8192;
+
+
     protected ServerSocket                        srv_sock;
     protected Acceptor                            acceptor;
     protected final Map<SocketAddress,Connection> connections=new ConcurrentHashMap<>();
@@ -238,8 +247,8 @@ public class SimpleTCP extends TP {
         public Connection(Socket sock) throws Exception {
             this.sock=sock;
             peer_addr=new IpAddress((InetSocketAddress)sock.getRemoteSocketAddress());
-            in=new DataInputStream(new BufferedInputStream(sock.getInputStream(), 64000));
-            out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream(), 64000));
+            in=new DataInputStream(createBufferedInputStream(sock.getInputStream()));
+            out=new DataOutputStream(createBufferedOutputStream(sock.getOutputStream()));
             runner=new Runner(new DefaultThreadFactory("tcp", false, true),
                               "conn-" + sock.getLocalPort(), this, null);
         }
@@ -287,6 +296,16 @@ public class SimpleTCP extends TP {
 
         public String toString() {
             return String.format("%s -> %s", sock.getLocalSocketAddress(), peer_addr);
+        }
+
+        protected BufferedOutputStream createBufferedOutputStream(OutputStream out) {
+            int size=buffered_output_stream_size;
+            return size == 0? new BufferedOutputStream(out) : new BufferedOutputStream(out, size);
+        }
+
+        protected BufferedInputStream createBufferedInputStream(InputStream in) {
+            int size=buffered_input_stream_size;
+            return size == 0? new BufferedInputStream(in) : new BufferedInputStream(in, size);
         }
     }
 
