@@ -11,6 +11,7 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -26,6 +27,7 @@ public class TcpConnection extends Connection {
     protected DataInputStream        in;
     protected volatile Receiver      receiver;
     protected final TcpBaseServer    server;
+    protected final AtomicInteger    writers=new AtomicInteger(0); // to determine the last writer to flush
 
     /** Creates a connection stub and binds it, use {@link #connect(Address)} to connect */
     public TcpConnection(Address peer_addr, TcpBaseServer server) throws Exception {
@@ -117,15 +119,20 @@ public class TcpConnection extends Connection {
      * @param length
      */
     public void send(byte[] data, int offset, int length) throws Exception {
+        if(out == null)
+            return;
+        writers.incrementAndGet();
         send_lock.lock();
         try {
-            doSend(data, offset, length, true, true);
+            doSend(data, offset, length);
             updateLastAccessed();
         }
         catch(InterruptedException iex) {
             Thread.currentThread().interrupt(); // set interrupt flag again
         }
         finally {
+            if(writers.decrementAndGet() == 0) // only the last active writer thread calls flush()
+                flush(); // won't throw an exception
             send_lock.unlock();
         }
     }
@@ -145,19 +152,17 @@ public class TcpConnection extends Connection {
     }
 
 
-    protected void doSend(byte[] data, int offset, int length, boolean acquire_lock, boolean flush) throws Exception {
-        if(out == null)
-            return;
+    protected void doSend(byte[] data, int offset, int length) throws Exception {
         out.writeInt(length); // write the length of the data buffer first
         out.write(data,offset,length);
-        if(!flush || (acquire_lock && send_lock.hasQueuedThreads()))
-            return; // don't flush as some of the waiting threads will do the flush, or flush is false
-        out.flush(); // may not be very efficient (but safe)
     }
 
-    protected void flush() throws Exception {
-        if(out != null)
+    protected void flush() {
+        try {
             out.flush();
+        }
+        catch(Throwable t) {
+        }
     }
 
     protected BufferedOutputStream createBufferedOutputStream(OutputStream out) {
