@@ -18,6 +18,14 @@ public class TcpServer extends TcpBaseServer {
     protected ServerSocket srv_sock;
     protected Thread       acceptor;
 
+    protected int buffered_inputstream_size;
+    protected int buffered_outputstream_size;
+
+
+    public int       getBufferedInputStreamSize()       {return buffered_inputstream_size;}
+    public TcpServer setBufferedInputStreamSize(int s)  {this.buffered_inputstream_size=s; return this;}
+    public int       getBufferedOutputStreamSize()      {return buffered_outputstream_size;}
+    public TcpServer setBufferedOutputStreamSize(int s) {this.buffered_outputstream_size=s; return this;}
 
 
     /**

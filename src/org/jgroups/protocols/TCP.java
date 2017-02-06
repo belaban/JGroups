@@ -5,6 +5,7 @@ import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.TcpServer;
 import org.jgroups.util.SocketFactory;
 
@@ -31,6 +32,14 @@ public class TCP extends BasicTCP {
     protected TcpServer server;
 
     public TCP() {}
+
+    @Property(description="Size of the buffer of the BufferedInputStream in TcpConnection. A read always tries to read " +
+      "ahead as much data as possible into the buffer. 0: default size")
+    protected int buffered_input_stream_size=8192;
+
+    @Property(description="Size of the buffer of the BufferedOutputStream in TcpConnection. Smaller messages are " +
+      " buffered until this size is exceeded or flush() is called. Bigger messages are sent immediately. 0: default size")
+    protected int buffered_output_stream_size=8192;
 
 
     @ManagedAttribute
@@ -73,7 +82,8 @@ public class TCP extends BasicTCP {
           .tcpNodelay(tcp_nodelay).linger(linger)
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
           .log(this.log);
-        server.peerAddressReadTimeout(peer_addr_read_timeout)
+        server.setBufferedInputStreamSize(buffered_input_stream_size).setBufferedOutputStreamSize(buffered_output_stream_size)
+          .peerAddressReadTimeout(peer_addr_read_timeout)
           .usePeerConnections(true)
           .socketFactory(getSocketFactory());
 
