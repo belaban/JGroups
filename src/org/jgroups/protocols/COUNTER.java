@@ -164,6 +164,9 @@ public class COUNTER extends Protocol {
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=evt.getArg();
                 break;
+            case Event.VIEW_CHANGE:
+                handleView(evt.arg());
+                break;
         }
         return down_prot.down(evt);
     }

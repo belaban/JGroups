@@ -117,7 +117,7 @@ public class ForkChannelTest {
     }
 
     public void testRefcount() throws Exception {
-        FORK fork=(FORK)a.getProtocolStack().findProtocol(FORK.class);
+        FORK fork=a.getProtocolStack().findProtocol(FORK.class);
         Protocol prot=fork.get("stack");
         assert prot == null;
         fc1=new ForkChannel(a, "stack", "fc1");
@@ -176,7 +176,7 @@ public class ForkChannelTest {
 
         assert p1.inits == 1 && p2.inits == 1;
 
-        FORK fork=(FORK)a.getProtocolStack().findProtocol(FORK.class);
+        FORK fork=a.getProtocolStack().findProtocol(FORK.class);
         Protocol prot=fork.get("stack");
         ForkProtocolStack fork_stack=(ForkProtocolStack)getProtStack(prot);
         int inits=fork_stack.getInits();
@@ -262,9 +262,10 @@ public class ForkChannelTest {
      * @throws Exception
      */
     public void testCounterService() throws Exception {
+        a.connect(CLUSTER);
         fc1=new ForkChannel(a, "stack", "fc1", false,ProtocolStack.Position.ABOVE, FORK.class, new COUNTER());
         fc2=new ForkChannel(a, "stack", "fc2", false,ProtocolStack.Position.ABOVE, FORK.class, new COUNTER());
-        a.connect(CLUSTER);
+
         fc1.connect("foo");
         fc2.connect("bar");
 
