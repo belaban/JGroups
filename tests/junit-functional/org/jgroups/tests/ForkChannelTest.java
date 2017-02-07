@@ -261,9 +261,10 @@ public class ForkChannelTest {
      * @throws Exception
      */
     public void testCounterService() throws Exception {
+        a.connect(CLUSTER);
         fc1=new ForkChannel(a, "stack", "fc1", false,ProtocolStack.ABOVE, FORK.class, new COUNTER());
         fc2=new ForkChannel(a, "stack", "fc2", false,ProtocolStack.ABOVE, FORK.class, new COUNTER());
-        a.connect(CLUSTER);
+
         fc1.connect("foo");
         fc2.connect("bar");
 
