@@ -712,7 +712,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         xmit_reqs_sent.addAndGet(missing.size());
     }
 
-    
+
     /**
      * Called by AgeOutCache, to removed expired connections
      * @param key
@@ -741,7 +741,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             sb.append(')');
             log.trace(sb);
         }
-        
+
         ReceiverEntry entry=getReceiverEntry(sender, seqno, first, conn_id);
         if(entry == null)
             return false;
@@ -766,7 +766,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 up_prot.up(evt);
             }
             catch(Throwable t) {
-                log.error("couldn't deliver OOB message " + msg, t);
+                log.error("couldn't deliver OOB message " + msg + ": " + t);
             }
         }
 
@@ -798,7 +798,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                         up_prot.up(new Event(Event.MSG, m));
                     }
                     catch(Throwable t) {
-                        log.error("couldn't deliver message " + m, t);
+                        log.error("couldn't deliver message " + m + ": " + t);
                     }
                 }
             }
@@ -887,7 +887,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     }
                     continue;
                 }
-                
+
                 down_prot.down(new Event(Event.MSG, msg));
                 xmit_rsps_sent.incrementAndGet();
             }
@@ -945,7 +945,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             xmit_task=null;
         }
     }
-    
+
 
 
     protected synchronized short getNewConnectionId() {
