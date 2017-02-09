@@ -684,9 +684,7 @@ Here's an example for public buckets with no credentials:
 [source,xml]
 ----
 
-<S3_PING location="my_bucket"
-         timeout="2000" num_initial_members="3"/>
-            
+<S3_PING location="my_bucket"/>
 ----
 
 And finally, here's an example for public readable buckets with pre-signed URLs:
@@ -698,7 +696,7 @@ And finally, here's an example for public readable buckets with pre-signed URLs:
 
 <S3_PING pre_signed_put_url="http://s3.amazonaws.com/my_bucket/DemoCluster/node1?AWSAccessKeyId=access_key&Expires=1316276200&Signature=it1cUUtgCT9ZJyCJDj2xTAcRTFg%3D"
          pre_signed_delete_url="http://s3.amazonaws.com/my_bucket/DemoCluster/node1?AWSAccessKeyId=access_key&Expires=1316276200&Signature=u4IFPRq%2FL6%2FAohykIW4QrKjR23g%3D"
-         timeout="2000" num_initial_members="3"/>
+         />
             
 ----
 
@@ -709,8 +707,7 @@ ${S3_PING}
 ==== AWS_PING
 
 This is a protocol written by Meltmedia, which uses the AWS API. It is not part of JGroups, but can be
-downloaded at link:$$http://meltmedia.github.io/jgroups-aws/$$[].
-
+downloaded at link:$$https://github.com/meltmedia/jgroups-aws$$[].
 
 ==== Native S3 PING
 
