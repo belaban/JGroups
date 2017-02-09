@@ -41,7 +41,7 @@ public class JDBC_PING extends FILE_PING {
     @Property(description = "The JDBC connection username", writable = false)
     protected String connection_username;
 
-    @Property(description = "The JDBC connection password", writable = false,exposeAsManagedAttribute=false)
+    @Property(description = "The JDBC connection password", writable = false, exposeAsManagedAttribute=false)
     protected String connection_password;
 
     @Property(description = "The JDBC connection driver name", writable = false)
@@ -84,21 +84,29 @@ public class JDBC_PING extends FILE_PING {
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    protected DataSource dataSourceFromJNDI;
+    protected DataSource dataSource;
 
 
     @Override protected void createRootDir() {
         ; // do *not* create root file system (don't remove !)
     }
 
+    public void setDataSource(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
     @Override
     public void init() throws Exception {
         super.init();
-        verifyconfigurationParameters();
-        if (stringIsEmpty(datasource_jndi_name))
-            loadDriver();
-        else
-            dataSourceFromJNDI = getDataSourceFromJNDI(datasource_jndi_name.trim());
+        verifyConfigurationParameters();
+        // If dataSource is already set, skip loading driver or JNDI lookup
+        if (dataSource == null) {
+            if (stringIsEmpty(datasource_jndi_name)) {
+                loadDriver();
+            } else {
+                dataSource = getDataSourceFromJNDI(datasource_jndi_name.trim());
+            }
+        }
         attemptSchemaInitialization();
     }
 
@@ -276,12 +284,12 @@ public class JDBC_PING extends FILE_PING {
             Class.forName(connection_driver);
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("JDBC Driver required for JDBC_PING "
-                        + "protocol could not be loaded: '" + connection_driver + "'");
+                        + " protocol could not be loaded: '" + connection_driver + "'");
         }
     }
 
     protected Connection getConnection() {
-        if (dataSourceFromJNDI == null) {
+        if (dataSource == null) {
             Connection connection;
             try {
                 connection = DriverManager.getConnection(connection_url, connection_username, connection_password);
@@ -296,7 +304,7 @@ public class JDBC_PING extends FILE_PING {
         }
         else {
             try {
-                return dataSourceFromJNDI.getConnection();
+                return dataSource.getConnection();
             } catch (SQLException e) {
                 log.error(Util.getMessage("CouldNotOpenConnectionToDatabase"), e);
                 return null;
@@ -394,19 +402,22 @@ public class JDBC_PING extends FILE_PING {
         }
     }
     
-    protected void verifyconfigurationParameters() {
-        if (stringIsEmpty(this.connection_url) ||
-          stringIsEmpty(this.connection_driver) ||
-          stringIsEmpty(this.connection_username) ) {
-            if (stringIsEmpty(this.datasource_jndi_name)) {
-                throw new IllegalArgumentException("Either the 4 configuration properties starting with 'connection_' or the datasource_jndi_name must be set");
+    protected void verifyConfigurationParameters() {
+        // Skip if datasource is already provided via integration code (e.g. WildFly)
+        if (dataSource == null) {
+            if (stringIsEmpty(this.connection_url) ||
+                    stringIsEmpty(this.connection_driver) ||
+                    stringIsEmpty(this.connection_username)) {
+                if (stringIsEmpty(this.datasource_jndi_name)) {
+                    throw new IllegalArgumentException("Either the 4 configuration properties starting with 'connection_' or the datasource_jndi_name must be set");
+                }
             }
-        }
-        if (stringNotEmpty(this.connection_url) ||
-          stringNotEmpty(this.connection_driver) ||
-          stringNotEmpty(this.connection_username) ) {
-            if (stringNotEmpty(this.datasource_jndi_name)) {
-                throw new IllegalArgumentException("When using the 'datasource_jndi_name' configuration property, all properties starting with 'connection_' must not be set");
+            if (stringNotEmpty(this.connection_url) ||
+                    stringNotEmpty(this.connection_driver) ||
+                    stringNotEmpty(this.connection_username)) {
+                if (stringNotEmpty(this.datasource_jndi_name)) {
+                    throw new IllegalArgumentException("When using the 'datasource_jndi_name' configuration property, all properties starting with 'connection_' must not be set");
+                }
             }
         }
         if (stringIsEmpty(this.insert_single_sql)) {
@@ -420,11 +431,11 @@ public class JDBC_PING extends FILE_PING {
         }
     }
     
-    private static final boolean stringIsEmpty(final String value) {
+    private static boolean stringIsEmpty(final String value) {
         return value == null || value.trim().isEmpty();
     }
     
-    private static final boolean stringNotEmpty(final String value) {
+    private static boolean stringNotEmpty(final String value) {
         return !stringIsEmpty(value);
     }
 
