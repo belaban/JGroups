@@ -7,9 +7,10 @@
 
 # Author: Bela Ban
 
+DIR=`dirname $0`
+DIST=$DIR/../dist/
+POM=$DIR/../pom.xml
 
-DIST=../dist
-POM=../pom.xml
 
 JAR=`find $DIST -name "jgroups-*.jar" | grep -v source`
 SRC_JAR=`find $DIST -name "jgroups-*.jar" | grep source`
