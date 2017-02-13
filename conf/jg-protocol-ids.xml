@@ -72,13 +72,13 @@
     <!-- FORK needs to have an ID > 200 in order for RELAY2 to copy it -->
     <class id="203" name="org.jgroups.protocols.FORK"/>
 
-    <!-- Reserved IDs for external classes: [500..1000] -->
+    <!-- Reserved IDs for external classes: [512..1023] -->
     <class id="520" name="org.jgroups.protocols.raft.ELECTION"    external="true"/>
     <class id="521" name="org.jgroups.protocols.raft.RAFT"        external="true"/>
     <class id="522" name="org.jgroups.protocols.raft.REDIRECT"    external="true"/>
     <class id="523" name="org.jgroups.protocols.raft.CLIENT"      external="true"/>
     <class id="530" name="org.jgroups.protocols.azure.AZURE_PING" external="true"/>
 
-    <!-- User-defined protocols should use IDs > 1000 -->
+    <!-- User-defined protocols should use IDs >= 1024 -->
 
 </protocol-ids>
