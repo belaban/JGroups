@@ -12,7 +12,6 @@
 
     <dependencies>
         <dependency org="biz.aQute.bnd"            name="bnd"                     rev="2.4+"/>
-        <dependency org="org.bouncycastle"         name="bcprov-jdk16"            rev="1.4+"/>
         <dependency org="org.jboss.byteman"        name="byteman"                 rev="3.+"/>
         <dependency org="org.jboss.byteman"        name="byteman-bmunit"          rev="3.+"/>
         <dependency org="org.jboss.byteman"        name="byteman-install"         rev="3.+"/>
