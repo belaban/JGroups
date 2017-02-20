@@ -38,7 +38,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected long    conn_expiry_timeout=(long) 60000 * 2;
 
     @Property(description="Time (in ms) until a connection marked to be closed will get removed. 0 disables this")
-    protected long    conn_close_timeout=10000;
+    protected long    conn_close_timeout=240_000; // 4 mins == TIME_WAIT timeout (= 2 * MSL)
 
     @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
     protected int     xmit_table_num_rows=100;
