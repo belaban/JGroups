@@ -7,21 +7,158 @@ Author: Bela Ban
 
 
 
+API changes
+===========
+[https://issues.jboss.org/browse/JGRP-1605]
+
+- Fluent configuration. Example:
+  JChannel ch=new JChannel("config.xml").name("A").connect("cluster");
+- Removed deprecated classes and methods
+
+
+Remove support for plain string-based channel configuration
+[https://issues.jboss.org/browse/JGRP-2019]
+
+
+Use of Java 8 features
+----------------------
+[https://issues.jboss.org/browse/JGRP-2007]
+
+E.g. replace Condition with Predicate etc
+
+
+Removed classes
+---------------
+- Shared transport [https://issues.jboss.org/browse/JGRP-1844]
+- TCP_NIO
+- UNICAST, UNICAST2
+- NAKACK
+- PEER_LOCK
+- FD_PING
+- MERGE2
+- FC
+- SCOPE
+- MuxRpcDispatcher
+- ENCRYPT
+
+
+MessageDispatcher / RpcDispatcher changes
+-----------------------------------------
+- [https://issues.jboss.org/browse/JGRP-1620]
+- Use of CompletableFuture instead of NotifyingFuture
+
+TCP: remove send queues
+-----------------------
+[https://issues.jboss.org/browse/JGRP-1994]
+
+
+
+
+
 
 New features
 ============
 
 
+Deliver message batches
+-----------------------
+[https://issues.jboss.org/browse/JGRP-2003]
 
-bla
------------------------------------------
-[]
+Receiver (ReceiverAdapter) now has an additional callback receive(MessageBatch batch). This allows JGroups
+to pass an entire batch of messages to the application rather than passing them up one by one.
+
+
+Refactored ENCRYPT into SYM_ENCRYPT and ASYM_ENCRYPT
+----------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2021]
+
+Plus fixed security issues in the refactored code. Removed ENCRYPT.
+
+
+Measure round-trip times for RPCs via probe
+-------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2049]
+
+Keys 'rpcs' and 'rpcs-details' dump information about average RTTs between individual cluster members
+
+
+Change message bundler at runtime
+---------------------------------
+[https://issues.jboss.org/browse/JGRP-2058]
+
+Message bundlers can be changed at runtime via probe. This is useful to see the effect of different
+bundlers on performance, even in the same test run.
+
+
+Probe
+-----
+
+- Sort attributes for better legibility: https://issues.jboss.org/browse/JGRP-2066
+- Removal of protocols via regular expressions
 
 
 
 
 Optimizations
 =============
+
+
+RpcDispatcher: don't copy the first anycast
+-------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2010]
+
+
+Reduction of memory size of classes
+-----------------------------------
+- Rsp (32 -> 24 bytes): https://issues.jboss.org/browse/JGRP-2011
+- Request: https://issues.jboss.org/browse/JGRP-2012
+
+
+Remove one buffer copy in COMPRESS
+[https://issues.jboss.org/browse/JGRP-2017]
+
+
+Replace Java serialization with JGroups marshalling
+---------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2033]
+
+Some internal classes still used Java serialization, which opens up security holes
+(google 'java serialization vulnerability').
+
+
+Faster marshalling / unmarshalling of messages
+----------------------------------------------
+- Writing of headers: [https://issues.jboss.org/browse/JGRP-2042]
+- Reading of headers: [https://issues.jboss.org/browse/JGRP-2043]
+
+
+TCP: reduce blocking
+--------------------
+[https://issues.jboss.org/browse/JGRP-2053]
+
+
+Message bundler improvements
+----------------------------
+[https://issues.jboss.org/browse/JGRP-2057]
+
+E.g. removal of SingletonAddress: not needed anymore as shared transports have been removed, too.
+
+
+Protocol: addition of up(Message) and down(Message) callbacks
+-------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2067]
+
+This massively reduces the number of Event creations.
+
+
+TransferQueueBundler: remove multiple messages
+----------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2076]
+
+Instead of removing messages one-by-one, the remover thread now removes as many messages as are in
+the queue (contention) into a local queue (no contention) and then creates and sends message batches off of
+the local queue.
+
 
 
 
@@ -31,17 +168,28 @@ Bug fixes
 =========
 
 
+GMS sometimes ignores view bundling timeout
+-------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2028]
+
+
+UFC and MFC headers get mixed up
+--------------------------------
+[https://issues.jboss.org/browse/JGRP-2072]
+
+Although indepent protocols, the protocol ID was assigned by the superclass, so replenish and credit messages
+would get mixed up, leading to stuttering in the sending of credits.
+
+
 
 Manual
 ======
 
-NOT YET AVAILABLE! Stay tuned and meanwhile read the src code...
-
-The manual is at http://www.jgroups.org/manual/index.html.
+The manual is at http://www.jgroups.org/manual4/index.html
 
 The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
 
 
 Bela Ban, Kreuzlingen, Switzerland
-Aug 2016
+March 2017
 
