@@ -97,6 +97,51 @@ Probe
 - Removal of protocols via regular expressions
 
 
+DELIVERY_TIME: new protocol to measure delivery time in the application
+-----------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2101]
+
+Exposes stats via JMX and probe
+
+
+RELAY2: sticky site masters
+---------------------------
+[https://issues.jboss.org/browse/JGRP-2112]
+
+When we have multiple site masters, messages from the same member should always be handled by the same
+site master. This prevents reordering of messages at the receiver.
+
+
+Multiple elements in bind_addr
+------------------------------
+[https://issues.jboss.org/browse/JGRP-2113]
+
+E.g.
+
+<TCP
+    bind_addr="match-interface:eth2,10.5.5.5,match-interface:en*,127.0.0.1"
+    ...
+ />
+
+This tries to bind to eth2 first, then to 10.5.5.5, then to an interface that starts with en0, and
+finally to loopback.
+Useful when running in an environment where the IP addresses and/or interfaces are not known before.
+
+
+Multiple receiver threads in UDP
+--------------------------------
+[https://issues.jboss.org/browse/JGRP-2146]
+
+Multiple threads can receive (and process) messages from a datagram socket, preventing queue buildups.
+
+
+
+FRAG3
+-----
+[https://issues.jboss.org/browse/JGRP-2154]
+
+
+
 
 
 Optimizations
@@ -160,6 +205,82 @@ the queue (contention) into a local queue (no contention) and then creates and s
 the local queue.
 
 
+Single thread pool
+------------------
+[https://issues.jboss.org/browse/JGRP-2099]
+
+There's only a single thread pool for all typs of messages, reducing the maintenance overhead of 4 thread pools
+and the configuration required.
+The internal thread pool is still available (size to the number of cores), but not configurable.
+A ForkJoinPool can be used instead of the thread pool (which can be disabled as well).
+
+
+Timer: tasks can indicate that they will not block
+--------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2100]
+
+If a task calls execute() with an argument blocking==false, the task will be executed by the timer's main thread,
+and not be passed on to the timer's thread pool. This reduces the number of threads needed and therefore the
+number of context switches.
+
+
+Headers are resized unnecessarily
+---------------------------------
+[https://issues.jboss.org/browse/JGRP-2120]
+
+
+ByteArrayDataOutputStream: expand more conservatively
+-----------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2124]
+
+
+Reading ints and longs creates unnecessary buffers
+--------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2125]
+
+Ints and longs are read into a byte[] array first, then parsed. This was changed to read the values and add them
+to the resulting ints or longs.
+Should reduce overall memory allocation as ints and longs are used a lot in headers.
+
+
+Table.removeMan() creates unneeded temp list
+--------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2126]
+
+This method is used a lot in NAKACK2 and UNICAST3. The change was to read messages directly into the resulting
+MessageBatch instead of a temp list and from there into the batch.
+
+
+Reduce in-memory size of UnicastHeader3
+---------------------------------------
+[https://issues.jboss.org/browse/JGRP-2127]
+
+Reduced size from 40 -> 32 bytes.
+
+
+Cache result of log.isTraceEnabled()
+------------------------------------
+[https://issues.jboss.org/browse/JGRP-2130]
+
+This was done mainly for protocols where log.isTraceEnabled() was used a lot, such as TP, NAKACK2 or UNICAST3.
+Note that the log level can still be changed at runtime.
+
+
+Added MessageProcessingPolicy to define assigning of threads to messages or batches
+-----------------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2143]
+
+This only applies only to regular (not OOB or internal) messages. Make sure that only one message per member is
+processed at a given time by the thread pool.
+This reduces the number of threads needed.
+
+
+UNICAST3 / NAKACK2: more efficient adding and removing of messages / batches to/from tables
+-------------------------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2150]
+
+Simpler algorithm and removal of one lock (= less contention)
+
 
 
 
@@ -179,6 +300,56 @@ UFC and MFC headers get mixed up
 
 Although indepent protocols, the protocol ID was assigned by the superclass, so replenish and credit messages
 would get mixed up, leading to stuttering in the sending of credits.
+
+
+Flow control: replenish credits after message delivery
+------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2084]
+
+
+MERGE3: merge is never triggered
+--------------------------------
+[https://issues.jboss.org/browse/JGRP-2092]
+
+This is an edge case that was not covered before: every subgroup coordinator has some other member as coord:
+A: BAC
+B: CAB
+C: ABC
+
+
+
+MPING: restart fails
+--------------------
+[https://issues.jboss.org/browse/JGRP-2116]
+
+
+
+UNICAST3 drops all messages until it receives one with first==true
+------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2131]
+
+This caused a bug in ASYM_ENCRYPT.
+
+
+ASYM_ENCRYPT: message batches are not handled correctly
+-------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2149]
+
+
+SYM_ENCRYPT: allow for other keystores besides JCEKS
+----------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2151]
+
+E.g. pcks#12 or jks
+
+
+ASYM_ENCRYPT encrypts an empty buffer into a null buffer
+--------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-2153]
+
+This caused an NPE.
+
+
 
 
 
