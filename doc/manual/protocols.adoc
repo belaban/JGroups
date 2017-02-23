@@ -145,6 +145,9 @@ match-address:: Pick an address which matches a pattern against the host address
 
 match-host:: Pick an address which matches a pattern against the host name,
              e.g. +match-host:linux.\*+
+
+custom:: Use custom code to pick the bind address. The value after `custom` needs to be the fully qualified name
+         of a class implementing `Supplier<InetAddress>`, e.g. bind_addr="custom:com.acme.BindAddressPicker".
                     
 An example of setting the bind address in UDP to use a site local address is:
         

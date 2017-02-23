@@ -13,6 +13,7 @@ import java.net.*;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
 /**
  * Groups a set of standard PropertyConverter(s) supplied by JGroups.
@@ -317,13 +318,10 @@ public final class PropertyConverters {
             else {
                 if(value.startsWith("match"))
                     retval=Util.getAddressByPatternMatch(value);
-                else {
+                else if(value.startsWith("custom:"))
+                    retval=getAddressByCustomCode(value.substring("custom:".length()));
+                else
                     retval=InetAddress.getByName(value);
-                    //if(retval != null && !retval.isMulticastAddress())
-                      //  Util.checkIfValidAddress(retval, null);
-                    if(retval != null)
-                        return retval;
-                }
             }
 
             if(retval instanceof Inet4Address && retval.isMulticastAddress() && Util.getIpStackType() == StackType.IPv6) {
@@ -332,6 +330,12 @@ public final class PropertyConverters {
                 return retval;
             }
             return retval;
+        }
+
+        protected static InetAddress getAddressByCustomCode(String value) throws Exception {
+            Class<Supplier<InetAddress>> clazz=(Class<Supplier<InetAddress>>)Util.loadClass(value, (ClassLoader)null);
+            Supplier<InetAddress> supplier=clazz.newInstance();
+            return supplier.get();
         }
 
         protected static Inet6Address getScopedInetAddress(Inet6Address addr) {
