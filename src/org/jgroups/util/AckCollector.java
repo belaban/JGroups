@@ -42,6 +42,22 @@ public class AckCollector {
         all_acks_received.reset();
     }
 
+    public synchronized AckCollector reset(Collection<Address> expected_acks, Collection<Address> exclude) {
+        suspected_mbrs.clear();
+        missing_acks.clear();
+        addAll(expected_acks, exclude);
+        all_acks_received.reset();
+        return this;
+    }
+
+    public synchronized AckCollector reset(Collection<Address> expected_acks, Address ... exclude) {
+        suspected_mbrs.clear();
+        missing_acks.clear();
+        addAll(expected_acks, exclude);
+        all_acks_received.reset();
+        return this;
+    }
+
     public synchronized void destroy() {
         suspected_mbrs.clear();
         missing_acks.clear();
@@ -119,6 +135,24 @@ public class AckCollector {
         if(members == null)
             return;
         members.stream().filter(member -> member != null && !missing_acks.contains(member)).forEach(missing_acks::add);
+        expected_acks=missing_acks.size();
+    }
+
+    protected synchronized void addAll(Collection<Address> members, Collection<Address> exclude) {
+        if(members == null)
+            return;
+        members.stream()
+          .filter(member -> member != null && !missing_acks.contains(member) && (exclude != null && !exclude.contains(member)))
+          .forEach(missing_acks::add);
+        expected_acks=missing_acks.size();
+    }
+
+    protected synchronized void addAll(Collection<Address> members, Address ... exclude) {
+        if(members == null)
+            return;
+        members.stream()
+          .filter(member -> member != null && !missing_acks.contains(member) && (exclude != null && !Util.contains(member, exclude)))
+          .forEach(missing_acks::add);
         expected_acks=missing_acks.size();
     }
 }

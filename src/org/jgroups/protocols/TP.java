@@ -1129,7 +1129,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected void loopback(Message msg, final boolean multicast) {
         final Message copy=loopback_copy? msg.copy() : msg;
         if(is_trace)
-            log.trace("%s: looping back message %s", local_addr, copy);
+            log.trace("%s: looping back message %s, headers are %s", local_addr, copy, copy.printHeaders());
 
         if(!loopback_separate_thread) {
             passMessageUp(copy, null, false, multicast, false);

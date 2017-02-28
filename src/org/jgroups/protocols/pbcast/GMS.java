@@ -24,6 +24,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import static org.jgroups.Message.Flag.INTERNAL;
+import static org.jgroups.Message.Flag.OOB;
+
 
 /**
  * Group membership protocol. Handles joins/leaves/crashes (suspicions) and
@@ -101,9 +104,11 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @Property(description="Logs warnings for reception of views less than the current, and for views which don't include self")
     protected boolean log_view_warnings=true;
 
+    /** @deprecated true by default */
     @Property(description="Whether or not to install a new view locally first before broadcasting it " +
-      "(only done in coord role). Set to true if a state transfer protocol is detected")
-    protected boolean install_view_locally_first=false;
+      "(only done at the coord ). Set to true automatically if a state transfer protocol is detected")
+    @Deprecated
+    protected boolean install_view_locally_first=true; // https://issues.jboss.org/browse/JGRP-1751
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
@@ -389,9 +394,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     public void start() throws Exception {
         if(impl != null) impl.start();
-        Protocol state_transfer_prot=stack.findProtocol(STATE_TRANSFER.class, StreamingStateTransfer.class);
-        if(state_transfer_prot != null)
-            install_view_locally_first=true;
     }
 
     public void stop() {
@@ -557,20 +559,23 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
     /**
-     * Broadcasts the new view and digest as a VIEW message and waits for acks from existing members
+     * Broadcasts the new view and digest as VIEW messages, possibly sends JOIN-RSP messages to joiners and then
+     * waits for acks from expected_acks
+     * @param new_view the new view ({@link View} or {@link MergeView})
+     * @param digest the digest, can be null if new_view is not a MergeView
+     * @param expected_acks the members from which to wait for VIEW_ACKs (self will be excluded)
+     * @param joiners the list of members to which to send the join response (jr). If null, no JOIN_RSPs will be sent
+     * @param jr the {@link JoinRsp}. If null (or joiners is null), no JOIN_RSPs will be sent
      */
-    public void castViewChange(View new_view, Digest digest, Collection<Address> newMembers) {
-        log.trace("%s: mcasting view %s (%d mbrs)\n", local_addr, new_view, new_view.size());
+    public void castViewChangeAndSendJoinRsps(View new_view, Digest digest, Collection<Address> expected_acks,
+                                              Collection<Address> joiners, JoinRsp jr) {
+        log.trace("%s: mcasting view %s", local_addr, new_view);
 
         // Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
         // in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
         // Check NAKACK's TMP_VIEW handling for details
         up_prot.up(new Event(Event.TMP_VIEW, new_view));
         down_prot.down(new Event(Event.TMP_VIEW, new_view));
-
-        List<Address> ackMembers=new ArrayList<>(new_view.getMembers());
-        if(newMembers != null && !newMembers.isEmpty())
-            ackMembers.removeAll(newMembers);
 
         View full_view=new_view;
         if(use_delta_views && view != null && !(new_view instanceof MergeView)) {
@@ -580,63 +585,53 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 new_view=createDeltaView(view, new_view);
         }
 
-        // bcast to all members
         Message view_change_msg=new Message().putHeader(this.id, new GmsHeader(GmsHeader.VIEW))
-          .setBuffer(marshal(new_view, digest));
-
-        // Bypasses SEQUENCER, prevents having to forward a merge view to a remote coordinator
-        // (https://issues.jboss.org/browse/JGRP-1484)
-        if(new_view instanceof MergeView)
+          .setBuffer(marshal(new_view, digest)).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
+        if(new_view instanceof MergeView) // https://issues.jboss.org/browse/JGRP-1484
             view_change_msg.setFlag(Message.Flag.NO_TOTAL_ORDER);
 
-        if(install_view_locally_first)
-            ackMembers.remove(local_addr); // remove self, as we'll install the view locally
-
-        if(!ackMembers.isEmpty())
-            ack_collector.reset(ackMembers);
-
-        if(install_view_locally_first)
-            impl.handleViewChange(full_view, digest); // install the view locally first
-
+        ack_collector.reset(expected_acks, local_addr); // exclude self, as we'll install the view locally
+        long start=System.currentTimeMillis();
+        impl.handleViewChange(full_view, digest); // install the view locally first
         down_prot.down(view_change_msg);
+        sendJoinResponses(jr, joiners);
         try {
-            if(!ackMembers.isEmpty()) {
+            if(ack_collector.size() > 0) {
                 ack_collector.waitForAllAcks(view_ack_collection_timeout);
-                log.trace("%s: got all ACKs (%d) from members for view %s", local_addr, ack_collector.expectedAcks(), new_view.getViewId());
+                log.trace("%s: got all ACKs (%d) for view %s in %d ms",
+                          local_addr, ack_collector.expectedAcks(), new_view.getViewId(), System.currentTimeMillis()-start);
             }
         }
         catch(TimeoutException e) {
-            if(log_collect_msgs)
+            if(log_collect_msgs);
                 log.warn("%s: failed to collect all ACKs (expected=%d) for view %s after %dms, missing %d ACKs from %s",
                          local_addr, ack_collector.expectedAcks(), new_view.getViewId(), view_ack_collection_timeout,
                          ack_collector.size(), ack_collector.printMissing());
         }
     }
 
-    public void sendJoinResponses(JoinRsp jr, Collection<Address> newMembers) {
-        if(jr != null && newMembers != null && !newMembers.isEmpty()) {
-            final ViewId view_id=jr.getView().getViewId();
-            ack_collector.reset(new ArrayList<>(newMembers));
-            for(Address joiner: newMembers) {
-                log.trace("%s: sending join-rsp to %s: view=%s (%d mbrs)\n", local_addr, joiner, jr.getView(), jr.getView().size());
-                sendJoinResponse(jr, joiner);
-            }
-            try {
-                ack_collector.waitForAllAcks(view_ack_collection_timeout);
-                log.trace("%s: got all ACKs (%d) from joiners for view %s", local_addr, ack_collector.expectedAcks(), view_id);
-            }
-            catch(TimeoutException e) {
-                if(log_collect_msgs)
-                    log.warn("%s: failed to collect all ACKs (expected=%d) for unicast view %s after %dms, missing %d ACKs from %s",
-                             local_addr, ack_collector.expectedAcks(), view_id, view_ack_collection_timeout,
-                             ack_collector.size(), ack_collector.printMissing());
-            }
+
+
+    protected void sendJoinResponses(JoinRsp jr, Collection<Address> joiners) {
+        if(jr == null || joiners == null || joiners.isEmpty())
+            return;
+
+        Buffer marshalled_jr=marshal(jr);
+        for(Address joiner: joiners) {
+            log.trace("%s: sending join-rsp to %s: view=%s (%d mbrs)", local_addr, joiner, jr.getView(), jr.getView().size());
+            sendJoinResponse(marshalled_jr, joiner);
         }
     }
 
     public void sendJoinResponse(JoinRsp rsp, Address dest) {
         Message m=new Message(dest).putHeader(this.id, new GmsHeader(GmsHeader.JOIN_RSP))
-          .setBuffer(marshal(rsp)).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL);
+          .setBuffer(marshal(rsp)).setFlag(OOB, INTERNAL);
+        getDownProtocol().down(m);
+    }
+
+    protected void sendJoinResponse(Buffer marshalled_rsp, Address dest) {
+        Message m=new Message(dest, marshalled_rsp).putHeader(this.id, new GmsHeader(GmsHeader.JOIN_RSP))
+          .setFlag(OOB, INTERNAL);
         getDownProtocol().down(m);
     }
 
@@ -910,6 +905,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                     catch(Throwable t) {
                         if(view != null)
                             log.warn("%s: failed to create view from delta-view; dropping view: %s", local_addr, t.toString());
+                        log.trace("%s: sending request for full view to %s", local_addr, msg.src());
+                        Message full_view_req=new Message(msg.src())
+                          .putHeader(id, new GmsHeader(GmsHeader.GET_CURRENT_VIEW)).setFlag(OOB, INTERNAL);
+                        down_prot.down(full_view_req);
                         return null;
                     }
                 }
@@ -989,7 +988,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 Digest digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST, local_addr));
                 if(digest != null) {
                     Message get_digest_rsp=new Message(msg.getSrc())
-                      .setFlag(Message.Flag.OOB,Message.Flag.INTERNAL)
+                      .setFlag(OOB, Message.Flag.INTERNAL)
                       .putHeader(this.id, new GmsHeader(GmsHeader.GET_DIGEST_RSP))
                       .setBuffer(marshal(null, digest));
                     down_prot.down(get_digest_rsp);
@@ -1013,8 +1012,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         return null; // my view-id doesn't differ from sender's view-id; no need to send view
                 }
                 // either my view-id differs from sender's view-id, or sender's view-id is null: send view
+                log.trace("%s: received request for full view from %s, sending view %s", local_addr, msg.src(), view);
                 Message view_msg=new Message(msg.getSrc()).putHeader(id,new GmsHeader(GmsHeader.VIEW))
-                  .setBuffer(marshal(view, null)).setFlag(Message.Flag.OOB,Message.Flag.INTERNAL);
+                  .setBuffer(marshal(view, null)).setFlag(OOB, Message.Flag.INTERNAL);
                 down_prot.down(view_msg);
                 break;
 
@@ -1089,7 +1089,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 if(coord != null) {
                     ViewId view_id=view != null? view.getViewId() : null;
                     Message msg=new Message(coord).putHeader(id, new GmsHeader(GmsHeader.GET_CURRENT_VIEW))
-                      .setBuffer(marshal(view_id)).setFlag(Message.Flag.OOB,Message.Flag.INTERNAL);
+                      .setBuffer(marshal(view_id)).setFlag(OOB, Message.Flag.INTERNAL);
                     down_prot.down(msg);
                 }
                 return null; // don't pass the event further down
@@ -1122,7 +1122,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
     private void sendViewAck(Address dest) {
-        Message view_ack=new Message(dest).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+        Message view_ack=new Message(dest).setFlag(OOB, INTERNAL)
           .putHeader(this.id, new GmsHeader(GmsHeader.VIEW_ACK));
         down_prot.down(view_ack);
     }

@@ -238,10 +238,9 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
     void sendJoinMessage(Address coord, Address mbr,boolean joinWithTransfer, boolean useFlushIfPresent) {
-        Message msg=new Message(coord).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL);
-        GMS.GmsHeader hdr=joinWithTransfer? new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER, mbr,useFlushIfPresent)
-          : new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, mbr,useFlushIfPresent);
-        msg.putHeader(gms.getId(), hdr);
+        byte type=joinWithTransfer? GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER : GMS.GmsHeader.JOIN_REQ;
+        GMS.GmsHeader hdr=new GMS.GmsHeader(type, mbr, useFlushIfPresent);
+        Message msg=new Message(coord).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL).putHeader(gms.getId(), hdr);
         gms.getDownProtocol().down(msg);
     }
 

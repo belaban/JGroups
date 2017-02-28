@@ -139,14 +139,13 @@ public class TimeSchedulerTest {
 
             Util.sleep(500); // wait until task has executed
             future.cancel(true);
-            int size=timer.size();
-            assert size == 1 : " timer size should be 1, but is " + size;
 
             int num_executions=task.getNumExecutions();
             System.out.println("number of task executions=" + num_executions);
             assert num_executions >= 1 : "task should have executed at least 1 time, as it was cancelled after 500ms";
             Util.sleep(1000);
-            assert timer.size() == 0 : " timer size should be 0, but is " + size;
+            int size=timer.size();
+            assert size == 0 : " timer size should be 0, but is " + size;
         }
         finally {
             timer.stop();

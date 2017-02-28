@@ -141,11 +141,9 @@ public class Merger {
 
         // only send to our *current* members, if we have A and B being merged (we are B), then we would *not*
         // want to block on a VIEW_ACK from A because A doesn't see us in the pre-merge view yet and discards the view
-        List<Address> newViewMembers=new ArrayList<>(data.view.getMembers());
-        newViewMembers.removeAll(gms.members.getMembers());
-
+        List<Address> expected_acks=gms.members.getMembers();
         try {
-            gms.castViewChange(data.view, data.digest, newViewMembers);
+            gms.castViewChangeAndSendJoinRsps(data.view, data.digest, expected_acks, null, null);
             // if we have flush in stack send ack back to merge coordinator
             if(gms.flushProtocolInStack) { //[JGRP-700] - FLUSH: flushing should span merge
                 Message ack=new Message(data.getSender()).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)

@@ -34,11 +34,9 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
 
     // the total number of the messages pumped down the channel
     private static final int msgCount=20000;
-    // the message payload size (in bytes);
-    private static final int payloadSize=32;
     // the time (in ms) the main thread waits for all the messages to arrive,
     // before declaring the test failed.
-    private static final int mainTimeout=60000;
+    private static final int mainTimeout=20000;
     GossipRouter             gossipRouter;
     private int              gossip_router_port;
     private String           gossip_router_hosts;
@@ -110,8 +108,8 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
         // stress send messages - the sender thread
         new Thread(() -> {
             try {
-                for(int i=0; i < msgCount; i++) {
-                    channel.send(null, new byte[payloadSize]);
+                for(int i=1; i <= msgCount; i++) {
+                    channel.send(null, i);
                     if(i % 2000 == 0)
                         System.out.println("-- sent " + i);
                 }

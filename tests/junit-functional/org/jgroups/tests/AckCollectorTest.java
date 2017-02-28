@@ -23,6 +23,41 @@ public class AckCollectorTest {
     final List<Address> list=Arrays.asList(one, two, three, four, five);
 
 
+    public void testAddAll() {
+        AckCollector coll=new AckCollector();
+        coll.reset(Arrays.asList(one,two,three,four), Collections.singletonList(five));
+        System.out.println("coll = " + coll);
+        assert coll.size() == 4;
+
+        Stream.of(one,two,three,four).forEach(coll::ack);
+        System.out.println("coll = " + coll);
+        assert coll.size() == 0;
+
+        coll.reset(Collections.singletonList(one), Collections.singletonList(one));
+        System.out.println("coll = " + coll);
+        assert coll.size() == 0;
+        boolean rc=coll.waitForAllAcks();
+        assert rc;
+    }
+
+
+    public void testAddAll2() {
+        AckCollector coll=new AckCollector();
+        coll.reset(Arrays.asList(one,two,three,four), five);
+        System.out.println("coll = " + coll);
+        assert coll.size() == 4;
+
+        Stream.of(one,two,three,four).forEach(coll::ack);
+        System.out.println("coll = " + coll);
+        assert coll.size() == 0;
+
+        coll.reset(Collections.singletonList(one), one);
+        System.out.println("coll = " + coll);
+        assert coll.size() == 0;
+        boolean rc=coll.waitForAllAcks();
+        assert rc;
+    }
+
     public void testConstructor() {
         AckCollector ac=new AckCollector(list);
         System.out.println("AckCollector is " + ac);
@@ -32,15 +67,13 @@ public class AckCollectorTest {
 
     public void testWaitForAllAcksNoTimeout() {
         final AckCollector ac=new AckCollector(list);
-        new Thread() {
-            public void run() {
-                for(Address member: list) {
-                    Util.sleep(100);
-                    ac.ack(member);
-                    System.out.println("AckCollector: " + ac);
-                }
+        new Thread(() -> {
+            for(Address member: list) {
+                Util.sleep(100);
+                ac.ack(member);
+                System.out.println("AckCollector: " + ac);
             }
-        }.start();
+        }).start();
         ac.waitForAllAcks();
         Assert.assertEquals(0, ac.size());
     }
@@ -53,15 +86,13 @@ public class AckCollectorTest {
 
     public void testWaitForAllAcksWithTimeout() {
         final AckCollector ac=new AckCollector(list);
-        new Thread() {
-            public void run() {
-                for(Address member: list) {
-                    Util.sleep(100);
-                    ac.ack(member);
-                    System.out.println("AckCollector: " + ac);
-                }
+        new Thread(() -> {
+            for(Address member: list) {
+                Util.sleep(100);
+                ac.ack(member);
+                System.out.println("AckCollector: " + ac);
             }
-        }.start();
+        }).start();
         try {
             ac.waitForAllAcks(30000);
             assert true : "we should not get a timeout exception here";
@@ -76,15 +107,13 @@ public class AckCollectorTest {
     @Test(expectedExceptions=TimeoutException.class)
     public void testWaitForAllAcksWithTimeoutException2() throws TimeoutException {
         final AckCollector ac=new AckCollector(list);
-        new Thread() {
-            public void run() {
-                for(Address member: list) {
-                    Util.sleep(100);
-                    ac.ack(member);
-                    System.out.println("AckCollector: " + ac);
-                }
+        new Thread(() -> {
+            for(Address member: list) {
+                Util.sleep(100);
+                ac.ack(member);
+                System.out.println("AckCollector: " + ac);
             }
-        }.start();
+        }).start();
         ac.waitForAllAcks(10);
     }
 
@@ -94,14 +123,12 @@ public class AckCollectorTest {
         final Address six=Util.createRandomAddress("six"), seven=Util.createRandomAddress("seven"),
           eight=Util.createRandomAddress("eight");
         final List<Address> new_list=Arrays.asList(six, seven, eight);
-        new Thread() {
-            public void run() {
-                Util.sleep(500);
-                System.out.println("resetting AckCollector");
-                ac.reset(new_list);
-                System.out.println("reset AckCollector: " + ac);
-            }
-        }.start();
+        new Thread(() -> {
+            Util.sleep(500);
+            System.out.println("resetting AckCollector");
+            ac.reset(new_list);
+            System.out.println("reset AckCollector: " + ac);
+        }).start();
         System.out.println("initial AckCollector: " + ac);
         ac.waitForAllAcks(1000);
         System.out.println("new AckCollector: " + ac);
@@ -114,23 +141,21 @@ public class AckCollectorTest {
           eight=Util.createRandomAddress("eight");
         final List<Address> new_list=Arrays.asList(six, seven, eight);
 
-        new Thread() {
-            public void run() {
-                Util.sleep(500);
-                System.out.println("resetting AckCollector");
-                ac.reset(new_list);
-                System.out.println("reset AckCollector: " + ac);
-                Util.sleep(100);
-                ac.ack(six);
-                System.out.println("AckCollector: " + ac);
-                Util.sleep(100);
-                ac.ack(seven);
-                System.out.println("AckCollector: " + ac);
-                Util.sleep(100);
-                ac.ack(eight);
-                System.out.println("AckCollector: " + ac);
-            }
-        }.start();
+        new Thread(() -> {
+            Util.sleep(500);
+            System.out.println("resetting AckCollector");
+            ac.reset(new_list);
+            System.out.println("reset AckCollector: " + ac);
+            Util.sleep(100);
+            ac.ack(six);
+            System.out.println("AckCollector: " + ac);
+            Util.sleep(100);
+            ac.ack(seven);
+            System.out.println("AckCollector: " + ac);
+            Util.sleep(100);
+            ac.ack(eight);
+            System.out.println("AckCollector: " + ac);
+        }).start();
         System.out.println("initial AckCollector: " + ac);
         ac.waitForAllAcks(30000);
         System.out.println("new AckCollector: " + ac);
@@ -150,12 +175,10 @@ public class AckCollectorTest {
         final AckCollector ac=new AckCollector(tmp_list);
         System.out.println("ac = " + ac);
         assert ac.size() == 5;
-        Thread thread=new Thread() {
-            public void run() {
-                Util.sleep(2000);
-                ac.destroy();
-            }
-        };
+        Thread thread=new Thread(() -> {
+            Util.sleep(2000);
+            ac.destroy();
+        });
         thread.start();
         boolean result=ac.waitForAllAcks(10000);
         System.out.println("result = " + result);
@@ -191,14 +214,12 @@ public class AckCollectorTest {
         System.out.println("ac=" + ac);
         assert ac.size() == 3;
 
-        new Thread() {
-            public void run() {
-                Util.sleep(1000);
-                ac.suspect(two);
-                Util.sleep(500);
-                ac.ack(three); ac.ack(one);
-            }
-        }.start();
+        new Thread(() -> {
+            Util.sleep(1000);
+            ac.suspect(two);
+            Util.sleep(500);
+            ac.ack(three); ac.ack(one);
+        }).start();
 
         boolean received_all=ac.waitForAllAcks(30000);
         System.out.println("ac = " + ac);
@@ -213,13 +234,11 @@ public class AckCollectorTest {
         ac.suspect(four);
         System.out.println("ac = " + ac);
 
-        new Thread() {
-            public void run() {
-                Util.sleep(1000);
-                ac.retainAll(Collections.singletonList(five));
-                System.out.println("ac=" + ac);
-            }
-        }.start();
+        new Thread(() -> {
+            Util.sleep(1000);
+            ac.retainAll(Collections.singletonList(five));
+            System.out.println("ac=" + ac);
+        }).start();
 
         boolean received_all=ac.waitForAllAcks(30000);
         System.out.println("ac = " + ac);

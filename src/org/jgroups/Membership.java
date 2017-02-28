@@ -15,8 +15,8 @@ import java.util.*;
  * @author Bela Ban
  */
 public class Membership {
-    /* private vector to hold all the addresses */
-    private final List<Address> members=new LinkedList<>();
+    /* holds all addresses */
+    protected final List<Address> members=new LinkedList<>();
 
     
    /**
