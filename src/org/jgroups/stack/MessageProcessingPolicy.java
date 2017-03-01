@@ -19,7 +19,7 @@ public interface MessageProcessingPolicy {
     /** To reset stats */
     default void reset() {}
 
-    /** Called before the transport is destroyed */
+    /** Called before the transport is stopped */
     default void destroy() {}
 
     /**

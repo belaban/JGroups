@@ -44,6 +44,11 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         resize=max_buffer_size == 0;
     }
 
+    public void destroy() {
+        mcasts.clear();
+        ucasts.clear();
+    }
+
     public void loopback(Message msg, boolean oob, boolean internal) {
         if(oob || internal) {
             super.loopback(msg, oob, internal);
@@ -94,6 +99,8 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             }
             return entry;
         }
+
+        protected void clear() {map.clear();}
 
         protected void process(Message msg, boolean loopback) {
             Address dest=msg.dest(), sender=msg.src();

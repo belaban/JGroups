@@ -5,11 +5,14 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.MyReceiver;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
+
+import java.util.List;
 
 
 /**
@@ -79,6 +82,44 @@ public class ConnectTest extends ChannelTestBase {
         assert view.size() == 2;
         assert view.containsMember(channel.getAddress());
         assert view.containsMember(coordinator.getAddress());
+    }
+
+
+    public void testDisconnectConnectndMessageSending() throws Exception {
+        coordinator=createChannel(true, 2).name("A");
+        channel=createChannel(coordinator, "B");
+        coordinator.connect("ConnectTest");
+        channel.connect("ConnectTest");
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, coordinator, channel);
+
+        MyReceiver<Integer> receiver=new MyReceiver<>();
+        channel.setReceiver(receiver);
+
+        for(int i=1; i <= 5; i++) {
+            coordinator.send(new Message(channel.getAddress(), i));
+            coordinator.send(new Message(null, i+5));
+        }
+        List<Integer> list=receiver.list();
+        Util.waitUntilListHasSize(list, 10, 5000, 500);
+        System.out.println("list = " + list);
+
+        list.clear();
+        //for(JChannel ch: Arrays.asList(coordinator, channel))
+            //ch.getProtocolStack().findProtocol(UNICAST3.class).setLevel("trace");
+        channel.disconnect();
+
+
+        channel.connect("ConnectTest");
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, coordinator, channel);
+
+
+
+        for(int i=1; i <= 5; i++) {
+            coordinator.send(new Message(channel.getAddress(), i));
+            coordinator.send(new Message(null, i+5));
+        }
+        Util.waitUntilListHasSize(list, 10, 5000, 500);
+        System.out.println("list = " + list);
     }
 
 

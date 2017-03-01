@@ -949,6 +949,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             bundler.stop();
             bundler=null;
         }
+        if(msg_processing_policy != null)
+            msg_processing_policy.destroy();
     }
 
     @ManagedOperation(description="Enables diagnostics and starts DiagnosticsHandler (if not running)")
