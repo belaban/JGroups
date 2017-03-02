@@ -9,6 +9,7 @@ import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -86,7 +87,7 @@ public abstract class BaseBundler implements Bundler {
     }
 
     @GuardedBy("lock") protected void clearMessages() {
-        msgs.values().stream().filter(list -> list != null).forEach(List::clear);
+        msgs.values().stream().filter(Objects::nonNull).forEach(List::clear);
     }
 
 
@@ -98,7 +99,7 @@ public abstract class BaseBundler implements Bundler {
             if(transport.statsEnabled())
                 transport.incrNumSingleMsgsSent(1);
         }
-        catch(SocketException sock_ex) {
+        catch(SocketException | SocketTimeoutException sock_ex) {
             log.trace(Util.getMessage("SendFailure"),
                       transport.localAddress(), (dest == null? "cluster" : dest), msg.size(), sock_ex.toString(), msg.printHeaders());
         }
@@ -115,7 +116,7 @@ public abstract class BaseBundler implements Bundler {
             Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, output, dest == null, transport.getId());
             transport.doSend(output.buffer(), 0, output.position(), dest);
         }
-        catch(SocketException sock_ex) {
+        catch(SocketException | SocketTimeoutException sock_ex) {
             log.debug(Util.getMessage("FailureSendingMsgBundle"), transport.localAddress(),sock_ex);
         }
         catch(Throwable e) {
@@ -125,11 +126,7 @@ public abstract class BaseBundler implements Bundler {
 
     @GuardedBy("lock") protected void addMessage(Message msg, long size) {
         Address dest=msg.getDest();
-        List<Message> tmp=msgs.get(dest);
-        if(tmp == null) {
-            tmp=new ArrayList<>(5);
-            msgs.put(dest, tmp);
-        }
+        List<Message> tmp=msgs.computeIfAbsent(dest, k -> new ArrayList<>(5));
         tmp.add(msg);
         count+=size;
     }

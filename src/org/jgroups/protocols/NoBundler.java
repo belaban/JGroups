@@ -7,6 +7,7 @@ import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 
 /**
  * Bundler which doesn't bundle :-) Can be used to measure the diff between bundling and non-bundling (e.g. at runtime)
@@ -42,7 +43,7 @@ public class NoBundler implements Bundler {
             if(transport.statsEnabled())
                 transport.incrNumSingleMsgsSent(1);
         }
-        catch(SocketException sock_ex) {
+        catch(SocketException | SocketTimeoutException sock_ex) {
             log.trace(Util.getMessage("SendFailure"),
                       transport.localAddress(), (dest == null? "cluster" : dest), msg.size(), sock_ex.toString(), msg.printHeaders());
         }
