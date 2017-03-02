@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Replacement for UDP. Instead of sending packets via UDP, a TCP connection is opened to a Router
@@ -179,6 +180,8 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         switch (data.getType()) {
             case MESSAGE:
                 byte[] msg=data.getBuffer();
+                if(Objects.equals(local_addr, data.getSender()))
+                    return;
                 receive(data.getSender(), msg, 0, msg.length);
                 break;
             case SUSPECT:

@@ -1,7 +1,9 @@
 package org.jgroups.protocols;
 
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.util.Util;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Stream;
@@ -76,5 +78,20 @@ public class MsgStats {
           .forEach(LongAdder::reset);
         Stream.of(num_rejected_msgs,num_threads_spawned).forEach(ai -> ai.set(0));
         return this;
+    }
+
+    public String toString() {
+        StringBuilder sb=new StringBuilder();
+        Field[] fields=MsgStats.class.getDeclaredFields();
+        for(Field field: fields) {
+            try {
+                Object val=Util.getField(field, this);
+                sb.append(field.getName()).append(": ").append(val).append("\n");
+            }
+            catch(Throwable t) {
+
+            }
+        }
+        return sb.toString();
     }
 }
