@@ -110,7 +110,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property(description="Time (in ms) after which entries in the logical address cache marked as removable " +
       "can be removed. 0 never removes any entries (not recommended)")
-    protected long logical_addr_cache_expiration=120000;
+    protected long logical_addr_cache_expiration=360000;
 
     @Property(description="Interval (in ms) at which the reaper task scans logical_addr_cache and removes entries " +
       "marked as removable. 0 disables reaping.")
