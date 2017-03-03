@@ -134,12 +134,6 @@
             <version>[3,)</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk16</artifactId>
-            <version>[1.4,)</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
     <build>
         <sourceDirectory>src</sourceDirectory>
