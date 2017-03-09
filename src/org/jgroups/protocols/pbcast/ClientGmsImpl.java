@@ -57,10 +57,6 @@ public class ClientGmsImpl extends GmsImpl {
      * Otherwise, we continue trying to send join() messages to the coordinator,
      * until we succeed (or there is no member in the group. In this case, we
      * create our own singleton group).
-     * <p>
-     * When GMS.disable_initial_coord is set to true, then we won't become
-     * coordinator on receiving an initial membership of 0, but instead will
-     * retry (forever) until we get an initial membership of > 0.
      *
      * @param mbr Our own address (assigned through SET_LOCAL_ADDRESS)
      */
