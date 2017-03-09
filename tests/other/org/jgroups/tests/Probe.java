@@ -9,13 +9,11 @@ import java.util.*;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * Date: Jun 2, 2003
- * Time: 4:35:29 PM
  */
 public class Probe {
-    MulticastSocket mcast_sock;
-    volatile boolean running=true;
-    final Set<String> senders=new HashSet<>();
+    protected MulticastSocket     mcast_sock;
+    protected volatile boolean    running=true;
+    protected final Set<String>   senders=new HashSet<>();
 
 
     public Probe() {
@@ -41,13 +39,11 @@ public class Probe {
                 sendRequest(addr, bind_addr, port, ttl, query, passcode);
         }
 
-        new Thread() {
-            public void run() {
-                Util.sleep(timeout);
-                mcast_sock.close();
-                running=false;
-            }
-        }.start();
+        new Thread(() -> {
+            Util.sleep(timeout);
+            mcast_sock.close();
+            running=false;
+        }).start();
 
         int matched=0, not_matched=0, count=0;
         String response;
@@ -85,14 +81,13 @@ public class Probe {
         DatagramPacket probe=new DatagramPacket(payload, 0, payload.length, addr, port);
         sock.send(probe);
 
-        new Thread() {
-            public void run() {
-                Util.sleep(timeout);
-                sock.close();
-            }
-        }.start();
+        new Thread(() -> {
+            Util.sleep(timeout);
+            sock.close();
+        }).start();
 
         Collection<InetAddress> retval=new ArrayList<>();
+        final String ADDRS="addrs=";
         long end_time=System.currentTimeMillis() + timeout;
         while(System.currentTimeMillis() < end_time) {
             byte[] buf=new byte[70000];
@@ -106,13 +101,14 @@ public class Probe {
 
             byte[] data=rsp.getData();
             String response=new String(data, 0, rsp.getLength());
-            if(response != null && response.startsWith("addrs=")) {
-                response=response.substring("addrs=".length()).trim();
+            int index=-1;
+            if(response != null && (index=response.indexOf(ADDRS)) >= 0) {
+                response=response.substring(index + ADDRS.length()).trim();
                 List<String> rsps=Util.parseStringList(response,",");
                 for(String tmp: rsps) {
-                    int index=tmp.indexOf(':');
-                    if(index != -1)
-                        tmp=tmp.substring(0, index);
+                    int index2=tmp.indexOf(':');
+                    if(index2 != -1)
+                        tmp=tmp.substring(0, index2);
                     retval.add(InetAddress.getByName(tmp));
                 }
                 return retval;
@@ -247,7 +243,7 @@ public class Probe {
             if(addrs.isEmpty()) {
                 StackType stack_type=Util.getIpStackType();
                 boolean ipv6=stack_type == StackType.IPv6;
-                InetAddress addr=ipv6? InetAddress.getByName(DEFAULT_DIAG_ADDR_IPv6) : InetAddress.getByName(DEFAULT_DIAG_ADDR);
+                InetAddress addr=InetAddress.getByName(ipv6? DEFAULT_DIAG_ADDR_IPv6 : DEFAULT_DIAG_ADDR);
                 addrs.add(addr);
             }
             if(port == 0)
