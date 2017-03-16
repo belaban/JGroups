@@ -77,7 +77,7 @@ public class Probe {
     protected static Collection<InetAddress> getPhysicalAddresses(InetAddress addr, InetAddress bind_addr,
                                                                   int port, final long timeout) throws Exception {
         final DatagramSocket sock=new DatagramSocket(new InetSocketAddress(bind_addr, 0));
-        byte[] payload="addrs".getBytes();
+        byte[] payload="member-addrs".getBytes();
         DatagramPacket probe=new DatagramPacket(payload, 0, payload.length, addr, port);
         sock.send(probe);
 
@@ -86,8 +86,6 @@ public class Probe {
             sock.close();
         }).start();
 
-        Collection<InetAddress> retval=new ArrayList<>();
-        final String ADDRS="addrs=";
         long end_time=System.currentTimeMillis() + timeout;
         while(System.currentTimeMillis() < end_time) {
             byte[] buf=new byte[70000];
@@ -101,21 +99,34 @@ public class Probe {
 
             byte[] data=rsp.getData();
             String response=new String(data, 0, rsp.getLength());
-            int index=-1;
-            if(response != null && (index=response.indexOf(ADDRS)) >= 0) {
-                response=response.substring(index + ADDRS.length()).trim();
-                List<String> rsps=Util.parseStringList(response,",");
-                for(String tmp: rsps) {
-                    int index2=tmp.indexOf(':');
-                    if(index2 != -1)
-                        tmp=tmp.substring(0, index2);
-                    retval.add(InetAddress.getByName(tmp));
-                }
+            Collection<InetAddress> retval=parseAddresses(response);
+            if(retval != null && !retval.isEmpty())
                 return retval;
+        }
+        return null;
+    }
+
+    protected static Collection<InetAddress> parseAddresses(String input) throws Exception {
+        final String ADDRS="member-addrs=";
+        Collection<InetAddress> retval=new ArrayList<>();
+        int start_index=-1, end_index=-1;
+        if(input != null && (start_index=input.indexOf(ADDRS)) >= 0) {
+            input=input.substring(start_index + ADDRS.length()).trim();
+            end_index=input.indexOf('\n');
+            if(end_index > 0)
+                input=input.substring(0, end_index);
+            List<String> rsps=Util.parseStringList(input,",");
+            for(String tmp: rsps) {
+                int index2=tmp.lastIndexOf(':');
+                if(index2 != -1)
+                    tmp=tmp.substring(0, index2);
+                retval.add(InetAddress.getByName(tmp));
             }
         }
         return retval;
     }
+
+
 
 
     protected void sendRequest(InetAddress addr, InetAddress bind_addr, int port, int ttl,
@@ -147,7 +158,7 @@ public class Probe {
 
         DatagramPacket probe=new DatagramPacket(payload, 0, payload.length, addr, port);
         mcast_sock.send(probe);
-        System.out.println("\n-- sending probe on " + addr + ':' + port + '\n');
+        System.out.printf("-- sending probe request to %s:%d\n", addr, port);
     }
 
     private boolean checkDuplicateResponse(String response) {

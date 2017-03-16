@@ -1019,7 +1019,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     }
                     retval.put(key, sb.toString());
                     break;
-                case "addrs":
+                case "member-addrs":
                     Set<PhysicalAddress> physical_addrs=logical_addr_cache.nonRemovedValues();
                     String list=Util.print(physical_addrs);
                     retval.put(key, list);
@@ -1030,7 +1030,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     public String[] supportedKeys() {
-        return new String[]{"dump", "keys", "uuids", "addrs"};
+        return new String[]{"dump", "keys", "uuids", "member-addrs"};
     }
 
 
