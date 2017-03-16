@@ -48,7 +48,7 @@ public class DELIVERY_TIME extends Protocol {
         finally {
             long time=Util.micros()-start;
             if(batch_size > 1)
-                time/=batch.size();
+                time/=batch_size; // cannot use batch.size() as message might have been removed from the batch!
             delivery_times.add(time);
         }
     }
