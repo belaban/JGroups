@@ -28,7 +28,7 @@ public class Probe {
             boolean unicast_dest=addr != null && !addr.isMulticastAddress();
             if(unicast_dest) {
                 Collection<InetAddress> targets=getPhysicalAddresses(addr, bind_addr, port, timeout);
-                if(targets.isEmpty()) {
+                if(targets == null || targets.isEmpty()) {
                     System.err.println("Found no valid hosts - terminating");
                     return;
                 }
