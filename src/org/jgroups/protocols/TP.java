@@ -289,11 +289,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     @ManagedAttribute(description="Returns the average batch size of received batches")
-    public double getAvgBatchSize() {
-        return avg_batch_size.getAverage();
+    public String getAvgBatchSize() {
+        return avg_batch_size.toString();
     }
 
-    public Average avgBatchSize() {return avg_batch_size;}
+    public AverageMinMax avgBatchSize() {return avg_batch_size;}
 
 
     public TP setThreadPoolMinThreads(int size) {
@@ -489,7 +489,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected Future<?> logical_addr_cache_reaper;
 
-    protected final Average avg_batch_size=new Average();
+    protected final AverageMinMax avg_batch_size=new AverageMinMax();
 
     protected static final LazyRemovalCache.Printable<Address,LazyRemovalCache.Entry<PhysicalAddress>> print_function
       =(logical_addr, entry) -> {
