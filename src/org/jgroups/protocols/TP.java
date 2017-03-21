@@ -2280,7 +2280,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 header=new TpHeader(cluster_name);
 
                 // local_addr is null when shared transport
-                setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
+                setInAllThreadFactories(cluster_name.toString(), local_addr, thread_naming_pattern);
                 setThreadNames();
                 connectLock.lock();
                 try {
@@ -2526,7 +2526,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(local_addr != null)
                 factory.setAddress(local_addr.toString());
             if(cluster_name != null)
-                factory.setClusterName(cluster_name != null? cluster_name.toString() : null);
+                factory.setClusterName(cluster_name.toString());
         }
 
         @ManagedAttribute(description="Name of the cluster to which this adapter proxies")
