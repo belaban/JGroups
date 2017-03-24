@@ -1,13 +1,16 @@
 package org.jgroups.demos;
 
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.blocks.cs.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Bits;
 import org.jgroups.util.Util;
 
+import java.io.DataInput;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 
@@ -50,6 +53,14 @@ public class PubServer extends ReceiverAdapter {
         catch(Exception ex) {
             log.error("failed publishing message", ex);
         }
+    }
+
+    public void receive(Address sender, DataInput in) throws Exception {
+        int len=in.readInt();
+        byte[] buf=new byte[len + Global.INT_SIZE];
+        Bits.writeInt(len, buf, 0);
+        in.readFully(buf, Global.INT_SIZE, len);
+        server.send(null, buf, 0, buf.length);
     }
 
     public static void main(String[] args) throws Exception {

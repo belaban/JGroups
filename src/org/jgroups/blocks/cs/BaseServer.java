@@ -12,6 +12,7 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.util.*;
 
 import java.io.Closeable;
+import java.io.DataInput;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
@@ -165,6 +166,15 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             this.receiver.receive(sender, buf);
     }
 
+    public void receive(Address sender, DataInput in, int len) throws Exception {
+        if(this.receiver != null)
+            this.receiver.receive(sender, in);
+        else {
+            // discard len bytes (in.skip() is not guaranteed to discard *all* len bytes)
+            byte[] buf=new byte[len];
+            in.readFully(buf, 0, len);
+        }
+    }
 
 
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {

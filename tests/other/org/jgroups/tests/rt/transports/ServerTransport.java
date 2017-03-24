@@ -1,13 +1,16 @@
 package org.jgroups.tests.rt.transports;
 
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.blocks.cs.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
+import org.jgroups.util.Bits;
 import org.jgroups.util.Util;
 
+import java.io.DataInput;
 import java.net.InetAddress;
 import java.util.List;
 
@@ -91,11 +94,25 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
     }
 
     public void send(Object dest, byte[] buf, int offset, int length) throws Exception {
-        srv.send((Address)dest, buf, offset, length);
+        byte[] buffer=new byte[length+Global.INT_SIZE];
+        Bits.writeInt(length, buffer, 0);
+        System.arraycopy(buf, 0, buffer, Global.INT_SIZE, length);
+        srv.send((Address)dest, buffer, 0, buffer.length);
     }
 
     public void receive(Address sender, byte[] buf, int offset, int length) {
-        if(receiver != null)
-            receiver.receive(sender, buf, offset, length);
+        if(receiver != null) {
+            int len=Bits.readInt(buf, offset);
+            receiver.receive(sender, buf, offset+ Global.INT_SIZE, len);
+        }
+    }
+
+    public void receive(Address sender, DataInput in) throws Exception {
+        if(receiver == null)
+            return;
+        int len=in.readInt();
+        byte[] buf=new byte[len];
+        in.readFully(buf);
+        receiver.receive(sender, buf, 0, buf.length);
     }
 }

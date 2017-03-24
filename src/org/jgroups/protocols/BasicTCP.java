@@ -77,8 +77,6 @@ public abstract class BasicTCP extends TP implements Receiver {
     public void     setReaperInterval(long interval) {this.reaper_interval=interval;}
     public long     getConnExpireTime()              {return conn_expire_time;}
     public void     setConnExpireTime(long time)     {this.conn_expire_time=time;}
-    // public boolean  getReuseAddress()                {return this.reuse_addr;}
-    // public BasicTCP setReuseAddress(boolean b)       {this.reuse_addr=b; return this;}
 
 
     public void init() throws Exception {
@@ -122,11 +120,6 @@ public abstract class BasicTCP extends TP implements Receiver {
     public abstract void send(Address dest, byte[] data, int offset, int length) throws Exception;
 
     public abstract void retainAll(Collection<Address> members);
-
-    /** BaseServer.Receiver interface */
-    public void receive(Address sender, byte[] data, int offset, int length) {
-        super.receive(sender, data, offset, length);
-    }
 
     public void receive(Address sender, ByteBuffer buf) {
         Util.bufferToArray(sender, buf, this);

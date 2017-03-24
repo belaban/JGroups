@@ -286,12 +286,9 @@ public class TcpConnection extends Connection {
             Throwable t=null;
             while(canRun()) {
                 try {
-                    int len=in.readInt();
-                    if(buffer == null || buffer.length < len)
-                        buffer=new byte[len];
-                    in.readFully(buffer, 0, len);
+                    int len=in.readInt(); // needed to read messages from TCP_NIO2
+                    server.receive(peer_addr, in, len);
                     updateLastAccessed();
-                    server.receive(peer_addr, buffer, 0, len);
                 }
                 catch(OutOfMemoryError mem_ex) {
                     t=mem_ex;

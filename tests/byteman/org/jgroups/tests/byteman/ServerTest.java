@@ -8,12 +8,14 @@ import org.jgroups.blocks.cs.BaseServer;
 import org.jgroups.blocks.cs.TcpServer;
 import org.jgroups.blocks.cs.NioServer;
 import org.jgroups.blocks.cs.ReceiverAdapter;
+import org.jgroups.util.Bits;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.DataInput;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +52,6 @@ public class ServerTest extends BMNGRunner {
         return new Object[][] {
           {create(false, PORT_A), create(false, PORT_B)},
           {create(true, PORT_A), create(true, PORT_B)}
-
         };
     }
 
@@ -83,26 +84,22 @@ public class ServerTest extends BMNGRunner {
 
     public void testSimpleSend(BaseServer a, BaseServer b) throws Exception {
         setup(a,b);
-        byte[] data=STRING_A.getBytes();
-        a.send(B, data, 0, data.length);
-        check(receiver_b.getList(), STRING_A);
+        send(STRING_A, a, B);
     }
 
 
     /**
      * Tests A connecting to B, and then B connecting to A; no concurrent connections
      */
-    // @Test(dataProvider="configProvider",invocationCount=5)
     public void testSimpleConnection(BaseServer first, BaseServer second) throws Exception {
         setup(first,second);
-        byte[] buf="hello".getBytes();
-        a.send(B, buf, 0, buf.length);
+        send("hello", a, B);
         waitForOpenConns(1, a, b);
         assert a.getNumOpenConnections() == 1 : "number of connections for conn_a: " + a.getNumOpenConnections();
         assert b.getNumOpenConnections() == 1 : "number of connections for conn_b: " + b.getNumOpenConnections();
         check(receiver_b.getList(),"hello");
 
-        b.send(A, buf, 0, buf.length);
+        send("hello", b, A);
         waitForOpenConns(1, a, b);
         assert a.getNumOpenConnections() == 1 : "number of connections for conn_a: " + a.getNumOpenConnections();
         assert b.getNumOpenConnections() == 1 : "number of connections for conn_b: " + b.getNumOpenConnections();
@@ -191,6 +188,19 @@ public class ServerTest extends BMNGRunner {
         }
     }
 
+    protected static void send(String str, BaseServer server, Address dest) {
+        byte[] request=str.getBytes();
+        byte[] data=new byte[request.length + Global.INT_SIZE];
+        Bits.writeInt(request.length, data, 0);
+        System.arraycopy(request, 0, data, Global.INT_SIZE, request.length);
+        try {
+            server.send(dest, data, 0, data.length);
+        }
+        catch(Exception e) {
+            System.err.println("Failed sending a request to " + dest + ": " + e);
+        }
+    }
+
 
     protected static class Sender implements Runnable {
         protected final BaseServer server;
@@ -205,13 +215,7 @@ public class ServerTest extends BMNGRunner {
         }
 
         public void run() {
-            byte[] request=req_to_send.getBytes();
-            try {
-                server.send(dest, request, 0, request.length);
-            }
-            catch(Exception e) {
-                System.err.println("Failed sending a request to " + dest + ": " + e);
-            }
+            send(req_to_send, server, dest);
         }
     }
 
@@ -227,7 +231,17 @@ public class ServerTest extends BMNGRunner {
         public void         clear()   {reqs.clear();}
 
         public void receive(Address sender, byte[] data, int offset, int length) {
-            String str=new String(data, offset, length);
+            int len=Bits.readInt(data, offset);
+            String str=new String(data, offset+Global.INT_SIZE, len);
+            System.out.println("[" + name + "] received request \"" + str + "\" from " + sender);
+            reqs.add(str);
+        }
+
+        public void receive(Address sender, DataInput in) throws Exception {
+            int len=in.readInt();
+            byte[] data=new byte[len];
+            in.readFully(data, 0, data.length);
+            String str=new String(data, 0, data.length);
             System.out.println("[" + name + "] received request \"" + str + "\" from " + sender);
             reqs.add(str);
         }

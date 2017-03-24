@@ -14,6 +14,7 @@ import org.jgroups.util.*;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.UUID;
 
+import java.io.DataInput;
 import java.io.InterruptedIOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
@@ -1240,26 +1241,43 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(Objects.equals(local_physical_addr, sender))
             return;
 
-        byte flags=data[Global.SHORT_SIZE];
-        boolean is_message_list=(flags & LIST) == LIST;
+        short version=Bits.readShort(data, offset);
+        if(!versionMatch(version, sender))
+            return;
+        offset+=Global.SHORT_SIZE;
+        byte flags=data[offset];
+        offset+=Global.BYTE_SIZE;
 
+        boolean is_message_list=(flags & LIST) == LIST, multicast=(flags & MULTICAST) == MULTICAST;
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(data, offset, length);
         if(is_message_list) // used if message bundling is enabled
-            handleMessageBatch(sender, data, offset, length);
+            handleMessageBatch(in, multicast);
         else
-            handleSingleMessage(sender, data, offset, length);
+            handleSingleMessage(in, multicast);
+    }
+
+    public void receive(Address sender, DataInput in) throws Exception {
+        if(in == null) return;
+
+        // drop message from self; it has already been looped back up (https://issues.jboss.org/browse/JGRP-1765)
+        if(Objects.equals(local_physical_addr, sender))
+            return;
+
+        short version=in.readShort();
+        if(!versionMatch(version, sender))
+            return;
+        byte flags=in.readByte();
+
+        boolean is_message_list=(flags & LIST) == LIST, multicast=(flags & MULTICAST) == MULTICAST;
+        if(is_message_list) // used if message bundling is enabled
+            handleMessageBatch(in, multicast);
+        else
+            handleSingleMessage(in, multicast);
     }
 
 
-    protected void handleMessageBatch(Address sender, byte[] data, int offset, int length) {
+    protected void handleMessageBatch(DataInput in, boolean multicast) {
         try {
-            ByteArrayDataInputStream in=new ByteArrayDataInputStream(data, offset, length);
-            short version=in.readShort();
-            if(!versionMatch(version, sender))
-                return;
-
-            byte flags=in.readByte();
-            final boolean multicast=(flags & MULTICAST) == MULTICAST;
-
             final MessageBatch[] batches=Util.readMessageBatch(in, multicast);
             final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch_oob=batches[2], internal_batch=batches[3];
 
@@ -1274,25 +1292,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-    protected void processBatch(MessageBatch batch, boolean oob, boolean internal) {
+    protected void handleSingleMessage(DataInput in, boolean multicast) {
         try {
-            if(batch != null && !batch.isEmpty())
-                msg_processing_policy.process(batch, oob, internal);
-        }
-        catch(Throwable t) {
-            log.error("processing batch failed", t);
-        }
-    }
-
-    protected void handleSingleMessage(Address sender, byte[] data, int offset, int length) {
-        try {
-            ByteArrayDataInputStream in=new ByteArrayDataInputStream(data, offset, length);
-            short version=in.readShort();
-            if(!versionMatch(version, sender))
-                return;
-
-            byte flags=in.readByte();
-            final boolean multicast=(flags & MULTICAST) == MULTICAST;
             Message msg=new Message(false); // don't create headers, readFrom() will do this
             msg.readFrom(in);
 
@@ -1304,6 +1305,16 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
         catch(Throwable t) {
             log.error(String.format(Util.getMessage("IncomingMsgFailure"), local_addr), t);
+        }
+    }
+
+    protected void processBatch(MessageBatch batch, boolean oob, boolean internal) {
+        try {
+            if(batch != null && !batch.isEmpty())
+                msg_processing_policy.process(batch, oob, internal);
+        }
+        catch(Throwable t) {
+            log.error("processing batch failed", t);
         }
     }
 

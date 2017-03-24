@@ -17,7 +17,7 @@ import java.util.List;
 
 
 /**
- * Encapsulates data sent between GossipRouter and GossipClient
+ * Encapsulates data sent between GossipRouter and RouterStub (TCPGOSSIP and TUNNEL)
  * @author Bela Ban Oct 4 2001
  */
 public class GossipData implements SizeStreamable {
@@ -88,12 +88,11 @@ public class GossipData implements SizeStreamable {
         this.ping_data=mbrs;
     }
 
-    public GossipData addPingData(PingData data) {
+    public void addPingData(PingData data) {
         if(ping_data == null)
             ping_data=new ArrayList<>();
         if(data != null)
             ping_data.add(data);
-        return this;
     }
 
 
@@ -162,7 +161,13 @@ public class GossipData implements SizeStreamable {
     }
 
     public void readFrom(DataInput in) throws Exception {
-        type=GossipType.values()[in.readByte()];
+        readFrom(in, true);
+    }
+
+
+    protected void readFrom(DataInput in, boolean read_type) throws Exception {
+        if(read_type)
+            type=GossipType.values()[in.readByte()];
         group=Bits.readString(in);
         addr=Util.readAddress(in);
         sender=Util.readAddress(in);
@@ -187,6 +192,7 @@ public class GossipData implements SizeStreamable {
             in.readFully(buffer, offset=0, length);
         }
     }
+
 
 
 }

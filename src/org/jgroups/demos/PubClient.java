@@ -1,10 +1,13 @@
 package org.jgroups.demos;
 
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.blocks.cs.*;
+import org.jgroups.util.Bits;
 import org.jgroups.util.Util;
 
 import java.io.BufferedInputStream;
+import java.io.DataInput;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
@@ -28,16 +31,26 @@ public class PubClient extends ReceiverAdapter implements ConnectionListener {
 
     @Override
     public void receive(Address sender, ByteBuffer buf) {
-        String msg=new String(buf.array(), buf.arrayOffset(), buf.limit());
+        byte[] buffer=buf.array();
+        int len=Bits.readInt(buffer, buf.arrayOffset());
+        String msg=new String(buffer, buf.arrayOffset()+Global.INT_SIZE, len);
         System.out.printf("-- %s\n", msg);
     }
 
     @Override
     public void receive(Address sender, byte[] buf, int offset, int length) {
-        String msg=new String(buf, offset, length);
+        int len=Bits.readInt(buf, offset);
+        String msg=new String(buf, offset+Global.INT_SIZE, len);
         System.out.printf("-- %s\n", msg);
     }
 
+    @Override public void receive(Address sender, DataInput in) throws Exception {
+        int len=in.readInt();
+        byte[] buf=new byte[len];
+        in.readFully(buf);
+        String msg=new String(buf, 0, buf.length);
+        System.out.printf("-- %s\n", msg);
+    }
 
     @Override
     public void connectionClosed(Connection conn, String cause) {
@@ -58,8 +71,7 @@ public class PubClient extends ReceiverAdapter implements ConnectionListener {
         client.receiver(this);
         client.addConnectionListener(this);
         client.start();
-        byte[] buf=String.format("%s joined\n", name).getBytes();
-        ((Client)client).send(buf, 0, buf.length);
+        send(String.format("%s joined", name));
         eventLoop();
         client.stop();
     }
@@ -75,14 +87,21 @@ public class PubClient extends ReceiverAdapter implements ConnectionListener {
                 if(line.startsWith("quit") || line.startsWith("exit")) {
                     break;
                 }
-                byte[] buf=String.format("%s: %s\n", name, line).getBytes();
-                ((Client)client).send(buf, 0, buf.length);
+                send(String.format("%s: %s", name, line));
             }
             catch(Exception e) {
                 e.printStackTrace();
                 break;
             }
         }
+    }
+
+    protected void send(String str) throws Exception {
+        byte[] buf=str.getBytes();
+        byte[] data=new byte[Global.INT_SIZE + buf.length];
+        Bits.writeInt(buf.length, data, 0);
+        System.arraycopy(buf, 0, data, Global.INT_SIZE, buf.length);
+        ((Client)client).send(data, 0, data.length);
     }
 
     public static void main(String[] args) throws Exception {

@@ -8,12 +8,14 @@ import org.jgroups.blocks.cs.BaseServer;
 import org.jgroups.blocks.cs.NioServer;
 import org.jgroups.blocks.cs.ReceiverAdapter;
 import org.jgroups.blocks.cs.TcpServer;
+import org.jgroups.util.Bits;
 import org.jgroups.util.CondVar;
 import org.jgroups.util.Condition;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.io.DataInput;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
@@ -52,7 +54,7 @@ public class ServerUnitTest {
                 byte[] data=new byte[0];
                 Address myself=a.localAddress();
                 a.receiver(new ReceiverAdapter() {});
-                a.send(myself, data, 0, data.length);
+                send(data, a, myself);
             }
         }
     }
@@ -76,7 +78,7 @@ public class ServerUnitTest {
                 byte[] data="hello world".getBytes();
                 a.receiver(r);
                 for(int i=0; i < NUM; i++)
-                    a.send(myself, data, 0, data.length);
+                    send(data, a, myself);
                 log("sent " + NUM + " msgs");
                 r.waitForCompletion(20000);
                 total_time=r.stop_time - r.start_time;
@@ -98,13 +100,14 @@ public class ServerUnitTest {
                 byte[] data="hello world".getBytes();
 
                 // send uncast to establish connection to s2:
-                a.send(b.localAddress(), new byte[1000], 0, 1000);
+                // a.send(b.localAddress(), new byte[1000], 0, 1000);
+                send(data, a, b.localAddress());
                 Util.sleep(1000);
 
                 a.receiver(r1);
                 b.receiver(r2);
                 for(int i=0; i < NUM; i++)
-                    a.send(null, data, 0, data.length);
+                    send(data, a, null);
 
                 log("sent " + NUM + " msgs");
                 r2.waitForCompletion(20000);
@@ -129,7 +132,7 @@ public class ServerUnitTest {
 
                 b.receiver(r);
                 for(int i=0; i < NUM; i++)
-                    a.send(other, data, 0, data.length);
+                    send(data, a, other);
 
                 log("sent " + NUM + " msgs");
                 r.waitForCompletion(20000);
@@ -157,7 +160,7 @@ public class ServerUnitTest {
                 b.receiver(r2);
 
                 for(int i=0; i < NUM; i++)
-                    a.send(other, data, 0, data.length);
+                    send(data, a, other);
                 log("sent " + NUM + " msgs");
                 r1.waitForCompletion(20000);
                 total_time=r1.stop_time - r1.start_time;
@@ -191,8 +194,8 @@ public class ServerUnitTest {
                 Address addr1=a.localAddress(), addr2=b.localAddress();
                 byte[] data="hello world".getBytes();
 
-                a.send(addr2, data, 0, data.length);
-                b.send(addr1, data, 0, data.length);
+                send(data, a, addr2);
+                send(data, b, addr1);
 
                 String msg="A: " + a + "\nB: " + b;
                 System.out.println(msg);
@@ -217,12 +220,12 @@ public class ServerUnitTest {
                 BaseServer b=create(nio, 0)) {
                 Address addr1=a.localAddress(), addr2=b.localAddress();
                 byte[] data="hello world".getBytes();
-                a.send(addr1, data, 0, data.length); // send to self
+                send(data, a, addr1); // send to self
                 assert a.getNumConnections() == 0;
-                a.send(addr2, data, 0, data.length); // send to other
+                send(data, a, addr2);  // send to other
 
-                b.send(addr2, data, 0, data.length); // send to self
-                b.send(addr1, data, 0, data.length); // send to other
+                send(data, b, addr2); // send to self
+                send(data, b, addr1); // send to other
 
 
                 System.out.println("A:\n" + a + "\nB:\n" + b);
@@ -250,15 +253,24 @@ public class ServerUnitTest {
 
             // now send 2 msgs from A to B: this will connect async, buffer the 2 msgs, then send when connected
             byte[] buffer="hello world".getBytes();
-            a.send(target, buffer, 0, buffer.length);
-            a.send(target, buffer, 0, buffer.length);
-
+            send(buffer, a, target);
+            send(buffer, a, target);
             r.waitForCompletion(20000);
             assert r.getNumReceived() == 2;
         }
     }
 
-
+    protected static void send(byte[] request, BaseServer server, Address dest) {
+        byte[] data=new byte[request.length + Global.INT_SIZE];
+        Bits.writeInt(request.length, data, 0);
+        System.arraycopy(request, 0, data, Global.INT_SIZE, request.length);
+        try {
+            server.send(dest, data, 0, data.length);
+        }
+        catch(Exception e) {
+            System.err.println("Failed sending a request to " + dest + ": " + e);
+        }
+    }
 
 
     static void log(String msg) {
@@ -331,7 +343,7 @@ public class ServerUnitTest {
 
 
         public void receive(Address sender, byte[] data, int offset, int length) {
-            System.out.printf("from %s: %d bytes\n", sender, length);
+            System.out.printf("[nio] from %s: %d bytes\n", sender, length);
             long tmp=num_received.incrementAndGet();
             if(tmp >= num_expected) {
                 synchronized(this) {
@@ -343,7 +355,32 @@ public class ServerUnitTest {
             if(send_response && tmp <= num_expected) {
                 try {
                     byte[] rsp=new byte[0];
-                    server.send(sender, rsp, 0, rsp.length);
+                    send(rsp, server, sender);
+                    num_sent.incrementAndGet();
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        public void receive(Address sender, DataInput in) throws Exception {
+            int len=in.readInt();
+            byte[] buf=new byte[len];
+            in.readFully(buf);
+            System.out.printf("[tcp] from %s: %d bytes\n", sender, len);
+            long tmp=num_received.incrementAndGet();
+            if(tmp >= num_expected) {
+                synchronized(this) {
+                    if(stop_time == 0)
+                        stop_time=System.currentTimeMillis();
+                }
+                done.signal(true);
+            }
+            if(send_response && tmp <= num_expected) {
+                try {
+                    byte[] rsp=new byte[0];
+                    send(rsp, server, sender);
                     num_sent.incrementAndGet();
                 }
                 catch(Exception e) {

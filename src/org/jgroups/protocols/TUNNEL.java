@@ -179,9 +179,9 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     public void receive(GossipData data) {
         switch (data.getType()) {
             case MESSAGE:
-                byte[] msg=data.getBuffer();
                 if(Objects.equals(local_addr, data.getSender()))
                     return;
+                byte[] msg=data.getBuffer();
                 receive(data.getSender(), msg, 0, msg.length);
                 break;
             case SUSPECT:

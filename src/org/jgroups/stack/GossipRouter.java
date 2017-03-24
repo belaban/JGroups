@@ -1,6 +1,7 @@
 package org.jgroups.stack;
 
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedAttribute;
@@ -13,6 +14,7 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.PingData;
 import org.jgroups.util.*;
 
+import java.io.DataInput;
 import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -144,11 +146,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         server.receiver(this);
         server.start();
         server.addConnectionListener(this);
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                GossipRouter.this.stop();
-            }
-        });
+        Runtime.getRuntime().addShutdownHook(new Thread(GossipRouter.this::stop));
     }
 
 
@@ -198,23 +196,21 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     }
 
 
-    @Override
-    public void receive(Address sender, byte[] buf, int offset, int length) {
+    @Override public void receive(Address sender, byte[] buf, int offset, int length) {
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
         GossipType type;
         try {
             type=GossipType.values()[in.readByte()];
+            in.position(Global.BYTE_SIZE);
         }
         catch(Exception ex) {
             log.error("failed reading data from %s: %s", sender, ex);
             return;
         }
 
-        GossipData request=null;
         switch(type) {
             case REGISTER:
-                if((request=readRequest(in.position(offset))) != null)
-                    handleRegister(sender, request);
+                handleRegister(sender, in);
                 break;
 
             case MESSAGE:
@@ -229,11 +225,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                         ByteArrayDataInputStream input=new ByteArrayDataInputStream(buf, offset, length);
                         GossipData data=new GossipData();
                         data.readFrom(input);
-                        System.out.println("");
-                        List<Message> messages=Util.parse(data.buffer, data.offset, data.length);
-                        if(messages != null)
-                            for(Message msg : messages)
-                                System.out.printf("dst=%s src=%s (%d bytes): hdrs= %s\n", msg.dest(), msg.src(), msg.getLength(), msg.printHeaders());
+                        dump(data);
                     }
                 }
                 catch(Throwable t) {
@@ -243,37 +235,101 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                 break;
 
             case GET_MBRS:
-                if((request=readRequest(in.position(offset))) == null)
-                    break;
-                GossipData rsp=new GossipData(GossipType.GET_MBRS_RSP, request.getGroup(), null);
-                Map<Address,Entry> members=address_mappings.get(request.getGroup());
-                if(members != null) {
-                    for(Map.Entry<Address,Entry> entry : members.entrySet()) {
-                        Address logical_addr=entry.getKey();
-                        PhysicalAddress phys_addr=entry.getValue().phys_addr;
-                        String logical_name=entry.getValue().logical_name;
-                        PingData data=new PingData(logical_addr, true, logical_name, phys_addr);
-                        rsp.addPingData(data);
-                    }
-                }
-                ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(rsp.serializedSize());
-                try {
-                    rsp.writeTo(out);
-                    server.send(sender, out.buffer(), 0, out.position());
-                }
-                catch(Exception ex) {
-                    log.error("failed sending %d to %s: %s", GossipType.GET_MBRS_RSP, sender, ex);
-                }
+                handleGetMembersRequest(sender, in);
                 break;
 
             case UNREGISTER:
-                if((request=readRequest(in.position(offset))) != null)
-                    removeAddressMapping(request.getGroup(), request.getAddress());
+                handleUnregister(in);
                 break;
         }
     }
 
+    public void receive(Address sender, DataInput in) throws Exception {
+        GossipType type=GossipType.values()[in.readByte()];
 
+        GossipData request=null;
+        switch(type) {
+            case REGISTER:
+                handleRegister(sender, in);
+                break;
+
+            case MESSAGE:
+                try {
+                    // inefficient: we should transfer bytes from input stream to output stream, but Server currently
+                    // doesn't provide a way of reading from an input stream
+                    if((request=readRequest(in, type)) != null) {
+                        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(request.serializedSize());
+                        request.writeTo(out);
+                        route(request.group, request.addr, out.buffer(), 0, out.position());
+                    }
+                    if(dump_msgs)
+                        dump(request);
+                }
+                catch(Throwable t) {
+                    log.error(Util.getMessage("FailedReadingRequest"), t);
+                    return;
+                }
+                break;
+
+            case GET_MBRS:
+                handleGetMembersRequest(sender, in);
+                break;
+
+            case UNREGISTER:
+                handleUnregister(in);
+                break;
+        }
+    }
+
+    protected void handleRegister(Address sender, DataInput in) {
+        GossipData req=readRequest(in, GossipType.REGISTER);
+        if(req != null) {
+            String          group=req.getGroup();
+            Address         addr=req.getAddress();
+            PhysicalAddress phys_addr=req.getPhysicalAddress();
+            String          logical_name=req.getLogicalName();
+            addAddressMapping(sender, group, addr, phys_addr, logical_name);
+        }
+    }
+
+    protected void handleUnregister(DataInput in) {
+        GossipData req=readRequest(in, GossipType.UNREGISTER);
+        if(req != null)
+            removeAddressMapping(req.getGroup(), req.getAddress());
+    }
+
+    protected void handleGetMembersRequest(Address sender, DataInput in) {
+        GossipData req=readRequest(in, GossipType.GET_MBRS);
+        if(req == null)
+            return;
+        GossipData rsp=new GossipData(GossipType.GET_MBRS_RSP, req.getGroup(), null);
+        Map<Address,Entry> members=address_mappings.get(req.getGroup());
+        if(members != null) {
+            for(Map.Entry<Address,Entry> entry : members.entrySet()) {
+                Address logical_addr=entry.getKey();
+                PhysicalAddress phys_addr=entry.getValue().phys_addr;
+                String logical_name=entry.getValue().logical_name;
+                PingData data=new PingData(logical_addr, true, logical_name, phys_addr);
+                rsp.addPingData(data);
+            }
+        }
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(rsp.serializedSize());
+        try {
+            rsp.writeTo(out);
+            server.send(sender, out.buffer(), 0, out.position());
+        }
+        catch(Exception ex) {
+            log.error("failed sending %d to %s: %s", GossipType.GET_MBRS_RSP, sender, ex);
+        }
+    }
+
+    protected static void dump(GossipData data) {
+        System.out.println("");
+        List<Message> messages=Util.parse(data.buffer, data.offset, data.length);
+        if(messages != null)
+            for(Message msg : messages)
+                System.out.printf("dst=%s src=%s (%d bytes): hdrs= %s\n", msg.dest(), msg.src(), msg.getLength(), msg.printHeaders());
+    }
 
     @Override
     public void connectionClosed(Connection conn, String reason) {
@@ -285,7 +341,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         log.debug("connection to %s established", conn.peerAddress());
     }
 
-    protected GossipData readRequest(ByteArrayDataInputStream in) {
+    protected GossipData readRequest(DataInput in) {
         GossipData data=new GossipData();
         try {
             data.readFrom(in);
@@ -297,13 +353,18 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         }
     }
 
-    protected void handleRegister(Address sender, GossipData request) {
-        String          group=request.getGroup();
-        Address         addr=request.getAddress();
-        PhysicalAddress phys_addr=request.getPhysicalAddress();
-        String          logical_name=request.getLogicalName();
-        addAddressMapping(sender, group, addr, phys_addr, logical_name);
+    protected GossipData readRequest(DataInput in, GossipType type) {
+        GossipData data=new GossipData(type);
+        try {
+            data.readFrom(in, false);
+            return data;
+        }
+        catch(Exception ex) {
+            log.error(Util.getMessage("FailedReadingRequest"), ex);
+            return null;
+        }
     }
+
 
     protected void addAddressMapping(Address sender, String group, Address addr, PhysicalAddress phys_addr, String logical_name) {
         ConcurrentMap<Address,Entry> m=address_mappings.get(group);

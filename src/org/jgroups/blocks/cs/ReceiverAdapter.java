@@ -3,6 +3,7 @@ package org.jgroups.blocks.cs;
 import org.jgroups.Address;
 import org.jgroups.util.Util;
 
+import java.io.DataInput;
 import java.nio.ByteBuffer;
 
 /**
@@ -25,5 +26,7 @@ public class ReceiverAdapter implements Receiver {
         Util.bufferToArray(sender, buf, this);
     }
 
+    public void receive(Address sender, DataInput in) throws Exception {
 
+    }
 }
