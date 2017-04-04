@@ -18,8 +18,8 @@ import org.jgroups.util.Util;
 public class DELIVERY_TIME extends Protocol {
     protected AverageMinMax delivery_times=new AverageMinMax();
 
-    @ManagedAttribute(description="Average delivery time (in microseconds). This is computed as the average delivery " +
-      "time for single messages, plus the delivery time for batches divided by batch size")
+    @ManagedAttribute(description="Average delivery time (in microseconds). This is computed as the average " +
+      "delivery time for single messages, plus the delivery time for batches")
     public double getAvgDeliveryTime() {
         return delivery_times.average();
     }
@@ -39,16 +39,23 @@ public class DELIVERY_TIME extends Protocol {
         }
     }
 
+    // Dividing the delivery time for a batch by the batch size is problematic, e.g. if a batch of 5 is
+    // received at time 0 and the 5 messages are delivered at times 20, 40, 60, 80 and 100, then the total
+    // time is 100, divided by 5 is 20 per message. However, this is incorrect as it ignores the waiting
+    // times for the individual messages: e.g. message 3 has to wait for 60 until it gets processed.
+    // The correct average delivery times would be (20+40+60+80+100)/5 = 60.
+    // However, we don't know in up(MessageBatch) when the individual messages are delivered, so we here we
+    // can only compute the delivery time of the entire batch
     public void up(MessageBatch batch) {
-        int batch_size=batch.size();
+        // int batch_size=batch.size();
         long start=Util.micros();
         try {
             up_prot.up(batch);
         }
         finally {
             long time=Util.micros()-start;
-            if(batch_size > 1)
-                time/=batch_size; // cannot use batch.size() as message might have been removed from the batch!
+            //if(batch_size > 1)
+              //  time/=batch_size; // cannot use batch.size() as message might have been removed from the batch!
             delivery_times.add(time);
         }
     }
