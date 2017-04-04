@@ -180,7 +180,7 @@ public class RingBufferBundler extends BaseBundler {
     }
 
     protected BiConsumer<Integer,Integer> createWaitStrategy(String st, BiConsumer<Integer,Integer> default_wait_strategy) {
-        if(st == null) return default_wait_strategy != null? default_wait_strategy : null;
+        if(st == null) return default_wait_strategy;
         switch(st) {
             case "spin":            return wait_strategy=SPIN;
             case "yield":           return wait_strategy=YIELD;
@@ -196,7 +196,7 @@ public class RingBufferBundler extends BaseBundler {
                 }
                 catch(Throwable t) {
                     log.error("failed creating wait_strategy " + st, t);
-                    return default_wait_strategy != null? default_wait_strategy : null;
+                    return default_wait_strategy;
                 }
         }
     }
