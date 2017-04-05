@@ -1,19 +1,16 @@
 package org.jgroups.protocols;
 
-/**
- * @author Bela Ban
- * @since  4.0
- */
-
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.util.Util;
 
+import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * This bundler uses the same logic as {@link TransferQueueBundler} but does not allocate
  * memory except for the buffer itself and does not use complex data structures.
+ * @author Radim Vansa
  */
 public class SimplifiedTransferQueueBundler extends TransferQueueBundler {
     protected static final int MSG_BUF_SIZE=512;
@@ -69,7 +66,7 @@ public class SimplifiedTransferQueueBundler extends TransferQueueBundler {
             int numMsgs=1;
             for(int i=start + 1; i < MSG_BUF_SIZE; ++i) {
                 Message msg=msg_queue[i];
-                if(msg != null && (dest == msg.getDest() || (dest != null && dest.equals(msg.getDest())))) {
+                if(msg != null && (dest == msg.getDest() || (Objects.equals(dest, msg.getDest())))) {
                     msg.setDest(dest); // avoid further equals() calls
                     numMsgs++;
                 }
