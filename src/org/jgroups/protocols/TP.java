@@ -225,7 +225,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected String bundler_type="transfer-queue";
 
     @Property(description="The max number of elements in a bundler if the bundler supports size limitations")
-    protected int bundler_capacity=16348;
+    protected int bundler_capacity=16384;
 
     @Property(description="Number of spins before a real lock is acquired")
     protected int bundler_num_spins=5;
