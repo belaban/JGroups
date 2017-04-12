@@ -363,22 +363,31 @@ public class StompConnection implements Runnable {
         }
     }
 
+    public void connectToSingleDestination(String destination) throws IOException {
+        try {
+            synchronized(this) {
+                connectToDestination(destination);
+                sendConnect();
+            }
+            subscriptions.forEach(this::sendSubscribe);
+        }
+        catch(IOException ex) {
+            closeConnections();
+            throw ex;
+        }
+
+    }
+
     public void connect() throws IOException{
         for (String dest : server_destinations) {
             try {
-                synchronized(this) {
-                    connectToDestination(dest);
-                    sendConnect();
-                }
-                subscriptions.forEach(this::sendSubscribe);
-
-                log.info("Connected to " + dest);
+                connectToSingleDestination(dest);
+                log.info("Connected to " + destination);
                 break;
             }
-            catch(IOException ex) {
+            catch(IOException ex){
                 if(log.isErrorEnabled())
-                    log.error(Util.getMessage("FailedConnectingTo") + dest + ":" + ex);
-                closeConnections();
+                    log.error(Util.getMessage("FailedConnectingTo") + destination + ":" + ex);
             }
         }
 
