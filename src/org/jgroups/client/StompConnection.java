@@ -385,7 +385,7 @@ public class StompConnection implements Runnable {
                 log.info("Connected to " + destination);
                 break;
             }
-            catch(IOException ex){
+            catch(IOException ex) {
                 if(log.isErrorEnabled())
                     log.error(Util.getMessage("FailedConnectingTo") + destination + ":" + ex);
             }
@@ -421,7 +421,7 @@ public class StompConnection implements Runnable {
         String host=dest.substring(0, index);
         int port=Integer.parseInt(dest.substring(index+1));
 
-        sock = buildSocket(host, port);
+        sock=buildSocket(host, port);
 
         in=new DataInputStream(sock.getInputStream());
         out=new DataOutputStream(sock.getOutputStream());
