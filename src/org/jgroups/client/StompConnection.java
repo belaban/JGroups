@@ -382,12 +382,12 @@ public class StompConnection implements Runnable {
         for (String dest : server_destinations) {
             try {
                 connectToSingleDestination(dest);
-                log.info("Connected to " + destination);
+                log.info("Connected to " + dest);
                 break;
             }
             catch(IOException ex) {
                 if(log.isErrorEnabled())
-                    log.error(Util.getMessage("FailedConnectingTo") + destination + ":" + ex);
+                    log.error(Util.getMessage("FailedConnectingTo") + dest + ":" + ex);
             }
         }
 
