@@ -8,7 +8,9 @@ import org.jgroups.util.Util;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.SSLSocket;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -63,6 +65,8 @@ public class StompConnection implements Runnable {
 
     protected final Log log=LogFactory.getLog(getClass());
 
+    protected SSLParameters sslParameters;
+
     /**
      * @param dest IP address + ':' + port, e.g. "192.168.1.5:8787"
      */
@@ -87,6 +91,7 @@ public class StompConnection implements Runnable {
             socket_factory = SSLSocketFactory.getDefault();
         else
             socket_factory = SocketFactory.getDefault();
+        this.sslParameters = null;
     }
 
     public StompConnection(String dest, String userid, String password, boolean reconnect, SSLContext sslcontext) {;
@@ -95,6 +100,17 @@ public class StompConnection implements Runnable {
         this.password = password;
         this.reconnect = reconnect;
         socket_factory = sslcontext.getSocketFactory();
+        this.sslParameters = null;
+    }
+
+    public StompConnection(String dest, String userid, String password, boolean reconnect, SSLContext sslcontext,
+                           SSLParameters sslParameters) {;
+        server_destinations.add(dest);
+        this.userid = userid;
+        this.password = password;
+        this.reconnect = reconnect;
+        socket_factory = sslcontext.getSocketFactory();
+        this.sslParameters = sslParameters;
     }
 
     public String getSessionId() {return session_id;}
@@ -127,7 +143,7 @@ public class StompConnection implements Runnable {
         }
     }
 
-    protected void sendConnect() {
+    protected void sendConnect() throws IOException {
         StringBuilder sb=new StringBuilder();
         sb.append(STOMP.ClientVerb.CONNECT.name()).append("\n");
         if(userid != null)
@@ -145,6 +161,7 @@ public class StompConnection implements Runnable {
         }
         catch(IOException ex) {
             log.error(Util.getMessage("FailedToSendConnectMessage"), ex);
+            throw ex;
         }
     }
 
@@ -346,22 +363,31 @@ public class StompConnection implements Runnable {
         }
     }
 
+    public void connectToSingleDestination(String destination) throws IOException {
+        try {
+            synchronized(this) {
+                connectToDestination(destination);
+                sendConnect();
+            }
+            subscriptions.forEach(this::sendSubscribe);
+        }
+        catch(IOException ex) {
+            closeConnections();
+            throw ex;
+        }
+
+    }
+
     public void connect() throws IOException{
         for (String dest : server_destinations) {
             try {
-                synchronized(this) {
-                    connectToDestination(dest);
-                    sendConnect();
-                }
-                subscriptions.forEach(this::sendSubscribe);
-
+                connectToSingleDestination(dest);
                 log.info("Connected to " + dest);
                 break;
             }
             catch(IOException ex) {
                 if(log.isErrorEnabled())
                     log.error(Util.getMessage("FailedConnectingTo") + dest + ":" + ex);
-                closeConnections();
             }
         }
 
@@ -375,13 +401,27 @@ public class StompConnection implements Runnable {
         startRunner();
     }
 
+    protected Socket buildSocket(String host, int port) throws IOException {
+        // both SocketFactory and SSLSocketFactory return abstract class Socket
+        // on createSocket calls, unfortunately we need to configure
+        // SSLSocket with SSLParameters, so we need to check if the socket is
+        // and instance of SSLSocket or not before we cast and modify
+        sock=socket_factory.createSocket(host, port);
+
+        if (sock instanceof SSLSocket && this.sslParameters != null) {
+            ((SSLSocket) sock).setSSLParameters(this.sslParameters);
+        }
+
+        return sock;
+    }
+
     protected void connectToDestination(String dest) throws IOException {
         // parse destination
         int index=dest.lastIndexOf(':');
         String host=dest.substring(0, index);
         int port=Integer.parseInt(dest.substring(index+1));
 
-        sock=socket_factory.createSocket(host, port);
+        sock=buildSocket(host, port);
 
         in=new DataInputStream(sock.getInputStream());
         out=new DataOutputStream(sock.getOutputStream());
