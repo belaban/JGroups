@@ -96,7 +96,7 @@ public class STOMP extends Protocol implements Runnable {
 
     public void start() throws Exception {
         super.start();
-        srv_sock=Util.createServerSocket(getSocketFactory(), "jgroups.stomp.srv_sock", bind_addr, port);
+        srv_sock=Util.createServerSocket(getSocketFactory(), "jgroups.stomp.srv_sock", bind_addr, port, port+50);
         if(log.isDebugEnabled())
             log.debug("server socket listening on " + srv_sock.getLocalSocketAddress());
 

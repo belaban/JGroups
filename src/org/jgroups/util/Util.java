@@ -3463,7 +3463,7 @@ public class Util {
                 if(start_port == end_port)
                     throw new BindException(String.format("no port available in range [%d .. %d] (bind_addr=%s)",
                                                           original_start_port, end_port, bind_addr));
-                if(bind_addr != null && !bind_addr.isLoopbackAddress()) {
+                if(bind_addr != null && !(bind_addr.isLoopbackAddress() || bind_addr.isAnyLocalAddress())) {
                     NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
                     if(nic == null)
                         throw new BindException("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
