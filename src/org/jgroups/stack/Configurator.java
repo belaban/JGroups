@@ -480,12 +480,8 @@ public class Configurator {
 						}
     					InetAddressInfo inetinfo = new InetAddressInfo(protocol, methods[j], properties, propertyValue, converted) ;
 
-                        Map<String, InetAddressInfo> protocolInetAddressMap=inetAddressMap.get(protocolName);
-                        if(protocolInetAddressMap == null) {
-                            protocolInetAddressMap = new HashMap<>() ;
-                            inetAddressMap.put(protocolName, protocolInetAddressMap) ;
-                        }
-    					protocolInetAddressMap.put(propertyName, inetinfo) ; 
+                        Map<String,InetAddressInfo> m=inetAddressMap.computeIfAbsent(protocolName, k -> new HashMap<>());
+                        m.put(propertyName, inetinfo) ;
     				}
     			}
     		}
@@ -515,12 +511,8 @@ public class Configurator {
 							}
     						InetAddressInfo inetinfo = new InetAddressInfo(protocol, fields[j], properties, propertyValue, converted) ;
 
-                            Map<String, InetAddressInfo> protocolInetAddressMap=inetAddressMap.get(protocolName);
-                            if(protocolInetAddressMap == null) {
-                                protocolInetAddressMap = new HashMap<>() ;
-                                inetAddressMap.put(protocolName, protocolInetAddressMap) ;
-                            }
-    						protocolInetAddressMap.put(propertyName, inetinfo) ;
+                            Map<String,InetAddressInfo> m=inetAddressMap.computeIfAbsent(protocolName, k -> new HashMap<>());
+                            m.put(propertyName, inetinfo) ;
     					}// recompute
     				}
     			}
@@ -1022,6 +1014,16 @@ public class Configurator {
                 catch(SecurityException ex) {
                     log.error(Util.getMessage("SyspropFailure"), system_property_name, ex);
                 }
+
+                try {
+                    retval=System.getenv(system_property_name);
+                    if(retval != null)
+                        return retval;
+                }
+                catch(SecurityException ex) {
+                    log.error(Util.getMessage("SyspropFailure"), system_property_name, ex);
+                }
+
             }
         }
         return retval;

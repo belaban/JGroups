@@ -4433,6 +4433,8 @@ public class Util {
                 retval=System.getProperty(prop);
                 if(retval != null)
                     return retval;
+                if((retval=System.getenv(prop)) != null)
+                    return retval;
             }
             catch(Throwable e) {
             }
