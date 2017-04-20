@@ -87,7 +87,7 @@ public final class PropertyConverters {
 		}
 
         private static int getPortRange(Protocol protocol) throws Exception {
-            Field f = protocol.getClass().getDeclaredField("port_range") ;
+            Field f = Util.getField(protocol.getClass(), "port_range");
             return (Integer)Util.getField(f, protocol);
 		}
     }
