@@ -34,12 +34,12 @@ public class TCPPING extends Discovery {
     @Property(description="Number of additional ports to be probed for membership. A port_range of 0 does not " +
       "probe additional ports. Example: initial_hosts=A[7800] port_range=0 probes A:7800, port_range=1 probes " +
       "A:7800 and A:7801")
-    private int port_range=1;
+    protected int port_range=1;
 
     @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership",
-        converter=PropertyConverters.InitialHosts.class, dependsUpon="port_range",
-            systemProperty=Global.TCPPING_INITIAL_HOSTS)
-    private List<PhysicalAddress> initial_hosts=Collections.emptyList();
+      converter=PropertyConverters.InitialHosts.class, dependsUpon="port_range",
+      systemProperty=Global.TCPPING_INITIAL_HOSTS)
+    protected List<PhysicalAddress> initial_hosts=Collections.emptyList();
 
     @Property(description="max number of hosts to keep beyond the ones in initial_hosts")
     protected int max_dynamic_hosts=2000;
