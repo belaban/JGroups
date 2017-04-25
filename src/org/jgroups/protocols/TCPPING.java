@@ -90,11 +90,6 @@ public class TCPPING extends Discovery {
         dynamic_hosts.clear();
     }
 
-    @ManagedAttribute
-    public String getInitialHostsList() {
-        return initial_hosts.toString();
-    }
-
     public void init() throws Exception {
         super.init();
         dynamic_hosts=new BoundedList<>(max_dynamic_hosts);
