@@ -66,6 +66,7 @@ public class PartitionedHashMapDemo {
                     System.out.println("L2 cache:\n" + map.getL2Cache());
                     break;
                 case 'q':
+                case -1:
                     l1_cache.stop();
                     map.stop();
                     return;

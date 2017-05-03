@@ -280,8 +280,6 @@ public class UPerf extends ReceiverAdapter {
                                           sync, oob, anycast_count, read_percentage,
                                           allow_local_gets, print_details, print_invokers));
             switch(c) {
-                case -1:
-                    break;
                 case '1':
                     startBenchmark();
                     break;
@@ -326,6 +324,7 @@ public class UPerf extends ReceiverAdapter {
                     System.out.printf("Version: %s\n", Version.printVersion());
                     break;
                 case 'x':
+                case -1:
                     Util.close(channel);
                     return;
                 case 'X':

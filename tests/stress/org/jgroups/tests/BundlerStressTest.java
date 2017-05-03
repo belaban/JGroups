@@ -87,6 +87,7 @@ public class BundlerStressTest {
                         details=!details;
                         break;
                     case 'x':
+                    case -1:
                         looping=false;
                         break;
                 }

@@ -87,6 +87,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
                         dont_bundle=!dont_bundle;
                         break;
                     case 'x':
+                    case -1:
                         looping=false;
                         break;
                 }

@@ -69,6 +69,7 @@ public class UdpPerf {
                         sendMessages();
                         break;
                     case 'x':
+                    case -1:
                         looping=false;
                         break;
                 }

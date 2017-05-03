@@ -170,6 +170,7 @@ public class MPerfRpc extends ReceiverAdapter {
                         invokeRpc(configChange, RequestOptions.SYNC().flags(Message.Flag.RSVP), change);
                         break;
                     case 'x':
+                    case -1:
                         looping=false;
                         break;
                     case 'X':

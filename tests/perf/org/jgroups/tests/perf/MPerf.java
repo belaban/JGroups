@@ -146,6 +146,7 @@ public class MPerf extends ReceiverAdapter {
                         send(null,change,MPerfHeader.CONFIG_CHANGE,Message.Flag.RSVP);
                         break;
                     case 'x':
+                    case -1:
                         looping=false;
                         break;
                     case 'X':

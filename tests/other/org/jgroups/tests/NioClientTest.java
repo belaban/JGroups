@@ -36,6 +36,7 @@ public class NioClientTest {
                     sendMessages(host, direct, num_threads);
                     break;
                 case 'x':
+                case -1:
                     looping=false;
                     break;
             }

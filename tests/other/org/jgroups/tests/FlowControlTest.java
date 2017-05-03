@@ -84,7 +84,7 @@ public class FlowControlTest extends ReceiverAdapter {
                     }
                     System.out.println(ufc.printCredits());
                     break;
-                case 'q': case 'Q': case 'x':
+                case 'q': case 'Q': case 'x': case -1:
                     return;
             }
         }

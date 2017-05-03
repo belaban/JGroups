@@ -123,6 +123,7 @@ public class RoundTrip implements RtReceiver {
                         details=!details;
                         break;
                     case 'x':
+                    case -1:
                         looping=false;
                         break;
                 }

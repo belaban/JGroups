@@ -1850,7 +1850,7 @@ public class Util {
             return ret;
         }
         catch(IOException e) {
-            return 0;
+            return -1;
         }
     }
 

@@ -91,6 +91,7 @@ public class RoundTripRpc implements MembershipListener {
                         details=!details;
                         break;
                     case 'x':
+                    case -1:
                         looping=false;
                         break;
                 }

@@ -101,6 +101,7 @@ public class CounterServiceDemo {
                         System.out.println("Pending requests:\n" + counter_service.dumpPendingRequests());
                         break;
                     case 'x':
+                    case -1:
                         looping=false;
                         break;
                 }
