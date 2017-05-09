@@ -64,6 +64,8 @@ public final class PropertyConverters {
     public static class InitialHosts implements PropertyConverter {
 
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String prop_val, boolean check_scope) throws Exception {
+            if(prop_val == null)
+                return null;
             int port_range = getPortRange((Protocol)obj) ;
             return Util.parseCommaDelimitedHosts(prop_val, port_range);
         }

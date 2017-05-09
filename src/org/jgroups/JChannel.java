@@ -166,8 +166,32 @@ public class JChannel implements Closeable {
      * might lead to problems !
      * @param protocols The list of protocols, from bottom to top, ie. the first protocol in the list is the transport,
      *                  the last the top protocol
+     * @deprecated Use {@link JChannel#JChannel(List)} instead
      */
+    @Deprecated
     public JChannel(Collection<Protocol> protocols) throws Exception {
+        prot_stack=new ProtocolStack().setChannel(this);
+        for(Protocol prot: protocols) {
+            prot_stack.addProtocol(prot);
+            prot.setProtocolStack(prot_stack);
+        }
+        prot_stack.init();
+
+        // Substitute vars with defined system props (if any)
+        List<Protocol> prots=prot_stack.getProtocols();
+        Map<String,String> map=new HashMap<>();
+        for(Protocol prot: prots)
+            Configurator.resolveAndAssignFields(prot, map);
+    }
+
+    /**
+     * Creates a channel from a list of protocols. Note that after a {@link org.jgroups.JChannel#close()}, the protocol
+     * list <em>should not</em> be reused, ie. new JChannel(protocols) would reuse the same protocol list, and this
+     * might lead to problems !
+     * @param protocols The list of protocols, from bottom to top, ie. the first protocol in the list is the transport,
+     *                  the last the top protocol
+     */
+    public JChannel(List<Protocol> protocols) throws Exception {
         prot_stack=new ProtocolStack().setChannel(this);
         for(Protocol prot: protocols) {
             prot_stack.addProtocol(prot);
