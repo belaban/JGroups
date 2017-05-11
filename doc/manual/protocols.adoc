@@ -715,7 +715,10 @@ downloaded at link:$$https://github.com/meltmedia/jgroups-aws$$[].
 ==== Native S3 PING
 
 This implementation by Zalando uses the AWS SDK. It is not part of JGroups, but can be found at
-link:$$https://github.com/zalando/jgroups-native-s3-ping/$$[].
+https://github.com/zalando/jgroups-native-s3-ping. This protocols works with JGroups versions 3.x.
+
+There's a refactored version of AWS_PING that was ported (in 2017) to run on JGroups 4.x at
+https://github.com/jgroups-extras/native-s3-ping.
 
 
 
@@ -831,7 +834,7 @@ ${SWIFT_PING}
 
 ==== KUBE_PING
 
-This discovery protocol can be used with OpenShift [2] and uses an OpenShift internal mechanism to discover cluster
+This Kubernetes-based discovery protocol can be used with OpenShift [2] and uses Kubernetes to discover cluster
 members. `KUBE_PING` is hosted on jgroups-extras; refer to [1] for details.
 
 
