@@ -29,7 +29,10 @@ import java.util.*;
 /**
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
  * @author Bela Ban
+ * @deprecated Use NATIVE_S3_PING (https://github.com/jgroups-extras/native-s3-ping) instead.
+ *             S3_PING will be removed in 5.0.
  */
+@Deprecated
 public class S3_PING extends FILE_PING {
 
     @Property(description="The name of the AWS server")
