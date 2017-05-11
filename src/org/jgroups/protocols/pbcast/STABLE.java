@@ -102,7 +102,7 @@ public class STABLE extends Protocol {
     protected final Lock          stability_lock=new ReentrantLock(); // to synchronize on stability_task
 
     @GuardedBy("stable_task_lock")
-    protected Future<?>           stable_task_future=null; // bcasts periodic STABLE message (added to timer below)
+    protected Future<?>           stable_task_future; // bcasts periodic STABLE message (added to timer below)
     protected final Lock          stable_task_lock=new ReentrantLock(); // to sync on stable_task
 
     protected TimeScheduler       timer; // to send periodic STABLE msgs (and STABILITY messages)

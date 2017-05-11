@@ -238,18 +238,20 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected SuppressLog<Address>      suppress_log_non_member;
 
 
-    public long    getXmitRequestsReceived()  {return xmit_reqs_received.sum();}
-    public long    getXmitRequestsSent()      {return xmit_reqs_sent.sum();}
-    public long    getXmitResponsesReceived() {return xmit_rsps_received.sum();}
-    public long    getXmitResponsesSent()     {return xmit_rsps_sent.sum();}
-    public boolean isUseMcastXmit()           {return use_mcast_xmit;}
-    public boolean isXmitFromRandomMember()   {return xmit_from_random_member;}
-    public boolean isDiscardDeliveredMsgs()   {return discard_delivered_msgs;}
-    public boolean getLogDiscardMessages()    {return log_discard_msgs;}
+    public long    getXmitRequestsReceived()               {return xmit_reqs_received.sum();}
+    public long    getXmitRequestsSent()                   {return xmit_reqs_sent.sum();}
+    public long    getXmitResponsesReceived()              {return xmit_rsps_received.sum();}
+    public long    getXmitResponsesSent()                  {return xmit_rsps_sent.sum();}
+    public boolean isUseMcastXmit()                        {return use_mcast_xmit;}
+    public boolean isXmitFromRandomMember()                {return xmit_from_random_member;}
+    public boolean isDiscardDeliveredMsgs()                {return discard_delivered_msgs;}
+    public boolean getLogDiscardMessages()                 {return log_discard_msgs;}
     public NAKACK2 setUseMcastXmit(boolean use_mcast_xmit) {this.use_mcast_xmit=use_mcast_xmit; return this;}
-    public NAKACK2 setUseMcastXmitReq(boolean flag) {this.use_mcast_xmit_req=flag; return this;}
-    public NAKACK2 setLogDiscardMessages(boolean flag) {log_discard_msgs=flag; return this;}
-    public NAKACK2 setLogNotFoundMessages(boolean flag) {log_not_found_msgs=flag; return this;}
+    public NAKACK2 setUseMcastXmitReq(boolean flag)        {this.use_mcast_xmit_req=flag; return this;}
+    public NAKACK2 setLogDiscardMessages(boolean flag)     {log_discard_msgs=flag; return this;}
+    public NAKACK2 setLogNotFoundMessages(boolean flag)    {log_not_found_msgs=flag; return this;}
+    public NAKACK2 setResendLastSeqnoMaxTimes(int n)       {this.resend_last_seqno_max_times=n; return this;}
+
     public NAKACK2 setXmitFromRandomMember(boolean xmit_from_random_member) {
         this.xmit_from_random_member=xmit_from_random_member; return this;
     }
