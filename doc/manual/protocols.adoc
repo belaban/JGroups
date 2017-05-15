@@ -368,7 +368,7 @@ FILE_PING can be used instead of GossipRouter in cases where no external process
             
 
 Since 3.5, the way FILE_PING performs discovery has changed. The following paragraphs describe the new
-mechanism to discover members via FILE_PING or subclasses (e.g. S3_PING or GOOGLE_PING),
+mechanism to discover members via FILE_PING or subclasses (e.g. S3_PING GOOGLE_PING or GOOGLE_PING2),
 so this applies to all cloud-based stores as well.
             
 Instead of storing 1 file per member in the file system or cloud store, we only store 1 file for
@@ -725,12 +725,9 @@ https://github.com/jgroups-extras/native-s3-ping.
 ==== GOOGLE_PING
 
 GOOGLE_PING is a subclass of S3_PING and inherits most of the functionality. It uses Google Cloud
-                Storage to store information about individual members.
-            
+Storage to store information about individual members.
 
 The snippet below shows a sample config:
-            
-
 
 [source,xml]
 ----
@@ -744,10 +741,21 @@ The snippet below shows a sample config:
 ----
 
 This will use a bucket "jgroups-bucket" or create one if it doesn't exist, then create another folder
-                under it with the cluster name, and finally use 1 object per member in that location for member info.
+under it with the cluster name, and finally use 1 object per member in that location for member info.
             
 
 ${GOOGLE_PING}
+
+NOTE: `GOOGLE_PING` has been deprecated and <<GOOGLE_PING2>> should be used instead.
+
+
+[[GOOGLE_PING2]]
+==== GOOGLE_PING2
+
+https://github.com/jgroups-extras/jgroups-google[GOOGLE_PING2] is the successor to `GOOGLE_PING` and uses Google's
+client library to access Google Compute Storage. It is the recommended way to access GCS and the project is hosted at
+https://github.com/jgroups-extras/jgroups-google.
+
 
 
 ==== DNS_PING

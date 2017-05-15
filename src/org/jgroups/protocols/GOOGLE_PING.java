@@ -7,7 +7,9 @@ package org.jgroups.protocols;
  * [1] https://developers.google.com/storage/docs/migrating#migration-simple
  * @author Bela Ban
  * @since 3.5
+ * @deprecated Use GOOGLE_PING2 instead: https://github.com/jgroups-extras/jgroups-google
  */
+@Deprecated
 public class GOOGLE_PING extends S3_PING {
 
     public void init() throws Exception {
