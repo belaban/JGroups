@@ -36,7 +36,9 @@ public class TCPPING extends Discovery {
       "A:7800 and A:7801")
     protected int port_range=1;
 
-    @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership",
+    @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership. " +
+      "Ideally, all members should be listed. If this is not possible, send_cache_on_join and / or return_entire_cache " +
+      "can be set to true",
       converter=PropertyConverters.InitialHosts.class, dependsUpon="port_range",
       systemProperty=Global.TCPPING_INITIAL_HOSTS)
     protected List<PhysicalAddress> initial_hosts=Collections.emptyList();
