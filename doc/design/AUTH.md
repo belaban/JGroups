@@ -1,67 +1,67 @@
-
-
-Design of authentication protocol (AUTH)
-========================================
+# Design of authentication protocol (AUTH)
 
 Author: Roland Raez, Bela Ban, Chris Mills
 
-Goal: to prevent random members from joining a group. Members have to pass authentication
-to join a group, otherwise they will be rejected
+Goal: to prevent unauthorized members from joining a group. Members have to pass authentication
+to join a group, otherwise they will be rejected.
 
-[pasted from JGroupsAUTH wiki]
+## Definition
 
-Definition
+_[pasted from JGroupsAUTH wiki]_
 
-AUTH is used to provide a layer of authentication to JGroups. This allows you to define pluggable security
+`AUTH` is used to provide a layer of authentication to JGroups. This allows you to define pluggable security
 that defines if a node should be allowed to join a group. AUTH sits below the GMS protocol and listens for
-JOIN REQUEST messages. When a JOIN REQUEST is received it tries to find an AuthHeader? object, inside of which
-should be an implementation of the AuthToken? object.
+`JOIN REQUEST` messages. When a `JOIN REQUEST` is received it tries to find an `AuthHeader` object, inside of which
+should be an implementation of the `AuthToken` object.
 
-AuthToken? is an abstract class, implementations of which are responsible for providing the actual authentication
-mechanism. Some basic implementations of AuthToken? are provide in the
-org.jgroups.auth package (SimpleToken?, MD5Token and X509Token).
-Effectivly all these implementations do is encrypt a string (found in the jgroups config) and pass that on
-the JOIN REQUEST.
+`AuthToken` is an abstract class, implementations of which are responsible for providing the actual authentication
+mechanism. Some basic implementations of AuthToken are provided in the
+`org.jgroups.auth` package (`SimpleToken`, `MD5Token`, `X509Token`, etc).
+Effectively all these implementations do is encrypt a string (found in the jgroups config) and pass that on
+the `JOIN REQUEST`.
 
-When authentication is successful, the message is simply passed up the stack to the GMS protocol.
-When it fails, the AUTH protocol creates a JOIN RESPONSE message with a failure string and passes
+When authentication is successful, the message is simply passed up the stack to the `GMS` protocol.
+When it fails, the `AUTH` protocol creates a `JOIN RESPONSE` message with a failure string and passes
 it back down the stack. This failure string informs the client of the reason for failure. Clients will
-then fail to join the group and will throw a SecurityException?. If this error string is null then
+then fail to join the group and will throw a `SecurityException`. If this error string is `null` then
 authentication is considered to have passed.
 
-Example Configuration
+## Example Configuration
 
-  <AUTH auth_class="org.jgroups.auth.X509Token1_5"
-        auth_value="chris_mills_110"
-        keystore_path="C\:\Documents and Settings\spare1\.keystore"
-        keystore_password="changeit"
-        cert_alias="test"
-        cipher_type="RSA"/>
+```xml
+<AUTH auth_class="org.jgroups.auth.X509Token1"
+      auth_value="chris_mills_110"
+      keystore_path="C\:\Documents and Settings\spare1\.keystore"
+      keystore_password="changeit"
+      cert_alias="test"
+      cipher_type="RSA"/>
+```
 
-In the above example the AUTH protocol delegates authentication to an instance of the
-org.jgroups.auth.X509Token1_5 class. The only parameter that AUTH requires is the auth_class
+In the above example the `AUTH` protocol delegates authentication to an instance of the
+`org.jgroups.auth.X509Token` class. The only parameter that `AUTH` requires is the `auth_class`
 attribute which defines the authentication mechanism. All other parameters defined in the configuration are
-passed in to the instance of the auth_class.
+passed in to the instance of the `auth_class`.
 
 This allows pluggable authentication mechanisms, abstracted from the core of JGroups, to be configured to
 secure and lock down who can join a group.
 
 Creating an AUTH module
 
-   1. Create a class that extends org.jgroups.auth.AuthToken
-   2. You must have an empty constructor
-   3. Implement the public void setValue(Properties properties) method to recieve properties from the JGroups config.
-   4. Implement the public String getName() method to return the package and class name
-   5. Implement the public boolean authenticate(AuthToken token) method to provide the actual authentication
+   1. Create a class that extends `org.jgroups.auth.AuthToken`
+   2. It must have an empty constructor
+   3. Implement the `public void setValue(Properties properties)` method to receive properties from the JGroups config.
+   4. Implement the `public String getName()` method to return the package and class name
+   5. Implement the `public boolean authenticate(AuthToken token)` method to provide the actual authentication
       mechanism of clients.
-   6. In the jgroups config XML for AUTH set the auth_class attribute to your new authentication class. Remember
-      to include anyother properties your class may require.
+   6. In the jgroups config XML for `AUTH` set the `auth_class` attribute to your new authentication class. Remember
+      to include any other properties your class may require.
 
-Example Failure
+## Example Failure
 
 When authentication fails a SecurityException? is thrown on the client trying to join the group. Below is
 an example stack trace:
 
+```
 org.jboss.jgroups.fileshare.exception.FileShareException: org.jgroups.ChannelException: connect() failed
 	at org.jboss.jgroups.fileshare.FileShare.<init>(FileShare.java:28)
 	at org.jboss.jgroups.fileshare.FileShare.main(FileShare.java:55)
@@ -78,14 +78,16 @@ Caused by: java.lang.SecurityException: Authentication failed
 	at org.jgroups.protocols.pbcast.ClientGmsImpl.join(ClientGmsImpl.java:132)
 	at org.jgroups.protocols.pbcast.GMS.down(GMS.java:738)
 	at org.jgroups.stack.DownHandler.run(Protocol.java:120)
+```
 
 On the coordinator the following is displayed for every failed membership join event:
 
+```
 21125 [WARN] X509Token.authenticate(): - X509 authentication failed
 21125 [WARN] AUTH.up(): - AUTH failed to validate AuthHeader token
+```
 
-
-[pasted from Roland's email]
+_[pasted from Roland's email]_
 
 Recently I discussed with Bela Ban about a new Protocol called AUTH to
 authenticate the joining of members.
@@ -119,7 +121,7 @@ I think it would be fine when AUTH supports two authentication methods:
 Token:
 A simple token (String) based authentication using a configured String or a
 String read from an external file which can be protected so that only
-certain proceses can read the credential. Each member in the group needs to
+certain processes can read the credential. Each member in the group needs to
 have the same token else the authentication will not succeed:
 
  1. AUTH sends along with the GMS.GmsHeader.JOIN_REQ the hash of the
@@ -168,17 +170,17 @@ the new symmetric encryption key encrypted with the public key of the
 joiner.
 
 This protocol uses a lot of public private key encryptions (4 or five when
-AUTH provides the key for ENCRYP) but I think this is ok (members usually
+AUTH provides the key for ENCRYPT) but I think this is ok (members usually
 join not very often).
 
 
-The session key created by the coordinator could be used in the ENCRPT
+The session key created by the coordinator could be used in the ENCRYPT
 protocol for the message encryption.
 
 
 For me there are the following open questions:
  - Are the two AUTH methods reasonable?
- - Should ENCRYTP be extended so that the AUTH protocol distributes the new
+ - Should ENCRYPT be extended so that the AUTH protocol distributes the new
 symmetric encryption key?
  - How would AUTH "send" the key to the ENCRYPT protocol? Using a header
 which is cleared in the ENCRYPT layer would need that the ENCRYPT must be
