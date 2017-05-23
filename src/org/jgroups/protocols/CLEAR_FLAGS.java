@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Message;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 
 /**
@@ -9,6 +10,7 @@ import org.jgroups.stack.Protocol;
  * @since  4.0.4
  */
 public class CLEAR_FLAGS extends Protocol {
+    @Property(description="clear OOB flags")
     protected boolean oob=true;
 
     @Override
