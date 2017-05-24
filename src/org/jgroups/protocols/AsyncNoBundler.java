@@ -25,7 +25,8 @@ public class AsyncNoBundler extends NoBundler {
         thread_pool=new ThreadPoolExecutor(0, max_threads,
                                            30000, TimeUnit.MICROSECONDS,
                                            new SynchronousQueue<>(),
-                                           new DefaultThreadFactory("async-bundler", true, true));
+                                           new DefaultThreadFactory("async-bundler", true, true),
+                                           new ThreadPoolExecutor.CallerRunsPolicy());
         thread_pool.allowCoreThreadTimeOut(true);
     }
 
