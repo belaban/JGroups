@@ -298,7 +298,7 @@ public abstract class Discovery extends Protocol {
                             // JGRP-1492: only return our own address, and addresses in view.
                             if(addr.equals(local_addr) || view.containsMember(addr)) {
                                 PhysicalAddress physical_addr=entry.getValue();
-                                sendDiscoveryResponse(addr, physical_addr, NameCache.get(addr), msg.getSrc(), is_coord);
+                                sendDiscoveryResponse(addr, physical_addr, NameCache.get(addr), msg.getSrc(), isCoord(addr));
                             }
                         }
                     }

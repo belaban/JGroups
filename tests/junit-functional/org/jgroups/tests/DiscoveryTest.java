@@ -7,8 +7,8 @@ import org.jgroups.protocols.Discovery;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
@@ -22,15 +22,9 @@ import java.util.Map;
 @Test(groups=Global.FUNCTIONAL)
 public class DiscoveryTest {
     protected JChannel a, b, c, d;
-    protected static final String props="/home/bela/fast.xml";
 
-    @BeforeClass
+    @BeforeMethod
     protected void setup() throws Exception {
-       /* a=new JChannel(props).name("A");
-        b=new JChannel(props).name("B");
-        c=new JChannel(props).name("C");
-        d=new JChannel(props).name("D");*/
-
         a=new JChannel(Util.getTestStack()).name("A");
         b=new JChannel(Util.getTestStack()).name("B");
         c=new JChannel(Util.getTestStack()).name("C");
@@ -44,7 +38,7 @@ public class DiscoveryTest {
         System.out.printf("view is %s\n", a.getView());
     }
 
-    @AfterClass protected void destroy() {Util.close(d,c,b,a);}
+    @AfterMethod protected void destroy() {Util.close(d, c, b, a);}
 
 
     /** Makes sure the leak caused by https://issues.jboss.org/browse/JGRP-1983 is not present anymore */
@@ -58,7 +52,7 @@ public class DiscoveryTest {
 
     protected void testLeak(JChannel discovery_initiator) throws Exception {
         ProtocolStack stack=discovery_initiator.getProtocolStack();
-        Discovery ping=(Discovery)stack.findProtocol(Discovery.class);
+        Discovery ping=stack.findProtocol(Discovery.class);
         ping.discoveryRspExpiryTime(1000);
         Field ping_rsps_field=Util.getField(Discovery.class, "ping_responses");
         Map<Long,Responses> ping_rsps=(Map<Long,Responses>)Util.getField(ping_rsps_field, ping);
