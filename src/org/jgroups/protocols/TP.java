@@ -925,7 +925,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
     }
 
-    @ManagedOperation(description="Returns stats about the current bundler")
+    @ManagedAttribute(description="Returns stats about the current bundler")
     public String bundlerStats() {
         Map<String,Object> tmp=bundler.getStats();
         return tmp != null? tmp.toString() : "n/a";
