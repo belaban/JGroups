@@ -3,6 +3,8 @@ package org.jgroups.protocols;
 import org.jgroups.Message;
 import org.jgroups.View;
 
+import java.util.Map;
+
 /**
  * Pluggable way to collect messages and send them as batches
  * @author Bela Ban
@@ -23,4 +25,12 @@ public interface Bundler {
 
     /** The number of unsent messages in the bundler */
     int size();
+
+    /**
+     * Returns stats about the bundler itself.
+     * @return Stats, may be null
+     */
+    default Map<String,Object> getStats() {return null;}
+
+    default void resetStats() {}
 }

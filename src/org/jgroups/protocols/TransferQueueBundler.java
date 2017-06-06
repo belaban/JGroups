@@ -2,9 +2,12 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.Message;
+import org.jgroups.util.AverageMinMax;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -17,6 +20,9 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     protected List<Message>          remove_queue;
     protected volatile     Thread    bundler_thread;
     protected volatile boolean       running=true;
+    protected int                    num_sends_because_full_queue;
+    protected int                    num_sends_because_no_msgs;
+    protected final AverageMinMax    fill_count=new AverageMinMax(); // avg number of bytes when a batch is sent
     protected static final String    THREAD_NAME="TQ-Bundler";
 
     public TransferQueueBundler() {
@@ -37,10 +43,27 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     public int                  removeQueueSize()         {return remove_queue.size();}
     public TransferQueueBundler removeQueueSize(int size) {this.remove_queue=new ArrayList<>(size); return this;}
 
-    public void init(TP transport) {
-        super.init(transport);
+    @Override
+    public Map<String,Object> getStats() {
+        Map<String,Object> retval=super.getStats();
+        if(retval == null)
+            retval=new HashMap<>(3);
+        retval.put("sends_because_full", num_sends_because_full_queue);
+        retval.put("sends_because_no_msgs", num_sends_because_no_msgs);
+        retval.put("avg_fill_count", fill_count);
+        return retval;
+    }
+
+    @Override
+    public void resetStats() {
+        num_sends_because_full_queue=num_sends_because_no_msgs=0;
+        fill_count.clear();
+    }
+
+    public void init(TP tp) {
+        super.init(tp);
         if(queue == null)
-            queue=new ArrayBlockingQueue<>(assertPositive(transport.getBundlerCapacity(), "bundler capacity cannot be " + transport.getBundlerCapacity()));
+            queue=new ArrayBlockingQueue<>(assertPositive(tp.getBundlerCapacity(), "bundler capacity cannot be " + tp.getBundlerCapacity()));
     }
 
     public synchronized void start() {
@@ -81,8 +104,11 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                 if((msg=queue.take()) == null)
                     continue;
                 long size=msg.size();
-                if(count + size >= transport.getMaxBundleSize())
+                if(count + size >= transport.getMaxBundleSize()) {
+                    num_sends_because_full_queue++;
+                    fill_count.add(count);
                     _sendBundledMessages();
+                }
                 _addMessage(msg, size);
                 while(true) {
                     remove_queue.clear();
@@ -92,13 +118,19 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                     for(int i=0; i < remove_queue.size(); i++) {
                         msg=remove_queue.get(i);
                         size=msg.size();
-                        if(count + size >= transport.getMaxBundleSize())
+                        if(count + size >= transport.getMaxBundleSize()) {
+                            num_sends_because_full_queue++;
+                            fill_count.add(count);
                             _sendBundledMessages();
+                        }
                         _addMessage(msg, size);
                     }
                 }
-                if(count > 0)
+                if(count > 0) {
+                    num_sends_because_no_msgs++;
+                    fill_count.add(count);
                     _sendBundledMessages();
+                }
             }
             catch(Throwable t) {
             }
