@@ -15,7 +15,6 @@ import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Simple relaying protocol: RELAY is added to the top of the stack, creates a channel to a bridge cluster,
@@ -541,7 +540,7 @@ public class RELAY extends Protocol {
                                                                     msg.getOffset(), msg.getLength());
                         // replace addrs with proxies
                         if(data.remote_view != null) {
-                            List<Address> mbrs=data.remote_view.getMembers().stream().collect(Collectors.toCollection(LinkedList::new));
+                            List<Address> mbrs=new LinkedList<>(data.remote_view.getMembers());
                             data.remote_view=new View(data.remote_view.getViewId(), mbrs);
                         }
                         boolean merge=remote_view == null;
@@ -571,7 +570,7 @@ public class RELAY extends Protocol {
             switch(view.size()) {
                 case 1:
                     // the remote cluster disappeared, remove all of its addresses from the view
-                    if(prev_members > 1 && view.getMembers().iterator().next().equals(bridge.getAddress())) {
+                    if(prev_members > 1 && view.getCoord().equals(bridge.getAddress())) {
                         remote_view=null;
                         View new_global_view=generateGlobalView(local_view, null);
                         sendViewOnLocalCluster(null, new_global_view, false, null);

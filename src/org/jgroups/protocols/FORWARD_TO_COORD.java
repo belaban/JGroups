@@ -6,7 +6,6 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Bits;
 import org.jgroups.util.ForwardQueue;
-import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -156,7 +155,7 @@ public class FORWARD_TO_COORD extends Protocol {
 
 
     protected void handleViewChange(View view) {
-        Address new_coord=Util.getCoordinator(view);
+        Address new_coord=view.getCoord();
         boolean coord_changed=!Objects.equals(coord, new_coord);
 
         if(coord_changed || received_not_coord) {

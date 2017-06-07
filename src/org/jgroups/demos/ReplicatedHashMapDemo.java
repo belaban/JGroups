@@ -218,7 +218,7 @@ public class ReplicatedHashMapDemo extends Frame implements WindowListener, Acti
     }
 
     private void _setTitle() {
-        int num=map.getChannel().getView().getMembers().size();
+        int num=map.getChannel().getView().size();
         setTitle("ReplicatedHashMapDemo: " + num + " server(s)");
     }
 

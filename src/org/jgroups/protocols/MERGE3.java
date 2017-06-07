@@ -248,8 +248,7 @@ public class MERGE3 extends Protocol {
                 if(only_coords_run_consistency_checker == false)
                     startViewConsistencyChecker();
 
-                List<Address> mbrs=view.getMembers();
-                Address coord=mbrs.isEmpty()? null : mbrs.get(0);
+                Address coord=view.getCoord();
                 if(Objects.equals(coord, local_addr)) {
                     is_coord=true;
                     if(only_coords_run_consistency_checker)

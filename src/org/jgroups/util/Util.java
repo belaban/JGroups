@@ -4109,16 +4109,10 @@ public class Util {
     public static boolean isCoordinator(View view,Address local_addr) {
         if(view == null || local_addr == null)
             return false;
-        List<Address> mbrs=view.getMembers();
-        return !(mbrs == null || mbrs.isEmpty()) && local_addr.equals(mbrs.iterator().next());
+        Address coord=view.getCoord();
+        return coord != null && local_addr.equals(coord);
     }
 
-    public static Address getCoordinator(View view) {
-        if(view == null)
-            return null;
-        List<Address> mbrs=view.getMembers();
-        return !mbrs.isEmpty()? mbrs.get(0) : null;
-    }
 
     public static MBeanServer getMBeanServer() {
         List<MBeanServer> servers=MBeanServerFactory.findMBeanServer(null);

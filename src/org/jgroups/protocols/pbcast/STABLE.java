@@ -361,7 +361,7 @@ public class STABLE extends Protocol {
         lock.lock();
         try {
             this.view=v;
-            coordinator=v.getMembers().get(0);
+            coordinator=v.getCoord();
             resetDigest();
             if(!initialized)
                 initialized=true;

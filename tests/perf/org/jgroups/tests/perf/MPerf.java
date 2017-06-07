@@ -92,7 +92,7 @@ public class MPerf extends ReceiverAdapter {
         JmxConfigurator.registerChannel(channel, Util.getMBeanServer(), "jgroups", "mperf", true);
 
         // send a CONFIG_REQ to the current coordinator, so we can get the current config
-        Address coord=channel.getView().getMembers().get(0);
+        Address coord=channel.getView().getCoord();
         if(coord != null && !local_addr.equals(coord))
             send(coord,null,MPerfHeader.CONFIG_REQ, Message.Flag.RSVP);
     }

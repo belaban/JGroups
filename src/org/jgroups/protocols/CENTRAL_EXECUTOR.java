@@ -65,7 +65,7 @@ public class CENTRAL_EXECUTOR extends Executing {
     public void handleView(View view) {
         Address oldCoord = coord;
         if(view.size() > 0) {
-            coord=view.getMembers().iterator().next();
+            coord=view.getCoord();
             is_coord=coord.equals(local_addr);
             if(log.isDebugEnabled())
                 log.debug("local_addr=" + local_addr + ", coord=" + coord + ", is_coord=" + is_coord);

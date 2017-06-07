@@ -307,11 +307,8 @@ public class SEQUENCER2 extends Protocol {
     // If we're becoming coordinator, we need to handle TMP_VIEW as
     // an immediate change of view. See JGRP-1452.
     private void handleTmpView(View v) {
-        List<Address> mbrs=v.getMembers();
-        if(mbrs.isEmpty()) return;
-
-        Address new_coord=mbrs.get(0);
-        if(!new_coord.equals(coord) && local_addr != null && local_addr.equals(new_coord))
+        Address new_coord=v.getCoord();
+        if(new_coord != null && !new_coord.equals(coord) && local_addr != null && local_addr.equals(new_coord))
             handleViewChange(v);
     }
 

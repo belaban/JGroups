@@ -725,9 +725,9 @@ public class RELAY2 extends Protocol {
         }
 
         if(retval.isEmpty()) {
-            Address tmp=Util.getCoordinator(view);
-            if(tmp != null)
-                retval.add(Util.getCoordinator(view));
+            Address coord=view.getCoord();
+            if(coord != null)
+                retval.add(coord);
         }
         return retval;
     }
