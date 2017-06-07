@@ -19,6 +19,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
+import java.util.stream.Stream;
 
 
 /**
@@ -246,100 +248,42 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     /** The number of messages in all Entry.sent_msgs tables (haven't received an ACK yet) */
     @ManagedAttribute
     public int getNumUnackedMessages() {
-        int num=0;
-        for(Entry entry: send_table.values()) {
-            if(entry.msgs != null)
-                num+=entry.msgs.size();
-        }
-        return num;
+        return accumulate(Table::size, send_table.values());
     }
 
-
     @ManagedAttribute(description="Total number of undelivered messages in all receive windows")
-    public long getXmitTableUndeliveredMessages() {
-        long retval=0;
-        for(Entry entry: recv_table.values()) {
-            if(entry.msgs != null)
-                retval+=entry.msgs.size();
-        }
-        return retval;
+    public int getXmitTableUndeliveredMessages() {
+        return accumulate(Table::size, recv_table.values());
     }
 
     @ManagedAttribute(description="Total number of missing messages in all receive windows")
-    public long getXmitTableMissingMessages() {
-        long retval=0;
-        for(Entry entry: recv_table.values()) {
-            if(entry.msgs != null)
-                retval+=entry.msgs.getNumMissing();
-        }
-        return retval;
+    public int getXmitTableMissingMessages() {
+        return accumulate(Table::getNumMissing, recv_table.values());
     }
 
     @ManagedAttribute(description="Total number of deliverable messages in all receive windows")
     public int getXmitTableDeliverableMessages() {
-        int retval=0;
-        for(Entry entry: recv_table.values()) {
-            if(entry.msgs != null)
-                retval+=entry.msgs.getNumDeliverable();
-        }
-        return retval;
+        return accumulate(Table::getNumDeliverable, recv_table.values());
     }
-
 
     @ManagedAttribute(description="Number of compactions in all (receive and send) windows")
     public int getXmitTableNumCompactions() {
-        int retval=0;
-        for(Entry entry: recv_table.values()) {
-            if(entry.msgs != null)
-                retval+=entry.msgs.getNumCompactions();
-        }
-        for(Entry entry: send_table.values()) {
-            if(entry.msgs != null)
-                retval+=entry.msgs.getNumCompactions();
-        }
-        return retval;
+        return accumulate(Table::getNumCompactions, recv_table.values(), send_table.values());
     }
 
     @ManagedAttribute(description="Number of moves in all (receive and send) windows")
     public int getXmitTableNumMoves() {
-        int retval=0;
-        for(Entry entry: recv_table.values()) {
-            if(entry.msgs != null)
-                retval+=entry.msgs.getNumMoves();
-        }
-        for(Entry entry: send_table.values()) {
-            if(entry.msgs != null)
-                retval+=entry.msgs.getNumMoves();
-        }
-        return retval;
+        return accumulate(Table::getNumMoves, recv_table.values(), send_table.values());
     }
 
     @ManagedAttribute(description="Number of resizes in all (receive and send) windows")
     public int getXmitTableNumResizes() {
-        int retval=0;
-        for(Entry entry: recv_table.values()) {
-            if(entry.msgs != null)
-                retval+=entry.msgs.getNumResizes();
-        }
-        for(Entry entry: send_table.values()) {
-            if(entry.msgs != null)
-                retval+=entry.msgs.getNumResizes();
-        }
-        return retval;
+        return accumulate(Table::getNumResizes, recv_table.values(), send_table.values());
     }
 
     @ManagedAttribute(description="Number of purges in all (receive and send) windows")
     public int getXmitTableNumPurges() {
-        int retval=0;
-        for(Entry entry: recv_table.values()) {
-            if(entry.msgs != null)
-                retval+=entry.msgs.getNumPurges();
-        }
-        for(Entry entry: send_table.values()) {
-            if(entry.msgs != null)
-                retval+=entry.msgs.getNumPurges();
-        }
-        return retval;
+        return accumulate(Table::getNumPurges, recv_table.values(), send_table.values());
     }
 
     @ManagedOperation(description="Prints the contents of the receive windows for all members")
@@ -507,9 +451,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 continue;
             }
 
-            List<LongTuple<Message>> list=msgs.get(hdr.conn_id);
-            if(list == null)
-                msgs.put(hdr.conn_id, list=new ArrayList<>(size));
+            List<LongTuple<Message>> list=msgs.computeIfAbsent(hdr.conn_id, k -> new ArrayList<>(size));
             list.add(new LongTuple<>(hdr.seqno(), msg));
 
             if(hdr.first)
@@ -1208,6 +1150,40 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return num_removed;
     }
 
+    /**
+     * Removes send- and/or receive-connections whose state is not OPEN (CLOSING or CLOSED).
+     * @param remove_send_connections If true, send connections whose state is !OPEN are destroyed and removed
+     * @param remove_receive_connections If true, receive connections with state !OPEN are destroyed and removed
+     * @return The number of connections which were removed
+     */
+    @ManagedOperation(description="Removes send- and/or receive-connections whose state is not OPEN (CLOSING or CLOSED)")
+    public int removeConnections(boolean remove_send_connections, boolean remove_receive_connections) {
+        int num_removed=0;
+        if(remove_send_connections) {
+            for(Map.Entry<Address,SenderEntry> entry: send_table.entrySet()) {
+                SenderEntry val=entry.getValue();
+                if(val.state() != State.OPEN) { // only look at closing or closed connections
+                    log.debug("%s: removing connection for %s (%d ms old, state=%s) from send_table",
+                              local_addr, entry.getKey(), val.age(), val.state());
+                    removeSendConnection(entry.getKey());
+                    num_removed++;
+                }
+            }
+        }
+        if(remove_receive_connections) {
+            for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
+                ReceiverEntry val=entry.getValue();
+                if(val.state() != State.OPEN) { // only look at closing or closed connections
+                    log.debug("%s: removing expired connection for %s (%d ms old, state=%s) from recv_table",
+                              local_addr, entry.getKey(), val.age(), val.state());
+                    removeReceiveConnection(entry.getKey());
+                    num_removed++;
+                }
+            }
+        }
+        return num_removed;
+    }
+
     protected void update(Entry entry, int num_received) {
         if(conn_expiry_timeout > 0)
             entry.update();
@@ -1220,6 +1196,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected static int compare(int ts1, int ts2) {
         int diff=ts1 - ts2;
         return diff < 0? -1 : diff > 0? 1 : 0;
+    }
+
+    @SafeVarargs
+    protected static int accumulate(ToIntFunction<Table> func, Collection<? extends Entry> ... entries) {
+        return Stream.of(entries).flatMap(Collection::stream)
+          .map(entry -> entry.msgs).filter(Objects::nonNull)
+          .mapToInt(func::applyAsInt).sum();
     }
 
 
