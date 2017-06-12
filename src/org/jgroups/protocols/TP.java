@@ -327,7 +327,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public long getThreadPoolKeepAliveTime() {return thread_pool_keep_alive_time;}
 
     public Object[] getJmxObjects() {
-        return new Object[]{msg_stats, msg_processing_policy};
+        return new Object[]{msg_stats, msg_processing_policy, bundler};
     }
 
     public <T extends Protocol> T setLevel(String level) {
@@ -1127,6 +1127,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             case "async-no-bundler":
             case "anb":
                 return new AsyncNoBundler();
+            case "ab":
+            case "alternating-bundler":
+                return new AlternatingBundler();
+            case "rqb": case "rq":
+            case "remove-queue-bundler": case "remove-queue":
+                return new RemoveQueueBundler();
         }
 
         try {

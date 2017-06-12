@@ -43,7 +43,7 @@ public class RingBundlerTest {
         System.out.println("rb = " + rb);
         assert rb.readIndex() == 6;
         assert rb.writeIndex() == 6;
-        assert rb.count() == 0;
+        assert rb.isEmpty();
         assert transport.map.get(null) == 1;
         transport.map.clear();
 
@@ -60,7 +60,7 @@ public class RingBundlerTest {
 
         assert rb.readIndex() == 2;
         assert rb.writeIndex() == 2;
-        assert rb.count() == 0;
+        assert rb.isEmpty();
         Stream.of(null, a,b,c,d).forEach(a -> {assert transport.map.get(a) == 1;});
     }
 
@@ -152,11 +152,7 @@ public class RingBundlerTest {
         }
 
         protected void incrCount(Address dest) {
-            Integer count=map.get(dest);
-            if(count == null)
-                map.put(dest, 1);
-            else
-                map.put(dest, count+1);
+            map.merge(dest, 1, (a1, b1) -> a1 + b1);
         }
     }
 }

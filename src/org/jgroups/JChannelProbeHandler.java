@@ -221,12 +221,12 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                         }
                         else {
                             // try to find a setter for X, e.g. x(type-of-x) or setX(type-of-x)
-                            ResourceDMBean.Accessor setter=ResourceDMBean.findSetter(target, attrname);  // Util.getSetter(prot.getClass(), attrname);
+                            ResourceDMBean.Accessor setter=ResourceDMBean.findSetter(target, attrname);
                             if(setter == null && target instanceof AdditionalJmxObjects) {
                                 Object[] objs=((AdditionalJmxObjects)target).getJmxObjects();
                                 if(objs != null && objs.length > 0) {
                                     for(Object o: objs) {
-                                        setter=o != null? ResourceDMBean.findSetter(target, attrname) : null;
+                                        setter=o != null? ResourceDMBean.findSetter(o, attrname) : null;
                                         if(setter!= null)
                                             break;
                                     }
@@ -246,8 +246,10 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                                     log.error("unable to invoke %s() on %s: %s", setter, protocol_name, e);
                                 }
                             }
-                            else
+                            else {
                                 log.warn(Util.getMessage("FieldNotFound"), attrname, protocol_name);
+                                setter=new ResourceDMBean.NoopAccessor();
+                            }
                         }
 
                         it.remove();

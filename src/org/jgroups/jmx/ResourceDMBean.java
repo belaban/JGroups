@@ -260,13 +260,15 @@ public class ResourceDMBean implements DynamicMBean {
         }
     }
 
-    /** Provides field-based getter and/or setters for all attributes in atts if not present */
+    /** Provides field-based getter and/or setters for all attributes in attrs if not present */
     protected void fixFields(Object instance) {
         for(AttributeEntry attr: atts.values()) {
             if(attr.getter == null)
                 attr.getter=findGetter(instance, attr.name);
             if(attr.setter == null)
                 attr.setter=findSetter(instance, attr.name);
+            if(attr.setter == null)
+                attr.setter=new NoopAccessor();
         }
     }
 
@@ -385,7 +387,7 @@ public class ResourceDMBean implements DynamicMBean {
         if(field != null)
             return new FieldAccessor(field, target);
 
-        return new NoopAccessor();
+        return null;
     }
 
     /** Returns a string with the first letter being lowercase */
@@ -557,7 +559,7 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
 
-    protected static class NoopAccessor implements Accessor {
+    public static class NoopAccessor implements Accessor {
         public Object invoke(Object new_val) throws Exception {return null;}
 
         public String toString() {return "NoopAccessor";}
