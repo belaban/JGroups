@@ -6,7 +6,7 @@ import org.jgroups.protocols.FORK;
 import org.jgroups.stack.Protocol;
 
 /**
- * Acts as bottom protool of a fork-stack. Knows about the fork-stack-id and inserts it into the ForkHeader of messages
+ * Acts as bottom protocol of a fork-stack. Knows about the fork-stack-id and inserts it into the ForkHeader of messages
  * sent down the stack
  * @author Bela Ban
  * @since  3.4

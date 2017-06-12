@@ -141,11 +141,7 @@ public class ForkProtocolStack extends ProtocolStack {
             FORK.ForkHeader hdr=msg.getHeader(FORK.ID);
             if(hdr != null) {
                 batch.remove(msg);
-                List<Message> list=map.get(hdr.getForkChannelId());
-                if(list == null) {
-                    list=new ArrayList<>();
-                    map.put(hdr.getForkChannelId(), list);
-                }
+                List<Message> list=map.computeIfAbsent(hdr.getForkChannelId(), k -> new ArrayList<>());
                 list.add(msg);
             }
         }
