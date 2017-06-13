@@ -70,7 +70,7 @@ public abstract class Discovery extends Protocol {
 
     @Property(description="When a new node joins, and we have a static discovery protocol (TCPPING), then send the " +
       "contents of the discovery cache to new and existing members if true (and we're the coord). Addresses JGRP-1903")
-    protected boolean                    send_cache_on_join;
+    protected boolean                    send_cache_on_join=true;
 
     @Property(description="The max rank of this member to respond to discovery requests, e.g. if " +
       "max_rank_to_reply=2 in {A,B,C,D,E}, only A (rank 1) and B (rank 2) will reply. A value <= 0 means " +
