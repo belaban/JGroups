@@ -110,6 +110,11 @@ public class JDBC_PING extends FILE_PING {
         attemptSchemaInitialization();
     }
 
+    @Override
+    public void stop() {
+        super.stop();
+        if (is_coord) removeAll(cluster_name);
+    }
 
     protected void write(List<PingData> list, String clustername) {
         for(PingData data: list)
