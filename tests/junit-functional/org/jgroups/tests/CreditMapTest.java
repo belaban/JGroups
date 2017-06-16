@@ -53,25 +53,25 @@ public class CreditMapTest {
 
         System.out.println("map:\n" + map);
 
-        boolean rc=map.decrement(200, 4000);
+        boolean rc=map.decrement(null, 200, 4000);
         System.out.println("rc=" + rc + ", map:\n" + map);
         assert rc;
         assert map.getMinCredits() == MAX_CREDITS - 200;
         assert map.getAccumulatedCredits() == 200;
 
-        rc=map.decrement(150, 100);
+        rc=map.decrement(null, 150, 100);
         System.out.println("\nrc=" + rc + ", map:\n" + map);
         assert rc;
         assert map.getMinCredits() == MAX_CREDITS - 200 - 150;
         assert map.getAccumulatedCredits() == 200 + 150;
 
-        rc=map.decrement(300, 100);
+        rc=map.decrement(null, 300, 100);
         System.out.println("\nrc=" + rc + ", map:\n" + map);
         assert rc;
         assert map.getMinCredits() == MAX_CREDITS - 200 - 150 - 300;
         assert map.getAccumulatedCredits() == 200 + 150 + 300;
 
-        rc=map.decrement(500, 100);
+        rc=map.decrement(null, 500, 100);
         System.out.println("\nrc=" + rc + ", map:\n" + map);
         assert !rc;
         assert map.getMinCredits() == MAX_CREDITS - 200 - 150 - 300;
@@ -99,16 +99,16 @@ public class CreditMapTest {
 
     public void testDecrementAndReplenish2() {
         map.putIfAbsent(a);
-        map.decrement(200, 100);
+        map.decrement(null, 200, 100);
 
         map.putIfAbsent(b);
-        map.decrement(200, 100);
+        map.decrement(null, 200, 100);
 
         map.putIfAbsent(c);
-        map.decrement(200, 100);
+        map.decrement(null, 200, 100);
 
         map.putIfAbsent(d);
-        map.decrement(200, 100);
+        map.decrement(null, 200, 100);
 
         // A: 200, B: 400, C: 600, D: 800
         System.out.println("map = " + map);
@@ -127,27 +127,25 @@ public class CreditMapTest {
     public void testBlockingDecrementAndReplenishment() throws Exception {
         final CyclicBarrier barrier=new CyclicBarrier(2);
 
-        Thread thread=new Thread() {
-            public void run() {
-                try {
-                    barrier.await();
-                    Util.sleep(1000);
-                    replenishAll(100);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
+        Thread thread=new Thread(() -> {
+            try {
+                barrier.await();
+                Util.sleep(1000);
+                replenishAll(100);
             }
-        };
+            catch(Exception e) {
+                e.printStackTrace();
+            }
+        });
         thread.start();
 
         addAll();
-        boolean rc=map.decrement(800, 100);
+        boolean rc=map.decrement(null, 800, 100);
         assert rc;
         System.out.println("map:\n" + map);
 
         barrier.await();
-        rc=map.decrement(250, 5000);
+        rc=map.decrement(null, 250, 5000);
         assert rc;
         System.out.println("map:\n" + map);
         assert map.getMinCredits() == 50;
@@ -156,11 +154,11 @@ public class CreditMapTest {
 
 
     public void testBlockingDecrementAndReplenishment2() {
-        long[] credit_sizes={500, 100, 100, 500, 300};
+        int[] credit_sizes={500, 100, 100, 500, 300};
         Decrementer[] decrementers=new Decrementer[credit_sizes.length];
 
         addAll();
-        boolean rc=map.decrement(800, 100);
+        boolean rc=map.decrement(null, 800, 100);
         assert rc;
 
         for(int i=0; i < credit_sizes.length; i++)
@@ -204,7 +202,7 @@ public class CreditMapTest {
 
     public void testClear() {
         addAll();
-        boolean rc=map.decrement(800, 100);
+        boolean rc=map.decrement(null, 800, 100);
         assert rc;
 
         Decrementer decr1=new Decrementer(map, 300, 20000, false), decr2=new Decrementer(map, 500, 20000, false);
@@ -228,7 +226,7 @@ public class CreditMapTest {
 
     public void testGetMembersWithInsufficientCredits() {
         addAll();
-        boolean rc=map.decrement(800, 50);
+        boolean rc=map.decrement(null, 800, 50);
         assert rc;
         List<Address> list=map.getMembersWithInsufficientCredits(100);
         assert list.isEmpty();
@@ -245,7 +243,7 @@ public class CreditMapTest {
         assert list.size() == 2;
         assert list.contains(a) && list.contains(d);
 
-        map.decrement(100, 50);
+        map.decrement(null, 100, 50);
         map.putIfAbsent(b); map.putIfAbsent(c);
 
         // Now A and D have 100 credits, B and C 1000
@@ -269,11 +267,11 @@ public class CreditMapTest {
 
     protected static class Decrementer extends Thread {
         private final CreditMap map;
-        private final long amount;
-        private final long timeout;
+        private final int       amount;
+        private final long      timeout;
         protected final boolean loop;
 
-        public Decrementer(CreditMap map, long amount, long timeout, boolean loop) {
+        public Decrementer(CreditMap map, int amount, long timeout, boolean loop) {
             this.map=map;
             this.amount=amount;
             this.timeout=timeout;
@@ -282,7 +280,7 @@ public class CreditMapTest {
 
         public void run() {
             while(true) {
-                boolean rc=map.decrement(amount, timeout);
+                boolean rc=map.decrement(null, amount, timeout);
                 if(rc) {
                     System.out.println("[" + getId() + "] decremented " + amount + " credits");
                     break;

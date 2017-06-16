@@ -64,6 +64,8 @@
     <class id="60" name="org.jgroups.protocols.NAMING"/>
     <class id="61" name="org.jgroups.protocols.dns.DNS_PING"/>
     <class id="62" name="org.jgroups.protocols.FRAG3"/>
+    <class id="63" name="org.jgroups.protocols.UFC_NB"/>
+    <class id="64" name="org.jgroups.protocols.MFC_NB"/>
 
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->

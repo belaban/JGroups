@@ -1421,6 +1421,44 @@ UFC has currently no properties other than those inherited by FlowControl (see a
 ${UFC}
 
 
+[[NonBlockingFlowControl]]
+=== Non blocking flow control
+
+Contrary to <<FlowControl,blocking flow control>>, which blocks senders from sending a message when credits are lacking,
+non-blocking flow control avoids blocking the sender thread.
+
+Instead, when a sender has insufficient credits to send a message, the message is queued and the control flow returns to
+the calling thread. When more credits are received, the queued messages are sent.
+
+This means that a `JChannel.send(Message)` never blocks and - if the transport is also non-blocking (e.g. <<TCP_NIO2>>) -
+we have a completely non-blocking stack.
+
+However, if the send rate is always faster than the receive (processing) rate, messages will end up in the queues and
+the queues will grow, leading to memory exhaustion.
+
+It is therefore possible to fall back to blocking the sender threads if the message queues grow beyond a certain limit.
+
+The attribute to bound a queue is `max_queue_size`, and defines the max number of bytes the accumulated messages can
+have. If that size is exceeded, the addition of a message to a queue will block until messages are removed from the queue.
+
+The `max_queue_size` attribute is per queue, so for unicast messages we have 1 queue per destination and for multicast
+messages we have a single queue for all destinations. For example, if `max_queue_size` is set to `5M` (5 million bytes),
+and we have members `{A,B,C,D}`, then on A the queues for B, C and D will have a combined max size of 15MB.
+
+[[UFC_NB]]
+==== UFC_NB
+This is the non-blocking alternative to <<UFC>>. It extends UFC, so all attributes from UFC are inherited.
+
+${UFC_NB}
+
+
+[[MFC_NB]]
+==== MFC_NB
+This is the non-blocking alternative to <<MFC>>. It inherits from MFC, so all attributes are inherited.
+
+${MFC_NB}
+
+
 
 === Fragmentation
 

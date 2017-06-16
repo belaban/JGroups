@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import org.jgroups.Address;
+import org.jgroups.Message;
 import org.jgroups.annotations.GuardedBy;
 
 import java.util.*;
@@ -19,22 +20,28 @@ public class CreditMap {
     @GuardedBy("lock")
     protected final Map<Address,Long> credits=new HashMap<>();
     protected long                    min_credits;
-    protected long                    accumulated_credits;
-    protected final Lock              lock=new ReentrantLock();
-    protected final Condition         credits_available=lock.newCondition();
+    protected long                    accumulated_credits; // credits that need to be subtracted from each member
+    protected final Lock              lock;
+    protected final Condition         credits_available;
     protected int                     num_blockings;
     protected final Average           avg_block_time=new Average(); // in ns
 
 
     public CreditMap(long max_credits) {
+        this(max_credits, new ReentrantLock());
+    }
+
+    public CreditMap(long max_credits, final Lock lock) {
         this.max_credits=max_credits;
-        min_credits=max_credits;
+        this.min_credits=max_credits;
+        this.lock=lock;
+        this.credits_available=lock.newCondition();
     }
 
     public long   getAccumulatedCredits() {return accumulated_credits;}
     public long   getMinCredits()         {return min_credits;}
     public int    getNumBlockings()       {return num_blockings;}
-    public double getAverageBlockTime()   {return avg_block_time.getAverage() / 1000000.0;} // in ms
+    public double getAverageBlockTime()   {return avg_block_time.getAverage() / 1_000_000.0;} // in ms
 
     public Set<Address> keys() {
         lock.lock();
@@ -125,11 +132,13 @@ public class CreditMap {
      * Decrements credits bytes from all. Returns true if successful, or false if not. Blocks for timeout ms
      * (if greater than 0).
      *
+     *
+     * @param msg The message to be sent
      * @param credits Number of bytes to decrement from all members
      * @param timeout Number of milliseconds to wait until more credits have been received
-     * @return True if decrementing credits bytes succeeded, false otherwise 
+     * @return True if decrementing credits bytes succeeded, false otherwise
      */
-    public boolean decrement(long credits, long timeout) {
+    public boolean decrement(final Message msg, int credits, long timeout) {
         lock.lock();
         try {
             if(decrement(credits))
@@ -144,11 +153,8 @@ public class CreditMap {
             }
             catch(InterruptedException e) {
             }
-            finally {
-                num_blockings++;
-                avg_block_time.add(System.nanoTime() - start);
-            }
-            
+            num_blockings++;
+            avg_block_time.add(System.nanoTime() - start);
             return decrement(credits);
         }
         finally {
@@ -227,7 +233,7 @@ public class CreditMap {
         lock.lock();
         try {
             for(Map.Entry<Address,Long> entry: credits.entrySet()) {
-                sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+                sb.append(entry.getKey()).append(": ").append(entry.getValue() - accumulated_credits).append("\n");
             }
             sb.append("min_credits=" + min_credits + ", accumulated=" + accumulated_credits);
         }
@@ -239,7 +245,7 @@ public class CreditMap {
 
     // need to be called with lock held
     protected boolean decrement(long credits) {
-        if(credits <= min_credits) {
+        if(min_credits - credits >= 0) {
             accumulated_credits+=credits;
             min_credits-=credits;
             return true;
@@ -263,7 +269,7 @@ public class CreditMap {
     }
 
     /**
-     * Decrements credits bytes from all elements and add new_credits to member (if non null).
+     * Decrements credits bytes from all elements and adds new_credits to member (if non null).
      * The lowest credit needs to be greater than min_credits. Needs to be called with lock held
      * @param member The member to which new_credits are added. NOP if null
      * @param new_credits Number of bytes to add to member. NOP if 0.

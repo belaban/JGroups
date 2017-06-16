@@ -16,8 +16,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Tests the last message dropped problem in NAKACK (see doc/design/varia2.txt)
@@ -59,7 +59,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         discard.setDropDownMulticasts(1); // drop the next multicast
         a.send(null, 3);
 
-        List<Integer> list=receiver.getMsgs();
+        Collection<Integer> list=receiver.getMsgs();
         for(int i=0; i < 20 && list.size() < 3; i++)  {
             System.out.println("list=" + list);
             Util.sleep(1000);
@@ -85,7 +85,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         stack.insertProtocol(new LastSeqnoDropper(1), ProtocolStack.Position.BELOW, NAKACK2.class);
         a.send(null, 3);
 
-        List<Integer> list=receiver.getMsgs();
+        Collection<Integer> list=receiver.getMsgs();
         for(int i=0; i < 20 && list.size() < 3; i++)  {
             System.out.println("list=" + list);
             Util.sleep(1000);
@@ -129,9 +129,9 @@ public class LastMessageDroppedTest extends ChannelTestBase {
     }
 
     protected static class MyReceiver extends ReceiverAdapter {
-        private final List<Integer> msgs=new ArrayList<>(3);
+        private final Collection<Integer> msgs=new ConcurrentLinkedQueue<>();
 
-        public List<Integer> getMsgs() {
+        public Collection<Integer> getMsgs() {
             return msgs;
         }
 

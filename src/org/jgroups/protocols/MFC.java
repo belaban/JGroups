@@ -85,7 +85,7 @@ public class MFC extends FlowControl {
    
     public void init() throws Exception {
         super.init();
-        credits=new CreditMap(max_credits);
+        credits=createCreditMap(max_credits);
     }
 
     public void stop() {
@@ -98,14 +98,20 @@ public class MFC extends FlowControl {
         credits.reset();
     }
 
+    protected CreditMap createCreditMap(long max_creds) {
+        return new CreditMap(max_creds);
+    }
+
     @Override
-    protected Object handleDownMessage(final Message msg, Address dest, int length) {
+    protected Object handleDownMessage(final Message msg) {
+        Address dest=msg.dest();
         if(dest != null) // 2nd line of defense, not really needed
             return down_prot.down(msg);
 
+        int length=msg.length();
         long block_time=max_block_times != null? getMaxBlockTime(length) : max_block_time;
         while(running) {
-            boolean rc=credits.decrement(length, block_time);
+            boolean rc=credits.decrement(msg, length, block_time);
             if(rc || max_block_times != null || !running)
                 break;
 

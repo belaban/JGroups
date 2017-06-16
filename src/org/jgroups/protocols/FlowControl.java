@@ -6,15 +6,14 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Average;
 import org.jgroups.util.Bits;
+import org.jgroups.util.Credit;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -34,14 +33,14 @@ public abstract class FlowControl extends Protocol {
      * Max number of bytes to send per receiver until an ack must be received before continuing sending
      */
     @Property(description="Max number of bytes to send per receiver until an ack must be received to proceed")
-    protected long max_credits=500000;
+    protected long           max_credits=500000;
 
     /**
      * Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
      * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to wait forever.
      */
     @Property(description="Max time (in ms) to block")
-    protected long max_block_time=500;
+    protected long           max_block_time=500;
 
     /**
      * Defines the max number of milliseconds for a message to block before being sent, based on the length of
@@ -52,7 +51,7 @@ public abstract class FlowControl extends Protocol {
      * If a message's length (size of the payload in bytes) is for example 15'000 bytes,
      * FlowControl blocks it for a max of 100 ms.
      */
-    protected Map<Long,Long> max_block_times=null;
+    protected Map<Long,Long> max_block_times;
 
 
     /**
@@ -63,21 +62,21 @@ public abstract class FlowControl extends Protocol {
     @Property(description="The threshold (as a percentage of max_credits) at which a receiver sends more credits to " +
             "a sender. Example: if max_credits is 1'000'000, and min_threshold 0.25, then we send ca. 250'000 credits " +
             "to P once we've got only 250'000 credits left for P (we've received 750'000 bytes from P)")
-    protected double min_threshold=0.40;
+    protected double         min_threshold=0.40;
 
     /**
      * Computed as <tt>max_credits</tt> times <tt>min_theshold</tt>. If explicitly set, this will
      * override the above computation
      */
     @Property(description="Computed as max_credits x min_theshold unless explicitly set")
-    protected long min_credits=0;
+    protected long           min_credits;
     
 
     
     
-    /* ---------------------------------------------   JMX      ------------------------------------------------------ */
-    protected int  num_credit_requests_received=0, num_credit_requests_sent=0;
-    protected int  num_credit_responses_sent=0, num_credit_responses_received=0;
+    /* ---------------------------------------------   JMX      -------------------------------------------------- */
+    protected int  num_credit_requests_received, num_credit_requests_sent;
+    protected int  num_credit_responses_sent, num_credit_responses_received;
 
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
@@ -90,16 +89,15 @@ public abstract class FlowControl extends Protocol {
      */
     protected final Map<Address,Credit> received=Util.createConcurrentMap();
 
-    protected Address local_addr;
+    protected Address                   local_addr;
 
 
     /** Whether FlowControl is still running, this is set to false when the protocol terminates (on stop()) */
-    protected volatile boolean running=true;
+    protected volatile boolean          running=true;
 
-    
-    protected int frag_size;
+    protected int                       frag_size; // remember frag_size from the fragmentation protocol
 
-   
+
 
 
 
@@ -318,7 +316,7 @@ public abstract class FlowControl extends Protocol {
         if(length == 0)
             return down_prot.down(msg);
 
-        Object retval=handleDownMessage(msg, dest, length);
+        Object retval=handleDownMessage(msg);
 
         // if the message is DONT_LOOPBACK, we will not receive it, therefore the credit
         // check needs to be done now
@@ -438,7 +436,7 @@ public abstract class FlowControl extends Protocol {
     }
 
     
-    protected abstract Object handleDownMessage(final Message msg, Address dest, int length);
+    protected abstract Object handleDownMessage(final Message msg);
 
 
 
@@ -456,7 +454,7 @@ public abstract class FlowControl extends Protocol {
             return 0;
         if(log.isTraceEnabled())
             log.trace("%s used %d credits, %d remaining", sender, length, cred.get() - length);
-        return cred.decrementAndGet(length);
+        return cred.decrementAndGet(length, min_credits, max_credits);
     }
 
     /**
@@ -471,7 +469,7 @@ public abstract class FlowControl extends Protocol {
                 return;
             if(log.isTraceEnabled())
                 log.trace("received credit request from %s: sending %d credits", sender, requested_credits);
-            cred.increment(requested_credits);
+            cred.increment(requested_credits, max_credits);
             sendCredit(sender, requested_credits);
         }
     }
@@ -509,7 +507,7 @@ public abstract class FlowControl extends Protocol {
         if(log.isTraceEnabled()) log.trace("new membership: %s", mbrs);
 
         // add members not in membership to received and sent hashmap (with full credits)
-        mbrs.stream().filter(addr -> !received.containsKey(addr)).forEach(addr -> received.put(addr, new Credit(max_credits, null)));
+        mbrs.stream().filter(addr -> !received.containsKey(addr)).forEach(addr -> received.put(addr, new Credit(max_credits)));
 
         // remove members that left
         received.keySet().retainAll(mbrs);
@@ -517,7 +515,7 @@ public abstract class FlowControl extends Protocol {
 
 
 
-    protected static String printMap(Map<Address,Credit> m) {
+    protected static String printMap(Map<Address,? extends Credit> m) {
         return m.entrySet().stream().collect(StringBuilder::new,
                                              (sb,entry) -> sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n"),
                                              (l,r) -> {}).toString();
@@ -535,92 +533,6 @@ public abstract class FlowControl extends Protocol {
 
 
 
-    protected class Credit {
-        protected long          credits_left;
-        protected int           num_blockings;
-        protected long          last_credit_request; // ns
-        protected final Average avg_blockings;
-
-        
-        protected Credit(long credits, Average avg_blockings) {
-            this.credits_left=credits;
-            this.avg_blockings=avg_blockings;
-        }
-
-        public void reset() {num_blockings=0; if(avg_blockings != null) avg_blockings.clear();}
-
-        protected synchronized boolean decrementIfEnoughCredits(long credits, long timeout) {
-            if(decrement(credits))
-                return true;
-
-            if(timeout <= 0)
-                return false;
-
-            long start=avg_blockings != null? System.nanoTime() : 0;
-            try {
-                this.wait(timeout);
-            }
-            catch(InterruptedException e) {
-            }
-            finally {
-                num_blockings++;
-                if(avg_blockings != null)
-                    avg_blockings.add(System.nanoTime() - start);
-            }
-
-            return decrement(credits);
-        }
-
-        
-        protected boolean decrement(long credits) {
-            if(credits <= credits_left) {
-                credits_left-=credits;
-                return true;
-            }
-            return false;
-        }
-
-
-        protected synchronized long decrementAndGet(long credits) {
-            credits_left=Math.max(0, credits_left - credits);
-            if(credits_left <= min_credits) {
-                long credit_response=Math.min(max_credits, max_credits - credits_left);
-                credits_left=max_credits;
-                return credit_response;
-            }
-            return 0;
-        }
-
-
-        protected synchronized void increment(long credits) {
-            credits_left=Math.min(max_credits, credits_left + credits);
-            notifyAll();
-        }
-
-        protected synchronized boolean needToSendCreditRequest() {
-            long current_time=System.nanoTime();
-            // will most likely send a request the first time (last_credit_request is 0), unless nanoTime() is negative
-            if(current_time - last_credit_request >= TimeUnit.NANOSECONDS.convert(max_block_time, TimeUnit.MILLISECONDS)) {
-                last_credit_request=current_time;
-                return true;
-            }
-            return false;
-        }
-
-        protected int getNumBlockings() {return num_blockings;}
-
-        protected synchronized long get() {return credits_left;}
-
-        protected synchronized void set(long new_credits) {
-            credits_left=Math.min(max_credits, new_credits);
-            notifyAll();
-        }
-
-        public String toString() {
-            return String.valueOf(credits_left);
-        }
-
-    }
 
 
 }
