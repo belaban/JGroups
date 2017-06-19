@@ -113,7 +113,7 @@ public class JDBC_PING extends FILE_PING {
     @Override
     public void stop() {
         super.stop();
-        if (is_coord) removeAll(cluster_name);
+        removeAll(cluster_name);
     }
 
     protected void write(List<PingData> list, String clustername) {
