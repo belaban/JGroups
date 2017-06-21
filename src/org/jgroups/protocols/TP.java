@@ -454,6 +454,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /** Factory which is used by the thread pool */
     protected ThreadFactory           thread_factory;
 
+    protected ThreadFactory           internal_thread_factory;
+
     protected Executor                internal_pool; // only created if thread_pool is enabled, to handle internal msgs
 
     // ================================== Timer thread pool  =========================
@@ -801,6 +803,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(thread_factory == null)
             //thread_factory=new DefaultThreadFactory("jgroups", false, true);
           thread_factory=new LazyThreadFactory("jgroups", false, true);
+
+        if(internal_thread_factory == null)
+            internal_thread_factory=new LazyThreadFactory("jgroups-int", false, true);
         
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
@@ -832,7 +837,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                           0, max_internal_size, 30000, num_cores);
                 thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
                                              "abort", new SynchronousQueue<>(), thread_factory, log, use_fork_join_pool, use_common_fork_join_pool);
-                internal_pool=createThreadPool(0, max_internal_size, 30000, "abort", new SynchronousQueue<>(), thread_factory, log, false, false);
+                internal_pool=createThreadPool(0, max_internal_size, 30000, "abort", new SynchronousQueue<>(), internal_thread_factory, log, false, false);
             }
             else // otherwise use the caller's thread to unmarshal the byte buffer into a message
                 thread_pool=new DirectExecutor();
@@ -894,6 +899,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         // Stop the thread pool
         if(thread_pool instanceof ExecutorService)
             shutdownThreadPool(thread_pool);
+
+        if(internal_pool instanceof ExecutorService)
+            shutdownThreadPool(internal_pool);
 
         if(timer != null)
             timer.stop();
@@ -1683,7 +1691,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     protected void setInAllThreadFactories(String cluster_name, Address local_address, String pattern) {
-        ThreadFactory[] factories= {thread_factory};
+        ThreadFactory[] factories= {thread_factory,internal_thread_factory};
 
         for(ThreadFactory factory: factories) {
             if(pattern != null)

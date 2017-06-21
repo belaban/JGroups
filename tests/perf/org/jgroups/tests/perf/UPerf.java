@@ -138,17 +138,7 @@ public class UPerf extends ReceiverAdapter {
     }
 
     protected void startEventThread() {
-        event_loop_thread=new Thread("EventLoop") {
-            public void run() {
-                try {
-                    eventLoop();
-                }
-                catch(Throwable ex) {
-                    ex.printStackTrace();
-                    UPerf.this.stop();
-                }
-            }
-        };
+        event_loop_thread=new Thread(UPerf.this::eventLoop,"EventLoop");
         event_loop_thread.setDaemon(true);
         event_loop_thread.start();
     }
@@ -273,77 +263,84 @@ public class UPerf extends ReceiverAdapter {
     // ================================= end of callbacks =====================================
 
 
-    public void eventLoop() throws Throwable {
+    public void eventLoop() {
 
         while(looping) {
-            int c=Util.keyPress(String.format(format, num_threads, time, Util.printBytes(msg_size),
-                                          sync, oob, anycast_count, read_percentage,
-                                          allow_local_gets, print_details, print_invokers));
-            switch(c) {
-                case '1':
-                    startBenchmark();
-                    break;
-                case '2':
-                    printView();
-                    break;
-                case '4':
-                    changeFieldAcrossCluster(NUM_THREADS, Util.readIntFromStdin("Number of sender threads: "));
-                    break;
-                case '6':
-                    changeFieldAcrossCluster(TIME, Util.readIntFromStdin("Time (secs): "));
-                    break;
-                case '7':
-                    changeFieldAcrossCluster(MSG_SIZE, Util.readIntFromStdin("Message size: "));
-                    break;
-                case 'a':
-                    int tmp=getAnycastCount();
-                    if(tmp >= 0)
-                        changeFieldAcrossCluster(ANYCAST_COUNT, tmp);
-                    break;
-                case 'o':
-                    changeFieldAcrossCluster(OOB, !oob);
-                    break;
-                case 's':
-                    changeFieldAcrossCluster(SYNC, !sync);
-                    break;
-                case 'r':
-                    double percentage= getReadPercentage();
-                    if(percentage >= 0)
-                        changeFieldAcrossCluster(READ_PERCENTAGE, percentage);
-                    break;
-                case 'd':
-                    changeFieldAcrossCluster(PRINT_DETAILS, !print_details);
-                    break;
-                case 'i':
-                    changeFieldAcrossCluster(PRINT_INVOKERS, !print_invokers);
-                    break;
-                case 'l':
-                    changeFieldAcrossCluster(ALLOW_LOCAL_GETS, !allow_local_gets);
-                    break;
-                case 'v':
-                    System.out.printf("Version: %s\n", Version.printVersion());
-                    break;
-                case 'x':
-                case -1:
-                    Util.close(channel);
-                    return;
-                case 'X':
-                    try {
-                        RequestOptions options=new RequestOptions(ResponseMode.GET_NONE, 0); // .setExclusionList(local_addr);
-                        options.flags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
-                        disp.callRemoteMethods(null, new MethodCall(QUIT_ALL), options);
-                    }
-                    catch(Throwable t) {
-                        System.err.println("Calling quitAll() failed: " + t);
-                    }
-                    break;
-                case '\n':
-                case '\r':
-                    break;
-                default:
-                    break;
+            try {
+                int c=Util.keyPress(String.format(format, num_threads, time, Util.printBytes(msg_size),
+                                                  sync, oob, anycast_count, read_percentage,
+                                                  allow_local_gets, print_details, print_invokers));
+                switch(c) {
+                    case '1':
+                        startBenchmark();
+                        break;
+                    case '2':
+                        printView();
+                        break;
+                    case '4':
+                        changeFieldAcrossCluster(NUM_THREADS, Util.readIntFromStdin("Number of sender threads: "));
+                        break;
+                    case '6':
+                        changeFieldAcrossCluster(TIME, Util.readIntFromStdin("Time (secs): "));
+                        break;
+                    case '7':
+                        changeFieldAcrossCluster(MSG_SIZE, Util.readIntFromStdin("Message size: "));
+                        break;
+                    case 'a':
+                        int tmp=getAnycastCount();
+                        if(tmp >= 0)
+                            changeFieldAcrossCluster(ANYCAST_COUNT, tmp);
+                        break;
+                    case 'o':
+                        changeFieldAcrossCluster(OOB, !oob);
+                        break;
+                    case 's':
+                        changeFieldAcrossCluster(SYNC, !sync);
+                        break;
+                    case 'r':
+                        double percentage=getReadPercentage();
+                        if(percentage >= 0)
+                            changeFieldAcrossCluster(READ_PERCENTAGE, percentage);
+                        break;
+                    case 'd':
+                        changeFieldAcrossCluster(PRINT_DETAILS, !print_details);
+                        break;
+                    case 'i':
+                        changeFieldAcrossCluster(PRINT_INVOKERS, !print_invokers);
+                        break;
+                    case 'l':
+                        changeFieldAcrossCluster(ALLOW_LOCAL_GETS, !allow_local_gets);
+                        break;
+                    case 'v':
+                        System.out.printf("Version: %s\n", Version.printVersion());
+                        break;
+                    case 'x':
+                    case -1:
+                        looping=false;
+                        break;
+                    case 'X':
+                        try {
+                            RequestOptions options=new RequestOptions(ResponseMode.GET_NONE, 0)
+                              .flags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
+                            disp.callRemoteMethods(null, new MethodCall(QUIT_ALL), options);
+                            break;
+                        }
+                        catch(Throwable t) {
+                            System.err.println("Calling quitAll() failed: " + t);
+                        }
+                        break;
+                    case '\n':
+                    case '\r':
+                        break;
+                    default:
+                        break;
+                }
+            }
+            catch(Throwable t) {
+                t.printStackTrace();
             }
         }
+        stop();
     }
 
 
