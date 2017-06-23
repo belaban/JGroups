@@ -585,7 +585,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     /**
      * Removes and resets from connection table (which is already locked). Returns true if member was found,
      * otherwise false. This method is public only so it can be invoked by unit testing, but should not otherwise be
-     * used ! 
+     * used !
      */
     public void closeConnection(Address mbr) {
         closeSendConnection(mbr);
@@ -705,7 +705,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                     up_prot.up(evt);
                 }
                 catch(Throwable t) {
-                    log.error("failed to deliver OOB message " + msg, t);
+                    log.warn("failed to deliver OOB message " + msg, t);
                 }
             }
         }
@@ -752,7 +752,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                         up_prot.up(new Event(Event.MSG, msg));
                     }
                     catch(Throwable t) {
-                        log.error("failed to deliver OOB message " + msg, t);
+                        log.warn("failed to deliver OOB message " + msg, t);
                     }
                 }
             }
@@ -1288,7 +1288,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         protected final Table<Message>  received_msgs;  // stores all msgs rcvd by a certain peer in seqno-order
         protected volatile boolean      send_ack;
 
-        
+
         public ReceiverEntry(Table<Message> received_msgs, short recv_conn_id) {
             super(recv_conn_id);
             this.received_msgs=received_msgs;
