@@ -1001,7 +1001,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             up_prot.up(msg);
         }
         catch(Throwable t) {
-            log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, msg.isFlagSet(Message.Flag.OOB) ?
+            log.warn(Util.getMessage("FailedToDeliverMsg"), local_addr, msg.isFlagSet(Message.Flag.OOB) ?
               "OOB message" : "message", msg, t);
         }
     }
@@ -1023,7 +1023,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             up_prot.up(batch);
         }
         catch(Throwable t) {
-            log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
+            log.warn(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
         }
     }
 
