@@ -165,6 +165,8 @@ public class FD_ALL extends Protocol {
                 use_time_service=false;
             }
         }
+        if(interval > timeout)
+            log.warn("interval (%d) is bigger than timeout (%d); this will lead to false suspicions", interval, timeout);
         suspected_mbrs.clear();
         has_suspected_mbrs=false;
     }
