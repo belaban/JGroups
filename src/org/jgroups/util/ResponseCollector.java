@@ -37,15 +37,17 @@ public class ResponseCollector<T> {
         responses=new HashMap<>();
     }
 
-    public void add(Address member, T data) {
+    public boolean add(Address member, T data) {
         if(member == null)
-            return;
+            return false;
         lock.lock();
         try {
             if(responses.containsKey(member)) {
                 responses.put(member, data);
                 cond.signal(true);
+                return true;
             }
+            return false;
         }
         finally {
             lock.unlock();
@@ -78,13 +80,16 @@ public class ResponseCollector<T> {
         }
     }
 
-    public void retainAll(List<Address> members) {
+    public boolean retainAll(List<Address> members) {
         if(members == null || members.isEmpty())
-            return;
+            return false;
         lock.lock();
         try {
-            if(responses.keySet().retainAll(members))
+            if(responses.keySet().retainAll(members)) {
                 cond.signal(true);
+                return true;
+            }
+            return false;
         }
         finally {
             lock.unlock();

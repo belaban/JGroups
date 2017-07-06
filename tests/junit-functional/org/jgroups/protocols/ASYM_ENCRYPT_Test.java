@@ -19,6 +19,8 @@ import javax.crypto.SecretKey;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+import static org.jgroups.util.Util.shutdown;
+
 /**
  * Tests use cases for {@link ASYM_ENCRYPT} described in https://issues.jboss.org/browse/JGRP-2021.
  * @author Bela Ban
@@ -272,6 +274,49 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         assert rc.size() == 0 : String.format("C: received msgs from cluster: %s", print(rc.list()));
     }
 
+    /**
+     * Tests {A,B,C} with A crashing. B installs a new view with a freshly created secret key SK. However, C won't be
+     * able to decrypt the new view as it doesn't have SK.<br/>
+     * https://issues.jboss.org/browse/JGRP-2203
+     */
+    public void testCrashOfCoord() throws Exception {
+        Address crashed_coord=a.getAddress();
+        shutdown(a);
+
+        System.out.printf("** Crashing %s **\n", crashed_coord);
+        GMS gms=b.getProtocolStack().findProtocol(GMS.class);
+        gms.up(new Event(Event.SUSPECT, crashed_coord));
+
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, b,c);
+        for(JChannel ch: Arrays.asList(a,b,c))
+            System.out.printf("View for %s: %s\n", ch.getName(), ch.getView());
+        for(JChannel ch: Arrays.asList(b,c)) {
+            assert ch.getView().size() == 2;
+            assert ch.getView().containsMember(b.address());
+            assert ch.getView().containsMember(c.address());
+        }
+    }
+
+    /**
+     * Tests A,B,C with C leaving gracefully and ASYM_ENCRYPT.change_key_on_leave=true. A installs a new secret key,
+     * which B doesn't understand. However, B fetches the secret key from A and is now able to install the new view B,C.
+     * @throws Exception
+     */
+    public void testLeaveOfParticipant() throws Exception {
+        for(JChannel ch: Arrays.asList(a,b)) {
+            ASYM_ENCRYPT encr=ch.getProtocolStack().findProtocol(ASYM_ENCRYPT.class);
+            encr.change_key_on_leave=true;
+        }
+        Util.close(c);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b);
+        for(JChannel ch: Arrays.asList(a,b))
+            System.out.printf("View for %s: %s\n", ch.getName(), ch.getView());
+        for(JChannel ch: Arrays.asList(a,b)) {
+            assert ch.getView().size() == 2;
+            assert ch.getView().containsMember(a.address());
+            assert ch.getView().containsMember(b.address());
+        }
+    }
 
     protected JChannel create(String name) throws Exception {
         JChannel ch=new JChannel(Util.getTestStack()).name(name);

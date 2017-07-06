@@ -28,7 +28,7 @@ public class AsciiString implements Comparable<AsciiString> {
     }
 
     public AsciiString(byte[] val) {
-        this.val=val; // mutable, used only for creation
+        this.val=val != null? val : new byte[]{}; // mutable, used only for creation
     }
 
     public AsciiString(int length) {

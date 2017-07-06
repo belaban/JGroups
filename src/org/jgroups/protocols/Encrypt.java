@@ -82,13 +82,11 @@ public abstract class Encrypt extends Protocol {
     public int                      symKeylength()                  {return sym_keylength;}
     public <T extends Encrypt> T    symKeylength(int len)           {this.sym_keylength=len; return (T)this;}
     public Key                      secretKey()                     {return secret_key;}
-    public <T extends Encrypt> T    secretKey(Key key)              {this.secret_key=key; return (T)this;}
     public String                   symAlgorithm()                  {return sym_algorithm;}
     public <T extends Encrypt> T    symAlgorithm(String alg)        {this.sym_algorithm=alg; return (T)this;}
     public String                   asymAlgorithm()                 {return asym_algorithm;}
     public <T extends Encrypt> T    asymAlgorithm(String alg)       {this.asym_algorithm=alg; return (T)this;}
     public byte[]                   symVersion()                    {return sym_version;}
-    public <T extends Encrypt> T    symVersion(byte[] v)            {this.sym_version=Arrays.copyOf(v, v.length); return (T)this;}
     public <T extends Encrypt> T    localAddress(Address addr)      {this.local_addr=addr; return (T)this;}
     public boolean                  encryptEntireMessage()          {return encrypt_entire_message;}
     public <T extends Encrypt> T    encryptEntireMessage(boolean b) {this.encrypt_entire_message=b; return (T)this;}
@@ -199,14 +197,14 @@ public abstract class Encrypt extends Protocol {
             decoding_ciphers.offer(createCipher(Cipher.DECRYPT_MODE, secret, algorithm));
         };
 
-        //set the version
+        // set the version
         MessageDigest digest=MessageDigest.getInstance("MD5");
         digest.reset();
         digest.update(secret.getEncoded());
 
         byte[] tmp=digest.digest();
         sym_version=Arrays.copyOf(tmp, tmp.length);
-        log.debug("%s: created %d symmetric ciphers with secret key (%d bytes)", local_addr, cipher_pool_size, sym_version.length);
+        // log.debug("%s: created %d symmetric ciphers with secret key (%d bytes)", local_addr, cipher_pool_size, sym_version.length);
     }
 
 
@@ -274,7 +272,7 @@ public abstract class Encrypt extends Protocol {
         if(!Arrays.equals(hdr.version(), sym_version)) {
             cipher=key_map.get(new AsciiString(hdr.version()));
             if(cipher == null) {
-                handleUnknownVersion();
+                handleUnknownVersion(hdr.version);
                 return null;
             }
             log.trace("%s: decrypting msg from %s using previous cipher version", local_addr, msg.src());
@@ -399,7 +397,9 @@ public abstract class Encrypt extends Protocol {
 
 
     /** Called when the version shipped in the header can't be found */
-    protected void handleUnknownVersion() {}
+    protected void handleUnknownVersion(byte[] version) {
+
+    }
 
 
     /** Decrypts all messages in a batch, replacing encrypted messages in-place with their decrypted versions */

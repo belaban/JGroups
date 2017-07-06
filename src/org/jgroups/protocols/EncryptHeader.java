@@ -13,9 +13,11 @@ import java.util.function.Supplier;
  * @since  4.0
  */
 public class EncryptHeader extends Header {
-    public static final byte ENCRYPT        = 1 << 0;
-    public static final byte SECRET_KEY_REQ = 1 << 1;
-    public static final byte SECRET_KEY_RSP = 1 << 2;
+    public static final byte ENCRYPT           = 1 << 0;
+    public static final byte SECRET_KEY_REQ    = 1 << 1;
+    public static final byte SECRET_KEY_RSP    = 1 << 2;
+    public static final byte NEW_KEYSERVER     = 1 << 3;
+    public static final byte NEW_KEYSERVER_ACK = 1 << 4;
 
     protected byte   type;
     protected byte[] version;
@@ -52,17 +54,19 @@ public class EncryptHeader extends Header {
     }
 
     public String toString() {
-        return String.format("[%s version=%s]", typeToString(type), (version != null? version.length + " bytes" : "n/a"));
+        return String.format("%s [version=%s]", typeToString(type), (version != null? Util.byteArrayToHexString(version) : "null"));
     }
 
     public int serializedSize() {return Global.BYTE_SIZE + Util.size(version) + Util.size(signature) /*+ Util.size(payload) */;}
 
     protected static String typeToString(byte type) {
         switch(type) {
-            case ENCRYPT:        return "ENCRYPT";
-            case SECRET_KEY_REQ: return "SECRET_KEY_REQ";
-            case SECRET_KEY_RSP: return "SECRET_KEY_RSP";
-            default:             return "<unrecognized type " + type;
+            case ENCRYPT:           return "ENCRYPT";
+            case SECRET_KEY_REQ:    return "SECRET_KEY_REQ";
+            case SECRET_KEY_RSP:    return "SECRET_KEY_RSP";
+            case NEW_KEYSERVER:     return "NEW_KEYSERVER";
+            case NEW_KEYSERVER_ACK: return "NEW_KEYSERVER_ACK";
+            default:                return "<unrecognized type " + type;
         }
     }
 }

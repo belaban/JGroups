@@ -753,7 +753,7 @@ public class SizeTest {
 
 
 
-    public static void testRequestCorrelatorHeader() throws Exception {
+    public void testRequestCorrelatorHeader() throws Exception {
         RequestCorrelator.Header hdr;
 
         hdr=new RequestCorrelator.Header(RequestCorrelator.Header.REQ, 0, (short)1000);
@@ -805,6 +805,26 @@ public class SizeTest {
 
         hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.REQ, 322649, (short)22, new Address[]{a,b});
         _testSize(hdr);
+    }
+
+    public void testDhHeader() throws Exception {
+        byte[] dh_key={'p','u','b','l','i','c'};
+        byte[] encr_secret={'s','e','c','r','e','t'};
+        byte[] version={'v','e','r','s','i','o','n'};
+        DH_KEY_EXCHANGE.DhHeader hdr=DH_KEY_EXCHANGE.DhHeader.createSecretKeyRequest(dh_key);
+        _test(hdr);
+
+        hdr=DH_KEY_EXCHANGE.DhHeader.createSecretKeyResponse(dh_key, encr_secret, version);
+        _test(hdr);
+    }
+
+    protected void _test(DH_KEY_EXCHANGE.DhHeader hdr) throws Exception {
+        int expected_size=hdr.serializedSize();
+        byte[] buf=Util.streamableToByteBuffer(hdr);
+        assert buf.length == expected_size;
+
+        DH_KEY_EXCHANGE.DhHeader hdr2=Util.streamableFromByteBuffer(DH_KEY_EXCHANGE.DhHeader.class, buf, 0, buf.length);
+        assert Arrays.equals(hdr.dhKey(), hdr2.dhKey());
     }
 
 

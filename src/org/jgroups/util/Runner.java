@@ -26,7 +26,7 @@ public class Runner implements Runnable {
 
 
     public synchronized void start() {
-        stop();
+        // stop();
         running=true;
         String name=thread_name != null? thread_name : "runner";
         thread=factory != null? factory.newThread(this, name) : new Thread(this, name);

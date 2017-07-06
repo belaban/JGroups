@@ -242,7 +242,7 @@ public abstract class Protocol {
     /** List of events that are provided to layers above (they will be handled when sent down from above) */
     public List<Integer> providedUpServices() {return null;}
 
-    /** List of events that are provided to layers below (they will be handled when sent down below) */
+    /** List of events that are provided to layers below (they will be handled when sent from down below) */
     public List<Integer> providedDownServices() {return null;}
 
     /** Returns all services provided by protocols below the current protocol */
