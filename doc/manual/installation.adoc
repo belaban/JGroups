@@ -140,6 +140,7 @@ To use the custom log, `LogFactory.setCustomLogFactory(CustomLogFactory f)` need
 
 It is possible to set the preferred log class via system property `jgroups.log_class`. To do this, the fully
 qualified name of a class which provides the following functionality has to be given:
+
 * Implement the `Log` interface
 * Provide a constructor taking a `Class` type as only argument
 * Provide a constructor taking a `String` type as only argument
