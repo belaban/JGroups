@@ -290,6 +290,9 @@ public class UDP extends TP {
 
     public void init() throws Exception {
         super.init();
+        if(max_bundle_size > Global.MAX_DATAGRAM_PACKET_SIZE)
+            throw new IllegalArgumentException("max_bundle_size (" + max_bundle_size + ") cannot exceed the max datagram " +
+                                                 "packet size of " + Global.MAX_DATAGRAM_PACKET_SIZE);
         if(is_mac && suppress_time_out_of_buffer_space > 0)
             suppress_log_out_of_buffer_space=new SuppressLog<>(log, "FailureSendingToPhysAddr", "SuppressMsg");
     }
