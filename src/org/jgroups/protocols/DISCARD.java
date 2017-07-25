@@ -24,39 +24,39 @@ import java.util.List;
 @MBean(description="Discards messages")
 public class DISCARD extends Protocol {
     @Property
-    protected double                    up=0.0;    // probability of dropping up   msgs
+    protected double                    up;    // probability of dropping up   msgs
 
     @Property
-    protected double                    down=0.0;  // probability of dropping down msgs
+    protected double                    down;  // probability of dropping down msgs
 
     @Property
     protected boolean                   excludeItself=true;   // if true don't discard messages sent/received in this stack
     protected Address                   localAddress;
 
     @ManagedAttribute(description="Number of dropped down messages",name="dropped_down_messages")
-    protected int                       num_down=0;
+    protected int                       num_down;
 
     @ManagedAttribute(description="Number of dropped up messages",name="dropped_up_messages")
-    protected int                       num_up=0;
+    protected int                       num_up;
 
     protected final Set<Address>        ignoredMembers = Collections.synchronizedSet(new HashSet<>());
 
 
     protected final Collection<Address> members = Collections.synchronizedList(new ArrayList<>());
 
-    @Property(description="drop all messages (up or down)",writable=true)
-    protected boolean                   discard_all=false;
+    @Property(description="drop all messages (up or down)")
+    protected boolean                   discard_all;
 
-    @Property(description="Number of subsequent unicasts to drop in the down direction",writable=true)
-    protected int                       drop_down_unicasts=0;
+    @Property(description="Number of subsequent unicasts to drop in the down direction")
+    protected int                       drop_down_unicasts;
 
-    @Property(description="Number of subsequent multicasts to drop in the down direction",writable=true)
-    protected int                       drop_down_multicasts=0;
+    @Property(description="Number of subsequent multicasts to drop in the down direction")
+    protected int                       drop_down_multicasts;
 
-    protected DiscardDialog             discard_dialog=null;
+    protected DiscardDialog             discard_dialog;
 
     @Property(name="gui", description="use a GUI or not")
-    protected boolean                   use_gui=false;
+    protected boolean                   use_gui;
 
 
     public DISCARD localAddress(Address addr) {setLocalAddress(addr); return this;}
@@ -224,8 +224,8 @@ public class DISCARD extends Protocol {
             msg.setSrc(localAddress());
 
         if(discard_all) {
-            if(dest == null || dest.equals(localAddress()))
-                loopback(msg);
+            if(excludeItself && (dest == null || dest.equals(localAddress())))
+                down_prot.down(msg);
             return null;
         }
 
@@ -282,21 +282,7 @@ public class DISCARD extends Protocol {
                 }
             }
         }
-
         return false;
-    }
-
-
-    private void loopback(Message msg) {
-        final Message rsp=msg.copy(true);
-        if(rsp.getSrc() == null)
-            rsp.setSrc(localAddress());
-
-        // pretty inefficient: creates one thread per message, okay for testing only
-        Thread thread=new Thread(() -> {
-            up_prot.up(rsp);
-        });
-        thread.start();
     }
 
     public void resetStats() {
