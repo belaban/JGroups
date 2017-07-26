@@ -111,6 +111,14 @@ public class JDBC_PING extends FILE_PING {
     }
 
 
+    @Override
+    public void stop() {
+        super.stop();
+        if(is_coord)
+            removeAll(cluster_name);
+    }
+
+
     protected void write(List<PingData> list, String clustername) {
         for(PingData data: list)
             writeToDB(data, clustername, true);
@@ -377,7 +385,7 @@ public class JDBC_PING extends FILE_PING {
     }
     
     protected DataSource getDataSourceFromJNDI(String name) {
-        final DataSource dataSource;
+        final DataSource data_source;
         InitialContext ctx = null;
         try {
             ctx = new InitialContext();
@@ -386,9 +394,9 @@ public class JDBC_PING extends FILE_PING {
                 throw new IllegalArgumentException("JNDI name " + name + " is not bound");
             if (!(whatever instanceof DataSource))
                 throw new IllegalArgumentException("JNDI name " + name + " was found but is not a DataSource");
-            dataSource = (DataSource) whatever;
+            data_source = (DataSource) whatever;
             log.debug("Datasource found via JNDI lookup via name: %s", name);
-            return dataSource;
+            return data_source;
         } catch (NamingException e) {
             throw new IllegalArgumentException("Could not lookup datasource " + name, e);
         } finally {
