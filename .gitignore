@@ -12,7 +12,7 @@ classes/
 build.properties
 dist/
 atlassian*
-keystore/
+keystore/*
 tmp/
 bla*.java
 doc/manual/*.css
@@ -25,3 +25,4 @@ target/
 lib/
 hs_err_pid*.log
 .ant-targets-build.xml
+*.pem

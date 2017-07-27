@@ -10,7 +10,7 @@ import java.security.NoSuchAlgorithmException;
 
 /**
  * Generates a keystore file that has a SecretKey in it. It is not possible to
- * use the keytool JDk tool to achieve this. This is a simple way to generate a
+ * use keytool to achieve this. This is a simple way to generate a
  * JCEKS format keystore and SecretKey.
  * 
  * Usage is --alg ALGNAME --size ALGSIZE --storeName FILENAME --storePass
