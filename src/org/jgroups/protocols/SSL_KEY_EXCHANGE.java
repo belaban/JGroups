@@ -35,6 +35,7 @@ import java.util.Objects;
  * @author Bela Ban
  * @since  4.0.5
  */
+@SuppressWarnings("unused")
 @MBean(description="Key exchange protocol based on an SSL connection between secret key requester and provider " +
   "(key server) to fetch a shared secret group key from the key server. That shared (symmetric) key is subsequently " +
   "used to encrypt communication between cluster members")

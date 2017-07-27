@@ -1795,7 +1795,7 @@ ${SYM_ENCRYPT}
 [[ASYM_ENCRYPT]]
 ===== ASYM_ENCRYPT
 Contrary to SYM_ENCRYPT, the secret key is not fetched from a shared keystore, but from the current coordinator C. After
-new member P joined the cluster (passing the join check done by AUTH), P sends a request to get the secret key
+new member P joins the cluster (passing the join check done by AUTH), P sends a request to get the secret key
 (including P's public key) to C.
 
 C then sends the secret key back to P, encrypted with P's public key, and P decrypts it with its private key
@@ -1832,7 +1832,66 @@ else unauthenticated nodes would be able to acquire the secret key from the coor
 ${ASYM_ENCRYPT}
 
 
+[[SSL_KEY_EXCHANGE]]
+===== SSL_KEY_EXCHANGE
+<<ASYM_ENCRYPT>> uses a built-in key exchange protocol for a requester to fetch the secret group key from the key server
+(usually the coordinator). Such secret key requests are accompanied by the requester's public key. The key server
+encrypts the secret key response with the public key of the requester, and the requester decrypts the response with its
+private key and can then install the new secret group key to encrypt and decrypt group messages.
 
+This works well, however, it is not immune against man-in-the-middle attacks. If MitM attack prevention is required,
+a separate key exchange protocol can be added to the stack. ASYM_ENCRYPT needs to be told to use the key exchange
+protocol, which has to be located somewhere beneath it in the stack, by setting `use_external_key_exchange` to true.
+
+A key exchange protocol needs to extend `KeyExchange`.
+
+`SSL_KEY_EXCHANGE` implements MitM-safe key exchange by using SSL sockets and client (and, of course, server)
+certification. The key server opens an SSL server socket on a given port and requesters create an SSL client socket and
+connect to it, then exchange the secret group key and finally close the connection.
+
+As key requesters and the key server require properly configured certificate chains, trust is established between the
+two parties and secret group keys can be transmitted securely.
+
+NOTE: As certificates authenticate the identity of key servers and requesters (usually joining members), `AUTH` is not
+needed as a separate protocol and can be removed from the configuration.
+
+Here's a typical configuration:
+
+[source,xml]
+----
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="urn:org:jgroups"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+    <UDP />
+    <PING/>
+    <MERGE3/>
+    <FD_ALL timeout="8000" interval="3000"/>
+    <FD_SOCK/>
+    <VERIFY_SUSPECT/>
+    <SSL_KEY_EXCHANGE // <2>
+        keystore_name="/home/bela/certs/my-keystore.jks"
+        keystore_password="password"
+    />
+    <ASYM_ENCRYPT
+            use_external_key_exchange="true" // <1>
+            encrypt_entire_message="true"
+            sym_keylength="128"
+            sym_algorithm="AES/ECB/PKCS5Padding"
+            asym_keylength="512"
+            asym_algorithm="RSA"/>
+
+    <pbcast.NAKACK2/>
+    <UNICAST3/>
+    <pbcast.STABLE/>
+    <FRAG2/>
+    <pbcast.GMS join_timeout="2000" />
+</config>
+----
+
+Here `SSL_KEY_EXCHANGE` is positioned below `ASYM_ENCRYPT`. The latter is configured to use an external key exchange
+protocol (1). The former is configured with a keystore and password (2).
+
+${SSL_KEY_EXCHANGE}
 
 
 [[AUTH]]
