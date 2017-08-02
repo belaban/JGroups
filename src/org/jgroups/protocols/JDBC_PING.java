@@ -48,7 +48,7 @@ public class JDBC_PING extends FILE_PING {
     protected String connection_driver;
 
     @Property(description = "If not empty, this SQL statement will be performed at startup."
-                + "Customize it to create the needed table on those databases which permit table creation attempt without loosing data, such as "
+                + "Customize it to create the needed table on those databases which permit table creation attempt without losing data, such as "
                 + "PostgreSQL and MySQL (using IF NOT EXISTS). To allow for creation attempts, errors performing this statement will be logged"
                 + "but not considered fatal. To avoid any DDL operation, set this to an empty string.")
     protected String initialize_sql = 
