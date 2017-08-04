@@ -41,7 +41,7 @@ public class FD_ALL extends Protocol {
 
     @Property(description="Treat messages received from members as heartbeats. Note that this means we're updating " +
             "a value in a hashmap every time a message is passing up the stack through FD_ALL, which is costly. Default is false")
-    protected boolean                                msg_counts_as_heartbeat=false;
+    protected boolean                                msg_counts_as_heartbeat;
 
     @Property(description="Uses TimeService to get the current time rather than System.currentTimeMillis. Might get " +
       "removed soon, don't use !")
@@ -361,15 +361,10 @@ public class FD_ALL extends Protocol {
         }
 
         // Check if we're coord, then send up the stack
-        if(local_addr != null && !eligible_mbrs.isEmpty()) {
-            Address first=eligible_mbrs.get(0);
-            if(local_addr.equals(first)) {
-                log.warn("suspecting " + getSuspectedMembers());
-                for(Address suspect: suspects) {
-                    up_prot.up(new Event(Event.SUSPECT, suspect));
-                    down_prot.down(new Event(Event.SUSPECT, suspect));
-                }
-            }
+        if(local_addr != null && !eligible_mbrs.isEmpty() && local_addr.equals(eligible_mbrs.get(0))) {
+            log.debug("%s: suspecting %s", local_addr, suspects);
+            up_prot.up(new Event(Event.SUSPECT, suspects));
+            down_prot.down(new Event(Event.SUSPECT, suspects));
         }
     }
 

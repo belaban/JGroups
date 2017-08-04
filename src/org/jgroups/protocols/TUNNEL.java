@@ -18,6 +18,7 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -188,7 +189,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                 Address suspect=data.getAddress();
                 if(suspect != null) {
                     log.debug("%s: firing suspect event for %s", local_addr, suspect);
-                    up(new Event(Event.SUSPECT, suspect));
+                    up(new Event(Event.SUSPECT, Collections.singletonList(suspect)));
                 }
                 break;
         }

@@ -15,6 +15,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * Tests the FLUSH protocol. Adds a FLUSH layer on top of the stack unless already present. Should
@@ -122,15 +123,16 @@ public class FlushTest {
     public void testFlushWithCrashedFlushCoordinator() throws Exception {
         JChannel a=null, b=null, c=null;
         try {
-            a = createChannel("A"); changeProps(a);
+            a = createChannel("A");
+            b = createChannel("B");
+            c = createChannel("C");
+            changeProps(a,b,c);
+            b.connect("testFlushWithCrashedFlushCoordinator");
             a.connect("testFlushWithCrashedFlushCoordinator");
 
-            b = createChannel("B"); changeProps(b);
-            b.connect("testFlushWithCrashedFlushCoordinator");
-
-            c = createChannel("C"); changeProps(c);
             c.connect("testFlushWithCrashedFlushCoordinator");
 
+            Util.waitUntilAllChannelsHaveSameView(10000, 500, a,b,c);
 
             System.out.println("shutting down flush coordinator B");
             b.down(new Event(Event.SUSPEND_BUT_FAIL)); // send out START_FLUSH and then return
@@ -139,12 +141,10 @@ public class FlushTest {
             // (either A or C), that the current flush started by B will be cancelled and a new flush (by A or C)
             // will be started
             Util.shutdown(b);
-
-            a.getProtocolStack().findProtocol(FLUSH.class).setLevel("debug");
-            c.getProtocolStack().findProtocol(FLUSH.class).setLevel("debug");
+            Stream.of(a,c).forEach(ch -> ch.getProtocolStack().findProtocol(FLUSH.class).setLevel("debug"));
 
             for(int i=0; i < 20; i++) {
-                if(a.getView().size() == 2 && c.getView().size() == 2)
+                if(Stream.of(a,c).allMatch(ch -> ch.view().size() == 2))
                     break;
                 Util.sleep(500);
             }
@@ -152,11 +152,8 @@ public class FlushTest {
             // cluster should not hang and two remaining members should have a correct view
             assert a.getView().size() == 2 : String.format("A's view: %s", a.getView());
             assert c.getView().size() == 2 : String.format("C's view: %s", c.getView());
-
-            a.getProtocolStack().findProtocol(FLUSH.class).setLevel("warn");
-            c.getProtocolStack().findProtocol(FLUSH.class).setLevel("warn");
-
-        } finally {
+        }
+        finally {
             Util.close(c, b, a);
         }
     }
@@ -409,6 +406,7 @@ public class FlushTest {
             if(fd_all != null) {
                 fd_all.setTimeout(2000);
                 fd_all.setInterval(800);
+                fd_all.setTimeoutCheckInterval(3000);
             }
         }
     }

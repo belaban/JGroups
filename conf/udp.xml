@@ -44,8 +44,7 @@
               conn_expiry_timeout="0"/>
     <pbcast.STABLE desired_avg_gossip="50000"
                    max_bytes="4M"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="2000"
-                view_bundling="true"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="2000"/>
     <UFC max_credits="2M"
          min_threshold="0.4"/>
     <MFC max_credits="2M"
@@ -53,5 +52,4 @@
     <FRAG2 frag_size="60K"  />
     <RSVP resend_interval="2000" timeout="10000"/>
     <pbcast.STATE_TRANSFER />
-    <!-- pbcast.FLUSH  /-->
 </config>

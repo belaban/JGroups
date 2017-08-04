@@ -34,5 +34,3 @@ Misc
 ----
 
 - MERGE2: num_initial_members in Discovery should be large, so that we detect partitions sooner
-- GMS: view bundling should be enabled, and max_bundling_time should be a bit larger than the default, as this
-  will allow for more concurrent joins and leaves before starting the view installation process

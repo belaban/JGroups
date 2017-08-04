@@ -956,7 +956,10 @@ public class JChannel implements Closeable {
                 receiver.viewAccepted((View)arg);
                 break;
             case Event.SUSPECT:
-                receiver.suspect((Address)arg);
+                // todo: change this in 4.1 to only accept collections
+                Collection<Address> suspects=arg instanceof Address? Collections.singletonList((Address)arg)
+                  : (Collection<Address>)arg;
+                suspects.forEach(receiver::suspect);
                 break;
             case Event.GET_APPLSTATE:
                 byte[] tmp_state=null;

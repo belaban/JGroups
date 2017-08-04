@@ -14,10 +14,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
@@ -42,11 +39,11 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     protected int         num_msgs=1;
     
     @Property(description="Use InetAddress.isReachable() to verify suspected member instead of regular messages")
-    protected boolean     use_icmp=false;
+    protected boolean     use_icmp;
 
     @Property(description="Send the I_AM_NOT_DEAD message back as a multicast rather than as multiple unicasts " +
       "(default is false)")
-    protected boolean     use_mcast_rsps=false;
+    protected boolean     use_mcast_rsps;
 
     @LocalAddress
     @Property(description="Interface for ICMP pings. Used if use_icmp is true " +
@@ -58,21 +55,21 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     
     
     /** network interface to be used to send the ICMP packets */
-    protected NetworkInterface intf=null;
+    protected NetworkInterface        intf;
     
-    protected Address local_addr=null;
+    protected Address                 local_addr;
 
     // a list of suspects, ordered by time when a SUSPECT event needs to be sent up
     protected final DelayQueue<Entry> suspects=new DelayQueue<>();
 
     @ManagedAttribute(description = "List of currently suspected members")
     public String getSuspects() {
-        synchronized (suspects) {
+        synchronized(suspects) {
             return suspects.toString();
         }
     }
 
-    protected Thread timer=null;
+    protected Thread timer;
     
     
     
@@ -96,22 +93,15 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         switch(evt.getType()) {
 
             case Event.SUSPECT:  // it all starts here ...
-                Address suspected_mbr=evt.getArg();
-                if(suspected_mbr == null) {
-                    if(log.isErrorEnabled()) log.error(Util.getMessage("SuspectedMemberIsNull"));
+                // todo: change to collections in 4.1
+                Collection<Address> s=evt.arg() instanceof Address? Collections.singletonList(evt.arg()) : evt.arg();
+                if(s == null)
                     return null;
-                }
-
-                if(Objects.equals(local_addr, suspected_mbr)) {
-                    if(log.isTraceEnabled())
-                        log.trace("I was suspected; ignoring SUSPECT message");
-                    return null;
-                }
-
+                s.remove(local_addr); // ignoring suspect of self
                 if(!use_icmp)
-                    verifySuspect(suspected_mbr);
+                    verifySuspect(s);
                 else
-                    verifySuspectWithICMP(suspected_mbr);
+                    s.forEach(this::verifySuspectWithICMP);
                 return null;  // don't pass up; we will decide later (after verification) whether to pass it up
 
             case Event.CONFIG:
@@ -130,21 +120,19 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         switch(hdr.type) {
             case VerifyHeader.ARE_YOU_DEAD:
                 if(hdr.from == null) {
-                    if(log.isErrorEnabled()) log.error(Util.getMessage("AREYOUDEADHdrFromIsNull"));
+                    log.error(Util.getMessage("AREYOUDEADHdrFromIsNull"));
+                    return null;
                 }
-                else {
-                    Message rsp;
-                    Address target=use_mcast_rsps? null : hdr.from;
-                    for(int i=0; i < num_msgs; i++) {
-                        rsp=new Message(target).setFlag(Message.Flag.INTERNAL)
-                          .putHeader(this.id, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
-                        down_prot.down(rsp);
-                    }
+                Address target=use_mcast_rsps? null : hdr.from;
+                for(int i=0; i < num_msgs; i++) {
+                    Message rsp=new Message(target).setFlag(Message.Flag.INTERNAL)
+                      .putHeader(this.id, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
+                    down_prot.down(rsp);
                 }
                 return null;
             case VerifyHeader.I_AM_NOT_DEAD:
                 if(hdr.from == null) {
-                    if(log.isErrorEnabled()) log.error(Util.getMessage("IAMNOTDEADHdrFromIsNull"));
+                    log.error(Util.getMessage("IAMNOTDEADHdrFromIsNull"));
                     return null;
                 }
                 unsuspect(hdr.from);
@@ -158,11 +146,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
      */
     protected void adjustSuspectedMembers(List<Address> new_mbrship) {
         synchronized(suspects) {
-            for(Iterator<Entry> it=suspects.iterator(); it.hasNext();) {
-                Entry entry=it.next();
-                if(!new_mbrship.contains(entry.suspect))
-                    it.remove();
-            }
+            suspects.removeIf(entry -> !new_mbrship.contains(entry.suspect));
         }
     }
 
@@ -175,11 +159,16 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     public void run() {
         while(!suspects.isEmpty() && timer != null) {
             try {
-                Entry entry=suspects.poll(timeout * 2,TimeUnit.MILLISECONDS);
+                Entry entry=suspects.poll(timeout,TimeUnit.MILLISECONDS);
                 if(entry != null) {
-                    if(log.isTraceEnabled())
-                        log.trace(entry.suspect + " is dead (passing up SUSPECT event)");
-                    up_prot.up(new Event(Event.SUSPECT, entry.suspect));
+                    List<Entry> expired=new ArrayList<>(suspects.size());
+                    suspects.drainTo(expired); // let's see if we can remove more elements which have also expired
+                    Collection<Address> suspect_list=new LinkedHashSet<>();
+                    suspect_list.add(entry.suspect);
+                    expired.forEach(e -> suspect_list.add(e.suspect));
+                    log.trace("%s %s dead (passing up SUSPECT event)",
+                              suspect_list, suspect_list.size() > 1? "are" : "is");
+                    up_prot.up(new Event(Event.SUSPECT, suspect_list));
                 }
             }
             catch(InterruptedException e) {
@@ -195,22 +184,21 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     /**
      * Sends ARE_YOU_DEAD message to suspected_mbr, wait for return or timeout
      */
-    void verifySuspect(Address mbr) {
-        Message msg;
-        if(mbr == null) return;
-
-        addSuspect(mbr);
-
-        startTimer(); // start timer before we send out are you dead messages
-        
-        // moved out of synchronized statement (bela): http://jira.jboss.com/jira/browse/JGRP-302
-        if(log.isTraceEnabled()) log.trace("verifying that " + mbr + " is dead");
-        
-        for(int i=0; i < num_msgs; i++) {
-            msg=new Message(mbr).setFlag(Message.Flag.INTERNAL)
-              .putHeader(this.id, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
-            down_prot.down(msg);
-        }               
+    void verifySuspect(Collection<Address> mbrs) {
+        if(mbrs == null || mbrs.isEmpty())
+            return;
+        boolean added=addSuspects(mbrs);
+        if(added) {
+            startTimer(); // start timer before we send out are you dead messages
+            log.trace("verifying that %s %s dead", mbrs, mbrs.size() == 1? "is" : "are");
+        }
+        for(Address mbr: mbrs) {
+            for(int i=0; i < num_msgs; i++) {
+                Message msg=new Message(mbr).setFlag(Message.Flag.INTERNAL)
+                  .putHeader(this.id, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
+                down_prot.down(msg);
+            }
+        }
     }
 
 
@@ -224,56 +212,47 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             long start=System.currentTimeMillis(), stop;
             boolean rc=host.isReachable(intf, 0, (int)timeout);
             stop=System.currentTimeMillis();
-            if(rc) { // success
-                if(log.isTraceEnabled())
-                    log.trace("successfully received response from " + host + " (after " + (stop-start) + "ms)");
-            }
+            if(rc) // success
+                log.trace("successfully received response from " + host + " (after " + (stop-start) + "ms)");
             else { // failure
-                if(log.isTraceEnabled())
-                    log.debug("could not ping " + suspected_mbr + " after " + (stop-start) + "ms; " +
-                            "passing up SUSPECT event");
+                log.debug("failed pinging " + suspected_mbr + " after " + (stop-start) + "ms; passing up SUSPECT event");
                 removeSuspect(suspected_mbr);
-                up_prot.up(new Event(Event.SUSPECT, suspected_mbr));
+                up_prot.up(new Event(Event.SUSPECT, Collections.singletonList(suspected_mbr)));
             }
         }
         catch(Exception ex) {
-            if(log.isErrorEnabled())
-                log.error(Util.getMessage("FailedPinging"),suspected_mbr, ex);
+            log.error(Util.getMessage("FailedPinging"),suspected_mbr, ex);
         }
     }
 
-    protected boolean addSuspect(Address suspect) {
-        if(suspect == null)
+    protected boolean addSuspects(Collection<Address> list) {
+        if(list == null || list.isEmpty())
             return false;
+        boolean added=false;
         synchronized(suspects) {
-            for(Entry entry: suspects) // check for duplicates
-                if(entry.suspect.equals(suspect))
-                    return false;
-            suspects.add(new Entry(suspect, System.currentTimeMillis() + timeout));
-            return true;
+            for(Address suspected_mbr : list) {
+                boolean found_dupe=suspects.stream().anyMatch(e -> e.suspect.equals(suspected_mbr));
+                if(!found_dupe) {
+                    suspects.add(new Entry(suspected_mbr, System.currentTimeMillis() + timeout));
+                    added=true;
+                }
+            }
         }
+        return added;
     }
 
     protected boolean removeSuspect(Address suspect) {
         if(suspect == null)
             return false;
-        boolean retval=false;
         synchronized(suspects) {
-            for(Iterator<Entry> it=suspects.iterator(); it.hasNext();) {
-                Entry entry=it.next();
-                if(entry.suspect.equals(suspect)) {
-                    it.remove();
-                    retval=true; // don't break, possibly remove more (2nd line of defense)
-                }
-            }
+            return suspects.removeIf(e -> Objects.equals(e.suspect, suspect));
         }
-        return retval;
     }
 
     public void unsuspect(Address mbr) {
         boolean removed=mbr != null && removeSuspect(mbr);
         if(removed) {
-            if(log.isTraceEnabled()) log.trace("member " + mbr + " was unsuspected");
+            log.trace("member " + mbr + " was unsuspected");
             down_prot.down(new Event(Event.UNSUSPECT, mbr));
             up_prot.up(new Event(Event.UNSUSPECT, mbr));
         }
@@ -302,7 +281,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             tmp=timer;
             timer=null;
             tmp.interrupt();
-            tmp=null;
         }
         timer=null;
     }
@@ -340,7 +318,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         static final short I_AM_NOT_DEAD=2;  // 'from' is suspected member
 
         short type=ARE_YOU_DEAD;
-        Address from=null;     // member who wants to verify that suspected_mbr is dead
+        Address from;     // member who wants to verify that suspected_mbr is dead
 
 
         public VerifyHeader() {

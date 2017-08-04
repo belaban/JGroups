@@ -78,11 +78,42 @@ public class AckCollector {
             all_acks_received.setResult(Boolean.TRUE);
     }
 
+    public synchronized void ack(Address ... members) {
+        for(Address member: members) {
+            if(member != null && missing_acks.remove(member) && missing_acks.isEmpty())
+                all_acks_received.setResult(Boolean.TRUE);
+        }
+    }
+
+    public synchronized void ack(Collection<Address> members) {
+        for(Address member: members) {
+            if(member != null && missing_acks.remove(member) && missing_acks.isEmpty())
+                all_acks_received.setResult(Boolean.TRUE);
+        }
+    }
+
     public synchronized void suspect(Address member) {
         if(member == null) return;
         if(!suspected_mbrs.contains(member))
             suspected_mbrs.add(member);
         ack(member);
+    }
+
+    public synchronized void suspect(Address ... members) {
+        for(Address member: members) {
+            if(!suspected_mbrs.contains(member))
+                suspected_mbrs.add(member);
+        }
+        ack(members);
+    }
+
+
+    public synchronized void suspect(Collection<Address> members) {
+        for(Address member: members) {
+            if(!suspected_mbrs.contains(member))
+                suspected_mbrs.add(member);
+        }
+        ack(members);
     }
 
     public boolean retainAll(Collection<Address> members) {

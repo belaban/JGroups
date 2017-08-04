@@ -10,7 +10,7 @@ public class Runner implements Runnable {
     protected final String        thread_name;
     protected final Runnable      function;
     protected final Runnable      stop_function;
-    protected volatile boolean    running=true;
+    protected volatile boolean    running;
     protected Thread              thread;
 
 
@@ -26,12 +26,14 @@ public class Runner implements Runnable {
 
 
     public synchronized void start() {
-        // stop();
-        running=true;
-        String name=thread_name != null? thread_name : "runner";
-        thread=factory != null? factory.newThread(this, name) : new Thread(this, name);
-        running=true;
-        thread.start();
+        if(running)
+            return;
+        if(thread == null || !thread.isAlive()) {
+            String name=thread_name != null? thread_name : "runner";
+            thread=factory != null? factory.newThread(this, name) : new Thread(this, name);
+            running=true;
+            thread.start();
+        }
     }
 
     public synchronized void stop() {

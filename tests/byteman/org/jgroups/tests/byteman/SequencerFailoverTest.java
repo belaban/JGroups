@@ -209,21 +209,19 @@ public class SequencerFailoverTest extends BMNGRunner {
         MyReceiver rb=new MyReceiver("B"), rc=new MyReceiver("C");
         b.setReceiver(rb); c.setReceiver(rc);
 
-        new Thread() {
-            public void run() {
-                Util.sleep(3000);
-                System.out.println("** killing A");
-                try {
-                    Util.shutdown(a);
-                }
-                catch(Exception e) {
-                    System.err.println("failed shutting down channel " + a.getAddress() + ", exception=" + e);
-                }
-                System.out.println("** A killed");
-                injectSuspectEvent(a.getAddress(), b, c);
-                a=null;
+        new Thread(() -> {
+            Util.sleep(3000);
+            System.out.println("** killing A");
+            try {
+                Util.shutdown(a);
             }
-        }.start();
+            catch(Exception e) {
+                System.err.println("failed shutting down channel " + a.getAddress() + ", exception=" + e);
+            }
+            System.out.println("** A killed");
+            injectSuspectEvent(a.getAddress(), b, c);
+            a=null;
+        }).start();
 
         final Address sender=channel.getAddress();
         for(int i=1; i <= NUM_MSGS; i++) {
@@ -256,9 +254,9 @@ public class SequencerFailoverTest extends BMNGRunner {
 
     /** Injects SUSPECT event(suspected_mbr) into channels */
     protected static void injectSuspectEvent(Address suspected_mbr, JChannel ... channels) {
-        Event evt=new Event(Event.SUSPECT, suspected_mbr);
+        Event evt=new Event(Event.SUSPECT, Collections.singletonList(suspected_mbr));
         for(JChannel ch: channels) {
-            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             if(gms != null)
                 gms.up(evt);
         }
@@ -268,7 +266,7 @@ public class SequencerFailoverTest extends BMNGRunner {
     protected void adjustConfiguration(JChannel ... channels) {
         for(JChannel ch: channels) {
             ch.getProtocolStack().removeProtocol(FD_ALL.class,FD.class,MERGE3.class, VERIFY_SUSPECT.class);
-            SEQUENCER seq=(SEQUENCER)ch.getProtocolStack().findProtocol(SEQUENCER.class);
+            SEQUENCER seq=ch.getProtocolStack().findProtocol(SEQUENCER.class);
             seq.setThreshold(0); // permanent ack-mode
         }
     }
@@ -288,7 +286,7 @@ public class SequencerFailoverTest extends BMNGRunner {
 
         public void receive(Message msg) {
             synchronized(list) {
-                list.add((Integer)msg.getObject());
+                list.add(msg.getObject());
             }
         }
     }

@@ -227,6 +227,7 @@ public class FD extends Protocol {
                 if(hdr.mbrs == null)
                     return null;
                 log.trace("%s: received suspect message: %s", local_addr, hdr);
+
                 for(Address mbr: hdr.mbrs) {
                     if(local_addr != null && mbr.equals(local_addr)) {
                         log.warn("%s: I was suspected by %s; ignoring the SUSPECT message and sending back a HEARTBEAT_ACK",
@@ -241,8 +242,13 @@ public class FD extends Protocol {
                     finally {
                         lock.unlock();
                     }
-                    up_prot.up(new Event(Event.SUSPECT, mbr));
-                    down_prot.down(new Event(Event.SUSPECT, mbr));
+                }
+                Collection<Address> suspects=new LinkedHashSet<>(hdr.mbrs);
+                suspects.remove(local_addr);
+                if(!suspects.isEmpty()) {
+                    log.debug("%s: suspecting %s", local_addr, suspects);
+                    up_prot.up(new Event(Event.SUSPECT, suspects));
+                    down_prot.down(new Event(Event.SUSPECT, suspects));
                 }
                 break;
             case FdHeader.UNSUSPECT:

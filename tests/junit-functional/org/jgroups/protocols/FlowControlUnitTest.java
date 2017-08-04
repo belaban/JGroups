@@ -200,6 +200,8 @@ public class FlowControlUnitTest {
             Util.sleep(2000);
             System.out.printf("-- removing %s\n", DropCreditResponses.class.getSimpleName());
             a.getProtocolStack().removeProtocol(DropCreditResponses.class);
+            UFC_NB ufc_nb=a.getProtocolStack().findProtocol(UFC_NB.class);
+            ufc_nb.handleCredit(b.getAddress(), MAX_CREDITS);
         });
         remover.start();
 
@@ -234,6 +236,9 @@ public class FlowControlUnitTest {
             Util.sleep(2000);
             System.out.printf("-- removing %s\n", DropCreditResponses.class.getSimpleName());
             a.getProtocolStack().removeProtocol(DropCreditResponses.class);
+            MFC_NB mfc_nb=a.getProtocolStack().findProtocol(MFC_NB.class);
+            mfc_nb.handleCredit(b.getAddress(), MAX_CREDITS);
+            // mfc_nb.handleCredit(a.getAddress(), MAX_CREDITS);
         });
         remover.start();
 

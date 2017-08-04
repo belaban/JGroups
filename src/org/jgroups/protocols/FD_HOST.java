@@ -12,9 +12,6 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -216,9 +213,7 @@ public class FD_HOST extends Protocol {
                 InetAddress key=getHostFor(mbr);
                 if(key == null)
                     continue;
-                List<Address> mbrs=hosts.get(key);
-                if(mbrs == null)
-                    hosts.put(key, mbrs=new ArrayList<>());
+                List<Address> mbrs=hosts.computeIfAbsent(key, k -> new ArrayList<>());
                 mbrs.add(mbr);
             }
             is_pinger=isPinger(local_addr);
@@ -300,30 +295,13 @@ public class FD_HOST extends Protocol {
         }
 
         // Check if we're coord, then send up the stack
-        if(local_addr != null && !eligible_mbrs.isEmpty()) {
-            Address first=eligible_mbrs.get(0);
-            if(local_addr.equals(first)) {
-                log.debug("%s: suspecting %s", local_addr, suspected_mbrs);
-                for(Address suspect: suspects) {
-                    up_prot.up(new Event(Event.SUSPECT, suspect));
-                    down_prot.down(new Event(Event.SUSPECT, suspect));
-                }
-            }
+        if(local_addr != null && !eligible_mbrs.isEmpty() && local_addr.equals(eligible_mbrs.get(0))) {
+            log.debug("%s: suspecting %s", local_addr, suspects);
+            up_prot.up(new Event(Event.SUSPECT, suspects));
+            down_prot.down(new Event(Event.SUSPECT, suspects));
         }
     }
 
-   /* protected void unsuspect(InetAddress host) {
-        List<Address> suspects;
-        synchronized(hosts) {
-            List<Address> tmp=hosts.get(host);
-            suspects=tmp != null? new ArrayList<Address>(tmp) : null;
-        }
-        if(suspects != null) {
-            log.debug("%s: unsuspecting host %s; unsuspected members: %s", local_addr, host, Util.printListWithDelimiter(suspects, ","));
-            for(Address unsuspect: suspects)
-                unsuspect(unsuspect);
-        }
-    }*/
 
     protected boolean unsuspect(Address mbr) {
         if(mbr == null) return false;
@@ -434,52 +412,6 @@ public class FD_HOST extends Protocol {
 
         public boolean isAlive(InetAddress host, long timeout) throws Exception {
             return CommandExecutor2.execute(cmd + " " + host.getHostAddress()) == 0;
-        }
-    }
-
-    public static class CommandExecutor {
-
-        public static int execute(String command) throws Exception {
-            Process p=Runtime.getRuntime().exec(command);
-            InputStream in=p.getInputStream(), err=p.getErrorStream();
-            try {
-                Reader in_reader, err_reader;
-                in_reader=new Reader(in);
-                err_reader=new Reader(err);
-                in_reader.start();
-                err_reader.start();
-                in_reader.join();
-                err_reader.join();
-                return p.exitValue();
-            }
-            finally {
-                Util.close(in);
-                Util.close(err);
-            }
-        }
-
-
-        static class Reader extends Thread {
-            InputStreamReader in;
-
-            Reader(InputStream in) {
-                this.in=new InputStreamReader(in);
-            }
-
-            public void run() {
-                int c;
-                while(true) {
-                    try {
-                        c=in.read();
-                        if(c == -1)
-                            break;
-                        // System.out.print((char)c);
-                    }
-                    catch(IOException e) {
-                        break;
-                    }
-                }
-            }
         }
     }
 

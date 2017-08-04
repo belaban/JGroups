@@ -109,8 +109,7 @@ public class ConnectStressTest {
                             new NAKACK2().setValue("log_discard_msgs", false),
                             new UNICAST3(),
                             new STABLE(),
-                            new GMS().joinTimeout(1000).setValue("view_bundling", true).setValue("max_bundling_time", 300)
-                              .setValue("print_local_addr", false),
+                            new GMS().joinTimeout(1000).setValue("print_local_addr", false),
                             new FRAG2().fragSize(8000));
 
     }

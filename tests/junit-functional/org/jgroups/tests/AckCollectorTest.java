@@ -58,6 +58,24 @@ public class AckCollectorTest {
         assert rc;
     }
 
+
+    public void testAck() {
+        AckCollector coll=new AckCollector();
+        coll.reset(Arrays.asList(one,two,three,four), five);
+        System.out.println("coll = " + coll);
+        assert coll.size() == 4;
+
+        coll.ack(one,two,three,four);
+        System.out.println("coll = " + coll);
+        assert coll.size() == 0;
+
+        coll.reset(Collections.singletonList(one), one);
+        System.out.println("coll = " + coll);
+        assert coll.size() == 0;
+        boolean rc=coll.waitForAllAcks();
+        assert rc;
+    }
+
     public void testConstructor() {
         AckCollector ac=new AckCollector(list);
         System.out.println("AckCollector is " + ac);

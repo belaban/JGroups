@@ -14,6 +14,8 @@ import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Tuple;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class DNS_PING extends Discovery {
@@ -79,8 +81,8 @@ public class DNS_PING extends Discovery {
             }
             break;
          case Event.SUSPECT:
-            Address address = evt.getArg();
-            discovered_hosts.remove(address);
+            Collection<Address> addresses=evt.getArg() instanceof Address? Collections.singletonList(evt.arg()) : evt.arg();
+            discovered_hosts.removeAll(addresses);
             break;
          case Event.ADD_PHYSICAL_ADDRESS:
             Tuple<Address, PhysicalAddress> tuple = evt.getArg();

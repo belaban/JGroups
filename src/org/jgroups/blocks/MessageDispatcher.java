@@ -517,8 +517,11 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
                 break;
 
             case Event.SUSPECT:
-                if(membership_listener != null)
-                    membership_listener.suspect(evt.getArg());
+                if(membership_listener != null) {
+                    // todo: remove in 4.1 once we've completely switched to collections
+                    Collection<Address> c=evt.arg() instanceof Address? Collections.singletonList(evt.arg()): evt.arg();
+                    c.forEach(membership_listener::suspect);
+                }
                 break;
 
             case Event.BLOCK:

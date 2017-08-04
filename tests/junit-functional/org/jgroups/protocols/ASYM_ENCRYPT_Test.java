@@ -17,6 +17,7 @@ import org.testng.annotations.Test;
 
 import javax.crypto.SecretKey;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.stream.Stream;
 
 import static org.jgroups.util.Util.shutdown;
@@ -285,7 +286,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
 
         System.out.printf("** Crashing %s **\n", crashed_coord);
         GMS gms=b.getProtocolStack().findProtocol(GMS.class);
-        gms.up(new Event(Event.SUSPECT, crashed_coord));
+        gms.up(new Event(Event.SUSPECT, Collections.singletonList(crashed_coord)));
 
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, b,c);
         for(JChannel ch: Arrays.asList(a,b,c))

@@ -13,14 +13,11 @@ import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.MembershipChangePolicy;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
-import org.jgroups.util.Queue;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
@@ -73,15 +70,18 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
      * false forces each JOIN/LEAVE/SUPSECT request to be handled separately. By default these requests are processed
      * together if they are queued at approximately the same time
      */
-    @Property(description="View bundling toggle")
+    @Deprecated
+    @Property(description="View bundling toggle",deprecatedMessage="view bundling is enabled by default")
     protected boolean view_bundling=true;
 
     @Property(description="If true, then GMS is allowed to send VIEW messages with delta views, otherwise " +
       "it always sends full views. See https://issues.jboss.org/browse/JGRP-1354 for details.")
     protected boolean use_delta_views=true;
 
-    @Property(description="Max view bundling timeout if view bundling is turned on. Default is 50 msec")
-    protected long max_bundling_time=50; // 50ms max to wait for other JOIN, LEAVE or SUSPECT requests
+    @Deprecated
+    @Property(description="Max view bundling timeout if view bundling is turned on",
+      deprecatedMessage="ignored as view bundling is always on")
+    protected long max_bundling_time=50; // 50 ms max to wait for other JOIN, LEAVE or SUSPECT requests
 
     @Property(description="Max number of old members to keep in history. Default is 50")
     protected int num_prev_mbrs=50;
@@ -155,7 +155,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected TimeScheduler             timer;
 
     /** Class to process JOIN, LEAVE and MERGE requests */
-    protected final ViewHandler         view_handler=new ViewHandler();
+    protected final org.jgroups.protocols.pbcast.ViewHandler2<Request> view_handler=
+      new org.jgroups.protocols.pbcast.ViewHandler2<>(this, this::process, Request::canBeProcessedTogether);
 
     /** To collect VIEW_ACKs from all members */
     protected final AckCollector        ack_collector=new AckCollector();
@@ -266,21 +267,17 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         this.view_ack_collection_timeout=view_ack_collection_timeout;
     }
 
-    public boolean isViewBundling() {
-        return view_bundling;
-    }
+    @Deprecated
+    public boolean isViewBundling() {return true;}
 
-    public void setViewBundling(boolean view_bundling) {
-        this.view_bundling=view_bundling;
-    }
+    @Deprecated
+    public void setViewBundling(@SuppressWarnings("unused") boolean ignored) {}
 
-    public long getMaxBundlingTime() {
-        return max_bundling_time;
-    }
+    @Deprecated
+    public long getMaxBundlingTime() {return 0;}
 
-    public void setMaxBundlingTime(long max_bundling_time) {
-        this.max_bundling_time=max_bundling_time;
-    }
+    @Deprecated
+    public void setMaxBundlingTime(long max_bundling_time) {}
 
     @ManagedAttribute
     public int getViewHandlerSize() {return view_handler.size();}
@@ -294,17 +291,12 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public String dumpViewHandlerHistory() {
         return view_handler.dumpHistory();
     }
-    @ManagedOperation
-    public void suspendViewHandler() {
-        view_handler.suspend();
-    }
-    @ManagedOperation
-    public void resumeViewHandler() {
-        view_handler.resumeForce();
-    }
+
+    @ManagedOperation public void suspendViewHandler() {view_handler.suspend();}
+    @ManagedOperation public void resumeViewHandler() {view_handler.resume();}
 
 
-    protected ViewHandler getViewHandler() {return view_handler;}
+    protected org.jgroups.protocols.pbcast.ViewHandler2 getViewHandler() {return view_handler;}
 
     @ManagedOperation
     public String printPreviousViews() {
@@ -324,7 +316,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             if(Objects.equals(logical_name, suspected_member)) {
                 Address suspect=entry.getKey();
                 if(suspect != null)
-                    up(new Event(Event.SUSPECT, suspect));
+                    up(new Event(Event.SUSPECT, Collections.singletonList(suspect)));
             }
         }
     }
@@ -397,7 +389,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     public void stop() {
-        view_handler.stop(true);
+        // view_handler.stop();
         if(impl != null) impl.stop();
         if(prev_members != null)
             prev_members.clear();
@@ -840,10 +832,15 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         switch(evt.getType()) {
             case Event.SUSPECT:
                 Object retval=up_prot.up(evt);
-                Address suspected=evt.getArg();
-                view_handler.add(new Request(Request.SUSPECT, suspected, true));
-                ack_collector.suspect(suspected);
-                merge_ack_collector.suspect(suspected);
+                // todo: change this to only accept lists in 4.1
+                Collection<Address> suspects=evt.arg() instanceof Address? Collections.singletonList(evt.arg()) : evt.arg();
+                Request[] suspect_reqs=new Request[suspects.size()];
+                int index=0;
+                for(Address mbr: suspects)
+                    suspect_reqs[index++]=new Request(Request.SUSPECT, mbr, true);
+                view_handler.add(suspect_reqs);
+                ack_collector.suspect(suspects);
+                merge_ack_collector.suspect(suspects);
                 return retval;
 
             case Event.UNSUSPECT:
@@ -1287,6 +1284,26 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         }
     }
 
+    protected void process(Collection<Request> requests) {
+        if(requests.isEmpty())
+            return;
+        Request firstReq=requests.iterator().next();
+        switch(firstReq.type) {
+            case Request.JOIN:
+            case Request.JOIN_WITH_STATE_TRANSFER:
+            case Request.LEAVE:
+            case Request.SUSPECT:
+                impl.handleMembershipChange(requests);
+                break;
+            case Request.MERGE:
+                impl.merge(firstReq.views);
+                break;
+            default:
+                log.error("request " + firstReq.type + " is unknown; discarded");
+        }
+    }
+
+
     /* --------------------------- End of Private Methods ------------------------------- */
 
     public static class DefaultMembershipPolicy implements MembershipChangePolicy {
@@ -1489,194 +1506,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 case INSTALL_DIGEST:               return "INSTALL_DIGEST";
                 case GET_CURRENT_VIEW:             return "GET_CURRENT_VIEW";
                 default:                           return "<unknown>";
-            }
-        }
-
-    }
-
-
-
-
-
-    /**
-     * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
-     * @author Bela Ban
-     */
-    class ViewHandler implements Runnable {
-        volatile Thread                     thread;
-        final Queue                         queue=new Queue(); // Queue<Request>
-        volatile boolean                    suspended=false;
-        final static long                   INTERVAL=5000;
-        private static final long           MAX_COMPLETION_TIME=10000;
-        /** Maintains a list of the last 20 requests */
-        private final BoundedList<String>   history=new BoundedList<>(20);
-
-        /** Current Resumer task */
-        private Future<?>                   resumer;
-
-
-        synchronized void add(Request req) {
-            if(suspended) {
-                log.trace("%s: queue is suspended; request %s is discarded",local_addr,req);
-                return;
-            }
-            start();
-            try {
-                queue.add(req);
-                history.add(new Date() + ": " + req.toString());
-            }
-            catch(QueueClosedException e) {
-                log.trace("%s: queue is closed; request %s is discarded", local_addr, req);
-            }
-        }
-
-
-        void waitUntilCompleted(long timeout) {
-            waitUntilCompleted(timeout, false);
-        }
-
-        synchronized void waitUntilCompleted(long timeout, boolean resume) {
-            if(thread != null) {
-                try {
-                    thread.join(timeout);
-                }
-                catch(InterruptedException e) {
-                    Thread.currentThread().interrupt(); // set interrupt flag again
-                }
-                thread = null; // Added after Brian noticed that ViewHandler leaks class loaders
-            }
-            if(resume)
-                resumeForce();
-        }
-
-        synchronized void start() {
-            if(queue.closed())
-                queue.reset();
-            if(thread == null || !thread.isAlive()) {
-                thread=getThreadFactory().newThread(this, "ViewHandler");
-                thread.setDaemon(false); // thread cannot terminate if we have tasks left, e.g. when we as coord leave
-                thread.start();
-            }
-        }
-
-        synchronized void stop(boolean flush) {
-            queue.close(flush);
-            if(resumer != null)
-                resumer.cancel(false);
-        }
-
-        /**
-         * Waits until the current requests in the queue have been processed, then clears the queue and discards new
-         * requests from now on
-         */
-        public synchronized void suspend() {
-            if(!suspended) {
-                suspended=true;
-                queue.clear();
-                waitUntilCompleted(MAX_COMPLETION_TIME);
-                queue.close(true);
-                resumer=timer.schedule(this::resume, resume_task_timeout, TimeUnit.MILLISECONDS, false);
-            }
-        }
-
-
-        public synchronized void resume() {
-            if(!suspended)
-                return;
-            if(resumer != null)
-                resumer.cancel(false);
-            resumeForce();
-        }
-
-        public synchronized void resumeForce() {
-            if(queue.closed())
-                queue.reset();
-            suspended=false;
-        }
-
-        public void run() {
-            long start_time, wait_time;  // ns
-            long timeout=TimeUnit.NANOSECONDS.convert(max_bundling_time, TimeUnit.MILLISECONDS);
-            List<Request> requests=new LinkedList<>();
-            while(Thread.currentThread().equals(thread) && !suspended) {
-                try {
-                    boolean keepGoing=false;
-                    start_time=System.nanoTime();
-                    do {
-                        Request firstRequest=(Request)queue.remove(INTERVAL); // throws a TimeoutException if it runs into timeout
-                        requests.add(firstRequest);
-                        if(!view_bundling)
-                            break;
-                        if(queue.size() > 0) {
-                            Request nextReq=(Request)queue.peek();
-                            keepGoing=view_bundling && firstRequest.canBeProcessedTogether(nextReq);
-                        }
-                        else {
-                            wait_time=timeout - (System.nanoTime() - start_time);
-                            if(wait_time > 0 && firstRequest.canBeProcessedTogether(firstRequest)) { // JGRP-1438
-                                long wait_time_ms=TimeUnit.MILLISECONDS.convert(wait_time, TimeUnit.NANOSECONDS);
-                                if(wait_time_ms > 0)
-                                    queue.waitUntilClosed(wait_time_ms); // misnomer: waits until element has been added or q closed
-                            }
-                            keepGoing=queue.size() > 0 && firstRequest.canBeProcessedTogether((Request)queue.peek());
-                        }
-                    }
-                    while(keepGoing && timeout - (System.nanoTime() - start_time) > 0);
-
-                    try {
-                        process(requests);
-                    }
-                    finally {
-                        requests.clear();
-                    }
-                }
-                catch(QueueClosedException e) {
-                    break;
-                }
-                catch(TimeoutException e) {
-                    break;
-                }
-                catch(Throwable catchall) {
-                    Util.sleep(50);
-                }
-            }
-        }
-
-        public int size() {return queue.size();}
-        public boolean suspended() {return suspended;}
-        public String dumpQueue() {
-            StringBuilder sb=new StringBuilder();
-            List v=queue.values();
-            for(Iterator it=v.iterator(); it.hasNext();) {
-                sb.append(it.next() + "\n");
-            }
-            return sb.toString();
-        }
-
-        public String dumpHistory() {
-            StringBuilder sb=new StringBuilder();
-            for(String line: history) {
-                sb.append(line + "\n");
-            }
-            return sb.toString();
-        }
-
-        private void process(List<Request> requests) {
-            if(requests.isEmpty())
-                return;
-            Request firstReq=requests.get(0);
-            switch(firstReq.type) {
-                case Request.JOIN:
-                case Request.JOIN_WITH_STATE_TRANSFER:
-                case Request.LEAVE:
-                case Request.SUSPECT:
-                    impl.handleMembershipChange(requests);
-                    break;
-                case Request.MERGE:
-                    impl.merge(firstReq.views);
-                    break;
-                default:
-                    log.error("request " + firstReq.type + " is unknown; discarded");
             }
         }
 

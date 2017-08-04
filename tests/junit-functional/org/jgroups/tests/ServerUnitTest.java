@@ -18,6 +18,7 @@ import org.testng.annotations.Test;
 import java.io.DataInput;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -292,15 +293,8 @@ public class ServerUnitTest {
 
     protected void waitForOpenConns(int expected, BaseServer... servers) {
         for(int i=0; i < 20; i++) {
-            boolean all_ok=true;
-            for(BaseServer server: servers) {
-                if(server.getNumOpenConnections() != expected) {
-                    all_ok=false;
-                    break;
-                }
-            }
-            if(all_ok)
-                return;
+            if(Arrays.stream(servers).allMatch(srv -> srv.getNumOpenConnections() == expected))
+                break;
             Util.sleep(1000);
         }
     }

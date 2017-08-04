@@ -71,8 +71,7 @@ A typical protocol stack configuration using UDP is:
     <UNICAST3 />
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="4M"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="2000"
-                view_bundling="true"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="2000"/>
     <UFC max_credits="2M"
          min_threshold="0.4"/>
     <MFC max_credits="2M"
@@ -289,9 +288,7 @@ The properties for a typical stack based on TCP might look like this (edited for
 <UNICAST3/>
 <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                max_bytes="400000"/>
-<pbcast.GMS print_local_addr="true" join_timeout="2000"
-            view_bundling="true"/>
-            
+<pbcast.GMS print_local_addr="true" join_timeout="2000"/>
 ----
 
 TCP:: The transport protocol, uses TCP (from TCP/IP) to send unicast and multicast messages. In the latter case, it sends

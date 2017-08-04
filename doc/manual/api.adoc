@@ -490,8 +490,7 @@ A sample XML configuration looks like this (edited from `udp.xml`):
               max_msg_batch_size="500"/>
     <pbcast.STABLE desired_avg_gossip="50000"
                    max_bytes="4M"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="2000"
-                view_bundling="true"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="2000"/>
     <UFC max_credits="2M"
          min_threshold="0.4"/>
     <MFC max_credits="2M"
@@ -871,8 +870,7 @@ protocols such as `NAKACK2` or `UNICAST3`, e.g.:
     <RSVP />
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="4M"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="3000"
-                view_bundling="true"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="3000"/>
     ...
 </config>
 ----

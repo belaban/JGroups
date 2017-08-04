@@ -46,8 +46,6 @@
                    max_bytes="4M"/>
     <pbcast.GMS print_local_addr="true"
                 join_timeout="10000"
-                view_bundling="true"
-                max_bundling_time="1000"
                 merge_timeout="5000"
                 resume_task_timeout="15000"
             />
