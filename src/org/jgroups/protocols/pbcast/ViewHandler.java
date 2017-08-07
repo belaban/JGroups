@@ -20,7 +20,7 @@ import java.util.function.Consumer;
  * @author Bela Ban
  * @since  4.0.5
  */
-public class ViewHandler2<R> {
+public class ViewHandler<R> {
     protected final Collection<R>           requests=new LinkedHashSet<>();
     protected R                             first_req;
     protected final Lock                    lock=new ReentrantLock();
@@ -40,7 +40,7 @@ public class ViewHandler2<R> {
      * @param req_processor A request processor which processes a list of requests
      * @param req_matcher The matcher which determines whether any given 2 requests can be processed together
      */
-    public ViewHandler2(GMS gms, Consumer<Collection<R>> req_processor, BiPredicate<R,R> req_matcher) {
+    public ViewHandler(GMS gms, Consumer<Collection<R>> req_processor, BiPredicate<R,R> req_matcher) {
         if(req_processor == null)
             throw new IllegalArgumentException("request processor cannot be null");
         this.gms=gms;

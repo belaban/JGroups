@@ -4,7 +4,6 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.ViewHandler;
-import org.jgroups.protocols.pbcast.ViewHandler2;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.DefaultThreadFactory;
 import org.jgroups.util.ThreadFactory;
@@ -30,8 +29,8 @@ import java.util.stream.Stream;
  * @since  4.0.5
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
-public class ViewHandlerTest2 {
-    protected ViewHandler2<Integer>           view_handler;
+public class ViewHandlerTest {
+    protected ViewHandler<Integer>            view_handler;
     protected Consumer<Collection<Integer>>   req_handler;
     protected BiPredicate<Integer,Integer>    req_matcher;
 
@@ -52,13 +51,13 @@ public class ViewHandlerTest2 {
     @BeforeMethod protected void init() {
         GMS gms=new GMS();
         configureGMS(gms);
-        view_handler=new ViewHandler2<>(gms, this::process, this::match);
+        view_handler=new ViewHandler<>(gms, this::process, this::match);
     }
 
     public void testAdd() {
         List<Integer> list=new ArrayList<>();
         req_handler=list::addAll;
-        req_matcher=ViewHandlerTest2::matches;
+        req_matcher=ViewHandlerTest::matches;
         Stream.of(1,3,5,2,4,6).forEach(n -> view_handler.add(n));
         System.out.printf("list: %s\n", list);
         assert list.size() == 6;
@@ -78,7 +77,7 @@ public class ViewHandlerTest2 {
     public void testAddList() {
         List<Integer> list=new ArrayList<>();
         req_handler=list::addAll;
-        req_matcher=ViewHandlerTest2::matches; // either both even or both odd
+        req_matcher=ViewHandlerTest::matches; // either both even or both odd
         Integer[] numbers={1,3,5,2,4,6,7,9,8,10};
         view_handler.add(numbers);
         System.out.printf("drained: %s\n", list);
@@ -135,7 +134,7 @@ public class ViewHandlerTest2 {
     public void testAddNoMatches() {
         List<Integer> list=new ArrayList<>();
         req_handler=list::addAll;
-        req_matcher=ViewHandlerTest2::matches;
+        req_matcher=ViewHandlerTest::matches;
         Integer[] numbers={1,2,3,4,5,6,7,8,9,10};
         view_handler.add(numbers);
         System.out.printf("list: %s\n", list);

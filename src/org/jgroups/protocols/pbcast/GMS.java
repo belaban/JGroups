@@ -155,8 +155,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected TimeScheduler             timer;
 
     /** Class to process JOIN, LEAVE and MERGE requests */
-    protected final org.jgroups.protocols.pbcast.ViewHandler2<Request> view_handler=
-      new org.jgroups.protocols.pbcast.ViewHandler2<>(this, this::process, Request::canBeProcessedTogether);
+    protected final ViewHandler<Request> view_handler=
+      new ViewHandler<>(this, this::process, Request::canBeProcessedTogether);
 
     /** To collect VIEW_ACKs from all members */
     protected final AckCollector        ack_collector=new AckCollector();
@@ -296,7 +296,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @ManagedOperation public void resumeViewHandler() {view_handler.resume();}
 
 
-    protected org.jgroups.protocols.pbcast.ViewHandler2 getViewHandler() {return view_handler;}
+    protected ViewHandler getViewHandler() {return view_handler;}
 
     @ManagedOperation
     public String printPreviousViews() {
