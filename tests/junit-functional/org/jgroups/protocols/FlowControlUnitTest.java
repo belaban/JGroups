@@ -190,7 +190,7 @@ public class FlowControlUnitTest {
         DropCreditResponses drop_credits=new DropCreditResponses();
         // Prevent credit replenishments from being received in A. At this point, A will block sending messages to B
         // after it runs out of credits
-        a.getProtocolStack().insertProtocol(drop_credits, ProtocolStack.Position.ABOVE, SHARED_LOOPBACK.class);
+        a.getProtocolStack().insertProtocol(drop_credits, ProtocolStack.Position.BELOW, UFC.class);
         replaceUFC(1500, a,b); // small max_queue_size
 
         final byte[] buf=new byte[1000];
@@ -200,8 +200,6 @@ public class FlowControlUnitTest {
             Util.sleep(2000);
             System.out.printf("-- removing %s\n", DropCreditResponses.class.getSimpleName());
             a.getProtocolStack().removeProtocol(DropCreditResponses.class);
-            UFC_NB ufc_nb=a.getProtocolStack().findProtocol(UFC_NB.class);
-            ufc_nb.handleCredit(b.getAddress(), MAX_CREDITS);
         });
         remover.start();
 
@@ -226,7 +224,7 @@ public class FlowControlUnitTest {
         // Prevent credit replenishments from being received in A. At this point, A will block sending messages to B
         // after it runs out of credits
 
-        a.getProtocolStack().insertProtocol(drop_credits, ProtocolStack.Position.ABOVE, SHARED_LOOPBACK.class);
+        a.getProtocolStack().insertProtocol(drop_credits, ProtocolStack.Position.BELOW, MFC.class);
         replaceMFC(1500, a,b);
 
         final byte[] buf=new byte[1000];
@@ -236,9 +234,6 @@ public class FlowControlUnitTest {
             Util.sleep(2000);
             System.out.printf("-- removing %s\n", DropCreditResponses.class.getSimpleName());
             a.getProtocolStack().removeProtocol(DropCreditResponses.class);
-            MFC_NB mfc_nb=a.getProtocolStack().findProtocol(MFC_NB.class);
-            mfc_nb.handleCredit(b.getAddress(), MAX_CREDITS);
-            // mfc_nb.handleCredit(a.getAddress(), MAX_CREDITS);
         });
         remover.start();
 
@@ -283,10 +278,12 @@ public class FlowControlUnitTest {
             ProtocolStack stack=ch.getProtocolStack();
             UFC_NB ufc_nb=(UFC_NB)new UFC_NB().setValue("max_credits", MAX_CREDITS).setValue("min_threshold", 0.2);
             ufc_nb.setMaxQueueSize(max_queue_size);
+            ufc_nb.frag_size=1500;
             View view=ch.getView();
             ufc_nb.handleViewChange(view.getMembers()); // needs to setup received and sent hashmaps
             stack.replaceProtocol(stack.findProtocol(UFC.class), ufc_nb);
             ufc_nb.down(new Event(Event.SET_LOCAL_ADDRESS, ch.getAddress()));
+            ufc_nb.start();
         }
     }
 
@@ -296,11 +293,13 @@ public class FlowControlUnitTest {
             ProtocolStack stack=ch.getProtocolStack();
             MFC_NB mfc_nb=(MFC_NB)new MFC_NB().setValue("max_credits", MAX_CREDITS).setValue("min_threshold", 0.2);
             mfc_nb.setMaxQueueSize(max_queue_size);
+            mfc_nb.frag_size=1500;
             mfc_nb.init();
             stack.replaceProtocol(stack.findProtocol(MFC.class), mfc_nb);
             View view=ch.getView();
             mfc_nb.handleViewChange(view.getMembers()); // needs to setup received and sent hashmaps
             mfc_nb.down(new Event(Event.SET_LOCAL_ADDRESS, ch.getAddress()));
+            mfc_nb.start();
         }
     }
 

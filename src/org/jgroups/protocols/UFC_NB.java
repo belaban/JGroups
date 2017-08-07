@@ -8,6 +8,8 @@ import org.jgroups.annotations.Property;
 import org.jgroups.util.Credit;
 import org.jgroups.util.NonBlockingCredit;
 
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
@@ -24,6 +26,7 @@ public class UFC_NB extends UFC {
       "will be blocked until there is again space available in the queue, or the protocol is stopped.")
     protected int                     max_queue_size=10_000_000;
     protected final Consumer<Message> send_function=msg -> down_prot.down(msg);
+    protected Future<?>               credit_send_task;
 
 
     public int      getMaxQueueSize()      {return max_queue_size;}
@@ -44,14 +47,28 @@ public class UFC_NB extends UFC {
         return sent.values().stream().map(c -> ((NonBlockingCredit)c).getEnqueuedMessages()).reduce(0, (l,r) -> l+r);
     }
 
-    public boolean  isQueuingTo(Address dest) {
+    public boolean isQueuingTo(Address dest) {
         NonBlockingCredit cred=(NonBlockingCredit)sent.get(dest);
         return cred != null && cred.isQueuing();
     }
 
-    public int      getQueuedMessagesTo(Address dest) {
+    public int getQueuedMessagesTo(Address dest) {
         NonBlockingCredit cred=(NonBlockingCredit)sent.get(dest);
         return cred != null? cred.getQueuedMessages() : 0;
+    }
+
+    public void start() throws Exception {
+        super.start();
+        if(max_block_time > 0) {
+            credit_send_task=getTransport().getTimer()
+              .scheduleWithFixedDelay(this::sendCreditRequestsIfNeeded, max_block_time, max_block_time, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    public void stop() {
+        super.stop();
+        if(credit_send_task != null)
+            credit_send_task.cancel(true);
     }
 
     @Override protected Object handleDownMessage(Message msg) {
@@ -80,5 +97,17 @@ public class UFC_NB extends UFC {
         return (T)new NonBlockingCredit(initial_credits, max_queue_size, new ReentrantLock(true), send_function);
     }
 
+    /**
+     * Checks the sent table: if some credits are in queueing mode and credits left are less than min_credits:
+     * send a credit request
+     */
+    protected void sendCreditRequestsIfNeeded() {
+        sent.forEach((dest, c) -> {
+            NonBlockingCredit cred=(NonBlockingCredit)c;
+            if(cred.get() < min_credits && cred.isQueuing() && cred.needToSendCreditRequest(max_block_time)) {
+                sendCreditRequest(dest, Math.max(0, max_credits - cred.get()));
+            }
+        });
+    }
 
 }

@@ -6,6 +6,7 @@ import org.jgroups.util.NonBlockingCredit;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
@@ -63,6 +64,28 @@ public class NonBlockingCreditTest {
         assert !cred.isQueuing();
         assert cred.get() == 6000 && cred.getQueuedMessages() == 0 && cred.getQueuedMessageSize() == 0;
         assert msg_sender.sent_msgs == 5;
+    }
+
+    /**
+     * Sender S blocks on the full queue, then another thread applies credits: S should unblock
+     */
+    public void testDecrementAndBlockingOnFullQueue() {
+        MessageSender msg_sender=new MessageSender();
+        final NonBlockingCredit cred=new NonBlockingCredit(2500, 1500, new ReentrantLock(), msg_sender);
+        final AtomicInteger count=new AtomicInteger();
+        new Thread(() -> {
+            Util.sleep(2000);
+            System.out.printf("[%s] adding 10000 credits\n", Thread.currentThread());
+            cred.increment(10000, 10000);
+        }).start();
+
+        for(int i=0; i < 10; i++) {
+            Message msg=msg(1000);
+            cred.decrementIfEnoughCredits(msg, msg.length(), 2000);
+            count.incrementAndGet();
+        }
+        System.out.printf("received %d msgs", count.get());
+        assert count.get() == 10;
     }
 
 
