@@ -215,7 +215,8 @@ public class AUTH extends Protocol {
             if(this.auth_token.authenticate(auth_hdr.getToken(), msg))
                 return true; //  authentication passed, send message up the stack
             else {
-                log.warn("%s: failed to validate AuthHeader (token: %s) from %s; dropping message",
+                log.warn("%s: failed to validate AuthHeader (token: %s) from %s; dropping message and sending " +
+                           "rejection message",
                          local_addr, auth_token.getClass().getSimpleName(), msg.src());
                 sendRejectionMessage(gms_hdr.getType(), msg.getSrc(), "authentication failed");
                 return false;
