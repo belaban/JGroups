@@ -2,10 +2,14 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.Global;
+import org.jgroups.JChannel;
 import org.jgroups.auth.FixedMembershipToken;
 import org.jgroups.auth.MD5Token;
 import org.jgroups.auth.SimpleToken;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 /**
@@ -136,7 +140,7 @@ public class AUTHTest {
      * <p/>
      * Fails if an exception is thrown or the set and get equal the same object
      */
-    public static void testAuthHeaderDifferent() {
+    public void testAuthHeaderDifferent() {
         SimpleToken token1=new SimpleToken();
         token1.setAuthValue("chris");
 
@@ -150,7 +154,7 @@ public class AUTHTest {
     }
 
 
-    public static void testFixedMembershipTokenIPv4() throws Exception {
+    public void testFixedMembershipTokenIPv4() throws Exception {
         FixedMembershipToken tok=new FixedMembershipToken();
         tok.setMemberList("192.168.1.6,10.1.1.1/7500,localhost/7800");
         assert !tok.isInMembersList(new IpAddress("192.168.1.3", 7500));
@@ -161,11 +165,35 @@ public class AUTHTest {
     }
 
 
-    public static void testFixedMembershipTokenIPv6() throws Exception {
+    public void testFixedMembershipTokenIPv6() throws Exception {
         FixedMembershipToken tok=new FixedMembershipToken();
         tok.setMemberList("fe80::aa20:66ff:fe11:d346,2a02:120b:2c45:1b70:aa20:66ff:fe11:d346/7500,2a02:120b:2c45:1b70:f474:e6ca:3038:6b5f/7500");
         assert tok.isInMembersList(new IpAddress("2a02:120b:2c45:1b70:f474:e6ca:3038:6b5f", 7500));
     }
 
+    public void testJoinOfSecondNodeWithoutAuthHeader() throws Exception {
+        JChannel a=create("A", true), b=create("B", false);
+        a.connect("auth-test");
+
+        try {
+            b.connect("auth-test");
+            assert false : "the second member's JOIN should have thrown an exception";
+        }
+        catch(Exception ex) {
+            System.out.printf("received exception as expected: %s\n", ex.getCause());
+        }
+        finally {
+            Util.close(b,a);
+        }
+    }
+
+    protected JChannel create(String name, boolean create_auth_prot) throws Exception {
+        JChannel ch=new JChannel(Util.getTestStack()).name(name);
+        if(create_auth_prot) {
+            AUTH auth=new AUTH().setAuthToken(new SimpleToken("foo")); //.setAuthCoord(false)
+            ch.getProtocolStack().insertProtocol(auth, ProtocolStack.Position.BELOW, GMS.class);
+        }
+        return ch;
+    }
 
 }
