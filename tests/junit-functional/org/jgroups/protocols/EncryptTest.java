@@ -122,7 +122,10 @@ public abstract class EncryptTest {
         rogue.getProtocolStack().removeProtocol(Encrypt.class);
         GMS gms=rogue.getProtocolStack().findProtocol(GMS.class);
         gms.setMaxJoinAttempts(1);
-        rogue.connect(cluster_name);
+        try {
+            rogue.connect(cluster_name);
+        }
+        catch(Exception ex) {}
         for(int i=0; i < 10; i++) {
             if(a.getView().size() > 3)
                 break;
