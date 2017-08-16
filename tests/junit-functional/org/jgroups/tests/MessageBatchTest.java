@@ -83,8 +83,7 @@ public class MessageBatchTest {
         assert batch.size() == 15;
         for(Message msg: batch) {
             int num=msg.getObject();
-            if(num <= 10)
-                assert msg.isTransientFlagSet(Message.TransientFlag.OOB_DELIVERED);
+            assert num > 10 || msg.isTransientFlagSet(Message.TransientFlag.OOB_DELIVERED);
         }
     }
 
@@ -143,8 +142,7 @@ public class MessageBatchTest {
 
         index=0;
         for(Message msg: batch) {
-            if(index % 2 == 0)
-                assert msg == MSG; // every even index has MSG
+            assert index % 2 != 0 || msg == MSG; // every even index has MSG
             index++;
         }
     }
@@ -557,8 +555,7 @@ public class MessageBatchTest {
 
         index=0;
         for(Message msg: batch) {
-            if(index % 2 == 0)
-                assert msg == MSG; // every even index has MSG
+            assert index % 2 != 0 || msg == MSG; // every even index has MSG
             index++;
         }
     }
