@@ -1696,7 +1696,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * Subclasses must call this method when a unicast or multicast message has been received.
      */
     public void receive(Address sender, byte[] data, int offset, int length) {
-        if(data == null) return;
+
+        // the length of a message needs to be at least 3 bytes: version (2) and flags (1) // JGRP-2210
+        if(data == null || length < Global.SHORT_SIZE + Global.BYTE_SIZE)
+            return;
 
         // drop message from self; it has already been looped back up (https://issues.jboss.org/browse/JGRP-1765)
         if(local_physical_addr != null && local_physical_addr.equals(sender))
