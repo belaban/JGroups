@@ -1266,6 +1266,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(Objects.equals(local_physical_addr, sender))
             return;
 
+        // the length of a message needs to be at least 3 bytes: version (2) and flags (1) // JGRP-2210
+        if(length < Global.SHORT_SIZE + Global.BYTE_SIZE)
+            return;
+
         short version=Bits.readShort(data, offset);
         if(!versionMatch(version, sender))
             return;
