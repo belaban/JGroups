@@ -150,7 +150,7 @@ public class ClientGmsImpl extends GmsImpl {
         }
         finally {
             if(success)
-                sendViewAck(rsp.getView().getCreator());
+                gms.sendViewAck(rsp.getView().getCreator());
         }
     }
 
@@ -240,11 +240,6 @@ public class ClientGmsImpl extends GmsImpl {
         gms.getDownProtocol().down(msg);
     }
 
-    void sendViewAck(Address coord) {
-        Message view_ack=new Message(coord).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
-          .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK));
-        gms.getDownProtocol().down(view_ack); // send VIEW_ACK to sender of view
-    }
 
     /** Returns all members whose PingData is flagged as coordinator */
     private static List<Address> getCoords(Iterable<PingData> mbrs) {

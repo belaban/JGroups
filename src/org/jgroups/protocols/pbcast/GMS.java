@@ -1118,7 +1118,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
 
-    private void sendViewAck(Address dest) {
+    protected void sendViewAck(Address dest) {
         Message view_ack=new Message(dest).setFlag(OOB, INTERNAL)
           .putHeader(this.id, new GmsHeader(GmsHeader.VIEW_ACK));
         down_prot.down(view_ack);
