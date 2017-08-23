@@ -46,7 +46,7 @@ public class Probe {
         }).start();
 
         int matched=0, not_matched=0, count=0;
-        String response;
+        System.out.println("\n");
         while(running) {
             byte[] buf=new byte[70000];
             DatagramPacket rsp=new DatagramPacket(buf, 0, buf.length);
@@ -59,19 +59,19 @@ public class Probe {
             }
 
             byte[] data=rsp.getData();
-            response=new String(data, 0, rsp.getLength());
+            String response=new String(data, 0, rsp.getLength());
             if(weed_out_duplicates && checkDuplicateResponse(response))
                 continue;
 
             count++;
             if(matches(response, match)) {
                 matched++;
-                System.out.println("\n#" + count + " (" + rsp.getLength() + " bytes):\n" + response);
+                System.out.printf("#%d (%d bytes):\n%s\n", count, rsp.getLength(), response);
             }
             else
                 not_matched++;
         }
-        System.out.println("\n" + count + " responses (" + matched + " matches, " + not_matched + " non matches)");
+        System.out.printf("%d responses (%d matches, %d non matches)\n", count, matched, not_matched);
     }
 
     protected static Collection<InetAddress> getPhysicalAddresses(InetAddress addr, InetAddress bind_addr,
@@ -158,7 +158,7 @@ public class Probe {
 
         DatagramPacket probe=new DatagramPacket(payload, 0, payload.length, addr, port);
         mcast_sock.send(probe);
-        System.out.printf("-- sending probe request to %s:%d\n", addr, port);
+        // System.out.printf("-- sending probe request to %s:%d\n", addr, port);
     }
 
     private boolean checkDuplicateResponse(String response) {
