@@ -312,6 +312,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     public void resetStats() {
         num_msgs_sent=num_msgs_received=num_acks_sent=num_acks_received=num_xmits=0;
         avg_delivery_batch_size.clear();
+        Stream.of(xmit_reqs_received, xmit_reqs_sent, xmit_rsps_sent).forEach(LongAdder::reset);
     }
 
 
