@@ -67,7 +67,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
       "Types are listed in http://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html")
     protected String          keystore_type="JKS";
 
-    @Property(description="Password to access the keystore")
+    @Property(description="Password to access the keystore",exposeAsManagedAttribute=false)
     protected String          keystore_password="changeit";
 
     @Property(description="The type of secret key to be sent up the stack (converted from DH). " +
