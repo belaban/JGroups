@@ -46,6 +46,18 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         SECRET_KEY_RSP // data: | length | version | length | secret key |
     }
 
+    public interface SessionVerifier {
+
+        /** Called after creation with session_verifier_arg */
+        void init(String arg);
+
+        /**
+         * Called to verify that the session is correct, e.g. by matching the peer's certificate-CN. Needs to throw a
+         * SecurityException if not
+         */
+        void verify(SSLSession session) throws SecurityException;
+    }
+
     @Property(description="The port at which the key server is listening. If the port is not available, the next port " +
       "will be probed, up to port+port_range. Used by the key server (server) to create an SSLServerSocket and " +
       "by clients to connect to the key server.")
@@ -82,6 +94,12 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
       "e.g. if the client connects to a non-JGroups service accidentally running on the same port")
     protected int             socket_timeout=1000;
 
+    @Property(description="The fully qualified name of a class implementing SessionVerifier")
+    protected String          session_verifier_class;
+
+    @Property(description="The argument to the session verifier")
+    protected String          session_verifier_arg;
+
 
     protected SSLServerSocket srv_sock;
 
@@ -90,6 +108,8 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected KeyStore        key_store;
 
     protected View            view;
+
+    protected SessionVerifier session_verifier;
 
 
     public void init() throws Exception {
@@ -107,6 +127,12 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         }
         key_store=KeyStore.getInstance(keystore_type != null? keystore_type : KeyStore.getDefaultType());
         key_store.load(new FileInputStream(keystore_name), keystore_password.toCharArray());
+        if(session_verifier_class != null) {
+            Class<? extends SessionVerifier> verifier_class=Util.loadClass(session_verifier_class, getClass());
+            session_verifier=verifier_class.newInstance();
+            if(session_verifier_arg != null)
+                session_verifier.init(session_verifier_arg);
+        }
     }
 
     public void start() throws Exception {
@@ -118,7 +144,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         if(srv_sock_handler != null) {
             srv_sock_handler.stop(); // should also close srv_sock
             srv_sock_handler=null;
-            Util.close(srv_sock); // todo: check: this should not be necessary
+            Util.close(srv_sock);  // not needed, but second line of defense
             srv_sock=null;
         }
     }
@@ -189,6 +215,16 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         }
     }
 
+    public static String getCN(String name) {
+        String[] parts = name.split(",\\s?"); // comma and whitespace
+
+        if ((parts.length > 0) && (parts[0].startsWith("CN"))) {
+            return parts[0].substring(3);
+        }
+        return "";
+    }
+
+
     protected void accept() {
         try(SSLSocket client_sock=(SSLSocket)srv_sock.accept()) {
             client_sock.setEnabledCipherSuites(client_sock.getSupportedCipherSuites());
@@ -197,6 +233,9 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
 
             log.debug("%s: accepted SSL connection from %s; protocol: %s, cipher suite: %s",
                       local_addr, client_sock.getRemoteSocketAddress(), sslSession.getProtocol(), sslSession.getCipherSuite());
+
+            if(session_verifier != null)
+                session_verifier.verify(sslSession);
 
             // Start handling application content
             InputStream in=client_sock.getInputStream();
@@ -285,21 +324,12 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
                 log.debug("%s: created SSL connection to %s (%s); protocol: %s, cipher suite: %s",
                           local_addr, target, sock.getRemoteSocketAddress(), sslSession.getProtocol(), sslSession.getCipherSuite());
 
-
-               /* Certificate[] cchain = sslSession.getPeerCertificates();
-                System.out.println("The Certificates used by peer");
-                for (int j = 0; j < cchain.length; j++) {
-                    System.out.println(((X509Certificate) cchain[j]).getSubjectDN());
-                }
-                System.out.println("Peer host is " + sslSession.getPeerHost());
-                System.out.println("Cipher is " + sslSession.getCipherSuite());
-                System.out.println("Protocol is " + sslSession.getProtocol());
-                System.out.println("ID is " + new BigInteger(sslSession.getId()));
-                System.out.println("Session created in " + sslSession.getCreationTime());
-                System.out.println("Session accessed in " + sslSession.getLastAccessedTime());*/
-
-
+                if(session_verifier != null)
+                    session_verifier.verify(sslSession);
                 return sock;
+            }
+            catch(SecurityException sec_ex) {
+                throw sec_ex;
             }
             catch(Throwable t) {
             }
