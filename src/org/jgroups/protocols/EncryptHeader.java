@@ -12,9 +12,11 @@ import java.io.DataOutput;
  * @since  3.6.10
  */
 public class EncryptHeader extends Header {
-    public static final byte ENCRYPT        = 1 << 0;
-    public static final byte SECRET_KEY_REQ = 1 << 1;
-    public static final byte SECRET_KEY_RSP = 1 << 2;
+    public static final byte ENCRYPT           = 1 << 0;
+    public static final byte SECRET_KEY_REQ    = 1 << 1;
+    public static final byte SECRET_KEY_RSP    = 1 << 2;
+    public static final byte NEW_KEYSERVER     = 1 << 3;
+    public static final byte NEW_KEYSERVER_ACK = 1 << 4;
 
     protected byte   type;
     protected byte[] version;
@@ -56,10 +58,12 @@ public class EncryptHeader extends Header {
 
     protected static String typeToString(byte type) {
         switch(type) {
-            case ENCRYPT:        return "ENCRYPT";
-            case SECRET_KEY_REQ: return "SECRET_KEY_REQ";
-            case SECRET_KEY_RSP: return "SECRET_KEY_RSP";
-            default:             return "<unrecognized type " + type;
+            case ENCRYPT:           return "ENCRYPT";
+            case SECRET_KEY_REQ:    return "SECRET_KEY_REQ";
+            case SECRET_KEY_RSP:    return "SECRET_KEY_RSP";
+            case NEW_KEYSERVER:     return "NEW_KEYSERVER";
+            case NEW_KEYSERVER_ACK: return "NEW_KEYSERVER_ACK";
+            default:                return "<unrecognized type " + type;
         }
     }
 }

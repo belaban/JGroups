@@ -858,9 +858,15 @@ public class Util {
     public static String byteArrayToHexString(byte[] b) {
         if(b == null)
             return "null";
-        StringBuilder sb = new StringBuilder(b.length * 2);
-        for (int i = 0; i < b.length; i++){
-            int v = b[i] & 0xff;
+        return byteArrayToHexString(b, 0, b.length);
+    }
+
+    public static String byteArrayToHexString(byte[] b, int offset, int length) {
+        if(b == null)
+            return "null";
+        StringBuilder sb = new StringBuilder(length * 2);
+        for (int i = 0; i < length; i++){
+            int v = b[i+offset] & 0xff;
             if (v < 16) { sb.append('0'); }
             sb.append(Integer.toHexString(v));
         }

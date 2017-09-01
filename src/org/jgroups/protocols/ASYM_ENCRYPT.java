@@ -57,9 +57,13 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ASYM_ENCRYPT extends EncryptBase {
     protected static final short                   GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
 
-    @Property(description="When a member leaves the view, change the secret key, preventing old members from eavesdropping",
-      writable=false)
+    @Property(description="When a member leaves the view, change the secret key, preventing old members from eavesdropping")
     protected boolean                              change_key_on_leave=true;
+
+    @Property(description="If true, a separate KeyExchange protocol (somewhere below in ths stack) is used to" +
+      " fetch the shared secret key. If false, the default (built-in) key exchange protocol will be used.")
+    protected boolean                              use_external_key_exchange;
+
     protected volatile Address                     key_server_addr;
     @ManagedAttribute(description="True if this member is the current key server, false otherwise")
     protected volatile boolean                     is_key_server;
@@ -73,6 +77,8 @@ public class ASYM_ENCRYPT extends EncryptBase {
     // queues a bounded number of messages received during a null secret key (or fetching the key from a new coord)
     protected final BlockingQueue<Message>         up_queue=new ArrayBlockingQueue<>(100);
 
+    @Property(description="Min time (in millis) between key requests")
+    protected long                                 min_time_between_key_requests=2000;
     protected volatile long                        last_key_request;
 
 
@@ -80,6 +86,10 @@ public class ASYM_ENCRYPT extends EncryptBase {
     public Cipher       asymCipher()                      {return asym_cipher;}
     public Address      keyServerAddr()                   {return key_server_addr;}
     public ASYM_ENCRYPT keyServerAddr(Address key_srv)    {this.key_server_addr=key_srv; return this;}
+
+    public List<Integer> providedDownServices() {
+        return Arrays.asList(Event.GET_SECRET_KEY, Event.SET_SECRET_KEY);
+    }
 
     @ManagedAttribute(description="Number of received messages currently queued")
     public int numQueuedMessages() {return up_queue.size();}
@@ -96,6 +106,11 @@ public class ASYM_ENCRYPT extends EncryptBase {
     public void init() throws Exception {
         initKeyPair();
         super.init();
+        if(use_external_key_exchange) {
+            List<Integer> provided_up_services=getDownServices();
+            if(provided_up_services == null || !provided_up_services.contains(Event.FETCH_SECRET_KEY))
+                throw new IllegalStateException("found no key exchange protocol below servicing event FETCH_SECRET_KEY");
+        }
     }
 
     public void stop() {
@@ -113,15 +128,28 @@ public class ASYM_ENCRYPT extends EncryptBase {
     }
 
     public Object up(Event evt) {
-        if(evt.type() == Event.MSG) {
-            Message msg=evt.arg();
-            if(skip(msg)) {
-                GMS.GmsHeader hdr=(GMS.GmsHeader)msg.getHeader(GMS_ID);
-                Address key_server=getCoordinator(msg, hdr);
-                if(key_server != null)
-                    sendKeyRequest(key_server);
-                return up_prot.up(evt);
-            }
+        switch(evt.type()) {
+            case Event.MSG:
+                Message msg=evt.arg();
+                if(skip(msg)) {
+                    GMS.GmsHeader hdr=(GMS.GmsHeader)msg.getHeader(GMS_ID);
+                    Address key_server=getCoordinator(msg, hdr);
+                    if(key_server != null)
+                        sendKeyRequest(key_server);
+                    return up_prot.up(evt);
+                }
+                break;
+            case Event.GET_SECRET_KEY:
+                return new Tuple<>(secret_key, sym_version);
+            case Event.SET_SECRET_KEY:
+                Tuple<SecretKey,byte[]> tuple=evt.arg();
+                try {
+                    setKeys(tuple.getVal1(), tuple.getVal2());
+                }
+                catch(Exception ex) {
+                    log.error("failed setting secret key", ex);
+                }
+                return null;
         }
         return super.up(evt);
     }
@@ -386,8 +414,21 @@ public class ASYM_ENCRYPT extends EncryptBase {
 
     /** send client's public key to server and request server's public key */
     protected void sendKeyRequest(Address key_server) {
+        if(last_key_request == 0 || System.currentTimeMillis() - last_key_request > min_time_between_key_requests)
+            last_key_request=System.currentTimeMillis();
+        else
+            return;
+
+        if(use_external_key_exchange) {
+            log.debug("%s: asking key exchange protocol to get secret key", local_addr);
+            down_prot.down(new Event(Event.FETCH_SECRET_KEY, key_server));
+            return;
+        }
+
         if(key_server == null)
             return;
+        log.debug("%s: asking %s for the secret key (my version: %s)",
+                  local_addr, key_server, Util.byteArrayToHexString(sym_version));
         Message newMsg=new Message(key_server, key_pair.getPublic().getEncoded()).src(local_addr)
           .putHeader(this.id,new EncryptHeader(EncryptHeader.SECRET_KEY_REQ, null));
         down_prot.down(new Event(Event.MSG,newMsg));
