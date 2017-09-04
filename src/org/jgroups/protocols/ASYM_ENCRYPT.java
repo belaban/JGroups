@@ -134,8 +134,11 @@ public class ASYM_ENCRYPT extends EncryptBase {
                 if(skip(msg)) {
                     GMS.GmsHeader hdr=(GMS.GmsHeader)msg.getHeader(GMS_ID);
                     Address key_server=getCoordinator(msg, hdr);
-                    if(key_server != null)
+                    if(key_server != null) {
+                        if(this.key_server_addr == null)
+                            this.key_server_addr=key_server;
                         sendKeyRequest(key_server);
+                    }
                     return up_prot.up(evt);
                 }
                 break;
