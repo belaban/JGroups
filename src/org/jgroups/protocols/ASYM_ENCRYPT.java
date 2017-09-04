@@ -497,16 +497,10 @@ public class ASYM_ENCRYPT extends Encrypt {
 
     /** send client's public key to server and request server's public key */
     protected void sendKeyRequest(Address key_server) {
-        if(key_server == null)
-            return;
-
         if(last_key_request == 0 || System.currentTimeMillis() - last_key_request > min_time_between_key_requests)
             last_key_request=System.currentTimeMillis();
-        else {
-            //log.warn("%s: dropping key request to %s as only %d ms have elapsed\n",
-              //       local_addr, key_server, System.currentTimeMillis()-last_key_request);
+        else
             return;
-        }
 
         if(use_external_key_exchange) {
             log.debug("%s: asking key exchange protocol to get secret key", local_addr);
@@ -514,6 +508,8 @@ public class ASYM_ENCRYPT extends Encrypt {
             return;
         }
 
+        if(key_server == null)
+            return;
         log.debug("%s: asking %s for the secret key (my version: %s)",
                   local_addr, key_server, Util.byteArrayToHexString(sym_version));
         Message newMsg=new Message(key_server, key_pair.getPublic().getEncoded()).src(local_addr)

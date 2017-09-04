@@ -215,14 +215,6 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         }
     }
 
-    public static String getCN(String name) {
-        String[] parts = name.split(",\\s?"); // comma and whitespace
-
-        if ((parts.length > 0) && (parts[0].startsWith("CN"))) {
-            return parts[0].substring(3);
-        }
-        return "";
-    }
 
 
     protected void accept() {
@@ -310,8 +302,6 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         SSLSocketFactory sslSocketFactory=ctx.getSocketFactory();
 
         IpAddress dest=(IpAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, target));
-
-
         SSLSocket sock=null;
         for(int i=0; i < port_range; i++) {
             try {
