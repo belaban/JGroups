@@ -469,6 +469,8 @@ public class ASYM_ENCRYPT extends EncryptBase {
 
     /** send client's public key to server and request server's public key */
     protected void sendKeyRequest(Address key_server) {
+        if(key_server == null)
+            return;
         if(last_key_request == 0 || System.currentTimeMillis() - last_key_request > min_time_between_key_requests)
             last_key_request=System.currentTimeMillis();
         else
