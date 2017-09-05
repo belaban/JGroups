@@ -52,7 +52,8 @@ public abstract class KeyExchange extends Protocol {
                     fetchSecretKeyFrom(target);
                 }
                 catch(Exception e) {
-                    throw new RuntimeException(e);
+                    // throw new RuntimeException(e);
+                    log.warn("failed fetching secret key from %s: %s", target, e);
                 }
                 return null; // the event is consumed and should not be passed further down
         }
