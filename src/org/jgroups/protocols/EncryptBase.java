@@ -7,7 +7,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
+import java.security.Key;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Map;
@@ -69,7 +69,7 @@ public abstract class EncryptBase extends Protocol {
     protected volatile byte[]               sym_version;
 
     // shared secret key to encrypt/decrypt messages
-    protected volatile SecretKey            secret_key;
+    protected volatile Key                  secret_key;
 
     // map to hold previous keys so we can decrypt some earlier messages if we need to
     protected Map<AsciiString,Cipher>       key_map;
@@ -79,9 +79,9 @@ public abstract class EncryptBase extends Protocol {
     public int                      asymKeylength()                 {return asym_keylength;}
     public <T extends EncryptBase> T    asymKeylength(int len)          {this.asym_keylength=len; return (T)this;}
     public int                      symKeylength()                  {return sym_keylength;}
-    public <T extends EncryptBase> T    symKeylength(int len)           {this.sym_keylength=len; return (T)this;}
-    public SecretKey                secretKey()                     {return secret_key;}
-    public <T extends EncryptBase> T    secretKey(SecretKey key)        {this.secret_key=key; return (T)this;}
+    public <T extends EncryptBase> T    symKeylength(int len)       {this.sym_keylength=len; return (T)this;}
+    public Key                          secretKey()                 {return secret_key;}
+    public <T extends EncryptBase> T    secretKey(Key key)          {this.secret_key=key; return (T)this;}
     public String                   symAlgorithm()                  {return sym_algorithm;}
     public <T extends EncryptBase> T    symAlgorithm(String alg)        {this.sym_algorithm=alg; return (T)this;}
     public String                   asymAlgorithm()                 {return asym_algorithm;}
@@ -187,7 +187,7 @@ public abstract class EncryptBase extends Protocol {
 
 
     /** Initialises the ciphers for both encryption and decryption using the generated or supplied secret key */
-    protected synchronized void initSymCiphers(String algorithm, SecretKey secret) throws Exception {
+    protected synchronized void initSymCiphers(String algorithm, Key secret) throws Exception {
         if(secret == null)
             return;
         encoding_ciphers.clear();
@@ -197,7 +197,7 @@ public abstract class EncryptBase extends Protocol {
             decoding_ciphers.offer(createCipher(Cipher.DECRYPT_MODE, secret, algorithm));
         };
 
-        //set the version
+        // set the version
         MessageDigest digest=MessageDigest.getInstance("MD5");
         digest.reset();
         digest.update(secret.getEncoded());
@@ -208,7 +208,7 @@ public abstract class EncryptBase extends Protocol {
     }
 
 
-    protected Cipher createCipher(int mode, SecretKey secret_key, String algorithm) throws Exception {
+    protected Cipher createCipher(int mode, Key secret_key, String algorithm) throws Exception {
         Cipher cipher=provider != null && !provider.trim().isEmpty()?
           Cipher.getInstance(algorithm, provider) : Cipher.getInstance(algorithm);
         cipher.init(mode, secret_key);
@@ -272,7 +272,7 @@ public abstract class EncryptBase extends Protocol {
         if(!Arrays.equals(hdr.version(), sym_version)) {
             cipher=key_map.get(new AsciiString(hdr.version()));
             if(cipher == null) {
-                handleUnknownVersion();
+                handleUnknownVersion(hdr.version);
                 return null;
             }
             log.trace("%s: decrypting msg from %s using previous cipher version", local_addr, msg.src());
@@ -397,7 +397,9 @@ public abstract class EncryptBase extends Protocol {
 
 
     /** Called when the version shipped in the header can't be found */
-    protected void handleUnknownVersion() {}
+    protected void handleUnknownVersion(byte[] version) {
+
+    }
 
 
     /** Decrypts all messages in a batch, replacing encrypted messages in-place with their decrypted versions */

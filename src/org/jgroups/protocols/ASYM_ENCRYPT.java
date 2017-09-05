@@ -57,42 +57,49 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ASYM_ENCRYPT extends EncryptBase {
     protected static final short                   GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
 
-    @Property(description="When a member leaves the view, change the secret key, preventing old members from eavesdropping")
+    @Property(description="When a member leaves, change the secret key, preventing old members from eavesdropping")
     protected boolean                              change_key_on_leave=true;
 
     @Property(description="If true, a separate KeyExchange protocol (somewhere below in ths stack) is used to" +
       " fetch the shared secret key. If false, the default (built-in) key exchange protocol will be used.")
     protected boolean                              use_external_key_exchange;
 
+    @Property(description="Interval (in ms) to send out announcements when the key server changed. Members will then " +
+      "start the key exchange protocol. When all members have acked, the task is cancelled.")
+    protected long                                 key_server_interval=1000;
+
     protected volatile Address                     key_server_addr;
-    @ManagedAttribute(description="True if this member is the current key server, false otherwise")
-    protected volatile boolean                     is_key_server;
-    protected KeyPair                              key_pair; // to store own's public/private Key
+    protected KeyPair                              key_pair;     // to store own's public/private Key
     protected Cipher                               asym_cipher;  // decrypting cypher for secret key requests
     protected final Lock                           queue_lock=new ReentrantLock();
 
     // queue all up msgs until the secret key has been received/created
     @ManagedAttribute(description="whether or not to queue received messages (until the secret key was received)")
     protected boolean                              queue_up_msgs=true;
-    // queues a bounded number of messages received during a null secret key (or fetching the key from a new coord)
+
+    // queues a bounded number of messages received during a null secret key (for fetching the key from a new coord)
     protected final BlockingQueue<Message>         up_queue=new ArrayBlockingQueue<>(100);
 
     @Property(description="Min time (in millis) between key requests")
     protected long                                 min_time_between_key_requests=2000;
     protected volatile long                        last_key_request;
 
+    protected ResponseCollectorTask<Boolean>       key_requesters;
+
 
     public KeyPair      keyPair()                         {return key_pair;}
     public Cipher       asymCipher()                      {return asym_cipher;}
     public Address      keyServerAddr()                   {return key_server_addr;}
     public ASYM_ENCRYPT keyServerAddr(Address key_srv)    {this.key_server_addr=key_srv; return this;}
+    public long         minTimeBetweenKeyRequests()       {return min_time_between_key_requests;}
+    public ASYM_ENCRYPT minTimeBetweenKeyRequests(long t) {this.min_time_between_key_requests=t; return this;}
 
     public List<Integer> providedDownServices() {
         return Arrays.asList(Event.GET_SECRET_KEY, Event.SET_SECRET_KEY);
     }
 
     @ManagedAttribute(description="Number of received messages currently queued")
-    public int numQueuedMessages() {return up_queue.size();}
+    public int queueSize() {return up_queue.size();}
 
     @ManagedOperation(description="Triggers a request for the secret key to the current keyserver")
     public void sendKeyRequest() {
@@ -101,6 +108,11 @@ public class ASYM_ENCRYPT extends EncryptBase {
             return;
         }
         sendKeyRequest(key_server_addr);
+    }
+
+    @ManagedAttribute(description="True if this member is the current key server, false otherwise")
+    public boolean isKeyServer() {
+        return Objects.equals(key_server_addr, local_addr);
     }
 
     public void init() throws Exception {
@@ -114,6 +126,8 @@ public class ASYM_ENCRYPT extends EncryptBase {
     }
 
     public void stop() {
+        if(key_requesters != null)
+            key_requesters.stop();
         stopQueueing();
         super.stop();
     }
@@ -172,6 +186,11 @@ public class ASYM_ENCRYPT extends EncryptBase {
                     log.error("failed passing up message from %s: %s, ex=%s", msg.src(), msg.printHeaders(), t);
                 }
             }
+            EncryptHeader hdr=(EncryptHeader)msg.getHeader(this.id);
+            if(hdr != null && hdr.type != EncryptHeader.ENCRYPT) {
+                handleUpEvent(msg,hdr);
+                batch.remove(msg);
+            }
         }
         if(!batch.isEmpty())
             super.up(batch); // decrypt the rest of the messages in the batch (if any)
@@ -209,7 +228,8 @@ public class ASYM_ENCRYPT extends EncryptBase {
      * encrypted as they're authenticated by {@link AUTH} */
     protected static boolean skip(Message msg) {
         GMS.GmsHeader hdr=(GMS.GmsHeader)msg.getHeader(GMS_ID);
-        if(hdr == null) return false;
+        if(hdr == null)
+            return false;
         switch(hdr.getType()) {
             case GMS.GmsHeader.JOIN_REQ:
             case GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
@@ -234,8 +254,17 @@ public class ASYM_ENCRYPT extends EncryptBase {
             case EncryptHeader.SECRET_KEY_RSP:
                 handleSecretKeyResponse(msg, hdr.version());
                 break;
-            default:
-                log.warn("%s: received unknown encrypt header of type %d", local_addr, hdr.type());
+            case EncryptHeader.NEW_KEYSERVER:
+                Address sender=msg.src();
+                if(!Objects.equals(key_server_addr, sender))
+                    key_server_addr=sender;
+                sendNewKeyserverAck(sender);
+                if(!Arrays.equals(sym_version, hdr.version)) // only send if sym_versions differ
+                    sendKeyRequest(sender);
+                break;
+            case EncryptHeader.NEW_KEYSERVER_ACK:
+                if(key_requesters != null)
+                    key_requesters.add(msg.src(), true);
                 break;
         }
         return null;
@@ -245,10 +274,7 @@ public class ASYM_ENCRYPT extends EncryptBase {
         if(enqueue(msg)) {
             log.trace("%s: queuing %s message from %s as secret key hasn't been retrieved from keyserver %s yet, hdrs: %s",
                       local_addr, msg.dest() == null? "mcast" : "unicast", msg.src(), key_server_addr, msg.printHeaders());
-            if(last_key_request == 0 || System.currentTimeMillis() - last_key_request > 2000) {
-                last_key_request=System.currentTimeMillis();
-                sendKeyRequest();
-            }
+            sendKeyRequest(key_server_addr);
             return false;
         }
         return true;
@@ -257,7 +283,7 @@ public class ASYM_ENCRYPT extends EncryptBase {
     protected void handleSecretKeyRequest(final Message msg) {
         if(!inView(msg.src(), "key requester %s is not in current view %s; ignoring key request"))
             return;
-        log.debug("%s: received key request from %s", local_addr, msg.getSrc());
+        log.debug("%s: received secret key request from %s", local_addr, msg.getSrc());
         try {
             PublicKey tmpKey=generatePubKey(msg.getBuffer());
             sendSecretKey(secret_key, tmpKey, msg.getSrc());
@@ -271,13 +297,21 @@ public class ASYM_ENCRYPT extends EncryptBase {
     protected void handleSecretKeyResponse(final Message msg, final byte[] key_version) {
         if(!inView(msg.src(), "ignoring secret key sent by %s which is not in current view %s"))
             return;
+
+        if(Arrays.equals(sym_version, key_version)) {
+            log.debug("%s: secret key (version %s) already installed, ignoring key response",
+                      local_addr, Util.byteArrayToHexString(key_version));
+            stopQueueing();
+            return;
+        }
         try {
             SecretKey tmp=decodeKey(msg.getBuffer());
             if(tmp == null)
                 sendKeyRequest(key_server_addr); // unable to understand response, let's try again
             else {
                 // otherwise set the returned key as the shared key
-                log.debug("%s: received secret key from keyserver %s", local_addr, msg.getSrc());
+                log.debug("%s: installing secret key received from %s (version: %s)",
+                          local_addr, msg.getSrc(), Util.byteArrayToHexString(key_version));
                 setKeys(tmp, key_version);
             }
         }
@@ -325,29 +359,47 @@ public class ASYM_ENCRYPT extends EncryptBase {
 
     @Override protected synchronized void handleView(View v) {
         boolean left_mbrs=change_key_on_leave && this.view != null && !v.containsMembers(this.view.getMembersRaw());
+        boolean create_new_key=secret_key == null || left_mbrs;
         super.handleView(v);
-        Address tmpKeyServer=v.getCoord(); // the coordinator is the keyserver
-        if(tmpKeyServer.equals(local_addr)) {
-            if(!is_key_server || left_mbrs)
-                becomeKeyServer(tmpKeyServer, left_mbrs);
+
+        if(key_requesters != null)
+            key_requesters.retainAll(v.getMembers());
+
+        Address old_key_server=key_server_addr;
+        key_server_addr=v.getCoord(); // the coordinator is the keyserver
+        if(Objects.equals(key_server_addr, local_addr)) {
+            if(!Objects.equals(key_server_addr, old_key_server))
+                log.debug("%s: I'm the new key server", local_addr);
+            if(create_new_key) {
+                createNewKey();
+                if(key_requesters != null)
+                    key_requesters.stop();
+                List<Address> targets=new ArrayList<>(v.getMembers());
+                targets.remove(local_addr);
+
+                if(!targets.isEmpty()) {  // https://issues.jboss.org/browse/JGRP-2203
+                    key_requesters=new ResponseCollectorTask<Boolean>(targets)
+                      .setPeriodicTask(new ResponseCollectorTask.Consumer<ResponseCollectorTask<Boolean>>() {
+                          public void accept(ResponseCollectorTask<Boolean> t) {
+                              Message msg=new Message(null).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK)
+                                .putHeader(id, new EncryptHeader(EncryptHeader.NEW_KEYSERVER, sym_version));
+                              down_prot.down(new Event(Event.MSG, msg));
+                          }
+                      })
+                      .start(getTransport().getTimer(), 0, key_server_interval);
+                }
+            }
         }
         else
-            handleNewKeyServer(tmpKeyServer, v instanceof MergeView, left_mbrs);
+            handleNewKeyServer(old_key_server, v instanceof MergeView, left_mbrs);
     }
 
 
-    protected void becomeKeyServer(Address tmpKeyServer, boolean left_mbrs) {
-        if(log.isDebugEnabled()) {
-            if(!is_key_server)
-                log.debug("%s: I'm the new key server", local_addr);
-            else if(left_mbrs)
-                log.debug("%s: creating new secret key because members left", local_addr);
-        }
-        key_server_addr=tmpKeyServer;
-        is_key_server=true;
+    protected void createNewKey() {
         try {
             this.secret_key=createSecretKey();
             initSymCiphers(sym_algorithm, secret_key);
+            log.debug("%s: created new secret key (version: %s)", local_addr, Util.byteArrayToHexString(sym_version));
             stopQueueing();
         }
         catch(Exception ex) {
@@ -356,23 +408,17 @@ public class ASYM_ENCRYPT extends EncryptBase {
     }
 
     /** If the keyserver changed, send a request for the secret key to the keyserver */
-    protected void handleNewKeyServer(Address newKeyServer, boolean merge_view, boolean left_mbrs) {
-        if(keyServerChanged(newKeyServer) || merge_view || left_mbrs) {
-            // secret_key=null;
-            // sym_version=null;
-            // queue_up_msgs=true;
+    protected void handleNewKeyServer(Address old_key_server, boolean merge_view, boolean left_mbrs) {
+        if(change_key_on_leave && (keyServerChanged(old_key_server) || merge_view || left_mbrs)) {
             startQueueing();
-            key_server_addr=newKeyServer;
-            is_key_server=false;
             log.debug("%s: sending request for secret key to the new keyserver %s", local_addr, key_server_addr);
             sendKeyRequest(key_server_addr);
         }
     }
 
-	protected boolean keyServerChanged(Address newKeyServer) {
-		return !Objects.equals(key_server_addr, newKeyServer);
+	protected boolean keyServerChanged(Address old_keyserver) {
+		return !Objects.equals(key_server_addr, old_keyserver);
 	}
-
 
 
     protected void setKeys(SecretKey key, byte[] version) throws Exception {
@@ -393,16 +439,16 @@ public class ASYM_ENCRYPT extends EncryptBase {
     }
 
 
-    protected void sendSecretKey(SecretKey secret_key, PublicKey public_key, Address source) throws Exception {
+    protected void sendSecretKey(Key secret_key, PublicKey public_key, Address source) throws Exception {
         byte[] encryptedKey=encryptSecretKey(secret_key, public_key);
         Message newMsg=new Message(source, encryptedKey).src(local_addr)
           .putHeader(this.id, new EncryptHeader(EncryptHeader.SECRET_KEY_RSP, symVersion()));
-        log.debug("%s: sending secret key to %s", local_addr, source);
-        down_prot.down(new Event(Event.MSG,newMsg));
+        log.debug("%s: sending secret key response to %s (version: %s)", local_addr, source, Util.byteArrayToHexString(sym_version));
+        down_prot.down(new Event(Event.MSG, newMsg));
     }
 
     /** Encrypts the current secret key with the requester's public key (the requester will decrypt it with its private key) */
-    protected byte[] encryptSecretKey(SecretKey secret_key, PublicKey public_key) throws Exception {
+    protected byte[] encryptSecretKey(Key secret_key, PublicKey public_key) throws Exception {
         Cipher tmp;
         if (provider != null && !provider.trim().isEmpty())
             tmp=Cipher.getInstance(asym_algorithm, provider);
@@ -417,10 +463,16 @@ public class ASYM_ENCRYPT extends EncryptBase {
 
     /** send client's public key to server and request server's public key */
     protected void sendKeyRequest(Address key_server) {
+        if(key_server == null)
+            return;
+
         if(last_key_request == 0 || System.currentTimeMillis() - last_key_request > min_time_between_key_requests)
             last_key_request=System.currentTimeMillis();
-        else
+        else {
+            log.trace("%s: dropping key request to %s as only %d ms have elapsed\n",
+                      local_addr, key_server, System.currentTimeMillis()-last_key_request);
             return;
+        }
 
         if(use_external_key_exchange) {
             log.debug("%s: asking key exchange protocol to get secret key", local_addr);
@@ -428,13 +480,16 @@ public class ASYM_ENCRYPT extends EncryptBase {
             return;
         }
 
-        if(key_server == null)
-            return;
         log.debug("%s: asking %s for the secret key (my version: %s)",
                   local_addr, key_server, Util.byteArrayToHexString(sym_version));
         Message newMsg=new Message(key_server, key_pair.getPublic().getEncoded()).src(local_addr)
           .putHeader(this.id,new EncryptHeader(EncryptHeader.SECRET_KEY_REQ, null));
         down_prot.down(new Event(Event.MSG,newMsg));
+    }
+
+    protected void sendNewKeyserverAck(Address dest) {
+        Message msg=new Message(dest).putHeader(id, new EncryptHeader(EncryptHeader.NEW_KEYSERVER_ACK, null));
+        down_prot.down(new Event(Event.MSG, msg));
     }
 
 
@@ -508,9 +563,12 @@ public class ASYM_ENCRYPT extends EncryptBase {
     }
 
 
-    @Override protected void handleUnknownVersion() {
-        if(!is_key_server)
+    @Override protected void handleUnknownVersion(byte[] version) {
+        if(!isKeyServer()) {
+            log.debug("%s: received msg encrypted with version %s (my version: %s), getting new secret key from %s",
+                      local_addr, Util.byteArrayToHexString(version), Util.byteArrayToHexString(sym_version), key_server_addr);
             sendKeyRequest(key_server_addr);
+        }
     }
 
     /** Used to reconstitute public key sent in byte form from peer */

@@ -237,6 +237,10 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
     /** Tests that a left member C cannot decrypt messages from the cluster */
     public void testEavesdroppingByLeftMember() throws Exception {
         printSymVersion(a,b,c);
+        for(JChannel ch: Arrays.asList(a,b)) {
+            ASYM_ENCRYPT encr=(ASYM_ENCRYPT)ch.getProtocolStack().findProtocol(ASYM_ENCRYPT.class);
+            encr.minTimeBetweenKeyRequests(500);
+        }
         View view=View.create(a.getAddress(), a.getView().getViewId().getId()+1, a.getAddress(),b.getAddress());
          for(JChannel ch: Arrays.asList(a,b)) {
             GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
@@ -248,7 +252,6 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         c.getProtocolStack().removeProtocol(NAKACK2.class); // to prevent A and B from discarding C as non-member
 
         Util.sleep(2000); // give members time to handle the new view
-
 
         printSymVersion(a,b,c);
         a.send(null, "hello from A");
