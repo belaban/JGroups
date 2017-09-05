@@ -101,6 +101,9 @@ public class ASYM_ENCRYPT extends EncryptBase {
     @ManagedAttribute(description="Number of received messages currently queued")
     public int queueSize() {return up_queue.size();}
 
+    @ManagedAttribute(description="The current key server")
+    public String getKeyServerAddress() {return key_server_addr != null? key_server_addr.toString() : "null";}
+
     @ManagedOperation(description="Triggers a request for the secret key to the current keyserver")
     public void sendKeyRequest() {
         if(key_server_addr == null) {
@@ -253,14 +256,17 @@ public class ASYM_ENCRYPT extends EncryptBase {
                 break;
             case EncryptHeader.SECRET_KEY_RSP:
                 handleSecretKeyResponse(msg, hdr.version());
+                sendNewKeyserverAck(msg.src());
                 break;
             case EncryptHeader.NEW_KEYSERVER:
                 Address sender=msg.src();
                 if(!Objects.equals(key_server_addr, sender))
                     key_server_addr=sender;
-                sendNewKeyserverAck(sender);
+
                 if(!Arrays.equals(sym_version, hdr.version)) // only send if sym_versions differ
                     sendKeyRequest(sender);
+                else
+                    sendNewKeyserverAck(sender);
                 break;
             case EncryptHeader.NEW_KEYSERVER_ACK:
                 if(key_requesters != null)
@@ -463,16 +469,10 @@ public class ASYM_ENCRYPT extends EncryptBase {
 
     /** send client's public key to server and request server's public key */
     protected void sendKeyRequest(Address key_server) {
-        if(key_server == null)
-            return;
-
         if(last_key_request == 0 || System.currentTimeMillis() - last_key_request > min_time_between_key_requests)
             last_key_request=System.currentTimeMillis();
-        else {
-            log.trace("%s: dropping key request to %s as only %d ms have elapsed\n",
-                      local_addr, key_server, System.currentTimeMillis()-last_key_request);
+        else
             return;
-        }
 
         if(use_external_key_exchange) {
             log.debug("%s: asking key exchange protocol to get secret key", local_addr);
