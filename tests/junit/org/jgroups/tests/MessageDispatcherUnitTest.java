@@ -1,5 +1,6 @@
 package org.jgroups.tests;
 
+import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -8,14 +9,18 @@ import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.util.Rsp;
-import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests return values from MessageDispatcher.castMessage()
@@ -142,6 +147,47 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         sendMessageToBothChannels(20000);
     }
 
+    public void testCastToMissingNode() throws Exception {
+        d1.setRequestHandler(new MyHandler(new byte[10]));
+        b=createChannel(a);
+        b.setName("B");
+
+        final CountDownLatch targetLatch=new CountDownLatch(1);
+        d2=new MessageDispatcher(b, null, null, new RequestHandler() {
+            @Override
+            public Object handle(Message msg) throws Exception {
+                targetLatch.await();
+                return null;
+            }
+        });
+
+        b.connect("MessageDispatcherUnitTest");
+        Assert.assertEquals(2, b.getView().size());
+
+        final CountDownLatch futureLatch=new CountDownLatch(1);
+        FutureListener listener=new FutureListener() {
+            @Override public void futureDone(Future future) {
+                futureLatch.countDown();
+            }
+        };
+
+
+        List<Address> dests=Collections.singletonList(b.getAddress());
+        byte[] buf=new byte[1];
+        Message msg=new Message();
+        msg.setBuffer(buf);
+        NotifyingFuture<RspList<Object>> future=d1.castMessageWithFuture(dests, msg, RequestOptions.SYNC(), null);
+
+        b.disconnect();
+
+        Thread.sleep(100);
+
+        future.setListener(listener);
+        assertTrue(futureLatch.await(10, TimeUnit.SECONDS));
+        targetLatch.countDown();
+    }
+
+
     private void sendMessage(int size) throws Exception {
         long start, stop;
         MyHandler handler=new MyHandler(new byte[size]);
@@ -191,7 +237,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
 
 
     private static class MyHandler implements RequestHandler {
-        byte[] retval=null;
+        byte[] retval;
 
         public MyHandler(byte[] retval) {
             this.retval=retval;

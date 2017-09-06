@@ -217,7 +217,12 @@ public class GroupRequest<T> extends Request {
             }
             if(changed) {
                 cond.signal(true);
-                checkCompletion(this);
+                if(responsesComplete()) {
+                    done=true;
+                    corrDone();
+                    if(listener != null)
+                        listener.futureDone(this);
+                }
             }
         }
         finally {

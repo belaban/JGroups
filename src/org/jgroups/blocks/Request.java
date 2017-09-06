@@ -175,4 +175,9 @@ public abstract class Request implements NotifyingFuture, org.jgroups.util.Condi
     }
 
 
+    protected void corrDone() {
+        if(corr!=null && this.req_id > 0)
+            corr.done(this.req_id);
+    }
+
 }
