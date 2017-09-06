@@ -1,22 +1,21 @@
 package org.jgroups.protocols.dns;
 
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import org.jgroups.Address;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
+import org.jgroups.stack.IpAddress;
 
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
-
-import org.jgroups.Address;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
-import org.jgroups.stack.IpAddress;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 class DefaultDNSResolver implements DNSResolver {
 
@@ -46,7 +45,7 @@ class DefaultDNSResolver implements DNSResolver {
 
    private final DirContext getDnsContext() {
       try {
-         log.trace("Initializing DNS Context with factory: %s and url: %s" + dnsContextFactory, dnsAddress);
+         log.trace("Initializing DNS Context with factory: %s and url: %s", dnsContextFactory, dnsAddress);
          Hashtable env = new Hashtable();
          env.put("java.naming.factory.initial", dnsContextFactory);
          env.put("java.naming.provider.url", "dns://" + dnsAddress);
