@@ -41,7 +41,11 @@ public class SASLTest {
         sasl.setClientCallbackHandler(new MyCallbackHandler(username));
         sasl.setServerCallbackHandler(new MyCallbackHandler(username));
         sasl.setTimeout(5000);
-        sasl.sasl_props.put("com.sun.security.sasl.digest.realm", REALM);
+        if (System.getProperty("java.vendor").contains("IBM")) {
+            sasl.sasl_props.put("com.ibm.security.sasl.digest.realm", REALM);
+        } else {
+            sasl.sasl_props.put("com.sun.security.sasl.digest.realm", REALM);
+        }
         sasl.setLevel("trace");
         GMS gms = new GMS();
         gms.setJoinTimeout(3000);
