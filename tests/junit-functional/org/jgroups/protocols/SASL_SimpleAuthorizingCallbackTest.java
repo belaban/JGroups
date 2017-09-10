@@ -1,11 +1,5 @@
 package org.jgroups.protocols;
 
-import static org.testng.AssertJUnit.assertTrue;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.util.Properties;
-
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.auth.sasl.SimpleAuthorizingCallbackHandler;
@@ -16,6 +10,12 @@ import org.jgroups.stack.Protocol;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Properties;
+
+import static org.testng.AssertJUnit.assertTrue;
 
 @Test(groups = Global.FUNCTIONAL, singleThreaded = true)
 public class SASL_SimpleAuthorizingCallbackTest {
