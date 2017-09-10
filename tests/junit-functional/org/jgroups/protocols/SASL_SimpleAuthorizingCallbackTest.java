@@ -4,7 +4,6 @@ import static org.testng.AssertJUnit.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.Properties;
 
 import org.jgroups.Global;
@@ -55,7 +54,11 @@ public class SASL_SimpleAuthorizingCallbackTest {
         sasl.setClientCallbackHandler(new SimpleAuthorizingCallbackHandler(properties));
         sasl.setServerCallbackHandler(new SimpleAuthorizingCallbackHandler(properties));
         sasl.setTimeout(5000);
-        sasl.sasl_props.put("com.sun.security.sasl.digest.realm", REALM);
+        if (System.getProperty("java.vendor").contains("IBM")) {
+            sasl.sasl_props.put("com.ibm.security.sasl.digest.realm", REALM);
+        } else {
+            sasl.sasl_props.put("com.sun.security.sasl.digest.realm", REALM);
+        }
         return new JChannel(new Protocol[] { new SHARED_LOOPBACK(), new PING(), new NAKACK2(), new UNICAST3(),
                 new STABLE(), sasl, new GMS() }).name(channelName);
     }
