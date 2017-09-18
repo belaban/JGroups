@@ -29,7 +29,7 @@ public class DISCARD extends Protocol {
     @Property
     protected double                    down;  // probability of dropping down msgs
 
-    @Property
+    @Property(description="If discard_all is true, still sends messages to self")
     protected boolean                   excludeItself=true;   // if true don't discard messages sent/received in this stack
     protected Address                   localAddress;
 
@@ -44,7 +44,7 @@ public class DISCARD extends Protocol {
 
     protected final Collection<Address> members = Collections.synchronizedList(new ArrayList<>());
 
-    @Property(description="drop all messages (up or down)")
+    @Property(description="Drops all messages (up or down) if true")
     protected boolean                   discard_all;
 
     @Property(description="Number of subsequent unicasts to drop in the down direction")
@@ -224,7 +224,7 @@ public class DISCARD extends Protocol {
             msg.setSrc(localAddress());
 
         if(discard_all) {
-            if(excludeItself && (dest == null || dest.equals(localAddress())))
+            if(excludeItself && dest.equals(localAddress()))
                 down_prot.down(msg);
             return null;
         }
