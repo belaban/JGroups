@@ -26,6 +26,7 @@
     <class id="21" name="org.jgroups.auth.MD5Token"/>
     <class id="22" name="org.jgroups.auth.X509Token"/>
     <class id="23" name="org.jgroups.blocks.MethodCall"/>
+    <class id="24" name="org.jgroups.util.FlagsUUID"/>
 
     <!-- Headers -->
     <class id="50"   name="org.jgroups.protocols.FD$FdHeader"/>
