@@ -224,7 +224,7 @@ public class DISCARD extends Protocol {
             msg.setSrc(localAddress());
 
         if(discard_all) {
-            if(excludeItself && dest.equals(localAddress()))
+            if(excludeItself && Objects.equals(dest, localAddress()))
                 down_prot.down(msg);
             return null;
         }
