@@ -1,13 +1,19 @@
 package org.jgroups.protocols.pbcast;
 
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.LinkedHashSet;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiPredicate;
@@ -21,17 +27,17 @@ import java.util.function.Consumer;
  * @since  4.0.5
  */
 public class ViewHandler<R> {
-    protected final Collection<R>           requests=new LinkedHashSet<>();
-    protected R                             first_req;
+    protected final Collection<R>           requests=new ConcurrentLinkedQueue<>();
     protected final Lock                    lock=new ReentrantLock();
     protected final AtomicInteger           count=new AtomicInteger();
-    protected volatile boolean              suspended;
+    protected final AtomicBoolean           suspended=new AtomicBoolean(false);
+    @GuardedBy("lock")
+    protected boolean                       processing;
+    protected final Condition               processing_done=lock.newCondition();
     protected final GMS                     gms;
     protected final Consumer<Collection<R>> req_processor;
     protected final BiPredicate<R,R>        req_matcher;
     protected final BoundedList<String>     history=new BoundedList<>(20); // maintains a list of the last 20 requests
-    protected final R                       END_MARKER=(R)new Object() {public String toString() {return "[end]";}};
-    protected static final long             THREAD_WAIT_TIME=5000;
 
 
     /**
@@ -48,107 +54,78 @@ public class ViewHandler<R> {
         this.req_matcher=req_matcher != null? req_matcher : (a,b) -> true;
     }
 
-    public boolean        suspended()         {return suspended;}
-    public int            size()              {return requests.size();}
+    public boolean suspended() {return suspended.get();}
+    public int     size()      {return requests.size();}
 
-    public void add(R req) {
-        if(suspended) {
-            log().trace("%s: queue is suspended; request %s is discarded", gms.getLocalAddress(), req);
-            return;
-        }
-        count.incrementAndGet();
-        history.add(new Date() + ": " + req.toString());
-
-        lock.lock();
-        try {
-            if(first_req == null) {
-                first_req=req;
-                requests.add(req);
-            }
-            else {
-                if(req_matcher.test(first_req, req))
-                    requests.add(req);
-                else
-                    process(requests);
-            }
-            if(count.decrementAndGet() == 0)
-                process(requests);
-        }
-        finally {
-            lock.unlock();
-        }
+    public ViewHandler<R> add(R req) {
+        if(_add(req))
+            process(requests);
+        return this;
     }
-
-
 
     @SuppressWarnings("unchecked")
-    public void add(R ... reqs) {
-        if(suspended) {
-            log().trace("%s: queue is suspended; requests are discarded", gms.getLocalAddress());
-            return;
-        }
-
-        count.incrementAndGet();
-        lock.lock();
-        try {
-            for(R req: reqs) {
-                history.add(new Date() + ": " + req.toString());
-                if(first_req == null) {
-                    first_req=req;
-                    requests.add(req);
-                }
-                else {
-                    if(req_matcher.test(first_req, req))
-                        requests.add(req);
-                    else {
-                        process(requests);
-                        first_req=req;
-                        requests.add(req);
-                    }
-                }
-            }
-            if(count.decrementAndGet() == 0)
-                process(requests);
-        }
-        finally {
-            lock.unlock();
-        }
-
+    public ViewHandler<R> add(R ... reqs) {
+        if(_add(reqs))
+            process(requests);
+        return this;
     }
 
 
-
-    /**
-     * Waits until the current requests in the queue have been processed, then clears the queue and discards new
-     * requests from now on
-     */
+    /** Clears the queue and discards new requests from now on */
     public void suspend() {
-        lock.lock();
-        try {
-            if(!suspended) {
-                suspended=true;
-                requests.clear();
-            }
-        }
-        finally {
-            lock.unlock();
-        }
+        if(suspended.compareAndSet(false, true))
+            requests.clear();
     }
 
 
     public void resume() {
+        suspended.compareAndSet(true, false);
+    }
+
+    /** Blocks the caller until the <em>current</em> set of requests being processed have been completed. Returns
+     * immediately if no requests are currently being processed */
+    public void waitUntilComplete() {
         lock.lock();
         try {
-            if(suspended)
-                suspended=false;
+            while(processing || count.get() > 0) {
+                try {
+                    processing_done.await();
+                }
+                catch(InterruptedException e) {
+                }
+            }
         }
         finally {
             lock.unlock();
         }
     }
 
-
-
+    /** Blocks the caller until the <em>current</em> set of requests being processed have been completed, or the timeout
+     * elapsed.<br/>
+     * Returns immediately if no requests are currently being processed
+     * @param timeout Max time to wait in milliseconds
+     */
+    public void waitUntilComplete(long timeout) {
+        long base=System.currentTimeMillis();
+        long now=0;
+        lock.lock();
+        try {
+            while(processing || count.get() > 0) {
+                long delay=timeout-now;
+                if(delay <= 0)
+                    break;
+                try {
+                    processing_done.await(delay, TimeUnit.MILLISECONDS);
+                    now=System.currentTimeMillis()-base;
+                }
+                catch(InterruptedException e) {
+                }
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+    }
 
     public String dumpQueue() {
         return requests.stream()
@@ -166,23 +143,103 @@ public class ViewHandler<R> {
 
     protected Log log() {return gms.getLog();}
 
-
-
-    protected void process(Collection<R> requests) {
-        try {
-            req_processor.accept(requests);
-        }
-        catch(Throwable t) {
-        }
-        requests.clear();
-        first_req=null;
+    @GuardedBy("lock")
+    protected boolean setProcessing(boolean flag) {
+        boolean do_signal=processing && !flag;
+        processing=flag;
+        if(do_signal)
+            processing_done.signalAll();
+        return flag;
     }
 
-    protected static void join(Thread t) {
-        try {
-            t.join(THREAD_WAIT_TIME);
+    protected boolean _add(R req) {
+        if(req == null || suspended.get()) {
+            log().trace("%s: queue is suspended; request %s is discarded", gms.getLocalAddress(), req);
+            return false;
         }
-        catch(InterruptedException e) {
+
+        String log=new Date() + ": " + req.toString();
+        count.incrementAndGet();
+        lock.lock();
+        try {
+            if(!requests.contains(req)) {
+                requests.add(req);
+                history.add(log);
+            }
+            return count.decrementAndGet() == 0 && !processing && setProcessing(true);
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    protected boolean _add(R ... reqs) {
+        if(reqs == null || reqs.length == 0 || suspended.get()) {
+            log().trace("%s: queue is suspended; requests are discarded", gms.getLocalAddress());
+            return false;
+        }
+
+        count.incrementAndGet();
+        lock.lock();
+        try {
+            for(R req: reqs) {
+                if(!requests.contains(req)) {
+                    requests.add(req);
+                    history.add(new Date() + ": " + req.toString());
+                }
+            }
+            return count.decrementAndGet() == 0 && !processing && setProcessing(true);
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    /** We're guaranteed that only one thread will be called with this method at any time */
+    protected void process(Collection<R> requests) {
+        for(;;) {
+            while(!requests.isEmpty()) {
+                removeAndProcess(requests); // remove matching requests and process them
+            }
+            lock.lock();
+            try {
+                if(requests.isEmpty()) {
+                    setProcessing(false);
+                    return;
+                }
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+    }
+
+    /**
+     * Removes requests as long as they match - breaks at the first non-matching request or when requests is empty
+     * This method must catch all exceptions; or else process() might return without setting processing to true again!
+     */
+    protected void removeAndProcess(Collection<R> requests) {
+        try {
+            Collection<R> removed=new ArrayList<>();
+            Iterator<R> it=requests.iterator();
+            R first_req=it.next();
+            removed.add(first_req);
+            it.remove();
+
+            while(it.hasNext()) {
+                R next=it.next();
+                if(req_matcher.test(first_req, next)) {
+                    removed.add(next);
+                    it.remove();
+                }
+                else
+                    break;
+            }
+            req_processor.accept(removed);
+        }
+        catch(Throwable t) {
+            log().error("failed processing requests", t);
         }
     }
 

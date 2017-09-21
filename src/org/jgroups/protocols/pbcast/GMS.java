@@ -837,7 +837,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 Request[] suspect_reqs=new Request[suspects.size()];
                 int index=0;
                 for(Address mbr: suspects)
-                    suspect_reqs[index++]=new Request(Request.SUSPECT, mbr, true);
+                    suspect_reqs[index++]=new Request(Request.SUSPECT, mbr);
                 view_handler.add(suspect_reqs);
                 ack_collector.suspect(suspects);
                 merge_ack_collector.suspect(suspects);
@@ -848,7 +848,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 return null;                              // discard
 
             case Event.MERGE:
-                view_handler.add(new Request(Request.MERGE, null, false, evt.getArg()));
+                view_handler.add(new Request(Request.MERGE, null, evt.getArg()));
                 return null;                              // don't pass up
 
             case Event.IS_MERGE_IN_PROGRESS:
@@ -865,10 +865,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
         switch(hdr.type) {
             case GmsHeader.JOIN_REQ:
-                view_handler.add(new Request(Request.JOIN, hdr.mbr, false, null, hdr.useFlushIfPresent));
+                view_handler.add(new Request(Request.JOIN, hdr.mbr, null, hdr.useFlushIfPresent));
                 break;
             case GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
-                view_handler.add(new Request(Request.JOIN_WITH_STATE_TRANSFER, hdr.mbr, false, null, hdr.useFlushIfPresent));
+                view_handler.add(new Request(Request.JOIN_WITH_STATE_TRANSFER, hdr.mbr, null, hdr.useFlushIfPresent));
                 break;
             case GmsHeader.JOIN_RSP:
                 JoinRsp join_rsp=readJoinRsp(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
@@ -878,7 +878,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             case GmsHeader.LEAVE_REQ:
                 if(hdr.mbr == null)
                     return null;
-                view_handler.add(new Request(Request.LEAVE, hdr.mbr, false));
+                view_handler.add(new Request(Request.LEAVE, hdr.mbr));
                 break;
             case GmsHeader.LEAVE_RSP:
                 impl.handleLeaveResponse();

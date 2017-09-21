@@ -50,12 +50,11 @@ public class CoordGmsImpl extends ServerGmsImpl {
         }
         if(mbr.equals(gms.local_addr))
             leaving=true;
-        gms.getViewHandler().add(new Request(Request.LEAVE, mbr, false));
-        // gms.getViewHandler().stop(); // wait until all requests have been processed, then close the queue and leave
+        gms.getViewHandler().add(new Request(Request.LEAVE, mbr));
 
         // If we're the coord leaving, ignore gms.leave_timeout: https://issues.jboss.org/browse/JGRP-1509
-       // long timeout=(long)(Math.max(gms.leave_timeout, gms.view_ack_collection_timeout) * 1.10);
-        //gms.getViewHandler().waitUntilCompleted(timeout);
+        long timeout=(long)(Math.max(gms.leave_timeout, gms.view_ack_collection_timeout) * 1.10);
+        gms.getViewHandler().waitUntilComplete(timeout);
     }
 
 
@@ -65,7 +64,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
             return;
         }        
         Collection<Request> suspected=new LinkedHashSet<>(1);
-        suspected.add(new Request(Request.SUSPECT,mbr,true));
+        suspected.add(new Request(Request.SUSPECT,mbr));
         handleMembershipChange(suspected);
     }
 
@@ -103,13 +102,9 @@ public class CoordGmsImpl extends ServerGmsImpl {
                         useFlushIfPresent=true;
                     break;
                 case Request.LEAVE:
-                    if(req.suspected)
-                        suspected_mbrs.add(req.mbr);
-                    else {
-                        leaving_mbrs.add(req.mbr);
-                        if(Objects.equals(gms.local_addr, req.mbr))
-                            self_leaving=true;
-                    }
+                    leaving_mbrs.add(req.mbr);
+                    if(Objects.equals(gms.local_addr, req.mbr))
+                        self_leaving=true;
                     break;
                 case Request.SUSPECT:
                     suspected_mbrs.add(req.mbr);

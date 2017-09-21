@@ -10,6 +10,7 @@ import org.jgroups.util.MergeId;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 
 
 public abstract class GmsImpl {
@@ -72,49 +73,66 @@ public abstract class GmsImpl {
 
 
     public static class Request {
-        static final int JOIN    = 1;
-        static final int LEAVE   = 2;
-        static final int SUSPECT = 3;
-        static final int MERGE   = 4;        
-        static final int JOIN_WITH_STATE_TRANSFER    = 6;
+        public static final int JOIN    = 1;
+        public static final int LEAVE   = 2;
+        public static final int SUSPECT = 3;
+        public static final int MERGE   = 4;
+        public static final int JOIN_WITH_STATE_TRANSFER    = 6;
 
 
-        int               type=-1;
-        Address           mbr;
-        boolean           suspected;
-        Map<Address,View> views; // different view on MERGE
-        boolean           useFlushIfPresent;
+        protected int               type=-1;
+        protected Address           mbr;
+        protected Map<Address,View> views; // different view on MERGE
+        protected boolean           useFlushIfPresent;
 
 
-        Request(int type, Address mbr, boolean suspected) {
+        public Request(int type, Address mbr) {
             this.type=type;
             this.mbr=mbr;
-            this.suspected=suspected;
         }
 
-        Request(int type, Address mbr, boolean suspected, Map<Address,View> views, boolean useFlushPresent) {
-            this(type, mbr, suspected);
+        public Request(int type, Address mbr, Map<Address,View> views, boolean useFlushPresent) {
+            this(type, mbr);
             this.views=views;
             this.useFlushIfPresent=useFlushPresent;
         }
         
-        Request(int type, Address mbr, boolean suspected, Map<Address,View> views) {
-        	this(type, mbr, suspected, views, true);
+        public Request(int type, Address mbr, Map<Address,View> views) {
+        	this(type, mbr, views, true);
         }
 
-        public int getType() {
-            return type;
+        public int getType() {return type;}
+
+        public boolean equals(Object obj) {
+            Request other=(Request)obj;
+            if(type != other.type)
+                return false;
+            switch(type) {
+                case JOIN:
+                case JOIN_WITH_STATE_TRANSFER:
+                case LEAVE:
+                case SUSPECT:
+                    return Objects.equals(mbr, other.mbr);
+                case MERGE:
+                    return Objects.equals(views, other.views);
+                default:
+                    return false;
+            }
+        }
+
+        public int hashCode() {
+            return type + (mbr != null? mbr.hashCode() : 0) + (views != null? views.hashCode() : 0);
         }
 
         public String toString() {
             switch(type) {
-                case JOIN:    return "JOIN(" + mbr + ")";
-                case JOIN_WITH_STATE_TRANSFER:    return "JOIN_WITH_STATE_TRANSFER(" + mbr + ")";
-                case LEAVE:   return "LEAVE(" + mbr + ", " + suspected + ")";
-                case SUSPECT: return "SUSPECT(" + mbr + ")";
-                case MERGE:   return "MERGE(" + views.size() + " views)";               
+                case JOIN:                     return "JOIN(" + mbr + ")";
+                case JOIN_WITH_STATE_TRANSFER: return "JOIN_WITH_STATE_TRANSFER(" + mbr + ")";
+                case LEAVE:                    return "LEAVE(" + mbr + ")";
+                case SUSPECT:                  return "SUSPECT(" + mbr + ")";
+                case MERGE:                    return "MERGE(" + views.size() + " views)";
+                default:                       return "<invalid (type=" + type + ")";
             }
-            return "<invalid (type=" + type + ")";
         }
 
         /**

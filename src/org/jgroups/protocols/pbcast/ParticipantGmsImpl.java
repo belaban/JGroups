@@ -88,7 +88,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
 
     public void suspect(Address mbr) {
         Collection<Request> suspected=new LinkedHashSet<>(1);
-        suspected.add(new Request(Request.SUSPECT,mbr,true));
+        suspected.add(new Request(Request.SUSPECT, mbr));
         handleMembershipChange(suspected);
     }
 
@@ -113,7 +113,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
 
             gms.becomeCoordinator();
             suspected_mbrs.forEach(mbr -> {
-                gms.getViewHandler().add(new Request(Request.SUSPECT, mbr, true));
+                gms.getViewHandler().add(new Request(Request.SUSPECT, mbr));
                 gms.ack_collector.suspect(mbr);
             });
             suspected_mbrs.clear();

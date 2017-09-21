@@ -9,6 +9,8 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 /**
@@ -172,30 +174,42 @@ public class CloseTest extends ChannelTestBase {
         a.connect(GROUP);
         assert a.isConnected();
         assertView(a, 1);
+        // printViews(a);
 
         b=createChannel(a, "B");
         assert b.isOpen() && !b.isConnected();
+        System.out.println("-- B joining");
         b.connect(GROUP);
         assert b.isConnected();
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
+        // printViews(a,b);
 
+        System.out.println("-- B leaving");
         b.disconnect();
         assert b.isOpen() && !b.isConnected();
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a);
+        // printViews(a);
 
+        System.out.println("-- B joining");
         b.connect(GROUP);
         assert b.isConnected();
         Util.waitUntilAllChannelsHaveSameView(20000, 1000, a, b);
 
         // Now see what happens if we disaconnect and reconnect A (the current coord)
+        System.out.println("-- A leaving");
         a.disconnect();
         assert a.isOpen() && !a.isConnected();
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, b);
+        printViews(b);
 
+        System.out.println("-- A joining");
         a.connect(GROUP);
         assert a.isOpen() && a.isConnected();
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
+        // printViews(a,b);
     }
+
+
 
     public void testMultipleConnectsAndDisconnects2() throws Exception {
         int NUM=10;
@@ -221,6 +235,12 @@ public class CloseTest extends ChannelTestBase {
         String msg="view=" + view;
         assertNotNull(view);
         Assert.assertEquals(view.size(), num, msg);
+    }
+
+    protected void printViews(JChannel ... channels) {
+        System.out.printf("views:\n%s\n",
+                          Stream.of(channels).map(ch -> ch.getAddress() + ": " + ch.getView().toString())
+                            .collect(Collectors.joining("\n")));
     }
 
 
