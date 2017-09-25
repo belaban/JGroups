@@ -144,6 +144,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     
     public void destroy() {        
         stubManager.destroyStubs();
+        if (sock != null) sock.close();
         super.destroy();
     }
 
