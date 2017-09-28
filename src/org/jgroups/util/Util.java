@@ -290,7 +290,7 @@ public class Util {
         }
         View first=channels[0].getView();
         for(View view : views)
-            if(!Objects.equals(view, first))
+            if(!Objects.equals(view, first) || view.size() != channels.length)
                 throw new TimeoutException("Timeout " + timeout + " kicked in, views are:\n" + sb);
     }
 

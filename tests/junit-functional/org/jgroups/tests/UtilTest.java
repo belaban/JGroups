@@ -1212,6 +1212,27 @@ public class UtilTest {
         _testMethodNameToAttributeName("lastName", "last_name");
     }
 
+    public void testWaitUntilAllChannelsHaveSameView() throws Exception {
+        JChannel a=null, b=null;
+
+        try {
+            a=new JChannel(Util.getTestStack()).name("A").connect("demo");
+            b=new JChannel(Util.getTestStack()).name("B").connect("demo");
+            Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b);
+
+            try {
+                Util.waitUntilAllChannelsHaveSameView(2000, 500, a);
+                assert false;
+            }
+            catch(Exception ex) {
+                System.out.printf("threw exception as expected: %s\n", ex);
+            }
+        }
+        finally {
+            Util.close(b,a);
+        }
+    }
+
     private static void _testMethodNameToAttributeName(String input, String expected_output) {
         String atttr_name=Util.methodNameToAttributeName(input);
         System.out.println("method name=" + input + ", attrname=" + atttr_name + ", expected output=" + expected_output);
