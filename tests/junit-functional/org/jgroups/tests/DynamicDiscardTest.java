@@ -1,8 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RequestOptions;
@@ -48,15 +46,15 @@ public class DynamicDiscardTest {
             channels[i].setName(Character.toString((char) ('A' + i)));
             channels[i].setDiscardOwnMessages(true);
             dispatchers[i]=new MessageDispatcher(channels[i], new MyRequestHandler());
+            dispatchers[i].setMembershipListener(new MyMembershipListener(channels[i]));
             channels[i].connect("DynamicDiscardTest");
             System.out.print(i + 1 + " ");
         }
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, channels);
 
         // discard all messages (except those to self)
-        DISCARD discard = new DISCARD();
+        DISCARD discard = new DISCARD().setDiscardAll(true);
         channels[0].getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
-        discard.setDiscardAll(true);
 
         // send a RSVP message
         byte[] data="message2".getBytes();
@@ -73,6 +71,18 @@ public class DynamicDiscardTest {
         public Object handle(Message msg) throws Exception {
             System.out.println(String.format("Received message %s", msg));
             return "bla";
+        }
+    }
+
+    protected static class MyMembershipListener extends ReceiverAdapter {
+        protected final JChannel ch;
+
+        public MyMembershipListener(JChannel ch) {
+            this.ch=ch;
+        }
+
+        public void viewAccepted(View view) {
+            System.out.printf("[%s] view: %s\n", ch.getAddress(), view);
         }
     }
 }

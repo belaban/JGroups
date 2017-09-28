@@ -224,8 +224,16 @@ public class DISCARD extends Protocol {
             msg.setSrc(localAddress());
 
         if(discard_all) {
-            if(excludeItself && Objects.equals(dest, localAddress()))
-                down_prot.down(msg);
+            if(excludeItself) {
+                if(dest == null) {
+                    // loop back to self but don't multicast to others
+                    up_prot.up(msg);
+                    return null;
+                }
+
+                if(Objects.equals(dest, localAddress()))
+                    down_prot.down(msg);
+            }
             return null;
         }
 
