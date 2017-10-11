@@ -18,7 +18,7 @@ public interface Log {
 
 
     void fatal(String msg);
-    void fatal(String msg, Object ... args);
+    void fatal(String format, Object ... args);
     void fatal(String msg, Throwable throwable);
 
     void error(String msg);
@@ -26,19 +26,19 @@ public interface Log {
     void error(String msg, Throwable throwable);
 
     void warn(String msg);
-    void warn(String msg, Object ... args);
+    void warn(String format, Object ... args);
     void warn(String msg, Throwable throwable);
 
     void info(String msg);
-    void info(String msg, Object ... args);
+    void info(String format, Object ... args);
 
     void debug(String msg);
-    void debug(String msg, Object ... args);
+    void debug(String format, Object ... args);
     void debug(String msg, Throwable throwable);
 
-    void trace(Object msg);
+    void trace(Object obj);
     void trace(String msg);
-    void trace(String msg, Object ... args);
+    void trace(String format, Object ... args);
     void trace(String msg, Throwable throwable);
 
 
