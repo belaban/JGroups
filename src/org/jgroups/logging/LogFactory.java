@@ -131,7 +131,7 @@ public final class LogFactory {
     protected static Constructor<? extends Log> findConstructor(String classname, Class<?> arg) throws Exception {
         Class<?> clazz=Util.loadClass(classname, (Class<?>)null);
         @SuppressWarnings("unchecked")
-		Constructor<? extends Log> constructor = (Constructor<? extends Log>)clazz.getDeclaredConstructor(arg);
+        Constructor<? extends Log> constructor = (Constructor<? extends Log>)clazz.getDeclaredConstructor(arg);
         return constructor;
     }
 }
