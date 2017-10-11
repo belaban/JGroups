@@ -5,7 +5,7 @@ package org.jgroups.logging;
  */
 public interface CustomLogFactory {
 
-    Log getLog(Class clazz);
+    Log getLog(Class<?> clazz);
 
     Log getLog(String category);
 }

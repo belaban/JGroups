@@ -19,8 +19,8 @@ public class JDKLogImpl implements Log {
         logger=Logger.getLogger(category);
     }
 
-    public JDKLogImpl(Class category) {
-        logger=Logger.getLogger(category.getName()); // fix for https://jira.jboss.org/browse/JGRP-1224
+    public JDKLogImpl(Class<?> clazz) {
+        logger=Logger.getLogger(clazz.getName()); // fix for https://jira.jboss.org/browse/JGRP-1224
     }
 
 
@@ -50,113 +50,139 @@ public class JDKLogImpl implements Log {
         }
     }
     
+    @Override
     public boolean isTraceEnabled() {
         return logger.isLoggable(Level.FINER);
     }
 
+    @Override
     public boolean isDebugEnabled() {
         return logger.isLoggable(Level.FINE);
     }
 
+    @Override
     public boolean isInfoEnabled() {
         return logger.isLoggable(Level.INFO);
     }
 
+    @Override
     public boolean isWarnEnabled() {
         return logger.isLoggable(Level.WARNING);
     }
 
+    @Override
     public boolean isErrorEnabled() {
         return logger.isLoggable(Level.SEVERE);
     }
 
+    @Override
     public boolean isFatalEnabled() {
         return logger.isLoggable(Level.SEVERE);
     }
 
+    @Override
     public void trace(String msg) {
         log(Level.FINER, msg);
     }
 
-    public void trace(String msg, Object... args) {
+    @Override
+    public void trace(String format, Object... args) {
         if(isTraceEnabled())
-            log(Level.FINER, format(msg, args));
+            log(Level.FINER, format(format, args));
     }
 
+    @Override
     public void trace(Object msg) {
         log(Level.FINER, msg.toString());
     }
 
+    @Override
     public void trace(String msg, Throwable t) {
         log(Level.FINER, msg, t);
     }
 
+    @Override
     public void debug(String msg) {
         log(Level.FINE, msg);
     }
 
-    public void debug(String msg, Object... args) {
+    @Override
+    public void debug(String format, Object... args) {
         if(isDebugEnabled())
-            log(Level.FINE, format(msg, args));
+            log(Level.FINE, format(format, args));
     }
 
+    @Override
     public void debug(String msg, Throwable t) {
         log(Level.FINE, msg, t);
     }
 
+    @Override
     public void info(String msg) {
         log(Level.INFO, msg);
     }
 
-    public void info(String msg, Object... args) {
+    @Override
+    public void info(String format, Object... args) {
         if(isInfoEnabled())
-            log(Level.INFO, format(msg, args));
+            log(Level.INFO, format(format, args));
     }
 
+    @Override
     public void warn(String msg) {
         log(Level.WARNING, msg);
     }
 
-    public void warn(String msg, Object... args) {
+    @Override
+    public void warn(String format, Object... args) {
         if(isWarnEnabled())
-            log(Level.WARNING, format(msg, args));
+            log(Level.WARNING, format(format, args));
     }
 
+    @Override
     public void warn(String msg, Throwable t) {
         log(Level.WARNING, msg, t);
     }
 
+    @Override
     public void error(String msg) {
         log(Level.SEVERE, msg);
     }
 
+    @Override
     public void error(String format, Object... args) {
         if(isErrorEnabled())
             log(Level.SEVERE, format(format, args));
     }
 
+    @Override
     public void error(String msg, Throwable t) {
         log(Level.SEVERE, msg, t);
     }
 
+    @Override
     public void fatal(String msg) {
         log(Level.SEVERE, msg);
     }
 
-    public void fatal(String msg, Object... args) {
+    @Override
+    public void fatal(String format, Object... args) {
         if(isFatalEnabled())
-            log(Level.SEVERE, format(msg, args));
+            log(Level.SEVERE, format(format, args));
     }
 
+    @Override
     public void fatal(String msg, Throwable t) {
         log(Level.SEVERE, msg, t);
     }
 
+    @Override
     public String getLevel() {
         Level level=logger.getLevel();
         return level != null? level.toString() : "off";
     }
 
+    @Override
     public void setLevel(String level) {
         Level new_level=strToLevel(level);
         if(new_level != null)

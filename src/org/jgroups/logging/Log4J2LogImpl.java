@@ -26,83 +26,107 @@ public class Log4J2LogImpl implements Log {
         logger = LogManager.getFormatterLogger(category);
     }
 
+    @Override
     public boolean isFatalEnabled() {return logger.isFatalEnabled();}
+    @Override
     public boolean isErrorEnabled() {return logger.isErrorEnabled();}
+    @Override
     public boolean isWarnEnabled()  {return logger.isWarnEnabled();}
+    @Override
     public boolean isInfoEnabled()  {return logger.isInfoEnabled();}
+    @Override
     public boolean isDebugEnabled() {return logger.isDebugEnabled();}
+    @Override
     public boolean isTraceEnabled() {return logger.isTraceEnabled();}
 
 
 
+    @Override
     public void trace(Object msg) {
         logger.trace(msg);
     }
 
+    @Override
     public void trace(String msg) {
         logger.trace(msg);
     }
 
-    public void trace(String msg, Object... args) {
-        logger.trace(msg, args);
+    @Override
+    public void trace(String format, Object... args) {
+        logger.trace(format, args);
     }
 
+    @Override
     public void trace(String msg, Throwable throwable) {
         logger.trace(msg, throwable);
     }
 
+    @Override
     public void debug(String msg) {
         logger.debug(msg);
     }
 
-    public void debug(String msg, Object... args) {
-        logger.debug(msg, args);
+    @Override
+    public void debug(String format, Object... args) {
+        logger.debug(format, args);
     }
 
+    @Override
     public void debug(String msg, Throwable throwable) {
         logger.debug(msg, throwable);
     }
 
+    @Override
     public void info(String msg) {
         logger.info(msg);
     }
 
-    public void info(String msg, Object... args) {
-        logger.info(msg, args);
+    @Override
+    public void info(String format, Object... args) {
+        logger.info(format, args);
     }
 
+    @Override
     public void warn(String msg) {
         logger.warn(msg);
     }
 
-    public void warn(String msg, Object... args) {
-        logger.warn(msg, args);
+    @Override
+    public void warn(String format, Object... args) {
+        logger.warn(format, args);
     }
 
+    @Override
     public void warn(String msg, Throwable throwable) {
         logger.warn(msg, throwable);
     }
 
+    @Override
     public void error(String msg) {
         logger.error(msg);
     }
 
+    @Override
     public void error(String format, Object... args) {
         logger.error(format, args);
     }
 
+    @Override
     public void error(String msg, Throwable throwable) {
         logger.error(msg, throwable);
     }
 
+    @Override
     public void fatal(String msg) {
         logger.fatal(msg);
     }
 
-    public void fatal(String msg, Object... args) {
-        logger.fatal(msg, args);
+    @Override
+    public void fatal(String format, Object... args) {
+        logger.fatal(format, args);
     }
 
+    @Override
     public void fatal(String msg, Throwable throwable) {
         logger.fatal(msg, throwable);
     }
@@ -112,6 +136,7 @@ public class Log4J2LogImpl implements Log {
 
 
 
+    @Override
     public String getLevel() {
         for(Level level: levels)
             if(logger.isEnabled(level))
@@ -119,6 +144,7 @@ public class Log4J2LogImpl implements Log {
         return "n/a";
     }
 
+    @Override
     public void setLevel(String level) {
         Level new_level=strToLevel(level);
         if(new_level == null)
