@@ -51,139 +51,139 @@ public class JDKLogImpl implements Log {
     }
     
     @Override
-	public boolean isTraceEnabled() {
+    public boolean isTraceEnabled() {
         return logger.isLoggable(Level.FINER);
     }
 
     @Override
-	public boolean isDebugEnabled() {
+    public boolean isDebugEnabled() {
         return logger.isLoggable(Level.FINE);
     }
 
     @Override
-	public boolean isInfoEnabled() {
+    public boolean isInfoEnabled() {
         return logger.isLoggable(Level.INFO);
     }
 
     @Override
-	public boolean isWarnEnabled() {
+    public boolean isWarnEnabled() {
         return logger.isLoggable(Level.WARNING);
     }
 
     @Override
-	public boolean isErrorEnabled() {
+    public boolean isErrorEnabled() {
         return logger.isLoggable(Level.SEVERE);
     }
 
     @Override
-	public boolean isFatalEnabled() {
+    public boolean isFatalEnabled() {
         return logger.isLoggable(Level.SEVERE);
     }
 
     @Override
-	public void trace(String msg) {
+    public void trace(String msg) {
         log(Level.FINER, msg);
     }
 
     @Override
-	public void trace(String msg, Object... args) {
+    public void trace(String msg, Object... args) {
         if(isTraceEnabled())
             log(Level.FINER, format(msg, args));
     }
 
     @Override
-	public void trace(Object msg) {
+    public void trace(Object msg) {
         log(Level.FINER, msg.toString());
     }
 
     @Override
-	public void trace(String msg, Throwable t) {
+    public void trace(String msg, Throwable t) {
         log(Level.FINER, msg, t);
     }
 
     @Override
-	public void debug(String msg) {
+    public void debug(String msg) {
         log(Level.FINE, msg);
     }
 
     @Override
-	public void debug(String msg, Object... args) {
+    public void debug(String msg, Object... args) {
         if(isDebugEnabled())
             log(Level.FINE, format(msg, args));
     }
 
     @Override
-	public void debug(String msg, Throwable t) {
+    public void debug(String msg, Throwable t) {
         log(Level.FINE, msg, t);
     }
 
     @Override
-	public void info(String msg) {
+    public void info(String msg) {
         log(Level.INFO, msg);
     }
 
     @Override
-	public void info(String msg, Object... args) {
+    public void info(String msg, Object... args) {
         if(isInfoEnabled())
             log(Level.INFO, format(msg, args));
     }
 
     @Override
-	public void warn(String msg) {
+    public void warn(String msg) {
         log(Level.WARNING, msg);
     }
 
     @Override
-	public void warn(String msg, Object... args) {
+    public void warn(String msg, Object... args) {
         if(isWarnEnabled())
             log(Level.WARNING, format(msg, args));
     }
 
     @Override
-	public void warn(String msg, Throwable t) {
+    public void warn(String msg, Throwable t) {
         log(Level.WARNING, msg, t);
     }
 
     @Override
-	public void error(String msg) {
+    public void error(String msg) {
         log(Level.SEVERE, msg);
     }
 
     @Override
-	public void error(String format, Object... args) {
+    public void error(String format, Object... args) {
         if(isErrorEnabled())
             log(Level.SEVERE, format(format, args));
     }
 
     @Override
-	public void error(String msg, Throwable t) {
+    public void error(String msg, Throwable t) {
         log(Level.SEVERE, msg, t);
     }
 
     @Override
-	public void fatal(String msg) {
+    public void fatal(String msg) {
         log(Level.SEVERE, msg);
     }
 
     @Override
-	public void fatal(String msg, Object... args) {
+    public void fatal(String msg, Object... args) {
         if(isFatalEnabled())
             log(Level.SEVERE, format(msg, args));
     }
 
     @Override
-	public void fatal(String msg, Throwable t) {
+    public void fatal(String msg, Throwable t) {
         log(Level.SEVERE, msg, t);
     }
 
     @Override
-	public String getLevel() {
+    public String getLevel() {
         Level level=logger.getLevel();
         return level != null? level.toString() : "off";
     }
 
     @Override
-	public void setLevel(String level) {
+    public void setLevel(String level) {
         Level new_level=strToLevel(level);
         if(new_level != null)
             logger.setLevel(new_level);
