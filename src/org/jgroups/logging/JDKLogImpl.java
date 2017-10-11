@@ -86,9 +86,9 @@ public class JDKLogImpl implements Log {
     }
 
     @Override
-    public void trace(String msg, Object... args) {
+    public void trace(String format, Object... args) {
         if(isTraceEnabled())
-            log(Level.FINER, format(msg, args));
+            log(Level.FINER, format(format, args));
     }
 
     @Override
@@ -107,9 +107,9 @@ public class JDKLogImpl implements Log {
     }
 
     @Override
-    public void debug(String msg, Object... args) {
+    public void debug(String format, Object... args) {
         if(isDebugEnabled())
-            log(Level.FINE, format(msg, args));
+            log(Level.FINE, format(format, args));
     }
 
     @Override
@@ -123,9 +123,9 @@ public class JDKLogImpl implements Log {
     }
 
     @Override
-    public void info(String msg, Object... args) {
+    public void info(String format, Object... args) {
         if(isInfoEnabled())
-            log(Level.INFO, format(msg, args));
+            log(Level.INFO, format(format, args));
     }
 
     @Override
@@ -134,9 +134,9 @@ public class JDKLogImpl implements Log {
     }
 
     @Override
-    public void warn(String msg, Object... args) {
+    public void warn(String format, Object... args) {
         if(isWarnEnabled())
-            log(Level.WARNING, format(msg, args));
+            log(Level.WARNING, format(format, args));
     }
 
     @Override
@@ -166,9 +166,9 @@ public class JDKLogImpl implements Log {
     }
 
     @Override
-    public void fatal(String msg, Object... args) {
+    public void fatal(String format, Object... args) {
         if(isFatalEnabled())
-            log(Level.SEVERE, format(msg, args));
+            log(Level.SEVERE, format(format, args));
     }
 
     @Override
