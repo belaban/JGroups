@@ -78,7 +78,7 @@ public final class LogFactory {
         }
     }
 
-    public static Log getLog(Class clazz) {
+    public static Log getLog(Class<?> clazz) {
         if(custom_log_factory != null)
             return custom_log_factory.getLog(clazz);
 
@@ -128,8 +128,10 @@ public final class LogFactory {
         return new JDKLogImpl(category);
     }
 
-    protected static Constructor<? extends Log> findConstructor(String classname, Class arg) throws Exception {
-        Class<?> clazz=Util.loadClass(classname, (Class)null);
-        return (Constructor<? extends Log>)clazz.getDeclaredConstructor(arg);
+    protected static Constructor<? extends Log> findConstructor(String classname, Class<?> arg) throws Exception {
+        Class<?> clazz=Util.loadClass(classname, (Class<?>)null);
+        @SuppressWarnings("unchecked")
+        Constructor<? extends Log> constructor = (Constructor<? extends Log>)clazz.getDeclaredConstructor(arg);
+        return constructor;
     }
 }
