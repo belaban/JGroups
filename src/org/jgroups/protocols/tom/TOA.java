@@ -149,12 +149,12 @@ public class TOA extends Protocol implements DeliveryProtocol {
         if (log.isTraceEnabled()) {
             log.trace("Handle view %s", view);
         }
-        View oldView = currentView;
+        final List<Address> leavers = View.leftMembers(currentView, view);
         currentView = view;
 
         //basis behavior: drop leavers message (as senders)
-        List<Address> leavers = View.leftMembers(oldView, view);
-        deliverManager.removeLeavers(leavers);
+
+        deliverManager.handleView(view);
 
         //basis behavior: avoid waiting for the acks
         Collection<MessageID> pendingSentMessages = senderManager.getPendingMessageIDs();
@@ -255,8 +255,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
     }
 
     private void handleDataMessage(Message message, ToaHeader header) {
-        long startTime = statsCollector.now();
-        long duration = -1;
+        final long startTime = statsCollector.now();
 
         try {
             final MessageID messageID = header.getMessageID();
@@ -270,6 +269,11 @@ public class TOA extends Protocol implements DeliveryProtocol {
                           header, myProposeSequenceNumber);
             }
 
+            if (myProposeSequenceNumber == -1) {
+                //message discarded. not sending ack back.
+                return;
+            }
+
             //create a new message and send it back
             ToaHeader newHeader = ToaHeader.newProposeMessageHeader(messageID, myProposeSequenceNumber);
 
@@ -278,11 +282,10 @@ public class TOA extends Protocol implements DeliveryProtocol {
 
             //multicastSenderThread.addUnicastMessage(proposeMessage);
             down_prot.down(proposeMessage);
-            duration = statsCollector.now() - startTime;
         } catch (Exception e) {
             logException("Exception caught while processing the data message " + header.getMessageID(), e);
         } finally {
-            statsCollector.addDataMessageDuration(duration);
+            statsCollector.addDataMessageDuration(statsCollector.now() - startTime);
         }
     }
 
@@ -375,6 +378,10 @@ public class TOA extends Protocol implements DeliveryProtocol {
     @ManagedOperation
     public String getMessageList() {
         return deliverManager.getMessageSet().toString();
+    }
+
+    public DeliveryManager getDeliverManager() {
+        return deliverManager;
     }
 
     @Override
