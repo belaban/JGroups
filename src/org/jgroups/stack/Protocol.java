@@ -20,8 +20,10 @@ import org.w3c.dom.Node;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -117,6 +119,32 @@ public abstract class Protocol {
         return this;
     }
 
+
+    /**
+     * Resolves and applies the specified properties to this protocol.
+     * @param properties a map of property string values
+     * @return this protocol
+     * @throws Exception if any of the specified properties are unresolvable or unrecognized.
+     */
+    public Protocol setProperties(Map<String, String> properties) throws Exception {
+        // These Configurator methods are destructive, so make a defensive copy
+        Map<String, String> copy = new HashMap<>(properties);
+        Configurator.removeDeprecatedProperties(this, copy);
+        Configurator.resolveAndAssignFields(this, copy);
+        Configurator.resolveAndInvokePropertyMethods(this, copy);
+        List<Object> objects = this.getConfigurableObjects();
+        if (objects != null) {
+            for (Object object : objects) {
+                Configurator.removeDeprecatedProperties(object, copy);
+                Configurator.resolveAndAssignFields(object, copy);
+                Configurator.resolveAndInvokePropertyMethods(object, copy);
+            }
+        }
+        if (!copy.isEmpty()) {
+            throw new IllegalArgumentException(String.format("Unrecognized %s properties: %s", this.getName(), copy.keySet()));
+        }
+        return this;
+    }
 
 
     /**
