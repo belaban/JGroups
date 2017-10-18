@@ -42,6 +42,10 @@ public class XMLSchemaGenerator {
 
     protected static final String[] PACKAGES={"", "pbcast", "tom", "relay", "rules"};
 
+    static {
+        System.setProperty("java.awt.headless", "true");
+    }
+
     public static void main(String[] args) {
 
         String outputDir = "./";
