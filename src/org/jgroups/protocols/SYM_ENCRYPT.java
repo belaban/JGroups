@@ -2,16 +2,11 @@ package org.jgroups.protocols;
 
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
-import org.jgroups.util.Util;
 
 import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.security.Key;
 import java.security.KeyStore;
-import java.security.KeyStore.SecretKeyEntry;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 
 import javax.crypto.SecretKey;
 
@@ -69,8 +64,11 @@ public class SYM_ENCRYPT extends Encrypt<KeyStore.SecretKeyEntry> {
     public SYM_ENCRYPT storePassword(String pwd)           {this.store_password=pwd; return this;}
 
     @Override
-    public void setKeyStoreEntry(SecretKeyEntry entry) {
-        SecretKey key = entry.getSecretKey();
+    public void setKeyStoreEntry(KeyStore.SecretKeyEntry entry) {
+        this.setSecretKey(entry.getSecretKey());
+    }
+
+    public void setSecretKey(SecretKey key) {
         this.sym_algorithm = key.getAlgorithm();
         this.secret_key = key;
     }
@@ -88,7 +86,6 @@ public class SYM_ENCRYPT extends Encrypt<KeyStore.SecretKeyEntry> {
      * can be generated using the keystoreGenerator file in demos. The keystore must be on the classpath to find it.
      */
     protected void readSecretKeyFromKeystore() throws Exception {
-        InputStream inputStream=null;
         // must not use default keystore type - as it does not support secret keys
         KeyStore store=KeyStore.getInstance(keystore_type != null? keystore_type : KeyStore.getDefaultType());
 
@@ -97,41 +94,24 @@ public class SYM_ENCRYPT extends Encrypt<KeyStore.SecretKeyEntry> {
             log.debug("%s: key_password used is same as store_password", local_addr);
         }
 
-        try {
-            // load in keystore using this thread's classloader
-            inputStream=Thread.currentThread().getContextClassLoader().getResourceAsStream(keystore_name);
-            if(inputStream == null)
-                inputStream=new FileInputStream(keystore_name);
-            // we can't find a keystore here -
-            if(inputStream == null)
-                throw new Exception("Unable to load keystore " + keystore_name + " ensure file is on classpath");
-            // we have located a file lets load the keystore
-            try {
-                store.load(inputStream, store_password.toCharArray());
-                // loaded keystore - get the key
-                if (!store.entryInstanceOf(alias, KeyStore.SecretKeyEntry.class)) {
-                    throw new Exception("Key '" + alias + "' from keystore " + keystore_name + " is not a secret key");
-                }
-                SecretKeyEntry entry = (KeyStore.SecretKeyEntry) store.getEntry(alias, new KeyStore.PasswordProtection(key_password.toCharArray()));
-                if (entry == null) {
-                    throw new Exception("Unable to retrieve key '" + alias + "' from keystore " + keystore_name);
-                }
-                this.setKeyStoreEntry(entry);
-            }
-            catch(IOException e) {
-                throw new Exception("Unable to load keystore " + keystore_name + ": " + e);
-            }
-            catch(NoSuchAlgorithmException e) {
-                throw new Exception("No Such algorithm " + keystore_name + ": " + e);
-            }
-            catch(CertificateException e) {
-                throw new Exception("Certificate exception " + keystore_name + ": " + e);
-            }
+        try (InputStream inputStream = getKeyStoreSource()) {
+            store.load(inputStream, store_password.toCharArray());
         }
-        finally {
-            Util.close(inputStream);
+
+        // loaded keystore - get the key
+        if (!store.entryInstanceOf(alias, KeyStore.SecretKeyEntry.class)) {
+            throw new Exception("Key '" + alias + "' from keystore " + keystore_name + " is not a secret key");
         }
+        KeyStore.SecretKeyEntry entry = (KeyStore.SecretKeyEntry) store.getEntry(alias, new KeyStore.PasswordProtection(key_password.toCharArray()));
+        if (entry == null) {
+            throw new Exception("Key '" + alias + "' not found in keystore " + keystore_name);
+        }
+
+        this.setKeyStoreEntry(entry);
     }
 
-
+    protected InputStream getKeyStoreSource() throws FileNotFoundException {
+        InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(keystore_name);
+        return (inputStream == null) ? new FileInputStream(keystore_name) : inputStream;
+    }
 }
