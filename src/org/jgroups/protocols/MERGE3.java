@@ -112,7 +112,7 @@ public class MERGE3 extends Protocol {
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<ViewId,Set<Address>> entry: convertViews().entrySet())
             sb.append(entry.getKey()).append(": [")
-              .append(Util.printListWithDelimiter(entry.getValue(), ", ", Util.MAX_LIST_PRINT_SIZE)).append("]\n");
+              .append(Util.printListWithDelimiter(entry.getValue(), ", ", Util.MAX_LIST_PRINT_SIZE)).append("]");
         return sb.toString();
     }
 
