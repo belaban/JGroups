@@ -8,6 +8,7 @@ import org.jgroups.util.*;
 
 import javax.crypto.Cipher;
 import java.security.Key;
+import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Map;
@@ -22,7 +23,7 @@ import java.util.zip.Checksum;
  * Super class of symmetric ({@link SYM_ENCRYPT}) and asymmetric ({@link ASYM_ENCRYPT}) encryption protocols.
  * @author Bela Ban
  */
-public abstract class Encrypt extends Protocol {
+public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     protected static final String DEFAULT_SYM_ALGO="AES";
 
 
@@ -75,25 +76,30 @@ public abstract class Encrypt extends Protocol {
     // map to hold previous keys so we can decrypt some earlier messages if we need to
     protected Map<AsciiString,Cipher>       key_map;
 
+    /**
+     * Sets the key store entry used to configure this protocol.
+     * @param entry a key store entry
+     */
+    public abstract void setKeyStoreEntry(E entry);
 
 
     public int                      asymKeylength()                 {return asym_keylength;}
-    public <T extends Encrypt> T    asymKeylength(int len)          {this.asym_keylength=len; return (T)this;}
+    public <T extends Encrypt<E>> T    asymKeylength(int len)          {this.asym_keylength=len; return (T)this;}
     public int                      symKeylength()                  {return sym_keylength;}
-    public <T extends Encrypt> T    symKeylength(int len)           {this.sym_keylength=len; return (T)this;}
+    public <T extends Encrypt<E>> T    symKeylength(int len)           {this.sym_keylength=len; return (T)this;}
     public Key                      secretKey()                     {return secret_key;}
     public String                   symAlgorithm()                  {return sym_algorithm;}
-    public <T extends Encrypt> T    symAlgorithm(String alg)        {this.sym_algorithm=alg; return (T)this;}
+    public <T extends Encrypt<E>> T    symAlgorithm(String alg)        {this.sym_algorithm=alg; return (T)this;}
     public String                   asymAlgorithm()                 {return asym_algorithm;}
-    public <T extends Encrypt> T    asymAlgorithm(String alg)       {this.asym_algorithm=alg; return (T)this;}
+    public <T extends Encrypt<E>> T    asymAlgorithm(String alg)       {this.asym_algorithm=alg; return (T)this;}
     public byte[]                   symVersion()                    {return sym_version;}
-    public <T extends Encrypt> T    localAddress(Address addr)      {this.local_addr=addr; return (T)this;}
+    public <T extends Encrypt<E>> T    localAddress(Address addr)      {this.local_addr=addr; return (T)this;}
     public boolean                  encryptEntireMessage()          {return encrypt_entire_message;}
-    public <T extends Encrypt> T    encryptEntireMessage(boolean b) {this.encrypt_entire_message=b; return (T)this;}
+    public <T extends Encrypt<E>> T    encryptEntireMessage(boolean b) {this.encrypt_entire_message=b; return (T)this;}
     public boolean                  signMessages()                  {return this.sign_msgs;}
-    public <T extends Encrypt> T    signMessages(boolean flag)      {this.sign_msgs=flag; return (T)this;}
+    public <T extends Encrypt<E>> T    signMessages(boolean flag)      {this.sign_msgs=flag; return (T)this;}
     public boolean                  adler()                         {return use_adler;}
-    public <T extends Encrypt> T    adler(boolean flag)             {this.use_adler=flag; return (T)this;}
+    public <T extends Encrypt<E>> T    adler(boolean flag)             {this.use_adler=flag; return (T)this;}
     @ManagedAttribute public String version()                       {return Util.byteArrayToHexString(sym_version);}
 
     public void init() throws Exception {
