@@ -35,7 +35,7 @@ public class DNS_PING extends Discovery {
     @Property(description = "DNS query for fetching members")
     protected String dns_query;
 
-    protected volatile DNSResolver dns_Resolver;
+    protected volatile DNSResolver dns_resolver;
 
     protected BoundedList<Address> discovered_hosts = new BoundedList<>();
 
@@ -49,8 +49,8 @@ public class DNS_PING extends Discovery {
         if (transportPort <= 0) {
             log.warn("Unable to discover transport port. This may prevent members from being discovered.");
         }
-        if (dns_Resolver == null) {
-            dns_Resolver = new DefaultDNSResolver(dns_context_factory, dns_address);
+        if (dns_resolver == null) {
+            dns_resolver = new DefaultDNSResolver(dns_context_factory, dns_address);
         }
     }
 
@@ -118,7 +118,7 @@ public class DNS_PING extends Discovery {
                 data.mbrs(members);
         }
 
-        List<Address> dns_discovery_members = dns_Resolver.resolveIps(dns_query,
+        List<Address> dns_discovery_members = dns_resolver.resolveIps(dns_query,
                 DNSResolver.DNSRecordType.valueOf(dns_record_type));
         log.debug("Entries collected from DNS: %s", dns_discovery_members);
         if (dns_discovery_members != null) {
