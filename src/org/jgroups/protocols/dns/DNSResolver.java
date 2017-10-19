@@ -6,10 +6,10 @@ import org.jgroups.Address;
 
 public interface DNSResolver {
 
-   enum DNSRecordType {
-      A, SRV
-   }
+    enum DNSRecordType {
+        A, SRV
+    }
 
-   List<Address> resolveIps(String dnsQuery, DNSRecordType recordType);
+    List<Address> resolveIps(String dnsQuery, DNSRecordType recordType);
 
 }
