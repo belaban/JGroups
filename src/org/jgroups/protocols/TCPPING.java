@@ -7,15 +7,18 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Tuple;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 /**
@@ -70,8 +73,16 @@ public class TCPPING extends Discovery {
         return initial_hosts;
     }
 
-    public void setInitialHosts(List<PhysicalAddress> initial_hosts) {
+
+    /** @deprecated Use {@link #setInitialHosts2(List)} instead (will later get renamed to setInitialHosts()) */
+    @Deprecated public void setInitialHosts(List<PhysicalAddress> initial_hosts) {
         this.initial_hosts=initial_hosts;
+    }
+
+    public void setInitialHosts2(List<InetSocketAddress> hosts) {
+        if(hosts == null || hosts.isEmpty())
+            return;
+        initial_hosts=hosts.stream().map(h -> new IpAddress(h.getAddress(), h.getPort())).collect(Collectors.toList());
     }
 
     public int getPortRange() {
