@@ -2,15 +2,12 @@ package org.jgroups.protocols;
 
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
-import org.jgroups.util.Util;
 
+import javax.crypto.SecretKey;
 import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.security.Key;
 import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 
 /**
  * Encrypts and decrypts communication in JGroups by using a secret key shared by all cluster members.<p>
@@ -36,7 +33,7 @@ import java.security.cert.CertificateException;
  */
 @MBean(description="Symmetric encryption protocol. The (shared) shared secret key is configured up front, " +
   "e.g. via a key store, or injection")
-public class SYM_ENCRYPT extends Encrypt {
+public class SYM_ENCRYPT extends Encrypt<KeyStore.SecretKeyEntry> {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     @Property(description="File on classpath that contains keystore repository")
@@ -65,15 +62,21 @@ public class SYM_ENCRYPT extends Encrypt {
     public String      storePassword()                     {return store_password;}
     public SYM_ENCRYPT storePassword(String pwd)           {this.store_password=pwd; return this;}
 
+    @Override
+    public void setKeyStoreEntry(KeyStore.SecretKeyEntry entry) {
+        this.setSecretKey(entry.getSecretKey());
+    }
 
+    public void setSecretKey(SecretKey key) {
+        this.sym_algorithm = key.getAlgorithm();
+        this.secret_key = key;
+    }
 
-
+    @Override
     public void init() throws Exception {
-        if(key_password == null && store_password != null) {
-            key_password=store_password;
-            log.debug("%s: key_password used is same as store_password", local_addr);
+        if (this.secret_key == null) {
+            readSecretKeyFromKeystore();
         }
-        readSecretKeyFromKeystore();
         super.init();
     }
 
@@ -82,47 +85,32 @@ public class SYM_ENCRYPT extends Encrypt {
      * can be generated using the keystoreGenerator file in demos. The keystore must be on the classpath to find it.
      */
     protected void readSecretKeyFromKeystore() throws Exception {
-        InputStream inputStream=null;
         // must not use default keystore type - as it does not support secret keys
         KeyStore store=KeyStore.getInstance(keystore_type != null? keystore_type : KeyStore.getDefaultType());
 
-        Key tempKey=null;
-        try {
-            if(this.secret_key == null) { // in case the secret key was set before, e.g. via injection in a unit test
-                // load in keystore using this thread's classloader
-                inputStream=Thread.currentThread().getContextClassLoader().getResourceAsStream(keystore_name);
-                if(inputStream == null)
-                    inputStream=new FileInputStream(keystore_name);
-                // we can't find a keystore here -
-                if(inputStream == null)
-                    throw new Exception("Unable to load keystore " + keystore_name + " ensure file is on classpath");
-                // we have located a file lets load the keystore
-                try {
-                    store.load(inputStream, store_password.toCharArray());
-                    // loaded keystore - get the key
-                    tempKey=store.getKey(alias, key_password.toCharArray());
-                }
-                catch(IOException e) {
-                    throw new Exception("Unable to load keystore " + keystore_name + ": " + e);
-                }
-                catch(NoSuchAlgorithmException e) {
-                    throw new Exception("No Such algorithm " + keystore_name + ": " + e);
-                }
-                catch(CertificateException e) {
-                    throw new Exception("Certificate exception " + keystore_name + ": " + e);
-                }
+        if(key_password == null && store_password != null) {
+            key_password=store_password;
+            log.debug("%s: key_password used is same as store_password", local_addr);
+        }
 
-                if(tempKey == null)
-                    throw new Exception("Unable to retrieve key '" + alias + "' from keystore " + keystore_name);
-                this.secret_key=tempKey;
-                if(sym_algorithm.equals(DEFAULT_SYM_ALGO))
-                    sym_algorithm=tempKey.getAlgorithm();
-            }
+        try (InputStream inputStream = getKeyStoreSource()) {
+            store.load(inputStream, store_password.toCharArray());
         }
-        finally {
-            Util.close(inputStream);
+
+        // loaded keystore - get the key
+        if (!store.entryInstanceOf(alias, KeyStore.SecretKeyEntry.class)) {
+            throw new Exception("Key '" + alias + "' from keystore " + keystore_name + " is not a secret key");
         }
+        KeyStore.SecretKeyEntry entry = (KeyStore.SecretKeyEntry) store.getEntry(alias, new KeyStore.PasswordProtection(key_password.toCharArray()));
+        if (entry == null) {
+            throw new Exception("Key '" + alias + "' not found in keystore " + keystore_name);
+        }
+
+        this.setKeyStoreEntry(entry);
     }
 
-
+    protected InputStream getKeyStoreSource() throws FileNotFoundException {
+        InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(keystore_name);
+        return (inputStream == null) ? new FileInputStream(keystore_name) : inputStream;
+    }
 }

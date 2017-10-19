@@ -55,7 +55,7 @@ import java.util.function.BiPredicate;
  */
 @MBean(description="Asymmetric encryption protocol. The secret key for encryption and decryption of messages is fetched " +
   "from a key server (the coordinator) via asymmetric encryption")
-public class ASYM_ENCRYPT extends Encrypt {
+public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
     protected static final short                   GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
 
     @Property(description="When a member leaves, change the secret key, preventing old members from eavesdropping")
@@ -91,6 +91,10 @@ public class ASYM_ENCRYPT extends Encrypt {
     protected ResponseCollectorTask<Boolean>       key_requesters;
 
 
+    @Override
+    public void setKeyStoreEntry(KeyStore.PrivateKeyEntry entry) {
+        this.key_pair = new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey());
+    }
 
     public KeyPair      keyPair()                  {return key_pair;}
     public Cipher       asymCipher()               {return asym_cipher;}
@@ -380,15 +384,17 @@ public class ASYM_ENCRYPT extends Encrypt {
 
     /** Generates the public/private key pair from the init params */
     protected void initKeyPair() throws Exception {
-        // generate keys according to the specified algorithms
-        // generate publicKey and Private Key
-        KeyPairGenerator KpairGen=null;
-        if(provider != null && !provider.trim().isEmpty())
-            KpairGen=KeyPairGenerator.getInstance(getAlgorithm(asym_algorithm), provider);
-        else
-            KpairGen=KeyPairGenerator.getInstance(getAlgorithm(asym_algorithm));
-        KpairGen.initialize(asym_keylength,new SecureRandom());
-        key_pair=KpairGen.generateKeyPair();
+        if (this.key_pair == null) {
+            // generate keys according to the specified algorithms
+            // generate publicKey and Private Key
+            KeyPairGenerator KpairGen=null;
+            if(provider != null && !provider.trim().isEmpty())
+                KpairGen=KeyPairGenerator.getInstance(getAlgorithm(asym_algorithm), provider);
+            else
+                KpairGen=KeyPairGenerator.getInstance(getAlgorithm(asym_algorithm));
+            KpairGen.initialize(asym_keylength,new SecureRandom());
+            key_pair=KpairGen.generateKeyPair();
+        }
 
         // set up the Cipher to decrypt secret key responses encrypted with our key
         if(provider != null && !provider.trim().isEmpty())
