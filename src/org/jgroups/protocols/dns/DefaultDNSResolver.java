@@ -5,6 +5,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.IpAddress;
 
+import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
@@ -12,8 +13,8 @@ import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,36 +24,20 @@ class DefaultDNSResolver implements DNSResolver {
 
     private static final Log log = LogFactory.getLog(MethodHandles.lookup().lookupClass());
 
-    final String dnsContextFactory;
-    final String dnsAddress;
-    final DirContext dnsContext;
+    private final DirContext dnsContext;
 
-    /**
-     * @deprecated Implemented for testing.
-     */
-    @Deprecated
-    DefaultDNSResolver(DirContext direcoryContextForTests) {
-        this.dnsContext = direcoryContextForTests;
-        dnsAddress = null;
-        dnsContextFactory = null;
+    DefaultDNSResolver(DirContext context) {
+        this.dnsContext = context;
     }
 
-    public DefaultDNSResolver(String dnsContextFactory, String dnsAddress) {
-        this.dnsContextFactory = dnsContextFactory;
-        this.dnsAddress = dnsAddress;
-        dnsContext = getDnsContext();
-    }
-
-    private final DirContext getDnsContext() {
-        try {
-            log.trace("Initializing DNS Context with factory: %s and url: %s", dnsContextFactory, dnsAddress);
-            Hashtable env = new Hashtable();
-            env.put("java.naming.factory.initial", dnsContextFactory);
-            env.put("java.naming.provider.url", "dns://" + dnsAddress);
-            return new InitialDirContext(env);
-        } catch (NamingException e) {
-            throw new IllegalStateException("Wrong DNS Context", e);
+    public DefaultDNSResolver(String dnsContextFactory, String dnsAddress) throws NamingException {
+        log.trace("Initializing DNS Context with factory: %s and url: %s", dnsContextFactory, dnsAddress);
+        Properties env = new Properties();
+        env.put(Context.INITIAL_CONTEXT_FACTORY, dnsContextFactory);
+        if (dnsAddress != null) {
+            env.put(Context.PROVIDER_URL, "dns://" + dnsAddress);
         }
+        this.dnsContext = new InitialDirContext(env);
     }
 
     @Override
