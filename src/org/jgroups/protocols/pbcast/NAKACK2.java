@@ -418,11 +418,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         transport.registerProbeHandler(this);
         if(!transport.supportsMulticasting()) {
             if(use_mcast_xmit) {
-                log.warn(Util.getMessage("NoMulticastTransport"), "use_mcast_xmit", transport.getName(), "use_mcast_xmit");
+                log.debug(Util.getMessage("NoMulticastTransport"), "use_mcast_xmit", transport.getName(), "use_mcast_xmit");
                 use_mcast_xmit=false;
             }
             if(use_mcast_xmit_req) {
-                log.warn(Util.getMessage("NoMulticastTransport"), "use_mcast_xmit_req", transport.getName(), "use_mcast_xmit_req");
+                log.debug(Util.getMessage("NoMulticastTransport"), "use_mcast_xmit_req", transport.getName(), "use_mcast_xmit_req");
                 use_mcast_xmit_req=false;
             }
         }
