@@ -74,12 +74,12 @@ public class TCPPING extends Discovery {
     }
 
 
-    /** @deprecated Use {@link #setInitialHosts2(List)} instead (will later get renamed to setInitialHosts()) */
+    /** @deprecated Use {@link #setInitialHosts(Collection)} instead (will later get renamed to setInitialHosts()) */
     @Deprecated public void setInitialHosts(List<PhysicalAddress> initial_hosts) {
         this.initial_hosts=initial_hosts;
     }
 
-    public void setInitialHosts2(List<InetSocketAddress> hosts) {
+    public void setInitialHosts(Collection<InetSocketAddress> hosts) {
         if(hosts == null || hosts.isEmpty())
             return;
         initial_hosts=hosts.stream().map(h -> new IpAddress(h.getAddress(), h.getPort())).collect(Collectors.toList());

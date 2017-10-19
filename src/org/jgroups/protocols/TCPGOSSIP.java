@@ -17,6 +17,7 @@ import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -38,17 +39,22 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
     @Property(description="Max time for socket creation. Default is 1000 msec")
-    int sock_conn_timeout=1000;
+    protected int sock_conn_timeout=1000;
 
     @Property(description="Interval (ms) by which a disconnected stub attempts to reconnect to the GossipRouter")
-    long reconnect_interval=10000L;
+    protected long reconnect_interval=10000L;
     
     @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership", 
               converter=PropertyConverters.InitialHosts2.class)
     public void setInitialHosts(List<InetSocketAddress> hosts) {
         if(hosts == null || hosts.isEmpty())
             throw new IllegalArgumentException("initial_hosts must contain the address of at least one GossipRouter");
+        initial_hosts.addAll(hosts) ;
+    }
 
+    public void setInitialHosts(Collection<InetSocketAddress> hosts) {
+        if(hosts == null || hosts.isEmpty())
+            throw new IllegalArgumentException("initial_hosts must contain the address of at least one GossipRouter");
         initial_hosts.addAll(hosts) ;
     }
 
