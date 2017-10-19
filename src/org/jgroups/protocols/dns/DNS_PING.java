@@ -22,6 +22,7 @@ public class DNS_PING extends Discovery {
 
     private static final String DEFAULT_DNS_FACTORY = "com.sun.jndi.dns.DnsContextFactory";
     private static final String DEFAULT_DNS_RECORD_TYPE = "A";
+    private static final String DNS_QUERY_SUFFIX = ".svc.cluster.local";
 
     @Property(description = "DNS Context Factory")
     protected String dns_context_factory = DEFAULT_DNS_FACTORY;
@@ -58,8 +59,9 @@ public class DNS_PING extends Discovery {
         if (dns_query == null) {
             throw new IllegalArgumentException("dns_query can not be null or empty");
         }
-        if (dns_address == null) {
-            throw new IllegalArgumentException("dns_query can not be null or empty");
+        // Auto-append query suffix if missing
+        if (!dns_query.endsWith(DNS_QUERY_SUFFIX)) {
+            dns_query += DNS_QUERY_SUFFIX;
         }
     }
 
