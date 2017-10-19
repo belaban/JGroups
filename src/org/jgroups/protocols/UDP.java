@@ -149,30 +149,25 @@ public class UDP extends TP {
 
 
 
-    public boolean supportsMulticasting() {
+    public boolean     supportsMulticasting() {
         return ip_mcast;
     }
-
-    public void setMulticastAddress(InetAddress addr) {this.mcast_group_addr=addr;}
+    public UDP         setMulticasting(boolean fl) {this.ip_mcast=fl; return this;}
+    public void        setMulticastAddress(InetAddress addr) {this.mcast_group_addr=addr;}
     public InetAddress getMulticastAddress() {return mcast_group_addr;}
-    public int getMulticastPort() {return mcast_port;}
-    public void setMulticastPort(int mcast_port) {this.mcast_port=mcast_port;}
-    public void setMcastPort(int mcast_port) {this.mcast_port=mcast_port;}
+    public int         getMulticastPort() {return mcast_port;}
+    public void        setMulticastPort(int mcast_port) {this.mcast_port=mcast_port;}
+    public void        setMcastPort(int mcast_port) {this.mcast_port=mcast_port;}
 
     /**
      * Set the ttl for multicast socket
      * @param ttl the time to live for the socket.
-     * @throws IOException
      */
     public void setMulticastTTL(int ttl) {
         this.ip_ttl=ttl;
         setTimeToLive(ttl, sock);
     }
 
-    /**
-     * Getter for current multicast TTL
-     * @return
-     */
     public int getMulticastTTL() {
         return ip_ttl;
     }
