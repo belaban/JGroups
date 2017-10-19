@@ -66,6 +66,11 @@ public class DNS_PING extends Discovery {
     }
 
     @Override
+    public void destroy() {
+        dns_resolver.close();
+    }
+
+    @Override
     public boolean isDynamic() {
         return true;
     }

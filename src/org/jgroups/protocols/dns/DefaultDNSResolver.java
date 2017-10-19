@@ -41,6 +41,15 @@ class DefaultDNSResolver implements DNSResolver {
     }
 
     @Override
+    public void close() {
+        try {
+            this.dnsContext.close();
+        } catch (NamingException e) {
+            log.warn(e.getLocalizedMessage(), e);
+        }
+    }
+
+    @Override
     public List<Address> resolveIps(String dnsQuery, DNSRecordType recordType) {
 
         log.trace("Resolving DNS Query: %s of a type: %s", dnsQuery, recordType.toString());
