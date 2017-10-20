@@ -45,7 +45,7 @@ public class DNSDiscoveryTester {
 
       for(int i = 0; i < numberOfTestedInstances; ++i) {
          DNS_PING ping = new DNS_PING();
-         ping.dns_Resolver = dnsResolverBuilder.build();
+         ping.dns_resolver = dnsResolverBuilder.build();
          ping.dns_query = dnsQuery;
          ping.dns_record_type = recordType;
          ping.dns_address = "fake.com";

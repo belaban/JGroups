@@ -41,21 +41,6 @@ public class DNS_PINGTest {
    }
 
    @Test
-   public void test_failing_on_no_dns_address() throws Exception {
-      //given
-      DNS_PING ping = new DNS_PING();
-      ping.dns_query = "fake";
-
-      //when
-      try {
-         ping.validateProperties();
-         Assert.fail();
-      } catch (IllegalArgumentException e) {
-         //then
-      }
-   }
-
-   @Test
    public void test_valid_dns_response() throws Exception {
       //given
       DNSDiscoveryTester dns_discovery_tester = new DNSDiscoveryTester(2, PORT_START, 500, TimeUnit.SECONDS)
