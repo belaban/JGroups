@@ -179,6 +179,11 @@ public abstract class Discovery extends Protocol {
         is_server=false;
     }
 
+    public void addResponse(Responses rsp) {
+        synchronized(ping_responses) {
+            ping_responses.put(System.nanoTime(), rsp);
+        }
+    }
 
     /**
      * Fetches information (e.g. physical address, logical name) for the given member addresses. Needs to add responses

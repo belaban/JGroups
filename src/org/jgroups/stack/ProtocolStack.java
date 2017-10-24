@@ -143,7 +143,7 @@ public class ProtocolStack extends Protocol {
                     String neighbor_prot=key.trim();
                     Protocol neighbor=findProtocol(neighbor_prot);
                     if(neighbor == null) {
-                        log.error(Util.getMessage("NeighborProtocol") + neighbor_prot + " not found in stack");
+                        log.error(Util.getMessage("NeighborProtocol") + " " + neighbor_prot + " not found in stack");
                         break;
                     }
                     Position position=tmp.equalsIgnoreCase("above")? Position.ABOVE : Position.BELOW;

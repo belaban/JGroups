@@ -67,6 +67,7 @@
     <class id="63" name="org.jgroups.protocols.UFC_NB"/>
     <class id="64" name="org.jgroups.protocols.MFC_NB"/>
     <class id="65" name="org.jgroups.protocols.DH_KEY_EXCHANGE"/>
+    <class id="66" name="org.jgroups.protocols.MULTI_PING"/>
 
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->

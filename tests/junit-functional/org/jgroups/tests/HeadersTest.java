@@ -28,6 +28,12 @@ public class HeadersTest {
         assert Headers.getHeader(hdrs, UDP_ID) == h3;
     }
 
+    public void testGetHeaderWithMultipleIDs() {
+        Header[] hdrs=createHeaders(3);
+
+        assert null == Headers.getHeader(hdrs, (short)4,(short)5,(short)6);
+        assert h3 == Headers.getHeader(hdrs, (short)4, (short)5, UDP_ID);
+    }
 
     public void testGetHeaders() {
         Header[] hdrs=createHeaders(3);

@@ -890,6 +890,32 @@ ${PDC}
 
 
 
+==== MULTI_PING
+
+This discovery protocol allows for multiple discovery protocols to be used in a configuration. `MULTI_PING` adds
+all discovery protocols underneath it in the stack to a list at initialization time.
+
+When a discovery request is
+received from above, all discovery protocols in the list are contacted, either sequentially
+(`async_discovery=false`) or in parallel (`async_discovery=true`).
+
+A sample configuration is shown below:
+
+[source,xml]
+----
+<TCP ... />
+<TCPPING initial_hosts="127.0.0.1[7800]" port_range="0"/>
+<PING />
+<MPING/>
+<FILE_PING/>
+<MULTI_PING async_discovery="true"/>
+<MERGE3/>
+ ...
+----
+
+${MULTI_PING}
+
+
 === Merging after a network partition
 
 If a cluster gets split for some reasons (e.g. network partition), this protocol merges the subclusters

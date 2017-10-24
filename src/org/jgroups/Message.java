@@ -477,6 +477,13 @@ public class Message implements Streamable, Constructable<Message> {
                                                  "getHeader() to jg-protocol-ids.xml");
         return Headers.getHeader(this.headers, id);
     }
+
+    /** Returns a header for a range of IDs, or null if not found */
+    public <T extends Header> T getHeader(short ... ids) {
+        if(ids == null || ids.length == 0)
+            return null;
+        return Headers.getHeader(this.headers, ids);
+    }
     /*---------------------------------------------------------------------*/
 
 
