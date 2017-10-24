@@ -228,7 +228,7 @@ public class ProtocolStack extends Protocol {
                 Method[] methods=clazz.getDeclaredMethods();
                 for(Method method: methods) {
                     String methodName=method.getName();
-                    if(method.isAnnotationPresent(Property.class) && Configurator.isSetPropertyMethod(method)) {
+                    if(method.isAnnotationPresent(Property.class) && Configurator.isSetPropertyMethod(method, clazz)) {
                         Property annotation=method.getAnnotation(Property.class);
                         List<String> possible_names=new LinkedList<>();
                         if(annotation.name() != null)
@@ -442,7 +442,7 @@ public class ProtocolStack extends Protocol {
             Method[] methods=clazz.getDeclaredMethods();
             for(Method method: methods) {
                 String methodName=method.getName();
-                if(method.isAnnotationPresent(Property.class) && Configurator.isSetPropertyMethod(method)) {
+                if(method.isAnnotationPresent(Property.class) && Configurator.isSetPropertyMethod(method, clazz)) {
                     annotation=method.getAnnotation(Property.class);
                     List<String> possible_names=new LinkedList<>();
                     if(annotation.name() != null)

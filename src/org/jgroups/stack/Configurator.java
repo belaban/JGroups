@@ -460,7 +460,7 @@ public class Configurator {
     		// Method[] methods=protocol.getClass().getMethods();
             Method[] methods=Util.getAllDeclaredMethodsWithAnnotations(protocol.getClass(), Property.class);
     		for(int j = 0; j < methods.length; j++) {
-    			if (methods[j].isAnnotationPresent(Property.class) && isSetPropertyMethod(methods[j])) {
+    			if (methods[j].isAnnotationPresent(Property.class) && isSetPropertyMethod(methods[j], protocol.getClass())) {
     				String propertyName = PropertyHelper.getPropertyName(methods[j]) ;
     				String propertyValue = properties.get(propertyName);
 
@@ -574,7 +574,7 @@ public class Configurator {
 
             Method[] methods=Util.getAllDeclaredMethodsWithAnnotations(protocol.getClass(), Property.class);
             for(int j=0; j < methods.length; j++) {
-                if(isSetPropertyMethod(methods[j])) {
+                if(isSetPropertyMethod(methods[j], protocol.getClass())) {
                     String propertyName=PropertyHelper.getPropertyName(methods[j]);
 
                     Object propertyValue=getValueFromProtocol(protocol, propertyName);
@@ -751,8 +751,7 @@ public class Configurator {
     	// get the methods for this class and add them to the list if annotated with @Property
     	Method[] methods=obj.getClass().getMethods();
     	for(int i = 0; i < methods.length; i++) {
- 
-    		if (methods[i].isAnnotationPresent(Property.class) && isSetPropertyMethod(methods[i])) {
+    		if (methods[i].isAnnotationPresent(Property.class) && isSetPropertyMethod(methods[i], obj.getClass())) {
     			String propertyName = PropertyHelper.getPropertyName(methods[i]) ;
     			unorderedFieldsAndMethods.add(methods[i]) ;
     			propertiesInventory.put(propertyName, methods[i]) ;
@@ -886,7 +885,7 @@ public class Configurator {
     public static void resolveAndInvokePropertyMethod(Object obj, Method method, Map<String,String> props) throws Exception {
     	String methodName=method.getName();
         Property annotation=method.getAnnotation(Property.class);
-    	if(annotation != null && isSetPropertyMethod(method)) {
+    	if(annotation != null && isSetPropertyMethod(method, obj.getClass())) {
     		String propertyName=PropertyHelper.getPropertyName(method) ;
     		String propertyValue=props.get(propertyName);
 
@@ -992,11 +991,16 @@ public class Configurator {
     }
 
     public static boolean isSetPropertyMethod(Method method) {
-        return (method.getName().startsWith("set") &&
-                method.getReturnType() == java.lang.Void.TYPE &&
-                method.getParameterTypes().length == 1);
+        return (method.getName().startsWith("set")
+          && method.getReturnType() == java.lang.Void.TYPE
+          && method.getParameterTypes().length == 1);
     }
 
+    public static boolean isSetPropertyMethod(Method method, Class<?> enclosing_clazz) {
+        return (method.getName().startsWith("set")
+          && (method.getReturnType() == java.lang.Void.TYPE || enclosing_clazz.isAssignableFrom(method.getReturnType()))
+          && method.getParameterTypes().length == 1);
+    }
 
   
 

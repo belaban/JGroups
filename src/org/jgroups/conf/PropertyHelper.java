@@ -131,7 +131,7 @@ import java.util.Map;
     		if (method == null) {
     			throw new IllegalArgumentException("Cannot get converted value: Method is null") ;
     		}
-    		if (!Configurator.isSetPropertyMethod(method)) {
+    		if (!Configurator.isSetPropertyMethod(method, obj.getClass())) {
     			throw new IllegalArgumentException("Cannot get converted value: Method is not set property method") ;
     		}
     		if (props == null) {
