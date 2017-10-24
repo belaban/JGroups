@@ -107,6 +107,7 @@ public class ClassConfigurator {
         if(protocol_ids.containsKey(protocol))
             alreadyInProtocolsMap(id, protocol.getName());
         protocol_ids.put(protocol, id);
+        protocol_names.putIfAbsent(id, protocol);
     }
 
 
