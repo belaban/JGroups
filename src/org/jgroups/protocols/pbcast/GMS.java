@@ -892,7 +892,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                             return null;
 
                         // Discards view with id lower than or equal to our own. Will be installed without check if it is the first view
-                        if(view != null && new_view.getViewId().compareToIDs(view.getViewId()) <= 0)
+                        ViewId viewId = this.getViewId();
+                        if (viewId != null && new_view.getViewId().compareToIDs(viewId) <= 0)
                             return null;
                         if(new_view instanceof DeltaView) {
                             try {
