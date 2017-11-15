@@ -94,7 +94,7 @@ public class MPerf extends ReceiverAdapter {
         // send a CONFIG_REQ to the current coordinator, so we can get the current config
         Address coord=channel.getView().getCoord();
         if(coord != null && !local_addr.equals(coord))
-            send(coord,null,MPerfHeader.CONFIG_REQ, Message.Flag.RSVP);
+            send(coord, null, MPerfHeader.CONFIG_REQ, Message.Flag.RSVP);
     }
 
 
@@ -118,7 +118,7 @@ public class MPerf extends ReceiverAdapter {
                         results.reset(getSenders());
 
                         ack_collector.reset(channel.getView().getMembers());
-                        send(null,null,MPerfHeader.CLEAR_RESULTS, Message.Flag.RSVP); // clear all results (from prev runs) first
+                        send(null, null, MPerfHeader.CLEAR_RESULTS, Message.Flag.RSVP); // clear all results (from prev runs) first
                         ack_collector.waitForAllAcks(5000);
                         
                         send(null, null, MPerfHeader.START_SENDING, Message.Flag.RSVP);
@@ -143,7 +143,7 @@ public class MPerf extends ReceiverAdapter {
                         break;
                     case 'o':
                         ConfigChange change=new ConfigChange("oob", !oob);
-                        send(null,change,MPerfHeader.CONFIG_CHANGE,Message.Flag.RSVP);
+                        send(null, change, MPerfHeader.CONFIG_CHANGE, Message.Flag.RSVP);
                         break;
                     case 'x':
                     case -1:
@@ -214,7 +214,7 @@ public class MPerf extends ReceiverAdapter {
 
 
     protected void send(Address target, Object payload, byte header, Message.Flag ... flags) throws Exception {
-        Message msg=new Message(target, payload);
+        Message msg=new BytesMessage(target, payload);
         if(flags != null)
             for(Message.Flag flag: flags)
                 msg.setFlag(flag);
@@ -381,7 +381,7 @@ public class MPerf extends ReceiverAdapter {
                 break;
 
             case MPerfHeader.NEW_CONFIG:
-                applyNewConfig(msg.getBuffer());
+                applyNewConfig(msg.getArray(), msg.getOffset(), msg.getLength());
                 break;
 
             case MPerfHeader.ACK:
@@ -428,8 +428,8 @@ public class MPerf extends ReceiverAdapter {
         return retval;
     }
 
-    protected void applyNewConfig(byte[] buffer) {
-        final InputStream in=new ByteArrayInputStream(buffer);
+    protected void applyNewConfig(byte[] buffer, int offset, int length) {
+        final InputStream in=new ByteArrayInputStream(buffer, offset, length);
         Thread thread=new Thread(() -> {
             try {
                 JChannel ch=new JChannel(in);
@@ -566,7 +566,7 @@ public class MPerf extends ReceiverAdapter {
                     if(tmp > num_msgs || cancelled)
                         break;
                     long new_seqno=seqno.getAndIncrement();
-                    Message msg=new Message(null, payload).putHeader(ID, new MPerfHeader(MPerfHeader.DATA, new_seqno));
+                    Message msg=new BytesMessage(null, payload).putHeader(ID, new MPerfHeader(MPerfHeader.DATA, new_seqno));
                     if(oob)
                         msg.setFlag(Message.Flag.OOB);
                     channel.send(msg);

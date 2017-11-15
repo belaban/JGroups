@@ -8,20 +8,27 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 
 /**
- * Class to test fragmentation. It uses ProtocolTester to assemble a minimal stack which only consists of
- * FRAG and LOOPBACK (messages are immediately resent up the stack). Sends NUM_MSGS with MSG_SIZE size down
- * the stack, they should be received as well.
+ * Class to test fragmentation. It uses a minimal stack with different fragmentation protocols.
+ * Sends NUM_MSGS with MSG_SIZE size down the stack, they should be received as well.
  *
  * @author Bela Ban
  */
@@ -31,67 +38,59 @@ public class FragTest {
     public static final int  MSG_SIZE  = 100000;
     public static final int  FRAG_SIZE =  24000;
 
-    protected JChannel a, b;
+    protected JChannel            a, b;
+    protected MyReceiver<Message> r1=new org.jgroups.util.MyReceiver<>().rawMsgs(true),
+                                  r2=new org.jgroups.util.MyReceiver<>().rawMsgs(true);
+    protected static final byte[] array=Util.generateArray(FRAG_SIZE*2);
 
     @DataProvider
     static Object[][] fragProvider() {
         return new Object[][] {
+          {FRAG.class},
           {FRAG2.class},
-          {FRAG3.class}
+          {FRAG3.class},
+          {FRAG4.class}
         };
     }
 
     @Test(enabled=false)
     protected void setup(Class<? extends Protocol> frag_clazz) throws Exception {
-        a=createChannel("A", frag_clazz).connect("FragTest");
-        b=createChannel("B", frag_clazz).connect("FragTest");
+        a=createChannel("A", frag_clazz, FRAG_SIZE).connect("FragTest");
+        b=createChannel("B", frag_clazz, FRAG_SIZE).connect("FragTest");
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b);
+        a.setReceiver(r1);
+        b.setReceiver(r2);
     }
 
-    @AfterMethod protected void destroy() {Util.close(b, a);}
+    @AfterMethod protected void destroy() {Util.close(b, a); r1.reset(); r2.reset();}
 
 
 
     public void testRegularMessages(Class<? extends Protocol> frag_clazz) throws Exception {
         setup(frag_clazz);
-        FragReceiver frag_receiver=new FragReceiver();
-        b.setReceiver(frag_receiver);
         for(int i=1; i <= NUM_MSGS; i++) {
             Message big_msg=createMessage(b.getAddress(), MSG_SIZE);
             a.send(big_msg);
         }
         System.out.println("-- done sending");
-        for(int i=0; i < 10; i++) {
-            int num_msgs=frag_receiver.getNumMsgs();
-            if(num_msgs >= NUM_MSGS)
-                break;
-            Util.sleep(500);
-        }
-        assert frag_receiver.getNumMsgs() == NUM_MSGS;
+        Util.waitUntil(5000, 500, () -> r2.size() == NUM_MSGS,
+                       () -> String.format("expected %d messages, but received %d", NUM_MSGS, r2.size()));
     }
 
 
     public void testMessagesWithOffsets(Class<? extends Protocol> frag_clazz) throws Exception {
         setup(frag_clazz);
-        FragReceiver frag_receiver=new FragReceiver();
-        b.setReceiver(frag_receiver);
         byte[] big_buffer=new byte[(int)(MSG_SIZE * NUM_MSGS)];
         int offset=0;
 
         for(int i=1; i <= NUM_MSGS; i++) {
-            Message big_msg=new Message(b.getAddress(), big_buffer, offset, MSG_SIZE);
+            Message big_msg=new BytesMessage(b.getAddress(), big_buffer, offset, MSG_SIZE);
             a.send(big_msg);
             offset+=MSG_SIZE;
         }
-
         System.out.println("-- done sending");
-        for(int i=0; i < 10; i++) {
-            int num_msgs=frag_receiver.getNumMsgs();
-            if(num_msgs >= NUM_MSGS)
-                break;
-            Util.sleep(500);
-        }
-        assert frag_receiver.getNumMsgs() == NUM_MSGS;
+        Util.waitUntil(5000, 500, () -> r2.size() == NUM_MSGS,
+                       () -> String.format("expected %d messages, but received %d", NUM_MSGS, r2.size()));
     }
 
     /**
@@ -101,32 +100,26 @@ public class FragTest {
      */
     public void testMessageOrdering(Class<? extends Protocol> frag_clazz) throws Exception {
         setup(frag_clazz);
-        OrderingReceiver receiver=new OrderingReceiver();
-        b.setReceiver(receiver);
-        Protocol frag=a.getProtocolStack().findProtocol(FRAG3.class, FRAG2.class, FRAG.class);
+        Protocol frag=a.getProtocolStack().findProtocol(FRAG4.class, FRAG3.class, FRAG2.class, FRAG.class);
         frag.setValue("frag_size", 5000);
 
         Address dest=b.getAddress();
-        Message first=new Message(dest, new Payload(1, 10));
-        Message big=new Message(dest, new Payload(2, 12000)); // frag_size is 5000, so FRAG{2} will create 3 fragments
-        Message last=new Message(dest, new Payload(3, 10));
+        Message first=new BytesMessage(dest, new Payload(1, 10));
+        Message big=new BytesMessage(dest, new Payload(2, 12000)); // frag_size is 5000, so FRAG{2} will create 3 fragments
+        Message last=new BytesMessage(dest, new Payload(3, 10));
 
         a.send(first);
         a.send(big);
         a.send(last);
 
-        List<Integer> list=receiver.getList();
-        for(int i=0; i < 10; i++) {
-            if(list.size() == 3)
-                break;
-            Util.sleep(1000);
-        }
+        List<Message> list=r2.list();
+        Util.waitUntil(3000, 500, () -> r2.size() == 3);
         System.out.println("list = " + list);
-        assert list.size() == 3;
 
         // assert that the ordering is [1 2 3], *not* [1 3 2]
         for(int i=0; i < list.size(); i++) {
-            assert list.get(i) == i+1 : "element at index " + i + " is " + list.get(i) + ", was supposed to be " + (i+1);
+            int seqno=((Payload)list.get(i).getObject()).seqno;
+            assert seqno == i+1 : "element at index " + i + " is " + seqno + ", was supposed to be " + (i+1);
         }
     }
 
@@ -135,29 +128,119 @@ public class FragTest {
         setup(frag_clazz);
         final String message="this message is supposed to get fragmented by A and defragmented by B";
         byte[] buf=message.getBytes();
-        MyReceiver r=new MyReceiver();
-        b.setReceiver(r);
-        a.send(new Message(b.getAddress(), buf).setFlag(Message.Flag.OOB));
-        for(int i=0; i < 10; i++) {
-            String msg=r.msg();
-            if(msg != null) {
-                assert msg.equals(message) : String.format("expected \"%s\" but received \"%s\"\n", message, msg);
-                System.out.printf("received \"%s\"\n", msg);
-                break;
-            }
-            Util.sleep(500);
-        }
+        Message msg=new BytesMessage(b.getAddress(), buf).setFlag(Message.Flag.OOB);
+        List<Message> list=r2.list();
+        a.send(msg);
+        Util.waitUntil(5000, 500, () -> list.size() == 1);
+        Message m=list.get(0);
+        String s=new String(m.getArray(), m.getOffset(), m.getLength());
+        assert s.equals(message) : String.format("expected \"%s\" but received \"%s\"\n", message, s);
+        System.out.printf("received \"%s\"\n", s);
     }
 
-    protected static JChannel createChannel(String name, Class<? extends Protocol> clazz) throws Exception {
+
+    public void testEmptyMessage(Class<? extends Protocol> frag_clazz) throws Exception {
+        setup(frag_clazz);
+        Message m1=new EmptyMessage(null), m2=new EmptyMessage(b.getAddress());
+        send(m1, m2);
+        assertForAllMessages(m -> m.getLength() == 0);
+    }
+
+
+    public void testBytesMessage(Class<? extends Protocol> frag_clazz) throws Exception {
+        setup(frag_clazz);
+        Message m1=new BytesMessage(null, array), m2=new BytesMessage(b.getAddress(), array);
+        send(m1, m2);
+        assertForAllMessages(m -> m.getLength() == array.length);
+        assertForAllMessages(m -> Util.verifyArray(m.getArray()));
+    }
+
+
+    public void testObjectMessage(Class<? extends Protocol> frag_clazz) throws Exception {
+        setup(frag_clazz);
+        MySizeData obj=new MySizeData(322649, array);
+        Message m1=new ObjectMessage(null, obj), m2=new ObjectMessage(b.getAddress(), obj);
+        send(m1, m2);
+        assertForAllMessages(m -> {
+            MySizeData data=m.getObject();
+            return data.equals(obj) && Util.verifyArray(data.array());
+        });
+    }
+
+
+    public void testObjectMessageSerializable(Class<? extends Protocol> frag_clazz) throws Exception {
+        setup(frag_clazz);
+        MySizeData obj=new MySizeData(322649, array);
+        Message m1=new ObjectMessageSerializable(null, obj), m2=new ObjectMessageSerializable(b.getAddress(), obj);
+        send(m1, m2);
+        assertForAllMessages(m -> {
+            MySizeData data=m.getObject();
+            return data.equals(obj) && Util.verifyArray(data.array());
+        });
+    }
+
+    public void testObjectMessageSerializable2(Class<? extends Protocol> frag_clazz) throws Exception {
+        setup(frag_clazz);
+        MyData obj=new MyData(322649, array);
+        Message m1=new ObjectMessageSerializable(null, obj), m2=new ObjectMessageSerializable(b.getAddress(), obj);
+        send(m1, m2);
+        assertForAllMessages(m -> {
+            MyData data=m.getObject();
+            return data.equals(obj) && Util.verifyArray(data.array());
+        });
+    }
+
+    public void testObjectMessageSerializable3(Class<? extends Protocol> frag_clazz) throws Exception {
+        setup(frag_clazz);
+        Person p=new Person("Bela Ban", 53, array);
+        Message m1=new ObjectMessageSerializable(null, p), m2=new ObjectMessageSerializable(b.getAddress(), p);
+        send(m1, m2);
+        assertForAllMessages(m -> {
+            Person p2=m.getObject();
+            return p2.name.equals("Bela Ban") && p2.age == p.age && Util.verifyArray(p.buf);
+        });
+    }
+
+    public void testNioHeapMessage(Class<? extends Protocol> frag_clazz) throws Exception {
+        setup(frag_clazz);
+        NioMessage m1=new NioMessage(null, ByteBuffer.wrap(array)),
+          m2=new NioMessage(b.getAddress(), ByteBuffer.wrap(array));
+        send(m1, m2);
+        assertForAllMessages(m -> Util.verifyArray(m.getArray()));
+    }
+
+    public void testNioDirectMessage(Class<? extends Protocol> frag_clazz) throws Exception {
+        setup(frag_clazz);
+        NioMessage m1=new NioMessage(null, Util.wrapDirect(array)),
+          m2=new NioMessage(b.getAddress(), Util.wrapDirect(array));
+        send(m1, m2);
+        assertForAllMessages(m -> Util.verifyArray(m.getArray()));
+    }
+
+    public void testCompositeMessage(Class<? extends Protocol> frag_clazz) throws Exception {
+        setup(frag_clazz);
+        CompositeMessage m1=new CompositeMessage(null, new EmptyMessage(null));
+        IntStream.of(10000, 15000, 5000).forEach(n -> m1.add(new BytesMessage(null, new byte[n])));
+        Person p=new Person("Bela Ban", 53, array);
+        m1.add(new ObjectMessageSerializable(null, p));
+        m1.add(new NioMessage(null, ByteBuffer.wrap(array)));
+        m1.add(new NioMessage(null, Util.wrapDirect(array)).useDirectMemory(false));
+
+        CompositeMessage m2=new CompositeMessage(b.getAddress(), new EmptyMessage(b.getAddress()));
+        send(m1, m2);
+    }
+
+
+
+    protected static JChannel createChannel(String name, Class<? extends Protocol> clazz, int frag_size) throws Exception {
         Protocol frag_prot=clazz.getDeclaredConstructor().newInstance();
-        frag_prot.setValue("frag_size", FRAG_SIZE);
+        frag_prot.setValue("frag_size", frag_size);
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
                             new NAKACK2().setValue("use_mcast_xmit", false),
                             new UNICAST3(),
                             new STABLE().setValue("max_bytes", 50000),
-                            new GMS().setValue("print_local_addr", false),
+                            new GMS().joinTimeout(500).setValue("print_local_addr", false),
                             new UFC(),
                             new MFC(),
                             frag_prot)
@@ -165,42 +248,35 @@ public class FragTest {
     }
 
     protected static Message createMessage(Address dest, int size) {
-        return new Message(dest, new byte[size]);
+        return new BytesMessage(dest, new byte[size]);
+    }
+
+    protected void send(Message mcast, Message ucast) throws Exception {
+        a.send(mcast); // from A --> all
+        a.send(ucast); // from A --> B
+
+        // wait until A and B have received mcast, and until B has received ucast
+        Util.waitUntil(100000, 500, () -> r1.size() == 1 && r2.size() == 2);
+        System.out.printf("A: %s\nB: %s\nB: %s\n",
+                          String.format("%s %s", r1.list().get(0).getClass().getSimpleName(), r1.list().get(0)),
+                          String.format("%s %s", r2.list().get(0).getClass().getSimpleName(), r2.list().get(0)),
+                          String.format("%s %s", r2.list().get(1).getClass().getSimpleName(), r2.list().get(1)));
+        if(mcast != null && ucast != null)
+            assertForAllMessages(m -> m.getClass().equals(mcast.getClass()) && m.getClass().equals(ucast.getClass()));
+
+        assertForAllMessages(m -> m.getSrc().equals(a.getAddress()));
+        assert r1.list().get(0).getDest() == null;
+        // one dest must be null and the other B:
+        assert Stream.of(r2.list()).flatMap(Collection::stream).anyMatch(m -> m.getDest() == null);
+        assert Stream.of(r2.list()).flatMap(Collection::stream).anyMatch(m -> Objects.equals(m.getDest(), b.getAddress()));
+    }
+
+    protected void assertForAllMessages(Predicate<Message> p) {
+        assert Stream.of(r1.list(), r2.list()).flatMap(Collection::stream).allMatch(p);
     }
 
 
-    protected static class FragReceiver extends ReceiverAdapter {
-        int num_msgs=0;
 
-        public int getNumMsgs() {
-            return num_msgs;
-        }
-
-        public void receive(Message msg) {
-            num_msgs++;
-            if(num_msgs % 100 == 0)
-                System.out.println("received " + num_msgs + " / " + NUM_MSGS);
-        }
-    }
-
-    protected static class OrderingReceiver extends ReceiverAdapter {
-        protected final List<Integer> list=new ArrayList<>();
-
-        public List<Integer> getList() {return list;}
-
-        public void receive(Message msg) {
-            Payload payload=msg.getObject();
-            list.add(payload.seqno);
-        }
-    }
-
-    protected static class MyReceiver extends ReceiverAdapter {
-        protected String msg;
-        public String msg() {return msg;}
-        public void receive(Message msg) {
-            this.msg=new String(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-        }
-    }
 
     protected static class Payload implements Serializable {
         private static final long serialVersionUID=-1989899280425578506L;
@@ -212,6 +288,72 @@ public class FragTest {
             this.buffer=new byte[size];
         }
     }
+
+    public static class MyData implements Streamable {
+          protected int    num;
+          protected byte[] arr;
+
+          public MyData() {}
+
+          public MyData(int num, byte[] buf) {
+              this.num=num;
+              this.arr=buf;
+          }
+
+          public byte[] array() {return arr;}
+
+          public boolean equals(Object obj) {
+              MyData d=(MyData)obj;
+              return num == d.num && arr.length == d.arr.length;
+          }
+
+          public String toString() {
+              return String.format("num=%d, data: %d bytes", num, arr != null? arr.length : 0);
+          }
+
+          public void writeTo(DataOutput out) throws IOException {
+              out.writeInt(num);
+              out.writeInt(arr != null? arr.length : 0);
+              if(arr != null)
+                  out.write(arr, 0, arr.length);
+          }
+
+          public void readFrom(DataInput in) throws IOException {
+              num=in.readInt();
+              int len=in.readInt();
+              if(len > 0) {
+                  arr=new byte[len];
+                  in.readFully(arr);
+              }
+          }
+      }
+
+
+    public static class MySizeData extends MyData implements SizeStreamable {
+        public MySizeData() {}
+        public MySizeData(int num, byte[] buf) {super(num, buf);}
+        public int serializedSize() {
+            return Global.INT_SIZE*2 + (array != null? array.length : 0);
+        }
+    }
+
+    protected static class Person implements Serializable {
+        private static final long serialVersionUID=8635045223414419580L;
+        protected String name;
+        protected int    age;
+        protected byte[] buf;
+
+        public Person(String name, int age, byte[] buf) {
+            this.name=name;
+            this.age=age;
+            this.buf=buf;
+        }
+
+        public String toString() {
+            return String.format("name=%s age=%d bytes=%d", name, age, buf != null? buf.length : 0);
+        }
+    }
+
 
 
 }

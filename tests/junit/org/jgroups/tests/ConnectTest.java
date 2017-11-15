@@ -96,8 +96,8 @@ public class ConnectTest extends ChannelTestBase {
         channel.setReceiver(receiver);
 
         for(int i=1; i <= 5; i++) {
-            coordinator.send(new Message(channel.getAddress(), i));
-            coordinator.send(new Message(null, i+5));
+            coordinator.send(new BytesMessage(channel.getAddress(), i));
+            coordinator.send(new BytesMessage(null, i+5));
         }
         List<Integer> list=receiver.list();
         Util.waitUntilListHasSize(list, 10, 5000, 500);
@@ -115,8 +115,8 @@ public class ConnectTest extends ChannelTestBase {
 
 
         for(int i=1; i <= 5; i++) {
-            coordinator.send(new Message(channel.getAddress(), i));
-            coordinator.send(new Message(null, i+5));
+            coordinator.send(new BytesMessage(channel.getAddress(), i));
+            coordinator.send(new BytesMessage(null, i+5));
         }
         Util.waitUntilListHasSize(list, 10, 5000, 500);
         System.out.println("list = " + list);
@@ -145,7 +145,7 @@ public class ConnectTest extends ChannelTestBase {
         channel.connect("ConnectTest.testgroup-6");
         channel.disconnect();
         channel.connect("ConnectTest.testgroup-5");
-        channel.send(new Message(null, "payload"));
+        channel.send(new BytesMessage(null, "payload"));
         Message msg=msgPromise.getResult(20000);
         assert msg != null;
         assert msg.getObject().equals("payload");

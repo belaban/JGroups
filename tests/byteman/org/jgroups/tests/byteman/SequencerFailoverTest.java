@@ -82,7 +82,7 @@ public class SequencerFailoverTest extends BMNGRunner {
 
         // Now send message 1 (it'll end up in the forward-queue)
         System.out.println("-- sending message 1");
-        Message msg=new Message(null, 1);
+        Message msg=new BytesMessage(null, 1);
         c.send(msg);
 
         // Now wait for the view change, the sending of new messages 2-5 and the resending of 1, and make sure
@@ -226,7 +226,7 @@ public class SequencerFailoverTest extends BMNGRunner {
         final Address sender=channel.getAddress();
         for(int i=1; i <= NUM_MSGS; i++) {
             Util.sleep(300);
-            channel.send(new Message(null, i));
+            channel.send(new BytesMessage(null, i));
             System.out.print("[" + sender + "] -- messages sent: " + i + "/" + NUM_MSGS + "\r");
         }
         System.out.println("");
@@ -303,7 +303,7 @@ public class SequencerFailoverTest extends BMNGRunner {
 
         public void run() {
             for(int i=1; i <=2; i++) {
-                Message msg=new Message(null, (rank + i));
+                Message msg=new BytesMessage(null, (rank + i));
                 try {
                     System.out.println("[" + rank + "]: sending msg " + (rank + i));
                     ch.send(msg);

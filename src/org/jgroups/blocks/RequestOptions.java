@@ -2,6 +2,7 @@ package org.jgroups.blocks;
 
 import org.jgroups.Address;
 import org.jgroups.Message;
+import org.jgroups.util.Util;
 
 import java.util.Arrays;
 
@@ -187,9 +188,9 @@ public class RequestOptions {
                 sb.append(" (using AnycastAddress)");
         }
         if(flags > 0)
-            sb.append(", flags=" + Message.flagsToString(flags));
+            sb.append(", flags=" + Util.flagsToString(flags));
         if(transient_flags > 0)
-            sb.append(", transient_flags=" + Message.transientFlagsToString(transient_flags));
+            sb.append(", transient_flags=" + Util.transientFlagsToString(transient_flags));
         if(exclusion_list != null)
             sb.append(", exclusion list: " + Arrays.toString(exclusion_list));
         return sb.toString();

@@ -1,9 +1,5 @@
 package org.jgroups.tests;
 
-import static org.testng.AssertJUnit.assertEquals;
-import static org.testng.AssertJUnit.assertNotNull;
-import static org.testng.AssertJUnit.assertTrue;
-
 import org.jgroups.*;
 import org.jgroups.blocks.ReplicatedHashMap;
 import org.jgroups.blocks.atomic.Counter;
@@ -30,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
+
+import static org.testng.AssertJUnit.*;
 
 /**
  * Tests {@link org.jgroups.fork.ForkChannel}
@@ -332,8 +330,8 @@ public class ForkChannelTest {
         MyUnknownForkHandler ufh=new MyUnknownForkHandler();
         f.setUnknownForkHandler(ufh);
 
-        fc1.send(new Message(null, "hello"));
-        fc2.send(new Message(null, "world"));
+        fc1.send(new BytesMessage(null, "hello"));
+        fc2.send(new BytesMessage(null, "world"));
 
         List<String> l=ufh.getUnknownForkStacks();
         Util.waitUntil(10000, 500, () -> l.size() == 2);
@@ -354,8 +352,8 @@ public class ForkChannelTest {
         MyUnknownForkHandler ufh=new MyUnknownForkHandler();
         f.setUnknownForkHandler(ufh);
 
-        fc2.send(new Message(null, "hello"));
-        fc2.send(new Message(null, "world"));
+        fc2.send(new BytesMessage(null, "hello"));
+        fc2.send(new BytesMessage(null, "world"));
 
         List<String> l=ufh.getUnknownForkChannels();
         Util.waitUntil(10000, 500, () -> l.size() == 2);

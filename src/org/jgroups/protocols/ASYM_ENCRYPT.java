@@ -357,12 +357,12 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         try {
             serializeKeys(out, add_secret_keys, serialize_only);
             if(msg.getLength() > 0) // add the original buffer
-                out.write(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-            return (copy? msg.copy(true, true) : msg).setBuffer(out.getBuffer())
+                out.write(msg.getArray(), msg.getOffset(), msg.getLength());
+            return (copy? msg.copy(true, true) : msg).setArray(out.getBuffer())
               .putHeader(id, new EncryptHeader(EncryptHeader.INSTALL_KEYS, symVersion(), getIv(msg)));
         }
         catch(Throwable t) {
-            log.error("%s: failed adding keys to message: %s", local_addr, t.getMessage());
+            log.error("%s: failed adding keys to message: %s", local_addr, t);
             return null;
         }
     }
@@ -373,14 +373,14 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
      * re-create the original message
      */
     protected void removeKeysFromMessageAndInstall(Message msg, byte[] version) {
-        ByteArrayDataInputStream in=new ByteArrayDataInputStream(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(msg.getArray(), msg.getOffset(), msg.getLength());
         unserializeAndInstallKeys(msg.getSrc(), version, in);
         int len=msg.getLength(), offset=msg.getOffset(), bytes_read=in.position();
         // we can modify the original message as the sender sends a copy (even on retransmissions)
         if(offset + bytes_read == len)
-            msg.setBuffer(null, 0, 0); // the original payload must have been null
+            msg.setArray(null, 0, 0); // the original payload must have been null
         else
-            msg.setBuffer(msg.getRawBuffer(), offset+bytes_read, len-bytes_read);
+            msg.setArray(msg.getArray(), offset+bytes_read, len-bytes_read);
     }
 
     /** Serializes all public keys and their corresponding encrypted shared group keys into a buffer */
@@ -445,7 +445,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
     }
 
 
-    protected static Buffer serializeKeys(Map<Address,byte[]> keys) throws Exception {
+    protected static ByteArray serializeKeys(Map<Address,byte[]> keys) throws Exception {
         int num_keys=keys.size();
         if(num_keys == 0)
             return null;

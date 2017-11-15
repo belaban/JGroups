@@ -1,8 +1,7 @@
 package org.jgroups.util;
 
 /**
- * Interface implementing Streamable and returning the size of the marshalled object. Might get merged into
- * Streamable itself in 4.0.
+ * Interface implementing Streamable and returning the size of the marshalled object.
  * @author Bela Ban
  * @since  3.3
  */

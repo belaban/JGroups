@@ -2,10 +2,7 @@ package org.jgroups.tests.byteman;
 
 import org.jboss.byteman.contrib.bmunit.BMNGRunner;
 import org.jboss.byteman.contrib.bmunit.BMScript;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.*;
 import org.jgroups.protocols.SHARED_LOOPBACK;
 import org.jgroups.protocols.SHARED_LOOPBACK_PING;
 import org.jgroups.protocols.UNICAST3;
@@ -43,7 +40,7 @@ public class MessageBeforeConnectedTest extends BMNGRunner {
         System.out.println("received " + greeting + " from " + msg.getSrc());
         if(HELLO1.equals(greeting)) {
             try {
-                a.send(new Message(a.getAddress(), HELLO2));
+                a.send(new BytesMessage(a.getAddress(), HELLO2));
             }
             catch(Exception e) {
                 ex=e;

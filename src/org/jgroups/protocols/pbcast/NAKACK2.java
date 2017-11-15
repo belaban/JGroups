@@ -139,15 +139,15 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @ManagedAttribute(description="Number of messages received")
     protected int                          num_messages_received;
 
-    protected static final Message         DUMMY_OOB_MSG=new Message().setFlag(Message.Flag.OOB);
+    protected static final Message DUMMY_OOB_MSG=new EmptyMessage().setFlag(Message.Flag.OOB);
 
     // Accepts messages which are (1) non-null, (2) no DUMMY_OOB_MSGs and (3) not OOB_DELIVERED
-    protected final Predicate<Message> no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs= msg ->
+    protected final Predicate<Message> no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs=msg ->
       msg != null && msg != DUMMY_OOB_MSG
-        && (!msg.isFlagSet(Message.Flag.OOB) || msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
-        && !(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK) && this.local_addr != null && this.local_addr.equals(msg.getSrc()));
+        && (!msg.isFlagSet(Message.Flag.OOB) || msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
+        && !(msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK) && this.local_addr != null && this.local_addr.equals(msg.getSrc()));
 
-    protected static final Predicate<Message> dont_loopback_filter=msg -> msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+    protected static final Predicate<Message> dont_loopback_filter=msg -> msg != null && msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK);
 
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
 
@@ -604,7 +604,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
             case NakAckHeader2.XMIT_REQ:
                 try {
-                    SeqnoList missing=Util.streamableFromBuffer(SeqnoList::new, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    SeqnoList missing=Util.streamableFromBuffer(SeqnoList::new, msg.getArray(), msg.getOffset(), msg.getLength());
                     if(missing != null)
                         handleXmitReq(msg.getSrc(), missing, hdr.sender);
                 }
@@ -618,7 +618,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 return null;
 
             case NakAckHeader2.HIGHEST_SEQNO:
-                handleHighestSeqno(msg.src(), hdr.seqno);
+                handleHighestSeqno(msg.getSrc(), hdr.seqno);
                 return null;
 
             default:
@@ -652,7 +652,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     break;
                 case NakAckHeader2.XMIT_REQ:
                     try {
-                        SeqnoList missing=Util.streamableFromBuffer(SeqnoList::new, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                        SeqnoList missing=Util.streamableFromBuffer(SeqnoList::new, msg.getArray(), msg.getOffset(), msg.getLength());
                         if(missing != null)
                             handleXmitReq(msg.getSrc(), missing, hdr.sender);
                     }
@@ -754,10 +754,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         if(buf == null) // discard message if there is no entry for local_addr
             return;
 
-        if(msg.src() == null)
-            msg.src(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
+        if(msg.getSrc() == null)
+            msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
 
-        boolean dont_loopback_set=msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+        boolean dont_loopback_set=msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK);
         msg_id=seqno.incrementAndGet();
         long sleep=10;
         do {
@@ -814,7 +814,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         if(added && msg.isFlagSet(Message.Flag.OOB)) {
             if(loopback) { // sent by self
                 msg=buf.get(hdr.seqno); // we *have* to get a message, because loopback means we didn't add it to win !
-                if(msg != null && msg.isFlagSet(Message.Flag.OOB) && msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
+                if(msg != null && msg.isFlagSet(Message.Flag.OOB) && msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
                     deliver(msg, sender, hdr.seqno, "OOB message");
             }
             else // sent by someone else
@@ -846,7 +846,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 for(LongTuple<Message> tuple: msgs) {
                     long    seq=tuple.getVal1();
                     Message msg=buf.get(seq); // we *have* to get the message, because loopback means we didn't add it to win !
-                    if(msg != null && msg.isFlagSet(Message.Flag.OOB) && msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
+                    if(msg != null && msg.isFlagSet(Message.Flag.OOB) && msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
                         oob_batch.add(msg);
                 }
             }
@@ -1015,7 +1015,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             return;
         }
 
-        Message xmit_msg=msg.copy(true, true).dest(dest); // copy payload and headers
+        Message xmit_msg=msg.copy(true, true).setDest(dest); // copy payload and headers
         NakAckHeader2 hdr=xmit_msg.getHeader(id);
         NakAckHeader2 newhdr=hdr.copy();
         newhdr.type=NakAckHeader2.XMIT_RSP; // change the type in the copy from MSG --> XMIT_RSP
@@ -1139,7 +1139,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     rebroadcast_done.await(sleep, TimeUnit.MILLISECONDS);
                     wait_time-=(System.currentTimeMillis() - start);
                 }
-                catch(InterruptedException e) {
+                catch(InterruptedException ignored) {
                 }
             }
             finally {
@@ -1155,7 +1155,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         try {
             cancel_rebroadcasting=isGreaterThanOrEqual(tmp, rebroadcast_digest);
         }
-        catch(Throwable t) {
+        catch(Throwable ignored) {
             ;
         }
         finally {
@@ -1409,7 +1409,17 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 dest=random_member;
         }
 
-        Message retransmit_msg=new Message(dest).setBuffer(Util.streamableToBuffer(missing_msgs))
+
+        ByteArray array=null;
+        try {
+            array=Util.streamableToBuffer(missing_msgs);
+        }
+        catch(Exception e) {
+            log.error("%s: serialization failure: %s", local_addr, e);
+            return;
+        }
+
+        Message retransmit_msg=new BytesMessage(dest).setArray(array)
           .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .putHeader(this.id, NakAckHeader2.createXmitRequestHeader(sender));
 
@@ -1518,9 +1528,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             }
             else
                 num_resends++;
-            Message msg=new Message(null).putHeader(id, NakAckHeader2.createHighestSeqnoHeader(seqno))
+            Message msg=new EmptyMessage(null).putHeader(id, NakAckHeader2.createHighestSeqnoHeader(seqno))
               .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
-              .setTransientFlag(Message.TransientFlag.DONT_LOOPBACK); // we don't need to receive our own broadcast
+              .setFlag(Message.TransientFlag.DONT_LOOPBACK); // we don't need to receive our own broadcast
             down_prot.down(msg);
         }
     }

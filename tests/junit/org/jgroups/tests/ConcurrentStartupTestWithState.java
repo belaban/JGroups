@@ -112,7 +112,7 @@ public class ConcurrentStartupTestWithState {
         }
 
         public void receive(Message msg) {
-            if(msg.getBuffer() == null)
+            if(!msg.hasPayload())
                 return;
             Integer number=msg.getObject();
             synchronized(state) {

@@ -92,7 +92,7 @@ public class JGroupsTransport extends ReceiverAdapter implements RtTransport {
     }
 
     public void send(Object dest, byte[] buf, int offset, int length) throws Exception {
-        Message msg=new Message((Address)dest, buf, offset, length);
+        Message msg=new BytesMessage((Address)dest, buf, offset, length);
         if(oob)
             msg.setFlag(Message.Flag.OOB);
         if(dont_bundle)
@@ -106,7 +106,7 @@ public class JGroupsTransport extends ReceiverAdapter implements RtTransport {
             return;
         for(Message msg: batch) {
             try {
-                receiver.receive(msg.src(), msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                receiver.receive(msg.getSrc(), msg.getArray(), msg.getOffset(), msg.getLength());
             }
             catch(Throwable t) {
                 log.error("failed delivering message from batch", t);
@@ -118,7 +118,7 @@ public class JGroupsTransport extends ReceiverAdapter implements RtTransport {
         if(receiver == null)
             return;
         try {
-            receiver.receive(msg.src(), msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+            receiver.receive(msg.getSrc(), msg.getArray(), msg.getOffset(), msg.getLength());
         }
         catch(Throwable t) {
             log.error("failed delivering message", t);

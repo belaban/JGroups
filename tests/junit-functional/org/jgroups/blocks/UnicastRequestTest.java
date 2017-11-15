@@ -3,7 +3,7 @@ package org.jgroups.blocks;
 
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Buffer;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.Util;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -21,7 +21,7 @@ import java.util.concurrent.TimeoutException;
 public class UnicastRequestTest {
     protected Address a, b, c;
     protected static final byte[] data="bla".getBytes();
-    protected static final Buffer buf=new Buffer(data, 0, data.length);
+    protected static final ByteArray buf=new ByteArray(data, 0, data.length);
 
     @BeforeClass
     void init() throws UnknownHostException {
@@ -32,7 +32,7 @@ public class UnicastRequestTest {
 
 
     public void testSimpleInvocation() throws Exception {
-        MyCorrelator corr=new MyCorrelator(false, new Object[]{new Message(b, (long)322649)}, 0);
+        MyCorrelator corr=new MyCorrelator(false, new Object[]{new BytesMessage(b, (long)322649)}, 0);
         UnicastRequest<Long> req=new UnicastRequest<>(corr, a, RequestOptions.SYNC().timeout(1000));
         corr.setRequest(req);
         Long result=req.execute(buf, true);
@@ -45,7 +45,7 @@ public class UnicastRequestTest {
     }
 
     public void testSimpleVoidInvocation() throws Exception {
-        MyCorrelator corr=new MyCorrelator(false, new Object[]{new Message(b, (String)null)}, 0);
+        MyCorrelator corr=new MyCorrelator(false, new Object[]{new BytesMessage(b, (String)null)}, 0);
         UnicastRequest<String> req=new UnicastRequest<>(corr, a, RequestOptions.SYNC().timeout(1000));
         corr.setRequest(req);
         String result=req.execute(buf, true);
@@ -59,7 +59,7 @@ public class UnicastRequestTest {
     }
 
     public void testInvocationWithException() throws Exception {
-        MyCorrelator corr=new MyCorrelator(false, new Object[]{new Message(b, (long)322649)}, 0);
+        MyCorrelator corr=new MyCorrelator(false, new Object[]{new BytesMessage(b, (long)322649)}, 0);
         UnicastRequest<Object> req=new UnicastRequest<>(corr, a, RequestOptions.SYNC().timeout(1000));
         corr.setRequest(req);
         req.receiveResponse(new NullPointerException("booom"), b, false);
@@ -198,7 +198,7 @@ public class UnicastRequestTest {
 
 
         @Override
-        public void sendUnicastRequest(Address dest, Buffer data, Request req, RequestOptions opts) throws Exception {
+        public void sendUnicastRequest(Address dest, ByteArray data, Request req, RequestOptions opts) throws Exception {
             send();
         }
 
@@ -231,7 +231,7 @@ public class UnicastRequestTest {
                         Address sender=msg.getSrc();
                         Object retval=null;
                         try {
-                            retval=Util.objectFromByteBuffer(msg.getBuffer());
+                            retval=Util.objectFromByteBuffer(msg.getArray(), msg.getOffset(), msg.getLength());
                         }
                         catch(Exception e) {
                             e.printStackTrace();

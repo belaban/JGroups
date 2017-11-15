@@ -4,7 +4,7 @@ package org.jgroups;
 import org.jgroups.util.MessageBatch;
 
 /**
- * MessageListener allows a listener to be notified when a {@link Message} or a state transfer
+ * MessageListener allows a listener to be notified when a {@link BaseMessage} or a state transfer
  * events arrives to a node.
  * <p>
  * MessageListener is often used by JGroups building blocks installed on top of a channel i.e

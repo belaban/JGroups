@@ -16,6 +16,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -28,8 +29,8 @@ public class StreamableTest {
     public static void testStreamable() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         byte[] tmp;
-        Message m1=new Message(null, buf, 0, 4);
-        Message m2=new Message(null, buf, 4, 3);
+        Message m1=new BytesMessage(null, buf, 0, 4);
+        Message m2=new BytesMessage(null, buf, 4, 3);
 
 
         ByteArrayOutputStream output=new ByteArrayOutputStream();
@@ -43,12 +44,11 @@ public class StreamableTest {
         DataInputStream in=new DataInputStream(input);
         Message m3, m4;
 
-        m3=new Message(false);
+        m3=new BytesMessage(false);
         m3.readFrom(in);
 
         Assert.assertEquals(4, m3.getLength());
-        Assert.assertEquals(4, m3.getRawBuffer().length);
-        Assert.assertEquals(4, m3.getBuffer().length);
+        Assert.assertEquals(4, m3.getArray().length);
         Assert.assertEquals(0, m3.getOffset());
 
         output=new ByteArrayOutputStream();
@@ -64,13 +64,12 @@ public class StreamableTest {
         input=new ByteArrayInputStream(tmp);
         in=new DataInputStream(input);
 
-        m4=new Message();
+        m4=new BytesMessage();
         m4.readFrom(in);
 
 
         Assert.assertEquals(3, m4.getLength());
-        Assert.assertEquals(3, m4.getBuffer().length);
-        Assert.assertEquals(3, m4.getRawBuffer().length);
+        Assert.assertEquals(3, m4.getArray().length);
         Assert.assertEquals(0, m4.getOffset());
     }
 
@@ -79,41 +78,41 @@ public class StreamableTest {
 
     public static void testStreamable2() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
-        Message msg=new Message(null, buf, 0, 4);
+        Message msg=new BytesMessage(null, buf, 0, 4);
         stream(msg);
     }
 
 
     public static void testStreamable3() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
-        Message msg=new Message(null, buf, 4, 3);
+        Message msg=new BytesMessage(null, buf, 4, 3);
         stream(msg);
     }
 
 
     public static void testNullBuffer() throws Exception {
-        Message msg=new Message();
+        Message msg=new BytesMessage();
         stream(msg);
     }
 
 
 
     public static void testNonNullBuffer() throws Exception {
-        Message msg=new Message(null, "Hello world".getBytes());
+        Message msg=new BytesMessage(null, "Hello world".getBytes());
         stream(msg);
     }
 
 
 
     public static void testNonNullAddress() throws Exception {
-        stream(new Message(null, "Hello world".getBytes()).src(UUID.randomUUID()));
+        stream(new BytesMessage(null, "Hello world".getBytes()).setSrc(UUID.randomUUID()));
     }
 
 
     public static void testHeaders() throws Exception {
         Address dest=UUID.randomUUID();
         Address src=UUID.randomUUID();
-        Message msg=new Message(dest, "Hello world".getBytes()).src(src);
+        Message msg=new BytesMessage(dest, "Hello world".getBytes()).setSrc(src);
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ);
         msg.putHeader(PING_ID, hdr);
         TpHeader udp_hdr=new TpHeader("bla");
@@ -129,10 +128,10 @@ public class StreamableTest {
           d=Util.createRandomAddress("D"), e=Util.createRandomAddress("E"), f=Util.createRandomAddress("F");
 
         View v1=View.create(a,1,a,b,c);
-        View v2=new MergeView(d, 2, Arrays.asList(d), new ArrayList<>());
+        View v2=new MergeView(d, 2, Collections.singletonList(d), new ArrayList<>());
         View v3=View.create(e, 3, e,f);
-        View v4=new MergeView(e, 4, Arrays.asList(d), null);
-        View v5=new View(e, 5, Arrays.asList(d));
+        View v4=new MergeView(e, 4, Collections.singletonList(d), null);
+        View v5=new View(e, 5, Collections.singletonList(d));
         List<View> subgroups=Arrays.asList(v1,v2,v3,v4,v5);
 
 
@@ -180,7 +179,7 @@ public class StreamableTest {
         ByteArrayInputStream input=new ByteArrayInputStream(tmp);
         DataInputStream in=new DataInputStream(input);
 
-        msg2=new Message();
+        msg2=new BytesMessage();
         msg2.readFrom(in);
 
         Assert.assertEquals(length, msg2.getLength());
@@ -204,12 +203,8 @@ public class StreamableTest {
             return a2.equals(a1);
     }
 
-//    private int getRawBufLength(Message msg) {
-//        return msg.getRawBuffer() != null? msg.getRawBuffer().length : 0;
-//    }
-
     private static int getBufLength(Message msg) {
-        return msg.getBuffer() != null? msg.getBuffer().length : 0;
+        return msg.getLength();
     }
 
 

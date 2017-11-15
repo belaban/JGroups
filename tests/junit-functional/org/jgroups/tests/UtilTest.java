@@ -2,6 +2,8 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.Message.Flag;
+import org.jgroups.Message.TransientFlag;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.IpAddressUUID;
 import org.jgroups.util.Bits;
@@ -490,17 +492,18 @@ public class UtilTest {
 
 
 
-    public static void testMessageToByteBuffer() throws Exception {
-        _testMessage(new Message());
-        _testMessage(new Message(null, "hello world"));
-        _testMessage(new Message(null).src(Util.createRandomAddress()));
-        _testMessage(new Message(null).src(Util.createRandomAddress()));
-        _testMessage(new Message(null, "bela").src(Util.createRandomAddress()));
+    public void testMessageToByteBuffer() throws Exception {
+        MessageFactory mf=new DefaultMessageFactory();
+        _testMessage(new EmptyMessage(), mf);
+        _testMessage(new BytesMessage(null, "hello world"), mf);
+        _testMessage(new EmptyMessage(null).setSrc(Util.createRandomAddress()), mf);
+        _testMessage(new EmptyMessage(null).setSrc(Util.createRandomAddress()), mf);
+        _testMessage(new BytesMessage(null, "bela").setSrc(Util.createRandomAddress()), mf);
     }
 
-    private static void _testMessage(Message msg) throws Exception {
-        Buffer buf=Util.messageToByteBuffer(msg);
-        Message msg2=Util.byteBufferToMessage(buf.getBuf(), buf.getOffset(), buf.getLength());
+    private static void _testMessage(Message msg, final MessageFactory mf) throws Exception {
+        ByteArray buf=Util.messageToByteBuffer(msg);
+        Message msg2=Util.messageFromByteBuffer(buf.getArray(), buf.getOffset(), buf.getLength(), mf);
         Assert.assertEquals(msg.getSrc(), msg2.getSrc());
         Assert.assertEquals(msg.getDest(), msg2.getDest());
         Assert.assertEquals(msg.getLength(), msg2.getLength());
@@ -588,9 +591,9 @@ public class UtilTest {
 
         int stack_trace_len=ex.getStackTrace().length;
 
-        Buffer buf=Util.objectToBuffer(ex);
+        ByteArray buf=Util.objectToBuffer(ex);
 
-        Throwable ex2=Util.objectFromByteBuffer(buf.getBuf(), buf.getOffset(), buf.getLength());
+        Throwable ex2=Util.objectFromByteBuffer(buf.getArray(), buf.getOffset(), buf.getLength());
         System.out.println("ex2 = " + ex2);
 
         int stack_trace_len2=ex2.getStackTrace().length;
@@ -603,7 +606,7 @@ public class UtilTest {
 
         buf=Util.objectToBuffer(ex);
 
-        ex2=Util.objectFromByteBuffer(buf.getBuf(), buf.getOffset(), buf.getLength());
+        ex2=Util.objectFromByteBuffer(buf.getArray(), buf.getOffset(), buf.getLength());
         System.out.println("ex2 = " + ex2);
 
         stack_trace_len2=ex2.getStackTrace().length;
@@ -713,10 +716,10 @@ public class UtilTest {
 
 
     static void objectToBuffer(Object obj) throws Exception {
-        Buffer buf=Util.objectToBuffer(obj);
+        ByteArray buf=Util.objectToBuffer(obj);
         assert buf != null;
         assert buf.getLength() > 0;
-        Object obj2=Util.objectFromByteBuffer(buf.getBuf(), buf.getOffset(), buf.getLength());
+        Object obj2=Util.objectFromByteBuffer(buf.getArray(), buf.getOffset(), buf.getLength());
         System.out.println("obj=" + obj + ", obj2=" + obj2 + " (type=" + obj.getClass().getName() + ", length=" + buf.getLength() + " bytes)");
         Assert.assertEquals(obj, obj2);
     }
@@ -733,7 +736,7 @@ public class UtilTest {
     }
 
     public static void testWriteStreamable() throws Exception {
-        Message m=new Message(null, "Hello");
+        Message m=new BytesMessage(null, "Hello");
         ViewId vid2=new ViewId(Util.createRandomAddress(), 35623);
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
@@ -745,7 +748,7 @@ public class UtilTest {
         DataInputStream dis=new DataInputStream(instream);
         Message m2=Util.readGenericStreamable(dis);
         ViewId v3=Util.readGenericStreamable(dis);
-        assert m2.getBuffer() != null;
+        assert m2.getArray() != null;
         Assert.assertEquals(m.getLength(), m2.getLength());
         assert v3 != null;
     }
@@ -855,22 +858,22 @@ public class UtilTest {
 
     public static void testWriteAndReadStreamableArray() throws Exception {
         Message[] msgs={
-          new Message(null, "hello world").setFlag(Message.Flag.OOB, Message.Flag.NO_RELIABILITY),
-          new Message(Util.createRandomAddress("dest"), "bela ban"),
-          new Message(Util.createRandomAddress("dest"), "hello world again").src(Util.createRandomAddress("src"))
-            .setTransientFlag(Message.TransientFlag.DONT_LOOPBACK)
+          new BytesMessage(null, "hello world").setFlag(Flag.OOB, Flag.NO_RELIABILITY),
+          new BytesMessage(Util.createRandomAddress("dest"), "bela ban"),
+          new BytesMessage(Util.createRandomAddress("dest"), "hello world again")
+            .setSrc(Util.createRandomAddress("src")).setFlag(TransientFlag.DONT_LOOPBACK)
         };
 
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(256);
         Util.write(msgs, out);
 
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(out.buffer(), 0, out.position());
-        Message[] tmp=Util.read(Message.class, in);
+        Message[] tmp=Util.read(BytesMessage.class, in);
         for(int i=0; i < msgs.length; i++) {
-            if(msgs[i].dest() == null)
-                assert tmp[i].dest() == null;
+            if(msgs[i].getDest() == null)
+                assert tmp[i].getDest() == null;
             else
-                assert(msgs[i].dest().equals(tmp[i].dest()));
+                assert(msgs[i].getDest().equals(tmp[i].getDest()));
             assert msgs[i].getLength() == tmp[i].getLength();
             assert msgs[i].getObject().equals(tmp[i].getObject());
         }
@@ -1326,6 +1329,32 @@ public class UtilTest {
         }
     }
 
+    public void testEnumeration() {
+        Integer[] array={1,2,3,4,5,6,7,8,9,10};
+        Enumeration<Integer> en=Util.enumerate(array, 0, array.length);
+        check(en, array);
+
+        en=Util.enumerate(array, 2, array.length-2);
+        check(en, new Integer[]{3,4,5,6,7,8,9,10});
+
+        en=Util.enumerate(array, 2, array.length-4);
+        check(en, new Integer[]{3,4,5,6,7,8});
+
+        en=Util.enumerate(array, 9, 1);
+        check(en, new Integer[]{10});
+
+        en=Util.enumerate(array, 5, 0);
+        check(en, new Integer[]{});
+    }
+
+    protected static void check(Enumeration<Integer> en, Integer[] expected) {
+        List<Integer> list=new ArrayList<>();
+        while(en.hasMoreElements())
+            list.add(en.nextElement());
+        assert list.size() == expected.length;
+        for(int i=0; i < expected.length; i++)
+            assert list.get(i).equals(expected[i]);
+    }
 
     private static void _testMethodNameToAttributeName(String input, String expected_output) {
         String atttr_name=Util.methodNameToAttributeName(input);

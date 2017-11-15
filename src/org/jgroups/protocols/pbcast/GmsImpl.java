@@ -2,6 +2,7 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.Address;
+import org.jgroups.EmptyMessage;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.logging.Log;
@@ -56,7 +57,7 @@ public abstract class GmsImpl {
 
 
     protected void sendMergeRejectedResponse(Address sender, MergeId merge_id) {
-        Message msg=new Message(sender).setFlag(Message.Flag.OOB);
+        Message msg=new EmptyMessage(sender).setFlag(Message.Flag.OOB);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
         hdr.merge_rejected=true;
         hdr.merge_id=merge_id;

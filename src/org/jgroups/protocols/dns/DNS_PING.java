@@ -1,9 +1,6 @@
 package org.jgroups.protocols.dns;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.PhysicalAddress;
+import org.jgroups.*;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.protocols.Discovery;
@@ -144,10 +141,10 @@ public class DNS_PING extends Discovery {
         for (Address addr : cluster_members) {
 
             // the message needs to be DONT_BUNDLE, see explanation above
-            Message msg = new Message(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
+            final Message msg = new BytesMessage(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
               .putHeader(this.id, hdr);
             if (data != null)
-                msg.setBuffer(marshal(data));
+                msg.setArray(marshal(data));
 
             if (async_discovery_use_separate_thread_per_request)
                 timer.execute(() -> sendDiscoveryRequest(msg), sends_can_block);

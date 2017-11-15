@@ -1,5 +1,6 @@
 package org.jgroups.tests;
 
+import org.jgroups.BytesMessage;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.util.*;
@@ -21,7 +22,7 @@ import java.util.stream.IntStream;
 @Test(groups=Global.FUNCTIONAL)
 public class TableTest {
 
-    protected static final Predicate<Message> dont_loopback_filter=msg -> msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+    protected static final Predicate<Message> dont_loopback_filter=msg -> msg != null && msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK);
 
 
     public static void testCreation() {
@@ -712,7 +713,7 @@ public class TableTest {
     public void testRemoveManyIntoMessageBatch() {
         Table<Message> table=new Table<>(3, 10, 0);
         for(int i=1; i <= 10; i++)
-            table.add(i, new Message(null, "hello"));
+            table.add(i, new BytesMessage(null, "hello"));
 
         MessageBatch batch=new MessageBatch(table.size());
         Supplier<MessageBatch> batch_creator=() -> batch;
@@ -724,7 +725,7 @@ public class TableTest {
         assert batch.size() == 10;
         assert result != null && result == batch;
 
-        IntStream.rangeClosed(11,15).forEach(seqno -> table.add(seqno, new Message(null, "test")));
+        IntStream.rangeClosed(11,15).forEach(seqno -> table.add(seqno, new BytesMessage(null, "test")));
 
         batch.reset();
         result=table.removeMany(true, 0, null, batch_creator, accumulator);
@@ -1478,7 +1479,7 @@ public class TableTest {
         Table<Message> win=new Table<>(3, 10, seqno);
 
         for(int i=1; i <= delta; i++) {
-            Message msg=new Message(null, "hello");
+            Message msg=new BytesMessage(null, "hello");
             win.add(++seqno, msg);
         }
         System.out.println("win = " + win);
@@ -1492,11 +1493,11 @@ public class TableTest {
     }
 
 
-    protected Message msg(int num) {return new Message(null, num);}
+    protected Message msg(int num) {return new BytesMessage(null, num);}
     protected Message msg(int num, boolean set_dont_loopback) {
         Message msg=msg(num);
         if(set_dont_loopback)
-            msg.setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
+            msg.setFlag(Message.TransientFlag.DONT_LOOPBACK);
         return msg;
     }
 

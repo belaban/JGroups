@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Header;
-import org.jgroups.Message;
-import org.jgroups.Version;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.PingData;
 import org.jgroups.protocols.PingHeader;
@@ -114,7 +111,7 @@ public class ParseMessages {
                                   view == null? "" : "(view: " + view + ")");
                 System.out.printf("    %d: [%d bytes%s], hdrs: %s %s\n",
                                   index++, msg.getLength(),
-                                  msg.getFlags() > 0? ", flags=" + Message.flagsToString(msg.getFlags()) : "",
+                                  msg.getFlags() > 0? ", flags=" + Util.flagsToString(msg.getFlags()) : "",
                                   msg.printHeaders(),
                                   view == null? "" : "(view: " + view + ")");
             }
@@ -129,7 +126,7 @@ public class ParseMessages {
         Collection<Header> hdrs=msg.getHeaders().values();
         for(Header hdr: hdrs) {
             if(hdr instanceof PingHeader) {
-                byte[] payload=msg.getRawBuffer();
+                byte[] payload=msg.getArray();
                 if(payload != null) {
                     PingData data=Util.streamableFromBuffer(PingData::new, payload, msg.getOffset(), msg.getLength());
                     NameCache.add(data.getAddress(), data.getLogicalName());
@@ -146,9 +143,9 @@ public class ParseMessages {
         try {
             switch(hdr.getType()) {
                 case GMS.GmsHeader.VIEW:
-                    return GMS._readViewAndDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength()).getVal1();
+                    return GMS._readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength()).getVal1();
                 case GMS.GmsHeader.JOIN_RSP:
-                    return Util.streamableFromBuffer(JoinRsp::new, msg.getRawBuffer(), msg.getOffset(), msg.getLength()).getView();
+                    return Util.streamableFromBuffer(JoinRsp::new, msg.getArray(), msg.getOffset(), msg.getLength()).getView();
             }
             return null;
         }

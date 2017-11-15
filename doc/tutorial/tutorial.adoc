@@ -1,5 +1,4 @@
-The JGroups tutorial
-====================
+= The JGroups tutorial
 :author: Bela Ban <belaban@yahoo.com>
 :toc:
 :icons:
@@ -17,7 +16,7 @@ license.
 This is a short tutorial on how to install JGroups and write a simple application. The goal is to show how to
 configure JGroups and how to write a simple application showing the major methods of the API.
 
-Bela Ban, Kreuzlingen, Switzerland, August 2016
+Bela Ban, Kreuzlingen, Switzerland, Nov 2019
 
 // Push titles down one level.
 //:leveloffset: 1

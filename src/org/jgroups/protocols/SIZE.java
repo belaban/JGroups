@@ -32,7 +32,7 @@ public class SIZE extends Protocol {
 
     public Object up(Message msg) {
         if(log.isTraceEnabled()) {
-            long size=raw_buffer? msg.getLength() : msg.size();
+            int size=raw_buffer? msg.getLength() : msg.size();
             if(size >= min_size) {
                 StringBuilder sb=new StringBuilder(local_addr + ".up(): size of message buffer=");
                 sb.append(Util.printBytes(size)).append(", " + numHeaders(msg) + " headers");
@@ -68,7 +68,7 @@ public class SIZE extends Protocol {
 
     public Object down(Message msg) {
         if(log.isTraceEnabled()) {
-            long size=raw_buffer? msg.getLength() : msg.size();
+            int size=raw_buffer? msg.getLength() : msg.size();
             if(size >= min_size) {
                 StringBuilder sb=new StringBuilder(local_addr + ".down(): size of message buffer=");
                 sb.append(Util.printBytes(size)).append(", " + numHeaders(msg) + " headers");

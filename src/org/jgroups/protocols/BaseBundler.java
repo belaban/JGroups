@@ -45,8 +45,7 @@ public abstract class BaseBundler implements Bundler {
     public int size() {
         lock.lock();
         try {
-            long num=msgs.values().stream().flatMap(Collection::stream).map(Message::size).reduce(0L, (a, b) -> a + b);
-            return (int)num;
+            return msgs.values().stream().flatMap(Collection::stream).map(Message::size).reduce(0, Integer::sum);
         }
         finally {
             lock.unlock();
@@ -108,7 +107,7 @@ public abstract class BaseBundler implements Bundler {
         }
     }
 
-    @GuardedBy("lock") protected void addMessage(Message msg, long size) {
+    @GuardedBy("lock") protected void addMessage(Message msg, int size) {
         Address dest=msg.getDest();
         List<Message> tmp=msgs.computeIfAbsent(dest, k -> new ArrayList<>(5));
         tmp.add(msg);

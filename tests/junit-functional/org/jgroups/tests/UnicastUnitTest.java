@@ -68,7 +68,7 @@ public class UnicastUnitTest {
         for(JChannel sender: Arrays.asList(a,b,c,d)) {
             for(JChannel receiver: Arrays.asList(a,b,c,d)) {
                 for(int i=1; i <= 5; i++) {
-                    Message msg=new Message(receiver.getAddress(), String.format("%s%d", sender.getAddress(), i));
+                    Message msg=new BytesMessage(receiver.getAddress(), String.format("%s%d", sender.getAddress(), i));
                     sender.send(msg);
                 }
             }
@@ -134,7 +134,7 @@ public class UnicastUnitTest {
           msg(dest), // reg
           msg(dest),
           msg(dest).setFlag(Message.Flag.OOB),
-          msg(dest).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK),
+          msg(dest).setFlag(Message.TransientFlag.DONT_LOOPBACK),
           msg(dest)
         };
 
@@ -163,10 +163,10 @@ public class UnicastUnitTest {
           msg(dest),
           msg(dest),
           msg(dest).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL),
-          msg(dest).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK),
+          msg(dest).setFlag(Message.TransientFlag.DONT_LOOPBACK),
           msg(dest),
-          msg(dest).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK),
-          msg(dest).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK),
+          msg(dest).setFlag(Message.TransientFlag.DONT_LOOPBACK),
+          msg(dest).setFlag(Message.TransientFlag.DONT_LOOPBACK),
           msg(dest),
           msg(dest)
         };
@@ -191,17 +191,17 @@ public class UnicastUnitTest {
         connect(a,b);
         Address dest=a.getAddress();
         Message[] msgs={
-          msg(dest).setFlag(Message.Flag.OOB).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK),
+          msg(dest).setFlag(Message.Flag.OOB).setFlag(Message.TransientFlag.DONT_LOOPBACK),
           msg(dest).setFlag(Message.Flag.OOB),
-          msg(dest).setFlag(Message.Flag.OOB).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK),
-          msg(dest).setFlag(Message.Flag.OOB).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK),
+          msg(dest).setFlag(Message.Flag.OOB).setFlag(Message.TransientFlag.DONT_LOOPBACK),
+          msg(dest).setFlag(Message.Flag.OOB).setFlag(Message.TransientFlag.DONT_LOOPBACK),
           msg(dest).setFlag(Message.Flag.OOB),
           msg(dest).setFlag(Message.Flag.OOB),
-          msg(dest).setFlag(Message.Flag.OOB).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK),
-          msg(dest).setFlag(Message.Flag.OOB).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK),
-          msg(dest).setFlag(Message.Flag.OOB).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK),
+          msg(dest).setFlag(Message.Flag.OOB).setFlag(Message.TransientFlag.DONT_LOOPBACK),
+          msg(dest).setFlag(Message.Flag.OOB).setFlag(Message.TransientFlag.DONT_LOOPBACK),
+          msg(dest).setFlag(Message.Flag.OOB).setFlag(Message.TransientFlag.DONT_LOOPBACK),
           msg(dest),
-          msg(dest).setFlag(Message.Flag.OOB).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK),
+          msg(dest).setFlag(Message.Flag.OOB).setFlag(Message.TransientFlag.DONT_LOOPBACK),
         };
 
         MyReceiver<Integer> receiver=new MyReceiver<>();
@@ -214,7 +214,7 @@ public class UnicastUnitTest {
     protected static void send(JChannel ch, Message... msgs) throws Exception {
         int cnt=1;
         for(Message msg: msgs) {
-            assert msg.dest() != null;
+            assert msg.getDest() != null;
             msg.setObject(cnt++);
             ch.send(msg);
         }
@@ -237,7 +237,7 @@ public class UnicastUnitTest {
                 assert num[i] == received.get(i);
     }
 
-    protected static Message msg(Address dest) {return new Message(dest);}
+    protected static Message msg(Address dest) {return new BytesMessage(dest);}
 
     protected static JChannel create(String name, boolean use_batching) throws Exception {
         Protocol[] protocols={
@@ -289,7 +289,7 @@ public class UnicastUnitTest {
             List<Address> members=new LinkedList<>(new_view.getMembers());
             assert 2 == members.size() : "members=" + members + ", local_addr=" + local_addr + ", view=" + new_view;
             Address dest=members.get(0);
-            Message unicast_msg=new Message(dest);
+            Message unicast_msg=new EmptyMessage(dest);
             try {
                 channel.send(unicast_msg);
             }

@@ -1,6 +1,7 @@
 package org.jgroups.auth.sasl;
 
 import org.jgroups.Address;
+import org.jgroups.EmptyMessage;
 import org.jgroups.Message;
 import org.jgroups.protocols.SASL;
 import org.jgroups.protocols.SaslHeader;
@@ -12,7 +13,6 @@ import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 import javax.security.sasl.SaslServerFactory;
-
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Map;
@@ -65,7 +65,7 @@ public class SaslServerContext implements SaslContext {
 
     @Override
     public Message nextMessage(Address address, SaslHeader header) throws SaslException {
-        Message message = new Message(address).setFlag(Message.Flag.OOB);
+        Message message = new EmptyMessage(address).setFlag(Message.Flag.OOB);
         byte[] challenge = server.evaluateResponse(header.getPayload());
         if (server.isComplete()) {
             latch.countDown();

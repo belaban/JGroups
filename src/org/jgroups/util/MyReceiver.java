@@ -3,6 +3,8 @@ package org.jgroups.util;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -11,7 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Bela Ban
  * @since  3.3
  */
-public class MyReceiver<T> extends ReceiverAdapter {
+public class MyReceiver<T> extends ReceiverAdapter implements Closeable {
     protected final List<T> list=new CopyOnWriteArrayList<>();
     protected String        name;
     protected boolean       verbose;
@@ -25,11 +27,12 @@ public class MyReceiver<T> extends ReceiverAdapter {
         }
     }
 
-    public MyReceiver    rawMsgs(boolean flag) {this.raw_msgs=flag; return this;}
-    public List<T>       list()                {return list;}
-    public MyReceiver<T> verbose(boolean flag) {verbose=flag; return this;}
-    public String        name()                {return name;}
-    public MyReceiver<T> name(String name)     {this.name=name; return this;}
-    public MyReceiver<T> reset()               {list.clear(); return this;}
-    public int           size()                {return list.size();}
+    public MyReceiver    rawMsgs(boolean flag)      {this.raw_msgs=flag; return this;}
+    public List<T>       list()                     {return list;}
+    public MyReceiver<T> verbose(boolean flag)      {verbose=flag; return this;}
+    public String        name()                     {return name;}
+    public MyReceiver<T> name(String name)          {this.name=name; return this;}
+    public MyReceiver<T> reset()                    {list.clear(); return this;}
+    public int           size()                     {return list.size();}
+    public void          close() throws IOException {reset();}
 }

@@ -174,10 +174,10 @@ public class TCPPING extends Discovery {
                 continue;
 
             // the message needs to be DONT_BUNDLE, see explanation above
-            final Message msg=new Message(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
+            final Message msg=new BytesMessage(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
               .putHeader(this.id,hdr);
             if(data != null)
-                msg.setBuffer(marshal(data));
+                msg.setArray(marshal(data));
 
             if(async_discovery_use_separate_thread_per_request)
                 timer.execute(() -> sendDiscoveryRequest(msg), sends_can_block);
@@ -192,7 +192,7 @@ public class TCPPING extends Discovery {
             down_prot.down(req);
         }
         catch(Throwable t) {
-            log.trace("sending discovery request to %s failed: %s", req.dest(), t);
+            log.trace("sending discovery request to %s failed: %s", req.getDest(), t);
         }
     }
 }

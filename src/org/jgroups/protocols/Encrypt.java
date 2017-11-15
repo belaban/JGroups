@@ -1,17 +1,11 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.AsciiString;
-import org.jgroups.util.BoundedHashMap;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -94,6 +88,9 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     // SecureRandom instance for generating IV's
     protected SecureRandom                  secure_random = new SecureRandom();
 
+    protected MessageFactory                msg_factory;
+
+
     /**
      * Sets the key store entry used to configure this protocol.
      * @param entry a key store entry
@@ -118,6 +115,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     public SecureRandom             secureRandom()                  {return this.secure_random;}
     /** Allows callers to replace secure_random with impl of their choice, e.g. for performance reasons. */
     public <T extends Encrypt<E>> T secureRandom(SecureRandom sr)   {this.secure_random = sr; return (T)this;}
+    public <T extends Encrypt<E>> T msgFactory(MessageFactory f)    {this.msg_factory=f; return (T)this;}
     @ManagedAttribute public String version()                       {return Util.byteArrayToHexString(sym_version);}
 
 
@@ -136,6 +134,9 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         }
         key_map=new BoundedHashMap<>(key_map_max_size);
         initSymCiphers(sym_algorithm, secret_key);
+        TP transport=getTransport();
+        if(transport != null)
+            msg_factory=transport.getMessageFactory();
     }
 
 
@@ -161,7 +162,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
                           local_addr, msg.dest() == null? "mcast" : "unicast", msg.dest(), msg.printHeaders());
                 return null;
             }
-            encryptAndSend(msg);
+            down_prot.down(encrypt(msg));
         }
         catch(Exception e) {
             log.warn("%s: unable to send message down", local_addr, e);
@@ -248,13 +249,11 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
 
 
     protected Cipher createCipher(String algorithm) throws Exception {
-        Cipher cipher=provider != null && !provider.trim().isEmpty()?
+        return provider != null && !provider.trim().isEmpty()?
           Cipher.getInstance(algorithm, provider) : Cipher.getInstance(algorithm);
-        return cipher;
     }
 
-    protected void initCipher(Cipher cipher, int mode, Key secret_key, byte[] iv) throws Exception
-    {
+    protected static void initCipher(Cipher cipher, int mode, Key secret_key, byte[] iv) throws Exception {
         if(iv != null)
             cipher.init(mode, secret_key, new IvParameterSpec(iv));
         else
@@ -262,8 +261,8 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     }
 
     protected byte[] makeIv() {
-        if (sym_iv_length > 0) {
-            byte[] iv = new byte[sym_iv_length];
+        if(sym_iv_length > 0) {
+            byte[] iv=new byte[sym_iv_length];
             secure_random.nextBytes(iv);
             return iv;
         }
@@ -272,7 +271,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
 
     protected Object handleEncryptedMessage(Message msg) throws Exception {
         // decrypt the message; we need to copy msg as we modify its buffer (http://jira.jboss.com/jira/browse/JGRP-538)
-        Message tmpMsg=decryptMessage(null, msg.copy()); // need to copy for possible xmits
+        Message tmpMsg=decrypt(null, msg.copy(true, true)); // need to copy for possible xmits
         return tmpMsg != null? up_prot.up(tmpMsg) : null;
     }
 
@@ -291,7 +290,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
 
 
     /** Does the actual work for decrypting - if version does not match current cipher then tries the previous cipher */
-    protected Message decryptMessage(Cipher cipher, Message msg) throws Exception {
+    protected Message decrypt(Cipher cipher, Message msg) throws Exception {
         EncryptHeader hdr=msg.getHeader(this.id);
         // If the versions of the group keys don't match, we only try to use a previous version if the sender is in
         // the current view
@@ -300,7 +299,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
                        String.format("%s: rejected decryption of %s message from non-member %s",
                                      local_addr, msg.dest() == null? "multicast" : "unicast", msg.getSrc())))
                 return null;
-            Key key = key_map.get(new AsciiString(hdr.version()));
+            Key key=key_map.get(new AsciiString(hdr.version()));
             if(key == null) {
                 log.trace("%s: message from %s (version: %s) dropped, as a key matching that version wasn't found " +
                             "(current version: %s)",
@@ -309,42 +308,45 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             }
             log.trace("%s: decrypting msg from %s using previous key version %s",
                       local_addr, msg.src(), Util.byteArrayToHexString(hdr.version()));
-            return _decrypt(cipher, key, msg, hdr.iv());
+            return _decrypt(cipher, key, msg, hdr);
         }
-        return _decrypt(cipher, secret_key, msg, hdr.iv());
+        return _decrypt(cipher, secret_key, msg, hdr);
     }
 
-    protected Message _decrypt(final Cipher cipher, Key key, Message msg, byte[] iv) throws Exception {
-        if(msg.getLength() == 0)
+    protected Message _decrypt(final Cipher cipher, Key key, Message msg, EncryptHeader hdr) throws Exception {
+        if(!msg.hasPayload())
             return msg;
 
         byte[] decrypted_msg;
         if(cipher == null)
-            decrypted_msg=code(msg.getRawBuffer(), msg.getOffset(), msg.getLength(), iv, true);
+            decrypted_msg=code(msg.getArray(), msg.getOffset(), msg.getLength(), hdr.iv(), true);
         else {
-            initCipher(cipher, Cipher.DECRYPT_MODE, key, iv);
-            decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+            initCipher(cipher, Cipher.DECRYPT_MODE, key, hdr.iv());
+            decrypted_msg=cipher.doFinal(msg.getArray(), msg.getOffset(), msg.getLength());
         }
-        return msg.setBuffer(decrypted_msg);
+        if(hdr.needsDeserialization())
+            return Util.messageFromBuffer(decrypted_msg, 0, decrypted_msg.length, msg_factory);
+        else
+            return msg.setArray(decrypted_msg, 0, decrypted_msg.length);
     }
 
     protected Message encrypt(Message msg) throws Exception {
-        EncryptHeader hdr=new EncryptHeader((byte)0, symVersion(), makeIv());
-
         // copy needed because same message (object) may be retransmitted -> prevent double encryption
-        Message msgEncrypted=msg.copy(false).putHeader(this.id, hdr);
-        byte[] payload=msg.getRawBuffer();
-        if(payload != null) {
-            if(msg.getLength() > 0)
-                msgEncrypted.setBuffer(code(payload, msg.getOffset(), msg.getLength(), hdr.iv(), false));
-            else // length is 0, but buffer may be "" (empty, but *not null* buffer)! [JGRP-2153]
-                msgEncrypted.setBuffer(payload, msg.getOffset(), msg.getLength());
-        }
-        return msgEncrypted;
-    }
-
-    protected void encryptAndSend(Message msg) throws Exception {
-        down_prot.down(encrypt(msg));
+        if(!msg.hasPayload())
+            return msg.putHeader(this.id, new EncryptHeader((byte)0, symVersion(), makeIv()));
+        boolean serialize=!msg.hasArray();
+        ByteArray tmp=null;
+        byte[] payload=serialize? (tmp=Util.messageToBuffer(msg)).getArray() : msg.getArray();
+        int offset=serialize? tmp.getOffset() : msg.getOffset();
+        int length=serialize? tmp.getLength() : msg.getLength();
+        byte[] iv=makeIv();
+        Message encrypted=(serialize? new BytesMessage(msg.dest()) : msg.copy(false, true))
+          .putHeader(this.id, new EncryptHeader((byte)0, symVersion(), iv).needsDeserialization(serialize));
+        if(length > 0)
+            encrypted.setArray(code(payload, offset, length, iv, false));
+        else // length is 0, but buffer may be "" (empty, but *not null* buffer)! [JGRP-2153]
+            encrypted.setArray(payload, offset, length);
+        return encrypted;
     }
 
 
@@ -391,7 +393,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
                 return;
             }
             try {
-                Message tmpMsg=decryptMessage(cipher, msg.copy()); // need to copy for possible xmits
+                Message tmpMsg=decrypt(cipher, msg.copy(true, true)); // need to copy for possible xmits
                 if(tmpMsg != null)
                     batch.replace(msg, tmpMsg);
                 else
@@ -399,7 +401,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             }
             catch(Exception e) {
                 log.error("%s: failed decrypting message from %s (offset=%d, length=%d, buf.length=%d): %s, headers are %s",
-                          local_addr, msg.getSrc(), msg.getOffset(), msg.getLength(), msg.getRawBuffer().length, e, msg.printHeaders());
+                          local_addr, msg.getSrc(), msg.getOffset(), msg.getLength(), msg.getArray().length, e, msg.printHeaders());
                 batch.remove(msg);
             }
         }

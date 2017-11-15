@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.*;
 import org.jgroups.protocols.FRAG2;
 import org.jgroups.protocols.MPING;
 import org.jgroups.protocols.TCP_NIO2;
@@ -46,7 +43,7 @@ public class NioServerTest2 {
 
     public void testMulticasting() throws Exception {
         for(int i=1; i<= NUM_MSGS; i++) {
-            Message msg=new Message(null, new byte[MSG_SIZE], 0, MSG_SIZE);
+            Message msg=new BytesMessage(null, new byte[MSG_SIZE], 0, MSG_SIZE);
             a.send(msg);
         }
 
@@ -107,7 +104,7 @@ public class NioServerTest2 {
                 bad++;
                 byte[] copy=new byte[msg.getLength()];
                 byte[] buf=null;
-                buf=msg.getRawBuffer();
+                buf=msg.getArray();
                 System.arraycopy(buf, msg.getOffset(), copy, 0, copy.length);
                 bad_msgs.add(copy);
             }

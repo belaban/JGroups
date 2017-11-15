@@ -2,10 +2,7 @@ package org.jgroups.tests.byteman;
 
 import org.jboss.byteman.contrib.bmunit.BMNGRunner;
 import org.jboss.byteman.contrib.bmunit.BMScript;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.*;
 import org.jgroups.protocols.PING;
 import org.jgroups.protocols.SHARED_LOOPBACK;
 import org.jgroups.protocols.UNICAST3;
@@ -73,7 +70,7 @@ public class BecomeServerTest extends BMNGRunner {
 
     protected void sendMessage(JChannel ch, String message) {
         try {
-            ch.send(new Message(null, message).setFlag(Message.Flag.OOB));
+            ch.send(new BytesMessage(null, message).setFlag(Message.Flag.OOB));
         }
         catch(Exception e) {
             e.printStackTrace(System.err);

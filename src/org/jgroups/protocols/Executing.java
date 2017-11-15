@@ -891,7 +891,7 @@ abstract public class Executing extends Protocol {
     
     protected void sendRequest(Address dest, Type type, long requestId, Object object) {
         Request req=new Request(type, object, requestId);
-        Message msg=new Message(dest, req).putHeader(id, new ExecutorHeader());
+        Message msg=new BytesMessage(dest, req).putHeader(id, new ExecutorHeader());
         if(bypass_bundling)
             msg.setFlag(Message.Flag.DONT_BUNDLE);
         if(log.isTraceEnabled())
@@ -907,7 +907,7 @@ abstract public class Executing extends Protocol {
     protected void sendThreadRequest(Address dest, long threadId, Type type, long requestId, 
         Object object) {
         RequestWithThread req=new RequestWithThread(type, object, requestId, threadId);
-        Message msg=new Message(dest, req).putHeader(id, new ExecutorHeader());
+        Message msg=new BytesMessage(dest, req).putHeader(id, new ExecutorHeader());
         if(bypass_bundling)
             msg.setFlag(Message.Flag.DONT_BUNDLE);
         if(log.isTraceEnabled())

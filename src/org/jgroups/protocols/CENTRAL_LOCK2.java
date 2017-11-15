@@ -1,9 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.MergeView;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
@@ -138,7 +135,7 @@ public class CENTRAL_LOCK2 extends Locking {
         try {
             req=req_queue.take();
         }
-        catch(InterruptedException e) {
+        catch(InterruptedException ignore) {
         }
         try {
             if(req != null && log.isTraceEnabled())
@@ -189,7 +186,7 @@ public class CENTRAL_LOCK2 extends Locking {
         log.trace("%s --> ALL: %s", local_addr, lock_info_req);
 
         // we cannot use a multicast as this may happen as a result of a MergeView and not everybody may have the view yet
-        sendLockInfoRequestTo(Util.streamableToBuffer(lock_info_req), mbrs, local_addr);
+        sendLockInfoRequestTo(lock_info_req, mbrs, local_addr);
         if(!lock_info_responses.waitForAllResponses(lock_reconciliation_timeout)) {
             List<Address> missing=lock_info_responses.getMissing();
             log.warn("%s: failed getting lock information from all members, missing responses: %d (from %s)",
@@ -233,12 +230,12 @@ public class CENTRAL_LOCK2 extends Locking {
     }
 
 
-    protected void sendLockInfoRequestTo(Buffer buf, Address[] mbrs, Address exclude) {
+    protected void sendLockInfoRequestTo(Request req, Address[] mbrs, Address exclude) {
         Stream.of(mbrs).filter(m -> m != null && !Objects.equals(m, exclude)).forEach(dest -> {
-            Message msg=new Message(dest, buf).putHeader(id, new LockingHeader());
-            if(bypass_bundling)
-                msg.setFlag(Message.Flag.DONT_BUNDLE);
             try {
+                Message msg=new BytesMessage(dest, Util.streamableToBuffer(req)).putHeader(id, new LockingHeader());
+                if(bypass_bundling)
+                    msg.setFlag(Message.Flag.DONT_BUNDLE);
                 down_prot.down(msg);
             }
             catch(Throwable t) {

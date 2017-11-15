@@ -282,7 +282,7 @@ public class Relay2Test {
         SiteMaster target_sm=new SiteMaster(SFO);
         System.out.printf("%s: sending %d messages to %s:\n", c.getAddress(), NUM, target_sm);
         for(int i=1; i <= NUM; i++) {
-            Message msg=new Message(target_sm, i); // the seqno is in the payload of the message
+            Message msg=new BytesMessage(target_sm, i); // the seqno is in the payload of the message
             c.send(msg);
         }
 
@@ -440,7 +440,7 @@ public class Relay2Test {
 
         public void receive(Message msg) {
             list.add(msg.getObject());
-            System.out.printf("<-- %s from %s\n", msg.getObject(), msg.src());
+            System.out.printf("<-- %s from %s\n", msg.getObject(), msg.getSrc());
         }
     }
 

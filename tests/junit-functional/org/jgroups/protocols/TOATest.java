@@ -4,7 +4,6 @@ import org.jgroups.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.tom.TOA;
-import org.jgroups.stack.Protocol;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
@@ -311,15 +310,13 @@ public class TOATest {
     }
 
     private TOANode createNewChannel(String name) throws Exception {
-        JChannel channel = new JChannel(new Protocol[]{
-                new SHARED_LOOPBACK(),
-                new SHARED_LOOPBACK_PING(),
-                new MERGE3(),
-                new NAKACK2(),
-                new UNICAST3(),
-                new TOA(),
-                new GMS()
-        }).name(name);
+        JChannel channel = new JChannel(new SHARED_LOOPBACK(),
+                                        new SHARED_LOOPBACK_PING(),
+                                        new MERGE3(),
+                                        new NAKACK2(),
+                                        new UNICAST3(),
+                                        new TOA(),
+                                        new GMS()).name(name);
         TOANode toaNode = new TOANode(channel);
         registeredToaNodes.add(toaNode);
         return toaNode;
@@ -413,19 +410,13 @@ public class TOATest {
         }
 
         public void sendAnycastMessage(AnycastAddress anycastAddress, String data) throws Exception {
-            Message msg = new Message();
-            msg.setSrc(channel.getAddress());
-            msg.setDest(anycastAddress);
-            msg.setFlag(Message.Flag.NO_TOTAL_ORDER);
-            msg.setObject(data);
+            Message msg = new BytesMessage(anycastAddress).setSrc(channel.getAddress())
+              .setFlag(Message.Flag.NO_TOTAL_ORDER).setObject(data);
             channel.send(msg);
         }
 
         public void sendTotalOrderAnycastMessage(AnycastAddress anycastAddress, String data) throws Exception {
-            Message msg = new Message();
-            msg.setSrc(channel.getAddress());
-            msg.setDest(anycastAddress);
-            msg.setObject(data);
+            Message msg = new BytesMessage(anycastAddress).setSrc(channel.getAddress()).setObject(data);
             channel.send(msg);
         }
 

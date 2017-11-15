@@ -5,7 +5,7 @@
 Binary format for marshalled messages
 =====================================
 
-An org.jgroups.Message is marshalled to a byte stream as follows.
+An org.jgroups.BaseMessage is marshalled to a byte stream as follows.
 
 - version ID: short (2 bytes). Version.encode() encodes the major, minor and patch version into the short.
 - flags (byte):

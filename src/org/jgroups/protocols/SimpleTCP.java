@@ -127,9 +127,9 @@ public class SimpleTCP extends TP {
     }
 
     protected Object _down(Message msg) throws Exception {
-        Address dest=msg.dest();
+        Address dest=msg.getDest();
         setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
-        int size=(int)msg.size();
+        int size=msg.size();
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(size + Global.INT_SIZE);
         out.writeInt(size);
         msg.writeTo(out);
@@ -279,7 +279,7 @@ public class SimpleTCP extends TP {
                     buffer=new byte[len];
                 in.readFully(buffer, 0, len);
                 ByteArrayDataInputStream input=new ByteArrayDataInputStream(buffer, 0, len);
-                Message msg=new Message(false);
+                Message msg=new BytesMessage(false);
                 msg.readFrom(input);
                 thread_pool.execute(() -> up_prot.up(msg));
             }

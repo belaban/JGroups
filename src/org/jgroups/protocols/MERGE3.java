@@ -286,13 +286,13 @@ public class MERGE3 extends Protocol {
                 break;
             case VIEW_REQ:
                 View viewToSend=view;
-                Message view_rsp=new Message(sender).setFlag(Message.Flag.INTERNAL)
-                  .putHeader(getId(), MergeHeader.createViewResponse()).setBuffer(marshal(viewToSend));
+                Message view_rsp=new BytesMessage(sender).setFlag(Message.Flag.INTERNAL)
+                  .putHeader(getId(), MergeHeader.createViewResponse()).setArray(marshal(viewToSend));
                 log.trace("%s: sending view rsp: %s", local_addr, viewToSend);
                 down_prot.down(view_rsp);
                 break;
             case VIEW_RSP:
-                View tmp_view=readView(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                View tmp_view=readView(msg.getArray(), msg.getOffset(), msg.getLength());
                 log.trace("%s: received view rsp from %s: %s", local_addr, msg.getSrc(), tmp_view);
                 if(tmp_view != null)
                     view_rsps.add(sender, tmp_view);
@@ -316,8 +316,13 @@ public class MERGE3 extends Protocol {
         return ret;
     }
 
-    public static Buffer marshal(View view) {
-        return Util.streamableToBuffer(view);
+    public static ByteArray marshal(View view) {
+        try {
+            return Util.streamableToBuffer(view);
+        }
+        catch(Exception e) {
+            return null;
+        }
     }
 
     protected View readView(byte[] buffer, int offset, int length) {
@@ -390,7 +395,7 @@ public class MERGE3 extends Protocol {
             return;
         }
         MergeHeader hdr=createInfo();
-        Message info=new Message(dest).setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr);
+        Message info=new EmptyMessage(dest).setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr);
         down_prot.down(info);
     }
 
@@ -403,8 +408,8 @@ public class MERGE3 extends Protocol {
 
             MergeHeader hdr=createInfo();
             if(transport_supports_multicasting) { // mcast the discovery request to all but self
-                Message msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr)
-                  .setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
+                Message msg=new EmptyMessage().setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr)
+                  .setFlag(Message.TransientFlag.DONT_LOOPBACK);
                 down_prot.down(msg);
                 return;
             }
@@ -469,7 +474,7 @@ public class MERGE3 extends Protocol {
                         view_rsps.add(local_addr, view);
                     continue;
                 }
-                Message view_req=new Message(target).setFlag(Message.Flag.INTERNAL)
+                Message view_req=new EmptyMessage(target).setFlag(Message.Flag.INTERNAL)
                   .putHeader(getId(), MergeHeader.createViewRequest());
                 down_prot.down(view_req);
             }

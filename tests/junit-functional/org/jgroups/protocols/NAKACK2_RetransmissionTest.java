@@ -93,7 +93,7 @@ public class NAKACK2_RetransmissionTest {
 
     /** Makes NAKACK2 receive a message with the given seqno */
     protected void injectMessage(long seqno) {
-        Message msg=new Message(null).src(B);
+        Message msg=new EmptyMessage(null).setSrc(B);
         NakAckHeader2 hdr=NakAckHeader2.createMessageHeader(seqno);
         msg.putHeader(ID, hdr);
         nak.up(msg);
@@ -142,7 +142,7 @@ public class NAKACK2_RetransmissionTest {
             if(hdr.getType() == NakAckHeader2.XMIT_REQ) {
                 SeqnoList seqnos=null;
                 try {
-                    seqnos=Util.streamableFromBuffer(SeqnoList::new, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    seqnos=Util.streamableFromBuffer(SeqnoList::new, msg.getArray(), msg.getOffset(), msg.getLength());
                     System.out.println("-- XMIT-REQ: request retransmission for " + seqnos);
                     for(Long seqno: seqnos)
                         xmit_requests.add(seqno);

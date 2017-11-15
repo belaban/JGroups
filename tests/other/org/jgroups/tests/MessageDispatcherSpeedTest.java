@@ -6,7 +6,7 @@ import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
-import org.jgroups.util.Buffer;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.Util;
 
 
@@ -75,7 +75,7 @@ public class MessageDispatcherSpeedTest extends ReceiverAdapter implements Reque
         start=System.currentTimeMillis();
         RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, TIMEOUT).flags(Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
         byte[] data="bla".getBytes();
-        Buffer buf=new Buffer(data, 0, data.length);
+        ByteArray buf=new ByteArray(data, 0, data.length);
 
         System.out.println("-- sending " + num + " messages");
         for(int i=1; i <= num; i++) {

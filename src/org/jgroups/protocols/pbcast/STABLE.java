@@ -243,7 +243,7 @@ public class STABLE extends Protocol {
             return up_prot.up(msg);
         }
 
-        handleUpEvent(hdr, msg.getSrc(), readDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
+        handleUpEvent(hdr, msg.getSrc(), readDigest(msg.getArray(), msg.getOffset(), msg.getLength()));
         return null;  // don't pass STABLE or STABILITY messages up the stack
     }
 
@@ -267,7 +267,7 @@ public class STABLE extends Protocol {
         for(Message msg: batch) { // remove and handle messages with flow control headers (STABLE_GOSSIP, STABILITY)
             if((hdr=msg.getHeader(id)) != null) {
                 batch.remove(msg);
-                handleUpEvent(hdr, batch.sender(), readDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
+                handleUpEvent(hdr, batch.sender(), readDigest(msg.getArray(), msg.getOffset(), msg.getLength()));
             }
         }
 
@@ -662,12 +662,13 @@ public class STABLE extends Protocol {
             return;
         }
 
-        final Message msg=new Message(dest)
-          .setFlag(Message.Flag.OOB,Message.Flag.INTERNAL,Message.Flag.NO_RELIABILITY)
+        final Message msg=new BytesMessage(dest)
+          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
           .putHeader(this.id, new StableHeader(StableHeader.STABLE_GOSSIP, current_view.getViewId()))
-          .setBuffer(marshal(d));
+          .setArray(marshal(d));
         try {
             if(!send_in_background) {
+                num_stable_msgs_sent++;
                 down_prot.down(msg);
                 return;
             }
@@ -688,8 +689,13 @@ public class STABLE extends Protocol {
     }
 
 
-    public static Buffer marshal(Digest digest) {
-        return Util.streamableToBuffer(digest);
+    public static ByteArray marshal(Digest digest) {
+        try {
+            return Util.streamableToBuffer(digest);
+        }
+        catch(Exception e) {
+            return null;
+        }
     }
 
     protected Digest readDigest(byte[] buffer, int offset, int length) {
@@ -731,9 +737,9 @@ public class STABLE extends Protocol {
         // https://issues.jboss.org/browse/JGRP-1638: we reverted to sending the STABILITY message *unreliably*,
         // but clear votes *before* sending it
         try {
-            Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
+            Message msg=new BytesMessage().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
               .putHeader(id, new StableHeader(StableHeader.STABILITY, view_id))
-              .setBuffer(marshal(stability_digest));
+              .setArray(marshal(stability_digest));
             log.trace("%s: sending stability msg %s", local_addr, printDigest(stability_digest));
             num_stability_msgs_sent++;
             down_prot.down(msg);

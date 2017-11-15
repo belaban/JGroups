@@ -190,7 +190,7 @@ public class MergeTest6 {
 
         protected static View readView(Message msg) {
             try {
-                Tuple<View,Digest> tuple=GMS._readViewAndDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                Tuple<View,Digest> tuple=GMS._readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
                 return tuple != null? tuple.getVal1() : null;
             }
             catch(Exception e) {

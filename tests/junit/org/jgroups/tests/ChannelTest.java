@@ -237,7 +237,7 @@ public class ChannelTest extends ChannelTestBase {
         try {
             ch.connect("testOrdering");
             for(int i=1;i <= NUM;i++) {
-                ch.send(new Message(null, i));
+                ch.send(new BytesMessage(null, i));
             }
             receiver.waitForCompletion();
             List<Integer> nums=receiver.getNums();

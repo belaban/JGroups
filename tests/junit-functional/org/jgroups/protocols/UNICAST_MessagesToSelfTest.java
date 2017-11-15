@@ -88,7 +88,7 @@ public class UNICAST_MessagesToSelfTest {
         final Receiver r=new Receiver();
         ch.setReceiver(r);
         for(int i=1; i <= NUM_MSGS; i++) {
-            Message msg=new Message(a1, createPayload(SIZE, i)); // unicast message
+            Message msg=new BytesMessage(a1, createPayload(SIZE, i)); // unicast message
             ch.send(msg);
             if(i % 1000 == 0)
                 System.out.println("==> " + i);
@@ -135,7 +135,7 @@ public class UNICAST_MessagesToSelfTest {
         public void receive(Message msg) {
             if(exception != null)
                 return;
-            ByteBuffer buf=ByteBuffer.wrap(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+            ByteBuffer buf=ByteBuffer.wrap(msg.getArray(), msg.getOffset(), msg.getLength());
             int seqno=buf.getInt();
             if(seqno != next) {
                 exception=new Exception("expected seqno was " + next + ", but received " + seqno);

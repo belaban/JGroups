@@ -3,7 +3,7 @@ package org.jgroups.blocks;
 
 import org.jgroups.Address;
 import org.jgroups.View;
-import org.jgroups.util.Buffer;
+import org.jgroups.util.ByteArray;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +41,7 @@ public abstract class Request<T> extends CompletableFuture<T> {
     }
 
 
-    public T execute(Buffer data, boolean block_for_results) throws Exception {
+    public T execute(ByteArray data, boolean block_for_results) throws Exception {
         if(corr == null)
             return null;
 
@@ -52,7 +52,7 @@ public abstract class Request<T> extends CompletableFuture<T> {
         return timeout > 0? waitForCompletion(options.timeout(), TimeUnit.MILLISECONDS) : waitForCompletion();
     }
 
-    public abstract void       sendRequest(Buffer data) throws Exception;
+    public abstract void       sendRequest(ByteArray data) throws Exception;
 
     public abstract void       receiveResponse(Object response_value, Address sender, boolean is_exception);
 

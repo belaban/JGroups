@@ -1,10 +1,7 @@
 
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.Message;
-import org.jgroups.PhysicalAddress;
-import org.jgroups.Version;
+import org.jgroups.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.DefaultSocketFactory;
 import org.jgroups.util.Util;
@@ -127,7 +124,7 @@ public class UnicastTestTcp {
         System.out.println("sending " + num_msgs + " messages (" + Util.printBytes(msg_size) +
                              ") to " + remote + ": oob=" + oob + ", " + num_threads + " sender thread(s)");
         ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.LONG_SIZE).put(START).putLong(num_msgs);
-        Message msg=new Message(destination, buf.array());
+        Message msg=new BytesMessage(destination, buf.array());
         // msg.writeTo(output);
         writeMessage(msg, output);
 
@@ -203,7 +200,7 @@ public class UnicastTestTcp {
 
 
     public void receive(Message msg) {
-        byte[] buf=msg.getRawBuffer();
+        byte[] buf=msg.getArray();
         byte   type=buf[msg.getOffset()];
 
         switch(type) {
@@ -249,7 +246,7 @@ public class UnicastTestTcp {
         short ver=in.readShort();
         byte flags=in.readByte();
         // final boolean multicast=(flags & (byte)2) == (byte)2;
-        Message msg=new Message(false); // don't create headers, readFrom() will do this
+        Message msg=new BytesMessage(false); // don't create headers, readFrom() will do this
         msg.readFrom(in);
         return msg;
     }
@@ -276,7 +273,7 @@ public class UnicastTestTcp {
         }
 
         protected void handleRequest(DataInputStream in) throws Exception {
-            Message msg=readMessage(in); // new Message(false);
+            Message msg=readMessage(in); // new BytesMessage(false);
             // msg.readFrom(in);
             receive(msg);
         }
@@ -299,7 +296,7 @@ public class UnicastTestTcp {
         public void run() {
             for(int i=1; i <= number_of_msgs; i++) {
                 try {
-                    Message msg=new Message(destination, buf);
+                    Message msg=new BytesMessage(destination, buf);
                     if(oob)
                         msg.setFlag(Message.Flag.OOB);
                     if(dont_bundle)

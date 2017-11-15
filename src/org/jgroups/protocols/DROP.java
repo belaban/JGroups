@@ -76,6 +76,6 @@ public class DROP extends Protocol {
 
     protected void dropped(Message msg, boolean down) {
 
-        log.trace("dropped msg %s hdrs: %s\n", down? "to " + msg.dest() : "from " + msg.src(), msg.printHeaders());
+        log.trace("dropped msg %s hdrs: %s\n", down? "to " + msg.getDest() : "from " + msg.getSrc(), msg.printHeaders());
     }
 }

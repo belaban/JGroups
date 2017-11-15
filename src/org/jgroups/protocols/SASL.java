@@ -1,8 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.auth.sasl.*;
@@ -427,13 +425,13 @@ public class SASL extends Protocol {
             return;
 
         JoinRsp joinRes = new JoinRsp(error_msg); // specify the error message on the JoinRsp
-        Message msg = new Message(dest).putHeader(GMS_ID, new GmsHeader(GmsHeader.JOIN_RSP)).setBuffer(
-                GMS.marshal(joinRes));
+        Message msg = new BytesMessage(dest).putHeader(GMS_ID, new GmsHeader(GmsHeader.JOIN_RSP))
+          .setArray(GMS.marshal(joinRes));
         down_prot.down(msg);
     }
 
     protected void sendMergeRejectionMessage(Address dest) {
-        Message msg = new Message(dest).setFlag(Message.Flag.OOB);
+        Message msg = new EmptyMessage(dest).setFlag(Message.Flag.OOB);
         GmsHeader hdr = new GmsHeader(GmsHeader.MERGE_RSP);
         hdr.setMergeRejected(true);
         msg.putHeader(GMS_ID, hdr);

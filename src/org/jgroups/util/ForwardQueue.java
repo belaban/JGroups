@@ -199,12 +199,10 @@ public class ForwardQueue {
             return;
         Long key=first.getKey();
         Message val=first.getValue();
-        Message forward_msg;
 
         while(flushing && running && !forward_table.isEmpty()) {
-            forward_msg=val.copy();
-            forward_msg.setDest(target);
-            forward_msg.setFlag(Message.Flag.DONT_BUNDLE);
+            Message forward_msg=val.copy(true, true)
+              .setDest(target).setFlag(Message.Flag.DONT_BUNDLE);
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": flushing (forwarding) " + "::" + key + " to target " + target);
             ack_promise.reset();
@@ -218,9 +216,8 @@ public class ForwardQueue {
             key=entry.getKey();
             val=entry.getValue();
             if(flushing && running) {
-                forward_msg=val.copy();
-                forward_msg.setDest(target);
-                forward_msg.setFlag(Message.Flag.DONT_BUNDLE);
+                Message forward_msg=val.copy(true, true)
+                  .setDest(target).setFlag(Message.Flag.DONT_BUNDLE);
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": flushing (forwarding) " + "::" + key + " to target " + target);
                 down_prot.down(forward_msg);

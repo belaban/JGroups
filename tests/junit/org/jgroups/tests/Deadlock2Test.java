@@ -2,10 +2,7 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.Address;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;

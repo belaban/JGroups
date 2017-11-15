@@ -146,7 +146,7 @@ public class Merger {
             gms.castViewChangeAndSendJoinRsps(data.view, data.digest, expected_acks, null, null);
             // if we have flush in stack send ack back to merge coordinator
             if(gms.flushProtocolInStack) { //[JGRP-700] - FLUSH: flushing should span merge
-                Message ack=new Message(data.getSender()).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+                Message ack=new EmptyMessage(data.getSender()).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
                   .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW_OK));
                 gms.getDownProtocol().down(ack);
             }
@@ -298,7 +298,7 @@ public class Merger {
 
     /** Send back a response containing view and digest to sender */
     protected void sendMergeResponse(Address sender, View view, Digest digest, MergeId merge_id) {
-        Message msg=new Message(sender).setBuffer(GMS.marshal(view, digest)).setFlag(Message.Flag.OOB,Message.Flag.INTERNAL)
+        Message msg=new BytesMessage(sender).setArray(GMS.marshal(view, digest)).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP).mergeId(merge_id));
         gms.getDownProtocol().down(msg);
     }
@@ -330,7 +330,7 @@ public class Merger {
 
         long start=System.currentTimeMillis();
         for(Address coord: coords) {
-            Message msg=new Message(coord).setBuffer(GMS.marshal(view, digest))
+            Message msg=new BytesMessage(coord).setArray(GMS.marshal(view, digest))
               .putHeader(gms.getId(),new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW).mergeId(merge_id));
             gms.getDownProtocol().down(msg);
         }
@@ -350,7 +350,7 @@ public class Merger {
     }
 
     protected void sendMergeRejectedResponse(Address sender, MergeId merge_id) {
-        Message msg=new Message(sender).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+        Message msg=new EmptyMessage(sender).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP).mergeId(merge_id).mergeRejected(true));
         gms.getDownProtocol().down(msg);
     }
@@ -359,7 +359,7 @@ public class Merger {
         if(coords == null || merge_id == null)
             return;
         for(Address coord: coords) {
-            Message msg=new Message(coord).putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.CANCEL_MERGE).mergeId(merge_id));
+            Message msg=new EmptyMessage(coord).putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.CANCEL_MERGE).mergeId(merge_id));
             gms.getDownProtocol().down(msg);
         }
     }
@@ -377,7 +377,7 @@ public class Merger {
             return new MutableDigest(view.getMembersRaw())
               .set((Digest)gms.getDownProtocol().down(new Event(Event.GET_DIGEST, gms.local_addr)));
 
-        Message get_digest_req=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+        Message get_digest_req=new EmptyMessage().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.GET_DIGEST_REQ).mergeId(merge_id));
 
         long max_wait_time=gms.merge_timeout / 2; // gms.merge_timeout is guaranteed to be > 0, verified in init()
@@ -415,8 +415,8 @@ public class Merger {
      */
     protected void fixDigests() {
         Digest digest=fetchDigestsFromAllMembersInSubPartition(gms.view, null);
-        Message msg=new Message().putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.INSTALL_DIGEST))
-          .setBuffer(GMS.marshal(null, digest));
+        Message msg=new BytesMessage().putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.INSTALL_DIGEST))
+          .setArray(GMS.marshal(null, digest));
         gms.getDownProtocol().down(msg);
     }
 
@@ -611,9 +611,9 @@ public class Merger {
             for(Map.Entry<Address,Collection<Address>> entry: coords.entrySet()) {
                 Address coord=entry.getKey();
                 Collection<Address> mbrs=entry.getValue();
-                Message msg=new Message(coord).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+                Message msg=new BytesMessage(coord).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
                   .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ).mbr(gms.local_addr).mergeId(new_merge_id))
-                  .setBuffer(GMS.marshal(mbrs));
+                  .setArray(GMS.marshal(mbrs));
                 gms.getDownProtocol().down(msg);
             }
 

@@ -1,10 +1,7 @@
 
 package org.jgroups.auth;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.PhysicalAddress;
+import org.jgroups.*;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.NameCache;
 

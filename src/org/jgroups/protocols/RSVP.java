@@ -127,7 +127,7 @@ public class RSVP extends Protocol {
                 log.trace(local_addr + ": " + hdr.typeToString() + " --> " + (target == null? "cluster" : target));
             retval=down_prot.down(msg);
 
-            if(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK))
+            if(msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK))
                 entry.ack(local_addr);
 
             // Block on AckCollector (if we need to block)
@@ -266,7 +266,7 @@ public class RSVP extends Protocol {
     protected void sendResponse(Address dest, short id) {
         try {
             RsvpHeader hdr=new RsvpHeader(RsvpHeader.RSP,id);
-            Message msg=new Message(dest) .putHeader(this.id, hdr)
+            Message msg=new EmptyMessage(dest) .putHeader(this.id, hdr)
               .setFlag(Message.Flag.RSVP, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB);
 
             if(log.isTraceEnabled())
@@ -357,7 +357,7 @@ public class RSVP extends Protocol {
                     continue;
 
                 RsvpHeader hdr=new RsvpHeader(RsvpHeader.REQ_ONLY, rsvp_id);
-                Message msg=new Message(dest).setFlag(Message.Flag.RSVP).putHeader(id,hdr);
+                Message msg=new EmptyMessage(dest).setFlag(Message.Flag.RSVP).putHeader(id, hdr);
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": " + hdr.typeToString() + " --> " + (val.target == null? "cluster" : val.target));
                 down_prot.down(msg);

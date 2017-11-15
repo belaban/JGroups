@@ -1,8 +1,7 @@
 
 
-Reliable group communication with JGroups
-=========================================
-:author: Bela Ban <belaban@yahoo.com>
+= Reliable group communication with JGroups
+:author: Bela Ban <belaban@gmail.com>
 :toc2:
 :toclevels: 3
 :icons:
@@ -24,7 +23,6 @@ This is the JGroups manual. It provides information about:
 
 
 The focus is on how to _use_ JGroups, not on how JGroups is _implemented_.
-
 
 Here are a couple of points I want to abide by throughout this book:
 
@@ -63,7 +61,7 @@ scientist, at least not a theoretical one), but rather code for JGroups, which c
 knowing that real-life projects/products are using JGroups is much more satisfactory than having a paper accepted at a
 conference/journal.
 
-That's why, after my time was up, I left Cornell and academia altogether, and started a job in the telecom industry
+That's why, after my time was up, I left Cornell and academia altogether, and accepted a job in the telecom industry
 in Silicon Valley.
 
 At around that time (May 2000), SourceForge had just opened its site, and I decided to use it for hosting JGroups.
@@ -81,9 +79,8 @@ I also want to thank Ken Birman and Robbert VanRenesse for many fruitful discuss
 of group communication in particular and distributed systems in general.
 
 
-I want to dedicate this manual to Jeannette, Michelle and Nicole.
 
-Bela Ban, San Jose, Aug 2002, Kreuzlingen Switzerland 2014
+Bela Ban, San Jose, Aug 2002, Kreuzlingen Switzerland 2019
 
 include::./overview.adoc[Overview]
 

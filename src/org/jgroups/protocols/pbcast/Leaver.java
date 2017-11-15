@@ -1,6 +1,7 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.Address;
+import org.jgroups.EmptyMessage;
 import org.jgroups.Message;
 import org.jgroups.logging.Log;
 import org.jgroups.util.Promise;
@@ -123,7 +124,7 @@ public class Leaver {
 
 
     protected void sendLeaveRequest(Address coord, Address leaving_mbr) {
-        Message msg=new Message(coord).setFlag(Message.Flag.OOB)
+        Message msg=new EmptyMessage(coord).setFlag(Message.Flag.OOB)
           .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.LEAVE_REQ, leaving_mbr));
         gms.getDownProtocol().down(msg);
     }

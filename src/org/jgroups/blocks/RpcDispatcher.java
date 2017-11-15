@@ -2,10 +2,7 @@
 package org.jgroups.blocks;
 
 
-import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.MembershipListener;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.util.*;
 
 import java.lang.reflect.Method;
@@ -92,7 +89,7 @@ public class RpcDispatcher extends MessageDispatcher {
             return empty_rsplist;
         }
 
-        Buffer buf=methodCallToBuffer(method_call, marshaller);
+        ByteArray buf=methodCallToBuffer(method_call, marshaller);
         RspList<T> retval=super.castMessage(dests, buf, opts);
         if(log.isTraceEnabled())
             log.trace("dests=%s, method_call=%s, options=%s, responses: %s", dests, method_call, opts, retval);
@@ -116,7 +113,7 @@ public class RpcDispatcher extends MessageDispatcher {
             log.trace("destination list of %s() is empty: no need to send message", method_call.methodName());
             return CompletableFuture.completedFuture(empty_rsplist);
         }
-        Buffer buf=methodCallToBuffer(method_call, marshaller);
+        ByteArray buf=methodCallToBuffer(method_call, marshaller);
         CompletableFuture<RspList<T>> retval=super.castMessageWithFuture(dests, buf, options);
         if(log.isTraceEnabled())
             log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, options);
@@ -150,7 +147,7 @@ public class RpcDispatcher extends MessageDispatcher {
      * @throws Exception Thrown if the method invocation threw an exception, either at the caller or the callee
      */
     public <T> T callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Exception {
-        Buffer buf=methodCallToBuffer(call, marshaller);
+        ByteArray buf=methodCallToBuffer(call, marshaller);
         T retval=super.sendMessage(dest, buf, options);
         if(log.isTraceEnabled())
             log.trace("dest=%s, method_call=%s, options=%s, retval: %s", dest, call, options, retval);
@@ -170,7 +167,7 @@ public class RpcDispatcher extends MessageDispatcher {
     public <T> CompletableFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions opts) throws Exception {
         if(log.isTraceEnabled())
             log.trace("dest=%s, method_call=%s, options=%s", dest, call, opts);
-        Buffer buf=methodCallToBuffer(call, marshaller);
+        ByteArray buf=methodCallToBuffer(call, marshaller);
         return super.sendMessageWithFuture(dest, buf, opts);
     }
 
@@ -192,7 +189,7 @@ public class RpcDispatcher extends MessageDispatcher {
             return null;
         }
 
-        MethodCall method_call=methodCallFromBuffer(req.getRawBuffer(), req.getOffset(), req.getLength(), marshaller);
+        MethodCall method_call=methodCallFromBuffer(req.getArray(), req.getOffset(), req.getLength(), marshaller);
         if(log.isTraceEnabled())
             log.trace("[sender=%s], method_call: %s", req.getSrc(), method_call);
 
@@ -209,7 +206,7 @@ public class RpcDispatcher extends MessageDispatcher {
         return method_call.invoke(server_obj);
     }
 
-    protected static Buffer methodCallToBuffer(final MethodCall call, Marshaller marshaller) throws Exception {
+    protected static ByteArray methodCallToBuffer(final MethodCall call, Marshaller marshaller) throws Exception {
         Object[] args=call.args();
 
         int estimated_size=64;

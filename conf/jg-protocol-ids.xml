@@ -70,6 +70,7 @@
     <class id="66" name="org.jgroups.protocols.MULTI_PING"/>
     <class id="67" name="org.jgroups.protocols.CENTRAL_LOCK2"/>
     <class id="68" name="org.jgroups.protocols.LOCAL_PING"/>
+    <class id="69" name="org.jgroups.protocols.FRAG4"/>
 
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->

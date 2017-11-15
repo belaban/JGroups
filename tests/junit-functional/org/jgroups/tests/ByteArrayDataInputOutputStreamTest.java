@@ -26,7 +26,7 @@ public class ByteArrayDataInputOutputStreamTest {
         byte[] tmp="hello world".getBytes();
         out.writeInt(tmp.length);
         out.write(tmp);
-        ByteBuffer input_buf=out.getByteBuffer();
+        ByteBuffer input_buf=ByteBuffer.wrap(out.buffer(), 0, out.position());
 
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(input_buf);
         int length=in.readInt();
@@ -49,7 +49,7 @@ public class ByteArrayDataInputOutputStreamTest {
         assert in.position() == 0;
         assert in.limit() == 4;
         assert in.capacity() == buf.length;
-        byte tmp[]=new byte[4];
+        byte[] tmp=new byte[4];
         in.read(tmp, 0, tmp.length);
         assert "Bela".equals(new String(tmp));
     }
@@ -61,9 +61,17 @@ public class ByteArrayDataInputOutputStreamTest {
         assert in.position() == 10;
         assert in.limit() == 14;
         assert in.capacity() == buf.length;
-        byte tmp[]=new byte[4];
+        byte[] tmp=new byte[4];
         in.read(tmp, 0, tmp.length);
         assert "Bela".equals(new String(tmp));
+    }
+
+    public void testOffsetAndLimit2() {
+        final byte[] data={'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(4);
+        out.write(data, 6, 4);
+        byte[] tmp=Arrays.copyOfRange(data, 6, 10);
+        assert Arrays.equals(tmp, out.buffer());
     }
 
     public void testReadBeyondLimit() {
@@ -73,7 +81,7 @@ public class ByteArrayDataInputOutputStreamTest {
         assert in.position() == 10;
         assert in.limit() == 14;
         assert in.capacity() == buf.length;
-        byte tmp[]=new byte[5];
+        byte[] tmp=new byte[5];
         try {
             in.readFully(tmp, 0, tmp.length);
             assert false : " should have gotten an exception";

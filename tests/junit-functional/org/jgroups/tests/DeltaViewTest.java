@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.FRAG2;
 import org.jgroups.protocols.FRAG3;
@@ -134,8 +131,8 @@ public class DeltaViewTest {
             int count=1;
             for(Message msg: join_rsps) {
                 try {
-                    JoinRsp join_rsp=Util.streamableFromBuffer(JoinRsp::new, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                    System.out.printf("join-rsp #%d to %s: %s\n", count++, msg.dest(), join_rsp.getView());
+                    JoinRsp join_rsp=Util.streamableFromBuffer(JoinRsp::new, msg.getArray(), msg.getOffset(), msg.getLength());
+                    System.out.printf("join-rsp #%d to %s: %s\n", count++, msg.getDest(), join_rsp.getView());
                 }
                 catch(Throwable t) {
                     log.error("failed unmarshalling JOIN-RSP", t);
@@ -146,7 +143,7 @@ public class DeltaViewTest {
             count=1;
             for(Message msg: views) {
                 try {
-                    Tuple<View,Digest> tuple=GMS._readViewAndDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    Tuple<View,Digest> tuple=GMS._readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
                     System.out.printf("view #%d: %s\n", count++, tuple.getVal1());
                 }
                 catch(Throwable t) {
@@ -164,7 +161,7 @@ public class DeltaViewTest {
             join_rsp_msg=join_rsps.remove(0);
             JoinRsp join_rsp=null;
             try {
-                join_rsp=Util.streamableFromBuffer(JoinRsp::new, join_rsp_msg.getRawBuffer(), join_rsp_msg.getOffset(), join_rsp_msg.getLength());
+                join_rsp=Util.streamableFromBuffer(JoinRsp::new, join_rsp_msg.getArray(), join_rsp_msg.getOffset(), join_rsp_msg.getLength());
             }
             catch(Exception e) {
                 throw new RuntimeException(e);

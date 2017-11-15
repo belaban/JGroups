@@ -154,7 +154,7 @@ public class UNICAST_ContentionTest {
             }
             for(int i=0; i < NUM_MSGS; i++) {
                 try {
-                    Message msg=new Message(dest, buf);
+                    Message msg=new BytesMessage(dest, buf);
                     ch.send(msg);
                 }
                 catch(Exception e) {

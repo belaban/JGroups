@@ -194,7 +194,7 @@ public class RELAY extends Protocol {
             return handleUpEvent(msg, hdr);
 
         if(is_coord && relay && dest == null && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
-            Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // we only copy headers from building blocks
+            Message tmp=Util.copy(msg, true, Global.BLOCKS_START_ID, (short[])null); // we only copy headers from building blocks
             try {
                 byte[] buf=Util.streamableToByteBuffer(tmp);
                 forward(buf, 0, buf.length);
@@ -221,8 +221,8 @@ public class RELAY extends Protocol {
             }
 
             // Leave the messages in the batch: they're going to be forwarded, but we also need to deliver them locally
-            if(is_coord && relay && msg.dest() == null && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
-                Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // we only copy headers from building blocks
+            if(is_coord && relay && msg.getDest() == null && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
+                Message tmp=Util.copy(msg, true, Global.BLOCKS_START_ID, (short[])null); // we only copy headers from building blocks
                 try {
                     byte[] buf=Util.streamableToByteBuffer(tmp);
                     forward(buf, 0, buf.length);
@@ -239,18 +239,18 @@ public class RELAY extends Protocol {
     protected Object handleUpEvent(Message msg, RelayHeader hdr) {
         switch(hdr.type) {
             case DISSEMINATE:
-                Message copy=msg.copy();
+                Message copy=msg.copy(true, true);
                 if(hdr.original_sender != null)
                     copy.setSrc(hdr.original_sender);
                 return up_prot.up(copy);
 
             case FORWARD:
                 if(is_coord)
-                    forward(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    forward(msg.getArray(), msg.getOffset(), msg.getLength());
                 break;
 
             case VIEW:
-                return installView(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                return installView(msg.getArray(), msg.getOffset(), msg.getLength());
 
             case BROADCAST_VIEW:
                 break;
@@ -321,7 +321,7 @@ public class RELAY extends Protocol {
 
     /** Forwards the message across the TCP link to the other local cluster */
     protected void forward(byte[] buffer, int offset, int length) {
-        Message msg=new Message(null, buffer, offset, length).putHeader(id, new RelayHeader(RelayHeader.Type.FORWARD));
+        Message msg=new BytesMessage(null, buffer, offset, length).putHeader(id, new RelayHeader(RelayHeader.Type.FORWARD));
         if(bridge != null) {
             try {
                 bridge.send(msg);
@@ -334,7 +334,7 @@ public class RELAY extends Protocol {
 
     /** Wraps the message annd sends it to the current coordinator */
     protected void forwardToCoord(Message msg) {
-        Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // // we only copy headers from building blocks
+        Message tmp=Util.copy(msg, true, Global.BLOCKS_START_ID, (short[])null); // // we only copy headers from building blocks
         if(tmp.getSrc() == null)
             tmp.setSrc(local_addr);
         
@@ -347,7 +347,7 @@ public class RELAY extends Protocol {
                     return;
                 }
 
-                tmp=new Message(coord, buf, 0, buf.length) // reusing tmp is OK here ...
+                tmp=new BytesMessage(coord, buf, 0, buf.length) // reusing tmp is OK here ...
                   .putHeader(id, new RelayHeader(RelayHeader.Type.FORWARD));
                 down_prot.down(tmp);
             }
@@ -363,7 +363,7 @@ public class RELAY extends Protocol {
         try {
             if(bridge != null && bridge.isConnected()) {
                 byte[] buf=Util.streamableToByteBuffer(view_data);
-                final Message msg=new Message(null, buf).putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
+                final Message msg=new BytesMessage(null, buf).putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
                 if(use_seperate_thread) {
                     timer.execute(() -> {
                         try {
@@ -435,7 +435,7 @@ public class RELAY extends Protocol {
 
     protected void sendOnLocalCluster(byte[] buf, int offset, int length) {
         try {
-            Message msg=Util.streamableFromByteBuffer(Message::new, buf, offset, length);
+            Message msg=Util.streamableFromByteBuffer(BytesMessage::new, buf, offset, length);
             Address sender=msg.getSrc();
             Address dest=msg.getDest();
 
@@ -490,7 +490,7 @@ public class RELAY extends Protocol {
 
     protected void sendViewOnLocalCluster(final List<Address> destinations, final byte[] buffer) {
         for(Address dest: destinations) {
-            Message view_msg=new Message(dest, buffer).putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
+            Message view_msg=new BytesMessage(dest, buffer).putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
             down_prot.down(view_msg);
         }
     }
@@ -533,11 +533,11 @@ public class RELAY extends Protocol {
                 case DISSEMINATE: // should not occur here, but we'll ignore it anyway
                     break;
                 case FORWARD:
-                    sendOnLocalCluster(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    sendOnLocalCluster(msg.getArray(), msg.getOffset(), msg.getLength());
                     break;
                 case VIEW:
                     try {
-                        ViewData data=Util.streamableFromByteBuffer(ViewData::new, msg.getRawBuffer(),
+                        ViewData data=Util.streamableFromByteBuffer(ViewData::new, msg.getArray(),
                                                                     msg.getOffset(), msg.getLength());
                         // replace addrs with proxies
                         if(data.remote_view != null) {
@@ -593,11 +593,11 @@ public class RELAY extends Protocol {
         public void run() {
             if(bridge == null || !bridge.isConnected() || remote_view != null)
                 return;
-            Message msg=new Message().putHeader(id, RelayHeader.create(RELAY.RelayHeader.Type.BROADCAST_VIEW));
+            Message msg=new EmptyMessage().putHeader(id, RelayHeader.create(RELAY.RelayHeader.Type.BROADCAST_VIEW));
             try {
                 bridge.send(msg);
             }
-            catch(Exception e) {
+            catch(Exception ignored) {
             }
         }
     }

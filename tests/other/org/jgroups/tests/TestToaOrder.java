@@ -439,7 +439,7 @@ public class TestToaOrder {
         start = System.nanoTime();
         for (int i = 0; i < numberOfMessages; ++i) {
             AnycastAddress dst = getDestinations(mbrs);
-            Message message = new Message().dest(dst);
+            Message message = new BytesMessage().setDest(dst);
 
             DataMessage dataMessage = new DataMessage();
             dataMessage.type = DataMessage.DATA;

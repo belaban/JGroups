@@ -127,7 +127,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
 
 
     protected void addAndSendIfSizeExceeded(Message msg) {
-        long size=msg.size();
+        int size=msg.size();
         if(count + size >= transport.getMaxBundleSize()) {
             num_sends_because_full_queue++;
             fill_count.add(count);
@@ -157,7 +157,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
         }
     }
 
-    protected void _addMessage(Message msg, long size) {
+    protected void _addMessage(Message msg, int size) {
         lock.lock();
         try {
             addMessage(msg, size);

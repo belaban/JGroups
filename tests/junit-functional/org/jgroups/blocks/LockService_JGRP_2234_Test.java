@@ -148,7 +148,7 @@ public class LockService_JGRP_2234_Test {
             Locking.LockingHeader hdr=msg.getHeader(CENTRAL_LOCK_ID);
             if(hdr != null) {
                 try {
-                    Locking.Request req=Util.streamableFromBuffer(Locking.Request::new, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    Locking.Request req=Util.streamableFromBuffer(Locking.Request::new, msg.getArray(), msg.getOffset(), msg.getLength());
                     switch(req.getType()) {
                         case RELEASE_LOCK:
                             System.out.printf("%s ---- dropping %s\n", up_prot.getProtocolStack().getChannel().getAddress(), req);

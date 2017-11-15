@@ -8,7 +8,7 @@ import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.util.Buffer;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
@@ -32,11 +32,11 @@ import java.util.concurrent.atomic.AtomicReference;
 public class MessageDispatcherUnitTest extends ChannelTestBase {
     protected MessageDispatcher   d1, d2;
     protected JChannel            a, b;
-    protected static final Buffer buf;
+    protected static final ByteArray buf;
 
     static {
         byte[] data="bla".getBytes();
-        buf=new Buffer(data, 0, data.length);
+        buf=new ByteArray(data, 0, data.length);
     }
 
     @BeforeClass

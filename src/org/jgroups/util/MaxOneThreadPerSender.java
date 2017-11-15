@@ -54,7 +54,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             super.loopback(msg, oob, internal);
             return;
         }
-        MessageTable table=msg.dest() == null? mcasts : ucasts;
+        MessageTable table=msg.getDest() == null? mcasts : ucasts;
         table.process(msg, true);
     }
 
@@ -63,7 +63,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             super.process(msg, oob, internal);
             return;
         }
-        MessageTable table=msg.dest() == null? mcasts : ucasts;
+        MessageTable table=msg.getDest() == null? mcasts : ucasts;
         table.process(msg, false);
     }
 
@@ -103,7 +103,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         protected void clear() {map.clear();}
 
         protected void process(Message msg, boolean loopback) {
-            Address dest=msg.dest(), sender=msg.src();
+            Address dest=msg.getDest(), sender=msg.getSrc();
             get(dest, sender).process(msg, loopback);
         }
 

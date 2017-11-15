@@ -1,18 +1,14 @@
 package org.jgroups.protocols.tom;
 
-import java.util.Collection;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.jgroups.Address;
-import org.jgroups.AnycastAddress;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
+
+import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Total Order Anycast with three communication steps (based on Skeen's Algorithm). Establishes total order for a
@@ -165,13 +161,12 @@ public class TOA extends Protocol implements DeliveryProtocol {
             long finalSequenceNumber = senderManager.removeLeavers(messageID, leavers);
             if (finalSequenceNumber != SenderManager.NOT_READY) {
                 ToaHeader finalHeader = ToaHeader.newFinalMessageHeader(messageID, finalSequenceNumber);
-                Message finalMessage = new Message().src(localAddress).putHeader(this.id, finalHeader)
+                Message finalMessage = new EmptyMessage().setSrc(localAddress).putHeader(this.id, finalHeader)
                         .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE);
 
-                if (log.isTraceEnabled()) {
+                if (log.isTraceEnabled())
                     log.trace("Message %s is ready to be delivered. Final sequencer number is %d",
                               messageID, finalSequenceNumber);
-                }
 
                 send(senderManager.getDestination(messageID), finalMessage, false);
                 //returns true if we are in destination set
@@ -244,8 +239,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
             if (!sendToMyself && address.equals(localAddress)) {
                 continue;
             }
-            Message cpy = msg.copy();
-            cpy.setDest(address);
+            Message cpy = msg.copy(true, true).setDest(address);
             down_prot.down(cpy);
         }
     }
@@ -273,7 +267,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
             //create a new message and send it back
             ToaHeader newHeader = ToaHeader.newProposeMessageHeader(messageID, myProposeSequenceNumber);
 
-            Message proposeMessage = new Message().src(localAddress).dest(messageID.getAddress())
+            Message proposeMessage = new EmptyMessage().setSrc(localAddress).setDest(messageID.getAddress())
                     .putHeader(this.id, newHeader).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE);
 
             //multicastSenderThread.addUnicastMessage(proposeMessage);
@@ -307,7 +301,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
 
                 ToaHeader finalHeader = ToaHeader.newFinalMessageHeader(messageID, finalSequenceNumber);
 
-                Message finalMessage = new Message().src(localAddress).putHeader(this.id, finalHeader)
+                Message finalMessage = new EmptyMessage().setSrc(localAddress).putHeader(this.id, finalHeader)
                         .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE);
 
                 Set<Address> destinations = senderManager.getDestination(messageID);

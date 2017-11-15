@@ -82,7 +82,7 @@ public class MAKE_BATCH extends Protocol {
         if(msg.isFlagSet(Message.Flag.OOB) && msg.isFlagSet(Message.Flag.INTERNAL))
             return up_prot.up(msg);
 
-        if((msg.dest() == null && multicasts) || (msg.dest() != null && unicasts)) {
+        if((msg.getDest() == null && multicasts) || (msg.getDest() != null && unicasts)) {
             queue(msg);
             return null;
         }
@@ -106,7 +106,7 @@ public class MAKE_BATCH extends Protocol {
     }
 
     protected void queue(Message msg) {
-        Address dest=msg.dest();
+        Address dest=msg.getDest();
         Map<Address,List<Message>> map;
         if(dest == null)
             map=msg.isFlagSet(Message.Flag.OOB)? oob_map_mcast : reg_map_mcast;

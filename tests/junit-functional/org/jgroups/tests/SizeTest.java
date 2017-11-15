@@ -570,17 +570,21 @@ public class SizeTest {
     public void testFragHeader() throws Exception {
         FragHeader hdr=new FragHeader(322649, 1, 10);
         _testSize(hdr);
+        hdr.needsDeserialization(true);
+        _testSize(hdr);
     }
 
     public void testFragHeader3() throws Exception {
         Frag3Header hdr=new Frag3Header(322649, 1, 10);
+        _testSize(hdr);
+        hdr.needsDeserialization(true);
         _testSize(hdr);
 
         hdr=new Frag3Header(322649, 2, 10, 10000, 3000);
         _testSize(hdr);
     }
 
-    public static void testCompressHeader() throws Exception {
+    public void testCompressHeader() throws Exception {
         COMPRESS.CompressHeader hdr=new COMPRESS.CompressHeader(2002);
         _testSize(hdr);
     }

@@ -1,6 +1,8 @@
 package org.jgroups.tests;
 
 import org.jgroups.Address;
+import org.jgroups.BytesMessage;
+import org.jgroups.EmptyMessage;
 import org.jgroups.Message;
 import org.jgroups.protocols.Bundler;
 import org.jgroups.protocols.RingBufferBundlerLockless;
@@ -50,7 +52,7 @@ public class RingBundlerTestLockless {
         bundler.init(transport);
 
         for(int i =0; i < 6; i++)
-            bundler.send(new Message(null));
+            bundler.send(new EmptyMessage(null));
 
         int cnt=bundler.size();
         assert cnt == 6;
@@ -64,7 +66,7 @@ public class RingBundlerTestLockless {
         assert transport.map.get(null) == 1;
         transport.map.clear();
 
-        for(Message msg: create(10000, null, a,a,a,b,c,d,d,a, null, null, a))
+        for(Message msg: create(10000, null, a, a, a, b, c, d, d, a, null, null, a))
             bundler.send(msg);
         System.out.println("bundler = " + bundler);
 
@@ -85,7 +87,7 @@ public class RingBundlerTestLockless {
     protected List<Message> create(int msg_size, Address ... destinations) {
         List<Message> list=new ArrayList<>(destinations.length);
         for(Address dest: destinations)
-            list.add(new Message(dest, new byte[msg_size]));
+            list.add(new BytesMessage(dest, new byte[msg_size]));
         return list;
     }
 
@@ -107,7 +109,7 @@ public class RingBundlerTestLockless {
                 e.printStackTrace();
             }
             try {
-                bundler.send(new Message(a));
+                bundler.send(new EmptyMessage(a));
             }
             catch(Exception e) {
                 e.printStackTrace();

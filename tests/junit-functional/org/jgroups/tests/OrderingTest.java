@@ -169,7 +169,7 @@ public class OrderingTest {
             }
             for(int i=1; i <= NUM_MSGS; i++) {
                 try {
-                    Message msg=new Message(dest, i);
+                    Message msg=new BytesMessage(dest, i);
                     ch.send(msg);
                     if(i % PRINT == 0)
                         System.out.println(ch.getAddress() + ": " + i + " sent");

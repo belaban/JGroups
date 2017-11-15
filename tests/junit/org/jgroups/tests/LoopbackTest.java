@@ -60,7 +60,7 @@ public class LoopbackTest extends ChannelTestBase {
         // send NUM messages to dest
         Address dest=unicast? channel.getAddress() : null;
         for(int i=1; i <= NUM; i++) {
-            channel.send(new Message(dest, i));
+            channel.send(new BytesMessage(dest, i));
             if(i % 100 == 0)
                 System.out.printf("-- [%s] sent %d\n", Thread.currentThread().getName(), i);
         }

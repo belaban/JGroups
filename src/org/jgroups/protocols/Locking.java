@@ -247,8 +247,8 @@ abstract public class Locking extends Protocol {
 
         Request req=null;
         try {
-            req=Util.streamableFromBuffer(Request::new, msg.getRawBuffer(), msg.getOffset(), msg.getLength())
-              .sender(msg.src());
+            req=Util.streamableFromBuffer(Request::new, msg.getArray(), msg.getOffset(), msg.getLength())
+              .sender(msg.getSrc());
         }
         catch(Exception ex) {
             log.error("%s: failed deserializing request", local_addr, ex);
@@ -258,7 +258,7 @@ abstract public class Locking extends Protocol {
         if(req.type != Type.LOCK_INFO_REQ && req.type != Type.LOCK_INFO_RSP && req.type != Type.LOCK_REVOKED
           && null != view && !view.containsMember(msg.getSrc())) {
             log.error("%s: received request from '%s' but member is not present in the current view - ignoring request",
-                      local_addr, msg.src());
+                      local_addr, msg.getSrc());
             return null;
         }
         requestReceived(req);
@@ -436,7 +436,14 @@ abstract public class Locking extends Protocol {
     }
 
     protected void send(Address dest, Request req) {
-        Message msg=new Message(dest, Util.streamableToBuffer(req)).putHeader(id, new LockingHeader());
+        ByteArray array=null;
+        try {
+            array=Util.streamableToBuffer(req);
+        }
+        catch(Exception e) {
+            log.warn("%s: failed serializing request: %s", local_addr, e);
+        }
+        Message msg=new BytesMessage(dest, array).putHeader(id, new LockingHeader());
         if(bypass_bundling)
             msg.setFlag(Message.Flag.DONT_BUNDLE);
         log.trace("%s --> %s: %s", local_addr, dest == null? "ALL" : dest, req);

@@ -338,7 +338,7 @@ public class NioConnection extends Connection {
             out.writeShort(Version.version);
             out.writeShort(addr_size); // address size
             local_addr.writeTo(out);
-            ByteBuffer buf=out.getByteBuffer();
+            ByteBuffer buf=ByteBuffer.wrap(out.buffer(), 0, out.position());
             send(buf, false);
             updateLastAccessed();
         }

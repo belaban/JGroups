@@ -12,11 +12,16 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
-import org.jgroups.util.*;
+import org.jgroups.util.MessageBatch;
+import org.jgroups.util.SocketFactory;
+import org.jgroups.util.ThreadFactory;
+import org.jgroups.util.Util;
 import org.w3c.dom.Node;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 
 /**
@@ -148,7 +153,7 @@ public abstract class Protocol {
         while(retval != null && retval.down_prot != null) {
             retval=retval.down_prot;
         }
-        return (TP)retval;
+        return retval instanceof TP? (TP)retval : null;
     }
 
     /** Supposed to be overwritten by subclasses. Usually the transport returns a valid non-null thread factory, but
@@ -313,7 +318,7 @@ public abstract class Protocol {
      * messages, although the transport itself will create initial MessageBatches that contain only either OOB or
      * regular messages.<p/>
      * The default processing below sends messages up the stack individually, based on a matching criteria
-     * (calling {@link #accept(org.jgroups.Message)}), and - if true - calls {@link #up(org.jgroups.Event)}
+     * (calling {@link #accept(Message)}), and - if true - calls {@link #up(org.jgroups.Event)}
      * for that message and removes the message. If the batch is not empty, it is passed up, or else it is dropped.<p/>
      * Subclasses should check if there are any messages destined for them (e.g. using
      * {@link MessageBatch#getMatchingMessages(short,boolean)}), then possibly remove and process them and finally pass

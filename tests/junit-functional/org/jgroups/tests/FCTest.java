@@ -1,10 +1,7 @@
 
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.*;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
@@ -60,7 +57,7 @@ public class FCTest {
         setUp(flow_control_class);
         ch.setReceiver(r);
         for(int i=1; i <= NUM_MSGS; i++) {
-            Message msg=new Message(null, createPayload(SIZE));
+            Message msg=new BytesMessage(null, createPayload(SIZE));
             ch.send(msg);
             if(i % PRINT == 0)
                 System.out.println("==> " + i);

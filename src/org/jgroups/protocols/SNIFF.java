@@ -44,7 +44,7 @@ public class SNIFF extends Protocol {
 
     protected static void dump(String type, Message msg) {
         StringBuilder sb=new StringBuilder();
-        sb.append(String.format("\n%s from %s (%d bytes):\nhdrs: %s\n", type, msg.src(), msg.getLength(), msg.printHeaders()));
+        sb.append(String.format("\n%s from %s (%d bytes):\nhdrs: %s\n", type, msg.getSrc(), msg.getLength(), msg.printHeaders()));
         if(msg.getLength() > 0) {
             sb.append("payload: ");
             printPayload(msg, sb);
@@ -54,7 +54,7 @@ public class SNIFF extends Protocol {
     }
 
     protected static String printPayload(Message msg, final StringBuilder sb) {
-        byte[] payload=msg.getRawBuffer();
+        byte[] payload=msg.getArray();
         int print_max=Math.min(msg.getLength(), 50);
         for(int i=msg.getOffset(); i < print_max; i++) {
             byte ch=payload[i];

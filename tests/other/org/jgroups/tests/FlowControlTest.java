@@ -41,7 +41,7 @@ public class FlowControlTest extends ReceiverAdapter {
                                     "[3] Set message size [4] Print credits MFC [5] Print credits UFC [q] quit");
             switch(key) {
                 case '1':
-                    Message msg=new Message(null, buf);
+                    Message msg=new BytesMessage(null, buf);
                     try {
                         ch.send(msg);
                     }
@@ -51,7 +51,7 @@ public class FlowControlTest extends ReceiverAdapter {
                     break;
                 case '2':
                     Address target=getReceiver();
-                    msg=new Message(target, buf);
+                    msg=new BytesMessage(target, buf);
                     try {
                         ch.send(msg);
                     }

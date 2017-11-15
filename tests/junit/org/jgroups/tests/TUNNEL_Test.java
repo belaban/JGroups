@@ -123,7 +123,7 @@ public class TUNNEL_Test extends ChannelTestBase {
         channel.disconnect();
         channel.connect(GROUP);
 
-        channel.send(new Message(null, "payload"));
+        channel.send(new BytesMessage(null, "payload"));
 
         Message msg=msgPromise.getResult(20000);
         assert msg != null;
@@ -233,7 +233,7 @@ public class TUNNEL_Test extends ChannelTestBase {
         channel.disconnect();
         channel.connect(GROUP);
 
-        channel.send(new Message(null, "payload"));
+        channel.send(new BytesMessage(null, "payload"));
 
         Message msg=msgPromise.getResult(20000);
         assert msg != null;

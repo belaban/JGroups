@@ -13,7 +13,7 @@ public class SenderSendsBundler extends BaseBundler {
 
     public void send(Message msg) throws Exception {
         num_senders.incrementAndGet();
-        long size=msg.size();
+        int size=msg.size();
 
         lock.lock();
         try {

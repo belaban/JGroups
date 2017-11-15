@@ -39,7 +39,7 @@ public class PingPong extends ReceiverAdapter {
             if(unicast)
                 dest=Util.pickRandomElement(members);
             
-            Message msg=new Message(dest, PING_REQ);
+            Message msg=new BytesMessage(dest, PING_REQ);
             msg.setFlag(Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
             start=System.nanoTime();
             ch.send(msg);
@@ -53,10 +53,10 @@ public class PingPong extends ReceiverAdapter {
     }
 
     public void receive(Message msg) {
-        byte type=msg.getRawBuffer()[msg.getOffset()];
+        byte type=msg.getArray()[msg.getOffset()];
         switch(type) {
             case PING:
-                final Message rsp=new Message(msg.getSrc(), PONG_RSP);
+                final Message rsp=new BytesMessage(msg.getSrc(), PONG_RSP);
                 rsp.setFlag(Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
                 try {
                     ch.send(rsp);
@@ -68,7 +68,7 @@ public class PingPong extends ReceiverAdapter {
             case PONG:
                 long rtt=System.nanoTime() - start;
                 double ms=rtt / 1000.0 / 1000.0;
-                System.out.printf("RTT for %s: %.2f ms\n", msg.src(), ms);
+                System.out.printf("RTT for %s: %.2f ms\n", msg.getSrc(), ms);
                 break;
         }
     }

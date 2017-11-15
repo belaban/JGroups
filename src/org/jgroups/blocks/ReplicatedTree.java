@@ -179,7 +179,7 @@ public class ReplicatedTree extends ReceiverAdapter {
                 return;
             }
             try {
-                channel.send(new Message(null, new Request(Request.PUT, fqn, data)));
+                channel.send(new BytesMessage(null, new Request(Request.PUT, fqn, data)));
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("failure bcasting PUT request: " + ex);
@@ -214,7 +214,7 @@ public class ReplicatedTree extends ReceiverAdapter {
                 return;
             }
             try {
-                channel.send(new Message(null, new Request(Request.PUT, fqn, key, value)));
+                channel.send(new BytesMessage(null, new Request(Request.PUT, fqn, key, value)));
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("failure bcasting PUT request: " + ex);
@@ -243,7 +243,7 @@ public class ReplicatedTree extends ReceiverAdapter {
                 return;
             }
             try {
-                channel.send(new Message(null, new Request(Request.REMOVE, fqn)));
+                channel.send(new BytesMessage(null, new Request(Request.REMOVE, fqn)));
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("failure bcasting REMOVE request: " + ex);
@@ -273,7 +273,7 @@ public class ReplicatedTree extends ReceiverAdapter {
                 return;
             }
             try {
-                channel.send(new Message(null, new Request(Request.REMOVE, fqn, key)));
+                channel.send(new BytesMessage(null, new Request(Request.REMOVE, fqn, key)));
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("failure bcasting REMOVE request: " + ex);

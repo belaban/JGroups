@@ -307,7 +307,7 @@ public class FlowControlUnitTest {
         public Object up(Message msg) {
             FcHeader hdr=getHeader(msg, UFC_ID, UFC_NB_ID, MFC_ID, MFC_NB_ID);
             if(hdr != null && hdr.type == FcHeader.REPLENISH) {
-                System.out.println("-- dropping credits from " + msg.src());
+                System.out.println("-- dropping credits from " + msg.getSrc());
                 return null;
             }
             return up_prot.up(msg);

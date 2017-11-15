@@ -137,7 +137,7 @@ public class STATE extends StreamingStateTransfer {
 
 
         protected void sendMessage(byte[] b, int off, int len) throws IOException {
-            Message m=new Message(stateRequester).putHeader(id, new StateHeader(StateHeader.STATE_PART));
+            Message m=new BytesMessage(stateRequester).putHeader(id, new StateHeader(StateHeader.STATE_PART));
 
             // we're copying the buffer passed from the state provider here: if a BufferedOutputStream is used, the
             // buffer (b) will always be the same and can be modified after it has been set in the message !
@@ -146,7 +146,7 @@ public class STATE extends StreamingStateTransfer {
             byte[] data=new byte[len];
             System.arraycopy(b, off, data, 0, len);
             // m.setBuffer(b, off, len);
-            m.setBuffer(data);
+            m.setArray(data, 0, data.length);
 
             bytesWrittenCounter+=len;
             if(Thread.interrupted())

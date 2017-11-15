@@ -67,7 +67,7 @@ public class Route implements Comparable<Route> {
     }
 
     protected Message createMessage(Address target, Address final_destination, Address original_sender, final Message msg) {
-        Message copy=relay.copy(msg).dest(target).src(null);
+        Message copy=relay.copy(msg).setDest(target).setSrc(null);
         RELAY2.Relay2Header hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, final_destination, original_sender);
         copy.putHeader(relay.getId(), hdr);
         return copy;

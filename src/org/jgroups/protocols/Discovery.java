@@ -302,21 +302,21 @@ public abstract class Discovery extends Protocol {
         if(is_leaving)
             return null; // prevents merging back a leaving member (https://issues.jboss.org/browse/JGRP-1336)
 
-        PingData data=readPingData(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-        Address logical_addr=data != null? data.getAddress() : msg.src();
+        PingData data=readPingData(msg.getArray(), msg.getOffset(), msg.getLength());
+        Address logical_addr=data != null? data.getAddress() : msg.getSrc();
 
         switch(hdr.type) {
 
             case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
                 if(cluster_name == null || hdr.cluster_name == null) {
                     log.warn("cluster_name (%s) or cluster_name of header (%s) is null; passing up discovery " +
-                               "request from %s, but this should not be the case", cluster_name, hdr.cluster_name, msg.src());
+                               "request from %s, but this should not be the case", cluster_name, hdr.cluster_name, msg.getSrc());
                 }
                 else {
                     if(!cluster_name.equals(hdr.cluster_name)) {
                         log.warn("%s: discarding discovery request for cluster '%s' from %s; " +
                                    "our cluster name is '%s'. Please separate your clusters properly",
-                                 logical_addr, hdr.cluster_name, msg.src(), cluster_name);
+                                 logical_addr, hdr.cluster_name, msg.getSrc(), cluster_name);
                         return null;
                     }
                 }
@@ -355,8 +355,8 @@ public abstract class Discovery extends Protocol {
             case PingHeader.GET_MBRS_RSP:
                 // add physical address (if available) to transport's cache
                 if(data != null) {
-                    log.trace("%s: received GET_MBRS_RSP from %s: %s", local_addr, msg.src(), data);
-                    handleDiscoveryResponse(data, msg.src());
+                    log.trace("%s: received GET_MBRS_RSP from %s: %s", local_addr, msg.getSrc(), data);
+                    handleDiscoveryResponse(data, msg.getSrc());
                 }
                 return null;
 
@@ -582,8 +582,13 @@ public abstract class Discovery extends Protocol {
         return Util.streamableFromByteBuffer(PingData::new, data);
     }
 
-    public static Buffer marshal(PingData data) {
-        return Util.streamableToBuffer(data);
+    public static ByteArray marshal(PingData data) {
+        try {
+            return Util.streamableToBuffer(data);
+        }
+        catch(Exception e) {
+            return null;
+        }
     }
 
     protected PingData readPingData(byte[] buffer, int offset, int length) {
@@ -598,9 +603,9 @@ public abstract class Discovery extends Protocol {
 
     protected void sendDiscoveryResponse(Address logical_addr, PhysicalAddress physical_addr,
                                          String logical_name, final Address sender, boolean coord) {
-        final PingData data=new PingData(logical_addr, is_server, logical_name, physical_addr).coord(coord);
-        final Message rsp_msg=new Message(sender).setFlag(Message.Flag.INTERNAL, Message.Flag.OOB, Message.Flag.DONT_BUNDLE)
-          .putHeader(this.id, new PingHeader(PingHeader.GET_MBRS_RSP)).setBuffer(marshal(data));
+        PingData data=new PingData(logical_addr, is_server, logical_name, physical_addr).coord(coord);
+        Message rsp_msg=new BytesMessage(sender).setFlag(Message.Flag.INTERNAL, Message.Flag.OOB, Message.Flag.DONT_BUNDLE)
+          .putHeader(this.id, new PingHeader(PingHeader.GET_MBRS_RSP)).setArray(marshal(data));
 
         if(stagger_timeout > 0) {
             int view_size=view != null? view.size() : 10;

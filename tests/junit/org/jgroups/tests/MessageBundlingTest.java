@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
@@ -59,7 +56,7 @@ public class MessageBundlingTest extends ChannelTestBase {
 
     public void testSimple() throws Exception {
         long start=System.nanoTime();
-        a.send(new Message());
+        a.send(new EmptyMessage());
         promise.getResult(5000);
         long diff=System.nanoTime() - start;
         System.out.printf("took %s to send and receive a multicast message\n", print(diff));
@@ -85,7 +82,7 @@ public class MessageBundlingTest extends ChannelTestBase {
         long[] times=new long[num];
         for(int i=0; i < num; i++) {
             long start=System.nanoTime();
-            a.send(new Message(null, new byte[4000]));
+            a.send(new BytesMessage(null, new byte[4000]));
             promise.getResult(SLEEP);
             long time=System.nanoTime()-start;
             times[i]=time;
@@ -102,7 +99,7 @@ public class MessageBundlingTest extends ChannelTestBase {
 
 
     protected void _testLatencyWithoutMessageBundling(boolean use_bundling) throws Exception {
-        Message tmp=new Message();
+        Message tmp=new EmptyMessage();
         if(use_bundling) {
             tmp.setFlag(Message.Flag.DONT_BUNDLE);
             setBundling(a, MAX_BYTES);

@@ -220,6 +220,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       "disables this.")
     protected long suppress_time_different_cluster_warnings=60000;
 
+    protected MessageFactory msg_factory=new DefaultMessageFactory();
+
 
     /**
      * Maximum number of bytes for messages to be queued until they are sent.
@@ -255,6 +257,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public final int getMaxBundleSize()            {return max_bundle_size;}
     public int getBundlerCapacity()                {return bundler_capacity;}
     public int getMessageProcessingMaxBufferSize() {return msg_processing_max_buffer_size;}
+    public MessageFactory getMessageFactory()      {return msg_factory;}
+    public TP setMessageFactory(MessageFactory f)  {this.msg_factory=f; return this;}
 
     @ManagedAttribute public int getBundlerBufferSize() {
         if(bundler instanceof TransferQueueBundler)
@@ -1210,7 +1214,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         // Don't send if dest is local address. Instead, send it up the stack. If multicast message, loop back directly
         // to us (but still multicast). Once we receive this, we discard our own multicast message
         boolean multicast=dest == null, do_send=multicast || !dest.equals(sender),
-          loop_back=(multicast || dest.equals(sender)) && !msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+          loop_back=(multicast || dest.equals(sender)) && !msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK);
 
         if(dest instanceof PhysicalAddress && dest.equals(local_physical_addr)) {
             loop_back=true;
@@ -1295,7 +1299,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     protected void loopback(Message msg, final boolean multicast) {
-        final Message copy=loopback_copy? msg.copy() : msg;
+        final Message copy=loopback_copy? msg.copy(true, true) : msg;
         if(is_trace)
             log.trace("%s: looping back message %s, headers are %s", local_addr, copy, copy.printHeaders());
 
@@ -1418,7 +1422,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         boolean is_message_list=(flags & LIST) == LIST, multicast=(flags & MULTICAST) == MULTICAST;
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(data, offset, length);
         if(is_message_list) // used if message bundling is enabled
-            handleMessageBatch(in, multicast);
+            handleMessageBatch(in, multicast, msg_factory);
         else
             handleSingleMessage(in, multicast);
     }
@@ -1437,15 +1441,15 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         boolean is_message_list=(flags & LIST) == LIST, multicast=(flags & MULTICAST) == MULTICAST;
         if(is_message_list) // used if message bundling is enabled
-            handleMessageBatch(in, multicast);
+            handleMessageBatch(in, multicast, msg_factory);
         else
             handleSingleMessage(in, multicast);
     }
 
 
-    protected void handleMessageBatch(DataInput in, boolean multicast) {
+    protected void handleMessageBatch(DataInput in, boolean multicast, MessageFactory factory) {
         try {
-            final MessageBatch[] batches=Util.readMessageBatch(in, multicast);
+            final MessageBatch[] batches=Util.readMessageBatch(in, multicast, factory);
             final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch_oob=batches[2], internal_batch=batches[3];
 
             processBatch(oob_batch,          true,  false);
@@ -1461,7 +1465,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected void handleSingleMessage(DataInput in, boolean multicast) {
         try {
-            Message msg=new Message(false); // don't create headers, readFrom() will do this
+            byte type=in.readByte();
+            Message msg=msg_factory.create(type); //new BytesMessage(false); // don't create headers, readFrom() will do this
             msg.readFrom(in);
 
             if(!multicast && unicastDestMismatch(msg.getDest()))

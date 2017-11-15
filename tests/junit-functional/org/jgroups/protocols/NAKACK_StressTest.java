@@ -162,7 +162,7 @@ public class NAKACK_StressTest {
     }
 
     private static Message createMessage(Address dest, Address src, long seqno, boolean oob) {
-        Message msg=new Message(dest, "hello world").src(src);
+        Message msg=new BytesMessage(dest, "hello world").setSrc(src);
         NakAckHeader2 hdr=NakAckHeader2.createMessageHeader(seqno) ;
         msg.putHeader(NAKACK_ID, hdr);
         if(oob)

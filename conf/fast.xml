@@ -23,7 +23,7 @@
          thread_naming_pattern="cl"
 
          thread_pool.min_threads="2"
-         thread_pool.max_threads="8"
+         thread_pool.max_threads="20"
          thread_pool.keep_alive_time="5000"/>
 
     <PING />

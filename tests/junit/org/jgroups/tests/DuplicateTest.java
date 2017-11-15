@@ -142,7 +142,7 @@ public class DuplicateTest extends ChannelTestBase {
      private static void send(JChannel sender_channel, Address dest, boolean oob, boolean mixed, int num_msgs) throws Exception {
          long seqno=1;
          for(int i=0; i < num_msgs; i++) {
-             Message msg=new Message(dest, seqno++);
+             Message msg=new BytesMessage(dest, seqno++);
              if(mixed) {
                  if(i % 2 == 0)
                      msg.setFlag(Message.Flag.OOB);

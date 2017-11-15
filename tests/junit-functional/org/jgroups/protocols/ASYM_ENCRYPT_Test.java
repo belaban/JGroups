@@ -4,13 +4,14 @@ import org.jgroups.*;
 import org.jgroups.auth.MD5Token;
 import org.jgroups.protocols.pbcast.*;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.Buffer;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -68,8 +69,8 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
                                     a.getAddress(),b.getAddress(),c.getAddress(),rogue.getAddress());
         JoinRsp join_rsp=new JoinRsp(rogue_view, null);
         GMS.GmsHeader gms_hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP);
-        Message rogue_join_rsp=new Message(b.getAddress(), rogue.getAddress()).putHeader(GMS_ID, gms_hdr)
-          .setBuffer(GMS.marshal(join_rsp)).setFlag(Message.Flag.NO_RELIABILITY); // bypasses NAKACK2 / UNICAST3
+        Message rogue_join_rsp=new BytesMessage(b.getAddress(), rogue.getAddress()).putHeader(GMS_ID, gms_hdr)
+          .setArray(GMS.marshal(join_rsp)).setFlag(Message.Flag.NO_RELIABILITY); // bypasses NAKACK2 / UNICAST3
         rogue.down(rogue_join_rsp);
         for(int i=0; i < 10; i++) {
             if(b.getView().size() > 3)
@@ -115,7 +116,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         MergeView merge_view=new MergeView(a.getAddress(), a.getView().getViewId().getId()+5,
                                            Arrays.asList(a.getAddress(), b.getAddress(), c.getAddress(), rogue.getAddress()), null);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW, a.getAddress());
-        Message merge_view_msg=new Message(null, marshalView(merge_view)).putHeader(GMS_ID, hdr)
+        Message merge_view_msg=new BytesMessage(null, marshalView(merge_view)).putHeader(GMS_ID, hdr)
           .setFlag(Message.Flag.NO_RELIABILITY);
         System.out.printf("** %s: trying to install MergeView %s in all members\n", rogue.getAddress(), merge_view);
         rogue.down(merge_view_msg);
@@ -269,6 +270,18 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
     }
 
 
+    public void testObjectMessage() throws Exception {
+        Person p=new Person("Bela Ban", 54, Util.generateArray(1200));
+        Message msg=new ObjectMessageSerializable(b.getAddress(), p);
+        a.send(msg);
+        Util.waitUntil(5000, 500, () -> rb.size() == 1);
+        Message m=rb.list().get(0);
+        assert m.getClass().equals(msg.getClass()) : String.format("expected %s, but got %s", msg.getClass(), m.getClass());
+        Person p2=m.getObject();
+        assert p2.name.equals(p.name) && p2.age == p.age;
+        Util.verifyArray(p2.buf);
+    }
+
 
     protected JChannel create(String name) throws Exception {
         return new JChannel(
@@ -295,7 +308,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
     }
 
 
-    protected static Buffer marshalView(final View view) throws Exception {
+    protected static ByteArray marshalView(final View view) throws Exception {
         final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(Global.SHORT_SIZE + view.serializedSize());
         out.writeShort(determineFlags(view));
         view.writeTo(out);
@@ -334,5 +347,23 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
             c.accept(asym);
         }
     }
+
+    protected static class Person implements Serializable {
+        private static final long serialVersionUID=8635045223414419580L;
+        protected String name;
+        protected int    age;
+        protected byte[] buf;
+
+        public Person(String name, int age, byte[] buf) {
+            this.name=name;
+            this.age=age;
+            this.buf=buf;
+        }
+
+        public String toString() {
+            return String.format("name=%s age=%d bytes=%d", name, age, buf != null? buf.length : 0);
+        }
+    }
+
 
 }

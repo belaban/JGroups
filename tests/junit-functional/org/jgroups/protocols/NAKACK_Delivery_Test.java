@@ -155,7 +155,7 @@ public class NAKACK_Delivery_Test {
 
 
     private static Message msg(Address sender, long seqno, int number, boolean oob) {
-        Message msg=new Message(null, number).src(sender);
+        Message msg=new BytesMessage(null, number).setSrc(sender);
         if(oob)
             msg.setFlag(Message.Flag.OOB);
         if(seqno != -1)

@@ -1,6 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.util.Buffer;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.DefaultThreadFactory;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
@@ -63,8 +63,8 @@ public class Probe {
 
     protected void fetchAddressesAndInvoke(SocketAddress dest, InetAddress bind_addr, String request, String passcode,
                                            long timeout, int ttl, boolean udp, boolean tcp) throws IOException {
-        Consumer<Buffer> on_rsp_handler=buf -> {
-            String response=new String(buf.getBuf(), 0, buf.getLength());
+        Consumer<ByteArray> on_rsp_handler=buf -> {
+            String response=new String(buf.getArray(), 0, buf.getLength());
             try {
                 Collection<SocketAddress> targets=parseAddresses(response, ((InetSocketAddress)dest).getPort());
                 if(targets == null || targets.isEmpty())
@@ -283,15 +283,15 @@ public class Probe {
     protected abstract class Requester implements Runnable {
         protected final SocketAddress dest;
         protected final String        request, passcode;
-        protected Consumer<Buffer>    on_rsp;
+        protected Consumer<ByteArray> on_rsp;
 
 
-        protected final Consumer<Buffer> ON_RSP=buf -> {
+        protected final Consumer<ByteArray> ON_RSP=buf -> {
             if(buf == null) {
                 System.out.println("\n");
                 return;
             }
-            String response=new String(buf.getBuf(), 0, buf.getLength());
+            String response=new String(buf.getArray(), 0, buf.getLength());
             if(weed_out_duplicates && checkDuplicateResponse(response))
                 return;
             count.incrementAndGet();
@@ -304,7 +304,7 @@ public class Probe {
         };
 
 
-        protected Requester(SocketAddress dest, String request, String passcode, Consumer<Buffer> on_rsp) {
+        protected Requester(SocketAddress dest, String request, String passcode, Consumer<ByteArray> on_rsp) {
             this.dest=dest;
             this.request=request;
             this.passcode=passcode;
@@ -315,8 +315,8 @@ public class Probe {
         protected abstract <T extends Requester> T stop();
         protected abstract boolean                 isRunning();
         protected abstract <T extends Requester> T sendRequest(byte[] request) throws IOException;
-        protected abstract Buffer                  fetchResponse();
-        protected <T extends Requester> T          setResponseHandler(Consumer<Buffer> rh) {this.on_rsp=rh; return (T)this;}
+        protected abstract ByteArray               fetchResponse();
+        protected <T extends Requester> T          setResponseHandler(Consumer<ByteArray> rh) {this.on_rsp=rh; return (T)this;}
 
 
         public void run() {
@@ -325,7 +325,7 @@ public class Probe {
                 sendRequest(req);
                 // System.out.println("\n");
                 while(isRunning()) {
-                    Buffer data=fetchResponse();
+                    ByteArray data=fetchResponse();
                     if(data == null)
                         break;
                     if(on_rsp != null)
@@ -361,7 +361,7 @@ public class Probe {
         protected MulticastSocket sock;
         protected final byte[]    buf=new byte[70000];
 
-        protected UdpRequester(SocketAddress dest, String request, String passcode, Consumer<Buffer> on_rsp) {
+        protected UdpRequester(SocketAddress dest, String request, String passcode, Consumer<ByteArray> on_rsp) {
             super(dest, request, passcode, on_rsp);
         }
 
@@ -389,11 +389,11 @@ public class Probe {
             return (T)this;
         }
 
-        protected Buffer fetchResponse() {
+        protected ByteArray fetchResponse() {
             DatagramPacket rsp=new DatagramPacket(buf, 0, buf.length);
             try {
                 sock.receive(rsp);
-                return new Buffer(rsp.getData(), 0, rsp.getLength());
+                return new ByteArray(rsp.getData(), 0, rsp.getLength());
             }
             catch(Throwable t) {
                 return null;
@@ -408,7 +408,7 @@ public class Probe {
 
 
         protected TcpRequester(SocketAddress dest, String request, String passcode,
-                               Consumer<Buffer> on_rsp) {
+                               Consumer<ByteArray> on_rsp) {
             super(dest, request, passcode, on_rsp);
         }
 
@@ -438,7 +438,7 @@ public class Probe {
             return (T)this;
         }
 
-        protected Buffer fetchResponse() {
+        protected ByteArray fetchResponse() {
             byte[] buf=new byte[1024];
             int    index=0;
 
@@ -461,7 +461,7 @@ public class Probe {
                     break;
                 }
             }
-            return new Buffer(buf, 0, index);
+            return new ByteArray(buf, 0, index);
         }
     }
 }

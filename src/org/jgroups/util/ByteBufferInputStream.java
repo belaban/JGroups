@@ -9,7 +9,7 @@ import java.nio.ByteBuffer;
  * @author Bela Ban
  * @since  3.5
  */
-public class ByteBufferInputStream implements DataInput {
+public class ByteBufferInputStream extends InputStream implements DataInput {
     protected final ByteBuffer buf;
 
     public ByteBufferInputStream(ByteBuffer buf) {
@@ -45,6 +45,10 @@ public class ByteBufferInputStream implements DataInput {
         } catch (BufferUnderflowException e) {
             throw new EOFException();
         }
+    }
+
+    public int read() {
+        return !buf.hasRemaining() ? -1 : (buf.get() & 0xff);
     }
 
     public int readUnsignedByte() throws IOException {

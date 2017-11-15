@@ -1,5 +1,6 @@
 package org.jgroups.tests;
 
+import org.jgroups.EmptyMessage;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.util.AverageMinMax;
@@ -21,7 +22,7 @@ import java.util.concurrent.atomic.LongAdder;
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class DrainTest {
-    protected final Queue<Message> queue=new ArrayBlockingQueue<Message>(50000);
+    protected final Queue<Message> queue=new ArrayBlockingQueue<>(50000);
     protected final AtomicInteger  counter=new AtomicInteger(0);
     protected final LongAdder      added=new LongAdder();
     protected final LongAdder      removed=new LongAdder();
@@ -39,10 +40,10 @@ public class DrainTest {
 
         Util.sleep(5000);
 
-        System.out.printf("\nStopping threads\n");
+        System.out.print("\nStopping threads\n");
         for(MyThread thread: threads)
             thread.cancel();
-        System.out.printf("done, joining threads\n");
+        System.out.print("done, joining threads\n");
         for(MyThread thread: threads)
             thread.join();
 
@@ -93,17 +94,11 @@ public class DrainTest {
                 e.printStackTrace();
             }
             while(running) {
-                Message msg=new Message();
+                Message msg=new EmptyMessage();
                 add(msg);
             }
         }
     }
 
-    protected Message[] create(int max) {
-        int num=(int)Util.random(max);
-        Message[] msgs=new Message[num];
-        for(int i=0; i < msgs.length; i++)
-            msgs[i]=new Message();
-        return msgs;
-    }
+
 }

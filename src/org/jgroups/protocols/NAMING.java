@@ -63,7 +63,7 @@ public class NAMING extends Protocol {
     protected Object handleMessage(Message msg, Header hdr) {
         switch(hdr.type) {
             case CACHE_REQ:
-                handleCacheRequest(msg.src());
+                handleCacheRequest(msg.getSrc());
                 break;
             case CACHE_RSP:
                 handleCacheResponse(msg);
@@ -87,7 +87,7 @@ public class NAMING extends Protocol {
             if(logical_name == null)
                 continue;
             Header hdr=new Header(Type.CACHE_RSP, addr, logical_name);
-            Message msg=new Message(sender).putHeader(id, hdr);
+            Message msg=new EmptyMessage(sender).putHeader(id, hdr);
             if(log.isTraceEnabled())
                 log.trace("%s: sending %s to %s", local_addr, hdr, sender);
             try {
@@ -103,7 +103,7 @@ public class NAMING extends Protocol {
         Header hdr=msg.getHeader(id);
         if(hdr != null && hdr.addr != null && hdr.name != null) {
             if(log.isTraceEnabled())
-                log.trace("%s: received %s from %s", local_addr, hdr, msg.src());
+                log.trace("%s: received %s from %s", local_addr, hdr, msg.getSrc());
             NameCache.add(hdr.addr, hdr.name);
         }
     }
@@ -124,7 +124,7 @@ public class NAMING extends Protocol {
                     Address coord=new_view.getCoord();
                     if(Objects.equals(local_addr, coord))
                         return;
-                    Message msg=new Message(coord).setFlag(Message.Flag.OOB).putHeader(id, new Header(Type.CACHE_REQ));
+                    Message msg=new EmptyMessage(coord).setFlag(Message.Flag.OOB).putHeader(id, new Header(Type.CACHE_REQ));
                     down_prot.down(msg);
                     return;
                 }
@@ -142,7 +142,7 @@ public class NAMING extends Protocol {
     protected void multicastOwnMapping() {
         String logical_name=NameCache.get(local_addr);
         if(logical_name != null) {
-            Message msg=new Message(null).setFlag(Message.Flag.OOB).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK)
+            Message msg=new EmptyMessage(null).setFlag(Message.Flag.OOB).setFlag(Message.TransientFlag.DONT_LOOPBACK)
               .putHeader(id, new Header(Type.CACHE_RSP, local_addr, logical_name));
             down_prot.down(msg);
         }

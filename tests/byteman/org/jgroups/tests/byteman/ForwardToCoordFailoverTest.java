@@ -67,7 +67,7 @@ public class ForwardToCoordFailoverTest extends BMNGRunner {
         // Now send message 1-5 (they'll end up in the forward-queue of FORWARD_TO_COORD)
         System.out.println("-- sending message 1-5");
         for(int i=1; i <= 5; i++) {
-            Event evt=new Event(Event.FORWARD_TO_COORD, new Message(null, i));
+            Event evt=new Event(Event.FORWARD_TO_COORD, new BytesMessage(null, i));
             c.down(evt);
         }
 
@@ -136,7 +136,7 @@ public class ForwardToCoordFailoverTest extends BMNGRunner {
 
         public void run() {
             for(int i=1; i <=2; i++) {
-                Message msg=new Message(null, (rank + i));
+                Message msg=new BytesMessage(null, (rank + i));
                 try {
                     System.out.println("[" + rank + "]: sending msg " + (rank + i));
                     ch.send(msg);

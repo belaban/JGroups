@@ -1,10 +1,8 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
+import org.jgroups.*;
 import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;

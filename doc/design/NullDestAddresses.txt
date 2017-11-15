@@ -5,7 +5,7 @@ Nulling of destination addresses for optimized marshalling
 Author: Bela Ban
 Date: Aug 26 2005
 
-When we marshall a message (org.jgroups.Message), we can transmit a null value for the destination, because
+When we marshall a message (org.jgroups.BaseMessage), we can transmit a null value for the destination, because
 the receiver can determine the destination:
 - for UDP: if received on the multicast receive socket, the destination is the multicast address (same as null)
            if received on the unicast receive socket, the destination is the local_addr (ourself)

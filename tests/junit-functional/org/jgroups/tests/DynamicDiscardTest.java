@@ -9,7 +9,7 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.Buffer;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
@@ -58,7 +58,7 @@ public class DynamicDiscardTest {
 
         // send a RSVP message
         byte[] data="message2".getBytes();
-        Buffer buf=new Buffer(data, 0, data.length);
+        ByteArray buf=new ByteArray(data, 0, data.length);
         RspList<Object> rsps=dispatchers[0].castMessage(null, buf, RequestOptions.SYNC().timeout(5000)
           .flags(Message.Flag.RSVP, Message.Flag.OOB));
         Rsp<Object> objectRsp=rsps.get(channels[1].getAddress());

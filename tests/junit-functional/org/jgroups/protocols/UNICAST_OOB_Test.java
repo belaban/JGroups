@@ -79,7 +79,7 @@ public class UNICAST_OOB_Test {
         System.out.println("=============== removed connection between A and B ===========");
 
         REVERSE reverse=new REVERSE().numMessagesToReverse(5)
-          .filter(msg -> msg.getDest() != null && src.equals(msg.getSrc()) && (msg.getFlags() == 0 || msg.isFlagSet(Message.Flag.OOB)));
+          .filter(msg -> msg.getDest() != null && src.equals(msg.getSrc()) && (msg.getFlags(false) == 0 || msg.isFlagSet(Message.Flag.OOB)));
         a.getProtocolStack().insertProtocol(reverse, ProtocolStack.Position.BELOW, UNICAST3.class);
 
         if(use_batches) {
@@ -94,7 +94,7 @@ public class UNICAST_OOB_Test {
         System.out.println("========== B sends messages 1-5 to A ==========");
         long start=System.currentTimeMillis();
         for(int i=1; i <= 5; i++) {
-            Message msg=new Message(dest, (long)i);
+            Message msg=new BytesMessage(dest, (long)i);
             if(oob) msg.setFlag(Message.Flag.OOB);
             b.send(msg);
         }
@@ -121,7 +121,7 @@ public class UNICAST_OOB_Test {
 
         Address dest=b.getAddress();
         for(int i=1; i <=5; i++) {
-            Message msg=new Message(dest,(long)i);
+            Message msg=new BytesMessage(dest, (long)i);
             if(i == 4 && oob)
                 msg.setFlag(Message.Flag.OOB);
             System.out.println("-- sending message #" + i);

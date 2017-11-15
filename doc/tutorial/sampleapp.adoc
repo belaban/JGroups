@@ -19,9 +19,8 @@ listeners that are called when things (such as member joins) happen.
 What is sent around are `Messages`, which contain a byte buffer (the payload), plus the sender's and receiver's address.
 Addresses are subclasses of `org.jgroups.Address`, and usually contain an IP address plus a port.
 
-The list of instances in a cluster is called a `View`, and every instance contains
-exactly the same view. The list of the addresses of all instances can get retrieved by calling
-View.getMembers().
+The list of instances in a cluster is called a `View`, and every instance contains exactly the same view.
+The list of the addresses of all instances can get retrieved by calling `view.getMembers()`.
 
 Instances can only send or receive messages after they've joined a cluster.
 
@@ -32,7 +31,7 @@ The latter actually calls `disconnect()` if the channel is still connected befor
 
 [[creating-channel]]
 === Creating a channel and joining a cluster
-To join a cluster, we'll use a JChannel. An instance of JChannel is created with a configuration
+To join a cluster, we'll use a `JChannel`. An instance of `JChannel` is created with a configuration
 (e.g. an XML file) which defines the properties of the channel. To actually connect to the cluster, the
 `connect(String clustername)` method is used. All channel instances which call connect() with the same argument will
 join the same cluster. So, let's actually create a JChannel and connect to a cluster called "ChatCluster":
@@ -98,7 +97,7 @@ private void eventLoop() {
             if(line.startsWith("quit") || line.startsWith("exit"))
                 break;
             line="[" + user_name + "] " + line;
-            Message msg=new Message(null, line);
+            Message msg=new BytesMessage(null, line);
             channel.send(msg);
         }
         catch(Exception e) {
@@ -111,16 +110,17 @@ We added the call to eventLoop() and the closing of the channel to the start() m
 implementation of eventLoop.
 
 The event loop blocks until a new line is ready (from standard input), then sends a message to the cluster.
-This is done by creating a new Message and calling Channel.send() with it as argument.
+This is done by creating a new `BytesMessage` (a message containing the destination and sender's addresses,
+plus a byte array as payload) and calling `Channel.send()` with it as argument.
 
-The first argument of the Message constructor is the destination address. A null destination address
+The first argument of the BytesMessage constructor is the destination address. A null destination address
 sends the message to everyone in the cluster (a non-null address of an instance would send the message
 to only one instance).
         
 
 The second argument is the line that we read from stdin, this uses Java
 serialization to create a byte[] buffer and set the message's payload. Note that we could also
-serialize the object ourselves (which is actually recommended!) and use the Message contructor which
+serialize the object ourselves (which is actually recommended!) and use the BytesMessage contructor which
 takes a byte[] buffer as second argument.
 
 The application is now fully functional, except that we don't yet receive messages or view notifications.
@@ -145,8 +145,7 @@ public class SimpleChat extends ReceiverAdapter {
 [source,java]
 ----
 private void start() throws Exception {
-    channel=new JChannel().setReceiver(this);
-    channel.connect("ChatCluster");
+    channel=new JChannel().setReceiver(this).connect("ChatCluster");
     eventLoop();
     channel.close();
 }
@@ -168,11 +167,11 @@ The viewAccepted() callback is called whenever a new instance joins the cluster,
 leaves (crashes included). Its toString() method prints out the view ID (an increasing ID) and a list of
 the current instances in the cluster
 
-In receive(), we get a Message as argument. We simply get its buffer as an object (again using Java
-serialization) and print it to stdout. We also print the sender's address (Message.getSrc()).
+In receive(), we get a Message as argument. We simply get its byte array as an object (again using Java
+serialization) and print it to stdout. We also print the sender's address (`Message.getSrc()`).
 
-Note that we could also get the byte[] buffer (the payload) by calling Message.getBuffer() and then
-de-serializing it ourselves, e.g. String line=new String(msg.getBuffer()).
+Note that we could also get the byte array (the payload) by calling `Message.getArray()` and then
+de-serializing it ourselves, e.g. `String line=new String(msg.getArray(), msg.getOffset(), msg.getLength())`.
         
 
 
@@ -307,7 +306,7 @@ return the shared cluster state. It is passed an output stream to which the stat
 that JGroups closes that stream automatically after the state has been written, even in the case of an
 exception, so the stream doesn't need to be closed.
 
-Since access to +state+ may be concurrent, we synchronize it. Then we call Util.objectToStream()
+Since access to state may be concurrent, we synchronize it. Then we call Util.objectToStream()
 which is a JGroups utility method writing an object to an output stream.
         
 The setState() method is called on the _state requester_, ie. the instance

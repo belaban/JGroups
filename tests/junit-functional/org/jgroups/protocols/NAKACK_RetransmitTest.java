@@ -128,7 +128,9 @@ public class NAKACK_RetransmitTest {
 
         public void receive(Message msg) {
             Integer num=msg.getObject();
-            list.add(num);
+            synchronized(list) {
+                list.add(num);
+            }
         }
 
         public Queue<Integer> getList() {return list;}
@@ -173,7 +175,7 @@ public class NAKACK_RetransmitTest {
         protected boolean discard=false;
 
         public Object down(Message msg) {
-            if(msg.dest() == null) {
+            if(msg.getDest() == null) {
                 discard=!discard;
                 if(discard)
                     return null;

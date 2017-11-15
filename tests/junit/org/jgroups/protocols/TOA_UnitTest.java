@@ -1,27 +1,19 @@
 package org.jgroups.protocols;
 
-import static org.testng.AssertJUnit.assertEquals;
-
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Global;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.protocols.tom.DeliveryManagerImpl;
-import org.jgroups.protocols.tom.MessageID;
-import org.jgroups.protocols.tom.SequenceNumberManager;
-import org.jgroups.protocols.tom.TOA;
-import org.jgroups.protocols.tom.ToaHeader;
+import org.jgroups.protocols.tom.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+
+import static org.testng.AssertJUnit.assertEquals;
 
 /**
  * Unit test for TOA protocol
@@ -365,8 +357,8 @@ public class TOA_UnitTest {
       toa.down(new Event(Event.VIEW_CHANGE, View.create(localAddress, viewId, members)));
    }
 
-   private Message newMessage(ToaHeader header, Address from, Address to) {
-      return new Message(to).setSrc(from).putHeader(TOA_ID, header);
+   private static Message newMessage(ToaHeader header, Address from, Address to) {
+      return new EmptyMessage(to).setSrc(from).putHeader(TOA_ID, header);
    }
 
    private static class MockUpProtocol extends Protocol {

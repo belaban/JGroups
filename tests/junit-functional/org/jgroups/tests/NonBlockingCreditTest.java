@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Address;
+import org.jgroups.BytesMessage;
 import org.jgroups.Message;
 import org.jgroups.util.NonBlockingCredit;
 import org.jgroups.util.Util;
@@ -24,7 +25,7 @@ public class NonBlockingCreditTest {
         MessageSender msg_sender=new MessageSender();
         NonBlockingCredit cred=new NonBlockingCredit(max_credits, 500_000, new ReentrantLock(), msg_sender);
         Message msg=msg(1000);
-        boolean success=cred.decrementIfEnoughCredits(msg, msg.length(), 500);
+        boolean success=cred.decrementIfEnoughCredits(msg, msg.getLength(), 500);
         assert success && cred.get() == 9000;
         cred.increment(2000, max_credits);
         assert !cred.isQueuing() && cred.get() == max_credits;
@@ -34,16 +35,16 @@ public class NonBlockingCreditTest {
         MessageSender msg_sender=new MessageSender();
         NonBlockingCredit cred=new NonBlockingCredit(max_credits, 500_000, new ReentrantLock(), msg_sender);
         Message msg=msg(1000);
-        boolean success=cred.decrementIfEnoughCredits(msg, msg.length(), 500);
+        boolean success=cred.decrementIfEnoughCredits(msg, msg.getLength(), 500);
         assert success && cred.get() == 9000;
 
         msg=msg(9000);
-        success=cred.decrementIfEnoughCredits(msg, msg.length(), 500);
+        success=cred.decrementIfEnoughCredits(msg, msg.getLength(), 500);
         assert success && cred.get() == 0;
 
         for(int i=0; i < 5; i++) {
             msg=msg(1000);
-            success=cred.decrementIfEnoughCredits(msg, msg.length(), 500);
+            success=cred.decrementIfEnoughCredits(msg, msg.getLength(), 500);
             assert !success && cred.get() == 0;
         }
 
@@ -81,7 +82,7 @@ public class NonBlockingCreditTest {
 
         for(int i=0; i < 10; i++) {
             Message msg=msg(1000);
-            cred.decrementIfEnoughCredits(msg, msg.length(), 2000);
+            cred.decrementIfEnoughCredits(msg, msg.getLength(), 2000);
             count.incrementAndGet();
         }
         System.out.printf("received %d msgs", count.get());
@@ -91,7 +92,7 @@ public class NonBlockingCreditTest {
 
     protected static Message msg(int size) {
         byte[] buf=new byte[size];
-        return new Message(dest, buf);
+        return new BytesMessage(dest, buf);
     }
 
     protected static class MessageSender implements Consumer<Message> {

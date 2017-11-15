@@ -45,7 +45,7 @@ public class AlternatingBundler extends TransferQueueBundler implements Diagnost
             try {
                 if((msg=queue.take()) == null) // block until first message is available
                     continue;
-                long size=msg.size();
+                int size=msg.size();
                 if(count + size >= transport.getMaxBundleSize()) {
                     num_sends_because_full_queue++;
                     fill_count.add(count);
@@ -53,7 +53,7 @@ public class AlternatingBundler extends TransferQueueBundler implements Diagnost
                 }
 
                 for(;;) {
-                    Address dest=msg.dest();
+                    Address dest=msg.getDest();
                     if(!Util.match(dest, target_dest) || count + size >= transport.getMaxBundleSize())
                         _sendBundledMessages();
                     _addMessage(msg, size);
@@ -111,7 +111,7 @@ public class AlternatingBundler extends TransferQueueBundler implements Diagnost
     }
 
     protected void _addMessage(Message msg, long size) {
-        target_dest=msg.dest();
+        target_dest=msg.getDest();
         target_list.add(msg);
         count+=size;
     }

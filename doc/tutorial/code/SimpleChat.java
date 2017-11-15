@@ -31,7 +31,6 @@ public class SimpleChat extends ReceiverAdapter {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public void setState(InputStream input) throws Exception {
         List<String> list=Util.objectFromStream(new DataInputStream(input));
         synchronized(state) {
@@ -61,7 +60,7 @@ public class SimpleChat extends ReceiverAdapter {
                     break;
                 }
                 line="[" + user_name + "] " + line;
-                Message msg=new Message(null, line);
+                Message msg=new BytesMessage(null, line);
                 channel.send(msg);
             }
             catch(Exception e) {

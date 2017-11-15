@@ -130,7 +130,7 @@ public class FifoOrderTest extends ChannelTestBase {
             }
 
             for(int i=1; i <= NUM; i++) {
-                msg=new Message(null, i);
+                msg=new BytesMessage(null, i);
                 try {                    
                     ch.send(msg);
                 }

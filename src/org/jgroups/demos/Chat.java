@@ -1,9 +1,6 @@
 package org.jgroups.demos;
 
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.View;
+import org.jgroups.*;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -51,7 +48,7 @@ public class Chat extends ReceiverAdapter {
                 if(line.startsWith("quit") || line.startsWith("exit")) {
                     break;
                 }
-                Message msg=new Message(null, line);
+                Message msg=new BytesMessage(null, line);
                 channel.send(msg);
             }
             catch(Exception ignored) {

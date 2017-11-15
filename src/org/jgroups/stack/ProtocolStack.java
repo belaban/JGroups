@@ -1,9 +1,6 @@
 package org.jgroups.stack;
 
-import org.jgroups.Event;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverter;

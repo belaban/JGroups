@@ -388,7 +388,7 @@ public class FD_ALL2 extends Protocol {
      */
     class HeartbeatSender implements Runnable {
         public void run() {
-            Message heartbeat=new Message().setFlag(Message.Flag.INTERNAL).putHeader(id, new HeartbeatHeader());
+            Message heartbeat=new EmptyMessage().setFlag(Message.Flag.INTERNAL).putHeader(id, new HeartbeatHeader());
             down_prot.down(heartbeat);
             num_heartbeats_sent++;
             log.trace("%s: sent heartbeat", local_addr);

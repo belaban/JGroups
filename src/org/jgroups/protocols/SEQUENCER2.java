@@ -320,14 +320,14 @@ public class SEQUENCER2 extends Protocol {
         if(target == null)
             return;
         SequencerHeader hdr=new SequencerHeader(SequencerHeader.REQUEST, 0, num_seqnos);
-        Message forward_msg=new Message(target).putHeader(this.id, hdr);
+        Message forward_msg=new EmptyMessage(target).putHeader(this.id, hdr);
         down_prot.down(forward_msg);
         sent_requests++;
     }
     
 	protected void sendSeqnoResponse(Address original_sender,long seqno, int num_seqnos) {
 		SequencerHeader hdr = new SequencerHeader(SequencerHeader.RESPONSE, seqno, num_seqnos);
-		Message ucast_msg = new Message(original_sender).putHeader(this.id, hdr);
+		Message ucast_msg = new EmptyMessage(original_sender).putHeader(this.id, hdr);
 		
         if (log.isTraceEnabled())
             log.trace(local_addr + ": sending seqno response to " + original_sender + ":: new_seqno=" + seqno + ", num_seqnos=" + num_seqnos);

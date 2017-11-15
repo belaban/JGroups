@@ -1,8 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Address;
-import org.jgroups.Message;
-import org.jgroups.PhysicalAddress;
+import org.jgroups.*;
 import org.jgroups.protocols.Bundler;
 import org.jgroups.protocols.RingBufferBundlerLockless2;
 import org.jgroups.protocols.TP;
@@ -57,7 +55,7 @@ public class RingBundlerTestLockless2 {
         bundler.init(transport);
 
         for(int i =0; i < 6; i++)
-            bundler.send(new Message(null));
+            bundler.send(new EmptyMessage(null));
 
         int cnt=bundler.size();
         assert cnt == 6;
@@ -71,7 +69,7 @@ public class RingBundlerTestLockless2 {
         assert transport.map.get(null) == 1;
         transport.map.clear();
 
-        for(Message msg: create(10000, null, a,a,a,b,c,d,d,a, null, null, a))
+        for(Message msg: create(10000, null, a, a, a, b, c, d, d, a, null, null, a))
             bundler.send(msg);
         System.out.println("bundler = " + bundler);
 
@@ -106,7 +104,7 @@ public class RingBundlerTestLockless2 {
         assert bundler.writeIndex() == 4;
         assert bundler.readIndex() == 2;
         assert bundler.size() == 1;
-        buf[3]=new Message(null);
+        buf[3]=new EmptyMessage(null);
         bundler._readMessages();
         assert bundler.readIndex() == 3;
         assert bundler.size() == 0;
@@ -116,7 +114,7 @@ public class RingBundlerTestLockless2 {
     protected List<Message> create(int msg_size, Address ... destinations) {
         List<Message> list=new ArrayList<>(destinations.length);
         for(Address dest: destinations)
-            list.add(new Message(dest, new byte[msg_size]));
+            list.add(new BytesMessage(dest, new byte[msg_size]));
         return list;
     }
 
@@ -138,7 +136,7 @@ public class RingBundlerTestLockless2 {
                 e.printStackTrace();
             }
             try {
-                bundler.send(new Message(a));
+                bundler.send(new EmptyMessage(a));
             }
             catch(Exception e) {
                 e.printStackTrace();

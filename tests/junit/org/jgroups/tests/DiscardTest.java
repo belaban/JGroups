@@ -140,7 +140,7 @@ public class DiscardTest extends ChannelTestBase {
         byte[] buf=new byte[size];
         for(int i=0;i < buf.length;i++)
             buf[i]=(byte)'x';
-        return new Message(null, buf);
+        return new BytesMessage(null, buf);
     }
 
 

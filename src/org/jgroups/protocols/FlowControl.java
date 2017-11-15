@@ -315,7 +315,7 @@ public abstract class FlowControl extends Protocol {
 
         // if the message is DONT_LOOPBACK, we will not receive it, therefore the credit
         // check needs to be done now
-        if(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK)) {
+        if(msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK)) {
             long new_credits=adjustCredit(received, local_addr, length);
             if(new_credits > 0)
                 sendCredit(local_addr, new_credits);
@@ -368,12 +368,12 @@ public abstract class FlowControl extends Protocol {
         switch(hdr.type) {
             case FcHeader.REPLENISH:
                 num_credit_responses_received++;
-                handleCredit(msg.getSrc(), bufferToLong(msg.getRawBuffer(), msg.getOffset()));
+                handleCredit(msg.getSrc(), bufferToLong(msg.getArray(), msg.getOffset()));
                 break;
             case FcHeader.CREDIT_REQUEST:
                 num_credit_requests_received++;
                 Address sender=msg.getSrc();
-                Long requested_credits=bufferToLong(msg.getRawBuffer(), msg.getOffset());
+                Long requested_credits=bufferToLong(msg.getArray(), msg.getOffset());
                 if(requested_credits != null)
                     handleCreditRequest(received, sender,requested_credits);
                 break;
@@ -473,7 +473,7 @@ public abstract class FlowControl extends Protocol {
     protected void sendCredit(Address dest, long credits) {
         if(log.isTraceEnabled())
             log.trace("sending %d credits to %s", credits, dest);
-        Message msg=new Message(dest, longToBuffer(credits))
+        Message msg=new BytesMessage(dest, longToBuffer(credits))
           .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
           .putHeader(this.id,getReplenishHeader());
         down_prot.down(msg);
@@ -489,7 +489,7 @@ public abstract class FlowControl extends Protocol {
     protected void sendCreditRequest(final Address dest, long credits_needed) {
         if(log.isTraceEnabled())
             log.trace("sending request for %d credits to %s", credits_needed, dest);
-        Message msg=new Message(dest, longToBuffer(credits_needed))
+        Message msg=new BytesMessage(dest, longToBuffer(credits_needed))
           .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
           .putHeader(this.id, getCreditRequestHeader());
         down_prot.down(msg);

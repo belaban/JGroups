@@ -4,6 +4,8 @@
 package org.jgroups.protocols;
 
 
+import org.jgroups.BytesMessage;
+import org.jgroups.DefaultMessageFactory;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.conf.ClassConfigurator;
@@ -31,6 +33,7 @@ public class ENCRYPTKeystoreTest {
         SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName("unkownKeystore.keystore");
         try {
             encrypt.init();
+            encrypt.msgFactory(new DefaultMessageFactory());
         }
         catch(Exception e) {
             System.out.println("didn't find incorrect keystore (as expected): " + e.getMessage());
@@ -40,6 +43,7 @@ public class ENCRYPTKeystoreTest {
     public void testInitKeystoreProperties() throws Exception {
         SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName("defaultStore.keystore");
         encrypt.init();
+        encrypt.msgFactory(new DefaultMessageFactory());
     }
 
     public void testMessageDownEncode() throws Exception {
@@ -48,15 +52,15 @@ public class ENCRYPTKeystoreTest {
         encrypt.setDownProtocol(observer);
 
         String messageText="hello this is a test message";
-        Message msg=new Message(null, messageText.getBytes());
+        Message msg=new BytesMessage(null, messageText.getBytes());
 
         encrypt.down(msg);
         Message sentMsg=observer.getDownMessages().get("message0");
-        String encText=new String(sentMsg.getBuffer());
+        String encText=new String(sentMsg.getArray(), sentMsg.getOffset(), sentMsg.getLength());
         assert !encText.equals(messageText);
         EncryptHeader encHeader = sentMsg.getHeader(ENCRYPT_ID);
         assert encHeader != null;
-        byte[] decodedBytes=encrypt.code(sentMsg.getRawBuffer(), sentMsg.getOffset(), sentMsg.getLength(), encHeader.iv(), true);
+        byte[] decodedBytes=encrypt.code(sentMsg.getArray(), sentMsg.getOffset(), sentMsg.getLength(), encHeader.iv(), true);
         String temp=new String(decodedBytes);
         System.out.printf("decoded text: '%s'\n", temp);
         assert temp.equals(messageText) : String.format("sent: '%s', decoded: '%s'", messageText, temp);
@@ -80,10 +84,10 @@ public class ENCRYPTKeystoreTest {
         digest.update(encrypt.secretKey().getEncoded());
 
         byte[] symVersion=digest.digest();
-        Message msg=new Message(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader((byte)0, symVersion, iv));
+        Message msg=new BytesMessage(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader((byte)0, symVersion, iv));
         encrypt.up(msg);
         Message rcvdMsg=observer.getUpMessages().get("message0");
-        String decText=new String(rcvdMsg.getBuffer());
+        String decText=new String(rcvdMsg.getArray(), rcvdMsg.getOffset(), rcvdMsg.getLength());
         assert decText.equals(messageText);
 
     }
@@ -105,7 +109,7 @@ public class ENCRYPTKeystoreTest {
 
         byte[] symVersion=digest.digest();
 
-        Message msg=new Message(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader((byte)0, symVersion, iv));
+        Message msg=new BytesMessage(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader((byte)0, symVersion, iv));
         encrypt.up(msg);
         assert observer.getUpMessages().isEmpty();
     }
@@ -118,7 +122,7 @@ public class ENCRYPTKeystoreTest {
         byte[] bytes=messageText.getBytes();
         byte[] encodedBytes=encrypt2.code(bytes, 0, bytes.length, encrypt2.makeIv(), false);
         assert !new String(encodedBytes).equals(messageText);
-        Message msg=new Message(null, encodedBytes);
+        Message msg=new BytesMessage(null, encodedBytes);
         encrypt.up(msg);
         assert observer.getUpMessages().isEmpty();
     }
@@ -128,13 +132,13 @@ public class ENCRYPTKeystoreTest {
         SYM_ENCRYPT encrypt=create("defaultStore.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
-        encrypt.up(new Message().putHeader(ENCRYPT_ID, new EncryptHeader((byte)0, "bla".getBytes(), encrypt.makeIv())));
+        encrypt.up((Message)new BytesMessage().putHeader(ENCRYPT_ID, new EncryptHeader((byte)0, "bla".getBytes(), encrypt.makeIv())));
         assert observer.getUpMessages().isEmpty();
     }
 
     public void testEncryptEntireMessage() throws Exception {
         SYM_ENCRYPT encrypt=create("defaultStore.keystore");
-        Message msg=new Message(null, "hello world".getBytes()).putHeader((short)1, new TpHeader("cluster"));
+        Message msg=new BytesMessage(null, "hello world".getBytes()).putHeader((short)1, new TpHeader("cluster"));
         MockProtocol mock=new MockProtocol();
         encrypt.setDownProtocol(mock);
         encrypt.down(msg);
@@ -146,13 +150,14 @@ public class ENCRYPTKeystoreTest {
         encrypt.up(encrypted_msg);
 
         Message decrypted_msg=mock.getUpMessages().get("message1");
-        String temp=new String(decrypted_msg.getBuffer());
+        String temp=new String(decrypted_msg.getArray(), decrypted_msg.getOffset(), decrypted_msg.getLength());
         assert "hello world".equals(temp);
     }
 
     protected SYM_ENCRYPT create(String keystore) throws Exception {
         SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName(keystore).symAlgorithm(symAlgorithm()).symIvLength(symIvLength());
         encrypt.init();
+        encrypt.msgFactory(new DefaultMessageFactory());
         return encrypt;
     }
 

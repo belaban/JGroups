@@ -361,7 +361,7 @@ public class MessageBatch implements Iterable<Message> {
     }
 
 
-    /** Returns the size of the message batch (by calling {@link org.jgroups.Message#size()} on all messages) */
+    /** Returns the size of the message batch (by calling {@link Message#size()} on all messages) */
     public long totalSize() {
         long retval=0;
         for(int i=0; i < index; i++)
@@ -369,7 +369,7 @@ public class MessageBatch implements Iterable<Message> {
         return retval;
     }
 
-    /** Returns the total number of bytes of the message batch (by calling {@link org.jgroups.Message#getLength()} on all messages) */
+    /** Returns the total number of bytes of the message batch (by calling {@link Message#getLength()} on all messages) */
     public int length() {
         int retval=0;
         for(int i=0; i < index; i++)

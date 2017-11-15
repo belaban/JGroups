@@ -51,7 +51,7 @@ public class RelayDemo extends ReceiverAdapter {
         System.out.println("<< " + msg.getObject() + " from " + sender);
         Address dst=msg.getDest();
         if(dst == null) {
-            Message rsp=new Message(msg.getSrc(), "response");
+            Message rsp=new BytesMessage(msg.getSrc(), "response");
             try {
                 ch.send(rsp);
             }

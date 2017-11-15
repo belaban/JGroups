@@ -1,9 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Global;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.DefaultThreadFactory;
 import org.jgroups.util.ThreadFactory;

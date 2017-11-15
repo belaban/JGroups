@@ -74,7 +74,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
                         return;
                     }
 
-                    instream=new DataInputStream(new ByteArrayInputStream(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
+                    instream=new DataInputStream(new ByteArrayInputStream(msg.getArray(), msg.getOffset(), msg.getLength()));
                     int r=0;
                     try {
                         r=instream.readInt();
@@ -193,7 +193,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
             outstream.writeInt(blue);
             outstream.writeInt(x);
             outstream.writeInt(y);
-            channel.send(new Message(null, out.toByteArray()));
+            channel.send(new BytesMessage(null, out.toByteArray()));
             out.reset();
         }
         catch(Exception ex) {
@@ -220,7 +220,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
             out.reset();
             outstream=new DataOutputStream(out);
             outstream.writeInt(-13);
-            channel.send(new Message(null, out.toByteArray()));
+            channel.send(new BytesMessage(null, out.toByteArray()));
             outstream.flush();
         }
         catch(Exception ex) {

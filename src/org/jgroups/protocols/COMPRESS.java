@@ -1,11 +1,10 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Global;
-import org.jgroups.Header;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
@@ -36,22 +35,23 @@ public class COMPRESS extends Protocol {
     protected int compression_level=Deflater.BEST_COMPRESSION; // this is 9
    
     @Property(description="Minimal payload size of a message (in bytes) for compression to kick in. Default is 500 bytes")
-    protected long min_size=500;
+    protected int min_size=500;
     
     @Property(description="Number of inflaters/deflaters for concurrent processing. Default is 2 ")
     protected int pool_size=2;
     
-    
-    /* --------------------------------------------- Fields ------------------------------------------------------ */
-    
-    
-    protected BlockingQueue<Deflater> deflater_pool=null;
-    protected BlockingQueue<Inflater> inflater_pool=null;
+    protected BlockingQueue<Deflater> deflater_pool;
+    protected BlockingQueue<Inflater> inflater_pool;
+    protected MessageFactory          msg_factory;
 
-    
+
+
 
     public COMPRESS() {      
     }
+
+    public int      getMinSize()      {return min_size;}
+    public COMPRESS setMinSize(int s) {this.min_size=s; return this;}
 
 
     public void init() throws Exception {
@@ -61,6 +61,7 @@ public class COMPRESS extends Protocol {
         inflater_pool=new ArrayBlockingQueue<>(pool_size);
         for(int i=0; i < pool_size; i++)
             inflater_pool.add(new Inflater());
+        msg_factory=getTransport().getMessageFactory();
     }
 
     public void destroy() {
@@ -78,20 +79,29 @@ public class COMPRESS extends Protocol {
     public Object down(Message msg) {
         int length=msg.getLength(); // takes offset/length (if set) into account
         if(length >= min_size) {
-            byte[] payload=msg.getRawBuffer(); // here we get the ref so we can avoid copying
+            boolean serialize=!msg.hasArray();
+            ByteArray tmp=null;
+            byte[] payload=serialize? (tmp=messageToByteArray(msg)).getArray() : msg.getArray();
+            int offset=serialize? tmp.getOffset() : msg.getOffset();
+            length=serialize? tmp.getLength() : msg.getLength();
             byte[] compressed_payload=new byte[length];
             Deflater deflater=null;
             try {
                 deflater=deflater_pool.take();
                 deflater.reset();
-                deflater.setInput(payload, msg.getOffset(), length);
+                deflater.setInput(payload, offset, length);
                 deflater.finish();
                 deflater.deflate(compressed_payload);
                 int compressed_size=deflater.getTotalOut();
 
                 if(compressed_size < length ) { // JGRP-1000
-                    Message copy=msg.copy(false).putHeader(this.id,new CompressHeader(length))
-                      .setBuffer(compressed_payload, 0, compressed_size);
+                    Message copy=null;
+                    if(serialize)
+                        copy=new BytesMessage(msg.getDest());
+                    else
+                        copy=msg.copy(false, true);
+                    copy.setArray(compressed_payload, 0, compressed_size)
+                      .putHeader(this.id, new CompressHeader(length).needsDeserialization(serialize));
                     if(log.isTraceEnabled())
                         log.trace("compressed payload from %d bytes to %d bytes", length, compressed_size);
                     return down_prot.down(copy);
@@ -120,7 +130,7 @@ public class COMPRESS extends Protocol {
     public Object up(Message msg) {
         CompressHeader hdr=msg.getHeader(this.id);
         if(hdr != null) {
-            Message uncompressed_msg=uncompress(msg, hdr.original_size);
+            Message uncompressed_msg=uncompress(msg, hdr.original_size, hdr.needsDeserialization());
             if(uncompressed_msg != null) {
                 if(log.isTraceEnabled())
                     log.trace("uncompressed %d bytes to %d bytes", msg.getLength(), uncompressed_msg.getLength());
@@ -134,7 +144,7 @@ public class COMPRESS extends Protocol {
         for(Message msg: batch) {
             CompressHeader hdr=msg.getHeader(this.id);
             if(hdr != null) {
-                Message uncompressed_msg=uncompress(msg, hdr.original_size);
+                Message uncompressed_msg=uncompress(msg, hdr.original_size, hdr.needsDeserialization());
                 if(uncompressed_msg != null) {
                     if(log.isTraceEnabled())
                         log.trace("uncompressed %d bytes to %d bytes", msg.getLength(), uncompressed_msg.getLength());
@@ -148,8 +158,8 @@ public class COMPRESS extends Protocol {
     }
 
     /** Returns a new message as a result of uncompressing msg, or null if msg couldn't be uncompressed */
-    protected Message uncompress(Message msg, int original_size) {
-        byte[] compressed_payload=msg.getRawBuffer();
+    protected Message uncompress(Message msg, int original_size, boolean needs_deserialization) {
+        byte[] compressed_payload=msg.getArray();
         if(compressed_payload != null && compressed_payload.length > 0) {
             byte[] uncompressed_payload=new byte[original_size];
             Inflater inflater=null;
@@ -160,7 +170,11 @@ public class COMPRESS extends Protocol {
                 try {
                     inflater.inflate(uncompressed_payload);
                     // we need to copy: https://jira.jboss.org/jira/browse/JGRP-867
-                    return msg.copy(false).setBuffer(uncompressed_payload);
+                    if(needs_deserialization) {
+                        return messageFromByteArray(uncompressed_payload, msg_factory);
+                    }
+                    else
+                        return msg.copy(false, true).setArray(uncompressed_payload, 0, uncompressed_payload.length);
                 }
                 catch(DataFormatException e) {
                     log.error(Util.getMessage("CompressionFailure"), e);
@@ -177,10 +191,28 @@ public class COMPRESS extends Protocol {
         return null;
     }
 
+    protected static ByteArray messageToByteArray(Message msg) {
+        try {
+            return Util.messageToBuffer(msg);
+        }
+        catch(Exception ex) {
+            throw new RuntimeException("failed marshalling message", ex);
+        }
+    }
+
+    protected static Message messageFromByteArray(byte[] uncompressed_payload, MessageFactory msg_factory) {
+        try {
+            return Util.messageFromBuffer(uncompressed_payload, 0, uncompressed_payload.length, msg_factory);
+        }
+        catch(Exception ex) {
+            throw new RuntimeException("failed unmarshalling message", ex);
+        }
+    }
 
 
     public static class CompressHeader extends Header {
-        int original_size=0;
+        protected int     original_size;
+        protected boolean needs_deserialization;
 
         public CompressHeader() {
             super();
@@ -190,25 +222,22 @@ public class COMPRESS extends Protocol {
             original_size=s;
         }
 
-        public short getMagicId() {return 58;}
-
-        public Supplier<? extends Header> create() {
-            return CompressHeader::new;
-        }
-
-        @Override
-        public int serializedSize() {
-            return Global.INT_SIZE;
-        }
+        public short                      getMagicId()                       {return 58;}
+        public Supplier<? extends Header> create()                           {return CompressHeader::new;}
+        public boolean                    needsDeserialization()             {return needs_deserialization;}
+        public CompressHeader             needsDeserialization(boolean flag) {needs_deserialization=flag; return this;}
+        @Override public int              serializedSize()                   {return Global.INT_SIZE + Global.BYTE_SIZE;}
 
         @Override
         public void writeTo(DataOutput out) throws IOException {
             out.writeInt(original_size);
+            out.writeBoolean(needs_deserialization);
         }
 
         @Override
         public void readFrom(DataInput in) throws IOException {
             original_size=in.readInt();
+            needs_deserialization=in.readBoolean();
         }
     }
 }

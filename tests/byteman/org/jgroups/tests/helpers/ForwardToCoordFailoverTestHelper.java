@@ -2,8 +2,8 @@ package org.jgroups.tests.helpers;
 
 import org.jboss.byteman.rule.Rule;
 import org.jboss.byteman.rule.helper.Helper;
+import org.jgroups.BytesMessage;
 import org.jgroups.Event;
-import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
 
 /**
@@ -20,7 +20,7 @@ public class ForwardToCoordFailoverTestHelper extends Helper {
         final Thread sender=new Thread() {
             public void run() {
                 for(int i=start; i <= end; i++) {
-                    Event evt=new Event(Event.FORWARD_TO_COORD, new Message(null, i));
+                    Event evt=new Event(Event.FORWARD_TO_COORD, new BytesMessage(null, i));
                     System.out.println("[byteman] --> sending message " + i);
                     prot.down(evt);
                 }

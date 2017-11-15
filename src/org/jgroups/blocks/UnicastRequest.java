@@ -7,7 +7,7 @@ import org.jgroups.UnreachableException;
 import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.protocols.relay.SiteAddress;
-import org.jgroups.util.Buffer;
+import org.jgroups.util.ByteArray;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -31,7 +31,7 @@ public class UnicastRequest<T> extends Request<T> {
     }
 
 
-    public void sendRequest(Buffer data) throws Exception {
+    public void sendRequest(ByteArray data) throws Exception {
         try {
             corr.sendUnicastRequest(target, data, options.mode() == ResponseMode.GET_NONE? null : this, this.options);
         }

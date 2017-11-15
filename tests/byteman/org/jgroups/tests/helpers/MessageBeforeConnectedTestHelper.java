@@ -2,6 +2,7 @@ package org.jgroups.tests.helpers;
 
 import org.jboss.byteman.rule.Rule;
 import org.jboss.byteman.rule.helper.Helper;
+import org.jgroups.BytesMessage;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.protocols.UNICAST3;
@@ -21,7 +22,7 @@ public class MessageBeforeConnectedTestHelper extends Helper {
      * Sends a unicast message up UNICAST2
      */
     public void sendUnicast(JChannel ch) throws Exception {
-        final Message msg=new Message(ch.getAddress(), "hello-1").src(ch.getAddress());
+        final Message msg=new BytesMessage(ch.getAddress(), "hello-1").setSrc(ch.getAddress());
 
         // Add a UNICAST2 header
         final UNICAST3 unicast=ch.getProtocolStack().findProtocol(UNICAST3.class);

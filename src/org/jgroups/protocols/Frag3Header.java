@@ -1,5 +1,6 @@
 package org.jgroups.protocols;
 
+import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.util.Bits;
 
@@ -13,12 +14,12 @@ import java.util.function.Supplier;
  * @author Bela Ban
  */
 public class Frag3Header extends Header {
-    protected int  id;              // unique sequence number - same for all fragments of a given original message
-    protected int  frag_id;         // the ID of the frag, starting with 0. E.g. 4 fragments will have IDs from 0 to 3
-    protected int  num_frags;       // the total number of fragments
-    protected int  original_length; // the length of the original message
-    protected int  offset;          // offset of this fragment in the original message; length is in Message.getLength()
-
+    protected int     id;              // unique sequence number - same for all fragments of a given original message
+    protected int     frag_id;         // the ID of the frag, starting with 0. E.g. 4 fragments will have IDs from 0 to 3
+    protected int     num_frags;       // the total number of fragments
+    protected int     original_length; // the length of the original message
+    protected int     offset;          // offset of this fragment in the original message; length is in Message.getLength()
+    protected boolean needs_deserialization; // true if byte[] array of a fragment needs to be de-serialized into a payload
 
 
     public Frag3Header() {
@@ -38,11 +39,10 @@ public class Frag3Header extends Header {
         this.offset=offset;
     }
 
-    public short getMagicId() {return 91;}
-
-    public Supplier<? extends Header> create() {
-        return Frag3Header::new;
-    }
+    public short                      getMagicId()                       {return 91;}
+    public Supplier<? extends Header> create()                           {return Frag3Header::new;}
+    public boolean                    needsDeserialization()             {return needs_deserialization;}
+    public Frag3Header                needsDeserialization(boolean flag) {needs_deserialization=flag; return this;}
 
     public String toString() {
         return String.format("[id=%d, frag-id=%d, num_frags=%d orig-length=%d, offset=%d]",
@@ -56,11 +56,13 @@ public class Frag3Header extends Header {
         Bits.writeInt(num_frags, out);
         Bits.writeInt(original_length, out);
         Bits.writeInt(offset, out);
+        out.writeBoolean(needs_deserialization);
     }
 
     @Override
     public int serializedSize() {
-        return Bits.size(id) + Bits.size(frag_id) + Bits.size(num_frags) + Bits.size(original_length) + Bits.size(offset);
+        return Bits.size(id) + Bits.size(frag_id) + Bits.size(num_frags) + Bits.size(original_length)
+          + Bits.size(offset) + Global.BYTE_SIZE;
     }
 
     @Override
@@ -70,6 +72,7 @@ public class Frag3Header extends Header {
         num_frags=Bits.readInt(in);
         original_length=Bits.readInt(in);
         offset=Bits.readInt(in);
+        needs_deserialization=in.readBoolean();
     }
 
 }

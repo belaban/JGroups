@@ -1,5 +1,6 @@
 package org.jgroups.protocols;
 
+import org.jgroups.BytesMessage;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
@@ -8,7 +9,8 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.util.*;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.IOException;
 import java.net.*;
 import java.util.*;
 
@@ -194,7 +196,7 @@ public class MPING extends PING implements Runnable {
             try {
                 mcast_receive_sock.receive(packet);
                 DataInput inp=new ByteArrayDataInputStream(packet.getData(), packet.getOffset(), packet.getLength());
-                Message msg=new Message();
+                Message msg=new BytesMessage();
                 msg.readFrom(inp);
                 if(!Objects.equals(local_addr,msg.getSrc())) // discard discovery request from self
                     up(msg);
@@ -265,10 +267,10 @@ public class MPING extends PING implements Runnable {
         try {
             if(msg.getSrc() == null)
                 msg.setSrc(local_addr);
-            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)(msg.size()+1));
+            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(msg.size()+1);
             msg.writeTo(out);
-            Buffer buf=out.getBuffer();
-            DatagramPacket packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), mcast_addr, mcast_port);
+            ByteArray buf=out.getBuffer();
+            DatagramPacket packet=new DatagramPacket(buf.getArray(), buf.getOffset(), buf.getLength(), mcast_addr, mcast_port);
             if(mcast_send_sockets != null) {
                 MulticastSocket s;
                 for(int i=0; i < mcast_send_sockets.length; i++) {

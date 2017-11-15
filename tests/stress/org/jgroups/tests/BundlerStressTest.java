@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Address;
+import org.jgroups.BytesMessage;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.protocols.*;
@@ -181,7 +182,7 @@ public class BundlerStressTest {
     protected Message[] generateMessages(int num) {
         Message[] msgs=new Message[num];
         for(int i=0; i < msgs.length; i++)
-            msgs[i]=new Message(pickAddress(), new byte[msg_size]);
+            msgs[i]=new BytesMessage(pickAddress(), new byte[msg_size]);
         return msgs;
     }
 

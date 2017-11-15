@@ -1,10 +1,7 @@
 package org.jgroups.protocols.pbcast;
 
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.protocols.PingData;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Promise;
@@ -223,7 +220,7 @@ public class ClientGmsImpl extends GmsImpl {
     void sendJoinMessage(Address coord, Address mbr,boolean joinWithTransfer, boolean useFlushIfPresent) {
         byte type=joinWithTransfer? GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER : GMS.GmsHeader.JOIN_REQ;
         GMS.GmsHeader hdr=new GMS.GmsHeader(type, mbr, useFlushIfPresent);
-        Message msg=new Message(coord).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL).putHeader(gms.getId(), hdr);
+        Message msg=new BytesMessage(coord).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL).putHeader(gms.getId(), hdr);
         gms.getDownProtocol().down(msg);
     }
 

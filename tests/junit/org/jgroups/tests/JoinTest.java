@@ -69,7 +69,7 @@ public class JoinTest extends ChannelTestBase {
         MyReceiver r2=new MyReceiver("c2");
         a.setReceiver(r1);
         b.setReceiver(r2);
-        Message m1=new Message(null, "message-1"), m2=new Message(null, "message-2");
+        Message m1=new BytesMessage(null, "message-1"), m2=new BytesMessage(null, "message-2");
         a.connect("JoinTest-2");
         View view=a.getView();
         assert view.size() == 2 : "c1's view: " + view;

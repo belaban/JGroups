@@ -55,7 +55,7 @@ public class FlushTest {
             a.connect("testJoinFollowedByUnicast");
 
             Address target = a.getAddress();
-            Message unicast_msg = new Message(target);
+            Message unicast_msg = new EmptyMessage(target);
 
             b = createChannel("B");
             b.setReceiver(new SimpleReplier(b,false));
@@ -80,7 +80,7 @@ public class FlushTest {
             a.connect("testStateTransferFollowedByUnicast");
 
             Address target = a.getAddress();
-            Message unicast_msg = new Message(target);
+            Message unicast_msg = new EmptyMessage(target);
 
             b = createChannel("B");
             b.setReceiver(new SimpleReplier(b,false));
@@ -475,7 +475,7 @@ public class FlushTest {
                 }
                 if (msgCount > 0) {
                     for (int i = 0; i < msgCount; i++) {
-                        channel.send(new Message());
+                        channel.send(new EmptyMessage());
                         Util.sleep(100);
                     }
                 }
@@ -496,7 +496,7 @@ public class FlushTest {
         }
 
         public void receive(Message msg) {
-            Message reply = new Message(msg.getSrc());
+            Message reply = new EmptyMessage(msg.getSrc());
             try {
                 System.out.println("-- MySimpleReplier[" + channel.getAddress() + "]: received message from " + msg.getSrc());
                 if (handle_requests) {

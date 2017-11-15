@@ -127,8 +127,8 @@ public class AUTH extends Protocol {
         if(gms_hdr != null && needsAuthentication(msg, gms_hdr)) {
             AuthHeader auth_hdr=msg.getHeader(id);
             if(auth_hdr == null) {
-                sendRejectionMessage(gms_hdr.getType(), msg.src(), "no AUTH header found in message");
-                throw new IllegalStateException(String.format("found %s from %s but no AUTH header", gms_hdr, msg.src()));
+                sendRejectionMessage(gms_hdr.getType(), msg.getSrc(), "no AUTH header found in message");
+                throw new IllegalStateException(String.format("found %s from %s but no AUTH header", gms_hdr, msg.getSrc()));
             }
             if(!handleAuthHeader(gms_hdr, auth_hdr, msg)) // authentication failed
                 return null;    // don't pass up
@@ -232,14 +232,14 @@ public class AUTH extends Protocol {
             return;
 
         JoinRsp joinRes=new JoinRsp(error_msg); // specify the error message on the JoinRsp
-        Message msg = new Message(dest).putHeader(GMS_ID, new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP))
-          .setBuffer(GMS.marshal(joinRes));
+        Message msg=new BytesMessage(dest).putHeader(GMS_ID, new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP))
+          .setArray(GMS.marshal(joinRes));
         down_prot.down(msg);
     }
 
     protected void sendMergeRejectionMessage(Address dest) {
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP).setMergeRejected(true);
-        Message msg=new Message(dest).setFlag(Message.Flag.OOB).putHeader(GMS_ID, hdr);
+        Message msg=new EmptyMessage(dest).setFlag(Message.Flag.OOB).putHeader(GMS_ID, hdr);
         if(this.authenticate_coord)
             msg.putHeader(this.id, new AuthHeader(this.auth_token));
         log.debug("merge response=%s", hdr);
@@ -255,7 +255,7 @@ public class AUTH extends Protocol {
     }
 
     protected static JoinRsp getJoinResponse(Message msg) {
-        byte[] buf=msg.getRawBuffer();
+        byte[] buf=msg.getArray();
         try {
             return buf != null? Util.streamableFromBuffer(JoinRsp::new, buf, msg.getOffset(), msg.getLength()) : null;
         }

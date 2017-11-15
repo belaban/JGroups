@@ -23,8 +23,8 @@ public class ByteBufferOutputStream implements DataOutput {
 
     public ByteBuffer getBuffer() {return buf;}
 
-    public Buffer getBufferAsBuffer() {
-        return new Buffer(buf.array(), buf.arrayOffset(), buf.position());
+    public ByteArray getBufferAsBuffer() {
+        return new ByteArray(buf.array(), buf.arrayOffset(), buf.position());
     }
 
 

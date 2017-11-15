@@ -5,7 +5,7 @@
     <!-- Generic classes -->
     <class id="1"  name="org.jgroups.stack.IpAddress"/>
     <class id="2" name="org.jgroups.stack.IpAddressUUID"/>
-    <class id="3"  name="org.jgroups.Message"/>
+    <class id="3"  name="org.jgroups.BytesMessage"/>
     <class id="4"  name="org.jgroups.View"/>
     <class id="5"  name="org.jgroups.ViewId"/>
     <class id="6"  name="org.jgroups.MergeView"/>

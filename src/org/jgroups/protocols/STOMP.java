@@ -186,14 +186,14 @@ public class STOMP extends Protocol implements Runnable {
             if(forward_non_client_generated_msgs) {
                 HashMap<String, String> hdrs=new HashMap<>();
                 hdrs.put("sender", msg.getSrc().toString());
-                sendToClients(hdrs, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                sendToClients(hdrs, msg.getArray(), msg.getOffset(), msg.getLength());
             }
             return up_prot.up(msg);
         }
 
         switch(hdr.type) {
             case MESSAGE:
-                sendToClients(hdr.headers, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                sendToClients(hdr.headers, msg.getArray(), msg.getOffset(), msg.getLength());
                 break;
             case ENDPOINT:
                 String tmp_endpoint=hdr.headers.get("endpoint");
@@ -340,7 +340,7 @@ public class STOMP extends Protocol implements Runnable {
 
     protected void broadcastEndpoint() {
         if(endpoint != null) {
-            Message msg=new Message().putHeader(id, StompHeader.createHeader(StompHeader.Type.ENDPOINT, "endpoint", endpoint));
+            Message msg=new EmptyMessage().putHeader(id, StompHeader.createHeader(StompHeader.Type.ENDPOINT, "endpoint", endpoint));
             down_prot.down(msg);
         }
     }
@@ -470,7 +470,7 @@ public class STOMP extends Protocol implements Runnable {
                         headers.put("sender", session_id.toString());
                     }
 
-                    Message msg=new Message(null, frame.getBody());
+                    Message msg=new BytesMessage(null, frame.getBody());
                     Header hdr=StompHeader.createHeader(StompHeader.Type.MESSAGE, headers);
                     msg.putHeader(id, hdr);
                     down_prot.down(msg);

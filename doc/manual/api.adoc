@@ -215,7 +215,7 @@ The downside is that IpAddressUUIDs need more memory. See https://issues.jboss.o
 [[Message]]
 === Message
 
-Data is sent between members in the form of messages (`org.jgroups.Message`). A message can be sent by a member to
+Data is sent between members in the form of messages (`org.jgroups.BaseMessage`). A message can be sent by a member to
 a _single member_, or to _all members_ of the group of which the channel is an endpoint.
 
 The structure of a message is shown in <<MessageFig>>.

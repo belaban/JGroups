@@ -1,14 +1,11 @@
 
 package org.jgroups.tests;
 
-import org.jgroups.Address;
-import org.jgroups.Global;
-import org.jgroups.Message;
-import org.jgroups.Version;
+import org.jgroups.*;
 import org.jgroups.protocols.TpHeader;
 import org.jgroups.protocols.UnicastHeader3;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
-import org.jgroups.util.Buffer;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
@@ -41,7 +38,7 @@ public class MessageSizeTest {
     public static void testMulticast() throws Exception {
         Address src=Util.createRandomAddress();
         Message msg=createMessage(null, src);
-        Buffer buf=marshal(msg);
+        ByteArray buf=marshal(msg);
         System.out.println("buf = " + buf);
 
         int len=buf.getLength();
@@ -65,7 +62,7 @@ public class MessageSizeTest {
         Address dest=Util.createRandomAddress();
         Address src=Util.createRandomAddress();
         Message msg=createMessage(dest, src);
-        Buffer buf=marshal(msg);
+        ByteArray buf=marshal(msg);
         System.out.println("buf = " + buf);
 
         int len=buf.getLength();
@@ -87,8 +84,8 @@ public class MessageSizeTest {
         return 100.0* (1.0 - (new_length / (double)old_length));
     }
 
-    private static Buffer marshal(Message msg) throws Exception {
-        ByteArrayDataOutputStream dos=new ByteArrayDataOutputStream((int)(msg.size() + 50));
+    private static ByteArray marshal(Message msg) throws Exception {
+        ByteArrayDataOutputStream dos=new ByteArrayDataOutputStream(msg.size() + 50);
         Address dest=msg.getDest();
         boolean multicast=dest == null;
         writeMessage(msg, dos, multicast);
@@ -106,7 +103,7 @@ public class MessageSizeTest {
 
 
     static Message createMessage(Address dest, Address src) {
-        Message msg=new Message(dest, "hello world").src(src);
+        Message msg=new BytesMessage(dest, "hello world").setSrc(src);
         msg.putHeader(NAKACK_ID, NakAckHeader2.createMessageHeader(322649));
         msg.putHeader(UNICAST_ID, UnicastHeader3.createDataHeader(465784, (short)23323, true));
         msg.putHeader(UDP_ID, new TpHeader("DrawDemo"));

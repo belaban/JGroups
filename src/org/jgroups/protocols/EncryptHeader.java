@@ -22,6 +22,7 @@ public class EncryptHeader extends Header {
     protected byte[]  version;
     protected Address server; // used with FETCH_SHARED_KEY
     protected byte[]  iv;
+    protected boolean needs_deserialization;
 
     public EncryptHeader() {}
 
@@ -41,17 +42,20 @@ public class EncryptHeader extends Header {
         this.version=version;
     }
 
-    public byte                       type()            {return type;}
-    public byte[]                     version()         {return version;}
-    public Address                    server()          {return server;}
-    public byte[]                     iv()              {return iv;}
-    public EncryptHeader              server(Address s) {this.server=s; return this;}
-    public short                      getMagicId()      {return 88;}
-    public Supplier<? extends Header> create()          {return EncryptHeader::new;}
+    public byte                       type()                             {return type;}
+    public byte[]                     version()                          {return version;}
+    public Address                    server()                           {return server;}
+    public byte[]                     iv()                               {return iv;}
+    public EncryptHeader              server(Address s)                  {this.server=s; return this;}
+    public boolean                    needsDeserialization()             {return needs_deserialization;}
+    public EncryptHeader              needsDeserialization(boolean flag) {needs_deserialization=flag; return this;}
+    public short                      getMagicId()                       {return 88;}
+    public Supplier<? extends Header> create()                           {return EncryptHeader::new;}
 
     @Override
     public void writeTo(DataOutput out) throws IOException {
         out.writeByte(type);
+        out.writeBoolean(needs_deserialization);
         Util.writeByteBuffer(version, 0, version != null? version.length : 0, out);
         Util.writeAddress(server, out);
         Util.writeByteBuffer(iv, 0, iv != null? iv.length : 0, out);
@@ -60,6 +64,7 @@ public class EncryptHeader extends Header {
     @Override
     public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         type=in.readByte();
+        needs_deserialization=in.readBoolean();
         version=Util.readByteBuffer(in);
         server=Util.readAddress(in);
         iv = Util.readByteBuffer(in);
@@ -73,7 +78,9 @@ public class EncryptHeader extends Header {
           + (iv == null? "" : " [iv=" + Util.byteArrayToHexString(iv) + "]");
     }
 
-    public int serializedSize() {return Global.BYTE_SIZE + Util.size(version) + Util.size(server) + Util.size(iv);}
+    public int serializedSize() {
+        return Global.BYTE_SIZE + Util.size(version) + Util.size(server) + Util.size(iv) + Global.BYTE_SIZE;
+    }
 
     protected static String typeToString(byte type) {
         switch(type) {

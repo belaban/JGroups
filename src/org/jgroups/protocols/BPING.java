@@ -1,5 +1,6 @@
 package org.jgroups.protocols;
 
+import org.jgroups.BytesMessage;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.ByteArrayDataInputStream;
@@ -35,8 +36,8 @@ public class BPING extends PING implements Runnable {
 
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
-    protected DatagramSocket  sock=null;
-    protected volatile Thread receiver=null;
+    protected DatagramSocket  sock;
+    protected volatile Thread receiver;
     protected InetAddress     dest_addr;
 
 
@@ -87,8 +88,7 @@ public class BPING extends PING implements Runnable {
             receiver=new Thread(this, "ReceiverThread");
             receiver.setDaemon(true);
             receiver.start();
-            if(log.isTraceEnabled())
-                log.trace("receiver thread started");
+            log.trace("receiver thread started");
         }
     }
 
@@ -104,7 +104,7 @@ public class BPING extends PING implements Runnable {
         try {
             if(msg.getSrc() == null)
                 msg.setSrc(local_addr);
-            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)msg.size());
+            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(msg.size());
             msg.writeTo(out);
             for(int i=bind_port; i <= bind_port+port_range; i++) {
                 DatagramPacket packet=new DatagramPacket(out.buffer(), 0, out.position(), dest_addr, i);
@@ -128,7 +128,7 @@ public class BPING extends PING implements Runnable {
             try {
                 sock.receive(packet);
                 inp=new ByteArrayDataInputStream(packet.getData(), packet.getOffset(), packet.getLength());
-                Message msg=new Message();
+                Message msg=new BytesMessage();
                 msg.readFrom(inp);
                 up(msg);
             }

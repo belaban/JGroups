@@ -164,7 +164,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
                 }
                 else {
                     state_provider=target;
-                    Message state_req=new Message(target).putHeader(this.id, new StateHeader(StateHeader.STATE_REQ))
+                    Message state_req=new EmptyMessage(target).putHeader(this.id, new StateHeader(StateHeader.STATE_REQ))
                       .setFlag(Message.Flag.SKIP_BARRIER, Message.Flag.DONT_BUNDLE, Message.Flag.OOB);
                     log.debug("%s: asking %s for state", local_addr, target);
                     down_prot.down(state_req);
@@ -209,7 +209,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
                     handleStateRsp(sender, hdr);
                     break;
                 case StateHeader.STATE_PART:
-                    handleStateChunk(sender, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    handleStateChunk(sender, msg.getArray(), msg.getOffset(), msg.getLength());
                     break;
                 case StateHeader.STATE_EOF:
                     log.trace("%s <-- EOF <-- %s", local_addr, sender);
@@ -217,7 +217,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
                     break;
                 case StateHeader.STATE_EX:
                     try {
-                        handleException(Util.exceptionFromBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
+                        handleException(Util.exceptionFromBuffer(msg.getArray(), msg.getOffset(), msg.getLength()));
                     }
                     catch(Throwable t) {
                         log.error("failed deserializaing state exception", t);
@@ -328,7 +328,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
     protected void sendEof(Address requester) {
         try {
-            Message eof_msg=new Message(requester).putHeader(getId(), new StateHeader(StateHeader.STATE_EOF));
+            Message eof_msg=new EmptyMessage(requester).putHeader(getId(), new StateHeader(StateHeader.STATE_EOF));
             log.trace("%s --> EOF --> %s", local_addr, requester);
             down(eof_msg);
         }
@@ -339,7 +339,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
     protected void sendException(Address requester, Throwable exception) {
         try {
-            Message ex_msg=new Message(requester).setBuffer(Util.exceptionToBuffer(exception))
+            Message ex_msg=new BytesMessage(requester).setArray(Util.exceptionToBuffer(exception))
               .putHeader(getId(), new StateHeader(StateHeader.STATE_EX));
             down(ex_msg);
         }
@@ -417,7 +417,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
         StateHeader hdr=new StateHeader(StateHeader.STATE_RSP, null, digest);
         // gives subclasses a chance to modify this header, e.g. STATE_SOCK adds the server socket's address
         modifyStateResponseHeader(hdr);
-        Message state_rsp=new Message(requester).putHeader(this.id, hdr);
+        Message state_rsp=new EmptyMessage(requester).putHeader(this.id, hdr);
         log.debug("%s: responding to state requester %s", local_addr, requester);
         down_prot.down(state_rsp);
         if(stats)

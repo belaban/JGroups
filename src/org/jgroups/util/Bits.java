@@ -45,6 +45,10 @@ public final class Bits {
         return (char) ((buf[offset + 1] & 0xFF) + (buf[offset] << 8));
     }
 
+    static private char makeChar(byte b1, byte b0) {
+        return (char)((b1 << 8) | (b0 & 0xff));
+    }
+
     public static void writeChar(char c, byte[] buf, int offset) {
         buf[offset+1]=(byte)c;
         buf[offset]=(byte)(c >>> 8);
@@ -52,6 +56,11 @@ public final class Bits {
 
     public static char readChar(byte[] buf, int offset) {
         return makeChar(buf, offset);
+    }
+
+    public static char readChar(ByteBuffer buf) {
+	    byte a=buf.get(), b=buf.get();
+	    return makeChar(b, a);
     }
 
     // -------------------- short ----------------------- //
@@ -73,6 +82,10 @@ public final class Bits {
 
     public static short readShort(byte[] buf, int offset) {
         return (short)((buf[offset+1] & 0xFF) + (buf[offset] << 8));
+    }
+
+    public static short readShort(ByteBuffer buf) {
+	    return makeShort(buf.get(), buf.get());
     }
 
     // --------------------- int ------------------------ //

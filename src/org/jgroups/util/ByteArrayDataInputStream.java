@@ -1,21 +1,19 @@
 package org.jgroups.util;
 
-import java.io.DataInput;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.UTFDataFormatException;
+import java.io.*;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 /**
  * Implements {@link java.io.DataInput} over a byte[] buffer. This class is not thread safe.
  * @author Bela Ban
  * @since  3.5
  */
-public class ByteArrayDataInputStream implements DataInput {
+public class ByteArrayDataInputStream extends InputStream implements DataInput {
     protected final byte[] buf;
     protected int          pos;   // current position to read next byte from buf
 
-    // index of last byte to be read, reading beyond will return -1 or throw EOFException. Limit has to be < buf.length
+    // index of last byte to be read, reading beyond will return -1 or throw EOFException. Limit has to be <= buf.length
     protected final int    limit;
 
     public ByteArrayDataInputStream(byte[] buf) {
@@ -56,18 +54,17 @@ public class ByteArrayDataInputStream implements DataInput {
 
 
     /**
-     * Reads the next byte of data from buf. The value byte is returned as an <code>int</code> in the range
-     * <code>0</code> to <code>255</code>. If no byte is available because the end of the buffer has been reached,
-     * the value <code>-1</code> is returned.
-     * @return  the next byte of data, or <code>-1</code> if the end of the stream has been reached.
+     * Reads the next byte of data from buf. The value byte is returned as an {@code int} in the range {@code 0} to
+     * {@code 255}. If no byte is available because the end of the buffer has been reached, the value {@code -1} is
+     * returned.
+     * @return  the next byte of data, or {@code -1} if the end of the stream has been reached.
      */
     public int read() {
         return (pos < limit) ? (buf[pos++] & 0xff) : -1;
     }
 
-    public int read(byte b[], int off, int len) {
-        if (b == null)
-            throw new NullPointerException();
+    public int read(byte[] b, int off, int len) {
+        Objects.requireNonNull(b);
 
         if(off < 0 || len < 0 || len > b.length - off)
             throw new IndexOutOfBoundsException();
@@ -105,7 +102,7 @@ public class ByteArrayDataInputStream implements DataInput {
     public int skipBytes(int n) {
         int k = limit - pos;
         if (n < k)
-            k = n < 0 ? 0 : n;
+            k=Math.max(n, 0);
         pos += k;
         return k;
     }
@@ -238,7 +235,7 @@ public class ByteArrayDataInputStream implements DataInput {
                     if (count > utflen)
                         throw new UTFDataFormatException(
                           "malformed input: partial character at end");
-                    char2 = (int) bytearr[count-1];
+                    char2=bytearr[count-1];
                     if ((char2 & 0xC0) != 0x80)
                         throw new UTFDataFormatException(
                           "malformed input around byte " + count);
@@ -251,8 +248,8 @@ public class ByteArrayDataInputStream implements DataInput {
                     if (count > utflen)
                         throw new UTFDataFormatException(
                           "malformed input: partial character at end");
-                    char2 = (int) bytearr[count-2];
-                    char3 = (int) bytearr[count-1];
+                    char2=bytearr[count-2];
+                    char3=bytearr[count-1];
                     if (((char2 & 0xC0) != 0x80) || ((char3 & 0xC0) != 0x80))
                         throw new UTFDataFormatException(
                           "malformed input around byte " + (count-1));

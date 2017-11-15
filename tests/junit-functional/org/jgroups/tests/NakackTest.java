@@ -202,7 +202,7 @@ public class NakackTest {
                 Address address=ch.getAddress();
                 for(int i=1; i <= NUM_MSGS; i++) {
                     try {
-                        Message msg=new Message(null, (long)i).src(address);
+                        Message msg=new BytesMessage(null, (long)i).setSrc(address);
                         ch.send(msg);
                         if(i % MSGS_PER_STATUS_LINE == 0) // status indicator
                             System.out.println("<" + address + ">:" + " ==> " + i);

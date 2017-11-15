@@ -49,7 +49,7 @@ public class HeadersResizeTest {
         Address dest=b.getAddress();
         bundler.hold();
         for(int i=1; i <= 5; i++) { // these 5 messages will be queued by the bundler
-            Message msg=new Message(dest, i).setFlag(OOB, Message.Flag.DONT_BUNDLE);
+            Message msg=new BytesMessage(dest, i).setFlag(OOB, Message.Flag.DONT_BUNDLE);
             a.send(msg);
         }
         bundler.release(); // sends all bundled messages as a batch
@@ -92,7 +92,7 @@ public class HeadersResizeTest {
         protected int num_msgs, num_transport_headers;
 
         public void receive(Message msg) {
-            System.out.printf("received message from %s: %s\n", msg.src(), msg.getObject());
+            System.out.printf("received message from %s: %s\n", msg.getSrc(), msg.getObject());
             num_msgs++;
             Header hdr=msg.getHeader(transport_id);
             if(hdr != null)

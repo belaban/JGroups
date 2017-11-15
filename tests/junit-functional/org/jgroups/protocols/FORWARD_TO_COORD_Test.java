@@ -78,7 +78,7 @@ public class FORWARD_TO_COORD_Test {
      * coordinator and therefore A must receive it.
      */
     public void testSimpleForwarding() throws Exception {
-        Message msg=new Message(null, 22);
+        Message msg=new BytesMessage(null, 22);
         channels[NUM-1].down(new Event(Event.FORWARD_TO_COORD, msg)); // send on C, A must receive it
         MyReceiver receiver=receivers[0];
         for(int i=0; i < 20; i++) {
@@ -99,7 +99,7 @@ public class FORWARD_TO_COORD_Test {
      * Tests the case where C forwards a Message to A, but A leaves, so eventually B should receive C's message
      */
     public void testForwardingWithCoordLeaving() throws Exception {
-        Message msg=new Message(null, 25);
+        Message msg=new BytesMessage(null, 25);
 
         DISCARD discard=channels[NUM-1].getProtocolStack().findProtocol(DISCARD.class);
         discard.setDropDownUnicasts(1);
@@ -131,7 +131,7 @@ public class FORWARD_TO_COORD_Test {
      * Tests the case where C forwards a Message to A, but A leaves, so eventually B should receive C's message
      */
     public void testForwardingWithCoordCrashing() throws Exception {
-        Message msg=new Message(null, 30);
+        Message msg=new BytesMessage(null, 30);
 
         DISCARD discard=channels[0].getProtocolStack().findProtocol(DISCARD.class);
         discard.setDiscardAll(true);
@@ -185,7 +185,7 @@ public class FORWARD_TO_COORD_Test {
             System.out.println(ch.getName() + ": view is " + ch.getView());
 
 
-        Message msg=new Message(null, 35);
+        Message msg=new BytesMessage(null, 35);
 
         // Sends the message to A, but C will discard it, so A will never get it
         System.out.println("C: forwarding the message to B");

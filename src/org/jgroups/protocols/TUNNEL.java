@@ -1,9 +1,9 @@
 package org.jgroups.protocols;
 
+
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
-import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.GossipData;
@@ -36,7 +36,6 @@ import java.util.Objects;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  */
-@Experimental
 public class TUNNEL extends TP implements RouterStub.StubReceiver {
 
     public interface TUNNELPolicy {

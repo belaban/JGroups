@@ -1,35 +1,40 @@
 
 == Installation and configuration
 
-The installation refers to version 4.x of JGroups.
-    
+The installation refers to version 5.x of JGroups.
 
-The JGroups JAR can be downloaded from http://sourceforge.net/projects/javagroups/files/JGroups[SourceForge].
-It is named `jgroups-x.y.z`, where x=major, y=minor and z=patch version, for example `jgroups-4.0.0.Final.jar`.
+JGroups can be add to the POM:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.jgroups</groupId>
+  <artifactId>jgroups</artifactId>
+  <version>5.0.0.Final</version>
+</dependency>
+----
+    
+Alternatively, the JAR can be downloaded from http://sourceforge.net/projects/javagroups/files/JGroups[SourceForge].
+It is named `jgroups-x.y.z`, where `x=major`, `y=minor` and `z=patch` version, for example `jgroups-5.0.0.Final.jar`.
+
 The JAR is all that's needed to get started using JGroups; it contains all core, demo and (selected) test
-classes, the sample XML configuration files and the schema.
+classes, some sample XML configuration files and the XML schema.
 
-Alternatively, Maven / Gradle / Ivy etc can be used:
-
-```
-groupId: org.jgroups
-artifactId: jgroups
-version: 4.0.0.Final (for example)
-```
-    
 The source code is hosted on https://github.com/belaban/jgroups[GitHub]. To build JGroups,
-ANT is currently used. In <<BuildingJGroups>> we'll show how to build JGroups from source.
+ANT is currently used (but there's also a POM for maven users).
+
+In <<BuildingJGroups>> we'll show how to build JGroups from source.
     
 
 [[Requirements]]
 === Requirements
 
-* JGroups up to (and including) 3.5.0.Final requires JDK 6.
 * JGroups 3.6.x to (excluding) 4.0 requires JDK 7.
 * JGroups 4.x requires JDK 8.
-* There is no JNI code present so JGroups should run on all platforms.
+* JGroups 5.0.0.Final requires JDK 11 or higher
+* There is no JNI code present so JGroups runs on all platforms.
 * Logging: by default, JGroups tries to use log4j2. If the classes are not found on the classpath, it
-  resorts to log4j, and if still not found, it falls back to java.util.logging logger.
+  resorts to log4j, and if still not found, it falls back to JDK logging (`java.util.logging logger`).
   See <<Logging>> for details on log configuration.
 
 
@@ -43,7 +48,8 @@ src:: the sources
 tests:: unit and stress tests
 
 lib:: JARs needed to either run the unit tests, or build the manual etc. No JARs from here are required at runtime!
-      Note that these JARs are downloaded automatically via ivy.
+      Note that these JARs are downloaded automatically via ivy. This directory is ignored if maven is used to
+      build (artifacts are in `target` instead).
 
 conf:: configuration files needed by JGroups, plus default protocol stack definitions
 
@@ -57,7 +63,7 @@ doc:: documentation
 * Download the sources from https://github.com/belaban/jgroups[GitHub], either via 'git clone', or the
   https://github.com/belaban/JGroups/archives/master[download link] into a directory `JGroups`, e.g. `/home/bela/JGroups`.
 
-* Download ant (preferably 1.8.x or higher)
+* Download ant (preferably 1.10 or higher)
 
 * Change to the `JGroups` directory
 
@@ -85,8 +91,8 @@ doc:: documentation
 [[Logging]]
 === Logging
 
-JGroups has no runtime dependencies; all that's needed to use it is to have jgroups.jar on the classpath.
-For logging, this means the JVM's logging (java.util.logging) is used.
+JGroups has no runtime dependencies; all that's needed to use it is to have the jgroups.jar on the classpath.
+For logging, this means the JVM's logging (`java.util.logging`) is used.
 
 However, JGroups can use any other logging framework. By default, log4j2 and slf4j are supported if the
 corresponding JARs are found on the classpath.
@@ -169,7 +175,7 @@ You should see the following output (more or less) if the class is found:
 ----
 $  java org.jgroups.Version
 
-   Version:      4.0.0.Final
+Version:      5.0.0.Final (Stelvio)
 ----
 
 
@@ -189,18 +195,15 @@ java org.jgroups.demos.Draw
 .Screenshot of 2 Draw instances
 image::./images/DrawScreenshot.png[Running 2 Draw instances]
 
-If you started them simultaneously, they could initially show a membership of 1 in
-their title bars. After some time, both windows should show 2. This means that the two instances found
-each other and formed a cluster.
+The `(2)` in the title means that the two instances found each other and formed a cluster.
 
 When drawing in one window, the second instance should also be updated. As the default group transport
 uses IP multicast, make sure that - if you want start the 2 instances in different subnets
 - IP multicast is enabled. If this is not the case, the 2 instances won't find each other and the
 example won't work.
 
-You can change the properties of the demo to for example use
-a different transport if multicast doesn't work (it should always
-work on the same machine). Please consult the documentation to see how to do this.
+You can change the properties of the demo to for example use a different transport if multicast doesn't work
+(it should always work on the same machine). Please consult the documentation for how to do this.
          
 State transfer (see the section in the API later) can also be tested by passing the `-state` flag to Draw.
         
@@ -223,15 +226,12 @@ The above instructions may also work for Windows systems, but this hasn't
 been tested. Note that not all operating systems allow multicast traffic to use the loopback interface.
 
 Typical home networks have a gateway/firewall with 2 NICs:
-the first (e.g. `eth0`) is connected to the outside world (Internet
-Service Provider), the second (`eth1`) to the internal network, with
-the gateway firewalling/masquerading traffic between the internal
-and external networks. If no route for multicast traffic is added,
-the default will be to use the fdefault gateway, which will
-typically direct the multicast traffic towards the ISP. To prevent
-this (e.g. ISP drops multicast traffic, or latency is too high),
-we recommend to add a route for multicast traffic which goes to
-the internal network (e.g. `eth1`).
+the first (e.g. `eth0`) is connected to the outside world (Internet Service Provider), the second (`eth1`) to the
+internal network, with the gateway firewalling/masquerading traffic between the internal and external networks.
+
+If no route for multicast traffic is added, the default will be to use the fdefault gateway, which will typically
+direct the multicast traffic towards the ISP. To prevent this (e.g. ISP drops multicast traffic, or latency
+is too high), we recommend to add a route for multicast traffic which goes to the internal network (e.g. `eth1`).
 
 
 [[ItDoesntWork]]
@@ -280,16 +280,6 @@ java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props /home/bela/ud
 
 The JDK uses IPv6 by default, although is has a dual stack, that is, it also supports IPv4.
 To force use of IPv6, start your JVM with `-Djava.net.preferIPv6Addresses=true`.
-        
-http://java.sun.com/j2se/1.4/docs/guide/net/ipv6_guide/[Here's] more details on the subject.
-
-
-
-=== Wiki
-
-There is a wiki which lists FAQs and their solutions at http://www.jboss.org/wiki/Wiki.jsp?page=JGroups[]. It is
-frequently updated and a useful companion to this manual.
-        
 
 
 
@@ -312,9 +302,8 @@ Please include the following information:
 
 JGroups project has been around since 1998. Over this time, some of the JGroups classes
 have been used in experimental phases and have never been matured enough to be used in today's production
-releases. However, they were not removed since some people used them in their products.
+releases. However, they have not been removed, since some people use them in their products.
     
-
 The following tables list unsupported and experimental classes. These classes are not actively maintained, and
 we will not work to resolve potential issues you might find. Their final fate is not yet determined; they
 might even be removed altogether in the next major release. Weight your risks if you decide to use them anyway.

@@ -93,7 +93,7 @@ public class SequencerMergeTest {
         thread.start();
 
         System.out.println("D sends a multicast message M");
-        Message msg=new Message(null, "M");
+        Message msg=new BytesMessage(null, "M");
         d.send(msg);
 
         System.out.println("\nReceivers:");

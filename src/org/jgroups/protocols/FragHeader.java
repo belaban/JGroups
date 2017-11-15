@@ -1,5 +1,6 @@
 package org.jgroups.protocols;
 
+import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.util.Bits;
 
@@ -13,9 +14,11 @@ import java.util.function.Supplier;
  * @author Bela Ban
  */
 public class FragHeader extends Header {
-    public long id;
-    public int  frag_id;
-    public int  num_frags;
+    public long    id;
+    public int     frag_id;
+    public int     num_frags;
+    public boolean needs_deserialization; // true if byte[] array of a fragment needs to be de-serialized into a payload
+    public byte    original_type;
 
 
     public FragHeader() {
@@ -32,6 +35,11 @@ public class FragHeader extends Header {
     public Supplier<? extends Header> create() {
         return FragHeader::new;
     }
+    public boolean    needsDeserialization()             {return needs_deserialization;}
+    public FragHeader needsDeserialization(boolean flag) {needs_deserialization=flag; return this;}
+    public byte       getOriginalType()                  {return original_type;}
+    public FragHeader setOriginalType(byte type)         {this.original_type=type; return this;}
+
 
     public String toString() {
         return "[id=" + id + ", frag_id=" + frag_id + ", num_frags=" + num_frags + ']';
@@ -42,11 +50,13 @@ public class FragHeader extends Header {
         Bits.writeLong(id,out);
         Bits.writeInt(frag_id, out);
         Bits.writeInt(num_frags, out);
+        out.writeBoolean(needs_deserialization);
+        out.writeByte(original_type);
     }
 
     @Override
     public int serializedSize() {
-        return Bits.size(id) + Bits.size(frag_id) + Bits.size(num_frags);
+        return Bits.size(id) + Bits.size(frag_id) + Bits.size(num_frags) + Global.BYTE_SIZE*2;
     }
 
     @Override
@@ -54,6 +64,8 @@ public class FragHeader extends Header {
         id=Bits.readLong(in);
         frag_id=Bits.readInt(in);
         num_frags=Bits.readInt(in);
+        needs_deserialization=in.readBoolean();
+        original_type=in.readByte();
     }
 
 }

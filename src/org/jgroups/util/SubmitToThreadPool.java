@@ -27,7 +27,7 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
     }
 
     public void loopback(Message msg, boolean oob, boolean internal) {
-        tp.submitToThreadPool(() -> tp.passMessageUp(msg, null, false, msg.dest() == null,false), internal);
+        tp.submitToThreadPool(() -> tp.passMessageUp(msg, null, false, msg.getDest() == null, false), internal);
     }
 
     public void process(Message msg, boolean oob, boolean internal) {

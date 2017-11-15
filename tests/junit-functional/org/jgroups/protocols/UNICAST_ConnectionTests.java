@@ -189,7 +189,7 @@ public class UNICAST_ConnectionTests {
         final List<Message> msgs=new ArrayList<>(NUM);
 
         for(int i=1; i <= NUM; i++) {
-            Message msg=new Message(b_addr, i).src(a_addr);
+            Message msg=new BytesMessage(b_addr, i).setSrc(a_addr);
             Header hdr=createDataHeader(ucast, 1, (short)2, true);
             msg.putHeader(ucast.getId(), hdr);
             msgs.add(msg);

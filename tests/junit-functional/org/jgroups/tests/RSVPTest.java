@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.*;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.RpcDispatcher;
@@ -99,7 +96,7 @@ public class RSVPTest {
 
         // test with a multicast message:
         short value=(short)Math.abs((short)Util.random(10000));
-        Message msg=new Message(null, value);
+        Message msg=new BytesMessage(null, value);
         msg.setFlag(Message.Flag.RSVP);
 
         DISCARD discard=channels[0].getProtocolStack().findProtocol(DISCARD.class);
@@ -124,7 +121,7 @@ public class RSVPTest {
     public void testSynchronousUnicastSend() throws Exception {
         // test with a unicast message:
         short value=(short)Math.abs((short)Util.random(10000));
-        Message msg=new Message(channels[1].getAddress(), value).setFlag(Message.Flag.RSVP);
+        Message msg=new BytesMessage(channels[1].getAddress(), value).setFlag(Message.Flag.RSVP);
 
         DISCARD discard=channels[0].getProtocolStack().findProtocol(DISCARD.class);
         discard.setDropDownUnicasts(1);
@@ -150,7 +147,7 @@ public class RSVPTest {
     public void testCancellationByClosingChannel() throws Exception {
         // test with a multicast message:
         short value=(short)Math.abs((short)Util.random(10000));
-        Message msg=new Message(null, value).setFlag(Message.Flag.RSVP);
+        Message msg=new BytesMessage(null, value).setFlag(Message.Flag.RSVP);
 
         DISCARD discard=channels[0].getProtocolStack().findProtocol(DISCARD.class);
         discard.setDiscardAll(true);
@@ -213,7 +210,7 @@ public class RSVPTest {
     public void testAsyncLostRSVPMessages() throws Exception {
         // test with a multicast message:
         short value=(short)Math.abs((short)Util.random(10000));
-        Message msg=new Message(null, value).setFlag(Message.Flag.RSVP_NB);
+        Message msg=new BytesMessage(null, value).setFlag(Message.Flag.RSVP_NB);
 
         DISCARD discard=channels[0].getProtocolStack().findProtocol(DISCARD.class);
         discard.setDiscardAll(true);

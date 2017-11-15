@@ -37,7 +37,7 @@ public class HeadersTest {
 
     public void testGetHeaders() {
         Header[] hdrs=createHeaders(3);
-        System.out.printf("hdrs are: %s\n", Headers.printObjectHeaders(hdrs));
+        System.out.printf("hdrs are: %s\n", Headers.printHeaders(hdrs));
         Map<Short, Header> map=Headers.getHeaders(hdrs);
         System.out.println("map = " + map);
         assert map != null && map.size() == 3;

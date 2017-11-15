@@ -1,9 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.Protocol;
@@ -59,7 +56,7 @@ public class UNICAST_DropFirstAndLastTest {
         setLevel("trace", a, b);
         Address dest=b.getAddress();
         for(int i=1; i <= 5; i++) {
-            Message msg=new Message(dest, i);
+            Message msg=new BytesMessage(dest, i);
             if(i == 5)
                 discard.setDropDownUnicasts(1); // drops the next unicast
             a.send(msg);
@@ -90,7 +87,7 @@ public class UNICAST_DropFirstAndLastTest {
 
         System.out.println("--> A sending first message to B (dropped before it reaches B)");
         discard.setDropDownUnicasts(1); // drops the next unicast
-        a.send(new Message(b.getAddress(), 1));
+        a.send(new BytesMessage(b.getAddress(), 1));
 
         List<Integer> msgs=rb.list();
         try {

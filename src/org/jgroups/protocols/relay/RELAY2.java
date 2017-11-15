@@ -582,7 +582,7 @@ public class RELAY2 extends Protocol {
             handleMessage(header, message);
         }
         else {
-            Message copy=copy(msg).dest(null).src(null).putHeader(id, hdr);
+            Message copy=copy(msg).setDest(null).setSrc(null).putHeader(id, hdr);
             down_prot.down(copy); // multicast locally
 
             // Don't forward: https://issues.jboss.org/browse/JGRP-1519
@@ -603,7 +603,7 @@ public class RELAY2 extends Protocol {
                 }
                 return true;
             case Relay2Header.TOPO_REQ:
-                Message topo_rsp=new Message(sender)
+                Message topo_rsp=new EmptyMessage(sender)
                   .putHeader(id, new Relay2Header(Relay2Header.TOPO_RSP).setSites(_printTopology(relayer)));
                 down_prot.down(topo_rsp);
                 return true;
@@ -687,12 +687,10 @@ public class RELAY2 extends Protocol {
     /**
      * Sends a SITE-UNREACHABLE message to the sender of the message. Because the sender is always local (we're the
      * relayer), no routing needs to be done
-     * @param dest
-     * @param target_site
      */
     protected void sendSiteUnreachableTo(Address dest, String target_site) {
-        Message msg=new Message(dest).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
-          .src(new SiteUUID((UUID)local_addr, NameCache.get(local_addr), site))
+        Message msg=new EmptyMessage(dest).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+          .setSrc(new SiteUUID((UUID)local_addr, NameCache.get(local_addr), site))
           .putHeader(id,new Relay2Header(Relay2Header.SITE_UNREACHABLE,new SiteMaster(target_site),null));
         down_prot.down(msg);
     }
@@ -702,7 +700,7 @@ public class RELAY2 extends Protocol {
         if(log.isTraceEnabled())
             log.trace(local_addr + ": forwarding message to final destination " + final_dest + " to " +
                         (forward_to_current_coord? " the current coordinator" : next_dest));
-        Message copy=copy(msg).dest(next_dest).src(null);
+        Message copy=copy(msg).setDest(next_dest).setSrc(null);
         Relay2Header hdr=new Relay2Header(Relay2Header.DATA, final_dest, original_sender);
         copy.putHeader(id,hdr);
         if(forward_to_current_coord && forwarding_protocol_present)
@@ -743,7 +741,7 @@ public class RELAY2 extends Protocol {
 
     protected void deliver(Address dest, Address sender, final Message msg) {
         try {
-            Message copy=copy(msg).dest(dest).src(sender);
+            Message copy=copy(msg).setDest(dest).setSrc(sender);
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": delivering message from " + sender);
             long start=stats? System.nanoTime() : 0;
@@ -763,12 +761,13 @@ public class RELAY2 extends Protocol {
             return;
         Relay2Header hdr=new Relay2Header(down? Relay2Header.SITES_DOWN : Relay2Header.SITES_UP, null, null)
           .setSites(sites);
-        down_prot.down(new Message(null).putHeader(id, hdr).setFlag(Message.Flag.NO_RELAY));
+        down_prot.down((Message)new EmptyMessage(null).putHeader(id, hdr).setFlag(Message.Flag.NO_RELAY));
+        // down_prot.down((Message)new EmptyMessage(null).setFlag(Message.Flag.NO_RELAY));
     }
 
     /** Copies the message, but only the headers above the current protocol (RELAY) (or RpcDispatcher related headers) */
     protected Message copy(Message msg) {
-        return msg.copy(true, Global.BLOCKS_START_ID, this.prots_above);
+        return Util.copy(msg, true, Global.BLOCKS_START_ID, this.prots_above);
     }
 
 
@@ -851,7 +850,7 @@ public class RELAY2 extends Protocol {
     }
 
     protected boolean sendTopoReq(JChannel bridge, Address dest) {
-        Message topo_req=new Message(dest).putHeader(id, new Relay2Header(Relay2Header.TOPO_REQ));
+        Message topo_req=new EmptyMessage(dest).putHeader(id, new Relay2Header(Relay2Header.TOPO_REQ));
         try {
             bridge.send(topo_req);
             return true;
@@ -864,7 +863,7 @@ public class RELAY2 extends Protocol {
 
     protected String fetchTopoFromSiteMaster(Address sm) {
         topo_collector.reset(sm);
-        Message topo_req=new Message(sm).putHeader(id, new Relay2Header(Relay2Header.TOPO_REQ));
+        Message topo_req=new EmptyMessage(sm).putHeader(id, new Relay2Header(Relay2Header.TOPO_REQ));
         down_prot.down(topo_req);
         topo_collector.waitForAllResponses(topo_wait_time);
         Map<Address,String> rsps=topo_collector.getResults();

@@ -1,14 +1,10 @@
 
 package org.jgroups.tests;
 
-import org.jgroups.Address;
-import org.jgroups.Global;
-import org.jgroups.Header;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.TpHeader;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
-import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.Range;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
@@ -18,54 +14,51 @@ import org.testng.annotations.Test;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
+ * Tests {@link BytesMessage} and {@link BaseMessage}
  * @author Bela Ban
  */
 @Test(groups=Global.FUNCTIONAL)
-public class MessageTest {
+public class MessageTest extends MessageTestBase {
 
-    static final short UDP_ID=101;
-    static final short PING_ID=102;
-    static final short NAKACK_ID=103;
-
-
-    public static void testFlags() {
-        Message m1=new Message();
+    public void testFlags() {
+        Message m1=new BytesMessage();
         assert !m1.isFlagSet(Message.Flag.OOB);
-        assert m1.getFlags() == 0;
+        assert m1.getFlags(false) == 0;
 
         m1.setFlag((Message.Flag[])null);
 
         assert !m1.isFlagSet(Message.Flag.OOB);
-        assert !m1.isFlagSet(null);
+        assert !m1.isFlagSet(Message.Flag.NO_RELIABILITY);
     }
 
 
     public void testSettingMultipleFlags() {
-        Message msg=new Message();
+        Message msg=new BytesMessage();
         msg.setFlag((Message.Flag[])null);
-        assert msg.getFlags() == 0;
+        assert msg.getFlags(false) == 0;
 
-        msg.setFlag(Message.Flag.OOB,Message.Flag.NO_FC, null, Message.Flag.DONT_BUNDLE);
+        msg.setFlag(Message.Flag.OOB, Message.Flag.NO_FC, null, Message.Flag.DONT_BUNDLE);
         assert msg.isFlagSet(Message.Flag.OOB);
         assert msg.isFlagSet(Message.Flag.NO_FC);
         assert msg.isFlagSet(Message.Flag.DONT_BUNDLE);
     }
 
 
-    public static void testFlags2() {
-        Message m1=new Message();
+    public void testFlags2() {
+        Message m1=new BytesMessage();
         m1.setFlag(Message.Flag.OOB);
         assert m1.isFlagSet(Message.Flag.OOB);
-        assert Message.isFlagSet(m1.getFlags(), Message.Flag.OOB);
+        assert Util.isFlagSet(m1.getFlags(false), Message.Flag.OOB);
         assert !(m1.isFlagSet(Message.Flag.DONT_BUNDLE));
-        assert !Message.isFlagSet(m1.getFlags(), Message.Flag.DONT_BUNDLE);
+        assert !Util.isFlagSet(m1.getFlags(false), Message.Flag.DONT_BUNDLE);
     }
 
-    public static void testFlags3() {
-        Message msg=new Message();
+    public void testFlags3() {
+        Message msg=new BytesMessage();
         assert !msg.isFlagSet(Message.Flag.OOB);
         msg.setFlag(Message.Flag.OOB);
         assert msg.isFlagSet(Message.Flag.OOB);
@@ -74,8 +67,8 @@ public class MessageTest {
     }
 
 
-    public static void testClearFlags() {
-        Message msg=new Message();
+    public void testClearFlags() {
+        Message msg=new BytesMessage();
         msg.setFlag(Message.Flag.OOB);
         assert msg.isFlagSet(Message.Flag.OOB);
         msg.clearFlag(Message.Flag.OOB);
@@ -87,8 +80,8 @@ public class MessageTest {
     }
 
 
-    public static void testClearFlags2() {
-        Message msg=new Message();
+    public void testClearFlags2() {
+        Message msg=new BytesMessage();
         msg.setFlag(Message.Flag.OOB);
         msg.setFlag(Message.Flag.NO_FC);
         assert !msg.isFlagSet(Message.Flag.DONT_BUNDLE);
@@ -106,7 +99,7 @@ public class MessageTest {
         assert !msg.isFlagSet(Message.Flag.NO_FC);
         msg.clearFlag(Message.Flag.DONT_BUNDLE);
         msg.clearFlag(Message.Flag.OOB);
-        assert msg.getFlags() == 0;
+        assert msg.getFlags(false) == 0;
         assert !msg.isFlagSet(Message.Flag.OOB);
         assert !msg.isFlagSet(Message.Flag.DONT_BUNDLE);
         assert !msg.isFlagSet(Message.Flag.NO_FC);
@@ -118,49 +111,47 @@ public class MessageTest {
 
     public void testDontLoopback() {
         final Address DEST=Util.createRandomAddress("A");
-        Message msg=new Message(null).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
+        Message msg=new EmptyMessage(null).setFlag(Message.TransientFlag.DONT_LOOPBACK);
 
-        msg.dest(null); // OK
+        msg.setDest(null); // OK
         msg.setDest(null);
+        msg.setDest(DEST);
 
-        msg.dest(DEST);
-
-        msg.clearTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
-        msg.dest(DEST); // OK
-        msg.setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
-        msg.setTransientFlagIfAbsent(Message.TransientFlag.DONT_LOOPBACK);
+        msg.clearFlag(Message.TransientFlag.DONT_LOOPBACK)
+          .setDest(DEST) // OK
+          .setFlag(Message.TransientFlag.DONT_LOOPBACK)
+          .setFlagIfAbsent(Message.TransientFlag.DONT_LOOPBACK);
 
         short flags=(short)(Message.TransientFlag.DONT_LOOPBACK.value() + Message.TransientFlag.OOB_DELIVERED.value());
-        msg.setTransientFlag(flags);
+        msg.setFlag(flags, true);
     }
 
 
-    public static void testBufferSize() throws Exception {
-        Message m1=new Message(null, "bela");
-        assert m1.getRawBuffer() != null;
-        assert m1.getBuffer() != null;
-        Assert.assertEquals(m1.getBuffer().length, m1.getLength());
+    public void testBufferSize() throws Exception {
+        Message m1=new BytesMessage(null, "bela");
+        assert m1.getArray() != null;
+        assert m1.getArray() != null;
+        Assert.assertEquals(m1.getArray().length, m1.getLength());
         byte[] new_buf={'m', 'i', 'c', 'h', 'e', 'l', 'l', 'e'};
-        m1.setBuffer(new_buf);
-        assert m1.getRawBuffer() != null;
-        assert m1.getBuffer() != null;
+        m1.setArray(new_buf, 0, new_buf.length);
+        assert m1.getArray() != null;
         Assert.assertEquals(new_buf.length, m1.getLength());
-        Assert.assertEquals(m1.getBuffer().length, m1.getLength());
+        Assert.assertEquals(m1.getArray().length, m1.getLength());
     }
 
 
-    public static void testBufferOffset() throws Exception {
+    public void testBufferOffset() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
-        Message m1=new Message(null, buf, 0, 4);
-        Message m2=new Message(null, buf, 4, 3);
+        Message m1=new BytesMessage(null, buf, 0, 4);
+        Message m2=new BytesMessage(null, buf, 4, 3);
 
         byte[] b1, b2;
 
         b1=new byte[m1.getLength()];
-        System.arraycopy(m1.getRawBuffer(), m1.getOffset(), b1, 0, m1.getLength());
+        System.arraycopy(m1.getArray(), m1.getOffset(), b1, 0, m1.getLength());
 
         b2=new byte[m2.getLength()];
-        System.arraycopy(m2.getRawBuffer(), m2.getOffset(), b2, 0, m2.getLength());
+        System.arraycopy(m2.getArray(), m2.getOffset(), b2, 0, m2.getLength());
 
         Assert.assertEquals(4, b1.length);
         Assert.assertEquals(3, b2.length);
@@ -168,99 +159,97 @@ public class MessageTest {
 
 
 
-    public static void testSetBufferWithNullBuffer() {
+    public void testSetBufferWithNullBuffer() {
         byte[] buf={'b', 'e', 'l', 'a'};
-        Message m1=new Message();
-        m1.setBuffer(buf, 1, 2); // dummy data with non 0 oiffset and length
+        Message m1=new BytesMessage();
+        m1.setArray(buf, 1, 2); // dummy data with non 0 oiffset and length
         Assert.assertEquals(1, m1.getOffset());
         Assert.assertEquals(2, m1.getLength());
 
-        m1.setBuffer(null, 1, 2); // dummy offset and length, is ignored
+        m1.setArray(null, 1, 2); // dummy offset and length, is ignored
         Assert.assertEquals(0, m1.getOffset());
         Assert.assertEquals(0, m1.getLength());
     }
 
 
     @Test(groups=Global.FUNCTIONAL, expectedExceptions=ArrayIndexOutOfBoundsException.class)
-    public static void testInvalidOffset() {
+    public void testInvalidOffset() {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
-        Message m1=new Message(null, buf, -1, 4);
+        Message m1=new BytesMessage(null, buf, -1, 4);
         System.out.println("message is " + m1);
     }
 
     @Test(groups=Global.FUNCTIONAL, expectedExceptions=ArrayIndexOutOfBoundsException.class)
-    public static void testInvalidLength() {
+    public void testInvalidLength() {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
-        Message m1=new Message(null, buf, 3, 6);
+        Message m1=new BytesMessage(null, buf, 3, 6);
         System.out.println("we should not get here with " + m1);
     }
 
 
-    public static void testGetRawBuffer() {
+    public void testGetRawBuffer() {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
-        Message m1=new Message(null, buf, 0, 4);
-        Message m2=new Message(null, buf, 4, 3);
+        Message m1=new BytesMessage(null, buf, 0, 4);
+        Message m2=new BytesMessage(null, buf, 4, 3);
 
-        Assert.assertEquals(buf.length, m1.getRawBuffer().length);
-        Assert.assertEquals(4, m1.getBuffer().length);
+        Assert.assertEquals(buf.length, m1.getArray().length);
         Assert.assertEquals(4, m1.getLength());
 
-        Assert.assertEquals(buf.length, m2.getRawBuffer().length);
-        Assert.assertEquals(3, m2.getBuffer().length);
+        Assert.assertEquals(buf.length, m2.getArray().length);
         Assert.assertEquals(3, m2.getLength());
     }
 
 
-
-    public static void testSetObject() {
+    public void testSetObject() {
         String s1="Bela Ban";
-        Message m1=new Message(null, s1);
+        Message m1=new BytesMessage(null, s1);
         Assert.assertEquals(0, m1.getOffset());
-        Assert.assertEquals(m1.getBuffer().length, m1.getLength());
+        Assert.assertEquals(m1.getArray().length, m1.getLength());
         String s2=m1.getObject();
         Assert.assertEquals(s2, s1);
     }
 
 
-    public static void testCopy() {
-        Message m1=new Message(null, "Bela Ban");
+    public void testCopy() {
+        Message m1=new BytesMessage(null, "Bela Ban");
         m1.setFlag(Message.Flag.OOB);
-        m1.setTransientFlag(Message.TransientFlag.OOB_DELIVERED);
-        Message m2=m1.copy();
+        m1.setFlag(Message.TransientFlag.OOB_DELIVERED);
+        Message m2=m1.copy(true, true);
         Assert.assertEquals(m1.getOffset(), m2.getOffset());
         Assert.assertEquals(m1.getLength(), m2.getLength());
         assert m2.isFlagSet(Message.Flag.OOB);
-        assert m2.isTransientFlagSet(Message.TransientFlag.OOB_DELIVERED);
+        assert m2.isFlagSet(Message.TransientFlag.OOB_DELIVERED);
     }
 
+    public void testCopy2() {
+        BytesMessage msg=new BytesMessage(null, "Bela".getBytes());
+        Message copy=msg.copy(true, true);
+        assert msg.getLength() == copy.getLength();
+    }
 
-
-    public static void testCopyWithOffset() {
+    public void testCopyWithOffset() {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
-        Message m1=new Message(null, buf, 0, 4);
-        Message m2=new Message(null, buf, 4, 3);
+        Message m1=new BytesMessage(null, buf, 0, 4);
+        Message m2=new BytesMessage(null, buf, 4, 3);
 
-        Message m3, m4;
-        m3=m1.copy();
-        m4=m2.copy();
+        Message m3=m1.copy(true, true);
+        Message m4=m2.copy(true, true);
 
         Assert.assertEquals(0, m3.getOffset());
         Assert.assertEquals(4, m3.getLength());
-        Assert.assertEquals(4, m3.getBuffer().length);
 
         Assert.assertEquals(4, m4.getOffset());
         Assert.assertEquals(3, m4.getLength());
-        Assert.assertEquals(3, m4.getBuffer().length);
     }
 
-    public static void testCopyHeaders() {
-        Message m1=new Message(null, "hello");
+    public void testCopyHeaders() {
+        Message m1=new BytesMessage(null, "hello");
         for(short id: new short[]{1, 2, 10, Global.BLOCKS_START_ID, Global.BLOCKS_START_ID +10}) {
             m1.putHeader(id, new DummyHeader(id));
         }
         System.out.println("Headers for m1: " + m1.printHeaders());
 
-        Message m2=m1.copy(true, Global.BLOCKS_START_ID);
+        Message m2=Util.copy(m1, true, Global.BLOCKS_START_ID, (short[])null);
         System.out.println("Headers for m2: " + m2.printHeaders());
         Map<Short,Header> hdrs=m2.getHeaders();
         assert hdrs.size() == 2;
@@ -348,113 +337,82 @@ public class MessageTest {
     }
 
 
+    public void testSizeNullMessage() throws Exception {
+        Message msg=new BytesMessage();
+        assert !msg.hasPayload();
+        assert msg.hasArray();
+        _testSize(msg);
+    }
 
-    public static void testSizeNullMessage() throws Exception {
-        Message msg=new Message();
+    public void testSizeWithEmptyArray() {
+        Message msg=new BytesMessage(null, new byte[0]);
+        assert msg.hasPayload();
+        assert msg.hasArray();
+        assert msg.getLength() == 0;
+    }
+
+
+    public void testSizeMessageWithDest() throws Exception {
+        Message msg=new EmptyMessage(UUID.randomUUID());
         _testSize(msg);
     }
 
 
-    public static void testSizeMessageWithDest() throws Exception {
-        Message msg=new Message(UUID.randomUUID());
+    public void testSizeMessageWithSrc() throws Exception {
+        Message msg=new EmptyMessage(null).setSrc(UUID.randomUUID());
         _testSize(msg);
     }
 
 
-    public static void testSizeMessageWithSrc() throws Exception {
-        Message msg=new Message(null).src(UUID.randomUUID());
-        _testSize(msg);
-    }
-
-
-    public static void testSizeMessageWithDestAndSrc() throws Exception {
-        Message msg=new Message(UUID.randomUUID()).src(UUID.randomUUID());
+    public void testSizeMessageWithDestAndSrc() throws Exception {
+        Message msg=new EmptyMessage(UUID.randomUUID()).setSrc(UUID.randomUUID());
         _testSize(msg);
     }
 
 
 
-    public static void testSizeMessageWithDestAndSrcAndFlags() throws Exception {
-        Message msg=new Message(UUID.randomUUID()).src(UUID.randomUUID());
+    public void testSizeMessageWithDestAndSrcAndFlags() throws Exception {
+        Message msg=new EmptyMessage(UUID.randomUUID()).setSrc(UUID.randomUUID());
         msg.setFlag(Message.Flag.OOB);
         msg.setFlag(Message.Flag.DONT_BUNDLE);
         _testSize(msg);
     }
 
 
-    public static void testSizeMessageWithBuffer() throws Exception {
-        Message msg=new Message(null, "bela".getBytes());
+    public void testSizeMessageWithBuffer() throws Exception {
+        Message msg=new BytesMessage(null, "bela".getBytes());
         _testSize(msg);
     }
 
 
-    public static void testSizeMessageWithBuffer2() throws Exception {
-        Message msg=new Message(null, new byte[]{'b', 'e', 'l', 'a'});
+    public void testSizeMessageWithBuffer2() throws Exception {
+        Message msg=new BytesMessage(null, new byte[]{'b', 'e', 'l', 'a'});
         _testSize(msg);
     }
 
 
-    public static void testSizeMessageWithBuffer3() throws Exception {
-        Message msg=new Message(null, "bela");
+    public void testSizeMessageWithBuffer3() throws Exception {
+        Message msg=new BytesMessage(null, "bela");
         _testSize(msg);
     }
 
 
     public void testSizeMessageWithDestAndSrcAndHeaders() throws Exception {
-        Message msg=new Message(UUID.randomUUID(), "bela".getBytes()).src(UUID.randomUUID());
+        Message msg=new BytesMessage(UUID.randomUUID(), "bela".getBytes()).setSrc(UUID.randomUUID());
         addHeaders(msg);
         _testSize(msg);
     }
 
-    public void testReadFromSkipPayload() throws Exception {
-        Message msg=new Message(Util.createRandomAddress("A"), "bela".getBytes()).src(Util.createRandomAddress("B"));
-        addHeaders(msg);
-        byte[] buf=Util.streamableToByteBuffer(msg);
+    public void testMakeReply() {
+        Address dest=Util.createRandomAddress("A"), src=Util.createRandomAddress("B");
+        Message msg=new BytesMessage(dest, "Bela".getBytes()).setSrc(src);
 
-        // ExposedByteArrayInputStream input=new ExposedByteArrayInputStream(buf);
-        // DataInput in=new DataInputStream(input);
-        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf);
-
-        Message msg2=new Message(false);
-        int payload_position=msg2.readFromSkipPayload(in);
-        msg2.setBuffer(buf, payload_position, buf.length - payload_position);
-        assert msg2.getOffset() == payload_position;
-        assert msg2.getLength() == msg.getLength();
-        assert msg2.size() == msg.size();
-
-        Message copy=msg2.copy();
-        assert copy.getOffset() == payload_position;
-        assert copy.getLength() == msg.getLength();
-        assert copy.size() == msg2.size();
+        Message reply=makeReply(msg);
+        System.out.println("reply = " + reply);
+        assert Objects.equals(reply.getSrc(), msg.getDest());
+        assert Objects.equals(reply.getDest(), msg.getSrc());
     }
 
-    public static void testReadFromSkipPayloadNullPayload() throws Exception {
-        Message msg=new Message(Util.createRandomAddress("A")).src(Util.createRandomAddress("B"));
-        addHeaders(msg);
-        byte[] buf=Util.streamableToByteBuffer(msg);
-
-        // ExposedByteArrayInputStream input=new ExposedByteArrayInputStream(buf);
-        // DataInput in=new DataInputStream(input);
-        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf);
-        Message msg2=new Message(false);
-        int payload_position=msg2.readFromSkipPayload(in);
-        if(payload_position >= 0)
-            msg2.setBuffer(buf, payload_position, buf.length - payload_position);
-        assert msg2.getOffset() == 0;
-        assert msg2.getLength() == msg.getLength();
-        assert msg.getRawBuffer() == null;
-        assert msg2.getRawBuffer() == null;
-        assert msg.getBuffer() == null;
-        assert msg2.getBuffer() == null;
-        assert msg2.size() == msg.size();
-
-        Message copy=msg2.copy();
-        assert copy.getOffset() == 0;
-        assert copy.getLength() == msg.getLength();
-        assert copy.getRawBuffer() == null;
-        assert copy.getBuffer() == null;
-        assert copy.size() == msg2.size();
-    }
 
     protected static void addHeaders(Message msg) {
         TpHeader tp_hdr=new TpHeader("DemoChannel2");
@@ -466,7 +424,7 @@ public class MessageTest {
     }
 
 
-    private static void _testSize(Message msg) throws Exception {
+    protected static void _testSize(Message msg) throws Exception {
         long size=msg.size();
         byte[] serialized_form=Util.streamableToByteBuffer(msg);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);

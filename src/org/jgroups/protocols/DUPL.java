@@ -107,7 +107,7 @@ public class DUPL extends Protocol {
                 boolean multicast=dest == null;
                 if((multicast && copy_multicast_msgs) ||  (!multicast && copy_unicast_msgs)) {
                     for(int i=0; i < incoming_copies; i++)
-                        copies.add(msg.copy(true));
+                        copies.add(msg.copy(true, true));
                 }
             }
             copies.forEach(batch::add);
@@ -122,7 +122,7 @@ public class DUPL extends Protocol {
         boolean multicast=dest == null;
         if((multicast && copy_multicast_msgs) ||  (!multicast && copy_unicast_msgs)) {
             for(int i=0; i < num_copies; i++) {
-                Message copy=msg.copy(true);
+                Message copy=msg.copy(true, true);
                 switch(direction) {
                     case UP:
                         up_prot.up(copy);

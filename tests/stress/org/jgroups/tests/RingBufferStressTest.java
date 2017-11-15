@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
+import org.jgroups.EmptyMessage;
 import org.jgroups.Message;
-//import org.jgroups.util.RingBufferLocked;
 import org.jgroups.util.RingBufferSeqno;
 import org.jgroups.util.Util;
 
@@ -9,11 +9,13 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+//import org.jgroups.util.RingBufferLocked;
+
 public class RingBufferStressTest {
     static int NUM_THREADS=10;
     static int NUM_MSGS=1000000;
 
-    static final Message MSG=new Message(false);
+    static final Message MSG=new EmptyMessage();
 
 
     static final AtomicInteger added=new AtomicInteger(0);
