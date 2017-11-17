@@ -73,6 +73,9 @@ public class BPING extends PING implements Runnable {
             }
         }
 
+        if (null == sock)
+            throw new RuntimeException("failed to open a port in range [" + bind_port + " - " + (bind_port+port_range) + "]");
+
         sock.setBroadcast(true);
         startReceiver();
         super.start();
