@@ -119,7 +119,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         ASYM_ENCRYPT asym_encrypt=findProtocolAbove(ASYM_ENCRYPT.class);
         if(asym_encrypt != null) {
             String sym_alg=asym_encrypt.symAlgorithm();
-            if(Util.match(sym_alg, secret_key_algorithm)) {
+            if(!Util.match(sym_alg, secret_key_algorithm)) {
                 log.warn("overriding %s=%s to %s from %s", "secret_key_algorithm", secret_key_algorithm,
                          sym_alg, ASYM_ENCRYPT.class.getSimpleName());
                 secret_key_algorithm=sym_alg;
