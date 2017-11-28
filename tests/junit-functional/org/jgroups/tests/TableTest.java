@@ -955,9 +955,51 @@ public class TableTest {
         assert missing.size() == 25;
 
         missing=buf.getMissing(10);
-        assert missing.size() == 10;
+        assert missing.size() == 5;
+
+        missing=buf.getMissing(200);
+        assert missing.size() == 25;
     }
 
+
+    public void testGetMissingWithMaxBundleSize() {
+        final int max_bundle_size=64000, missing_msgs=1_000_000;
+        final int max_xmit_req_size=(max_bundle_size -50) * Global.LONG_SIZE;
+        Table<Integer> table=new Table<>(10, 1000, 0);
+        table.add(0, 0);
+        table.add(missing_msgs, missing_msgs);
+        System.out.println("table = " + table);
+
+        SeqnoList missing=table.getMissing(max_xmit_req_size);
+        System.out.println("missing = " + missing);
+
+        int serialized_size=missing.serializedSize();
+        assert serialized_size <= max_bundle_size :
+          String.format("serialized size of %d needs to be less than max_bundle_size of %d bytes", serialized_size, max_bundle_size);
+    }
+
+    public void testGetMissingWithMaxBundleSize2() {
+        final int max_bundle_size=64000, missing_msgs=2_000_000;
+        final int max_xmit_req_size=(max_bundle_size -50) * Global.LONG_SIZE;
+        Table<Integer> table=new Table<>(10, 1000, 0);
+        for(int i=0; i < missing_msgs/2; i++)
+            table.add(i, i);
+
+        table.add(missing_msgs, missing_msgs);
+        System.out.println("table = " + table);
+
+        SeqnoList missing=table.getMissing(max_xmit_req_size);
+        System.out.println("missing = " + missing);
+
+        int serialized_size=missing.serializedSize();
+        assert serialized_size <= max_bundle_size :
+          String.format("serialized size of %d needs to be less than max_bundle_size of %d bytes", serialized_size, max_bundle_size);
+
+        int limit=missing_msgs/2 + max_xmit_req_size;
+        for(long l: missing) {
+            assert l >= missing_msgs/2 && l < limit;
+        }
+    }
 
 
     public static void testGetMissingLast() {

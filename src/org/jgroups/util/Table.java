@@ -677,8 +677,9 @@ public class Table<T> implements Iterable<T> {
             int max_size=max_msgs > 0? Math.min(max_msgs, capacity) : capacity;
             if(max_size <= 0)
                 return null;
-            Missing missing=new Missing(start_seqno, capacity, max_size);
-            forEach(start_seqno, hr-1, missing);
+            Missing missing=new Missing(start_seqno, max_size);
+            long to=max_size > 0? Math.min(start_seqno + max_size-1, hr-1) : hr-1;
+            forEach(start_seqno, to, missing);
             return missing.getMissingElements();
         }
         finally {
@@ -859,8 +860,8 @@ public class Table<T> implements Iterable<T> {
         protected final int       max_num_msgs;
         protected int             num_msgs;
 
-        protected Missing(long start, int capacity, int max_number_of_msgs) {
-            missing_elements=new SeqnoList(capacity, start);
+        protected Missing(long start, int max_number_of_msgs) {
+            missing_elements=new SeqnoList(max_number_of_msgs, start);
             this.max_num_msgs=max_number_of_msgs;
         }
 
