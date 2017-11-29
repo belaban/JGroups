@@ -50,10 +50,11 @@ public class SEQUENCER extends Protocol {
     protected final Condition                   send_cond=send_lock.newCondition();
 
     /** When ack_mode is set, we need to wait for an ack for each forwarded message until we can send the next one */
+    @ManagedAttribute(description="is ack-mode enabled or not")
     protected volatile boolean                  ack_mode=true;
 
     /** Set when we block all sending threads to resend all messages from forward_table */
-    protected volatile boolean                  flushing=false;
+    protected volatile boolean                  flushing;
 
     protected volatile boolean                  running=true;
 
@@ -71,11 +72,11 @@ public class SEQUENCER extends Protocol {
 
 
     @Property(description="Size of the set to store received seqnos (for duplicate checking)")
-    protected int  delivery_table_max_size=2000;
+    protected int                               delivery_table_max_size=2000;
 
     @Property(description="Number of acks needed before going from ack-mode to normal mode. " +
       "0 disables this, which means that ack-mode is always on")
-    protected int  threshold=10;
+    protected int                               threshold=10;
 
     @ManagedAttribute protected int  num_acks;
     @ManagedAttribute protected long forwarded_msgs;
@@ -199,9 +200,7 @@ public class SEQUENCER extends Protocol {
                 }
                 Address sender=msg.getSrc();
                 if(view != null && !view.containsMember(sender)) {
-                    if(log.isErrorEnabled())
-                        log.error(local_addr + ": dropping FORWARD request from non-member " + sender +
-                                    "; view=" + view);
+                    log.error("%s: dropping FORWARD request from non-member %s; view=%s", local_addr, sender, view);
                     return null;
                 }
 
@@ -468,8 +467,7 @@ public class SEQUENCER extends Protocol {
     protected void deliver(Message msg, SequencerHeader hdr) {
         Address sender=msg.getSrc();
         if(sender == null) {
-            if(log.isErrorEnabled())
-                log.error(local_addr + ": sender is null, cannot deliver " + "::" + hdr.getSeqno());
+            log.error("%s: sender is null, cannot deliver ::%d", local_addr, hdr.getSeqno());
             return;
         }
         long msg_seqno=hdr.getSeqno();
@@ -484,8 +482,7 @@ public class SEQUENCER extends Protocol {
             }
         }
         if(!canDeliver(sender, msg_seqno)) {
-            if(log.isWarnEnabled())
-                log.warn(local_addr + ": dropped duplicate message " + sender + "::" + msg_seqno);
+            log.warn("%s: dropped duplicate message %s::%d", local_addr, sender, msg_seqno);
             return;
         }
         if(log.isTraceEnabled())
