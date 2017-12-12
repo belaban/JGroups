@@ -701,7 +701,7 @@ public class UtilTest {
         DataInputStream dis=new DataInputStream(instream);
         View v2=Util.readGenericStreamable(dis);
         Assert.assertEquals(v, v2);
-        v2=Util.readStreamable(View.class, dis);
+        v2=Util.readStreamable(View::new, dis);
         Assert.assertEquals(v, v2);
     }
 

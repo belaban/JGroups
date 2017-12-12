@@ -156,8 +156,7 @@ public class ExecutionServiceDemo {
 
         @Override
         public void readFrom(DataInput in) throws Exception {
-            buffer = ((ByteBufferStreamable)Util.readStreamable(
-                ByteBufferStreamable.class, in)).buffer;
+            buffer = Util.readStreamable(ByteBufferStreamable::new, in).buffer;
         }
     }
     
@@ -214,11 +213,8 @@ public class ExecutionServiceDemo {
 
         @Override
         public void readFrom(DataInput in) throws Exception {
-            bytes1 = ((ByteBufferStreamable)Util.readStreamable(
-                ByteBufferStreamable.class, in)).buffer;
-            
-            bytes2 = ((ByteBufferStreamable)Util.readStreamable(
-                ByteBufferStreamable.class, in)).buffer;
+            bytes1 = Util.readStreamable(ByteBufferStreamable::new, in).buffer;
+            bytes2 = Util.readStreamable(ByteBufferStreamable::new, in).buffer;
         }
     }
     

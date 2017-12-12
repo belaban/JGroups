@@ -691,7 +691,7 @@ public class STABLE extends Protocol {
 
     protected Digest readDigest(byte[] buffer, int offset, int length) {
         try {
-            return buffer != null? Util.streamableFromBuffer(Digest.class, buffer, offset, length) : null;
+            return buffer != null? Util.streamableFromBuffer(Digest::new, buffer, offset, length) : null;
         }
         catch(Exception ex) {
             log.error("%s: failed reading Digest from message: %s", local_addr, ex);

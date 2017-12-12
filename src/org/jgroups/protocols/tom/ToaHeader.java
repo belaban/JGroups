@@ -91,7 +91,7 @@ public class ToaHeader extends Header {
         messageID.readFrom(in);
         sequencerNumber = Bits.readLong(in);
         if (type == DATA_MESSAGE) {
-            destinations = (Collection<Address>) Util.readAddresses(in, ArrayList.class);
+            destinations = Util.readAddresses(in, ArrayList::new);
         }
     }
 

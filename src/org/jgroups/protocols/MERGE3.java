@@ -314,7 +314,7 @@ public class MERGE3 extends Protocol {
 
     protected View readView(byte[] buffer, int offset, int length) {
         try {
-            return buffer != null? Util.streamableFromBuffer(View.class, buffer, offset, length) : null;
+            return buffer != null? Util.streamableFromBuffer(View::new, buffer, offset, length) : null;
         }
         catch(Exception ex) {
             log.error("%s: failed reading View from message: %s", local_addr, ex);

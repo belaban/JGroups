@@ -233,7 +233,7 @@ abstract public class Locking extends Protocol {
 
         Request req=null;
         try {
-            req=Util.streamableFromBuffer(Request.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+            req=Util.streamableFromBuffer(Request::new, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
         }
         catch(Exception ex) {
             log.error("failed deserializng request", ex);
@@ -1346,7 +1346,7 @@ abstract public class Locking extends Protocol {
             type=Type.values()[in.readByte()];
             lock_name=Bits.readString(in);
             lock_id=in.readInt();
-            owner=Util.readStreamable(Owner.class, in);
+            owner=Util.readStreamable(Owner::new, in);
             timeout=in.readLong();
             is_trylock=in.readBoolean();
         }

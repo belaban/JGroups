@@ -124,7 +124,7 @@ public class AnycastAddress implements Address, Constructable<AnycastAddress> {
 
     @Override
     public void readFrom(DataInput in) throws Exception {
-        destinations = (Collection<Address>) Util.readAddresses(in, ArrayList.class);
+        destinations = Util.readAddresses(in, ArrayList::new);
     }
 
 }

@@ -296,7 +296,7 @@ public class RELAY extends Protocol {
 
     protected Object installView(byte[] buf, int offset, int length) {
         try {
-            ViewData data=Util.streamableFromByteBuffer(ViewData.class, buf, offset, length);
+            ViewData data=Util.streamableFromByteBuffer(ViewData::new, buf, offset, length);
             if(data.uuids != null)
                 NameCache.add(data.uuids);
 
@@ -434,7 +434,7 @@ public class RELAY extends Protocol {
 
     protected void sendOnLocalCluster(byte[] buf, int offset, int length) {
         try {
-            Message msg=Util.streamableFromByteBuffer(Message.class, buf, offset, length);
+            Message msg=Util.streamableFromByteBuffer(Message::new, buf, offset, length);
             Address sender=msg.getSrc();
             Address dest=msg.getDest();
 
@@ -536,7 +536,7 @@ public class RELAY extends Protocol {
                     break;
                 case VIEW:
                     try {
-                        ViewData data=Util.streamableFromByteBuffer(ViewData.class, msg.getRawBuffer(),
+                        ViewData data=Util.streamableFromByteBuffer(ViewData::new, msg.getRawBuffer(),
                                                                     msg.getOffset(), msg.getLength());
                         // replace addrs with proxies
                         if(data.remote_view != null) {

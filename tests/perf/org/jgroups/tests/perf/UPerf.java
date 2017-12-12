@@ -589,8 +589,8 @@ public class UPerf extends ReceiverAdapter {
             num_gets=Bits.readLong(in);
             num_puts=Bits.readLong(in);
             time=Bits.readLong(in);
-            avg_gets=Util.readStreamable(AverageMinMax.class, in);
-            avg_puts=Util.readStreamable(AverageMinMax.class, in);
+            avg_gets=Util.readStreamable(AverageMinMax::new, in);
+            avg_puts=Util.readStreamable(AverageMinMax::new, in);
         }
 
         public String toString() {

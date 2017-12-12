@@ -436,7 +436,7 @@ public class FD extends Protocol {
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
-            mbrs=(Collection<Address>)Util.readAddresses(in, ArrayList.class);
+            mbrs=Util.readAddresses(in, ArrayList::new);
             from=Util.readAddress(in);
         }
 
