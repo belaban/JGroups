@@ -13,6 +13,7 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.io.NotSerializableException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -547,19 +548,21 @@ public class RequestCorrelator {
             return ret.toString();
         }
 
-
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             Bits.writeLong(req_id, out);
             out.writeShort(corrId);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=in.readByte();
             req_id=Bits.readLong(in);
             corrId=in.readShort();
         }
 
+        @Override
         public int serializedSize() {
             return Global.BYTE_SIZE  // type
               + Bits.size(req_id)    // req_id
@@ -585,16 +588,19 @@ public class RequestCorrelator {
             return MultiDestinationHeader::new;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             super.writeTo(out);
             Util.writeAddresses(exclusion_list, out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             super.readFrom(in);
             exclusion_list=Util.readAddresses(in);
         }
 
+        @Override
         public int serializedSize() {
             return (int)(super.serializedSize() + Util.size(exclusion_list));
         }

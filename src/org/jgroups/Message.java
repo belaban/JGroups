@@ -7,6 +7,7 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -528,7 +529,6 @@ public class Message implements Streamable, Constructable<Message> {
         if(copy_buffer && buf != null)
             retval.setBuffer(buf, offset, length);
 
-        //noinspection NonAtomicOperationOnVolatileField
         retval.headers=copy_headers && headers != null? Headers.copy(this.headers) : createHeaders(Util.DEFAULT_HEADERS);
         return retval;
     }
@@ -590,14 +590,8 @@ public class Message implements Streamable, Constructable<Message> {
 
     /* ----------------------------------- Interface Streamable  ------------------------------- */
 
-    /**
-     * Streams all members (dest and src addresses, buffer and headers) to the output stream.
-     *
-     *
-     * @param out
-     * @throws Exception
-     */
-    public void writeTo(DataOutput out) throws Exception {
+    /** Writes the message to the output stream */
+    @Override public void writeTo(DataOutput out) throws IOException {
         byte leading=0;
 
         if(dest != null)
@@ -646,13 +640,9 @@ public class Message implements Streamable, Constructable<Message> {
    /**
     * Writes the message to the output stream, but excludes the dest and src addresses unless the
     * src address given as argument is different from the message's src address
-    *
-    * @param src
-    * @param out
     * @param excluded_headers Don't marshal headers that are part of excluded_headers
-    * @throws Exception
     */
-    public void writeToNoAddrs(Address src, DataOutput out, short ... excluded_headers) throws Exception {
+    public void writeToNoAddrs(Address src, DataOutput out, short ... excluded_headers) throws IOException {
         byte leading=0;
 
         boolean write_src_addr=src == null || sender != null && !sender.equals(src);
@@ -696,9 +686,8 @@ public class Message implements Streamable, Constructable<Message> {
         }
     }
 
-
-    public void readFrom(DataInput in) throws Exception {
-
+    /** Reads the message's contents from an input stream */
+    @Override public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         // 1. read the leading byte first
         byte leading=in.readByte();
 
@@ -734,7 +723,7 @@ public class Message implements Streamable, Constructable<Message> {
 
     /** Reads the message's contents from an input stream, but skips the buffer and instead returns the
      * position (offset) at which the buffer starts */
-    public int readFromSkipPayload(ByteArrayDataInputStream in) throws Exception {
+    public int readFromSkipPayload(ByteArrayDataInputStream in) throws IOException, ClassNotFoundException {
 
         // 1. read the leading byte first
         byte leading=in.readByte();
@@ -835,7 +824,7 @@ public class Message implements Streamable, Constructable<Message> {
         return sb.toString();
     }
 
-    protected static void writeHeader(Header hdr, DataOutput out) throws Exception {
+    protected static void writeHeader(Header hdr, DataOutput out) throws IOException {
         short magic_number=hdr.getMagicId();
         out.writeShort(magic_number);
         hdr.writeTo(out);
@@ -843,7 +832,7 @@ public class Message implements Streamable, Constructable<Message> {
 
 
 
-    protected static Header readHeader(DataInput in) throws Exception {
+    protected static Header readHeader(DataInput in) throws IOException, ClassNotFoundException {
         short magic_number=in.readShort();
         Header hdr=ClassConfigurator.create(magic_number);
         hdr.readFrom(in);

@@ -6,6 +6,7 @@ import org.jgroups.util.Bits;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 /**
@@ -133,7 +134,8 @@ public class UnicastHeader3 extends Header {
      * | CLOSE | conn_id |
      * </pre>
      */
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         out.writeByte(type);
         switch(type) {
             case DATA:
@@ -157,7 +159,8 @@ public class UnicastHeader3 extends Header {
         }
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         type=in.readByte();
         switch(type) {
             case DATA:

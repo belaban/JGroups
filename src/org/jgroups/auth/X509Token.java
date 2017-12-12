@@ -123,11 +123,13 @@ public class X509Token extends AuthToken {
         return false;
     }
 
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         Util.writeByteBuffer(this.encryptedToken, out);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         this.encryptedToken = Util.readByteBuffer(in);
         this.valueSet = true;
     }

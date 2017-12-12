@@ -12,6 +12,7 @@ import org.jgroups.util.UUID;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
@@ -533,6 +534,7 @@ public class MERGE3 extends Protocol {
         public short getMagicId() {return 75;}
         public Supplier<? extends Header> create() {return MergeHeader::new;}
 
+        @Override
         public int serializedSize() {
             int retval=Global.BYTE_SIZE; // for the type
             retval+=Util.size(view_id);
@@ -543,15 +545,16 @@ public class MERGE3 extends Protocol {
             return retval;
         }
 
-        public void writeTo(DataOutput outstream) throws Exception {
+        @Override
+        public void writeTo(DataOutput outstream) throws IOException {
             outstream.writeByte(type.ordinal()); // a byte if ok as we only have 3 types anyway
             Util.writeViewId(view_id,outstream);
             Bits.writeString(logical_name,outstream);
             Util.writeAddress(physical_addr, outstream);
         }
 
-        @SuppressWarnings("unchecked")
-        public void readFrom(DataInput instream) throws Exception {
+        @Override
+        public void readFrom(DataInput instream) throws IOException, ClassNotFoundException {
             type=Type.values()[instream.readByte()];
             view_id=Util.readViewId(instream);
             logical_name=Bits.readString(instream);

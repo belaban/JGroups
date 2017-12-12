@@ -12,6 +12,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -188,13 +189,13 @@ public class ABP extends Protocol {
         }
 
         @Override
-        public void writeTo(DataOutput out) throws Exception {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type.ordinal());
             out.writeByte(bit);
         }
 
         @Override
-        public void readFrom(DataInput in) throws Exception {
+        public void readFrom(DataInput in) throws IOException {
             type=Type.values()[in.readByte()];
             bit=in.readByte();
         }

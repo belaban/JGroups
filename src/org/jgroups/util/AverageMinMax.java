@@ -2,6 +2,7 @@ package org.jgroups.util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -78,13 +79,13 @@ public class AverageMinMax extends Average {
         return count == 0? "n/a" : String.format("min/avg/max=%,d/%,.2f/%,d", min, getAverage(), max);
     }
 
-    public void writeTo(DataOutput out) throws Exception {
+    public void writeTo(DataOutput out) throws IOException {
         super.writeTo(out);
         Bits.writeLong(min, out);
         Bits.writeLong(max, out);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    public void readFrom(DataInput in) throws IOException {
         super.readFrom(in);
         min=Bits.readLong(in);
         max=Bits.readLong(in);

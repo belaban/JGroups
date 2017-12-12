@@ -300,13 +300,15 @@ public class PDC extends Protocol {
         public Address  getPhysicalAddr() {return physical_addr;}
         public String   getLogicalName()  {return logical_name;}
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             Util.writeAddress(logical_addr, out);
             Util.writeAddress(physical_addr, out);
             Bits.writeString(logical_name,out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             logical_addr=Util.readAddress(in);
             physical_addr=Util.readAddress(in);
             logical_name=Bits.readString(in);

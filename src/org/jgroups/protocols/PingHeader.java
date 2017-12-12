@@ -7,6 +7,7 @@ import org.jgroups.util.Bits;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 
@@ -35,6 +36,7 @@ public class PingHeader extends Header {
 
     public Supplier<? extends Header> create() {return PingHeader::new;}
 
+    @Override
     public int serializedSize() {
         int retval=Global.BYTE_SIZE *3; // type, cluster_name presence and initial_discovery
         if(cluster_name != null)
@@ -54,14 +56,15 @@ public class PingHeader extends Header {
         }
     }
 
-
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         out.writeByte(type);
         Bits.writeString(cluster_name,out);
         out.writeBoolean(initial_discovery);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         type=in.readByte();
         cluster_name=Bits.readString(in);
         initial_discovery=in.readBoolean();

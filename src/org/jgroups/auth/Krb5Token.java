@@ -105,7 +105,8 @@ public class Krb5Token extends AuthToken {
         
         return false;
     }
-    
+
+    @Override
     public void writeTo(DataOutput out) throws IOException {
         if (isAuthenticated()) {
             generateServiceTicket();
@@ -113,7 +114,8 @@ public class Krb5Token extends AuthToken {
         }
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
 
         // This method is called from within a temporary token so it has not authenticated to a client principal
         // This token is passed to the authenticate

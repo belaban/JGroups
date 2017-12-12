@@ -12,6 +12,7 @@ import javax.management.MBeanServer;
 import java.io.BufferedReader;
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -366,11 +367,13 @@ public class UnicastTestRpc extends ReceiverAdapter {
             return 50;
         }
 
-        public void objectToStream(Object obj, DataOutput out) throws Exception {
+        @Override
+        public void objectToStream(Object obj, DataOutput out) throws IOException {
             Util.objectToStream(obj, out);
         }
 
-        public Object objectFromStream(DataInput in) throws Exception {
+        @Override
+        public Object objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
             return Util.objectFromStream(in);
         }
     }

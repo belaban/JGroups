@@ -11,6 +11,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.Supplier;
@@ -195,15 +196,18 @@ public class COMPRESS extends Protocol {
             return CompressHeader::new;
         }
 
+        @Override
         public int serializedSize() {
             return Global.INT_SIZE;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeInt(original_size);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException {
             original_size=in.readInt();
         }
     }

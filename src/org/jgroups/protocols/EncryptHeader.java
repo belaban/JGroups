@@ -7,6 +7,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 /**
@@ -41,18 +42,21 @@ public class EncryptHeader extends Header {
     public short                      getMagicId()      {return 88;}
     public Supplier<? extends Header> create()          {return EncryptHeader::new;}
 
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         out.writeByte(type);
         Util.writeByteBuffer(version, 0, version != null? version.length : 0, out);
         Util.writeAddress(server, out);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         type=in.readByte();
         version=Util.readByteBuffer(in);
         server=Util.readAddress(in);
     }
 
+    @Override
     public String toString() {
         return String.format("%s [version=%s]",
                              typeToString(type), (version != null? Util.byteArrayToHexString(version) : "null"))

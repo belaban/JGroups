@@ -7,6 +7,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 
@@ -105,17 +106,19 @@ public class ViewId implements Comparable<ViewId>, SizeStreamable, Constructable
         return (int)(creator.hashCode() + id);
     }
 
-
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         Util.writeAddress(creator, out);
         Bits.writeLong(id,out);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         creator=Util.readAddress(in);
         id=Bits.readLong(in);
     }
 
+    @Override
     public int serializedSize() {
         return Bits.size(id) + Util.size(creator);
     }

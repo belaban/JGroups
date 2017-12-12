@@ -618,7 +618,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
             }
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeInt(status);
             Bits.writeString(classname,out);
             Bits.writeString(name,out);
@@ -629,7 +629,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
             Bits.writeString(stack_trace,out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        public void readFrom(DataInput in) throws IOException {
             status=in.readInt();
             classname=Bits.readString(in);
             name=Bits.readString(in);

@@ -84,19 +84,12 @@ public class RegexMembership extends AuthToken {
         return false;
     }
 
-   
-
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) {
     }
 
-    /**
-     * Required to deserialize the object when read in from the wire
-     *
-     *
-     * @param in
-     * @throws Exception
-     */
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) {
     }
 
     public int size() {

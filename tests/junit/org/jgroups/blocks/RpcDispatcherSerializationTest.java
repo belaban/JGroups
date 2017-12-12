@@ -110,7 +110,8 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         static final byte LONG   = 2;
         static final byte OBJ    = 3;
 
-        public void objectToStream(Object obj, DataOutput out) throws Exception {
+        @Override
+        public void objectToStream(Object obj, DataOutput out) throws IOException {
             if(obj == null)
                 out.writeByte(NULL);
             else if(obj instanceof Boolean) {
@@ -128,7 +129,8 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
             }
         }
 
-        public Object objectFromStream(DataInput in) throws Exception {
+        @Override
+        public Object objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
             int type=in.readByte();
             switch(type) {
                 case NULL:

@@ -8,6 +8,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 
@@ -53,7 +54,7 @@ public class DeltaView extends View {
     public Address[] getLeftMembers()   {return left_members;}
     public Address[] getNewMembers()    {return new_members;}
 
-
+    @Override
     public int serializedSize() {
         int retval=view_id.serializedSize() + ref_view_id.serializedSize();
         retval+=Util.size(left_members);
@@ -61,15 +62,16 @@ public class DeltaView extends View {
         return retval;
     }
 
-
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         view_id.writeTo(out);
         ref_view_id.writeTo(out);
         Util.writeAddresses(left_members, out);
         Util.writeAddresses(new_members, out);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         view_id=new ViewId();
         view_id.readFrom(in);
         ref_view_id=new ViewId();

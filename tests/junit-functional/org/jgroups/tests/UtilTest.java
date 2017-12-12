@@ -406,7 +406,6 @@ public class UtilTest {
                                         
     }
 
-    @SuppressWarnings("unchecked")
     public void testSerialization() throws Exception {
         byte[] buf;
         Address addr=Util.createRandomAddress(), addr2;
@@ -646,14 +645,17 @@ public class UtilTest {
         // test heap based ByteBuffer:
         String hello="hello";
         byte[] buffer=hello.getBytes();
-        ByteBuffer buf=(ByteBuffer)ByteBuffer.allocate(50).putInt(322649).put(buffer).flip();
+        ByteBuffer buf=ByteBuffer.allocate(50).putInt(322649).put(buffer);
+        buf.flip(); // for java 8 compatibility
+
         buf.getInt();
         MyNioReceiver receiver=new MyNioReceiver();
         receiver.receive(null, buf);
         assert receiver.name.equals(hello);
 
         // test direct ByteBuffer:
-        buf=(ByteBuffer)ByteBuffer.allocateDirect(50).putInt(322649).put(buffer).flip();
+        buf=ByteBuffer.allocateDirect(50).putInt(322649).put(buffer);
+        buf.flip();
         buf.getInt();
         receiver.receive(null, buf);
         assert receiver.name.equals(hello);
@@ -1033,16 +1035,6 @@ public class UtilTest {
         assert result.contains(1) && result.contains(2) && result.contains(3);
     }
 
-
-    public static void testAll() {
-        List<String> l=new ArrayList<>();
-        l.add("one"); l.add("two"); l.add("one");
-        System.out.println("-- list is " + l);
-        assert !(Util.all(l, "one"));
-        l.remove("two");
-        System.out.println("-- list is " + l);
-        assert Util.all(l, "one");
-    }
 
 
     public static void testParseCommaDelimitedString() {

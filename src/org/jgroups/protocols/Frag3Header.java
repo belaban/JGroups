@@ -5,6 +5,7 @@ import org.jgroups.util.Bits;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 
@@ -48,8 +49,8 @@ public class Frag3Header extends Header {
                              id, frag_id, num_frags, original_length, offset);
     }
 
-
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         Bits.writeInt(id,out);
         Bits.writeInt(frag_id, out);
         Bits.writeInt(num_frags, out);
@@ -57,11 +58,13 @@ public class Frag3Header extends Header {
         Bits.writeInt(offset, out);
     }
 
+    @Override
     public int serializedSize() {
         return Bits.size(id) + Bits.size(frag_id) + Bits.size(num_frags) + Bits.size(original_length) + Bits.size(offset);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         id=Bits.readInt(in);
         frag_id=Bits.readInt(in);
         num_frags=Bits.readInt(in);

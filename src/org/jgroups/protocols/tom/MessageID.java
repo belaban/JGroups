@@ -7,6 +7,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 
 
 /**
@@ -77,18 +78,19 @@ public class MessageID implements Comparable<MessageID>, Cloneable, SizeStreamab
         return result;
     }
 
+    @Override
     public int serializedSize() {
         return Bits.size(id) + Util.size(address);
     }
 
     @Override
-    public void writeTo(DataOutput out) throws Exception {
+    public void writeTo(DataOutput out) throws IOException {
         Util.writeAddress(address, out);
         Bits.writeLong(id, out);
     }
 
     @Override
-    public void readFrom(DataInput in) throws Exception {
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         address = Util.readAddress(in);
         id = Bits.readLong(in);
     }

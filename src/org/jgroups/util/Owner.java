@@ -5,6 +5,7 @@ import org.jgroups.Address;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 
 
 /**
@@ -31,12 +32,14 @@ public class Owner implements Streamable, Comparable<Owner> {
         return thread_id;
     }
 
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         Util.writeAddress(address, out);
         Bits.writeLong(thread_id, out);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         address=Util.readAddress(in);
         thread_id=Bits.readLong(in);
     }

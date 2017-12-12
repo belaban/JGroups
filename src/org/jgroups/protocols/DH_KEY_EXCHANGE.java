@@ -13,6 +13,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.function.Supplier;
@@ -285,6 +286,7 @@ public class DH_KEY_EXCHANGE extends KeyExchange {
         public byte[]                     encryptedSecret() {return encrypted_secret_key;}
         public byte[]                     version()         {return secret_key_version;}
 
+        @Override
         public int serializedSize() {
             switch(type) {
                 case SECRET_KEY_REQ:
@@ -299,7 +301,8 @@ public class DH_KEY_EXCHANGE extends KeyExchange {
             }
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type.ordinal());
             switch(type) {
                 case SECRET_KEY_REQ:
@@ -325,7 +328,8 @@ public class DH_KEY_EXCHANGE extends KeyExchange {
             }
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException {
             byte ordinal=in.readByte();
             type=Type.values()[ordinal];
 

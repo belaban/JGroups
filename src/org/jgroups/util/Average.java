@@ -2,6 +2,7 @@ package org.jgroups.util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 
 /**
  * Maintains an approximation of an average of values. Done by keeping track of the number of samples, and computing
@@ -62,12 +63,14 @@ public class Average implements Streamable {
         return String.valueOf(getAverage());
     }
 
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         out.writeDouble(avg);
         Bits.writeLong(count, out);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         avg=in.readDouble();
         count=Bits.readLong(in);
     }

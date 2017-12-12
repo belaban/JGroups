@@ -212,13 +212,12 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
         return ret.toString();
     }
 
-
-
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         writeTo(out, null);
     }
 
-    public void writeTo(DataOutput out, Marshaller marshaller) throws Exception {
+    public void writeTo(DataOutput out, Marshaller marshaller) throws IOException {
         out.write(mode);
 
         switch(mode) {
@@ -239,14 +238,12 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
         writeArgs(out, marshaller);
     }
 
-
-
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
        readFrom(in, null);
     }
 
-
-    public void readFrom(DataInput in, Marshaller marshaller) throws Exception {
+    public void readFrom(DataInput in, Marshaller marshaller) throws IOException, ClassNotFoundException {
         switch(mode=in.readByte()) {
             case METHOD:
                 method_name=Bits.readString(in);
@@ -302,7 +299,7 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
         return null;
     }
 
-    protected void writeArgs(DataOutput out, Marshaller marshaller) throws Exception {
+    protected void writeArgs(DataOutput out, Marshaller marshaller) throws IOException {
         int args_len=args != null? args.length : 0;
         out.write(args_len);
         if(args_len == 0)
@@ -315,7 +312,7 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
         }
     }
 
-    protected void readArgs(DataInput in, Marshaller marshaller) throws Exception {
+    protected void readArgs(DataInput in, Marshaller marshaller) throws IOException, ClassNotFoundException {
         int args_len=in.readByte();
         if(args_len == 0)
             return;
@@ -325,7 +322,7 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
     }
 
 
-    protected void writeTypes(DataOutput out) throws Exception {
+    protected void writeTypes(DataOutput out) throws IOException {
         int types_len=types != null? types.length : 0;
         out.write(types_len);
         if(types_len > 0)
@@ -333,7 +330,7 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
                 Util.objectToStream(type, out);
     }
 
-    protected void readTypes(DataInput in) throws Exception {
+    protected void readTypes(DataInput in) throws IOException, ClassNotFoundException {
         int types_len=in.readByte();
         if(types_len > 0) {
             types=new Class<?>[types_len];
@@ -342,7 +339,7 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
         }
     }
 
-    protected void writeMethod(DataOutput out) throws Exception {
+    protected void writeMethod(DataOutput out) throws IOException {
         if(method != null) {
             out.write(1);
             Util.objectToStream(method.getParameterTypes(),out);
@@ -352,7 +349,7 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
             out.write(0);
     }
 
-    protected void readMethod(DataInput in) throws Exception {
+    protected void readMethod(DataInput in) throws IOException, ClassNotFoundException {
         if(in.readByte() == 1) {
             Class[] parametertypes=Util.objectFromStream(in);
             Class   declaringclass=Util.objectFromStream(in);

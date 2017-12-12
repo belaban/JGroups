@@ -13,6 +13,7 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -1537,7 +1538,8 @@ abstract public class Locking extends Protocol {
         public Address sender()                    {return this.sender;}
         public Request sender(Address sender)      {this.sender=sender; return this;}
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type.ordinal());
             Bits.writeString(lock_name,out);
             out.writeInt(lock_id);
@@ -1548,7 +1550,8 @@ abstract public class Locking extends Protocol {
             Util.writeAddress(sender, out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=Type.values()[in.readByte()];
             lock_name=Bits.readString(in);
             lock_id=in.readInt();
@@ -1625,14 +1628,17 @@ abstract public class Locking extends Protocol {
             return LockingHeader::new;
         }
 
+        @Override
         public int serializedSize() {
             return 0;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         }
     }
 
@@ -1648,7 +1654,7 @@ abstract public class Locking extends Protocol {
             return this;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        public void writeTo(DataOutput out) throws IOException {
             if(existing_locks == null)
                 out.writeInt(0);
             else {
@@ -1667,7 +1673,7 @@ abstract public class Locking extends Protocol {
             }
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             int size=in.readInt();
             if(size > 0) {
                 existing_locks=new ArrayList<>(size);

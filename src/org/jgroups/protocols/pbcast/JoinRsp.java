@@ -10,6 +10,7 @@ import org.jgroups.util.SizeStreamable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 
@@ -45,8 +46,8 @@ public class JoinRsp implements SizeStreamable, Constructable<JoinRsp> {
     public String  getFailReason()         {return fail_reason;}
     public JoinRsp setFailReason(String r) {fail_reason=r; return this;}
 
-
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         byte flags=0;
         if(view != null)
             flags|=VIEW_PRESENT;
@@ -69,7 +70,8 @@ public class JoinRsp implements SizeStreamable, Constructable<JoinRsp> {
             out.writeUTF(fail_reason);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         byte flags=in.readByte();
 
         // 1. view
@@ -89,6 +91,7 @@ public class JoinRsp implements SizeStreamable, Constructable<JoinRsp> {
             fail_reason=in.readUTF();
     }
 
+    @Override
     public int serializedSize() {
         int retval=Global.BYTE_SIZE; // flags
 

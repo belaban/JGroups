@@ -111,12 +111,19 @@ public class ClassConfigurator {
     }
 
 
-    public static <T extends Object> T create(short id) throws Exception {
+    public static <T extends Object> T create(short id) throws ClassNotFoundException {
         if(id >= MIN_CUSTOM_MAGIC_NUMBER) {
             Object val=magicMapUser.get(id);
             if(val == null)
                 throw new ClassNotFoundException("Class for magic number " + id + " cannot be found");
-            return (T) ((val instanceof Supplier)? ((Supplier)val).get() : ((Class)val).newInstance());
+            if (val instanceof Supplier) {
+                return ((Supplier<T>) val).get();
+            }
+            try {
+                return ((Class<T>) val).newInstance();
+            } catch (IllegalAccessException | InstantiationException e) {
+                throw new IllegalStateException(e);
+            }
         }
         Supplier<?> supplier=magicMap[id];
         if(supplier == null)

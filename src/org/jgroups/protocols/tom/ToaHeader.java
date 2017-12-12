@@ -1,13 +1,14 @@
 package org.jgroups.protocols.tom;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.util.Objects;
-import java.util.function.Supplier;
-
 import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.util.Bits;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * The header for the Total Order Anycast (TOA) protocol
@@ -61,7 +62,7 @@ public class ToaHeader extends Header {
     }
 
     @Override
-    public void writeTo(DataOutput out) throws Exception {
+    public void writeTo(DataOutput out) throws IOException {
         out.writeByte(type);
         messageID.writeTo(out);
         Bits.writeLong(sequencerNumber, out);
@@ -69,7 +70,7 @@ public class ToaHeader extends Header {
     }
 
     @Override
-    public void readFrom(DataInput in) throws Exception {
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         type = in.readByte();
         messageID = new MessageID();
         messageID.readFrom(in);

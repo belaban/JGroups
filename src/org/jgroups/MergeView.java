@@ -7,6 +7,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -101,8 +102,8 @@ public class MergeView extends View {
         return sb.toString();
     }
 
-
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         super.writeTo(out);
 
         // write subgroups
@@ -130,7 +131,8 @@ public class MergeView extends View {
         }
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         super.readFrom(in);
         short len=in.readShort();
         if(len > 0) {
@@ -154,6 +156,7 @@ public class MergeView extends View {
         }
     }
 
+    @Override
     public int serializedSize() {
         int retval=super.serializedSize();
         retval+=Global.SHORT_SIZE; // for size of subgroups vector

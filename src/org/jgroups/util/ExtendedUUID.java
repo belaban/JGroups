@@ -149,20 +149,20 @@ public class ExtendedUUID extends FlagsUUID {
         return (T)this;
     }
 
-
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         super.writeTo(out);
         write(out);
     }
 
-
-
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         super.readFrom(in);
         read(in);
     }
 
     /** The number of bytes required to serialize this instance */
+    @Override
     public int serializedSize() {
         return super.serializedSize() + Global.BYTE_SIZE + sizeofHashMap();
     }

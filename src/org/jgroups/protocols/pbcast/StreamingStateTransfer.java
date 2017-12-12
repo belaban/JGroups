@@ -9,6 +9,7 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
@@ -569,19 +570,21 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
             }
         }
 
-
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             Util.writeStreamable(digest, out);
             Util.writeStreamable(bind_addr, out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=in.readByte();
             digest=Util.readStreamable(Digest::new, in);
             bind_addr=Util.readStreamable(IpAddress::new, in);
         }
 
+        @Override
         public int serializedSize() {
             int retval=Global.BYTE_SIZE; // type
             retval+=Global.BYTE_SIZE;    // presence byte for my_digest
