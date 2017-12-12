@@ -2,6 +2,7 @@ package org.jgroups.blocks;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 
 /**
  * Performs serialization and de-serialization of RPC call arguments and return values (including exceptions)
@@ -26,15 +27,16 @@ public interface Marshaller {
      * Serializes an object to an output stream
      * @param obj the object to be serialized
      * @param out the output stream, created taking {@link #estimatedSize(Object)} into account
-     * @throws Exception thrown if serialization failed
+     * @throws IOException thrown if serialization failed
      */
-    void objectToStream(Object obj, DataOutput out) throws Exception;
+    void objectToStream(Object obj, DataOutput out) throws IOException;
 
     /**
      * Creates an object from a stream
      * @param in the input stream
      * @return an object read from the input stream
-     * @throws Exception thrown if deserialization failed
+     * @throws IOException thrown if deserialization failed
+     * @throws ClassNotFoundException if a requisite class was not found
      */
-    Object objectFromStream(DataInput in) throws Exception;
+    Object objectFromStream(DataInput in) throws IOException, ClassNotFoundException;
 }

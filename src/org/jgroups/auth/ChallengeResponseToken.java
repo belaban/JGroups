@@ -88,8 +88,10 @@ public class ChallengeResponseToken extends AuthToken implements AUTH.UpHandler 
         }
     }
 
-    public void writeTo(DataOutput out) throws Exception {}
-    public void readFrom(DataInput in) throws Exception {}
+    @Override
+    public void writeTo(DataOutput out) {}
+    @Override
+    public void readFrom(DataInput in) {}
     public int  size() {return 0;}
 
 

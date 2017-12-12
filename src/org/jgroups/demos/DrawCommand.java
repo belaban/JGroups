@@ -5,6 +5,7 @@ import org.jgroups.util.Streamable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 
 /**
  * Encapsulates information about a draw command.
@@ -33,15 +34,16 @@ public class DrawCommand implements Streamable {
         this.rgb=rgb;
     }
 
-
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         out.writeByte(mode);
         out.writeInt(x);
         out.writeInt(y);
         out.writeInt(rgb);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         mode=in.readByte();
         x=in.readInt();
         y=in.readInt();

@@ -201,12 +201,12 @@ public class ExecutingServiceTest extends ChannelTestBase {
         }
 
         @Override
-        public void writeTo(DataOutput out) throws Exception {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeLong(millis);
         }
 
         @Override
-        public void readFrom(DataInput in) throws Exception {
+        public void readFrom(DataInput in) throws IOException {
             millis = in.readLong();
         }
 
@@ -255,30 +255,14 @@ public class ExecutingServiceTest extends ChannelTestBase {
         }
 
         @Override
-        public void writeTo(DataOutput out) throws Exception {
-            try {
-                Util.writeObject(_object, out);
-            }
-            catch (IOException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                throw new IOException(e);
-            }
+        public void writeTo(DataOutput out) throws IOException {
+            Util.writeObject(_object, out);
         }
 
         @SuppressWarnings("unchecked")
         @Override
-        public void readFrom(DataInput in) throws Exception {
-            try {
-                _object = (V)Util.readObject(in);
-            }
-            catch (IOException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                throw new IOException(e);
-            }
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+            _object = (V)Util.readObject(in);
         }
     }
     

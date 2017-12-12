@@ -9,6 +9,7 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -789,17 +790,20 @@ public class STABLE extends Protocol {
             return String.format("[%s] view-id= %s", type2String(type), view_id);
         }
 
+        @Override
         public int serializedSize() {
             return Global.BYTE_SIZE // type
               + Util.size(view_id);
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             Util.writeViewId(view_id, out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=in.readByte();
             view_id=Util.readViewId(in);
         }

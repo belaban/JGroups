@@ -4,6 +4,7 @@ package org.jgroups.util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 
 
 public class Range implements SizeStreamable, Comparable<Range> {
@@ -42,18 +43,20 @@ public class Range implements SizeStreamable, Comparable<Range> {
     }
 
 
-
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         Bits.writeLongSequence(low, high, out);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         long[] seqnos={0,0};
         Bits.readLongSequence(in, seqnos, 0);
         low=seqnos[0];
         high=seqnos[1];
     }
 
+    @Override
     public int serializedSize() {
         return Bits.size(low, high);
     }

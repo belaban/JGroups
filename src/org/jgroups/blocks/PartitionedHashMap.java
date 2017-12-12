@@ -14,6 +14,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -488,8 +489,8 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         static final byte OBJ         = 2;
         static final byte VALUE       = 3;
 
-
-        public void objectToStream(Object obj, DataOutput out) throws Exception {
+        @Override
+        public void objectToStream(Object obj, DataOutput out) throws IOException {
             if(obj == null) {
                 out.write(NULL);
                 return;
@@ -506,7 +507,8 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
             }
         }
 
-        public Object objectFromStream(DataInput in) throws Exception {
+        @Override
+        public Object objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
             byte type=in.readByte();
             if(type == NULL)
                 return null;

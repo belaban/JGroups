@@ -7,6 +7,7 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -1039,14 +1040,14 @@ public class FLUSH extends Protocol {
             }
         }
 
-
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             out.writeLong(viewID);
         }
 
-        @SuppressWarnings("unchecked")
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException {
             type = in.readByte();
             viewID = in.readLong();
         }

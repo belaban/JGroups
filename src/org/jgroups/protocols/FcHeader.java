@@ -5,6 +5,7 @@ import org.jgroups.Header;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 /**
@@ -31,15 +32,18 @@ public class FcHeader extends Header {
 
     public short getMagicId() {return 59;}
 
+    @Override
     public int serializedSize() {
         return Global.BYTE_SIZE;
     }
 
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         out.writeByte(type);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         type=in.readByte();
     }
 

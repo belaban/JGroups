@@ -7,6 +7,7 @@ import org.jgroups.annotations.Immutable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -143,11 +144,12 @@ public class Digest implements SizeStreamable, Iterable<Digest.Entry>, Construct
         return new Digest(members, Arrays.copyOf(seqnos, seqnos.length));
     }
 
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         writeTo(out, true);
     }
 
-    public void writeTo(DataOutput out, boolean write_addrs) throws Exception {
+    public void writeTo(DataOutput out, boolean write_addrs) throws IOException {
         if(write_addrs)
             Util.writeAddresses(members, out);
         else
@@ -156,11 +158,12 @@ public class Digest implements SizeStreamable, Iterable<Digest.Entry>, Construct
             Bits.writeLongSequence(seqnos[i * 2], seqnos[i * 2 +1], out);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         readFrom(in, true);
     }
 
-    public void readFrom(DataInput in, boolean read_addrs) throws Exception {
+    public void readFrom(DataInput in, boolean read_addrs) throws IOException, ClassNotFoundException {
         if(read_addrs) {
             members=Util.readAddresses(in);
             seqnos=new long[capacity() * 2];
@@ -172,6 +175,7 @@ public class Digest implements SizeStreamable, Iterable<Digest.Entry>, Construct
             Bits.readLongSequence(in, seqnos, i*2);
     }
 
+    @Override
     public int serializedSize() {
         return (int)serializedSize(true);
     }

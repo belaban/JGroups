@@ -135,7 +135,7 @@ public final class Executions {
         }
 
         @Override
-        public void writeTo(DataOutput out) throws Exception {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeUTF(_classCallable.getName());
             out.writeByte(_constructorNumber);
             out.writeByte(_args.length);
@@ -149,16 +149,10 @@ public final class Executions {
             }
         }
 
-        @SuppressWarnings("unchecked")
         @Override
-        public void readFrom(DataInput in) throws Exception {
-            try {
-                String classname=in.readUTF();
-                _classCallable=ClassConfigurator.get(classname);
-            }
-            catch (ClassNotFoundException e) {
-                throw new IOException("failed to read class from classname", e);
-            }
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+            String classname=in.readUTF();
+            _classCallable=ClassConfigurator.get(classname);
             _constructorNumber = in.readByte();
             short numberOfArgs = in.readByte();
             _args = new Object[numberOfArgs];

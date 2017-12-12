@@ -16,6 +16,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -1333,7 +1334,8 @@ abstract public class Locking extends Protocol {
         public Request lockId(int lock_id) {this.lock_id=lock_id; return this;}
         public int lockId()                {return lock_id;}
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type.ordinal());
             Bits.writeString(lock_name,out);
             out.writeInt(lock_id);
@@ -1342,7 +1344,8 @@ abstract public class Locking extends Protocol {
             out.writeBoolean(is_trylock);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=Type.values()[in.readByte()];
             lock_name=Bits.readString(in);
             lock_id=in.readInt();
@@ -1402,14 +1405,17 @@ abstract public class Locking extends Protocol {
             return LockingHeader::new;
         }
 
+        @Override
         public int serializedSize() {
             return 0;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         }
     }
 

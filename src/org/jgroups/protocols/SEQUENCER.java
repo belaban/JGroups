@@ -11,6 +11,7 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -635,19 +636,21 @@ public class SEQUENCER extends Protocol {
             }
         }
 
-
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             Bits.writeLong(seqno,out);
             out.writeBoolean(flush_ack);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException {
             type=in.readByte();
             seqno=Bits.readLong(in);
             flush_ack=in.readBoolean();
         }
 
+        @Override
         public int serializedSize() {
             return Global.BYTE_SIZE + Bits.size(seqno) + Global.BYTE_SIZE; // type + seqno + flush_ack
         }

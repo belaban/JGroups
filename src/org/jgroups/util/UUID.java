@@ -6,6 +6,7 @@ import org.jgroups.Global;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.function.Supplier;
 
@@ -204,18 +205,19 @@ public class UUID implements Address, Constructable<UUID> {
     }
 
 
-
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         out.writeLong(leastSigBits);
         out.writeLong(mostSigBits);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         leastSigBits=in.readLong();
         mostSigBits=in.readLong();
     }
 
-
+    @Override
     public int serializedSize() {
         return SIZE;
     }

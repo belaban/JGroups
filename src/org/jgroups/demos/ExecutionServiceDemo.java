@@ -2,6 +2,7 @@ package org.jgroups.demos;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -93,14 +94,14 @@ public class ExecutionServiceDemo {
         }
 
         @Override
-        public void writeTo(DataOutput out) throws Exception {
+        public void writeTo(DataOutput out) throws IOException {
             int sizeLocal = buffer.limit() - buffer.position();
             out.writeInt(sizeLocal);
             out.write(buffer.array(), buffer.position(), sizeLocal);
         }
 
         @Override
-        public void readFrom(DataInput in) throws Exception {
+        public void readFrom(DataInput in) throws IOException {
             buffer = ByteBuffer.allocate(in.readInt());
             in.readFully(buffer.array());
         }
@@ -150,12 +151,12 @@ public class ExecutionServiceDemo {
 
         // We copy over as a single array with no offset
         @Override
-        public void writeTo(DataOutput out) throws Exception {
+        public void writeTo(DataOutput out) throws IOException {
             Util.writeStreamable(new ByteBufferStreamable(buffer), out);
         }
 
         @Override
-        public void readFrom(DataInput in) throws Exception {
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             buffer = Util.readStreamable(ByteBufferStreamable::new, in).buffer;
         }
     }
@@ -206,13 +207,13 @@ public class ExecutionServiceDemo {
         }
         
         @Override
-        public void writeTo(DataOutput out) throws Exception {
+        public void writeTo(DataOutput out) throws IOException {
             Util.writeStreamable(new ByteBufferStreamable(bytes1), out);
             Util.writeStreamable(new ByteBufferStreamable(bytes2), out);
         }
 
         @Override
-        public void readFrom(DataInput in) throws Exception {
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             bytes1 = Util.readStreamable(ByteBufferStreamable::new, in).buffer;
             bytes2 = Util.readStreamable(ByteBufferStreamable::new, in).buffer;
         }

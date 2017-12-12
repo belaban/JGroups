@@ -158,12 +158,15 @@ public class HeadersTest {
             return MyHeader::new;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) {
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) {
         }
 
+        @Override
         public int serializedSize() {
             return 0;
         }

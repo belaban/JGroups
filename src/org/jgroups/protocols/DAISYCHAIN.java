@@ -11,6 +11,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
@@ -194,15 +195,18 @@ public class DAISYCHAIN extends Protocol {
 
         public Supplier<? extends Header> create() {return DaisyHeader::new;}
 
+        @Override
         public int serializedSize() {
             return Global.SHORT_SIZE;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeShort(ttl);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException {
             ttl=in.readShort();
         }
 
