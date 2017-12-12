@@ -532,12 +532,14 @@ public class MPerfRpc extends ReceiverAdapter {
             return Util.size(attr_name) + Util.size(attr_value);
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             Bits.writeString(attr_name,out);
             Util.writeByteBuffer(attr_value, out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException {
             attr_name=Bits.readString(in);
             attr_value=Util.readByteBuffer(in);
         }
@@ -564,13 +566,15 @@ public class MPerfRpc extends ReceiverAdapter {
             return retval;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeInt(changes.size());
             for(ConfigChange change: changes)
                 change.writeTo(out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException {
             int len=in.readInt();
             for(int i=0; i < len; i++) {
                 ConfigChange change=new ConfigChange();
@@ -630,12 +634,14 @@ public class MPerfRpc extends ReceiverAdapter {
             return Bits.size(time) + Bits.size(msgs);
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             Bits.writeLong(time, out);
             Bits.writeLong(msgs, out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException {
             time=Bits.readLong(in);
             msgs=Bits.readLong(in);
         }
@@ -654,11 +660,13 @@ public class MPerfRpc extends ReceiverAdapter {
             return 50;
         }
 
-        public void objectToStream(Object obj, DataOutput out) throws Exception {
+        @Override
+        public void objectToStream(Object obj, DataOutput out) throws IOException {
             Util.objectToStream(obj, out);
         }
 
-        public Object objectFromStream(DataInput in) throws Exception {
+        @Override
+        public Object objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
             return Util.objectFromStream(in);
         }
 

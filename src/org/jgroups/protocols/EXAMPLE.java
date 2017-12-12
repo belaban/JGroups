@@ -9,6 +9,7 @@ import org.jgroups.util.MessageBatch;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -81,11 +82,13 @@ public class EXAMPLE extends Protocol {
             return "[EXAMPLE: <variables> ]";
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             // write variables to stream
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             // initialize variables from stream
         }
     }

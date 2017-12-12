@@ -61,19 +61,20 @@ public class FlagsUUID extends UUID {
         return (T)this;
     }
 
-
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         super.writeTo(out);
         Bits.writeInt(flags, out);
     }
 
-
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         super.readFrom(in);
         flags=Bits.readInt(in);
     }
 
     /** The number of bytes required to serialize this instance */
+    @Override
     public int serializedSize()     {return super.serializedSize() + Bits.size(flags);}
     public String toString() {
         return flags == 0? super.toString() : String.format("%s (flags=%d)", super.toString(), flags);

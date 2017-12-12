@@ -7,6 +7,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 
 /**
  * <p>
@@ -112,11 +113,13 @@ public class MD5Token extends AuthToken {
         return false;
     }
 
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         Bits.writeString(this.auth_value,out);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         this.auth_value = Bits.readString(in);
     }
 

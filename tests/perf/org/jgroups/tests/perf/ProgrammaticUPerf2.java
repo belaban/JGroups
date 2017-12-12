@@ -14,6 +14,7 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
@@ -476,7 +477,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
 
         // Unless and until serialization is supported on GraalVM, we're sending only the exception message across the
         // wire, but not the entire exception
-        public void objectToStream(Object obj, DataOutput out) throws Exception {
+        public void objectToStream(Object obj, DataOutput out) throws IOException {
             if(obj instanceof Throwable) {
                 Throwable t=(Throwable)obj;
                 out.writeByte(1);
@@ -488,7 +489,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
             }
         }
 
-        public Object objectFromStream(DataInput in) throws Exception {
+        public Object objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
             byte type=in.readByte();
             if(type == 0)
                 return Util.objectFromStream(in);
@@ -606,7 +607,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
             this.avg_puts=avg_puts;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        public void writeTo(DataOutput out) throws IOException {
             Bits.writeLong(num_gets, out);
             Bits.writeLong(num_puts, out);
             Bits.writeLong(execution_time, out);
@@ -614,7 +615,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
             Util.writeStreamable(avg_puts, out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             num_gets=Bits.readLong(in);
             num_puts=Bits.readLong(in);
             execution_time=Bits.readLong(in);
@@ -643,7 +644,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
             return this;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeInt(values.size());
             for(Map.Entry<String,Object> entry: values.entrySet()) {
                 Bits.writeString(entry.getKey(),out);
@@ -651,7 +652,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
             }
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             int size=in.readInt();
             for(int i=0; i < size; i++) {
                 String key=Bits.readString(in);

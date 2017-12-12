@@ -14,6 +14,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
@@ -459,19 +460,22 @@ public class SEQUENCER2 extends Protocol {
             }
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             Bits.writeLong(seqno,out);
             out.writeShort(num_seqnos);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException {
             type=in.readByte();
             seqno=Bits.readLong(in);
             num_seqnos=in.readUnsignedShort();
         }
 
         // type + seqno + localSeqno + flush_ack
+        @Override
         public int serializedSize() {
             return Global.BYTE_SIZE + Bits.size(seqno) + Global.SHORT_SIZE;
         }

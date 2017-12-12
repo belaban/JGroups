@@ -12,6 +12,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
@@ -384,16 +385,19 @@ public class RSVP extends Protocol {
         public short getMagicId() {return 76;}
         public Supplier<? extends Header> create() {return RsvpHeader::new;}
 
+        @Override
         public int serializedSize() {
             return Global.BYTE_SIZE + Global.SHORT_SIZE;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             out.writeShort(id);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException {
             type=in.readByte();
             id=in.readShort();
         }

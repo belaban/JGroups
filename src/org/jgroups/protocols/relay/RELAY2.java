@@ -13,6 +13,7 @@ import org.w3c.dom.Node;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -781,17 +782,20 @@ public class RELAY2 extends Protocol {
         public short getMagicId() {return 80;}
         public Supplier<? extends Header> create() {return Relay2Header::new;}
 
+        @Override
         public int serializedSize() {
             return Global.BYTE_SIZE + Util.size(final_dest) + Util.size(original_sender);
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             Util.writeAddress(final_dest, out);
             Util.writeAddress(original_sender, out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=in.readByte();
             final_dest=Util.readAddress(in);
             original_sender=Util.readAddress(in);

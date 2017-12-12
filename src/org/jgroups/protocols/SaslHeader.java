@@ -5,6 +5,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 public class SaslHeader extends Header {
@@ -58,13 +59,13 @@ public class SaslHeader extends Header {
     }
 
     @Override
-    public void writeTo(DataOutput out) throws Exception {
+    public void writeTo(DataOutput out) throws IOException {
         out.writeByte(type.ordinal());
         Util.writeByteBuffer(payload, out);
     }
 
     @Override
-    public void readFrom(DataInput in) throws Exception {
+    public void readFrom(DataInput in) throws IOException {
         type = Type.values()[in.readByte()];
         payload = Util.readByteBuffer(in);
     }

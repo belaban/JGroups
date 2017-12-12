@@ -7,6 +7,7 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -597,7 +598,8 @@ public class Message implements Streamable, Constructable<Message> {
      * @param out
      * @throws Exception
      */
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         byte leading=0;
 
         if(dest != null)
@@ -696,8 +698,8 @@ public class Message implements Streamable, Constructable<Message> {
         }
     }
 
-
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
 
         // 1. read the leading byte first
         byte leading=in.readByte();
@@ -835,7 +837,7 @@ public class Message implements Streamable, Constructable<Message> {
         return sb.toString();
     }
 
-    protected static void writeHeader(Header hdr, DataOutput out) throws Exception {
+    protected static void writeHeader(Header hdr, DataOutput out) throws IOException {
         short magic_number=hdr.getMagicId();
         out.writeShort(magic_number);
         hdr.writeTo(out);
@@ -843,7 +845,7 @@ public class Message implements Streamable, Constructable<Message> {
 
 
 
-    protected static Header readHeader(DataInput in) throws Exception {
+    protected static Header readHeader(DataInput in) throws IOException, ClassNotFoundException {
         short magic_number=in.readShort();
         Header hdr=ClassConfigurator.create(magic_number);
         hdr.readFrom(in);

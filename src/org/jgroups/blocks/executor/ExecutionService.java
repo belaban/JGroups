@@ -715,51 +715,17 @@ public class ExecutionService extends AbstractExecutorService {
             return result;
         }
         @Override
-        public void writeTo(DataOutput out) throws Exception {
-            try {
-                Util.writeObject(task, out);
-            }
-            catch (IOException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                throw new IOException("Exception encountered while writing execution runnable", e);
-            }
-            
-            try {
-                Util.writeObject(result, out);
-            }
-            catch (IOException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                throw new IOException("Exception encountered while writing execution result", e);
-            }
+        public void writeTo(DataOutput out) throws IOException {
+            Util.writeObject(task, out);
+            Util.writeObject(result, out);
         }
         @SuppressWarnings("unchecked")
         @Override
-        public void readFrom(DataInput in) throws Exception {
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             // We can't use Util.readObject since it's size is limited to 2^15-1
             // The runner could be larger than that possibly
-            try {
-                task = (Runnable)Util.readObject(in);
-            }
-            catch (IOException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                throw new IOException("Exception encountered while reading execution runnable", e);
-            }
-            
-            try {
-                result = (T)Util.readObject(in);
-            }
-            catch (IOException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                throw new IOException("Exception encountered while reading execution result", e);
-            }
+            task = (Runnable)Util.readObject(in);
+            result = (T)Util.readObject(in);
         }
     }
 

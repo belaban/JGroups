@@ -951,7 +951,8 @@ abstract public class Executing extends Protocol {
             return Request::new;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type.ordinal());
             // We can't use Util.writeObject since it's size is limited to 2^15-1
             try {
@@ -974,7 +975,8 @@ abstract public class Executing extends Protocol {
             out.writeLong(request);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=Type.values()[in.readByte()];
             // We can't use Util.readObject since it's size is limited to 2^15-1
             try {
@@ -1024,13 +1026,13 @@ abstract public class Executing extends Protocol {
         }
 
         @Override
-        public void readFrom(DataInput in) throws Exception {
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             super.readFrom(in);
             threadId = in.readLong();
         }
         
         @Override
-        public void writeTo(DataOutput out) throws Exception {
+        public void writeTo(DataOutput out) throws IOException {
             super.writeTo(out);
             out.writeLong(threadId);
         }
@@ -1053,10 +1055,12 @@ abstract public class Executing extends Protocol {
 
         public Supplier<? extends Header> create() {return ExecutorHeader::new;}
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         }
     }
     

@@ -12,6 +12,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -418,7 +419,7 @@ public class FD extends Protocol {
             }
         }
 
-
+        @Override
         public int serializedSize() {
             int retval=Global.BYTE_SIZE; // type
             retval+=Util.size(mbrs);
@@ -426,15 +427,15 @@ public class FD extends Protocol {
             return retval;
         }
 
-
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             Util.writeAddresses(mbrs, out);
             Util.writeAddress(from, out);
         }
 
-
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=in.readByte();
             mbrs=Util.readAddresses(in, ArrayList::new);
             from=Util.readAddress(in);

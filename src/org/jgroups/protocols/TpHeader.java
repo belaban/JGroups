@@ -7,6 +7,7 @@ import org.jgroups.util.AsciiString;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 
@@ -45,18 +46,21 @@ public class TpHeader extends Header {
 
     public byte[] getClusterName() {return cluster_name;}
 
+    @Override
     public int serializedSize() {
         return cluster_name != null? Global.SHORT_SIZE + cluster_name.length : Global.SHORT_SIZE;
     }
 
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         int length=cluster_name != null? cluster_name.length : -1;
         out.writeShort(length);
         if(cluster_name != null)
             out.write(cluster_name, 0, cluster_name.length);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         int len=in.readShort();
         if(len >= 0) {
             cluster_name=new byte[len];

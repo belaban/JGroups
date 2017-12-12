@@ -7,6 +7,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 
 /**
  * <p>
@@ -73,30 +74,16 @@ public class SimpleToken extends AuthToken {
         return false;
     }
 
-    /**
-     * Required to serialize the object to pass across the wire
-     * 
-     *
-     *
-     * @param out
-     * @throws Exception
-     */
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("SimpleToken writeTo()");
         }
         Bits.writeString(this.auth_value,out);
     }
 
-    /**
-     * Required to deserialize the object when read in from the wire
-     * 
-     *
-     *
-     * @param in
-     * @throws Exception
-     */
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("SimpleToken readFrom()");
         }

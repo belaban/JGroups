@@ -16,6 +16,7 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
@@ -1416,7 +1417,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
         public Supplier<? extends Header> create() {return GmsHeader::new;}
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             short flags=determineFlags();
             out.writeShort(flags);
@@ -1425,7 +1427,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 merge_id.writeTo(out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=in.readByte();
             short flags=in.readShort();
             mbr=Util.readAddress(in);
@@ -1437,6 +1440,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             useFlushIfPresent=(flags & USE_FLUSH) == USE_FLUSH;
         }
 
+        @Override
         public int serializedSize() {
             int retval=Global.BYTE_SIZE  // type
               + Global.SHORT_SIZE       // flags
