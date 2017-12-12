@@ -84,7 +84,9 @@ public class MD5Token extends AuthToken {
         }
 
         if (hashedToken == null) {
-            // failed to encrypt
+            // failed to hash - sending the token in clear text
+            // Note that this may be considered a security vulnerabiltiy if clear text passwords are forbidden.
+
             log.warn("Failed to hash token - sending in clear text");
             return token;
         }
@@ -97,6 +99,7 @@ public class MD5Token extends AuthToken {
             // Found a valid Token to authenticate against
             MD5Token serverToken = (MD5Token) token;
 
+            // Compare the hash values
             return (this.auth_value != null) && (serverToken.auth_value != null)
               && (this.auth_value.equalsIgnoreCase(serverToken.auth_value));
         }
