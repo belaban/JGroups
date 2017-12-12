@@ -59,7 +59,11 @@ public class MD5Token extends AuthToken {
     }
 
     public void setAuthValue(String auth_value) {
-        this.auth_value = hash(auth_value);
+        this.auth_value = auth_value;
+    }
+
+    public hashAndSetAuthValue(String authvalue) {
+      this.auth_value = hash(authvalue);
     }
 
     public String getName() {
