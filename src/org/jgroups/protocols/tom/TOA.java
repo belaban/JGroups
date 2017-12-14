@@ -29,7 +29,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
     private SenderManager senderManager;
 
     // threads
-    private final DeliveryThread deliverThread = new DeliveryThread(this);
+    private volatile DeliveryThread deliverThread = new DeliveryThread(this);
 
     //local address
     private Address localAddress;
@@ -48,6 +48,10 @@ public class TOA extends Protocol implements DeliveryProtocol {
     public void start() throws Exception {
         deliverManager = new DeliveryManagerImpl();
         senderManager = new SenderManager();
+        if(deliverThread == null) {
+            deliverThread=new DeliveryThread(this);
+            deliverThread.setLocalAddress(localAddress.toString());
+        }
         deliverThread.start(deliverManager);
         statsCollector.setStatsEnabled(statsEnabled());
     }
@@ -55,6 +59,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
     @Override
     public void stop() {
         deliverThread.interrupt();
+        deliverThread=null;
     }
 
     @Override
@@ -62,7 +67,8 @@ public class TOA extends Protocol implements DeliveryProtocol {
         switch (evt.getType()) {
             case Event.SET_LOCAL_ADDRESS:
                 this.localAddress =evt.getArg();
-                this.deliverThread.setLocalAddress(localAddress.toString());
+                if(this.deliverThread != null)
+                    this.deliverThread.setLocalAddress(localAddress.toString());
                 break;
             case Event.VIEW_CHANGE:
                 handleViewChange(evt.getArg());
