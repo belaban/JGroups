@@ -13,6 +13,7 @@ import org.jgroups.util.*;
 import javax.management.MBeanServer;
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -462,11 +463,13 @@ public class UPerf extends ReceiverAdapter {
             return 50;
         }
 
-        public void objectToStream(Object obj, DataOutput out) throws Exception {
+        @Override
+        public void objectToStream(Object obj, DataOutput out) throws IOException {
             Util.objectToStream(obj, out);
         }
 
-        public Object objectFromStream(DataInput in) throws Exception {
+        @Override
+        public Object objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
             return Util.objectFromStream(in);
         }
     }
@@ -577,7 +580,8 @@ public class UPerf extends ReceiverAdapter {
             this.avg_puts=avg_puts;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             Bits.writeLong(num_gets, out);
             Bits.writeLong(num_puts, out);
             Bits.writeLong(time, out);
@@ -585,12 +589,13 @@ public class UPerf extends ReceiverAdapter {
             Util.writeStreamable(avg_puts, out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             num_gets=Bits.readLong(in);
             num_puts=Bits.readLong(in);
             time=Bits.readLong(in);
-            avg_gets=Util.readStreamable(AverageMinMax.class, in);
-            avg_puts=Util.readStreamable(AverageMinMax.class, in);
+            avg_gets=Util.readStreamable(AverageMinMax::new, in);
+            avg_puts=Util.readStreamable(AverageMinMax::new, in);
         }
 
         public String toString() {
@@ -614,7 +619,8 @@ public class UPerf extends ReceiverAdapter {
             return this;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeInt(values.size());
             for(Map.Entry<String,Object> entry: values.entrySet()) {
                 Bits.writeString(entry.getKey(),out);
@@ -622,7 +628,8 @@ public class UPerf extends ReceiverAdapter {
             }
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             int size=in.readInt();
             for(int i=0; i < size; i++) {
                 String key=Bits.readString(in);

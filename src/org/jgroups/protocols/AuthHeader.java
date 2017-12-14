@@ -7,6 +7,7 @@ import org.jgroups.conf.ClassConfigurator;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 /**
@@ -33,14 +34,17 @@ public class AuthHeader extends Header {
     public AuthToken  token()                   {return this.token;}
     public short getMagicId() {return 66;}
 
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         writeAuthToken(out, token);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         this.token=readAuthToken(in);
     }
 
+    @Override
     public int serializedSize() {
         return sizeOf(token);
     }
@@ -50,7 +54,7 @@ public class AuthHeader extends Header {
     }
 
 
-    protected static void writeAuthToken(DataOutput out, AuthToken tok) throws Exception {
+    protected static void writeAuthToken(DataOutput out, AuthToken tok) throws IOException {
         out.writeByte(tok == null? 0 : 1);
         if(tok == null) return;
         short id=ClassConfigurator.getMagicNumber(tok.getClass());
@@ -62,7 +66,7 @@ public class AuthHeader extends Header {
         tok.writeTo(out);
     }
 
-    protected static AuthToken readAuthToken(DataInput in) throws Exception {
+    protected static AuthToken readAuthToken(DataInput in) throws IOException, ClassNotFoundException {
         if(in.readByte() == 0) return null;
         short id=in.readShort();
         AuthToken retval=null;
@@ -71,7 +75,11 @@ public class AuthHeader extends Header {
         else {
             String classname=in.readUTF();
             Class<?> clazz=Class.forName(classname);
-            retval=(AuthToken)clazz.newInstance();
+            try {
+                retval=(AuthToken)clazz.newInstance();
+            } catch (IllegalAccessException | InstantiationException e) {
+                throw new IllegalStateException(e);
+            }
         }
         retval.readFrom(in);
         return retval;

@@ -7,6 +7,7 @@ import org.jgroups.util.UUID;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -110,18 +111,21 @@ public class IpAddressUUID extends IpAddress {
             (high >> 16) ^ high);
     }*/
 
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         super.writeTo(out);
         out.writeLong(low);
         out.writeInt(high);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         super.readFrom(in);
         low=in.readLong();
         high=in.readInt();
     }
 
+    @Override
     public int serializedSize() {
         return super.serializedSize() + Global.LONG_SIZE + Global.INT_SIZE;
     }

@@ -11,6 +11,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
@@ -122,6 +123,7 @@ public class PingData implements SizeStreamable, Constructable<PingData> {
         return sb.toString();
     }
 
+    @Override
     public int serializedSize() {
         int retval=Global.BYTE_SIZE; // for is_server
         retval+=Util.size(sender);
@@ -133,7 +135,8 @@ public class PingData implements SizeStreamable, Constructable<PingData> {
         return retval;
     }
 
-    public void writeTo(DataOutput outstream) throws Exception {
+    @Override
+    public void writeTo(DataOutput outstream) throws IOException {
         Util.writeAddress(sender, outstream);
         outstream.writeByte(flags);
         Bits.writeString(logical_name,outstream);
@@ -141,13 +144,13 @@ public class PingData implements SizeStreamable, Constructable<PingData> {
         Util.writeAddresses(mbrs, outstream);
     }
 
-    @SuppressWarnings("unchecked")
-    public void readFrom(DataInput instream) throws Exception {
+    @Override
+    public void readFrom(DataInput instream) throws IOException, ClassNotFoundException {
         sender=Util.readAddress(instream);
         flags=instream.readByte();
         logical_name=Bits.readString(instream);
         physical_addr=(PhysicalAddress)Util.readAddress(instream);
-        mbrs=Util.readAddresses(instream, ArrayList.class);
+        mbrs=Util.readAddresses(instream, ArrayList::new);
     }
 
 

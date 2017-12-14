@@ -31,6 +31,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -466,17 +468,17 @@ public class Util {
     /**
      * Creates an object from a byte buffer
      */
-    public static <T extends Object> T objectFromByteBuffer(byte[] buffer) throws Exception {
+    public static <T extends Object> T objectFromByteBuffer(byte[] buffer) throws IOException, ClassNotFoundException {
         if(buffer == null) return null;
         return objectFromByteBuffer(buffer,0,buffer.length);
     }
 
-    public static <T extends Object> T objectFromByteBuffer(byte[] buffer,int offset,int length) throws Exception {
+    public static <T extends Object> T objectFromByteBuffer(byte[] buffer,int offset,int length) throws IOException, ClassNotFoundException {
         return objectFromByteBuffer(buffer, offset, length, null);
     }
 
 
-    public static <T extends Object> T objectFromByteBuffer(byte[] buffer,int offset,int length, ClassLoader loader) throws Exception {
+    public static <T extends Object> T objectFromByteBuffer(byte[] buffer,int offset,int length, ClassLoader loader) throws IOException, ClassNotFoundException {
         if(buffer == null) return null;
         byte type=buffer[offset++];
         length--;
@@ -519,7 +521,7 @@ public class Util {
      * Serializes/Streams an object into a byte buffer.
      * The object has to implement interface Serializable or Externalizable or Streamable.
      */
-    public static byte[] objectToByteBuffer(Object obj) throws Exception {
+    public static byte[] objectToByteBuffer(Object obj) throws IOException {
         if(obj == null)
             return TYPE_NULL_ARRAY;
 
@@ -555,7 +557,7 @@ public class Util {
     }
 
 
-    public static Buffer objectToBuffer(Object obj) throws Exception {
+    public static Buffer objectToBuffer(Object obj) throws IOException {
         if(obj == null)
             return new Buffer(TYPE_NULL_ARRAY);
 
@@ -654,7 +656,7 @@ public class Util {
 
 
 
-    public static void objectToStream(Object obj, DataOutput out) throws Exception {
+    public static void objectToStream(Object obj, DataOutput out) throws IOException {
         if(obj == null) {
             out.write(TYPE_NULL);
             return;
@@ -736,11 +738,11 @@ public class Util {
         }
     }
 
-    public static <T extends Object> T objectFromStream(DataInput in) throws Exception {
+    public static <T extends Object> T objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
         return objectFromStream(in, null);
     }
 
-    public static <T extends Object> T objectFromStream(DataInput in, ClassLoader loader) throws Exception {
+    public static <T extends Object> T objectFromStream(DataInput in, ClassLoader loader) throws IOException, ClassNotFoundException {
         if(in == null) return null;
         byte b=in.readByte();
 
@@ -783,20 +785,24 @@ public class Util {
         }
     }
 
-
+    @Deprecated
     public static <T extends Streamable> T streamableFromByteBuffer(Class<? extends Streamable> cl,byte[] buffer) throws Exception {
         return streamableFromByteBuffer(cl,buffer,0,buffer.length);
+    }
+
+    public static <T extends Streamable> T streamableFromByteBuffer(Supplier<T> factory, byte[] buffer) throws Exception {
+        return streamableFromByteBuffer(factory, buffer, 0, buffer.length);
     }
 
     /**
      * Poor man's serialization of an exception. Serializes only the message, stack trace and cause (not suppressed exceptions)
      */
-    public static void exceptionToStream(Throwable t, DataOutput out) throws Exception {
+    public static void exceptionToStream(Throwable t, DataOutput out) throws IOException {
         Set<Throwable> causes=new HashSet<>();
         exceptionToStream(causes, t, out);
     }
 
-    protected static void exceptionToStream(Set<Throwable> causes, Throwable t, DataOutput out) throws Exception {
+    protected static void exceptionToStream(Set<Throwable> causes, Throwable t, DataOutput out) throws IOException {
         // 1. null check
         if( t == null) {
             out.writeBoolean(true);
@@ -822,12 +828,12 @@ public class Util {
     }
 
 
-    public static Throwable exceptionFromStream(DataInput in) throws Exception {
+    public static Throwable exceptionFromStream(DataInput in) throws IOException, ClassNotFoundException {
         return exceptionFromStream(in, 0);
     }
 
 
-    protected static Throwable exceptionFromStream(DataInput in, int recursion_count) throws Exception {
+    protected static Throwable exceptionFromStream(DataInput in, int recursion_count) throws IOException, ClassNotFoundException {
         // 1. null check
         if(in.readBoolean())
             return null;
@@ -838,7 +844,7 @@ public class Util {
         return readException(in, recursion_count);
     }
 
-    protected static void writeException(Set<Throwable> causes, Throwable t, DataOutput out) throws Exception {
+    protected static void writeException(Set<Throwable> causes, Throwable t, DataOutput out) throws IOException {
         // 3. classname
         Bits.writeString(t.getClass().getName(), out);
 
@@ -868,7 +874,7 @@ public class Util {
     }
 
 
-    protected static Throwable readException(DataInput in, int recursion_count) throws Exception {
+    protected static Throwable readException(DataInput in, int recursion_count) throws IOException, ClassNotFoundException {
         // 3. classname
         String classname=Bits.readString(in);
         Class<? extends Throwable> clazz=(Class<? extends Throwable>)Util.loadClass(classname, (ClassLoader)null);
@@ -890,10 +896,15 @@ public class Util {
         catch(Throwable t) {
         }
 
-        if(retval == null)
-            retval=clazz.newInstance();
+        if(retval == null) {
+            try {
+                retval=clazz.newInstance();
+            } catch (IllegalAccessException | InstantiationException e) {
+                throw new IllegalStateException(e);
+            }
+        }
 
-        // 5. stack trace
+    // 5. stack trace
         int depth=in.readShort();
         if(depth > 0) {
             StackTraceElement[] stack_trace=new StackTraceElement[depth];
@@ -947,7 +958,7 @@ public class Util {
         }
     }
 
-
+    @Deprecated
     public static <T extends Streamable> T streamableFromByteBuffer(Class<? extends Streamable> cl,byte[] buffer,int offset,int length) throws Exception {
         if(buffer == null) return null;
         DataInput in=new ByteArrayDataInputStream(buffer,offset,length);
@@ -956,12 +967,24 @@ public class Util {
         return retval;
     }
 
+    public static <T extends Streamable> T streamableFromByteBuffer(Supplier<T> factory, byte[] buffer, int offset, int length) throws Exception {
+        if(buffer == null) return null;
+        DataInput in=new ByteArrayDataInputStream(buffer,offset,length);
+        T retval=factory.get();
+        retval.readFrom(in);
+        return retval;
+    }
 
+    @Deprecated
     public static <T extends Streamable> T streamableFromBuffer(Class<T> clazz,byte[] buffer,int offset,int length) throws Exception {
         DataInput in=new ByteArrayDataInputStream(buffer,offset,length);
         return Util.readStreamable(clazz, in);
     }
 
+    public static <T extends Streamable> T streamableFromBuffer(Supplier<T> factory, byte[] buffer, int offset, int length) throws Exception {
+        DataInput in=new ByteArrayDataInputStream(buffer,offset,length);
+        return Util.readStreamable(factory, in);
+    }
 
     public static byte[] streamableToByteBuffer(Streamable obj) throws Exception {
         int expected_size=obj instanceof SizeStreamable? ((SizeStreamable)obj).serializedSize() : 512;
@@ -1264,7 +1287,7 @@ public class Util {
     }
 
 
-    public static void writeView(View view,DataOutput out) throws Exception {
+    public static void writeView(View view,DataOutput out) throws IOException {
         if(view == null) {
             out.writeBoolean(false);
             return;
@@ -1275,7 +1298,7 @@ public class Util {
     }
 
 
-    public static View readView(DataInput in) throws Exception {
+    public static View readView(DataInput in) throws IOException, ClassNotFoundException {
         if(!in.readBoolean())
             return null;
         boolean isMergeView=in.readBoolean();
@@ -1288,7 +1311,7 @@ public class Util {
         return view;
     }
 
-    public static void writeViewId(ViewId vid,DataOutput out) throws Exception {
+    public static void writeViewId(ViewId vid,DataOutput out) throws IOException {
         if(vid == null) {
             out.writeBoolean(false);
             return;
@@ -1297,7 +1320,7 @@ public class Util {
         vid.writeTo(out);
     }
 
-    public static ViewId readViewId(DataInput in) throws Exception {
+    public static ViewId readViewId(DataInput in) throws IOException, ClassNotFoundException {
         if(!in.readBoolean())
             return null;
         ViewId retval=new ViewId();
@@ -1306,7 +1329,7 @@ public class Util {
     }
 
 
-    public static void writeAddress(Address addr,DataOutput out) throws Exception {
+    public static void writeAddress(Address addr,DataOutput out) throws IOException {
         byte flags=0;
         boolean streamable_addr=true;
 
@@ -1340,7 +1363,7 @@ public class Util {
             writeOtherAddress(addr,out);
     }
 
-    public static Address readAddress(DataInput in) throws Exception {
+    public static Address readAddress(DataInput in) throws IOException, ClassNotFoundException {
         byte flags=in.readByte();
         if(Util.isFlagSet(flags,Address.NULL))
             return null;
@@ -1416,14 +1439,14 @@ public class Util {
         return buf == null? Global.BYTE_SIZE : Global.BYTE_SIZE + Global.INT_SIZE + buf.length;
     }
 
-    private static Address readOtherAddress(DataInput in) throws Exception {
+    private static Address readOtherAddress(DataInput in) throws IOException, ClassNotFoundException {
         short magic_number=in.readShort();
         Address addr=ClassConfigurator.create(magic_number);
         addr.readFrom(in);
         return addr;
     }
 
-    private static void writeOtherAddress(Address addr,DataOutput out) throws Exception {
+    private static void writeOtherAddress(Address addr,DataOutput out) throws IOException {
         short magic_number=ClassConfigurator.getMagicNumber(addr.getClass());
 
         // write the class info
@@ -1440,7 +1463,7 @@ public class Util {
      * @param out
      * @throws Exception
      */
-    public static void writeAddresses(Collection<? extends Address> v,DataOutput out) throws Exception {
+    public static void writeAddresses(Collection<? extends Address> v,DataOutput out) throws IOException {
         if(v == null) {
             out.writeShort(-1);
             return;
@@ -1451,7 +1474,7 @@ public class Util {
         }
     }
 
-    public static void writeAddresses(final Address[] addrs,DataOutput out) throws Exception {
+    public static void writeAddresses(final Address[] addrs,DataOutput out) throws IOException {
         if(addrs == null) {
             out.writeShort(-1);
             return;
@@ -1467,6 +1490,7 @@ public class Util {
      * @return Collection of Address objects
      * @throws Exception
      */
+    @Deprecated
     public static Collection<? extends Address> readAddresses(DataInput in,Class cl) throws Exception {
         short length=in.readShort();
         if(length < 0) return null;
@@ -1479,8 +1503,27 @@ public class Util {
         return retval;
     }
 
+    /**
+     * @param in
+     * @param factory a factory for creating the returned collection, parameterized by size
+     * @return Collection of Address objects
+     * @throws ClassNotFoundException 
+     * @throws Exception
+     */
+    public static <T extends Collection<Address>> T readAddresses(DataInput in, IntFunction<T> factory) throws IOException, ClassNotFoundException {
+        short length=in.readShort();
+        if(length < 0) return null;
+        T retval = factory.apply(length);
+        Address addr;
+        for(int i=0; i < length; i++) {
+            addr=Util.readAddress(in);
+            retval.add(addr);
+        }
+        return retval;
+    }
 
-    public static Address[] readAddresses(DataInput in) throws Exception {
+
+    public static Address[] readAddresses(DataInput in) throws IOException, ClassNotFoundException {
         short length=in.readShort();
         if(length < 0) return null;
         Address[] retval=new Address[length];
@@ -1516,7 +1559,7 @@ public class Util {
     }
 
 
-    public static void writeStreamable(Streamable obj,DataOutput out) throws Exception {
+    public static void writeStreamable(Streamable obj,DataOutput out) throws IOException {
         if(obj == null) {
             out.writeBoolean(false);
             return;
@@ -1525,7 +1568,7 @@ public class Util {
         obj.writeTo(out);
     }
 
-
+    @Deprecated
     public static <T extends Streamable> T readStreamable(Class<T> clazz,DataInput in) throws Exception {
         T retval=null;
         if(!in.readBoolean())
@@ -1535,8 +1578,16 @@ public class Util {
         return retval;
     }
 
+    public static <T extends Streamable> T readStreamable(Supplier<T> factory, DataInput in) throws IOException, ClassNotFoundException {
+        T retval=null;
+        if(!in.readBoolean())
+            return null;
+        retval=factory.get();
+        retval.readFrom(in);
+        return retval;
+    }
 
-    public static void writeGenericStreamable(Streamable obj, DataOutput out) throws Exception {
+    public static void writeGenericStreamable(Streamable obj, DataOutput out) throws IOException {
         short magic_number;
         String classname;
 
@@ -1555,11 +1606,11 @@ public class Util {
         obj.writeTo(out); // write the contents
     }
 
-    public static <T extends Streamable> T readGenericStreamable(DataInput in) throws Exception {
+    public static <T extends Streamable> T readGenericStreamable(DataInput in) throws IOException, ClassNotFoundException {
         return readGenericStreamable(in, null);
     }
 
-    public static <T extends Streamable> T readGenericStreamable(DataInput in, ClassLoader loader) throws Exception {
+    public static <T extends Streamable> T readGenericStreamable(DataInput in, ClassLoader loader) throws IOException, ClassNotFoundException {
         T retval=null;
         int b=in.readByte();
         if(b == 0)
@@ -1574,7 +1625,11 @@ public class Util {
         else {
             String classname=in.readUTF();
             clazz=ClassConfigurator.get(classname, loader);
-            retval=(T)clazz.newInstance();
+            try {
+                retval=(T)clazz.newInstance();
+            } catch (IllegalAccessException | InstantiationException e) {
+                throw new IllegalStateException(e);
+            }
         }
 
         retval.readFrom(in);
@@ -1605,7 +1660,7 @@ public class Util {
 
 
 
-    public static void writeObject(Object obj,DataOutput out) throws Exception {
+    public static void writeObject(Object obj,DataOutput out) throws IOException {
         if(obj instanceof Streamable) {
             out.writeInt(-1);
             writeGenericStreamable((Streamable)obj,out);
@@ -1617,7 +1672,7 @@ public class Util {
         }
     }
 
-    public static Object readObject(DataInput in) throws Exception {
+    public static Object readObject(DataInput in) throws IOException, ClassNotFoundException {
         int len=in.readInt();
         if(len == -1)
             return readGenericStreamable(in);
@@ -1725,11 +1780,11 @@ public class Util {
     }
 
 
-    public static void writeByteBuffer(byte[] buf,DataOutput out) throws Exception {
+    public static void writeByteBuffer(byte[] buf,DataOutput out) throws IOException {
         writeByteBuffer(buf,0,buf.length,out);
     }
 
-    public static void writeByteBuffer(byte[] buf,int offset,int length,DataOutput out) throws Exception {
+    public static void writeByteBuffer(byte[] buf,int offset,int length,DataOutput out) throws IOException {
         if(buf != null) {
             out.write(1);
             out.writeInt(length);
@@ -1739,7 +1794,7 @@ public class Util {
             out.write(0);
     }
 
-    public static byte[] readByteBuffer(DataInput in) throws Exception {
+    public static byte[] readByteBuffer(DataInput in) throws IOException {
         int b=in.readByte();
         if(b == 1) {
             b=in.readInt();

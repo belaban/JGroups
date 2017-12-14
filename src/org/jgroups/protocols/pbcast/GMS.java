@@ -16,6 +16,7 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
@@ -1214,7 +1215,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     protected JoinRsp readJoinRsp(byte[] buffer, int offset, int length) {
         try {
-            return buffer != null? Util.streamableFromBuffer(JoinRsp.class, buffer, offset, length) : null;
+            return buffer != null? Util.streamableFromBuffer(JoinRsp::new, buffer, offset, length) : null;
         }
         catch(Exception ex) {
             log.error("%s: failed reading JoinRsp from message: %s", local_addr, ex);
@@ -1226,7 +1227,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         if(buffer == null) return null;
         try {
             DataInput in=new ByteArrayDataInputStream(buffer, offset, length);
-            return Util.readAddresses(in, ArrayList.class);
+            return Util.readAddresses(in, ArrayList::new);
         }
         catch(Exception ex) {
             log.error("%s: failed reading members from message: %s", local_addr, ex);
@@ -1424,7 +1425,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
         public Supplier<? extends Header> create() {return GmsHeader::new;}
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             short flags=determineFlags();
             out.writeShort(flags);
@@ -1433,7 +1435,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 merge_id.writeTo(out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=in.readByte();
             short flags=in.readShort();
             mbr=Util.readAddress(in);
@@ -1445,6 +1448,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             useFlushIfPresent=(flags & USE_FLUSH) == USE_FLUSH;
         }
 
+        @Override
         public int serializedSize() {
             int retval=Global.BYTE_SIZE  // type
               + Global.SHORT_SIZE       // flags

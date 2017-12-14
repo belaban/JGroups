@@ -6,6 +6,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 /**
@@ -37,7 +38,8 @@ public class ChallengeResponseHeader extends Header {
         return ChallengeResponseHeader::new;
     }
 
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         out.writeByte(type);
         switch(type) {
             case CHALLENGE:
@@ -49,7 +51,8 @@ public class ChallengeResponseHeader extends Header {
         }
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         type=in.readByte();
         switch(type) {
             case CHALLENGE:
@@ -61,6 +64,7 @@ public class ChallengeResponseHeader extends Header {
         }
     }
 
+    @Override
     public int serializedSize() {
         int retval=Global.BYTE_SIZE; // type
         switch(type) {

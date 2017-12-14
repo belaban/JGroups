@@ -10,6 +10,7 @@ import org.jgroups.util.MessageBatch;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 /**
@@ -105,15 +106,18 @@ public class PERF extends Protocol {
             return PerfHeader::new;
         }
 
+        @Override
         public int serializedSize() {
             return Global.LONG_SIZE;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeLong(start_time);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException {
             start_time=in.readLong();
         }
     }

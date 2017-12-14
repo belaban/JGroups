@@ -12,6 +12,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -138,8 +139,8 @@ public class GossipData implements SizeStreamable {
         return retval;
     }
 
-
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         out.writeByte(type.ordinal());
         Bits.writeString(group, out);
         Util.writeAddress(addr, out);
@@ -160,12 +161,13 @@ public class GossipData implements SizeStreamable {
             out.write(buffer, offset, length);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         readFrom(in, true);
     }
 
 
-    protected void readFrom(DataInput in, boolean read_type) throws Exception {
+    protected void readFrom(DataInput in, boolean read_type) throws IOException, ClassNotFoundException {
         if(read_type)
             type=GossipType.values()[in.readByte()];
         group=Bits.readString(in);

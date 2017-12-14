@@ -256,7 +256,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         }
 
         try {
-            DrawCommand comm=Util.streamableFromByteBuffer(DrawCommand.class, buf, msg.getOffset(), msg.getLength());
+            DrawCommand comm=Util.streamableFromByteBuffer(DrawCommand::new, buf, msg.getOffset(), msg.getLength());
             switch(comm.mode) {
                 case DrawCommand.DRAW:
                     if(panel != null)

@@ -726,7 +726,7 @@ public class SizeTest {
         System.out.println("\nlen=" + len + ", serialized length=" + buf.length);
         assert len == buf.length;
         DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf));
-        Collection<? extends Address> new_list=Util.readAddresses(in, ArrayList.class);
+        Collection<Address> new_list=Util.readAddresses(in, ArrayList::new);
         System.out.println("old list=" + list + "\nnew list=" + new_list);
         assert list.equals(new_list);
     }
@@ -740,7 +740,7 @@ public class SizeTest {
 
         uuid=org.jgroups.util.UUID.randomUUID();
         byte[] buf=Util.streamableToByteBuffer(uuid);
-        org.jgroups.util.UUID uuid2=Util.streamableFromByteBuffer(UUID.class, buf);
+        org.jgroups.util.UUID uuid2=Util.streamableFromByteBuffer(UUID::new, buf);
         System.out.println("uuid:  " + uuid);
         System.out.println("uuid2: " + uuid2);
         assert uuid.equals(uuid2);
@@ -823,14 +823,14 @@ public class SizeTest {
         byte[] buf=Util.streamableToByteBuffer(hdr);
         assert buf.length == expected_size;
 
-        DH_KEY_EXCHANGE.DhHeader hdr2=Util.streamableFromByteBuffer(DH_KEY_EXCHANGE.DhHeader.class, buf, 0, buf.length);
+        DH_KEY_EXCHANGE.DhHeader hdr2=Util.streamableFromByteBuffer(DH_KEY_EXCHANGE.DhHeader::new, buf, 0, buf.length);
         assert Arrays.equals(hdr.dhKey(), hdr2.dhKey());
     }
 
 
     private static void _testMarshalling(UnicastHeader3 hdr) throws Exception {
         byte[] buf=Util.streamableToByteBuffer(hdr);
-        UnicastHeader3 hdr2=Util.streamableFromByteBuffer(UnicastHeader3.class, buf);
+        UnicastHeader3 hdr2=Util.streamableFromByteBuffer(UnicastHeader3::new, buf);
 
         assert hdr.type()       == hdr2.type();
         assert hdr.seqno()      == hdr2.seqno();
@@ -913,7 +913,7 @@ public class SizeTest {
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
 
-        JoinRsp rsp2=Util.streamableFromByteBuffer(JoinRsp.class, serialized_form);
+        JoinRsp rsp2=Util.streamableFromByteBuffer(JoinRsp::new, serialized_form);
         assert Util.match(rsp.getDigest(), rsp2.getDigest());
         assert Util.match(rsp.getView(), rsp2.getView());
         assert Util.match(rsp.getFailReason(), rsp2.getFailReason());

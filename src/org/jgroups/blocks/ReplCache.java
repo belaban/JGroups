@@ -849,8 +849,8 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
         static final byte OBJ         = 2;
         static final byte VALUE       = 3;
 
-
-        public void objectToStream(Object obj, DataOutput out) throws Exception {
+        @Override
+        public void objectToStream(Object obj, DataOutput out) throws IOException {
             if(obj == null) {
                 out.write(NULL);
                 return;
@@ -867,7 +867,8 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
             }
         }
 
-        public Object objectFromStream(DataInput in) throws Exception {
+        @Override
+        public Object objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
             byte type=in.readByte();
             if(type == NULL)
                 return null;

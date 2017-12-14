@@ -371,9 +371,12 @@ public class FD_ALL2 extends Protocol {
         public short getMagicId() {return 63;}
         public Supplier<? extends Header> create() {return HeartbeatHeader::new;}
         public String toString() {return "heartbeat";}
+        @Override
         public int serializedSize() {return 0;}
-        public void writeTo(DataOutput out) throws Exception {}
-        public void readFrom(DataInput in) throws Exception {}
+        @Override
+        public void writeTo(DataOutput out) {}
+        @Override
+        public void readFrom(DataInput in) {}
     }
 
 

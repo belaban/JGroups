@@ -9,6 +9,7 @@ import org.jgroups.util.ForwardQueue;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -204,14 +205,17 @@ public class FORWARD_TO_COORD extends Protocol {
         public short getMagicId() {return 81;}
         public long getId()   {return id;}
         public byte getType() {return type;}
+        @Override
         public int serializedSize()    {return Global.BYTE_SIZE + Bits.size(id);}
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             Bits.writeLong(id,out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException {
             type=in.readByte();
             id=Bits.readLong(in);
         }

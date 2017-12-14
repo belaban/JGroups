@@ -11,6 +11,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -174,22 +175,26 @@ public class NAMING extends Protocol {
         public short                                  getMagicId() {return 89;}
 
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeShort(type.ordinal());
             Util.writeAddress(addr, out);
             Bits.writeString(name, out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=Type.values()[in.readShort()];
             addr=Util.readAddress(in);
             name=Bits.readString(in);
         }
 
+        @Override
         public String toString() {
             return String.format("%s addr=%s name=%s", type, addr, name);
         }
 
+        @Override
         public int serializedSize() {
             return Global.SHORT_SIZE + Util.size(addr) + Util.size(name);
         }

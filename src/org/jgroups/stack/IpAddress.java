@@ -151,7 +151,8 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
     }
 
 
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         if(ip_addr != null) {
             byte[] address=ip_addr.getAddress();  // 4 bytes (IPv4) or 16 bytes (IPv6)
             out.writeByte(address.length); // 1 byte
@@ -165,7 +166,8 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
         out.writeShort(port);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         int len=in.readByte();
         if(len > 0 && (len != Global.IPV4_SIZE && len != Global.IPV6_SIZE))
             throw new IOException("length has to be " + Global.IPV4_SIZE + " or " + Global.IPV6_SIZE + " bytes (was " +
@@ -184,6 +186,7 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
         port=in.readUnsignedShort();
     }
 
+    @Override
     public int serializedSize() {
         // length (1 bytes) + 4 bytes for port
         int tmp_size=Global.BYTE_SIZE+ Global.SHORT_SIZE;

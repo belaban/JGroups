@@ -792,7 +792,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 addrs=new HashMap<>(size);
                 for(int i=0; i < size; i++) {
                     Address key=Util.readAddress(in);
-                    IpAddress val=Util.readStreamable(IpAddress.class, in);
+                    IpAddress val=Util.readStreamable(IpAddress::new, in);
                     addrs.put(key, val);
                 }
             }
@@ -897,7 +897,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             }
         }
 
-
+        @Override
         public int serializedSize() {
             int retval=Global.BYTE_SIZE; // type
             retval+=Util.size(mbr);
@@ -916,7 +916,8 @@ public class FD_SOCK extends Protocol implements Runnable {
             return retval;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             Util.writeAddress(mbr, out);
             Util.writeStreamable(sock_addr, out);
@@ -927,10 +928,11 @@ public class FD_SOCK extends Protocol implements Runnable {
                     Util.writeAddress(address, out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=in.readByte();
             mbr=Util.readAddress(in);
-            sock_addr=Util.readStreamable(IpAddress.class, in);
+            sock_addr=Util.readStreamable(IpAddress::new, in);
             int size=in.readInt();
             if(size > 0) {
                 mbrs=new HashSet<>();

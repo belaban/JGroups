@@ -14,6 +14,7 @@ import org.jgroups.util.Util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.EOFException;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
@@ -440,17 +441,19 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
             }
         }
 
-
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             Util.writeStreamable(my_digest, out);
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=in.readByte();
-            my_digest=Util.readStreamable(Digest.class, in);
+            my_digest=Util.readStreamable(Digest::new, in);
         }
 
+        @Override
         public int serializedSize() {
             int retval=Global.BYTE_SIZE; // type
             retval+=Global.BYTE_SIZE;    // presence byte for my_digest

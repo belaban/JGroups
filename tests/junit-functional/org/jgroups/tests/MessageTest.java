@@ -492,14 +492,17 @@ public class MessageTest {
             return num;
         }
 
+        @Override
         public int serializedSize() {
             return 0;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) {
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) {
         }
 
         public String toString() {

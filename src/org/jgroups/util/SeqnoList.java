@@ -5,6 +5,7 @@ import org.jgroups.Global;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
@@ -77,19 +78,22 @@ public class SeqnoList extends FixedSizeBitSet implements SizeStreamable, Iterab
         return index == -1? -1 : seqno(index);
     }
 
+    @Override
     public int serializedSize() {
         return Global.INT_SIZE // number of words
           + (words.length+1) * Global.LONG_SIZE; // words + offset
     }
 
-    public void writeTo(DataOutput out) throws Exception {
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
         out.writeInt(size);
         out.writeLong(offset);
         for(long word: words)
             out.writeLong(word);
     }
 
-    public void readFrom(DataInput in) throws Exception {
+    @Override
+    public void readFrom(DataInput in) throws IOException {
         size=in.readInt();
         offset=in.readLong();
         words=new long[wordIndex(size - 1) + 1];

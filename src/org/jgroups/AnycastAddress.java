@@ -65,6 +65,7 @@ public class AnycastAddress implements Address, Constructable<AnycastAddress> {
         }
     }
 
+    @Override
     public int serializedSize() {
         if (destinations == null) {
             return Global.INT_SIZE;
@@ -118,13 +119,13 @@ public class AnycastAddress implements Address, Constructable<AnycastAddress> {
     }
 
     @Override
-    public void writeTo(DataOutput out) throws Exception {
+    public void writeTo(DataOutput out) throws IOException {
         Util.writeAddresses(destinations, out);
     }
 
     @Override
-    public void readFrom(DataInput in) throws Exception {
-        destinations = (Collection<Address>) Util.readAddresses(in, ArrayList.class);
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+        destinations = Util.readAddresses(in, ArrayList::new);
     }
 
 }

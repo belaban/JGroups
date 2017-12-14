@@ -237,7 +237,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
         }
 
         try {
-            DrawCommand comm=(DrawCommand)Util.streamableFromByteBuffer(DrawCommand.class, buf, offset, length);
+            DrawCommand comm=Util.streamableFromByteBuffer(DrawCommand::new, buf, offset, length);
             switch(comm.mode) {
                 case DrawCommand.DRAW:
                     if(panel != null)

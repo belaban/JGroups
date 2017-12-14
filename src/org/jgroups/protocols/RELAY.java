@@ -11,6 +11,7 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -296,7 +297,7 @@ public class RELAY extends Protocol {
 
     protected Object installView(byte[] buf, int offset, int length) {
         try {
-            ViewData data=Util.streamableFromByteBuffer(ViewData.class, buf, offset, length);
+            ViewData data=Util.streamableFromByteBuffer(ViewData::new, buf, offset, length);
             if(data.uuids != null)
                 NameCache.add(data.uuids);
 
@@ -434,7 +435,7 @@ public class RELAY extends Protocol {
 
     protected void sendOnLocalCluster(byte[] buf, int offset, int length) {
         try {
-            Message msg=Util.streamableFromByteBuffer(Message.class, buf, offset, length);
+            Message msg=Util.streamableFromByteBuffer(Message::new, buf, offset, length);
             Address sender=msg.getSrc();
             Address dest=msg.getDest();
 
@@ -536,7 +537,7 @@ public class RELAY extends Protocol {
                     break;
                 case VIEW:
                     try {
-                        ViewData data=Util.streamableFromByteBuffer(ViewData.class, msg.getRawBuffer(),
+                        ViewData data=Util.streamableFromByteBuffer(ViewData::new, msg.getRawBuffer(),
                                                                     msg.getOffset(), msg.getLength());
                         // replace addrs with proxies
                         if(data.remote_view != null) {
@@ -630,6 +631,7 @@ public class RELAY extends Protocol {
             return RelayHeader::new;
         }
 
+        @Override
         public int serializedSize() {
             int retval=Global.BYTE_SIZE; // type
             switch(type) {
@@ -644,7 +646,8 @@ public class RELAY extends Protocol {
             return retval;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type.ordinal());
             switch(type) {
                 case DISSEMINATE:
@@ -657,7 +660,8 @@ public class RELAY extends Protocol {
             }
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=Type.values()[in.readByte()];
             switch(type) {
                 case DISSEMINATE:
@@ -705,8 +709,8 @@ public class RELAY extends Protocol {
             return new ViewData(remote_view, global_view, tmp);
         }
 
-
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             Util.writeView(remote_view, out);
             Util.writeView(global_view, out);
             out.writeInt(uuids.size());
@@ -716,7 +720,8 @@ public class RELAY extends Protocol {
             }
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             remote_view=Util.readView(in);
             global_view=Util.readView(in);
             int size=in.readInt();

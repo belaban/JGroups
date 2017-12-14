@@ -646,8 +646,7 @@ public class STOMP extends Protocol implements Runnable {
             return retval;
         }
 
-
-
+        @Override
         public int serializedSize() {
             int retval=Global.INT_SIZE *2; // type + size of hashmap
             for(Map.Entry<String,String> entry: headers.entrySet()) {
@@ -657,7 +656,8 @@ public class STOMP extends Protocol implements Runnable {
             return retval;
         }
 
-        public void writeTo(DataOutput out) throws Exception {
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
             out.writeInt(type.ordinal());
             out.writeInt(headers.size());
             for(Map.Entry<String,String> entry: headers.entrySet()) {
@@ -666,7 +666,8 @@ public class STOMP extends Protocol implements Runnable {
             }
         }
 
-        public void readFrom(DataInput in) throws Exception {
+        @Override
+        public void readFrom(DataInput in) throws IOException {
             type=Type.values()[in.readInt()];
             int size=in.readInt();
             for(int i=0; i < size; i++) {
