@@ -21,7 +21,7 @@ import java.io.DataOutput;
  * <li>token_hash (required) = MD5(default)/SHA</li>
  * <li>auth_value (required) = the string to encrypt</li>
  * </ul>
- * 
+ *
  * @see org.jgroups.auth.AuthToken
  * @author Chris Mills
  */
@@ -42,8 +42,8 @@ public class MD5Token extends AuthToken {
     }
 
     public MD5Token(String authvalue, String hash_type) {
-        this.auth_value = hash(authvalue);
         this.hash_type = hash_type;
+        this.auth_value = hash(authvalue);
     }
 
     public String getHashType() {
@@ -62,13 +62,17 @@ public class MD5Token extends AuthToken {
         this.auth_value = auth_value;
     }
 
+    public hashAndSetAuthValue(String authvalue) {
+      this.auth_value = hash(authvalue);
+    }
+
     public String getName() {
         return "org.jgroups.auth.MD5Token";
     }
 
     /**
      * Called during setup to hash the auth_value string in to an MD5/SHA hash
-     * 
+     *
      * @param token
      *            the string to hash
      * @return the hashed version of the string
@@ -84,7 +88,9 @@ public class MD5Token extends AuthToken {
         }
 
         if (hashedToken == null) {
-            // failed to encrypt
+            // failed to hash - sending the token in clear text
+            // Note that this may be considered a security vulnerabiltiy if clear text passwords are forbidden.
+
             log.warn("Failed to hash token - sending in clear text");
             return token;
         }
@@ -97,6 +103,7 @@ public class MD5Token extends AuthToken {
             // Found a valid Token to authenticate against
             MD5Token serverToken = (MD5Token) token;
 
+            // Compare the hash values
             return (this.auth_value != null) && (serverToken.auth_value != null)
               && (this.auth_value.equalsIgnoreCase(serverToken.auth_value));
         }
