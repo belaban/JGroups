@@ -578,8 +578,8 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
-            digest=Util.readStreamable(Digest.class, in);
-            bind_addr=Util.readStreamable(IpAddress.class, in);
+            digest=Util.readStreamable(Digest::new, in);
+            bind_addr=Util.readStreamable(IpAddress::new, in);
         }
 
         public int serializedSize() {

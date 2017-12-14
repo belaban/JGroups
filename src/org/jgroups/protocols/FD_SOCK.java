@@ -792,7 +792,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 addrs=new HashMap<>(size);
                 for(int i=0; i < size; i++) {
                     Address key=Util.readAddress(in);
-                    IpAddress val=Util.readStreamable(IpAddress.class, in);
+                    IpAddress val=Util.readStreamable(IpAddress::new, in);
                     addrs.put(key, val);
                 }
             }
@@ -930,7 +930,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
             mbr=Util.readAddress(in);
-            sock_addr=Util.readStreamable(IpAddress.class, in);
+            sock_addr=Util.readStreamable(IpAddress::new, in);
             int size=in.readInt();
             if(size > 0) {
                 mbrs=new HashSet<>();

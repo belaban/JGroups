@@ -452,7 +452,7 @@ public class SEQUENCER extends Protocol {
      */
     protected void unwrapAndDeliver(final Message msg, boolean flush_ack) {
         try {
-            Message msg_to_deliver=Util.streamableFromBuffer(Message.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+            Message msg_to_deliver=Util.streamableFromBuffer(Message::new, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             SequencerHeader hdr=msg_to_deliver.getHeader(this.id);
             if(flush_ack)
                 hdr.flush_ack=true;

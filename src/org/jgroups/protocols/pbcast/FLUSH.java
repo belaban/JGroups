@@ -946,8 +946,8 @@ public class FLUSH extends Protocol {
         if(buffer == null) return null;
         try {
             DataInput in=new ByteArrayDataInputStream(buffer, offset, length);
-            Collection<? extends Address> participants=Util.readAddresses(in, ArrayList.class);
-            Digest digest=Util.readStreamable(Digest.class, in);
+            Collection<Address> participants=Util.readAddresses(in, ArrayList::new);
+            Digest digest=Util.readStreamable(Digest::new, in);
             return new Tuple<>(participants, digest);
         }
         catch(Exception ex) {

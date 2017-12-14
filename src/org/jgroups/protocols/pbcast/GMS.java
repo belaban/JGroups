@@ -1214,7 +1214,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     protected JoinRsp readJoinRsp(byte[] buffer, int offset, int length) {
         try {
-            return buffer != null? Util.streamableFromBuffer(JoinRsp.class, buffer, offset, length) : null;
+            return buffer != null? Util.streamableFromBuffer(JoinRsp::new, buffer, offset, length) : null;
         }
         catch(Exception ex) {
             log.error("%s: failed reading JoinRsp from message: %s", local_addr, ex);
@@ -1226,7 +1226,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         if(buffer == null) return null;
         try {
             DataInput in=new ByteArrayDataInputStream(buffer, offset, length);
-            return Util.readAddresses(in, ArrayList.class);
+            return Util.readAddresses(in, ArrayList::new);
         }
         catch(Exception ex) {
             log.error("%s: failed reading members from message: %s", local_addr, ex);

@@ -83,7 +83,7 @@ public class DigestTest {
 
     public void testViewId() throws Exception {
         byte[] buf=Util.streamableToByteBuffer(d);
-        Digest digest=(Digest)Util.streamableFromByteBuffer(Digest.class,buf);
+        Digest digest=Util.streamableFromByteBuffer(Digest::new,buf);
         System.out.println("digest = " + digest);
     }
 
@@ -401,7 +401,7 @@ public class DigestTest {
 
     public void testViewBasedMarshalling() throws Exception {
         byte[] buf=Util.streamableToByteBuffer(d);
-        Digest new_digest=(Digest)Util.streamableFromByteBuffer(Digest.class,buf);
+        Digest new_digest=Util.streamableFromByteBuffer(Digest::new,buf);
         System.out.println("new_digest = " + new_digest);
         assert new_digest.equals(d);
     }
@@ -425,7 +425,7 @@ public class DigestTest {
         byte[] buf1=Util.streamableToByteBuffer(digest);
         System.out.println("buf1: " + buf1.length + " bytes");
 
-        Digest digest1=(Digest)Util.streamableFromByteBuffer(Digest.class,buf1);
+        Digest digest1=Util.streamableFromByteBuffer(Digest::new,buf1);
 
         System.out.println("digest1 = " + digest1);
         assert digest.equals(digest1);

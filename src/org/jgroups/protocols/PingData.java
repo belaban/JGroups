@@ -141,13 +141,12 @@ public class PingData implements SizeStreamable, Constructable<PingData> {
         Util.writeAddresses(mbrs, outstream);
     }
 
-    @SuppressWarnings("unchecked")
     public void readFrom(DataInput instream) throws Exception {
         sender=Util.readAddress(instream);
         flags=instream.readByte();
         logical_name=Bits.readString(instream);
         physical_addr=(PhysicalAddress)Util.readAddress(instream);
-        mbrs=Util.readAddresses(instream, ArrayList.class);
+        mbrs=Util.readAddresses(instream, ArrayList::new);
     }
 
 

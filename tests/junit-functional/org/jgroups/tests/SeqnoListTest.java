@@ -113,7 +113,7 @@ public class SeqnoListTest {
         System.out.println("list.size()=" + list.size()  + "\nlist = " + list);
         int expected_size=list.serializedSize();
         byte[] buf=Util.streamableToByteBuffer(list);
-        SeqnoList list2=Util.streamableFromByteBuffer(SeqnoList.class, buf);
+        SeqnoList list2=Util.streamableFromByteBuffer(SeqnoList::new, buf);
         System.out.println("list2.size()=" + list2.size() + "\nlist2 = " + list2);
         assert list.size() == list2.size();
 

@@ -1,20 +1,5 @@
 package org.jgroups.demos;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.Queue;
-import java.util.Random;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.jgroups.JChannel;
 import org.jgroups.blocks.executor.ExecutionCompletionService;
 import org.jgroups.blocks.executor.ExecutionRunner;
@@ -22,6 +7,16 @@ import org.jgroups.blocks.executor.ExecutionService;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Queue;
+import java.util.Random;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ExecutionServiceDemo {
     protected String props;
@@ -156,8 +151,7 @@ public class ExecutionServiceDemo {
 
         @Override
         public void readFrom(DataInput in) throws Exception {
-            buffer = ((ByteBufferStreamable)Util.readStreamable(
-                ByteBufferStreamable.class, in)).buffer;
+            buffer = Util.readStreamable(ByteBufferStreamable::new, in).buffer;
         }
     }
     
@@ -214,11 +208,8 @@ public class ExecutionServiceDemo {
 
         @Override
         public void readFrom(DataInput in) throws Exception {
-            bytes1 = ((ByteBufferStreamable)Util.readStreamable(
-                ByteBufferStreamable.class, in)).buffer;
-            
-            bytes2 = ((ByteBufferStreamable)Util.readStreamable(
-                ByteBufferStreamable.class, in)).buffer;
+            bytes1 = Util.readStreamable(ByteBufferStreamable::new, in).buffer;
+            bytes2 = Util.readStreamable(ByteBufferStreamable::new, in).buffer;
         }
     }
     

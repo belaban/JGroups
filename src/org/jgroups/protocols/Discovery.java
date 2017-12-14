@@ -528,7 +528,7 @@ public abstract class Discovery extends Protocol {
     }
 
     protected static PingData deserialize(final byte[] data) throws Exception {
-        return (PingData)Util.streamableFromByteBuffer(PingData.class, data);
+        return Util.streamableFromByteBuffer(PingData::new, data);
     }
 
     public static Buffer marshal(PingData data) {
@@ -537,7 +537,7 @@ public abstract class Discovery extends Protocol {
 
     protected PingData readPingData(byte[] buffer, int offset, int length) {
         try {
-            return buffer != null? Util.streamableFromBuffer(PingData.class, buffer, offset, length) : null;
+            return buffer != null? Util.streamableFromBuffer(PingData::new, buffer, offset, length) : null;
         }
         catch(Exception ex) {
             log.error("%s: failed reading PingData from message: %s", local_addr, ex);

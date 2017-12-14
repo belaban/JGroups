@@ -319,7 +319,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             return msg;
         }
 
-        Message ret=Util.streamableFromBuffer(Message.class,decrypted_msg,0,decrypted_msg.length);
+        Message ret=Util.streamableFromBuffer(Message::new,decrypted_msg,0,decrypted_msg.length);
         if(ret.getDest() == null)
             ret.setDest(msg.getDest());
         if(ret.getSrc() == null)

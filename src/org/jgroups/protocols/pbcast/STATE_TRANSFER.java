@@ -448,7 +448,7 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
-            my_digest=Util.readStreamable(Digest.class, in);
+            my_digest=Util.readStreamable(Digest::new, in);
         }
 
         public int serializedSize() {

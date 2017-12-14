@@ -149,7 +149,7 @@ public class StreamableTest {
         assert buf != null;
         assert buf.length > 0;
 
-        MergeView merge_view=(MergeView)Util.streamableFromByteBuffer(MergeView.class, buf);
+        MergeView merge_view=Util.streamableFromByteBuffer(MergeView::new, buf);
         assert merge_view != null;
         System.out.println("MergeView: " + merge_view);
         for(View v: merge_view.getSubgroups()) {
