@@ -70,7 +70,7 @@ public class TOA_UnitTest {
 
       setInitialView(localAddress, localAddress, b);
 
-      ToaHeader header = ToaHeader.newDataMessageHeader(new MessageID(c, 1), Collections.singleton(localAddress));
+      ToaHeader header = ToaHeader.newDataMessageHeader(new MessageID(c, 1), 1);
       Message message = newMessage(header, c, localAddress);
 
       //Message from member C. it isn't in the view and the message should be discarded.
@@ -88,7 +88,7 @@ public class TOA_UnitTest {
       setInitialView(localAddress, localAddress, b);
       sequenceNumberManager().update(9); //it increments it to 10
 
-      ToaHeader header = ToaHeader.newDataMessageHeader(new MessageID(b, 1), Collections.singleton(localAddress));
+      ToaHeader header = ToaHeader.newDataMessageHeader(new MessageID(b, 1), 1);
       header.setSequencerNumber(10);
       Message message = newMessage(header, b, localAddress);
 
@@ -118,7 +118,7 @@ public class TOA_UnitTest {
       setInitialView(localAddress, localAddress, b);
       sequenceNumberManager().update(10); //next message will have 11
 
-      ToaHeader header = ToaHeader.newDataMessageHeader(new MessageID(b, 1), Collections.singleton(localAddress));
+      ToaHeader header = ToaHeader.newDataMessageHeader(new MessageID(b, 1), 1);
       header.setSequencerNumber(2);
       Message message = newMessage(header, b, localAddress);
 
@@ -148,7 +148,7 @@ public class TOA_UnitTest {
       setInitialView(localAddress, localAddress, b);
       sequenceNumberManager().update(10); //next message will have 11
 
-      ToaHeader header = ToaHeader.newDataMessageHeader(new MessageID(b, 1), Collections.singleton(localAddress));
+      ToaHeader header = ToaHeader.newDataMessageHeader(new MessageID(b, 1), 1);
       header.setSequencerNumber(20);
       Message message = newMessage(header, b, localAddress);
 
@@ -172,12 +172,164 @@ public class TOA_UnitTest {
       assertUpMessagesEmpty();
    }
 
+   public void testMessageBeforeFirstView() {
+      Address b = Util.createRandomAddress("B");
+
+      ToaHeader header = ToaHeader.newDataMessageHeader(new MessageID(b, 1), 1);
+      Message message = newMessage(header, b, localAddress);
+
+      // message from node B to A.
+      // no view is installed yet.
+      // message should be accepted
+      toa.up(message);
+      assertProposedMessageSent(0);
+      assertFirstMessage(0, false);
+
+      header = ToaHeader.newFinalMessageHeader(new MessageID(b, 1), 1);
+      message = newMessage(header, b, localAddress);
+
+      // final message
+      // no view installed yet
+      toa.up(message);
+      assertFirstMessage(1, true);
+      assertDownMessagesEmpty();
+      assertUpMessagesEmpty();
+   }
+
+   public void testMessageBeforeFirstViewDead() {
+      Address b = Util.createRandomAddress("B");
+
+      ToaHeader header = ToaHeader.newDataMessageHeader(new MessageID(b, 1), 1);
+      Message message = newMessage(header, b, localAddress);
+
+      // message from node B to A.
+      // no view is installed yet.
+      // message should be accepted
+      toa.up(message);
+      assertProposedMessageSent(0);
+      assertFirstMessage(0, false);
+
+      // view {2|A}
+      setView(localAddress, 2, localAddress);
+
+      // message dropped. member no longer belongs to the view.
+      assertNoMessageToDeliver();
+      assertDownMessagesEmpty();
+      assertUpMessagesEmpty();
+   }
+
+   public void testMessageBeforeFirstViewAlive() {
+      Address b = Util.createRandomAddress("B");
+
+      ToaHeader header = ToaHeader.newDataMessageHeader(new MessageID(b, 1), 1);
+      Message message = newMessage(header, b, localAddress);
+
+      // message from node B to A.
+      // no view is installed yet.
+      // message should be accepted
+      toa.up(message);
+      assertProposedMessageSent(0);
+      assertFirstMessage(0, false);
+
+      // view {2|A,B}
+      setView(localAddress, 2, localAddress, b);
+
+      // message is kept
+      assertFirstMessage(0, false);
+
+      header = ToaHeader.newFinalMessageHeader(new MessageID(b, 1), 1);
+      message = newMessage(header, b, localAddress);
+
+      // final message
+      toa.up(message);
+      assertFirstMessage(1, true);
+      assertDownMessagesEmpty();
+      assertUpMessagesEmpty();
+   }
+
+   public void testMessageFromPreviousViewAlive() {
+      Address b = Util.createRandomAddress("B");
+
+      // view {4|A,B}
+      setView(localAddress, 4, localAddress, b);
+
+      ToaHeader header = ToaHeader.newDataMessageHeader(new MessageID(b, 1), 3);
+      Message message = newMessage(header, b, localAddress);
+
+      // message from node B to A from view 3.
+      // message is accepted
+      toa.up(message);
+      assertProposedMessageSent(0);
+      assertFirstMessage(0, false);
+
+      header = ToaHeader.newFinalMessageHeader(new MessageID(b, 1), 1);
+      message = newMessage(header, b, localAddress);
+
+      // final message
+      toa.up(message);
+      assertFirstMessage(1, true);
+      assertDownMessagesEmpty();
+      assertUpMessagesEmpty();
+   }
+
+   public void testMessageFromPreviousViewDead() {
+      Address b = Util.createRandomAddress("B");
+
+      // view {4|A}
+      setView(localAddress, 4, localAddress);
+
+      ToaHeader header = ToaHeader.newDataMessageHeader(new MessageID(b, 1), 3);
+      Message message = newMessage(header, b, localAddress);
+
+      // message from node B to A from view 3.
+      // B isn't in the view and the message should be discarded
+      toa.up(message);
+      assertNoMessageToDeliver();
+      assertDownMessagesEmpty();
+      assertUpMessagesEmpty();
+   }
+
+   public void testMessageFromNewView() {
+      Address b = Util.createRandomAddress("B");
+
+      // view {1|A}
+      setInitialView(localAddress, localAddress);
+
+      ToaHeader header = ToaHeader.newDataMessageHeader(new MessageID(b, 1), 2);
+      Message message = newMessage(header, b, localAddress);
+
+      // message from node B to A from view 2.
+      // B isn't in the view but the message is accepted
+      toa.up(message);
+      assertProposedMessageSent(0);
+      assertFirstMessage(0, false);
+
+      // view {2|A,B}
+      // message is kept
+      setView(localAddress, 2, localAddress, b);
+      assertFirstMessage(0, false);
+
+      header = ToaHeader.newFinalMessageHeader(new MessageID(b, 1), 1);
+      message = newMessage(header, b, localAddress);
+
+      //final message
+      toa.up(message);
+      assertFirstMessage(1, true);
+      assertDownMessagesEmpty();
+      assertUpMessagesEmpty();
+   }
+
+
    private DeliveryManagerImpl deliveryManager() {
       return (DeliveryManagerImpl) toa.getDeliverManager();
    }
 
    private SequenceNumberManager sequenceNumberManager() {
       return deliveryManager().getSequenceNumberManager();
+   }
+
+   private void assertNoMessageToDeliver() {
+      assertEquals(Collections.emptyList(), deliveryManager().getAllMessages());
    }
 
    private void assertProposedMessageSent(long expectedSequenceNumber) {
@@ -205,8 +357,12 @@ public class TOA_UnitTest {
    }
 
    private void setInitialView(Address localAddress, Address... members) {
+      setView(localAddress, 1, members);
+   }
+
+   private void setView(Address localAddress, long viewId, Address... members) {
       toa.down(new Event(Event.SET_LOCAL_ADDRESS, localAddress));
-      toa.down(new Event(Event.VIEW_CHANGE, View.create(localAddress, 1, members)));
+      toa.down(new Event(Event.VIEW_CHANGE, View.create(localAddress, viewId, members)));
    }
 
    private Message newMessage(ToaHeader header, Address from, Address to) {
