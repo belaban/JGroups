@@ -1,17 +1,13 @@
 package org.jgroups.protocols.tom;
 
-import org.jgroups.Address;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.util.Objects;
+import java.util.function.Supplier;
+
 import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.util.Bits;
-import org.jgroups.util.Util;
-
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.function.Supplier;
 
 /**
  * The header for the Total Order Anycast (TOA) protocol
@@ -30,7 +26,7 @@ public class ToaHeader extends Header {
     private byte type = 0;
     private MessageID messageID; //address and sequence number
     private long sequencerNumber;
-    private Collection<Address> destinations;
+    private long viewId;
 
     public ToaHeader() {
     }
@@ -44,15 +40,6 @@ public class ToaHeader extends Header {
 
     public MessageID getMessageID() {
         return messageID;
-    }
-
-    private ToaHeader setDestinations(Collection<Address> addresses) {
-        this.destinations = addresses;
-        return this;
-    }
-
-    public Collection<Address> getDestinations() {
-        return Collections.unmodifiableCollection(destinations);
     }
 
     public long getSequencerNumber() {
@@ -70,8 +57,7 @@ public class ToaHeader extends Header {
 
     @Override
     public int serializedSize() {
-        return (int) (Global.BYTE_SIZE + messageID.serializedSize() + Bits.size(sequencerNumber) +
-                Util.size(destinations));
+        return Global.BYTE_SIZE + messageID.serializedSize() + Bits.size(sequencerNumber) + Bits.size(viewId);
     }
 
     @Override
@@ -79,9 +65,7 @@ public class ToaHeader extends Header {
         out.writeByte(type);
         messageID.writeTo(out);
         Bits.writeLong(sequencerNumber, out);
-        if (type == DATA_MESSAGE) {
-            Util.writeAddresses(destinations, out);
-        }
+        Bits.writeLong(viewId, out);
     }
 
     @Override
@@ -90,9 +74,7 @@ public class ToaHeader extends Header {
         messageID = new MessageID();
         messageID.readFrom(in);
         sequencerNumber = Bits.readLong(in);
-        if (type == DATA_MESSAGE) {
-            destinations = Util.readAddresses(in, ArrayList::new);
-        }
+        viewId = Bits.readLong(in);
     }
 
     @Override
@@ -101,11 +83,11 @@ public class ToaHeader extends Header {
                 "type=" + type2String(type) +
                 ", message_id=" + messageID +
                 ", sequence_number=" + sequencerNumber +
-                ", destinations=" + destinations +
+                ", view_id=" + viewId +
                 '}';
     }
 
-    public static String type2String(byte type) {
+    private static String type2String(byte type) {
         switch (type) {
             case DATA_MESSAGE:
                 return "DATA_MESSAGE";
@@ -120,9 +102,9 @@ public class ToaHeader extends Header {
         }
     }
 
-    public static ToaHeader newDataMessageHeader(MessageID messageID, Collection<Address> destinations) {
+    public static ToaHeader newDataMessageHeader(MessageID messageID, long viewId) {
         assertMessageIDNotNull(messageID);
-        return new ToaHeader(messageID, DATA_MESSAGE).setDestinations(new ArrayList<>(destinations));
+        return new ToaHeader(messageID, DATA_MESSAGE).setViewId(viewId);
     }
 
     public static ToaHeader newProposeMessageHeader(MessageID messageID, long sequencerNumber) {
@@ -140,9 +122,16 @@ public class ToaHeader extends Header {
     }
 
     private static void assertMessageIDNotNull(MessageID messageID) {
-        if (messageID == null) {
-            throw new NullPointerException("The message ID can't be null.");
-        }
+        Objects.requireNonNull(messageID, "The message ID can't be null.");
+    }
+
+    public long getViewId() {
+        return viewId;
+    }
+
+    private ToaHeader setViewId(long viewId) {
+        this.viewId = viewId;
+        return this;
     }
 }
 

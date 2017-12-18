@@ -6,6 +6,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -60,6 +61,10 @@ public class AnycastAddress implements Address, Constructable<AnycastAddress> {
         return destinations;
     }
 
+    public Optional<Collection<Address>> findAddresses() {
+        return Optional.ofNullable(destinations);
+    }
+
     private void initCollection(int estimatedSize) {
         if (destinations == null) {
             destinations = new ArrayList<>(estimatedSize);
@@ -88,7 +93,7 @@ public class AnycastAddress implements Address, Constructable<AnycastAddress> {
         if (o == null || getClass() != o.getClass()) return false;
 
         AnycastAddress that = (AnycastAddress) o;
-        return !(!Objects.equals(destinations, that.destinations));
+        return Objects.equals(destinations, that.destinations);
     }
 
     @Override

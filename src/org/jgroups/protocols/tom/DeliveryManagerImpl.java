@@ -1,8 +1,8 @@
 package org.jgroups.protocols.tom;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,22 +30,55 @@ public class DeliveryManagerImpl implements DeliveryManager {
     @GuardedBy("deliverySet")
     private final SequenceNumberManager sequenceNumberManager = new SequenceNumberManager();
     @GuardedBy("deliverySet")
-    private final Set<Address> currentView = new HashSet<>();
+    private View currentView;
 
-    public final void handleView(View newView) {
-        List<MessageInfo> toRemove = new LinkedList<>();
+    /**
+     * Updates the current view in use and returns a {@link Collection} with the members that left the cluster.
+     */
+    public final Collection<Address> handleView(View newView) {
+        View oldView;
         synchronized (deliverySet) {
-            updateMembers(newView);
-            deliverySet.stream()
-                  .filter(this::shouldRemove)
-                  .forEach(toRemove::add);
-
-            deliverySet.removeAll(toRemove);
+            oldView = getAndSetView(newView);
+            deliverySet.removeIf(this::removeMessage);
             notifyIfNeeded();
         }
-        for (MessageInfo removed : toRemove) {
-            messageCache.remove(removed.messageID);
+        return View.leftMembers(oldView, newView);
+    }
+
+    /**
+     * @return the current view id or {@code -1} if no view is installed yet.
+     */
+    public long getViewId() {
+        synchronized (deliverySet) {
+            return internalGetViewId();
         }
+    }
+
+    /**
+     * @return an unmodifiable collection with the current cluster members.
+     */
+    final Collection<Address> getViewMembers() {
+        synchronized (deliverySet) {
+            return currentView == null ? Collections.emptyList() : currentView.getMembers();
+        }
+    }
+
+    long addRemoteMessageToDeliver(MessageID messageID, Message message, long remoteSequenceNumber, long viewId) {
+        MessageInfo messageInfo;
+        long sequenceNumber;
+        synchronized (deliverySet) {
+            long currentViewId = internalGetViewId();
+            if (currentViewId != -1 //we have a view, check the view id
+                && viewId <= currentViewId //message from the current or previous view, check the members
+                && !currentView.containsMember(message.getSrc())) { //node no longer in view. discard it
+                return -1;
+            }
+            sequenceNumber = sequenceNumberManager.updateAndGet(remoteSequenceNumber);
+            messageInfo = new MessageInfo(messageID, message, sequenceNumber);
+            deliverySet.add(messageInfo);
+        }
+        messageCache.put(messageID, messageInfo);
+        return sequenceNumber;
     }
 
     long addLocalMessageToDeliver(MessageID messageID, Message message, ToaHeader header) {
@@ -61,19 +94,9 @@ public class DeliveryManagerImpl implements DeliveryManager {
         return sequenceNumber;
     }
 
-    long addRemoteMessageToDeliver(MessageID messageID, Message message, long remoteSequenceNumber) {
-        MessageInfo messageInfo;
-        long sequenceNumber;
-        synchronized (deliverySet) {
-            if (!currentView.contains(message.getSrc())) {
-                return -1;
-            }
-            sequenceNumber = sequenceNumberManager.updateAndGet(remoteSequenceNumber);
-            messageInfo = new MessageInfo(messageID, message, sequenceNumber);
-            deliverySet.add(messageInfo);
-        }
-        messageCache.put(messageID, messageInfo);
-        return sequenceNumber;
+    @GuardedBy("deliverSet")
+    private long internalGetViewId() {
+        return currentView == null ? -1 : currentView.getViewId().getId();
     }
 
     void updateSequenceNumber(long sequenceNumber) {
@@ -142,9 +165,10 @@ public class DeliveryManagerImpl implements DeliveryManager {
     }
 
     @GuardedBy("deliverySet")
-    private void updateMembers(View newView) {
-        currentView.clear();
-        currentView.addAll(newView.getMembers());
+    private View getAndSetView(View newView) {
+        View oldView = currentView;
+        currentView = newView;
+        return oldView;
     }
 
     //see the interface javadoc
@@ -192,11 +216,16 @@ public class DeliveryManagerImpl implements DeliveryManager {
     }
 
     /**
-     * @return {@code true} if the source of the message left the view and the message isn't ready to be deliver.
+     * @return {@code true} if the member who sent the message left the cluster and the message isn't ready to be deliver.
      */
     @GuardedBy("deliverySet")
-    private boolean shouldRemove(MessageInfo messageInfo) {
-        return !(currentView.contains(messageInfo.getMessage().getSrc()) || messageInfo.isReadyToDeliver());
+    private boolean removeMessage(MessageInfo messageInfo) {
+        if (currentView.containsMember(messageInfo.getMessage().getSrc()) || messageInfo.isReadyToDeliver()) {
+            return false;
+        } else {
+            messageCache.remove(messageInfo.messageID);
+            return true;
+        }
     }
 
     @GuardedBy("deliverySet")
