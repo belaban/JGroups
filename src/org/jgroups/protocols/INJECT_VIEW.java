@@ -14,10 +14,10 @@ import java.util.Map;
 
 /**
  * Simple protocol to inject an arbitrary view on one or more cluster nodes.</p>
- * INJECT_VIEW expose a managed operation (injectView) capable of injecting a view by parsing the view state from a string.
- * The string format is A=A,B,C;B=B,C;C=C (where A,B,C are node names), this would inject view [A,B] with A as leader in node A,
- * view [B] in node B and view [C] in node C.</p>
- * In order to leverage the injection on multiple nodes at once a tool like probe.sh
+ * INJECT_VIEW exposes a managed operation (injectView) capable of injecting a view by parsing the view state from a string.
+ * The string format is A=A,B,C;B=B,C;C=C (where A,B,C are node names), this would inject view [A,B,C] with A as leader in node A,
+ * view [B,C] with B as leader in node B and view [C] in node C.</p>
+ * In order to leverage the injection on multiple nodes at once use a tool like probe.sh
  * (https://github.com/belaban/JGroups/blob/master/tests/other/org/jgroups/tests/Probe.java)
  * @author Andrea Tarocchi
  * @author Ugo Landini
