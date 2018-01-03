@@ -103,9 +103,9 @@ public abstract class Protocol {
     }
 
 
-    public Protocol setValue(String name, Object value) {
+    public <T extends Protocol> T setValue(String name, Object value) {
         if(name == null || value == null)
-            return this;
+            return (T)this;
         Field field=Util.getField(getClass(), name);
         if(field == null)
             throw new IllegalArgumentException("field " + name + " not found");
@@ -116,7 +116,7 @@ public abstract class Protocol {
                 log.warn("Field " + getName() + "." + name + " is deprecated: " + deprecated_msg);
         }
         Util.setField(field, this, value);
-        return this;
+        return (T)this;
     }
 
 
@@ -126,7 +126,7 @@ public abstract class Protocol {
      * @return this protocol
      * @throws Exception if any of the specified properties are unresolvable or unrecognized.
      */
-    public Protocol setProperties(Map<String, String> properties) throws Exception {
+    public <T extends Protocol> T setProperties(Map<String, String> properties) throws Exception {
         // These Configurator methods are destructive, so make a defensive copy
         Map<String, String> copy = new HashMap<>(properties);
         Configurator.removeDeprecatedProperties(this, copy);
@@ -143,7 +143,7 @@ public abstract class Protocol {
         if (!copy.isEmpty()) {
             throw new IllegalArgumentException(String.format("Unrecognized %s properties: %s", this.getName(), copy.keySet()));
         }
-        return this;
+        return (T)this;
     }
 
 
