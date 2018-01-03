@@ -2200,3 +2200,18 @@ FORK allows ForkChannels to piggy-back messages on a regular channel. Needs to b
 
 ${FORK}
 
+[[INJECT_VIEW]]
+
+
+==== INJECT_VIEW
+INJECT_VIEW exposes a managed operation (injectView) capable of injecting a view by parsing the view state from a string.
+
+The string format is A=A,B,C;B=B,C;C=C (where A,B,C are node names),
+this would inject view [A,B,C] with A as leader in node A, view [B,C] with B as leader in node B and view [C] in node C.
+
+NOTE: calling `injectView("A=A,B,C;B=B,C;C=C")`, as an example, just on node B would result only in view [B,C] applied to node B.
+
+In order to leverage the injection on multiple nodes at once a tool like <<Probe,Probe>> can be used,
+example: `probe.sh op=INJECT_VIEW.injectView["A=A,B,C;B=B,C;C=C"]`
+
+${INJECT_VIEW}
