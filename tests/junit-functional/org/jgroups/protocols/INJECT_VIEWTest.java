@@ -7,7 +7,6 @@ import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Membership;
 import org.jgroups.View;
-import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.protocols.pbcast.GMS;
@@ -33,8 +32,6 @@ import java.util.Map;
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class INJECT_VIEWTest {
-
-    static final short GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
 
     protected static Protocol[] getProps() {
         return modify(Util.getTestStack());
@@ -66,7 +63,7 @@ public class INJECT_VIEWTest {
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
 
-            String injectionViewString = "A=A,B,C;B=B,C;C=C";
+            String injectionViewString = "A=A/B;B=B/C;C=C";
             System.out.println("\ninjecting views: "+injectionViewString);
             for (JChannel channel : channels) {
                 channel.getProtocolStack().addProtocol( new INJECT_VIEW());
@@ -79,7 +76,7 @@ public class INJECT_VIEWTest {
             System.out.println("\nInjected views: "+injectionViewString);
             print(channels);
             System.out.println("\nchecking views: ");
-            checkViews(channels, "A", "A", "B", "C");
+            checkViews(channels, "A", "A", "B");
             System.out.println("\nA is OK");
             checkViews(channels, "B", "B", "C");
             System.out.println("\nB is OK");
@@ -106,10 +103,7 @@ public class INJECT_VIEWTest {
 
             System.out.println("\ndigests:");
             printDigests(channels);
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-        finally {
+        } finally {
             System.out.println("closing channels");
             close(channels);
             System.out.println("done");
@@ -128,7 +122,6 @@ public class INJECT_VIEWTest {
         for(JChannel ch: channels)
             assert ch.getView().size() == count : ch.getName() + " has view " + ch.getView() + " (should have " + count + " mbrs)";
     }
-
 
     private static void close(JChannel[] channels) {
         if(channels == null) return;
