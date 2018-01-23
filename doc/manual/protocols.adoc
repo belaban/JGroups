@@ -1238,7 +1238,7 @@ ${NAKACK2}
 
 
 [[UNICAST3]]
-==== UNICAST2
+==== UNICAST3
 
 UNICAST3 provides reliable delivery and FIFO (= First In First Out) properties for point-to-point
 messages between a sender and a receiver.
