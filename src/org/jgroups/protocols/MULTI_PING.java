@@ -12,16 +12,16 @@ import java.util.stream.Collectors;
 /**
  * Protocol to invoke multiple discovery protocols in the same stack. All discovery protocols needs to be _below_ this
  * one, e.g.
- * <pre>
-     <TCP.../>
-     <TCPPING initial_hosts="127.0.0.1[7800]"/>
-     <PING />
-     <MPING/>
-     <FILE_PING/>
-     <MULTI_PING async_discovery="true"/>
-     <MERGE3 .../>
-      ...
- * </pre>
+ * <pre>{@code
+ *   <TCP.../>
+ *   <TCPPING initial_hosts="127.0.0.1[7800]"/>
+ *   <PING />
+ *   <MPING/>
+ *   <FILE_PING/>
+ *   <MULTI_PING async_discovery="true"/>
+ *   <MERGE3 .../>
+ *   ...
+ * }</pre>
  * @author Bela Ban
  * @since  4.0.8
  */
