@@ -256,8 +256,12 @@ public class TUNNEL_Test extends ChannelTestBase {
         tunnel.setGossipRouterHosts(gossip_router_hosts);
         List<Protocol> protocols=new ArrayList<>();
         protocols.addAll(Arrays.asList(tunnel, new PING(), new MERGE3().setValue("min_interval", 1000).setValue("max_interval", 3000)));
-        if(include_failure_detection)
-            protocols.addAll(Arrays.asList(new FD().setValue("timeout", 2000).setValue("max_tries", 2), new VERIFY_SUSPECT()));
+        if(include_failure_detection) {
+            List<Protocol> tmp=new ArrayList<>(2);
+            tmp.add(new FD().setValue("timeout", 2000).setValue("max_tries", 2));
+            tmp.add(new VERIFY_SUSPECT());
+            protocols.addAll(tmp);
+        }
         protocols.addAll(Arrays.asList(new NAKACK2().setValue("use_mcast_xmit", false), new UNICAST3(), new STABLE(),
                                        new GMS().joinTimeout(1000)));
         JChannel ch=new JChannel(protocols);

@@ -3,6 +3,7 @@ package org.jgroups.blocks;
 
 import org.jgroups.*;
 import org.jgroups.tests.ChannelTestBase;
+import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
@@ -167,25 +168,92 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
     }
 
 
+    public void testInvocationOfDefaultMethodInParentInterface() throws Exception {
+        RspList<Integer> rsps=d1.callRemoteMethods(null, "bar", null, null, RequestOptions.SYNC());
+        System.out.println("rsps:\n" + rsps);
+        assert rsps.size() == 3;
+        for(Rsp<Integer> rsp: rsps)
+            assert rsp.getValue() == 22;
+    }
 
-    private static class ServerObject {
-        boolean called=false;
-        int num_calls=0;
+
+    public void testInvocationOfDefaultMethod() throws Exception {
+        RspList<Integer> rsps=d1.callRemoteMethods(null, "bar2", null, null, RequestOptions.SYNC());
+        System.out.println("rsps:\n" + rsps);
+        assert rsps.size() == 3;
+        for(Rsp<Integer> rsp: rsps)
+            assert rsp.getValue() == 44;
+    }
+
+    public void testInvocationOnSubclass() throws Exception {
+        Object obj1=d1.server_obj, obj2=d2.server_obj, obj3=d3.server_obj;
+        try {
+            d1.server_obj=new Subclass();
+            d2.server_obj=new Subclass();
+            d3.server_obj=new Subclass();
+            RspList<Integer> rsps=d1.callRemoteMethods(null, "foobar", null, null, RequestOptions.SYNC());
+            System.out.println("rsps:\n" + rsps);
+            assert rsps.size() == 3;
+            for(Rsp<Integer> rsp : rsps)
+                assert rsp.getValue() == 33;
+        }
+        finally {
+            d1.server_obj=obj1;
+            d2.server_obj=obj2;
+            d3.server_obj=obj3;
+        }
+    }
+
+    public void testInvocationOnObject() throws Exception {
+        RspList<Integer> rsps=d1.callRemoteMethods(null, "hashCode", null, null, RequestOptions.SYNC());
+        System.out.println("rsps:\n" + rsps);
+        assert rsps.size() == 3;
+        for(Rsp<Integer> rsp: rsps)
+            assert rsp.getValue() > 0;
+    }
+
+    public void testInvocationOfProtectedMethod() throws Exception {
+        RspList<Boolean> rsps=d1.callRemoteMethods(null, "protectedMethod", null, null, RequestOptions.SYNC());
+        System.out.println("rsps:\n" + rsps);
+        assert rsps.size() == 3;
+        for(Rsp<Boolean> rsp: rsps)
+            assert rsp.getValue();
+    }
+
+
+    protected interface ParentInterface {
+        boolean          wasCalled();
+        default int      bar() {return 22;}
+    }
+
+    protected interface MyInterface extends ParentInterface {
+        int              getNumCalls();
+        void             reset();
+        boolean          foo();
+        default int      bar2() {return 44;}
+    }
+
+    protected static class ServerObject implements MyInterface {
+        boolean called;
+        int     num_calls;
 
         public boolean wasCalled() {
             return called;
         }
-
-        public int getNumCalls() {return num_calls;}
-
-        public void reset() {
-            called=false; num_calls=0;
-        }
+        public int     getNumCalls() {return num_calls;}
+        public void    reset() {called=false; num_calls=0;}
 
         public boolean foo() {
             num_calls++;
             return called=true;
         }
+
+        protected static boolean protectedMethod() {return true;}
+    }
+
+
+    protected static class Subclass extends ServerObject {
+        public static int foobar() {return 33;}
     }
 
 

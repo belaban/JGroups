@@ -2,14 +2,16 @@ package org.jgroups.blocks;
 
 
 import org.jgroups.Constructable;
-import org.jgroups.util.*;
+import org.jgroups.util.Bits;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 
 
@@ -366,15 +368,26 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
      * and those inherited from superclasses and superinterfaces.
      */
     protected static Method[] getAllMethods(Class target) {
-        Class superclass = target;
-        List methods = new ArrayList();
-        int size = 0;
+        Class       superclass = target;
+        Set<Method> methods = new HashSet<>();
 
         while(superclass != null) {
             try {
                 Method[] m = superclass.getDeclaredMethods();
-                methods.add(m);
-                size += m.length;
+                Collections.addAll(methods, m);
+
+                // find the default methods of all interfaces (https://issues.jboss.org/browse/JGRP-2247)
+                Class[] interfaces=superclass.getInterfaces();
+                if(interfaces != null) {
+                    for(Class cl: interfaces) {
+                        Method[] tmp=getAllMethods(cl);
+                        if(tmp != null) {
+                            for(Method mm: tmp)
+                                if(mm.isDefault())
+                                    methods.add(mm);
+                        }
+                    }
+                }
                 superclass = superclass.getSuperclass();
             }
             catch(SecurityException e) {
@@ -384,13 +397,10 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
             }
         }
 
-        Method[] result = new Method[size];
+        Method[] result = new Method[methods.size()];
         int index = 0;
-        for(Iterator i = methods.iterator(); i.hasNext();) {
-            Method[] m = (Method[])i.next();
-            System.arraycopy(m, 0, result, index, m.length);
-            index += m.length;
-        }
+        for(Method m: methods)
+            result[index++]=m;
         return result;
     }
 
