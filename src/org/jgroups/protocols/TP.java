@@ -620,6 +620,24 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return this;
     }
 
+    public Executor getInternalThreadPool() {return internal_pool;}
+
+    public TP setInternalThreadPool(Executor thread_pool) {
+        if(this.internal_pool != null)
+            shutdownThreadPool(this.internal_pool);
+        this.internal_pool=thread_pool;
+        return this;
+    }
+
+    public ThreadFactory getInternalThreadPoolThreadFactory() {return internal_thread_factory;}
+
+    public TP setInternalThreadPoolThreadFactory(ThreadFactory factory) {
+        internal_thread_factory=factory;
+        if(internal_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)internal_pool).setThreadFactory(factory);
+        return this;
+    }
+
     public TimeScheduler getTimer() {return timer;}
 
     /**
@@ -837,7 +855,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                           0, max_internal_size, 30000, num_cores);
                 thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
                                              "abort", new SynchronousQueue<>(), thread_factory, log, use_fork_join_pool, use_common_fork_join_pool);
-                internal_pool=createThreadPool(0, max_internal_size, 30000, "abort", new SynchronousQueue<>(), internal_thread_factory, log, false, false);
+                internal_pool=createThreadPool(0, max_internal_size, 30000, "abort",
+                                               new SynchronousQueue<>(), internal_thread_factory, log, false, false);
             }
             else // otherwise use the caller's thread to unmarshal the byte buffer into a message
                 thread_pool=new DirectExecutor();
