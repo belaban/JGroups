@@ -1543,17 +1543,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-    protected void setPingData(PingData data) {
-        if(data.getAddress() != null) {
-            if(data.getPhysicalAddr() != null)
-                addPhysicalAddressToCache(data.getAddress(),data.getPhysicalAddr());
-            if(data.getLogicalName() != null)
-                NameCache.add(data.getAddress(), data.getLogicalName());
-        }
-    }
-
-
-
     @SuppressWarnings("unchecked")
     protected Object handleDownEvent(Event evt) {
         switch(evt.getType()) {
@@ -1668,9 +1657,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         local_physical_addr=physical_addr;
         if(addr != null) {
             if(use_ip_addrs && local_addr instanceof IpAddressUUID)
-                addPhysicalAddressToCache(addr, (PhysicalAddress)local_addr);
+                addPhysicalAddressToCache(addr, (PhysicalAddress)local_addr, true);
             else
-                addPhysicalAddressToCache(addr, physical_addr);
+                addPhysicalAddressToCache(addr, physical_addr, true);
         }
     }
 
@@ -1763,7 +1752,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     protected boolean addPhysicalAddressToCache(Address logical_addr, PhysicalAddress physical_addr) {
-        return logical_addr != null && physical_addr != null && logical_addr_cache.add(logical_addr, physical_addr);
+        return addPhysicalAddressToCache(logical_addr, physical_addr, false);
+    }
+
+    protected boolean addPhysicalAddressToCache(Address logical_addr, PhysicalAddress physical_addr, boolean overwrite) {
+        return logical_addr != null && physical_addr != null &&
+          overwrite? logical_addr_cache.add(logical_addr, physical_addr) : logical_addr_cache.addIfAbsent(logical_addr, physical_addr);
     }
 
     protected PhysicalAddress getPhysicalAddressFromCache(Address logical_addr) {

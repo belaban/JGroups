@@ -44,21 +44,19 @@ public class LazyRemovalCache<K,V> {
     }
 
     public boolean add(K key, V val) {
-        boolean added=false;
-        if(key != null && val != null)
-            added=map.put(key, new Entry<>(val)) == null; // overwrite existing element (new timestamp, and possible removable mark erased)
-        checkMaxSizeExceeded();
-        return added;
+        return add(key, val, false);
+    }
+
+    public boolean addIfAbsent(K key, V val) {
+        return add(key, val, true);
     }
 
     public void addAll(Map<K,V> m) {
-        if(m == null)
-            return;
-        for(Map.Entry<K,V> entry: m.entrySet()) {
-            K key=entry.getKey();
-            V val=entry.getValue();
-            map.put(key, new Entry<>(val));
-        }
+       addAll(m, false);
+    }
+
+    public void addAllIfAbsent(Map<K,V> m) {
+        addAll(m , true);
     }
 
     public Set<Map.Entry<K, Entry<V>>> entrySet() {
@@ -261,6 +259,32 @@ public class LazyRemovalCache<K,V> {
      */
     public void removeMarkedElements() {
         removeMarkedElements(false);
+    }
+
+    protected boolean add(K key, V val, boolean if_absent) {
+        boolean added=false;
+        if(key != null && val != null) {
+            Entry<V> entry=new Entry<>(val);
+            added=if_absent? map.putIfAbsent(key, entry) == null : map.put(key, entry) == null;
+            if(added)
+                checkMaxSizeExceeded();
+        }
+        return added;
+    }
+
+    protected void addAll(Map<K,V> m, boolean if_absent) {
+        if(m == null)
+            return;
+        for(Map.Entry<K,V> entry: m.entrySet()) {
+            K key=entry.getKey();
+            V val=entry.getValue();
+            Entry<V> e=new Entry<>(val);
+            if(if_absent)
+                map.putIfAbsent(key, e);
+            else
+                map.put(key, e);
+        }
+        checkMaxSizeExceeded();
     }
 
 
