@@ -1752,7 +1752,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     protected boolean addPhysicalAddressToCache(Address logical_addr, PhysicalAddress physical_addr) {
-        return addPhysicalAddressToCache(logical_addr, physical_addr, false);
+        return addPhysicalAddressToCache(logical_addr, physical_addr, true);
     }
 
     protected boolean addPhysicalAddressToCache(Address logical_addr, PhysicalAddress physical_addr, boolean overwrite) {

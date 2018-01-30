@@ -11,6 +11,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -120,6 +121,9 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
 
         if(meth != null) {
             try {
+                // allow method invocation on protected or (package-) private methods, too
+                if(!Modifier.isPublic(meth.getModifiers()))
+                    meth.setAccessible(true);
                 return meth.invoke(target, args);
             }
             catch(InvocationTargetException target_ex) {
