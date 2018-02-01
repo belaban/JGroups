@@ -690,19 +690,10 @@ abstract public class Locking extends Protocol {
             }
 
             synchronized(queue) {
-                for(Iterator<Request> it=queue.iterator(); it.hasNext(); ) {
-                    Request req=it.next();
-                    if(!members.contains(req.owner.getAddress()))
-                        it.remove();
-                }
-            }
-            
-            for(Iterator<Owner> it=condition.queue.iterator(); it.hasNext();) {
-                Owner own=it.next();
-                if(!members.contains(own.getAddress()))
-                    it.remove();
+                queue.removeIf(req -> !members.contains(req.owner.getAddress()));
             }
 
+            condition.queue.removeIf(own -> !members.contains(own.getAddress()));
             return processQueue();
         }
 
@@ -745,11 +736,7 @@ abstract public class Locking extends Protocol {
 
         protected void removeRequest(Type type, Owner owner) {
             synchronized(queue) {
-                for(Iterator<Request> it=queue.iterator(); it.hasNext(); ) {
-                    Request req=it.next();
-                    if(req.type == type && req.owner.equals(owner))
-                        it.remove();
-                }
+                queue.removeIf(req -> req.type == type && req.owner.equals(owner));
             }
         }
 
@@ -1080,9 +1067,17 @@ abstract public class Locking extends Protocol {
         }
 
         protected void resendPendingLockRequests() {
-            if(!table.isEmpty())
+            List<ClientLock> pending_lock_reqs;
+            synchronized(this) {
+                if(table.isEmpty())
+                    return;
+                pending_lock_reqs=new ArrayList<>(table.size());
                 table.values().forEach(map -> map.values().stream().filter(lock -> !lock.acquired && !lock.denied)
-                  .forEach(lock -> sendGrantLockRequest(lock.name, lock.lock_id, lock.owner, lock.timeout, lock.is_trylock)));
+                  .forEach(pending_lock_reqs::add));
+            }
+            if(pending_lock_reqs != null) // send outside of the synchronized block
+                pending_lock_reqs
+                  .forEach(lock -> sendGrantLockRequest(lock.name, lock.lock_id, lock.owner, lock.timeout, lock.is_trylock));
         }
 
         protected synchronized Collection<Map<Owner,ClientLock>> values() {
