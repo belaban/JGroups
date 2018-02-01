@@ -5,7 +5,11 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
-import org.jgroups.auth.sasl.*;
+import org.jgroups.auth.sasl.SaslClientCallbackHandler;
+import org.jgroups.auth.sasl.SaslClientContext;
+import org.jgroups.auth.sasl.SaslContext;
+import org.jgroups.auth.sasl.SaslServerContext;
+import org.jgroups.auth.sasl.SaslUtils;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.protocols.pbcast.GMS;
@@ -172,9 +176,14 @@ public class SASL extends Protocol {
         saslServerFactory = SaslUtils.getSaslServerFactory(mech, sasl_props);
         saslClientFactory = SaslUtils.getSaslClientFactory(mech, sasl_props);
         char[] client_password_chars = client_password == null ? new char[]{} : client_password.toCharArray();
-        if (client_callback_handler == null && client_password != null) {
-            client_callback_handler = new SaslClientCallbackHandler(client_name, client_password_chars);
+        if (client_callback_handler == null) {
+            client_callback_handler = client_password == null ? Void -> {} : new SaslClientCallbackHandler(client_name, client_password_chars);
         }
+
+        if (server_callback_handler == null) {
+            server_callback_handler = Void -> {};
+        }
+
         if (server_subject == null && login_module_name != null) {
             LoginContext lc = new LoginContext(login_module_name);
             lc.login();
