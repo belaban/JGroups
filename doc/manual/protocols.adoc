@@ -1902,7 +1902,7 @@ Here's a typical configuration:
             use_external_key_exchange="true" // <1>
             encrypt_entire_message="true"
             sym_keylength="128"
-            sym_algorithm="AES/ECB/PKCS5Padding"
+            sym_algorithm="AES"
             asym_keylength="512"
             asym_algorithm="RSA"/>
 
