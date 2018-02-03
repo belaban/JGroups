@@ -219,104 +219,116 @@ public class ExecutionServiceDemo {
             if(line.startsWith("quit") || line.startsWith("exit"))
                 break;
 
-            if(line.startsWith("submit")) {
-                int randomNumbers = Integer.parseInt(line.substring("submit".length()).trim());
-                // Parse numbers and break into parts
-                byte[] numbers = new byte[randomNumbers];
-                
-                for (int i = 0; i < randomNumbers; ++i) {
-                    numbers[i] = (byte)random.nextInt(256);
-                }
-                
-                if (printValues)
-                    System.out.println("Original Numbers: " + 
-                        Arrays.toString(numbers));
-                
-                ExecutionCompletionService<ByteBufferStreamable> completion = 
-                    new ExecutionCompletionService<>(execution_service);
-                
-                long beginDistributed = System.nanoTime();
-                int chunks = numbers.length / size;
-                for (int i = 0; i < chunks; ++i) {
-                    completion.submit(new SortingByteCallable(numbers, size * i, size));
-                }
-
-                int futureNumber = chunks;
-                int leftOver = numbers.length % size;
-                if (leftOver != 0) {
-                    completion.submit(new SortingByteCallable(numbers, numbers.length - leftOver, leftOver));
-                    futureNumber++;
-                }
-                
-                Future<ByteBufferStreamable> finalValue;
-                if (futureNumber > 1) {
-                    Future<ByteBufferStreamable> result = null;
-                    while (true) {
-                        result = completion.take();
-                        if (--futureNumber >= 1) {
-                            Future<ByteBufferStreamable> result2 = completion.take();
-                            completion.submit(new SortingTwoByteCallable(result.get(), result2.get()));
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                    
-                    finalValue = result;
-                }
-                else {
-                    finalValue = completion.take();
-                }
-                
-                ByteBufferStreamable results = finalValue.get();
-                
-                long totalDistributed = System.nanoTime() - beginDistributed;
-                if (printValues) {
-                    System.out.println("Sorted values: " + Arrays.toString(
-                        results.buffer.array()));
-                }
-                System.out.println("Distributed Sort Took: " + Util.printTime(totalDistributed, TimeUnit.NANOSECONDS));
-                
-                long beginLocal = System.nanoTime();
-                Arrays.sort(numbers);
-                System.out.println("      Local Sort Took: " + Util.printTime((System.nanoTime() - beginLocal), TimeUnit.NANOSECONDS));
-            }
-            else  if(line.startsWith("consumer")) {
-                // Parse stop start and add or remove
-                if (line.contains("start")) {
-                    queue.add(executor.submit(runner));
-                    System.out.println("Started Consumer - running " + queue.size() + " consumers");
-                }
-                else if (line.contains("stop")) {
-                    queue.remove().cancel(true);
-                    System.out.println("Stopped Consumer - running " + queue.size() + " consumers");
-                }
-                else {
-                    System.out.println("Consumers Running Locally: " + queue.size());
-                }
-            }
-            else if(line.startsWith("size")) {
-                String thresholdSize = line.substring("size".length()).trim();
-                if (thresholdSize.length() > 0) {
-                    int sizeLocal = Integer.parseInt(thresholdSize);
-                    
-                    this.size = sizeLocal;
-                    System.out.println("Changed sort threshold size to " + sizeLocal);
-                }
-                else {
-                    System.out.println("Threshold Size: " + size);
-                }
-            }
-            else if(line.startsWith("print")) {
-                printValues = !printValues;
-                System.out.println("Print Arrays: " + printValues);
-            }
-            else if(line.startsWith("view"))
-                System.out.println("View: " + ch.getView());
-            else if(line.startsWith("help"))
-                help();
+            processLine(line);
         }
     }
+
+	private void processLine(String line) throws InterruptedException, ExecutionException {
+		if(line.startsWith("submit")) {
+		    int randomNumbers = Integer.parseInt(line.substring("submit".length()).trim());
+		    // Parse numbers and break into parts
+		    byte[] numbers = new byte[randomNumbers];
+		    
+		    for (int i = 0; i < randomNumbers; ++i) {
+		        numbers[i] = (byte)random.nextInt(256);
+		    }
+		    
+		    if (printValues)
+		        System.out.println("Original Numbers: " + 
+		            Arrays.toString(numbers));
+		    
+		    ExecutionCompletionService<ByteBufferStreamable> completion = 
+		        new ExecutionCompletionService<>(execution_service);
+		    
+		    long beginDistributed = System.nanoTime();
+		    int chunks = numbers.length / size;
+		    for (int i = 0; i < chunks; ++i) {
+		        completion.submit(new SortingByteCallable(numbers, size * i, size));
+		    }
+
+		    int futureNumber = chunks;
+		    int leftOver = numbers.length % size;
+		    if (leftOver != 0) {
+		        completion.submit(new SortingByteCallable(numbers, numbers.length - leftOver, leftOver));
+		        futureNumber++;
+		    }
+		    
+		    Future<ByteBufferStreamable> finalValue;
+		    if (futureNumber > 1) {
+		        Future<ByteBufferStreamable> result = null;
+		        while (true) {
+		            result = completion.take();
+		            if (--futureNumber >= 1) {
+		                Future<ByteBufferStreamable> result2 = completion.take();
+		                completion.submit(new SortingTwoByteCallable(result.get(), result2.get()));
+		            }
+		            else {
+		                break;
+		            }
+		        }
+		        
+		        finalValue = result;
+		    }
+		    else {
+		        finalValue = completion.take();
+		    }
+		    
+		    ByteBufferStreamable results = finalValue.get();
+		    
+		    long totalDistributed = System.nanoTime() - beginDistributed;
+		    if (printValues) {
+		        System.out.println("Sorted values: " + Arrays.toString(
+		            results.buffer.array()));
+		    }
+		    System.out.println("Distributed Sort Took: " + Util.printTime(totalDistributed, TimeUnit.NANOSECONDS));
+		    
+		    long beginLocal = System.nanoTime();
+		    Arrays.sort(numbers);
+		    System.out.println("      Local Sort Took: " + Util.printTime((System.nanoTime() - beginLocal), TimeUnit.NANOSECONDS));
+		} else
+			processSpecialCases(line);
+	}
+
+	private void processSpecialCases(String line) {
+		if(line.startsWith("consumer")) {
+		    // Parse stop start and add or remove
+		    if (line.contains("start")) {
+		        queue.add(executor.submit(runner));
+		        System.out.println("Started Consumer - running " + queue.size() + " consumers");
+		    }
+		    else if (line.contains("stop")) {
+		        queue.remove().cancel(true);
+		        System.out.println("Stopped Consumer - running " + queue.size() + " consumers");
+		    }
+		    else {
+		        System.out.println("Consumers Running Locally: " + queue.size());
+		    }
+		}
+		else if(line.startsWith("size")) {
+		    changeSize(line);
+		}
+		else if(line.startsWith("print")) {
+		    printValues = !printValues;
+		    System.out.println("Print Arrays: " + printValues);
+		}
+		else if(line.startsWith("view"))
+		    System.out.println("View: " + ch.getView());
+		else if(line.startsWith("help"))
+		    help();
+	}
+
+	private void changeSize(String line) {
+		String thresholdSize = line.substring("size".length()).trim();
+		if (thresholdSize.length() > 0) {
+		    int sizeLocal = Integer.parseInt(thresholdSize);
+		    
+		    this.size = sizeLocal;
+		    System.out.println("Changed sort threshold size to " + sizeLocal);
+		}
+		else {
+		    System.out.println("Threshold Size: " + size);
+		}
+	}
 
 
     protected static void help() {
