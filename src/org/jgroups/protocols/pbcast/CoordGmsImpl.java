@@ -130,18 +130,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
         suspected_mbrs.retainAll(current_members); // remove all elements of suspected_mbrs which are not current members
 
         // for the members that have already joined, return the current digest and membership
-        for(Iterator<Address> it=new_mbrs.iterator(); it.hasNext();) {
-            Address mbr=it.next();
-            if(gms.members.contains(mbr)) { // already joined: return current digest and membership
-                log.trace("%s: %s already present; returning existing view %s", gms.local_addr, mbr, gms.view);
-                Tuple<View,Digest> tuple=gms.getViewAndDigest();
-                if(tuple != null)
-                    gms.sendJoinResponse(new JoinRsp(tuple.getVal1(), tuple.getVal2()), mbr);
-                else
-                    log.warn("%s: did not find a digest matching view %s; dropping JOIN-RSP", gms.local_addr, gms.view);
-                it.remove(); // remove it anyway, even if we didn't find a digest matching the view (joiner will retry)
-            }
-        }
+        sendCurrentDigestAndMemberships(new_mbrs);
 
         if(new_mbrs.isEmpty() && leaving_mbrs.isEmpty() && suspected_mbrs.isEmpty()) {
             log.trace("%s: found no members to add or remove, will not create new view", gms.local_addr);
@@ -175,21 +164,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
             // Example: {A}, B joins, after returning JoinRsp to B, A garbage collects messages higher than those
             // in the digest returned to the client, so the client will *not* be able to ask for retransmission
             // of those messages if he misses them            
-            if(hasJoiningMembers) {
-                gms.getDownProtocol().down(new Event(Event.SUSPEND_STABLE, MAX_SUSPEND_TIMEOUT));
-                // create a new digest, which contains the new members, minus left members
-                MutableDigest join_digest=new MutableDigest(new_view.getMembersRaw()).set(gms.getDigest());
-                for(Address member: new_mbrs)
-                    join_digest.set(member,0,0); // ... and set the new members. their first seqno will be 1
-
-                // If the digest from NAKACK doesn't include all members of the view, we try once more; if it is still
-                // incomplete, we don't send a JoinRsp back to the joiner(s). This shouldn't be a problem as they will retry
-                if(join_digest.allSet() || join_digest.set(gms.getDigest()).allSet())
-                    join_rsp=new JoinRsp(new_view, join_digest);
-                else
-                    log.warn("%s: digest does not match view (missing seqnos for %s); dropping JOIN-RSP",
-                             gms.local_addr, Arrays.toString(join_digest.getNonSetMembers()));
-            }
+            join_rsp = createNewDigest(new_mbrs, new_view, join_rsp, hasJoiningMembers);
 
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
 
@@ -205,6 +180,43 @@ public class CoordGmsImpl extends ServerGmsImpl {
                 gms.initState(); // in case connect() is called again
         }
     }
+
+
+	private JoinRsp createNewDigest(Collection<Address> new_mbrs, View new_view, JoinRsp join_rsp,
+			boolean hasJoiningMembers) {
+		if(hasJoiningMembers) {
+		    gms.getDownProtocol().down(new Event(Event.SUSPEND_STABLE, MAX_SUSPEND_TIMEOUT));
+		    // create a new digest, which contains the new members, minus left members
+		    MutableDigest join_digest=new MutableDigest(new_view.getMembersRaw()).set(gms.getDigest());
+		    for(Address member: new_mbrs)
+		        join_digest.set(member,0,0); // ... and set the new members. their first seqno will be 1
+
+		    // If the digest from NAKACK doesn't include all members of the view, we try once more; if it is still
+		    // incomplete, we don't send a JoinRsp back to the joiner(s). This shouldn't be a problem as they will retry
+		    if(join_digest.allSet() || join_digest.set(gms.getDigest()).allSet())
+		        join_rsp=new JoinRsp(new_view, join_digest);
+		    else
+		        log.warn("%s: digest does not match view (missing seqnos for %s); dropping JOIN-RSP",
+		                 gms.local_addr, Arrays.toString(join_digest.getNonSetMembers()));
+		}
+		return join_rsp;
+	}
+
+
+	private void sendCurrentDigestAndMemberships(Collection<Address> new_mbrs) {
+		for(Iterator<Address> it=new_mbrs.iterator(); it.hasNext();) {
+            Address mbr=it.next();
+            if(gms.members.contains(mbr)) { // already joined: return current digest and membership
+                log.trace("%s: %s already present; returning existing view %s", gms.local_addr, mbr, gms.view);
+                Tuple<View,Digest> tuple=gms.getViewAndDigest();
+                if(tuple != null)
+                    gms.sendJoinResponse(new JoinRsp(tuple.getVal1(), tuple.getVal2()), mbr);
+                else
+                    log.warn("%s: did not find a digest matching view %s; dropping JOIN-RSP", gms.local_addr, gms.view);
+                it.remove(); // remove it anyway, even if we didn't find a digest matching the view (joiner will retry)
+            }
+        }
+	}
 
 
     /**
