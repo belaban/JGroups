@@ -188,11 +188,8 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         if(skip(msg)) {
             GMS.GmsHeader hdr=msg.getHeader(GMS_ID);
             Address key_server=getCoordinator(msg, hdr);
-            if(key_server != null) {
-                if(this.key_server_addr == null)
-                    this.key_server_addr=key_server;
+            if(key_server != null)
                 sendKeyRequest(key_server);
-            }
             return up_prot.up(msg);
         }
         return super.up(msg);
@@ -300,9 +297,6 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
                 break;
             case EncryptHeader.NEW_KEYSERVER:
                 Address sender=msg.src();
-                if(!Objects.equals(key_server_addr, sender))
-                    key_server_addr=sender;
-
                 if(!Arrays.equals(sym_version, hdr.version)) // only send if sym_versions differ
                     sendKeyRequest(sender);
                 else
@@ -476,7 +470,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             Cipher decoding_cipher=secret_key != null? decoding_ciphers.take() : null;
             // put the previous key into the map, keep the cipher: no leak, as we'll clear decoding_ciphers in initSymCiphers()
             if(decoding_cipher != null)
-                key_map.put(new AsciiString(version), decoding_cipher);
+                key_map.putIfAbsent(new AsciiString(version), decoding_cipher);
             secret_key=key;
             initSymCiphers(key.getAlgorithm(), key);
             sym_version=version;
