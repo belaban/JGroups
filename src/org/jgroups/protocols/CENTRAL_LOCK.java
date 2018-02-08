@@ -86,11 +86,11 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
         sendRequest(dest, Type.GRANT_LOCK, lock_name, lock_id, owner, timeout, is_trylock);
     }
 
-    protected void sendReleaseLockRequest(String lock_name, Owner owner) {
+    protected void sendReleaseLockRequest(String lock_name, int lock_id, Owner owner) {
         Address dest=coord;
         if(dest == null)
             throw new IllegalStateException("No coordinator available, cannot send RELEASE-LOCK request");
-        sendRequest(dest, Type.RELEASE_LOCK, lock_name, owner, 0, false);
+        sendRequest(dest, Type.RELEASE_LOCK, lock_name, lock_id, owner, 0, false);
     }
 
     protected void sendCreateLockRequest(Address dest, String lock_name, Owner owner) {
@@ -122,8 +122,7 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
         if(view.size() > 0) {
             coord=view.getCoord();
             is_coord=coord.equals(local_addr);
-            if(log.isDebugEnabled())
-                log.debug("local_addr=" + local_addr + ", coord=" + coord + ", is_coord=" + is_coord);
+            log.debug("[%s] coord=%s, is_coord=%b", local_addr, coord, is_coord);
         }
 
         if(is_coord && num_backups > 0) {
@@ -189,8 +188,7 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
             copy=new HashMap<>(server_locks);
         }
 
-        if(log.isTraceEnabled())
-            log.trace("copying locks to " + new_joiners);
+        log.trace("[%s] copying locks to %s", local_addr, new_joiners);
         for(Map.Entry<String,ServerLock> entry: copy.entrySet()) {
             for(Address joiner: new_joiners) {
                 ServerLock lock = entry.getValue();
