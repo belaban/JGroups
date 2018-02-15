@@ -6,12 +6,14 @@ import org.jgroups.Message;
 import org.jgroups.blocks.locking.LockService;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.CENTRAL_LOCK;
+import org.jgroups.protocols.CENTRAL_LOCK2;
 import org.jgroups.protocols.Locking;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -21,30 +23,39 @@ import java.util.stream.Stream;
 /** Tests https://issues.jboss.org/browse/JGRP-2234 with {@link LockService}
  * @author Bela Ban
  */
-@Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED},singleThreaded=true)
+@Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED},singleThreaded=true,dataProvider="createLockingProtocol")
 public class LockService_JGRP_2234_Test {
     protected JChannel            a, b, c, d;
     protected LockService         s1, s2, s3, s4;
     protected static final String LOCK="sample-lock";
+    protected static final String CLUSTER=LockService_JGRP_2234_Test.class.getSimpleName();
 
 
-    @BeforeMethod
-    protected void init() throws Exception {
-        a=createChannel("A");
+    @DataProvider(name="createLockingProtocol")
+    Object[][] createLockingProtocol() {
+        return new Object[][] {
+          {CENTRAL_LOCK.class},
+          {CENTRAL_LOCK2.class}
+        };
+    }
+
+
+    protected void init(Class<? extends Locking> locking_class) throws Exception {
+        a=createChannel("A", locking_class);
         s1=new LockService(a);
-        a.connect("LockServiceTest");
+        a.connect(CLUSTER);
 
-        b=createChannel("B");
+        b=createChannel("B", locking_class);
         s2=new LockService(b);
-        b.connect("LockServiceTest");
+        b.connect(CLUSTER);
 
-        c=createChannel("C");
+        c=createChannel("C", locking_class);
         s3=new LockService(c);
-        c.connect("LockServiceTest");
+        c.connect(CLUSTER);
 
-        d=createChannel("D");
+        d=createChannel("D", locking_class);
         s4=new LockService(d);
-        d.connect("LockServiceTest");
+        d.connect(CLUSTER);
 
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b, c, d);
     }
@@ -57,7 +68,9 @@ public class LockService_JGRP_2234_Test {
 
     @BeforeMethod
     protected void unlockAll() {
-        Stream.of(s4,s3,s2,s1).forEach(LockService::unlockAll);
+        Stream.of(s4,s3,s2,s1).forEach(s -> {
+            if(s != null) s.unlockAll();
+        });
         Thread.interrupted(); // clears any possible interrupts from the previous method
     }
 
@@ -69,12 +82,13 @@ public class LockService_JGRP_2234_Test {
      * The lost request (due to the new view not being received at all members at the same wall-clock time) is simulated
      * by a simple dropping of the release request on D.
      */
-    public void testUnsuccessfulUnlock() throws Exception {
+    public void testUnsuccessfulUnlock(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         Lock lock=s4.getLock(LOCK);
         boolean success=lock.tryLock(10, TimeUnit.SECONDS); // this should succeed as A is the lock server for LOCK
         assert success;
 
-        d.getProtocolStack().insertProtocol(new UnlockDropper(), ProtocolStack.Position.BELOW, CENTRAL_LOCK.class);
+        d.getProtocolStack().insertProtocol(new UnlockDropper(), ProtocolStack.Position.BELOW, Locking.class);
         lock.unlock(); // this request will be dropped
 
         d.getProtocolStack().removeProtocol(UnlockDropper.class); // future release requests are not going to be dropped
@@ -91,8 +105,8 @@ public class LockService_JGRP_2234_Test {
     }
 
 
-    protected JChannel createChannel(String name) throws Exception {
-        Protocol[] stack=Util.getTestStack(new CENTRAL_LOCK().level("trace"));
+    protected static JChannel createChannel(String name, Class<? extends Locking> locking_class) throws Exception {
+        Protocol[] stack=Util.getTestStack(locking_class.newInstance().level("trace"));
         return new JChannel(stack).name(name);
     }
 
@@ -127,20 +141,22 @@ public class LockService_JGRP_2234_Test {
     
 
     protected static class UnlockDropper extends Protocol {
-        protected static short CENTRAL_LOCK_ID=ClassConfigurator.getProtocolId(CENTRAL_LOCK.class);
+
         public Object down(Message msg) {
+            Locking lock_prot=(Locking)up_prot;
+            short CENTRAL_LOCK_ID=ClassConfigurator.getProtocolId(lock_prot.getClass());
             Locking.LockingHeader hdr=msg.getHeader(CENTRAL_LOCK_ID);
             if(hdr != null) {
                 try {
                     Locking.Request req=Util.streamableFromBuffer(Locking.Request::new, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                     switch(req.getType()) {
                         case RELEASE_LOCK:
-                            System.out.printf("[%s] ---- dropping %s\n", up_prot.getProtocolStack().getChannel().getAddress(), req);
+                            System.out.printf("%s ---- dropping %s\n", up_prot.getProtocolStack().getChannel().getAddress(), req);
                             return null;
                     }
                 }
                 catch(Exception ex) {
-                    log.error("failed deserializng request", ex);
+                    log.error("failed deserializing request", ex);
                     return null;
                 }
             }

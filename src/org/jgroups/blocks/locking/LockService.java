@@ -51,7 +51,7 @@ public class LockService {
 
     public void setChannel(JChannel ch) {
         this.ch=ch;
-        lock_prot=(Locking)ch.getProtocolStack().findProtocol(Locking.class);
+        lock_prot=ch.getProtocolStack().findProtocol(Locking.class);
         if(lock_prot == null)
             throw new IllegalStateException("Channel configuration must include a locking protocol " +
                                               "(subclass of " + Locking.class.getName() + ")");
@@ -63,6 +63,10 @@ public class LockService {
 
     public void unlockAll() {
         ch.down(new Event(Event.UNLOCK_ALL));
+    }
+
+    public void unlockForce(String lock_name) {
+        ch.down(new Event(Event.UNLOCK_FORCE, lock_name));
     }
 
     public void addLockListener(LockNotification listener) {

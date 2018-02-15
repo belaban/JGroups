@@ -66,6 +66,7 @@ public class Event {
     public static final int FETCH_SECRET_KEY                   = 110; // arg = Address (target)
     public static final int GET_SECRET_KEY                     = 111; // arg = null -> Tuple<SecretKey,byte[]> // PK+version
     public static final int SET_SECRET_KEY                     = 112; // arg = Tuple<SecretKey,byte[]> // PK+version
+    public static final int UNLOCK_FORCE                       = 113; // arg = lock name
 
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
 
@@ -159,6 +160,7 @@ public class Event {
             case FETCH_SECRET_KEY:       return "FETCH_SECRET_KEY";
             case GET_SECRET_KEY:         return "GET_SECRET_KEY";
             case SET_SECRET_KEY:         return "SET_SECRET_KEY";
+            case UNLOCK_FORCE:           return "UNLOCK_FORCE";
 
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";

@@ -4,11 +4,12 @@ import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.locking.LockService;
 import org.jgroups.protocols.CENTRAL_LOCK;
+import org.jgroups.protocols.CENTRAL_LOCK2;
+import org.jgroups.protocols.Locking;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.*;
@@ -18,63 +19,73 @@ import java.util.concurrent.locks.Lock;
 /** Tests {@link org.jgroups.blocks.locking.LockService}
  * @author Bela Ban
  */
-@Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED},singleThreaded=true)
+@Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED},singleThreaded=true,dataProvider="createLockingProtocol")
 public class LockServiceTest {
-    protected JChannel    c1, c2, c3;
-    protected LockService s1, s2, s3;
-    protected Lock        lock;
-    protected static final String LOCK="sample-lock";
+    protected JChannel                              c1, c2, c3;
+    protected LockService                           s1, s2, s3;
+    protected Lock                                  lock;
+    protected static final String                   LOCK="sample-lock";
+    protected static final Class<? extends Locking> LOCK_CLASS=Locking.class;
+    protected static final String                   CLUSTER=LockServiceTest.class.getSimpleName();
+
+    @DataProvider(name="createLockingProtocol")
+    Object[][] createLockingProtocol() {
+        return new Object[][] {
+          {CENTRAL_LOCK.class},
+          {CENTRAL_LOCK2.class}
+        };
+    }
 
 
-    @BeforeClass
-    protected void init() throws Exception {
-        c1=createChannel("A");
+    protected void init(Class<? extends Locking> locking_class) throws Exception {
+        c1=createChannel("A", locking_class);
         s1=new LockService(c1);
-        c1.connect("LockServiceTest");
+        c1.connect(CLUSTER);
 
-        c2=createChannel("B");
+        c2=createChannel("B", locking_class);
         s2=new LockService(c2);
-        c2.connect("LockServiceTest");
+        c2.connect(CLUSTER);
 
-        c3=createChannel("C");
+        c3=createChannel("C", locking_class);
         s3=new LockService(c3);
-        c3.connect("LockServiceTest");
+        c3.connect(CLUSTER);
 
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, c1, c2, c3);
         lock=s1.getLock(LOCK);
     }
 
 
-    @AfterClass
+    @AfterMethod
     protected void cleanup() {
         Util.close(c3,c2,c1);
     }
 
-    @BeforeMethod
+   /* @BeforeMethod
     protected void unlockAll() {
         s3.unlockAll();
         s2.unlockAll();
         s1.unlockAll();
         Thread.interrupted(); // clears any possible interrupts from the previous method
-    }
+    }*/
 
 
-    public void testSimpleLock() {
+    @Test(dataProvider="createLockingProtocol")
+    public void testSimpleLock(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         lock(lock, LOCK);
         unlock(lock, LOCK);
     }
 
-    public void testLockingOfAlreadyAcquiredLock() {
+    public void testLockingOfAlreadyAcquiredLock(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         lock(lock, LOCK);
         lock(lock, LOCK);
         unlock(lock, LOCK);
     }
 
-    public void testUnsuccessfulTryLock() {
-        System.out.println("s1:\n" + s1.printLocks() +
-                             "\ns2:\n" + s2.printLocks() +
-                             "\ns3:\n" + s3.printLocks());
-
+    public void testUnsuccessfulTryLock(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
+        System.out.printf("s1:\n%s\ns2:\n%s\ns3:\n%s\n", s1.printLocks(), s2.printLocks(), s3.printLocks());
 
         Lock lock2=s2.getLock(LOCK);
         lock(lock2, LOCK);
@@ -88,7 +99,8 @@ public class LockServiceTest {
         }
     }
 
-    public void testUnsuccessfulTryLockTimeout() throws InterruptedException {
+    public void testUnsuccessfulTryLockTimeout(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         Lock lock2=s2.getLock(LOCK);
         lock(lock2, LOCK);
         try {
@@ -101,7 +113,8 @@ public class LockServiceTest {
     }
 
 
-    public void testLockInterrupt() {
+    public void testLockInterrupt(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         // Interrupt ourselves before trying to acquire lock
         Thread.currentThread().interrupt();
 
@@ -118,8 +131,9 @@ public class LockServiceTest {
         }
     }
 
-    @Test(expectedExceptions=InterruptedException.class)
-    public void testTryLockInterruptibly() throws InterruptedException {
+    @Test(expectedExceptions=InterruptedException.class,dataProvider="createLockingProtocol")
+    public void testTryLockInterruptibly(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         // Interrupt ourselves before trying to acquire lock
         Thread.currentThread().interrupt();
 
@@ -137,7 +151,8 @@ public class LockServiceTest {
     }
 
 
-    public void testTryLockInterrupt() {
+    public void testTryLockInterrupt(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         Thread.currentThread().interrupt(); // interrupt myself before trying to acquire lock
         boolean status=lock.tryLock();
         try {
@@ -153,8 +168,9 @@ public class LockServiceTest {
         }
     }
 
-    @Test(expectedExceptions=InterruptedException.class)
-    public void testTimedTryLockInterrupt() throws InterruptedException {
+    @Test(expectedExceptions=InterruptedException.class,dataProvider="createLockingProtocol")
+    public void testTimedTryLockInterrupt(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         Thread.currentThread().interrupt(); // interrupt myself before trying to acquire lock
         boolean status=lock.tryLock(5000, TimeUnit.MILLISECONDS);
         try {
@@ -171,7 +187,8 @@ public class LockServiceTest {
     }
 
 
-    public void testSuccessfulSignalAllTimeout() throws InterruptedException, BrokenBarrierException {
+    public void testSuccessfulSignalAllTimeout(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         Lock lock2=s2.getLock(LOCK);
         Thread locker=new Signaller(true);
         boolean rc=tryLock(lock2, 5000, LOCK);
@@ -182,7 +199,8 @@ public class LockServiceTest {
     }
 
 
-    public void testSuccessfulTryLockTimeout() throws InterruptedException, BrokenBarrierException {
+    public void testSuccessfulTryLockTimeout(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         final CyclicBarrier barrier=new CyclicBarrier(2);
         Thread locker=new Locker(barrier);
         locker.start();
@@ -193,7 +211,8 @@ public class LockServiceTest {
     }
 
 
-    public void testConcurrentLockRequests() throws Exception {
+    public void testConcurrentLockRequests(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         int NUM=10;
         final CyclicBarrier barrier=new CyclicBarrier(NUM +1);
         TryLocker[] lockers=new TryLocker[NUM];
@@ -213,7 +232,8 @@ public class LockServiceTest {
         assert num_acquired == 1 : "expected 1 acquired bot got " + num_acquired;
     }
 
-    public void testConcurrentLockRequestsFromDifferentMembers() throws Exception {
+    public void testConcurrentLockRequestsFromDifferentMembers(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         int NUM=10;
         final CyclicBarrier barrier=new CyclicBarrier(NUM +1);
         TryLocker[] lockers=new TryLocker[NUM];
@@ -238,10 +258,11 @@ public class LockServiceTest {
     }
 
     /** Tests locking by T1 and unlocking by T2 (https://issues.jboss.org/browse/JGRP-1886) */
-    public void testLockUnlockByDiffentThreads() throws Exception {
+    public void testLockUnlockByDiffentThreads(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         CyclicBarrier barrier=null;
         try {
-            setProp(CENTRAL_LOCK.class, "use_thread_id_for_lock_owner", false, c1,c2,c3);
+            setProp(LOCK_CLASS, "use_thread_id_for_lock_owner", false, c1,c2,c3);
             barrier=new CyclicBarrier(2);
             Thread locker=new Locker(barrier);
             locker.start();
@@ -250,13 +271,14 @@ public class LockServiceTest {
             assert rc;
         }
         finally {
-            setProp(CENTRAL_LOCK.class, "use_thread_id_for_lock_owner", true,c1,c2,c3);
+            setProp(LOCK_CLASS, "use_thread_id_for_lock_owner", true,c1,c2,c3);
             unlock(lock, LOCK);
         }
     }
 
 
-    public void testSuccessfulSignalOneTimeout() throws InterruptedException, BrokenBarrierException {
+    public void testSuccessfulSignalOneTimeout(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         Lock lock2 = s2.getLock(LOCK);
         Thread locker = new Signaller(false);
         boolean rc = tryLock(lock2, 5000, LOCK);
@@ -266,7 +288,8 @@ public class LockServiceTest {
         unlock(lock2, LOCK);
     }
 
-    public void testInterruptWhileWaitingForCondition() throws InterruptedException {
+    public void testInterruptWhileWaitingForCondition(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         CountDownLatch latch = new CountDownLatch(1);
         Thread awaiter = new Thread(new InterruptAwaiter(latch));
         awaiter.start();
@@ -281,7 +304,8 @@ public class LockServiceTest {
         assert latch.await(100, TimeUnit.MILLISECONDS);
     }
     
-    public void testSignalAllAwakesAllForCondition() throws InterruptedException {
+    public void testSignalAllAwakesAllForCondition(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
         final int threadCount = 5;
         CountDownLatch latch = new CountDownLatch(threadCount);
         
@@ -309,12 +333,12 @@ public class LockServiceTest {
 
 
 
-    protected JChannel createChannel(String name) throws Exception {
-        Protocol[] stack=Util.getTestStack(new CENTRAL_LOCK().level("trace"));
+    protected static JChannel createChannel(String name, Class<? extends Locking> locking_class) throws Exception {
+        Protocol[] stack=Util.getTestStack(locking_class.newInstance().level("trace"));
         return new JChannel(stack).name(name);
     }
 
-    protected void setProp(Class<? extends Protocol> clazz, String prop_name, Object value, JChannel ... channels) {
+    protected static void setProp(Class<? extends Protocol> clazz, String prop_name, Object value, JChannel... channels) {
         for(JChannel ch: channels) {
             Protocol prot=ch.getProtocolStack().findProtocol(clazz);
             prot.setValue(prop_name, value);

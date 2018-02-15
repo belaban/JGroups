@@ -337,7 +337,7 @@ public class ServerUnitTest {
 
 
         public synchronized void receive(Address sender, byte[] data, int offset, int length) {
-            System.out.printf("[nio] from %s: %d bytes\n", sender, length);
+            // System.out.printf("[nio] from %s: %d bytes\n", sender, length);
             long tmp=num_received.incrementAndGet();
             if(tmp >= num_expected) {
                 if(stop_time == 0)
@@ -360,7 +360,7 @@ public class ServerUnitTest {
             int len=in.readInt();
             byte[] buf=new byte[len];
             in.readFully(buf);
-            System.out.printf("[tcp] from %s: %d bytes\n", sender, len);
+            // System.out.printf("[tcp] from %s: %d bytes\n", sender, len);
             long tmp=num_received.incrementAndGet();
             if(tmp >= num_expected) {
                 if(stop_time == 0)

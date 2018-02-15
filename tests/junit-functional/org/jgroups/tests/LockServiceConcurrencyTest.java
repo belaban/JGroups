@@ -6,13 +6,14 @@ import org.jgroups.Message;
 import org.jgroups.blocks.locking.LockService;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.CENTRAL_LOCK;
+import org.jgroups.protocols.CENTRAL_LOCK2;
 import org.jgroups.protocols.Locking;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -23,18 +24,25 @@ import java.util.concurrent.locks.Lock;
  * @author Bela Ban
  * @since  3.4
  */
-@Test(groups={Global.BYTEMAN,Global.EAP_EXCLUDED},singleThreaded=true)
+@Test(groups={Global.BYTEMAN,Global.EAP_EXCLUDED},singleThreaded=true,dataProvider="createLockingProtocol")
 public class LockServiceConcurrencyTest {
     protected JChannel           a, b;
     protected LockService        ls_a, ls_b;
-    protected static final short CENTRAL_LOCK_ID=ClassConfigurator.getProtocolId(CENTRAL_LOCK.class);
 
 
-    @BeforeMethod protected void init() throws Exception {
-        a=new JChannel(Util.getTestStack(new CENTRAL_LOCK())).name("A");
+    @DataProvider(name="createLockingProtocol")
+    Object[][] createLockingProtocol() {
+        return new Object[][] {
+          {CENTRAL_LOCK.class},
+          {CENTRAL_LOCK2.class}
+        };
+    }
+
+    protected void init(Class<? extends Locking> locking_class) throws Exception {
+        a=new JChannel(Util.getTestStack(locking_class.newInstance())).name("A");
         ls_a=new LockService(a);
         a.connect("LockServiceConcurrencyTest");
-        b=new JChannel(Util.getTestStack(new CENTRAL_LOCK())).name("B");
+        b=new JChannel(Util.getTestStack(locking_class.newInstance())).name("B");
         ls_b=new LockService(b);
         b.connect("LockServiceConcurrencyTest");
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
@@ -47,11 +55,13 @@ public class LockServiceConcurrencyTest {
     }
 
     /** Tests JIRA https://issues.jboss.org/browse/JGRP-1679 */
-    public void testConcurrentClientLocks() throws Exception {
+    public void testConcurrentClientLocks(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
+
         Lock lock=ls_b.getLock("L"); // A is the coordinator
 
         DropGrantResponse dropper=new DropGrantResponse();
-        a.getProtocolStack().insertProtocol(dropper, ProtocolStack.Position.BELOW, CENTRAL_LOCK.class);
+        a.getProtocolStack().insertProtocol(dropper, ProtocolStack.Position.BELOW, Locking.class);
 
         // we're dropping the LOCK-GRANTED response for lock-id #1, so this lock acquisition must fail; lock L will not be released!
         boolean success=lock.tryLock(1, TimeUnit.MILLISECONDS);
@@ -60,16 +70,16 @@ public class LockServiceConcurrencyTest {
 
         // the LOCK-GRANTED response for lock-id #2 is received, which is incorrect and therefore dropped
         // tryLock() works the same, with or without timeout
-        success=lock.tryLock(10, TimeUnit.MILLISECONDS); // timeout needs to be greater than 1 (byteman rule fires on this) !
+        success=lock.tryLock(10, TimeUnit.MILLISECONDS);
         assert !success : "lock was acquired successfully - this is incorrect";
 
         printLocks(a,b);
         a.getProtocolStack().removeProtocol(DropGrantResponse.class);
     }
 
-    protected void printLocks(JChannel ... channels) {
+    protected static void printLocks(JChannel... channels) {
         for(JChannel ch: channels) {
-            Locking l=ch.getProtocolStack().findProtocol(CENTRAL_LOCK.class);
+            Locking l=ch.getProtocolStack().findProtocol(Locking.class);
             System.out.printf("**** server locks on %s: %s\n", ch.getAddress(), l.printServerLocks());
         }
     }
@@ -84,7 +94,10 @@ public class LockServiceConcurrencyTest {
 
 
         public Object down(Message msg) {
-            Locking.LockingHeader hdr=msg.getHeader(CENTRAL_LOCK_ID);
+            Locking lock_prot=(Locking)up_prot;
+            short lock_prot_id=ClassConfigurator.getProtocolId(lock_prot.getClass());
+
+            Locking.LockingHeader hdr=msg.getHeader(lock_prot_id);
             if(hdr != null) {
                 try {
                     Locking.Request req=Util.streamableFromBuffer(Locking.Request::new, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
@@ -98,7 +111,7 @@ public class LockServiceConcurrencyTest {
                             if(num_grant_lock_reqs_received == 2) {
                                 // send the queued LOCK_GRANTED response
                                 if(lock_granted_req != null) {
-                                    System.out.printf("==> sending the queued LOCK_GRANTED response\n");
+                                    System.out.println("==> sending the queued LOCK_GRANTED response");
                                     down_prot.down(lock_granted_req);
                                     lock_granted_req=null;
                                     return null; // and drop the real LOCK_GRANTED response
@@ -127,7 +140,9 @@ public class LockServiceConcurrencyTest {
         }
 
         protected void handleMessage(Message msg) {
-            Locking.LockingHeader hdr=msg.getHeader(CENTRAL_LOCK_ID);
+            Locking lock_prot=(Locking)up_prot;
+            short lock_prot_id=ClassConfigurator.getProtocolId(lock_prot.getClass());
+            Locking.LockingHeader hdr=msg.getHeader(lock_prot_id);
             if(hdr != null) {
                 try {
                     Locking.Request req=Util.streamableFromBuffer(Locking.Request::new, msg.getRawBuffer(), msg.getOffset(), msg.getLength());

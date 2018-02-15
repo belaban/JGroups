@@ -10,28 +10,37 @@ import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
-@Test(groups = {Global.FUNCTIONAL,Global.EAP_EXCLUDED}, sequential = true)
+@Test(groups = {Global.FUNCTIONAL,Global.EAP_EXCLUDED}, singleThreaded=true, dataProvider="createLockingProtocol")
 public class RpcLockingTest {
 	protected JChannel            a, b;
 	protected MessageDispatcher   disp_a, disp_b;
 	protected Lock                lock_a, lock_b;
 
-	@BeforeMethod
-	void setUp() throws Exception {
+
+
+    @DataProvider(name="createLockingProtocol")
+    Object[][] createLockingProtocol() {
+        return new Object[][] {
+          {CENTRAL_LOCK.class},
+          {CENTRAL_LOCK2.class}
+        };
+    }
+
+	protected void setUp(Class<? extends Locking> locking_class) throws Exception {
 		System.out.print("Connecting channels: ");
-        a=createChannel("A");
+        a=createChannel("A", locking_class);
         disp_a=new MessageDispatcher(a);
         a.connect(RpcLockingTest.class.getSimpleName());
         lock_a=new LockService(a).getLock("lock");
 
-        b=createChannel("B");
+        b=createChannel("B", locking_class);
         disp_b=new MessageDispatcher(b);
         b.connect(RpcLockingTest.class.getSimpleName());
         lock_b=new LockService(b).getLock("lock");
@@ -74,7 +83,7 @@ public class RpcLockingTest {
         Util.close(b,a);
     }
 
-    protected JChannel createChannel(String name) throws Exception {
+    protected static JChannel createChannel(String name, Class<? extends Locking> locking_class) throws Exception {
         return new JChannel(
           new SHARED_LOOPBACK(), new SHARED_LOOPBACK_PING(),
           new MERGE3().setValue("min_interval", 1000).setValue("max_interval", 3000),
@@ -84,7 +93,8 @@ public class RpcLockingTest {
           new GMS().joinTimeout(1000).setValue("print_local_addr", false).setValue("leave_timeout", 100)
             .setValue("log_view_warnings", false).setValue("view_ack_collection_timeout", 2000)
             .setValue("log_collect_msgs", false),
-          new CENTRAL_LOCK()).name(name);
+          locking_class.newInstance())
+          .name(name);
     }
 
 
@@ -94,7 +104,8 @@ public class RpcLockingTest {
 	 * the receiver will wait for ever in tryLock. However, castMessage will
 	 * return after a while because of the default settings of RequestOptions.SYNC().
 	 */
-	public void testCoordSendFirst() throws Exception {
+	public void testCoordSendFirst(Class<? extends Locking> locking_class) throws Exception {
+	    setUp(locking_class);
 		System.out.println("Running testCoordSendFirst");
 
 		// ===========================================================================
@@ -125,7 +136,8 @@ public class RpcLockingTest {
 	 * If the node that isn't the coordinator is the one who sends the message
 	 * it works, but later when the coordinator sends the message, the receiver, will wait forever in tryLock.
 	 */
-	public void testCoordReceiveFirst() throws Exception {
+	public void testCoordReceiveFirst(Class<? extends Locking> locking_class) throws Exception {
+	    setUp(locking_class);
 		System.out.println("Running testCoordReceiveFirst");
 
 		if(lock_b.tryLock()) {

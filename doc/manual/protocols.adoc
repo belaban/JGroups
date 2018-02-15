@@ -2161,6 +2161,16 @@ The advantage of CENTRAL_LOCK is that all lock requests are granted in the same 
 ${CENTRAL_LOCK}
 
 
+[[CENTRAL_LOCK2]]
+===== CENTRAL_LOCK2
+
+In CENTRAL_LOCK2, the coordinator (= lock issuer) does not backup its lock table to other member(s), but instead a new
+coordinator fetches information about held locks and pending lock/unlock requests from existing members, before it
+starts processing lock requests. See <<LockService>> for details.
+
+${CENTRAL_LOCK2}
+
+
 
 [[CENTRAL_EXECUTOR]]
 

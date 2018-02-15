@@ -124,7 +124,7 @@ public class MergeTest6 {
             .setValue("view_ack_collection_timeout", 50)
             .setValue("log_collect_msgs", false))
           .name(String.valueOf(num));
-        // the address generator makes sure that 2's UUID is lower than 3's UUID, so 2 is chose as merge leader
+        // the address generator makes sure that 2's UUID is lower than 3's UUID, so 2 is chosen as merge leader
         ch.addAddressGenerator(() -> new UUID(0, num));
         return ch.connect("MergeTest6");
     }

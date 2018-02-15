@@ -5,10 +5,12 @@ import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.locking.LockService;
 import org.jgroups.protocols.CENTRAL_LOCK;
+import org.jgroups.protocols.CENTRAL_LOCK2;
+import org.jgroups.protocols.Locking;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.PrintStream;
@@ -26,32 +28,36 @@ import static org.testng.AssertJUnit.assertTrue;
 import static org.testng.AssertJUnit.fail;
 
 /** Tests https://issues.jboss.org/browse/JGRP-2234 */
-@Test(groups = {Global.FUNCTIONAL, Global.EAP_EXCLUDED}, timeOut = 60000)
+@Test(groups = {Global.FUNCTIONAL, Global.EAP_EXCLUDED}, timeOut = 60000, dataProvider="createLockingProtocol")
 public class ClusterSplitLockTest {
-
-    private static final int MEMBERS = 3;
-    private final JChannel[] channels = new JChannel[MEMBERS];
-    private final LockService[] lockServices = new LockService[MEMBERS];
+    private static final int        MEMBERS = 3;
+    private final JChannel[]        channels = new JChannel[MEMBERS];
+    private final LockService[]     lockServices = new LockService[MEMBERS];
     private final ExecutorService[] execs = new ExecutorService[MEMBERS];
 
-    @BeforeMethod
-    protected void setUp() throws Exception {
+
+    @DataProvider(name="createLockingProtocol")
+    Object[][] createLockingProtocol() {
+        return new Object[][] {
+          {CENTRAL_LOCK.class},
+          {CENTRAL_LOCK2.class}
+        };
+    }
+
+    protected void setUp(Class<? extends Locking> locking_class) throws Exception {
         for (int i = 0; i < MEMBERS; i++) {
+            Locking lock_prot=locking_class.newInstance().level("debug");
+            if(lock_prot instanceof CENTRAL_LOCK)
+                lock_prot.setValue("num_backups", 2);
 
-            Protocol[] stack = Util.getTestStack(new CENTRAL_LOCK()
-                    .level("debug")
-                    .setValue("num_backups", 2));
-
+            Protocol[] stack = Util.getTestStack(lock_prot);
             channels[i] = new JChannel(stack);
-
             lockServices[i] = new LockService(channels[i]);
             channels[i].setName(memberName(i));
             channels[i].connect("TEST");
             execs[i] = Executors.newCachedThreadPool();
-
-            if (i == 0) {
+            if (i == 0)
                 Util.sleep(500);
-            }
         }
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, channels);
 
@@ -75,44 +81,34 @@ public class ClusterSplitLockTest {
     }
 
     /**
-     * Performs a test where the first member (also the initial coordinator)
-     * goes down
-     *
-     * @throws Exception
+     * Performs a test where the first member (also the initial coordinator) goes down
      */
-    public void testClusterSplitWhereAGoesDown() throws Exception {
-        testClusterSplitImpl(0);
+    public void testClusterSplitWhereAGoesDown(Class<? extends Locking> locking_class) throws Exception {
+        testClusterSplitImpl(0, locking_class);
     }
 
     /**
      * Performs a test where the second member goes down
-     *
-     * @throws Exception
      */
-    public void testClusterSplitWhereBGoesDown() throws Exception {
-        testClusterSplitImpl(1);
+    public void testClusterSplitWhereBGoesDown(Class<? extends Locking> locking_class) throws Exception {
+        testClusterSplitImpl(1, locking_class);
     }
 
     /**
      * Performs a test where the third member goes down
-     *
-     * @throws Exception
      */
-    public void testClusterSplitWhereCGoesDown() throws Exception {
-        testClusterSplitImpl(2);
+    public void testClusterSplitWhereCGoesDown(Class<? extends Locking> locking_class) throws Exception {
+        testClusterSplitImpl(2, locking_class);
     }
 
     /**
-     * Performs a test where the specified downMember goes down when the member
-     * performed a lock operation on 50% of the locks. The coordinator should
-     * unlock all locks that where locked by the member that goes down. If the
-     * member that goes down is the coordinator the new channel coordinator
-     * should make sure the lock table is up-to-date.
-     *
-     * @param downMember
-     * @throws Exception
+     * Performs a test where the specified downMember goes down when the member performed a lock operation on 50%
+     * of the locks. The coordinator should unlock all locks that were locked by the member that goes down. If the
+     * member that goes down is the coordinator the new channel coordinator should make sure the lock table is up-to-date.
      */
-    private void testClusterSplitImpl(final int downMember) throws Exception {
+    private void testClusterSplitImpl(final int downMember, Class<? extends Locking> locking_class) throws Exception {
+        setUp(locking_class);
+
         CountDownLatch doneOnMemberThatWillGoDown = new CountDownLatch(1);
 
         final int numLocks = 10;

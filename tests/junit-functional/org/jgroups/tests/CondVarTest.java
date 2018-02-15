@@ -84,13 +84,11 @@ public class CondVarTest {
         }.start();
     }
 
-    protected void interrupt(final Thread target_thread, final long after_ms) {
-        new Thread() {
-            public void run() {
-                Util.sleep(after_ms);
-                System.out.println("interrupting " + target_thread);
-                target_thread.interrupt();
-            }
-        }.start();
+    protected static void interrupt(final Thread target_thread, final long after_ms) {
+        new Thread(() -> {
+            Util.sleep(after_ms);
+            System.out.println("interrupting " + target_thread);
+            target_thread.interrupt();
+        }).start();
     }
 }

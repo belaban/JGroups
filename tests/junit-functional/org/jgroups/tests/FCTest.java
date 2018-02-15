@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
 public class FCTest {
     JChannel         ch;
     static final int SIZE=1000; // bytes
-    static final int NUM_MSGS=100000;
+    static final int NUM_MSGS=100_000;
     static final int PRINT=NUM_MSGS / 10;
 
 
@@ -74,7 +74,7 @@ public class FCTest {
                 break;
             num_tries--;
         }
-        assert num_received == NUM_MSGS;
+        assert num_received == NUM_MSGS : String.format("expected %d messages, but got %d", NUM_MSGS, num_received);
     }
 
 
@@ -89,7 +89,7 @@ public class FCTest {
     }
 
 
-    static class Receiver extends ReceiverAdapter {
+    protected static class Receiver extends ReceiverAdapter {
         int num_mgs_received=0;
 
         public void receive(Message msg) {

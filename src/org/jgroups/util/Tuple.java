@@ -18,6 +18,6 @@ public class Tuple<V1,V2> {
     public V2 getVal2() {return val2;}
 
     public String toString() {
-        return val1 + " : " + val2;
+        return String.format("%s: %s", val1, val2);
     }
 }

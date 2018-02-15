@@ -415,6 +415,12 @@ public class Util {
         }
     }
 
+    public static void closeReverse(Closeable... closeables) {
+        if(closeables != null) {
+            for(int i=closeables.length-1; i >= 0; i--)
+                Util.close(closeables[i]);
+        }
+    }
 
     /**
      * Drops messages to/from other members and then closes the channel. Note that this member won't get excluded from
@@ -1721,7 +1727,8 @@ public class Util {
         System.out.flush();
         System.in.skip(System.in.available());
         BufferedReader reader=new BufferedReader(new InputStreamReader(System.in));
-        return reader.readLine().trim();
+        String line=reader.readLine();
+        return line != null? line.trim() : null;
     }
 
     public static long readLongFromStdin(String message) throws Exception {
@@ -4238,7 +4245,6 @@ public class Util {
         final int IN_BRACKET=2;
         final char[] chars=string.toCharArray();
         StringBuilder buffer=new StringBuilder();
-        boolean properties=false;
         int state=NORMAL;
         int start=0;
         for(int i=0; i < chars.length; ++i) {
@@ -4272,8 +4278,7 @@ public class Util {
                 }
                 else // Collect the system property
                 {
-                    String value=null;
-
+                    String value;
                     String key=string.substring(start + 2,i);
 
                     // check for alias
@@ -4317,7 +4322,6 @@ public class Util {
                     }
 
                     if(value != null) {
-                        properties=true;
                         buffer.append(value);
                     }
                 }
@@ -4326,16 +4330,9 @@ public class Util {
             }
         }
 
-        // No properties
-       // if(!properties)
-         //   return string;
-
         // Collect the trailing characters
-        if(start != chars.length) {
-            // buffer.append(string.substring(start,chars.length));
+        if(start != chars.length)
             append(buffer, string.substring(start, chars.length));
-        }
-
         return buffer.toString();
     }
 

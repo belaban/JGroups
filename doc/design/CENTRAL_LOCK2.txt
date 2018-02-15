@@ -1,0 +1,142 @@
+
+
+CENTRAL_LOCK2
+=============
+
+Author: Bela Ban
+Date: July 2018
+JIRA: https://issues.jboss.org/browse/JGRP-2249
+
+
+Overview
+--------
+
+Like CENTRAL_LOCK, CENTRAL_LOCK2 uses the coordinator to maintain the lock table and grant/deny lock/unlock requests.
+Every lock/unlock request is therefore sent to the coordinator.
+
+However, CENTRAL_LOCK2 doesn't have backup coordinator(s), but instead uses a reconciliation round (started by the
+new coordinator) to collect information about locks held by the members and pending lock/unlock requests.
+
+The term 'client' denotes any member in the cluster, it could also be the coordinator acting in the _client role_.
+
+This design currently only supports _locks_, but not yet _conditions_, which may be added in a second phase.
+
+
+State
+-----
+
+- lock-table   (coord):  locks held by various members of the cluster
+- req-queue    (coord):  queue of lock/unlock requests
+- lock-handler (coord):  thread which processes the req-queue
+- pending-reqs (client): list of pending lock/unlock requests
+- client-locks (client): list of locks held by a particular member
+
+
+On reception of a view V:
+-------------------------
+- Determine coord
+- If coord changed -> remember the current coord
+- If member is the new coord (or V is a MergeView) -> BecomeCoord
+- If member was coord and is not coord any longer (e.g. after a merge) -> CeaseCoord
+
+
+BecomeCoord (coord):
+--------------------
+- Run ReconciliationProtocol
+  (blocks until done, or timeout)
+- Start lock-handler
+
+
+CeaseCoord (coord):
+-------------------
+- Stop lock-handler
+- Clear req-queue
+- Clear server locks
+
+
+ReconciliationProtocol (coord):
+-------------------------------
+- Send LOCK-INFO-REQ requests to all members
+- Wait for LOCK-INFO-RSP responses from all members (or occurrence of timeout)
+- When responses from all members have been received, iterate over all responses:
+  - Add existing locks to lock-table
+    - Drop duplicate locks (from different members) and send back DUPLICATE-LOCK to sender
+  - Add lock/unlock requests to req-queue
+
+
+lock-handler (coord):
+---------------------
+- Loop:
+  - Remove and process requests (LOCK,UNLOCK) in req-queue
+    - case LOCK(X)   -> handleLock(X)
+    - case UNLOCK(X) -> handleUnlock(X)
+
+
+On reception of LOCK-INFO-REQ (client):
+---------------------------------------
+- Send LOCK-INFO-RSP including locks held, and pending lock/unlock requests, back to requester (coord)
+
+
+On reception of LOCK-INFO-RSP (coord):
+--------------------------------------
+- Add LOCK-INFO-RSP to responses (unblocks the caller when all responses have been received)
+
+
+
+handleLock(X) (coord):
+----------------------
+- If lock X is available
+  - Add X to lock-table
+  - Send successful LOCK-RSP(X) back to requester
+- Else -> send failed LOCK-RSP(X) (with rejection message) back to requester
+
+
+
+handleUnlock(X) (coord):
+------------------------
+- Remove X from lock-table
+- Send UNLOCK-RSP(X) to requester
+
+
+LOCK(X) (client):
+-----------------
+- A LOCK(X) message is sent to the coordinator
+- The request for X is added to pending-reqs
+- The client blocks until a LOCK-RSP(X) has been received, or a timeout occurs
+
+
+UNLOCK(X) (client):
+-------------------
+- An UNLOCK message is sent to the coordinator
+- The request is added to pending-reqs
+- The caller does _not_ block, but returns immediately
+
+
+On reception of LOCK(X) / UNLOCK(X) (coord):
+--------------------------------------------
+- Add to req-queue
+
+
+On reception of a LOCK-RSP(X) (client):
+---------------------------------------
+- The corresponding request is looked up in pending-reqs, and its promise is signalled (unblocking the caller)
+- A client lock is added to to the client-locks table
+- The request is removed from pending-reqs
+
+
+On reception of an UNLOCK-RSP(X) (client):
+------------------------------------------
+- The corresponding request is removed from pending-reqs
+- The client lock is removed from client-locks
+
+
+On reception of a timeout (client):
+-----------------------------------
+- The corresponding lock is removed from pending-reqs and its promise is signalled an exception
+- The exception is thrown by the caller
+
+
+On reception of DUPLICATE-LOCK(X) (client):
+-------------------------------------------
+- Invoke callback to handle duplicate locks (e.g. after a merge)
+- Remove client lock from client-locks table

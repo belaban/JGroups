@@ -28,15 +28,15 @@ public class LockServiceDemo implements LockNotification {
     }
 
     public void start() throws Exception {
-        ch=new JChannel(props);
-        if(name != null)
-            ch.setName(name);
-        lock_service=new LockService(ch);
-        lock_service.addLockListener(this);
-        ch.connect("lock-cluster");
-        JmxConfigurator.registerChannel(ch, Util.getMBeanServer(), "lock-service", ch.getClusterName(), true);
 
         try {
+            ch=new JChannel(props);
+            if(name != null)
+                ch.setName(name);
+            lock_service=new LockService(ch);
+            lock_service.addLockListener(this);
+            ch.connect("lock-cluster");
+            JmxConfigurator.registerChannel(ch, Util.getMBeanServer(), "lock-service", ch.getClusterName(), true);
             loop();
         }
         catch(Exception e) {
@@ -65,10 +65,17 @@ public class LockServiceDemo implements LockNotification {
         }
     }
 
-    public void lockCreated(String name) {
+    public void lockCreated(String lock_name) {
+        System.out.println("server lock \"" + lock_name + "\" created");
     }
 
     public void lockDeleted(String name) {
+    }
+
+    public void lockRevoked(String lock_name, Owner current_owner) {
+        System.out.printf("\"%s\" has been revoked (existing owner is %s); releasing lock\n", lock_name, current_owner);
+        Lock lock=lock_service.getLock(lock_name);
+        lock.unlock();
     }
 
     public void locked(String lock_name, Owner owner) {
@@ -91,7 +98,7 @@ public class LockServiceDemo implements LockNotification {
         List<String> lock_names;
         while(ch.isConnected()) {
             String line=Util.readStringFromStdin(": ");
-            if(line.startsWith("quit") || line.startsWith("exit"))
+            if(line == null || line.startsWith("quit") || line.startsWith("exit"))
                 break;
 
             if(line.startsWith("lock")) {

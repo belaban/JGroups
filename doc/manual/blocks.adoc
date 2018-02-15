@@ -636,11 +636,15 @@ never been heavily tested and is therefore not meant to be used in production.
 [[LockService]]
 === Cluster wide locking
 
-In 2.12, a new distributed locking service was added, replacing `DistributedLockManager`. The new service is
-implemented as a protocol and is used via `org.jgroups.blocks.locking.LockService`.
+`LockService` can be used to acquire locks on a cluster-wide basis; ie. only one node can acquire a given lock. E.g. if
+member B acquires lock L, and member C also tries to acquire L, then C will block until B releases L
+(or leaves /crashes)
 
-`LockService` talks to the locking protocol via events. The main abstraction of a distributed lock is an
-implementation of java.util.concurrent.locks.Lock.
+The new service is implemented as a building block (`org.jgroups.blocks.locking.LockService`) and a protocol
+(`CENTRAL_LOCK` or `CENTRAL_LOCK2`). `LockService` looks up the protocol and talks to it via events. If no locking
+protocol is found, `LockService` won't start and will throw an exception.
+
+The main abstraction of a distributed lock is an implementation of `java.util.concurrent.locks.Lock`.
 
 Below is an example of how LockService is typically used:
 
@@ -662,23 +666,23 @@ finally {
 
 In the example, we create a channel, then a `LockService`, then connect the channel. If the channel's
 configuration doesn't include a locking protocol, an exception will be thrown.
-Then we grab a lock named +"mylock"+, which we lock and subsequently unlock. If another member P had already
-acquired +"mylock"+, we'd block until P released the lock, or P left the cluster or crashed.
+Then we grab a lock named `"mylock"`, which we lock and subsequently unlock. If another member P had already
+acquired `"mylock"`, we'd block until P released the lock, or P left the cluster or crashed.
         
 Note that the owner of a lock is always a given thread in a cluster, so the owner is the JGroups address and
-the thread ID. This means that different threads inside the same JVM trying to access the same named lock
-will compete for it. If `thread-22` grabs the lock first, then `thread-5` will block until `thread-22`
+the thread ID. *This means that different threads inside the same JVM trying to access the same named lock
+will compete for it.* If `thread-22` grabs the lock first, then `thread-5` will block until `thread-22`
 releases the lock.
 
 NOTE: If we want the lock owner to only be the address (and not the thread-id), then property
-+use_thread_id_for_lock_owner+ can be set to false. This means that all threads in a given node can lock or unlock
+`use_thread_id_for_lock_owner` can be set to `false`. This means that all threads in a given node can lock or unlock
 a given lock. Example: thread T1 locks "lock", but thread T2 can unlock it. This is _not_ the same semantics as
-+java.util.concurrent.locks.Lock+, but nevertheless useful in some scenarios. (Introduced in 3.6)
+`java.util.concurrent.locks.Lock`, but nevertheless useful in some scenarios. (Introduced in 3.6)
 
 JGroups includes a demo (`org.jgroups.demos.LockServiceDemo`), which can be used to interactively experiment
 with distributed locks. `LockServiceDemo -h` dumps all command line options.
         
-There is one protocol which provides locking: <<CENTRAL_LOCK>>.
+There are two protocols which provides locking: <<CENTRAL_LOCK>> and <<CENTRAL_LOCK2>>.
 
 Note that the locking protocol has to be placed at or towards the top of the stack (close to the channel), because it
 requires reliable unicasts and multicasts (e.g. provided by `UNICAST3` and `NAKACK2`).
@@ -689,7 +693,7 @@ requires reliable unicasts and multicasts (e.g. provided by `UNICAST3` and `NAKA
 
 The following scenario is susceptible to network partitioning and subsequent merging: we have a cluster
 view of `{A,B,C,D}` and then the cluster splits into `{A,B}` and `{C,D}`. Assume that B and D now acquire a
-lock +"mylock"+. This is what happens (with the locking protocol being `CENTRAL_LOCK`):
+lock `"mylock"`. This is what happens (with the locking protocol being `CENTRAL_LOCK`):
                 
 * There are 2 coordinators: A for `{A,B}` and C for `{C,D}`
 * B successfully acquires `"mylock"` from A
@@ -720,8 +724,48 @@ public void viewAccepted(View view) {
         }.start();
     }
 }
-            
 ----
+
+==== Locking and merges (updated)
+With <<CENTRAL_LOCK2>>, merging of partitions is handled differently. Contrary to CENTRAL_LOCK, which has the coordinator
+back up its lock tables to one or more backup members, CENTRAL_LOCK2 doesn't do this.
+
+Instead, when the current coordinator leaves or crashes, the new coordinator fetches information about locks and pending
+lock/unlock requests from all members, and then builds its lock table based on this information.
+
+In the above scenario with both B and D holding `mylock`, in case of a merge (say A becomes the new coordinator), D
+will be told that its lock `mylock` has been *revoked*. This means that D needs to force-unlock D. This can be done
+in the `lockRevoked()` callback, e.g.:
+
+[source,java]
+----
+LockService lock_service;
+...
+public void lockRevoked(String lock_name, Owner current_owner) {
+    lock_service.unlockForce(lock_name);
+}
+----
+
+This is maginally better than CENTRAL_LOCK, but admittedly less than ideal. Given the following code:
+
+[source,java]
+----
+Lock lock=lock_service.get("mylock";
+lock.lock();
+try {
+   // do something while the lock is held
+   longRunningAction();
+}
+finally {
+    lock.unlock
+}
+----
+
+When `mylock` is revoked, `longRunningAction()` should be stopped immediately, or - even better - its changes should be
+undone (like in a transaction). However, this isn't feasible and would unnecessarily complicate the code.
+
+Here, we see that the `Lock` abstraction, as easy as it is and as often it is used *locally* (inside the same JVM),
+may not be the best abstraction for a distributed setting!
 
 
 [[ExecutionService]]

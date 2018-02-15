@@ -161,7 +161,11 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
         if(is_coord)
             updateBackups(Type.DELETE_LOCK, lock_name, owner);
     }
-    
+
+    public void lockRevoked(String lock_name, Owner current_owner) {
+        log.warn("%s: lock %s has been revoked; the existing owner is %s", local_addr, lock_name, current_owner);
+    }
+
     public void awaiting(String lock_name, Owner owner) {
         if(is_coord)
             updateBackups(Type.CREATE_AWAITER, lock_name, owner);
@@ -192,8 +196,8 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
         for(Map.Entry<String,ServerLock> entry: copy.entrySet()) {
             for(Address joiner: new_joiners) {
                 ServerLock lock = entry.getValue();
-                if (lock.current_owner != null) {
-                    sendCreateLockRequest(joiner, entry.getKey(), entry.getValue().current_owner);
+                if (lock.owner != null) {
+                    sendCreateLockRequest(joiner, entry.getKey(), entry.getValue().owner);
                 }
                 synchronized (lock.condition) {
                     Queue<Owner> queue = lock.condition.queue;
