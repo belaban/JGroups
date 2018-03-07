@@ -301,7 +301,6 @@ public class DISCARD extends Protocol {
 
 
 
-
     protected class DiscardDialog extends JFrame implements ActionListener {
         private final JButton start_discarding_button=new JButton("start discarding");
         private final JButton stop_discarding_button=new JButton("stop discarding");
