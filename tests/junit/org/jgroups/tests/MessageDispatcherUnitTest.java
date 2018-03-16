@@ -133,11 +133,9 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
     }
 
     /**
-     * In this scenario we block the second member so to verify
-     * the sender actually waits: we want to see a timeout
+     * In this scenario we block the second member so to verify the sender actually waits: we want to see a timeout
      * being triggered.
-     * It's hard to otherwise make sure casting isn't being
-     * done asynchronously.
+     * It's hard to otherwise make sure casting isn't being done asynchronously.
      */
     public void testBlockingSecondMember() throws Exception {
         RequestOptions requestOptions = RequestOptions.SYNC()
@@ -150,20 +148,22 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         BlockableRequestHandler blockableHandler = new BlockableRequestHandler();
         d2 = new MessageDispatcher(b);
         d2.setRequestHandler(blockableHandler);
-        boolean exception = false;
         b.connect("MessageDispatcherUnitTest");
         Assert.assertEquals(2,b.getView().size());
         System.out.println("view: " + b.getView());
         blockableHandler.installThreadTrap();
         try {
             RspList<Object> rsps = d1.castMessage(null, buf, requestOptions);
-            Assert.fail("This is a synchronous message for which no reply was delivered yet: should have timed out!");
-        } catch (Exception e) {
-            //expected
-            exception = true;
+            System.out.printf("responses: %s\n", rsps);
+            assert rsps.size() == 1;
+            Rsp rsp=rsps.get(b.getAddress());
+            assert rsp != null;
+            assert !rsp.wasReceived();
+            assert !rsp.wasSuspected();
+
+        } finally {
             blockableHandler.releaseBlockedThreads();
         }
-        Assert.assertTrue(exception);
         Assert.assertTrue(blockableHandler.receivedAnything());
     }
 
