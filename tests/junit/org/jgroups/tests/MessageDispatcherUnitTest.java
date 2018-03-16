@@ -142,12 +142,10 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
                 .exclusionList(a.getAddress())//redundant - simplifies debugging
                 .setMode(ResponseMode.GET_ALL)//redundant - implied by SYNC()
                 .setTransientFlags(Message.TransientFlag.DONT_LOOPBACK)//redundant - self is excluded
-                .setTimeout(1000)//Speed up the test execution
-                ;
+                .setTimeout(1000); //Speed up the test execution
         b = createChannel(a, "B");
         BlockableRequestHandler blockableHandler = new BlockableRequestHandler();
-        d2 = new MessageDispatcher(b);
-        d2.setRequestHandler(blockableHandler);
+        d2 = new MessageDispatcher(b).setRequestHandler(blockableHandler);
         b.connect("MessageDispatcherUnitTest");
         Assert.assertEquals(2,b.getView().size());
         System.out.println("view: " + b.getView());
