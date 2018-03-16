@@ -133,8 +133,8 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
     }
 
     /**
-     * In this scenario we block the second member so to verify the sender actually waits: we want to see a timeout
-     * being triggered.
+     * In this scenario we block the second member so to verify the sender actually waits;
+     * this won't trigger a timeout but will produce a response having "received=false".
      * It's hard to otherwise make sure casting isn't being done asynchronously.
      */
     public void testBlockingSecondMember() throws Exception {
@@ -142,23 +142,24 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
                 .exclusionList(a.getAddress())//redundant - simplifies debugging
                 .setMode(ResponseMode.GET_ALL)//redundant - implied by SYNC()
                 .setTransientFlags(Message.TransientFlag.DONT_LOOPBACK)//redundant - self is excluded
-                .setTimeout(1000); //Speed up the test execution
+                .setTimeout(100)//Speed up the test execution
+                ;
         b = createChannel(a, "B");
         BlockableRequestHandler blockableHandler = new BlockableRequestHandler();
         d2 = new MessageDispatcher(b).setRequestHandler(blockableHandler);
         b.connect("MessageDispatcherUnitTest");
         Assert.assertEquals(2,b.getView().size());
-        System.out.println("view: " + b.getView());
         blockableHandler.installThreadTrap();
         try {
             RspList<Object> rsps = d1.castMessage(null, buf, requestOptions);
             System.out.printf("responses: %s\n", rsps);
-            assert rsps.size() == 1;
-            Rsp rsp=rsps.get(b.getAddress());
-            assert rsp != null;
-            assert !rsp.wasReceived();
-            assert !rsp.wasSuspected();
-
+            Assert.assertEquals(1, rsps.size());
+            Rsp rsp = rsps.get(b.getAddress());
+            Assert.assertNotNull(rsp);
+            Assert.assertFalse(rsp.wasReceived());
+            Assert.assertFalse(rsp.wasSuspected());
+        } catch (Exception e) {
+            Assert.fail("exception returned by castMessage", e);
         } finally {
             blockableHandler.releaseBlockedThreads();
         }
