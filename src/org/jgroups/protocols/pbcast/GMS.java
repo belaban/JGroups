@@ -106,7 +106,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     /** @deprecated true by default */
     @Property(description="Whether or not to install a new view locally first before broadcasting it " +
-      "(only done at the coord ). Set to true automatically if a state transfer protocol is detected")
+      "(only done at the coord ). Set to true automatically if a state transfer protocol is detected",
+              deprecatedMessage = "ignored and enabled by default")
     @Deprecated
     protected boolean install_view_locally_first=true; // https://issues.jboss.org/browse/JGRP-1751
 
