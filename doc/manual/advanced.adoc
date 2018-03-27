@@ -1199,7 +1199,7 @@ To use RELAY2, it has to be placed at the top of the configuration, e.g.:
 
 The above configuration has a site name which will be used to route messages between sites. To do that, addresses
             contain the site-ID, so we always know which site the address is from. E.g. an address A1:LON in the SFO site
-            is not local, but will be routed to the remote site SFO.
+            is not local, but will be routed to the remote site LON.
 
 The relay_multicasts property determines whether or not multicast messages (with dest = null) are relayed to
             the other sites, or not. When we have a site LON, connected to sites SFO and NYC, if a multicast message is
