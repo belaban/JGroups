@@ -28,7 +28,7 @@ public class DNS_PING extends Discovery {
     protected String dns_context_factory = DEFAULT_DNS_FACTORY;
 
     @Property(description = "DNS Address. This property will be assembled with the 'dns://' prefix")
-    protected String dns_address;
+    protected String dns_address = "";
 
     @Property(description = "DNS Record type")
     protected String dns_record_type = DEFAULT_DNS_RECORD_TYPE;
