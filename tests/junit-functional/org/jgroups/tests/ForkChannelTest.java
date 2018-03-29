@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Event;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.blocks.ReplicatedHashMap;
 import org.jgroups.blocks.atomic.Counter;
 import org.jgroups.blocks.atomic.CounterService;
@@ -12,6 +9,7 @@ import org.jgroups.fork.ForkProtocolStack;
 import org.jgroups.protocols.COUNTER;
 import org.jgroups.protocols.FORK;
 import org.jgroups.protocols.FRAG2;
+import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.STATE;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -22,6 +20,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Tests {@link org.jgroups.fork.ForkChannel}
@@ -34,7 +33,7 @@ public class ForkChannelTest {
     protected ForkChannel             fc1, fc2, fc3, fc4;
     protected static final String     CLUSTER="ForkChannelTest";
 
-    protected Protocol[] protocols() {return Util.getTestStack(new STATE(), new FORK());}
+    protected static Protocol[] protocols() {return Util.getTestStack(new STATE(), new FORK());}
 
     @BeforeMethod protected void setup() throws Exception {
         a=new JChannel(protocols()).name("A");
@@ -59,6 +58,63 @@ public class ForkChannelTest {
 
         Util.close(fc, c);
     }
+
+
+    public void testSimpleSend() throws Exception {
+        a.connect(CLUSTER);
+        fc1=new ForkChannel(a, "stack", "fc1").connect("bla");
+        fc2=new ForkChannel(a, "stack", "fc2").connect("bla");
+
+        b=new JChannel(protocols()).name("B").connect(CLUSTER);
+        fc3=new ForkChannel(b, "stack", "fc1").connect("bla");
+        fc4=new ForkChannel(b, "stack", "fc2").connect("bla");
+
+        MyReceiver r3=new MyReceiver().rawMsgs(true), r4=new MyReceiver().rawMsgs(true);
+        fc3.setReceiver(r3);
+        fc4.setReceiver(r4);
+
+        fc1.send(null, "hello");
+        List l3=r3.list(), l4=r4.list();
+        for(int i=0; i < 10; i++) {
+            if(!l3.isEmpty() || !l4.isEmpty())
+                break;
+            Util.sleep(1000);
+        }
+        assert !l3.isEmpty();
+        assert l4.isEmpty();
+
+        l3.clear();
+
+        Address dest=fc3.getAddress();
+
+        fc1.send(dest, "hello2");
+        for(int i=0; i < 10; i++) {
+            if(!l3.isEmpty() || !l4.isEmpty())
+                break;
+            Util.sleep(1000);
+        }
+        assert !l3.isEmpty();
+        assert l4.isEmpty();
+        l3.clear();
+
+        // send to non-existing member:
+        UNICAST3 ucast=a.getProtocolStack().findProtocol(UNICAST3.class);
+        ucast.setValue("conn_close_timeout", 10000);
+
+        Util.close(fc3,fc4,b);
+        Util.sleep(1000);
+
+        fc1.send(dest, "hello3");
+        for(int i=0; i < 10; i++) {
+            if(!l3.isEmpty() || !l4.isEmpty())
+                break;
+            Util.sleep(1000);
+        }
+        assert l3.isEmpty();
+        assert l4.isEmpty();
+    }
+
+
 
     public void testLifecycle() throws Exception {
         fc1=new ForkChannel(a, "stack", "fc1");
@@ -320,13 +376,15 @@ public class ForkChannelTest {
     }
 
 
-    protected ForkChannel createForkChannel(JChannel main, String stack_name, String ch_name) throws Exception {
+
+
+    protected static ForkChannel createForkChannel(JChannel main, String stack_name, String ch_name) throws Exception {
         ForkChannel fork_ch=new ForkChannel(main, stack_name, ch_name);
         fork_ch.connect(ch_name);
         return fork_ch;
     }
 
-    protected void addData(ReplicatedHashMap<String,Integer> a, ReplicatedHashMap<String,Integer> b, ReplicatedHashMap<String,Integer> c) {
+    protected static void addData(Map<String,Integer> a, Map<String,Integer> b, Map<String,Integer> c) {
         if(a != null) {
             a.put("id", 322649);
             a.put("version", 45);
@@ -350,22 +408,7 @@ public class ForkChannelTest {
         return prot instanceof ProtocolStack? (ProtocolStack)prot : null;
     }
 
-  /*  protected Entry[] create(boolean main_ch, boolean fc1, boolean fc2) {
-        Entry[] entry=new Entry[3];
 
-        return entry;
-    }
-
-
-    protected static class Entry {
-        protected final JChannel                          ch;
-        protected final ReplicatedHashMap<String,Integer> map;
-
-        public Entry(JChannel ch, ReplicatedHashMap<String,Integer> map) {
-            this.ch=ch;
-            this.map=map;
-        }
-    }*/
 
     protected static class Prot extends Protocol {
         protected final String myname;
