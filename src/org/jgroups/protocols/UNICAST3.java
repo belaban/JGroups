@@ -36,7 +36,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     /* ------------------------------------------ Properties  ------------------------------------------ */
 
     @Property(description="Time (in milliseconds) after which an idle incoming or outgoing connection is closed. The " +
-      "connection will get re-established when used again. 0 disables connection reaping")
+      "connection will get re-established when used again. 0 disables connection reaping. Note that this creates " +
+      "lingering connection entries, which increases memory over time.")
     protected long    conn_expiry_timeout=(long) 60000 * 2;
 
     @Property(description="Time (in ms) until a connection marked to be closed will get removed. 0 disables this")
