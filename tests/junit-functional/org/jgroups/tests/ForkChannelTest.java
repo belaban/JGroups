@@ -104,11 +104,12 @@ public class ForkChannelTest {
         Util.close(fc3,fc4,b);
         Util.sleep(1000);
 
+        System.out.printf("---- sending message to non-existing member %s\n", dest);
         fc1.send(dest, "hello3");
         for(int i=0; i < 10; i++) {
             if(!l3.isEmpty() || !l4.isEmpty())
                 break;
-            Util.sleep(1000);
+            Util.sleep(500);
         }
         assert l3.isEmpty();
         assert l4.isEmpty();
