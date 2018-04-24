@@ -324,7 +324,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
                 runnable.run();
             }
             catch(Throwable t) {
-                log.error(Util.getMessage("FailedExecutingTask") + runnable, t);
+                log.error(Util.getMessage("FailedExecutingTask") + ' ' + runnable, t);
             }
             finally {
                 done=true;
