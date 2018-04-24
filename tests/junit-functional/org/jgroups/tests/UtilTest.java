@@ -10,6 +10,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -105,7 +106,7 @@ public class UtilTest {
         for(List<String> perm: perms) {
             System.out.printf("%d: %s ", ++cnt, perm);
             if(Util.checkOrder(perm, a, b))
-                System.out.printf("OK\n");
+                System.out.print("OK\n");
             else
                 assert false : String.format("%s is not in correct order (a: %s, b: %s)", perm, a, b);
         }
@@ -464,17 +465,17 @@ public class UtilTest {
           new byte[]{'H', 'e', 'l', 'l', 'o'},
           Util.generateArray(1024)
         };
-        System.out.printf("\n ------------ objectToByteBuffer() ------------\n");
+        System.out.print("\n ------------ objectToByteBuffer() ------------\n");
         for(int i=0; i < values.length; i++) {
             Object value=values[i];
             objectToByteBuffer(value);
         }
-        System.out.printf("\n ------------ objectToBuffer() ------------\n");
+        System.out.print("\n ------------ objectToBuffer() ------------\n");
         for(int i=0; i < values.length; i++) {
             Object value=values[i];
             objectToBuffer(value);
         }
-        System.out.printf("\n ------------ objectToStream() ------------\n");
+        System.out.print("\n ------------ objectToStream() ------------\n");
         for(int i=0; i < values.length; i++) {
             Object value=values[i];
             objectToStream(value);
@@ -572,6 +573,57 @@ public class UtilTest {
         Throwable new_cause=new_ex.getCause();
         assert new_cause instanceof IllegalArgumentException;
         assert new_cause.getMessage().startsWith("this is highly");
+    }
+
+
+    public void testExceptionWithStackTrace() throws Exception {
+        Throwable ex=foo();
+        System.out.println("ex = " + ex);
+
+        int stack_trace_len=ex.getStackTrace().length;
+
+        Buffer buf=Util.objectToBuffer(ex);
+
+        Throwable ex2=Util.objectFromByteBuffer(buf.getBuf(), buf.getOffset(), buf.getLength());
+        System.out.println("ex2 = " + ex2);
+
+        int stack_trace_len2=ex2.getStackTrace().length;
+        assert stack_trace_len == stack_trace_len2;
+
+        ex=new InvocationTargetException(ex, "target");
+        System.out.println("ex = " + ex);
+
+        stack_trace_len=ex.getStackTrace().length;
+
+        buf=Util.objectToBuffer(ex);
+
+        ex2=Util.objectFromByteBuffer(buf.getBuf(), buf.getOffset(), buf.getLength());
+        System.out.println("ex2 = " + ex2);
+
+        stack_trace_len2=ex2.getStackTrace().length;
+        assert stack_trace_len == stack_trace_len2;
+    }
+
+
+    protected static Throwable foo() throws Exception {
+        try {
+            bar();
+            return null;
+        }
+        catch(Throwable throwable) {
+            throwable.printStackTrace(new PrintStream(new FileOutputStream("/dev/null")));
+            return throwable;
+        }
+    }
+
+    protected static boolean bar() throws Throwable {
+        return foobar();
+    }
+
+    protected static boolean foobar() throws Throwable {
+        Throwable ex=new NullPointerException("boom");
+        ex.initCause(new IllegalArgumentException("illegal"));
+        throw ex;
     }
 
 

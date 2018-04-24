@@ -63,7 +63,6 @@ public class Util {
     private static final byte TYPE_SHORT        = 17;
     private static final byte TYPE_STRING       = 18; // ascii
     private static final byte TYPE_BYTEARRAY    = 19;
-    private static final byte TYPE_EXCEPTION    = 20;
     private static final byte TYPE_UTF_STRING   = 21; // multibyte charset
 
     // constants
@@ -508,9 +507,6 @@ public class Util {
                 byte[] tmp=new byte[length];
                 System.arraycopy(buffer,offset,tmp,0,length);
                 return (T)tmp;
-            case TYPE_EXCEPTION:
-                in=new ByteArrayDataInputStream(buffer,offset,length);
-                return (T)Util.exceptionFromStream(in);
             default:
                 throw new IllegalArgumentException("type " + type + " is invalid");
         }
@@ -524,15 +520,6 @@ public class Util {
     public static byte[] objectToByteBuffer(Object obj) throws Exception {
         if(obj == null)
             return TYPE_NULL_ARRAY;
-
-        if(obj instanceof Throwable) {
-            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512, true);
-            out.write(TYPE_EXCEPTION);
-            Util.exceptionToStream((Throwable)obj, out);
-            byte[] ret=new byte[out.position()];
-            System.arraycopy(out.buffer(), 0, ret, 0, out.position());
-            return ret;
-        }
 
         if(obj instanceof Streamable) {
             int expected_size=obj instanceof SizeStreamable? ((SizeStreamable)obj).serializedSize() : 512;
@@ -560,13 +547,6 @@ public class Util {
     public static Buffer objectToBuffer(Object obj) throws Exception {
         if(obj == null)
             return new Buffer(TYPE_NULL_ARRAY);
-
-        if(obj instanceof Throwable) {
-            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512, true);
-            out.write(TYPE_EXCEPTION);
-            Util.exceptionToStream((Throwable)obj, out);
-            return out.getBuffer();
-        }
 
         if(obj instanceof Streamable) {
             int expected_size=obj instanceof SizeStreamable? ((SizeStreamable)obj).serializedSize() : 512;
@@ -659,12 +639,6 @@ public class Util {
     public static void objectToStream(Object obj, DataOutput out) throws Exception {
         if(obj == null) {
             out.write(TYPE_NULL);
-            return;
-        }
-
-        if(obj instanceof Throwable) {
-            out.write(TYPE_EXCEPTION);
-            Util.exceptionToStream((Throwable)obj, out);
             return;
         }
 
@@ -778,8 +752,6 @@ public class Util {
                 byte[] tmpbuf=new byte[len];
                 in.readFully(tmpbuf,0,tmpbuf.length);
                 return (T)tmpbuf;
-            case TYPE_EXCEPTION:
-                return (T)Util.exceptionFromStream(in);
             default:
                 throw new IllegalArgumentException("type " + b + " is invalid");
         }

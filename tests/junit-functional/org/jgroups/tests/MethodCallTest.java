@@ -258,7 +258,7 @@ public class MethodCallTest {
         System.out.println("m: " + m);
     }
 
-    public static void testMarshalling2() throws Exception {
+    public void testMarshalling2() throws Exception {
         Address addr=Util.createRandomAddress("A");
         MethodCall call=new MethodCall("foo",
                                        new Object[]{"hello", 23, addr},
