@@ -55,7 +55,7 @@ public class INJECT_VIEWTest {
         return retval;
     }
 
-    public static void testInjectView() throws Exception {
+    public void testInjectView() throws Exception {
         JChannel[] channels=null;
         try {
             channels=create(false, true, "testInjectView", "A", "B", "C");

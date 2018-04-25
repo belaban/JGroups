@@ -82,7 +82,7 @@ public class TCPGOSSIP_Test {
         channel=createTcpgossipChannel("B");
         coordinator.connect(GROUP);
         channel.connect(GROUP);
-        TCPGOSSIP p = (TCPGOSSIP) channel.getProtocolStack().findProtocol(TCPGOSSIP.class);
+        TCPGOSSIP p =channel.getProtocolStack().findProtocol(TCPGOSSIP.class);
         String tmp_bind_addr = bind_addr.getHostAddress();
         assert p.removeInitialHost(tmp_bind_addr, gossip_router_port);
         p.addInitialHost(tmp_bind_addr, gossip_router_port);
@@ -195,8 +195,8 @@ public class TCPGOSSIP_Test {
 
 
 
-    protected void changeGossipRouter(JChannel channel, String host, int port) {
-        TCPGOSSIP tcp_gossip_prot=(TCPGOSSIP)channel.getProtocolStack().findProtocol(TCPGOSSIP.class);
+    protected static void changeGossipRouter(JChannel channel, String host, int port) {
+        TCPGOSSIP tcp_gossip_prot=channel.getProtocolStack().findProtocol(TCPGOSSIP.class);
         List<InetSocketAddress> initial_hosts=tcp_gossip_prot.getInitialHosts();
         initial_hosts.clear();
         initial_hosts.add(new InetSocketAddress(host, port));

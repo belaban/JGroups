@@ -18,8 +18,8 @@ import java.util.*;
  * Client part of GMS. Whenever a new member wants to join a group, it starts in the CLIENT role.
  * No multicasts to the group will be received and processed until the member has been joined and
  * turned into a SERVER (either coordinator or participant, mostly just participant). This class
- * only implements <code>Join</code> (called by clients who want to join a certain group, and
- * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
+ * only implements {@code Join} (called by clients who want to join a certain group, and
+ * {@code ViewChange} which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
  * @version $Revision: 1.78 $
@@ -61,9 +61,10 @@ public class ClientGmsImpl extends GmsImpl {
      * @param mbr Our own address (assigned through SET_LOCAL_ADDRESS)
      */
     protected void joinInternal(Address mbr, boolean joinWithStateTransfer, boolean useFlushIfPresent) {
-        long          join_attempts=0;
+        long  join_attempts=0;
         leaving=false;
         join_promise.reset();
+
         while(!leaving) {
             if(installViewIfValidJoinRsp(join_promise, false))
                 return;
@@ -71,7 +72,7 @@ public class ClientGmsImpl extends GmsImpl {
             long start=System.currentTimeMillis();
             Responses responses=(Responses)gms.getDownProtocol().down(Event.FIND_INITIAL_MBRS_EVT);
 
-            // Sept 2008 (bela): break if we got a belated JoinRsp (https://jira.jboss.org/jira/browse/JGRP-687)
+            // Sept 2008 (bela): return if we got a belated JoinRsp (https://jira.jboss.org/jira/browse/JGRP-687)
             if(installViewIfValidJoinRsp(join_promise, false))
                 return;
 
@@ -92,25 +93,23 @@ public class ClientGmsImpl extends GmsImpl {
             if(coords == null) { // e.g. because we have all clients only
                 if(firstOfAllClients(mbr, responses))
                     return;
-                continue;
+            }
+            else {
+                if(coords.size() > 1) {
+                    log.debug("%s: found multiple coords: %s", gms.local_addr, coords);
+                    Collections.shuffle(coords); // so the code below doesn't always pick the same coord
+                }
+                for(Address coord : coords) {
+                    log.debug("%s: sending JOIN(%s) to %s", gms.local_addr, mbr, coord);
+                    sendJoinMessage(coord, mbr, joinWithStateTransfer, useFlushIfPresent);
+                    if(installViewIfValidJoinRsp(join_promise, true))
+                        return;
+                    log.warn("%s: JOIN(%s) sent to %s timed out (after %d ms), on try %d",
+                             gms.local_addr, mbr, coord, gms.join_timeout, join_attempts);
+                }
             }
 
-            if(coords.size() > 1) {
-                log.debug("%s: found multiple coords: %s", gms.local_addr, coords);
-                Collections.shuffle(coords); // so the code below doesn't always pick the same coord
-            }
-
-            join_attempts++;
-            for(Address coord: coords) {
-                log.debug("%s: sending JOIN(%s) to %s", gms.local_addr, mbr, coord);
-                sendJoinMessage(coord, mbr, joinWithStateTransfer, useFlushIfPresent);
-                if(installViewIfValidJoinRsp(join_promise, true))
-                    return;
-                log.warn("%s: JOIN(%s) sent to %s timed out (after %d ms), on try %d",
-                         gms.local_addr, mbr, coord, gms.join_timeout, join_attempts);
-            }
-
-            if(gms.max_join_attempts != 0 && join_attempts >= gms.max_join_attempts) {
+            if(gms.max_join_attempts > 0 && ++join_attempts >= gms.max_join_attempts) {
                 log.warn("%s: too many JOIN attempts (%d): becoming singleton", gms.local_addr, join_attempts);
                 becomeSingletonMember(mbr);
                 return;
