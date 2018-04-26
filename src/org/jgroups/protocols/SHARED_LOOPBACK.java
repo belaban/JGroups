@@ -6,10 +6,12 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.AsciiString;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Util;
 
+import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -21,9 +23,10 @@ import java.util.concurrent.ConcurrentMap;
  * @author Bela Ban
  */
 public class SHARED_LOOPBACK extends TP {
+    protected short            port=1;
     protected PhysicalAddress  physical_addr;
 
-    @ManagedAttribute(description="The current view",writable=false)
+    @ManagedAttribute(description="The current view")
     protected volatile View    curr_view;
 
     protected volatile boolean is_server=false, is_coord=false;
@@ -151,6 +154,11 @@ public class SHARED_LOOPBACK extends TP {
         }
 
         return retval;
+    }
+
+    public void init() throws Exception {
+        super.init();
+        physical_addr=new IpAddress(InetAddress.getLoopbackAddress(), port++);
     }
 
     public void stop() {

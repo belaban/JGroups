@@ -21,6 +21,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 /**
  * Tests original coordinator not being marked as coord, and firstOfAllClients() failing
@@ -33,7 +34,7 @@ public class FrozenCoordinatorTest {
     protected String   location;
     protected Path     root_dir;
     protected File     file;
-    protected JChannel b;
+    protected JChannel b, c;
 
     protected static final String CLUSTER="FrozenCoordinator";
     protected static final String FILENAME="frozen_coord.A.list";
@@ -78,11 +79,20 @@ public class FrozenCoordinatorTest {
         System.out.println("view = " + view);
         assert view.size() == 1;
         assert view.containsMember(b.getAddress());
+
+        c=create("C");
+        c.connect(CLUSTER);
+
+        System.out.printf("B's view: %s\nC's view: %s\n", b.getView(), c.getView());
+        for(View v: Arrays.asList(b.getView(), c.getView())) {
+            assert v.size() == 2;
+            assert v.containsMember(b.getAddress()) && v.containsMember(c.getAddress());
+        }
     }
 
 
     protected JChannel create(String name) throws Exception {
-        FILE_PING ping=new FILE_PING().setLocation(root_dir.toString());
+        FILE_PING ping=new FILE_PING().setLocation(root_dir.toString()).setValue("remove_all_data_on_view_change", true);
         Protocol[] protocols={
           new SHARED_LOOPBACK(),
           ping,
