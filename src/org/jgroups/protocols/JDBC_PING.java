@@ -110,6 +110,11 @@ public class JDBC_PING extends FILE_PING {
         attemptSchemaInitialization();
     }
 
+    @Override
+    public void stop() {
+        super.stop();
+        removeAll(cluster_name);
+    }
 
     @Override
     public void stop() {
