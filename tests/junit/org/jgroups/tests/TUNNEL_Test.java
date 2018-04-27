@@ -189,9 +189,9 @@ public class TUNNEL_Test extends ChannelTestBase {
          c=createTunnelChannel("C");
          c.connect(GROUP);
          
-         View view=channel.getView();
-         assert channel.getView().size() == 3;
-         assert c.getView().size() == 3;
+         Util.waitUntilAllChannelsHaveSameView(10000, 1000, coordinator, channel, c);
+         View view=c.getView();
+
          assert view.containsMember(channel.getAddress());
          assert view.containsMember(coordinator.getAddress());
      }

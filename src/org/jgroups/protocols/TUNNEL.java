@@ -2,7 +2,6 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
-import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedOperation;
@@ -11,7 +10,6 @@ import org.jgroups.stack.GossipData;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.stack.RouterStubManager;
-import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 
 import java.net.DatagramSocket;
@@ -198,35 +196,25 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
 
 
 
-    @Override
-    protected void send(Message msg, Address dest) throws Exception {
-
-        // we don't currently support message bundling in TUNNEL
-        TpHeader hdr=msg.getHeader(this.id);
-        if(hdr == null)
-            throw new Exception("message " + msg + " doesn't have a transport header, cannot route it");
-        String group=cluster_name != null? cluster_name.toString() : null;
-
-        ByteArrayDataOutputStream dos=new ByteArrayDataOutputStream((int)(msg.size() + 50));
-        Util.writeMessage(msg, dos, dest == null);
-
-        if(stats) {
-            msg_stats.incrNumMsgsSent(1);
-            msg_stats.incrNumBytesSent(dos.position());
-        }
-        if(dest == null)
-            tunnel_policy.sendToAllMembers(group, local_addr, dos.buffer(), 0, dos.position());
-        else
-            tunnel_policy.sendToSingleMember(group, dest, local_addr, dos.buffer(), 0, dos.position());
-    }
-
-
     public void sendMulticast(byte[] data, int offset, int length) throws Exception {
-        throw new UnsupportedOperationException("sendMulticast() should not get called on TUNNEL");
+        String group=cluster_name != null? cluster_name.toString() : null;
+        tunnel_policy.sendToAllMembers(group, local_addr, data, offset, length);
     }
 
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
-        throw new UnsupportedOperationException("sendUnicast() should not get called on TUNNEL");
+        String group=cluster_name != null? cluster_name.toString() : null;
+        tunnel_policy.sendToSingleMember(group, dest, local_addr, data, offset, length);
+    }
+
+    protected void sendToSingleMember(final Address dest, byte[] buf, int offset, int length) throws Exception {
+        if(dest instanceof PhysicalAddress)
+            throw new IllegalArgumentException(String.format("destination %s cannot be a physical address", dest));
+        sendUnicast(dest, buf, offset, length);
+    }
+
+    protected void sendUnicast(Address dest, byte[] data, int offset, int length) throws Exception {
+        String group=cluster_name != null? cluster_name.toString() : null;
+        tunnel_policy.sendToSingleMember(group, dest, local_addr, data, offset, length);
     }
 
     public String getInfo() {
@@ -259,11 +247,12 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
             stubManager.forAny( stub -> {
                 try {
                     if(log.isTraceEnabled())
-                        log.trace("sent a message to all members, GR used %s", stub.gossipRouterAddress());
+                        log.trace("sent a message to %s (router used %s)", dest, stub.gossipRouterAddress());
                     stub.sendToMember(group, dest, sender, data, offset, length);
                 }
                 catch (Exception ex) {
-                    log.warn("failed sending a message to all members, router used %s", stub.gossipRouterAddress());
+                    log.warn("failed sending a message to %s (router used %s):", dest,
+                             stub.gossipRouterAddress(), ex);
                 }
             });
         }

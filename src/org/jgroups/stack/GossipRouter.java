@@ -425,6 +425,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
             Entry entry=map.get(dest);
             if(entry != null)
                 sendToMember(entry.client_addr, msg, offset, length);
+            else
+                log.warn("dest %s in cluster %s not found", dest, group);
         }
         else {             // multicast - send to all members in group
             Set<Map.Entry<Address,Entry>> dests=map.entrySet();
