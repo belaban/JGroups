@@ -24,15 +24,14 @@ import java.util.List;
 
 
 /**
- * Ensures that a disconnected channel reconnects correctly, for different
- * stack configurations.
+ * Ensures that a disconnected channel reconnects correctly, for different stack configurations.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
  **/
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER, Global.EAP_EXCLUDED},singleThreaded=true)
 public class TUNNEL_Test extends ChannelTestBase {
-    protected JChannel            channel, coordinator;
+    protected JChannel            channel, coordinator, c;
     protected final static String GROUP="TUNNEL_Test";
     protected GossipRouter        gossipRouter;
     protected int                 gossip_router_port;
@@ -57,7 +56,7 @@ public class TUNNEL_Test extends ChannelTestBase {
 
     @AfterMethod(alwaysRun=true)
     void tearDown() throws Exception {
-        Util.close(channel, coordinator);
+        Util.close(c, channel, coordinator);
     }
 
 
@@ -187,16 +186,14 @@ public class TUNNEL_Test extends ChannelTestBase {
          coordinator.connect(GROUP);
          channel.connect(GROUP);
          
-         JChannel third = createTunnelChannel("C");
-         third.connect(GROUP);
+         c=createTunnelChannel("C");
+         c.connect(GROUP);
          
          View view=channel.getView();
          assert channel.getView().size() == 3;
-         assert third.getView().size() == 3;
+         assert c.getView().size() == 3;
          assert view.containsMember(channel.getAddress());
          assert view.containsMember(coordinator.getAddress());
-         
-         Util.close(third);
      }
 
 
@@ -252,13 +249,17 @@ public class TUNNEL_Test extends ChannelTestBase {
     }
 
     protected JChannel createTunnelChannel(String name, boolean include_failure_detection) throws Exception {
-        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("bind_addr", gossip_router_bind_addr);
+        TUNNEL tunnel=new TUNNEL().setValue("bind_addr", gossip_router_bind_addr);
+        FD_ALL fd_all=new FD_ALL();
+        fd_all.setTimeout(2000);
+        fd_all.setInterval(500);
         tunnel.setGossipRouterHosts(gossip_router_hosts);
-        List<Protocol> protocols=new ArrayList<>();
-        protocols.addAll(Arrays.asList(tunnel, new PING(), new MERGE3().setValue("min_interval", 1000).setValue("max_interval", 3000)));
+        List<Protocol> protocols=new ArrayList<>(Arrays.asList(tunnel, new PING(),
+                                                               new MERGE3().setValue("min_interval", 1000)
+                                                                 .setValue("max_interval", 3000)));
         if(include_failure_detection) {
             List<Protocol> tmp=new ArrayList<>(2);
-            tmp.add(new FD().setValue("timeout", 2000).setValue("max_tries", 2));
+            tmp.add(fd_all);
             tmp.add(new VERIFY_SUSPECT());
             protocols.addAll(tmp);
         }

@@ -1,14 +1,7 @@
 package org.jgroups.protocols;
 
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Membership;
-import org.jgroups.View;
-import org.jgroups.conf.ProtocolStackConfigurator;
-import org.jgroups.protocols.pbcast.FLUSH;
+import org.jgroups.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
@@ -16,30 +9,29 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
-import org.w3c.dom.Element;
 
-import java.io.File;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
- * Tests the INJECT_VIEW protocol
+ * Tests the INJECT_VIEW protocol. Note that the logical names of the members should be unique, otherwise - when
+ * running the testsuite in parallel and the names were A,B,C - the lookup of real addresses by logical names when
+ * injecting views might be incorrect: e.g. a member A added by a different test might return the 'wrong' address!
  * @author Andrea Tarocchi
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class INJECT_VIEWTest {
+    protected static final String A, B, C;
+
+    static {
+        A=INJECT_VIEWTest.class.getSimpleName() + "-A";
+        B=INJECT_VIEWTest.class.getSimpleName() + "-B";
+        C=INJECT_VIEWTest.class.getSimpleName() + "-C";
+    }
 
     protected static Protocol[] getProps() {
         return modify(Util.getTestStack());
     }
 
-    protected static Protocol[] getFlushProps() {
-        return modify(Util.getTestStack(new FLUSH()));
-    }
 
     protected static Protocol[] modify(Protocol[] retval) {
         for(Protocol prot: retval) {
@@ -58,12 +50,15 @@ public class INJECT_VIEWTest {
     public void testInjectView() throws Exception {
         JChannel[] channels=null;
         try {
-            channels=create(false, true, "testInjectView", "A", "B", "C");
+            channels=create( "testInjectView", A, B, C);
             print(channels);
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
 
-            String injectionViewString = "A=A/B;B=B/C;C=C";
+            String injectionViewString = String.format("%s=%s/%s;%s=%s/%s;%s=%s",
+                                                       A,A,B,
+                                                       B,B,C,
+                                                       C,C);
             System.out.println("\ninjecting views: "+injectionViewString);
             for (JChannel channel : channels) {
                 channel.getProtocolStack().addProtocol( new INJECT_VIEW());
@@ -76,21 +71,21 @@ public class INJECT_VIEWTest {
             System.out.println("\nInjected views: "+injectionViewString);
             print(channels);
             System.out.println("\nchecking views: ");
-            checkViews(channels, "A", "A", "B");
+            checkViews(channels, A, A, B);
             System.out.println("\nA is OK");
-            checkViews(channels, "B", "B", "C");
+            checkViews(channels, B, B, C);
             System.out.println("\nB is OK");
-            checkViews(channels, "C", "C");
+            checkViews(channels, C, C);
             System.out.println("\nC is OK");
 
             System.out.println("\ndigests:");
             printDigests(channels);
 
-            Address leader=determineLeader(channels, "A", "B","C");
+            Address leader=determineLeader(channels, A, B, C);
             long end_time=System.currentTimeMillis() + 30000;
             do {
                 System.out.println("\n==== injecting merge events into " + leader + " ====");
-                injectMergeEvent(channels, leader, "A", "B", "C");
+                injectMergeEvent(channels, leader, A, B, C);
                 Util.sleep(1000);
                 if(allChannelsHaveViewOf(channels, channels.length))
                     break;
@@ -103,7 +98,8 @@ public class INJECT_VIEWTest {
 
             System.out.println("\ndigests:");
             printDigests(channels);
-        } finally {
+        }
+        finally {
             System.out.println("closing channels");
             close(channels);
             System.out.println("done");
@@ -131,18 +127,14 @@ public class INJECT_VIEWTest {
         }
     }
 
-    private static JChannel[] create(boolean use_flush_props, boolean simple_ids, String cluster_name, String ... names) throws Exception {
+    private static JChannel[] create(String cluster_name, String ... names) throws Exception {
         JChannel[] retval=new JChannel[names.length];
 
         for(int i=0; i < retval.length; i++) {
             JChannel ch;
-            Protocol[] props=use_flush_props? getFlushProps() : getProps();
-            if(simple_ids) {
-                ch=new MyChannel(props);
-                ((MyChannel)ch).setId(i+1);
-            }
-            else
-                ch=new JChannel(props);
+            Protocol[] props=getProps();
+            ch=new JChannel(props);
+            // ((MyChannel)ch).setId(i+1);
             ch.setName(names[i]);
             retval[i]=ch;
             ch.connect(cluster_name);
@@ -243,67 +235,4 @@ public class INJECT_VIEWTest {
         }
     }
 
-
-    private static class MyChannel extends JChannel {
-        protected int id=0;
-
-        private MyChannel() throws Exception {
-            super();
-        }
-
-        private MyChannel(File properties) throws Exception {
-            super(properties);
-        }
-
-        private MyChannel(Element properties) throws Exception {
-            super(properties);
-        }
-
-        private MyChannel(URL properties) throws Exception {
-            super(properties);
-        }
-
-        private MyChannel(String properties) throws Exception {
-            super(properties);
-        }
-
-        private MyChannel(ProtocolStackConfigurator configurator) throws Exception {
-            super(configurator);
-        }
-
-        public MyChannel(Collection<Protocol> protocols) throws Exception {
-            super(protocols);
-        }
-
-        public MyChannel(Protocol... protocols) throws Exception {
-            super(protocols);
-        }
-
-        private MyChannel(JChannel ch) throws Exception {
-            super(ch);
-        }
-
-
-        public void setId(int id) {
-            this.id=id;
-        }
-
-        protected MyChannel setAddress() {
-            Address old_addr=local_addr;
-            local_addr=new org.jgroups.util.UUID(id, id);
-
-            if(old_addr != null)
-                down(new Event(Event.REMOVE_ADDRESS, old_addr));
-            if(name == null || name.isEmpty()) // generate a logical name if not set
-                name=Util.generateLocalName();
-            if(name != null && !name.isEmpty())
-                org.jgroups.util.NameCache.add(local_addr, name);
-
-            Event evt=new Event(Event.SET_LOCAL_ADDRESS, local_addr);
-            down(evt);
-            if(up_handler != null)
-                up_handler.up(evt);
-            return this;
-        }
-    }
 }
