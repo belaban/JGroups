@@ -2204,14 +2204,22 @@ ${FORK}
 
 
 ==== INJECT_VIEW
-INJECT_VIEW exposes a managed operation (injectView) capable of injecting a view by parsing the view state from a string.
+INJECT_VIEW exposes a managed operation (injectView) capable of injecting a view by parsing the view state
+from a string.
 
 The string format is A=A/B/C;B=B/C;C=C (where A,B,C are node names),
 this would inject view [A,B,C] with A as leader in node A, view [B,C] with B as leader in node B and view [C] in node C.
 
-NOTE: calling `injectView("A=A/B/C;B=B/C;C=C")`, as an example, just on node B would result only in view [B,C] applied to node B.
+NOTE: Calling `injectView("A=A/B/C;B=B/C;C=C")`, as an example, just on node B would result only in view [B,C] applied to node B.
 
 In order to leverage the injection on multiple nodes at once a tool like <<Probe,Probe>> can be used,
 example: `probe.sh op=INJECT_VIEW.injectView["A=A/B/C;B=B/C;C=C"]`
+
+
+NOTE: `INJECT_VIEW` uses logical names to look up real addresses in the logical address cache (located in the
+transport). This cache is keyed by address and its values are names. This means that, for example, UUIDs 1 and 6
+may map to the same name ("say "A"). If we now look up the address for "A", either 1 or 6 may be returned, depending
+on which address mapping was added last to the cache. This means that logical names should be unique, ie.
+when running a fork channel.
 
 ${INJECT_VIEW}
