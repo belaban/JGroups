@@ -55,7 +55,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @Property(description="Timeout (in ms) to complete merge")
     protected long merge_timeout=5000; // time to wait for all MERGE_RSPS
 
-    @Property(description="Number of join attempts before we give up and become a singleton. Zero means 'never give up'.")
+    @Property(description="Number of join attempts before we give up and become a singleton. 0 means 'never give up'.")
     protected long max_join_attempts=10;
 
     @Property(description="Print local address of this member after connect. Default is true")

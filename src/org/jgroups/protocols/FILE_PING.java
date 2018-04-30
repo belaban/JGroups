@@ -68,7 +68,9 @@ public class FILE_PING extends Discovery {
     };
     protected Future<?>                   info_writer;
 
-    public boolean isDynamic() {return true;}
+    public boolean   isDynamic()           {return true;}
+    public String    getLocation()         {return location;}
+    public FILE_PING setLocation(String l) {this.location=l; return this;}
 
     @ManagedAttribute(description="Whether the InfoWriter task is running")
     public synchronized boolean isInfoWriterRunning() {return info_writer != null && !info_writer.isDone();}
