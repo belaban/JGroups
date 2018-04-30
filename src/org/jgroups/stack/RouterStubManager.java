@@ -151,14 +151,8 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     }
 
     public void run() {
-        // try to create new RouterStubs for all elements in targets. when successful, remove target
-        while(!reconnect_list.isEmpty()) {
-            for(Iterator<Target> it=reconnect_list.iterator(); it.hasNext();) {
-                Target target=it.next();
-                if(reconnect(target))
-                    it.remove();
-            }
-        }
+        if(reconnect_list.removeIf(this::reconnect) && reconnect_list.isEmpty())
+            stopReconnector();
     }
 
     @Override
@@ -250,37 +244,6 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
 
 
 
-
-
-    /*public void connectionStatusChange(RouterStub stub, RouterStub.ConnectionStatus newState) {
-        switch(newState) {
-            case CONNECTED:
-            case DISCONNECTED:
-                reconnector.remove(stub.gossipRouterAddress());
-                break;
-            case CONNECTION_BROKEN:
-                reconnector.add(stub.gossipRouterAddress(), stub.local());
-                break;
-            default:
-                break;
-        }*/
-
-/*
-        if(newState == RouterStub.ConnectionStatus.CONNECTION_BROKEN) {
-            stub.interrupt();
-            stub.destroy();
-            startReconnecting(stub);
-        } else if (newState == RouterStub.ConnectionStatus.CONNECTED) {
-            stopReconnecting(stub);
-        } else if (newState == RouterStub.ConnectionStatus.DISCONNECTED) {
-            // wait for disconnect ack;
-            try {
-                stub.join(interval);
-            } catch (InterruptedException e) {
-            }
-        }*/
-    //}
-    
 
 
 
