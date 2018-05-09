@@ -9,7 +9,6 @@ import org.jgroups.protocols.PingData;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Responses;
-import org.jgroups.util.Util;
 
 import java.util.*;
 
@@ -173,7 +172,7 @@ public class ClientGmsImpl extends GmsImpl {
         }
         log.trace("%s: I (%s) am not the first of the nodes, waiting for another client to become coordinator",
                   gms.local_addr, joiner);
-        Util.sleep(500);
+        // Util.sleep(500);
         return false;
     }
 
