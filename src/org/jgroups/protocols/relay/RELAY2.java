@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -83,6 +84,9 @@ public class RELAY2 extends Protocol {
     protected volatile List<Address>                   site_masters;
 
     protected SiteMasterPicker                         site_master_picker;
+
+    /** Listens for notifications about becoming site master (arg: true), or ceasing to be site master (arg: false) */
+    protected Consumer<Boolean>                        site_master_listener;
 
     protected volatile Relayer                         relayer;
 
@@ -153,6 +157,8 @@ public class RELAY2 extends Protocol {
 
     public RouteStatusListener getRouteStatusListener()       {return route_status_listener;}
     public void setRouteStatusListener(RouteStatusListener l) {this.route_status_listener=l;}
+
+    public RELAY2 setSiteMasterListener(Consumer<Boolean> l)  {site_master_listener=l; return this;}
 
     @ManagedAttribute(description="Number of messages forwarded to the local SiteMaster")
     public long getNumForwardedToSiteMaster() {return forward_to_site_master.sum();}
@@ -683,10 +689,12 @@ public class RELAY2 extends Protocol {
                 timer.execute(() -> startRelayer(tmp, bridge_name));
             else
                 startRelayer(relayer, bridge_name);
+            notifySiteMasterListener(true);
         }
         else {
             if(cease_site_master) { // ceased being the site master: stop the relayer
                 is_site_master=false;
+                notifySiteMasterListener(false);
                 log.trace(local_addr + ": ceased to be site master; closing bridges");
                 if(relayer != null)
                     relayer.stop();
@@ -706,6 +714,10 @@ public class RELAY2 extends Protocol {
     }
 
 
+    protected void notifySiteMasterListener(boolean flag) {
+        if(site_master_listener != null)
+            site_master_listener.accept(flag);
+    }
 
     /**
      * Iterates over the list of members and adds every member if the member's rank is below max_site_masters. Skips

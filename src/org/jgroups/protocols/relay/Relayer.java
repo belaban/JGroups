@@ -228,11 +228,7 @@ public class Relayer {
                 List<Route> list=routes.get(key);
 
                 // Remove routes not in the view anymore:
-                for(Iterator<Route> it=list.iterator(); it.hasNext();) {
-                    Route route=it.next();
-                    if(!val.contains(route.siteMaster()))
-                        it.remove();
-                }
+                list.removeIf(route -> !val.contains(route.siteMaster()));
 
                 // Add routes that aren't yet in the routing table:
                 val.stream().filter(addr -> !contains(list, addr))
@@ -265,11 +261,7 @@ public class Relayer {
             for(Address mbr: view) {
                 SiteAddress member=(SiteAddress)mbr;
                 String key=member.getSite();
-                List<Address> list=map.get(key);
-                if(list == null) {
-                    list=new ArrayList<>();
-                    map.put(key, list);
-                }
+                List<Address> list=map.computeIfAbsent(key, k -> new ArrayList<>());
                 if(!list.contains(member))
                     list.add(member);
             }
