@@ -783,6 +783,12 @@ The snippet below shows a sample config:
 
 This will turn on DNS discovery using DNS server at address `192.168.0.17` and DNS query `jgroups-dns-ping.myproject.svc.cluster.local`.
 
+The `dns_address` parameter is optional and when it's missing, the protocol will use the default DNS server configured
+on the machine (usually, it's the first entry of `/etc/resolv.conf`).
+
+The `dns_query` parameter is mandatory. It is used for querying the DNS Server and obtaining information about the cluster members.
+The `svc.cluster.local` part is specific to Kubernetes and OpenShift and might be omitted.
+
 It is also possible to use `SRV` entries for discovery as shown below:
 
 
@@ -791,19 +797,22 @@ It is also possible to use `SRV` entries for discovery as shown below:
 ----
 
 <dns.DNS_PING
-            dns_address="192.168.0.17"
             dns_query="_ping._tcp.jgroups-dns-ping.myproject.svc.cluster.local"
             dns_record_type="SRV" />
 
 ----
 
 Kubernetes SRV entries are created using the following scheme: `_my-port-name._my-port-protocol.my-svc.my-namespace.svc.cluster.local`.
+When the above example is used in Kubernetes or OpenShift, the <<DNS_PING>> will form a cluster of all the Pods governed
+by a Service named `jgroups-dns-ping` in `myproject` Namespace, which expose a TCP port named `ping`.
 For more information, please refer to https://kubernetes.io/docs/admin/dns[Kubernetes DNS Admin Guide].
 
 NOTE: Note that both <<KUBE_PING>> and <<DNS_PING>> can be used in Kubernetes/OpenShift. The main difference between them is that
       <<KUBE_PING>> uses Kubernetes API for discovery whereas <<DNS_PING>> uses DNS entries. Having said that, <<DNS_PING>> should
       be used together with a Governing Service, which makes it perfect fit for
       https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set[Stateful Sets].
+
+A working example of using this protocol might be found in https://github.com/slaskawi/jgroups-dns-ping-example.
 
 
 ${DNS_PING}
