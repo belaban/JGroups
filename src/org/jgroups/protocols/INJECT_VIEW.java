@@ -34,13 +34,13 @@ public class INJECT_VIEW extends Protocol {
     @ManagedOperation(description="Inject a view (example of view string format: A=A/B/C;B=B/C;C=C)")
     public synchronized void injectView(String newView) {
         try {
-            log.info("[INJECT_VIEW] Received request to inject view %s\n", newView);
+            log.info("Received request to inject view %s", newView);
             String[] perNode = newView.split(NODE_VIEWS_SEPARATOR);
             String thisNodeAddress = getProtocolStack().getChannel().getAddressAsString();
 
             for( String nodeView : perNode ){
                 if( nodeView.startsWith(thisNodeAddress) ) {
-                    log.info("[INJECT_VIEW] [channel: %s] Injecting a new view: %s\n", thisNodeAddress, nodeView);
+                    log.info("[channel: %s] Injecting a new view: %s", thisNodeAddress, nodeView);
 
                     long viewId = getProtocolStack().getChannel().getView().getViewId().getId()+1;
                     List<Address> nodes = new ArrayList<>();
@@ -48,7 +48,7 @@ public class INJECT_VIEW extends Protocol {
                     for( String nodeName : nodeView.split(VIEW_SEPARATOR)[1].split(NAMES_SEPARATOR) ){
                         for( Map.Entry<Address, String> entry : NameCache.getContents().entrySet() ) {
                             if( nodeName.equals(entry.getValue()) ){
-                                log.debug("[INJECT_VIEW] [channel: %s] Found name: <%s> for address: <%s>\n", entry.getValue(), entry.getKey().toString());
+                                log.debug("[channel: %s] Found name: <%s> for address: <%s>", entry.getValue(), entry.getKey().toString());
                                 nodes.add( entry.getKey() );
                                 break;
                             }
@@ -59,7 +59,7 @@ public class INJECT_VIEW extends Protocol {
 
                     GMS gms = getProtocolStack().findProtocol(GMS.class);
                     gms.installView(view);
-                    log.info("[INJECT_VIEW] [channel: %s] Injection finished of view: %s\n", thisNodeAddress, nodeView);
+                    log.info("[channel: %s] Injection finished of view: %s", thisNodeAddress, nodeView);
                 }
             }
         }
