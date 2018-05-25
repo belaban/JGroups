@@ -1807,7 +1807,7 @@ SYM_ENCRYPT could then be configured as follows:
              alias="myKey"/>
 ----
 
-Note that defaultStore.keystore will have to be found in the claspath.
+Note that defaultStore.keystore will have to be found in the classpath.
 
 NOTE: Both SYM_ENCRYPT and ASYM_ENCRYPT should be placed directly under NAKACK2
 (see link:https://github.com/belaban/JGroups/tree/master/conf[sample configurations], e.g. sym-encrypt.xml or
