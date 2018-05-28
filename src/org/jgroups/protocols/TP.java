@@ -251,7 +251,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedAttribute public int getBundlerBufferSize() {
         if(bundler instanceof TransferQueueBundler)
             return ((TransferQueueBundler)bundler).getBufferSize();
-        return bundler.size();
+        return bundler != null? bundler.size() : 0;
     }
 
     @ManagedAttribute(description="The wait strategy for a RingBuffer")
@@ -953,7 +953,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @ManagedAttribute(description="Returns stats about the current bundler")
     public String bundlerStats() {
-        Map<String,Object> tmp=bundler.getStats();
+        Map<String,Object> tmp=bundler != null? bundler.getStats() : null;
         return tmp != null? tmp.toString() : "n/a";
     }
 
