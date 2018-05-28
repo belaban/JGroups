@@ -172,7 +172,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             case Event.SET_SECRET_KEY:
                 Tuple<SecretKey,byte[]> tuple=evt.arg();
                 try {
-                    setKeys(tuple.getVal1(), tuple.getVal2());
+                    setKeys(null, tuple.getVal1(), tuple.getVal2());
                 }
                 catch(Exception ex) {
                     log.error("failed setting secret key", ex);
@@ -349,10 +349,8 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             if(tmp == null)
                 sendKeyRequest(key_server_addr); // unable to understand response, let's try again
             else {
-                // otherwise set the returned key as the shared key
-                log.debug("%s: installing secret key received from %s (version: %s)",
-                          local_addr, msg.getSrc(), Util.byteArrayToHexString(key_version));
-                setKeys(tmp, key_version);
+                // otherwise set the received key as the shared key
+                setKeys(msg.src(), tmp, key_version);
             }
         }
         catch(Exception e) {
@@ -461,16 +459,20 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
 	}
 
 
-    protected void setKeys(SecretKey key, byte[] version) throws Exception {
+    protected void setKeys(Address sender, SecretKey key, byte[] version) throws Exception {
         synchronized(this) {
             if(Arrays.equals(this.sym_version, version)) {
                 stopQueueing();
+                log.debug("%s: ignoring secret key received from %s (version: %s), as it has already been installed",
+                          local_addr, sender != null? sender : "key exchange protocol", Util.byteArrayToHexString(version));
                 return;
             }
             Cipher decoding_cipher=secret_key != null? decoding_ciphers.take() : null;
             // put the previous key into the map, keep the cipher: no leak, as we'll clear decoding_ciphers in initSymCiphers()
             if(decoding_cipher != null)
                 key_map.putIfAbsent(new AsciiString(version), decoding_cipher);
+            log.debug("%s: installing secret key received from %s (version: %s)",
+                      local_addr, sender != null? sender : "key exchange protocol", Util.byteArrayToHexString(version));
             secret_key=key;
             initSymCiphers(key.getAlgorithm(), key);
             sym_version=version;
