@@ -609,6 +609,16 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         }
     }
 
+    @Override protected void secretKeyNotAvailable() {
+        if(!isKeyServer()) {
+            if(key_server_addr == null) {
+                log.warn("%s: key server's address is null, dropping request message for secret key", local_addr);
+                return;
+            }
+            sendKeyRequest(key_server_addr);
+        }
+    }
+
     /** Used to reconstitute public key sent in byte form from peer */
     protected PublicKey generatePubKey(byte[] encodedKey) {
         PublicKey pubKey=null;

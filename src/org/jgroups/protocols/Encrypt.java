@@ -118,8 +118,9 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
+                Object retval=down_prot.down(evt); // Start keyserver socket in SSL_KEY_EXCHANGE, for instance
                 handleView(evt.getArg());
-                break;
+                return retval;
 
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=evt.getArg();
@@ -134,6 +135,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             if(secret_key == null) {
                 log.trace("%s: discarded %s message to %s as secret key is null, hdrs: %s",
                           local_addr, msg.dest() == null? "mcast" : "unicast", msg.dest(), msg.printHeaders());
+                secretKeyNotAvailable();
                 return null;
             }
             encryptAndSend(msg);
@@ -230,16 +232,17 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         }
         switch(hdr.type()) {
             case EncryptHeader.ENCRYPT:
-                return handleEncryptedMessage(msg);
+                return handleEncryptedMessage(msg, hdr.version);
             default:
                 return handleUpEvent(msg,hdr);
         }
     }
 
 
-    protected Object handleEncryptedMessage(Message msg) throws Exception {
-        if(!process(msg))
-            return null;
+    protected Object handleEncryptedMessage(Message msg, byte[] version) throws Exception {
+        if(!Arrays.equals(sym_version, version)) // only check if msg needs to be queued if versions differ
+            if(!process(msg))
+                return null;
 
         // try and decrypt the message - we need to copy msg as we modify its
         // buffer (http://jira.jboss.com/jira/browse/JGRP-538)
@@ -407,6 +410,11 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
 
     }
 
+    /** Called when the secret key is null */
+    protected void secretKeyNotAvailable() {
+
+    }
+
 
     /** Decrypts all messages in a batch, replacing encrypted messages in-place with their decrypted versions */
     protected class Decrypter implements BiConsumer<Message,MessageBatch> {
@@ -426,9 +434,11 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
 
             if(hdr.type() == EncryptHeader.ENCRYPT) {
                 try {
-                    if(!process(msg)) {
-                        batch.remove(msg);
-                        return;
+                    if(!Arrays.equals(sym_version, hdr.version)) { // only check if msg needs to be queued if versions differ
+                        if(!process(msg)) {
+                            batch.remove(msg);
+                            return;
+                        }
                     }
                     Message tmpMsg=decryptMessage(cipher, msg.copy()); // need to copy for possible xmits
                     if(tmpMsg != null)
