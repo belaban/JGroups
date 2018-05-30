@@ -4,5 +4,4 @@
 # Probe [-help] [-addr <addr>] [-port <port>] [-ttl <ttl>] [-timeout <timeout>]
 
 
-
-jgroups.sh org.jgroups.tests.Probe $*
+`dirname $0`/jgroups.sh org.jgroups.tests.Probe $*

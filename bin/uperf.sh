@@ -5,4 +5,4 @@
 
 JG=$HOME/JGroups
 
-jgroups.sh org.jgroups.tests.perf.UPerf $*
+`dirname $0`/jgroups.sh org.jgroups.tests.perf.UPerf $*

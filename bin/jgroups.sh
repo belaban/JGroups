@@ -2,7 +2,9 @@
 
 #!/bin/bash
 
-JG=${JG-$HOME/JGroups}
+CURRENT=`dirname $0/../`
+
+JG=${JG-$CURRENT}
 
 LIB=$JG/lib
 

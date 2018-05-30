@@ -5,4 +5,4 @@
 
 JG=$HOME/JGroups
 
-jgroups.sh org.jgroups.util.CountTests $*
+`dirname $0`/jgroups.sh org.jgroups.util.CountTests $*
