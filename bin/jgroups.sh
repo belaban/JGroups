@@ -2,7 +2,8 @@
 
 #!/bin/bash
 
-CURRENT=`dirname $0/../`
+CURR=`dirname $0`
+CURRENT=$CURR/../
 
 JG=${JG-$CURRENT}
 
