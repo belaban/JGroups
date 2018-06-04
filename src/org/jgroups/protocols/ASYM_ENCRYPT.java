@@ -397,39 +397,44 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
     }
 
 
-    @Override protected synchronized void handleView(View v) {
-        boolean left_mbrs=change_key_on_leave && this.view != null && !v.containsMembers(this.view.getMembersRaw());
-        boolean create_new_key=secret_key == null || left_mbrs;
-        super.handleView(v);
+    @Override protected void handleView(View v) {
+        boolean left_mbrs, create_new_key;
+        Address old_key_server;
 
-        if(key_requesters != null)
-            key_requesters.retainAll(v.getMembers());
+        synchronized(this) {
+            left_mbrs=change_key_on_leave && this.view != null && !v.containsMembers(this.view.getMembersRaw());
+            create_new_key=secret_key == null || left_mbrs;
+            super.handleView(v);
 
-        Address old_key_server=key_server_addr;
-        key_server_addr=v.getCoord(); // the coordinator is the keyserver
-        if(Objects.equals(key_server_addr, local_addr)) {
-            if(!Objects.equals(key_server_addr, old_key_server))
-                log.debug("%s: I'm the new key server", local_addr);
-            if(create_new_key) {
-                createNewKey();
-                if(key_requesters != null)
-                    key_requesters.stop();
-                List<Address> targets=new ArrayList<>(v.getMembers());
-                targets.remove(local_addr);
+            if(key_requesters != null)
+                key_requesters.retainAll(v.getMembers());
 
-                if(!targets.isEmpty()) {  // https://issues.jboss.org/browse/JGRP-2203
-                    key_requesters=new ResponseCollectorTask<Boolean>(targets)
-                      .setPeriodicTask(c -> {
-                          Message msg=new Message(null).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK)
-                            .putHeader(id, new EncryptHeader(EncryptHeader.NEW_KEYSERVER, sym_version));
-                          down_prot.down(msg);
-                      })
-                      .start(getTransport().getTimer(), 0, key_server_interval);
+            old_key_server=key_server_addr;
+            key_server_addr=v.getCoord(); // the coordinator is the keyserver
+            if(Objects.equals(key_server_addr, local_addr)) {
+                if(!Objects.equals(key_server_addr, old_key_server))
+                    log.debug("%s: I'm the new key server", local_addr);
+                if(create_new_key) {
+                    createNewKey();
+                    if(key_requesters != null)
+                        key_requesters.stop();
+                    List<Address> targets=new ArrayList<>(v.getMembers());
+                    targets.remove(local_addr);
+
+                    if(!targets.isEmpty()) {  // https://issues.jboss.org/browse/JGRP-2203
+                        key_requesters=new ResponseCollectorTask<Boolean>(targets)
+                          .setPeriodicTask(c -> {
+                              Message msg=new Message(null).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK)
+                                .putHeader(id, new EncryptHeader(EncryptHeader.NEW_KEYSERVER, sym_version));
+                              down_prot.down(msg);
+                          })
+                          .start(getTransport().getTimer(), 0, key_server_interval);
+                    }
                 }
+                return;
             }
         }
-        else
-            handleNewKeyServer(old_key_server, v instanceof MergeView, left_mbrs);
+        handleNewKeyServer(old_key_server, v instanceof MergeView, left_mbrs);
     }
 
 
@@ -449,7 +454,6 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
     protected void handleNewKeyServer(Address old_key_server, boolean merge_view, boolean left_mbrs) {
         if(change_key_on_leave && (keyServerChanged(old_key_server) || merge_view || left_mbrs)) {
             startQueueing();
-            log.debug("%s: sending request for secret key to the new keyserver %s", local_addr, key_server_addr);
             sendKeyRequest(key_server_addr);
         }
     }

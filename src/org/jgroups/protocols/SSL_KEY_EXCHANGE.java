@@ -166,7 +166,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     }
 
 
-    public synchronized void fetchSecretKeyFrom(Address target) throws Exception {
+    public void fetchSecretKeyFrom(Address target) throws Exception {
         try(SSLSocket sock=createSocketTo(target)) {
             DataInput in=new DataInputStream(sock.getInputStream());
             OutputStream out=sock.getOutputStream();
