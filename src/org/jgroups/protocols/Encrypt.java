@@ -212,7 +212,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
 
         byte[] tmp=digest.digest();
         sym_version=Arrays.copyOf(tmp, tmp.length);
-        // log.debug("%s: created %d symmetric ciphers with secret key (%d bytes)", local_addr, cipher_pool_size, sym_version.length);
     }
 
 

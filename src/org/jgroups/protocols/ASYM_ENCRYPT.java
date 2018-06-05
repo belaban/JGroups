@@ -297,6 +297,8 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
                 break;
             case EncryptHeader.NEW_KEYSERVER:
                 Address sender=msg.src();
+                if(!inView(sender, "key server %s is not in the current view %s; ignoring NEW_KEYSERVER msg"))
+                    return null;
                 if(!Arrays.equals(sym_version, hdr.version)) // only send if sym_versions differ
                     sendKeyRequest(sender);
                 else
@@ -339,8 +341,8 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             return;
 
         if(Arrays.equals(sym_version, key_version)) {
-            log.debug("%s: secret key (version %s) already installed, ignoring key response",
-                      local_addr, Util.byteArrayToHexString(key_version));
+            log.debug("%s: secret key (version %s) already installed, ignoring key response from %s",
+                      local_addr, Util.byteArrayToHexString(key_version), msg.src());
             stopQueueing();
             return;
         }
@@ -354,7 +356,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             }
         }
         catch(Exception e) {
-            log.warn("%s: unable to process received public key", local_addr, e);
+            log.warn("%s: unable to process key received from %s: %s", local_addr, msg.src(), e);
         }
     }
 
@@ -517,7 +519,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             return;
 
         if(use_external_key_exchange) {
-            log.debug("%s: asking key exchange protocol to get secret key", local_addr);
+            log.debug("%s: asking key exchange protocol to get secret key from %s", local_addr, key_server);
             down_prot.down(new Event(Event.FETCH_SECRET_KEY, key_server));
             return;
         }
@@ -591,6 +593,9 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         finally {
             queue_lock.unlock();
         }
+
+        if(log.isTraceEnabled() && !sink.isEmpty())
+            log.trace("%s: sending %d queued messages up the stack", local_addr, sink.size());
 
         for(Message queued_msg: sink) {
             try {
