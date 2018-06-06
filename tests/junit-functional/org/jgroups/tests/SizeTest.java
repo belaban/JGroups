@@ -630,7 +630,7 @@ public class SizeTest {
     public void testEncryptHeader() throws Exception {
         EncryptHeader hdr=new EncryptHeader(EncryptHeader.ENCRYPT, new byte[]{'b','e', 'l', 'a'});
         _testSize(hdr);
-        hdr=new EncryptHeader(EncryptHeader.ENCRYPT, "Hello".getBytes()).signature("bla".getBytes());
+        hdr=new EncryptHeader(EncryptHeader.ENCRYPT, "Hello".getBytes());
         _testSize(hdr);
     }
 
@@ -818,7 +818,7 @@ public class SizeTest {
         _test(hdr);
     }
 
-    protected void _test(DH_KEY_EXCHANGE.DhHeader hdr) throws Exception {
+    protected static void _test(DH_KEY_EXCHANGE.DhHeader hdr) throws Exception {
         int expected_size=hdr.serializedSize();
         byte[] buf=Util.streamableToByteBuffer(hdr);
         assert buf.length == expected_size;

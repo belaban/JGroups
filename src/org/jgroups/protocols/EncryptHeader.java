@@ -21,7 +21,6 @@ public class EncryptHeader extends Header {
 
     protected byte   type;
     protected byte[] version;
-    protected byte[] signature; // the encrypted checksum
 
 
     public EncryptHeader() {}
@@ -34,8 +33,6 @@ public class EncryptHeader extends Header {
 
     public byte          type()              {return type;}
     public byte[]        version()           {return version;}
-    public byte[]        signature()         {return signature;}
-    public EncryptHeader signature(byte[] s) {this.signature=s; return this;}
     public short getMagicId() {return 88;}
     public Supplier<? extends Header> create() {
         return EncryptHeader::new;
@@ -44,20 +41,18 @@ public class EncryptHeader extends Header {
     public void writeTo(DataOutput out) throws Exception {
         out.writeByte(type);
         Util.writeByteBuffer(version, 0, version != null? version.length : 0, out);
-        Util.writeByteBuffer(signature, 0, signature != null? signature.length : 0, out);
     }
 
     public void readFrom(DataInput in) throws Exception {
         type=in.readByte();
         version=Util.readByteBuffer(in);
-        signature=Util.readByteBuffer(in);
     }
 
     public String toString() {
         return String.format("%s [version=%s]", typeToString(type), (version != null? Util.byteArrayToHexString(version) : "null"));
     }
 
-    public int serializedSize() {return Global.BYTE_SIZE + Util.size(version) + Util.size(signature) /*+ Util.size(payload) */;}
+    public int serializedSize() {return Global.BYTE_SIZE + Util.size(version);}
 
     protected static String typeToString(byte type) {
         switch(type) {

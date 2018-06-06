@@ -1773,20 +1773,15 @@ keystore (symmetric encryption) or a new joiner fetches it from the coordinator 
 
 A sender encrypts a message with the shared secret key and the receivers decrypt it with the same secret key.
 
-By default, the entire message (including the headers) is encrypted, but it is also possible to only encrypt the payload
-(this is configurable). If the headers are not encrypted, it is possible to use replay attacks, because the
-sequence numbers (seqnos) of a message are seen. For example, if a seqno is 50, then an attacker might copy the message,
-and increment the seqno. This is prevented by copying and _signing_ the message.
+By default, only the payload of a message is encrypted, but not the other metadata (e.g. headers, destination address,
+flags etc).
 
-A message can be signed, which is a hash over the encrypted message, encrypted with the secret key. If the hash shipped
-with a message doesn't match the hash computed over the received message, the message will be discarded by a receiver,
-and no attempt is made to decrypt it.
+If (for example) headers are not encrypted, it is possible to use replay attacks, because the sequence number (seqno)
+of a message is seen. For example, if a seqno is 50, then an attacker might copy the message, and increment the seqno.
 
-The cost of encrypting the entire message includes serializing the entire message (including headers, flags, destination
-address etc) and encrypting it into the buffer of a new message (to the same destination). If message signing is enabled,
-the cost of computing a hashcode and encrypting it is added to the above cost.
+To prevent this, the <<SERIALIZE>> protocol can be placed on top of SYM_ENCRYPT or ASYM_ENCRYPT. It serializes the
+_entire message_ into the payload of a new message that's then encrypted and sent down the stack.
 
-Attributes present in both symmetric and asymmetric encryption include `sign_msgs` and `encrypt_entire_message`.
 
 [[SYM_ENCRYPT]]
 ===== SYM_ENCRYPT
@@ -1810,7 +1805,6 @@ SYM_ENCRYPT could then be configured as follows:
 [source,xml]
 ----
 <SYM_ENCRYPT sym_algorithm="AES"
-             encrypt_entire_message="true"
              key_store_name="defaultStore.keystore"
              store_password="changeit"
              alias="myKey"/>
@@ -1844,7 +1838,7 @@ A stack configured to use asymmetric encryption could look like this:
 ----
     ...
     <VERIFY_SUSPECT/>
-    <ASYM_ENCRYPT encrypt_entire_message="true"
+    <ASYM_ENCRYPT
              sym_keylength="128"
              sym_algorithm="AES/ECB/PKCS5Padding"
              asym_keylength="512"
@@ -1866,6 +1860,14 @@ else unauthenticated nodes would be able to acquire the secret key from the coor
 
 ${ASYM_ENCRYPT}
 
+
+[[SERIALIZE]]
+===== SERIALIZE
+This protocol serializes every sent message including all of its metadata into a new message and sends it down. When
+a message is received, it will be deserialized and then sent up the stack. This can be used by the encryption
+protocols (see <<ENCRYPT>>).
+
+${SERIALIZE}
 
 [[SSL_KEY_EXCHANGE]]
 ===== SSL_KEY_EXCHANGE

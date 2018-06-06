@@ -11,7 +11,6 @@
 
     <!-- Asymmetric encryption using public/private encryption to fetch the shared secret key -->
     <ASYM_ENCRYPT
-            encrypt_entire_message="true"
             sym_keylength="128"
             sym_algorithm="AES/ECB/PKCS5Padding"
             asym_keylength="512"

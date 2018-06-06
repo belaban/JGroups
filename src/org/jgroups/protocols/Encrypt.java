@@ -1,10 +1,16 @@
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
+import org.jgroups.util.AsciiString;
+import org.jgroups.util.BoundedHashMap;
+import org.jgroups.util.MessageBatch;
+import org.jgroups.util.Util;
 
 import javax.crypto.Cipher;
 import java.security.Key;
@@ -15,9 +21,6 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.BiConsumer;
-import java.util.zip.Adler32;
-import java.util.zip.CRC32;
-import java.util.zip.Checksum;
 
 /**
  * Super class of symmetric ({@link SYM_ENCRYPT}) and asymmetric ({@link ASYM_ENCRYPT}) encryption protocols.
@@ -46,15 +49,19 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     @Property(description="Number of ciphers in the pool to parallelize encrypt and decrypt requests",writable=false)
     protected int                           cipher_pool_size=8;
 
-    @Property(description="If true, the entire message (including payload and headers) is encrypted, else only the payload")
-    protected boolean                       encrypt_entire_message=true;
+    @Property(description="If true, the entire message (including payload and headers) is encrypted, else only the payload",
+      deprecatedMessage="ignored (always false)")
+    @Deprecated
+    protected boolean                       encrypt_entire_message;
 
     @Property(description="If true, all messages are digitally signed by adding an encrypted checksum of the encrypted " +
-      "message to the header. Ignored if encrypt_entire_message is false")
-    protected boolean                       sign_msgs=true;
+      "message to the header. Ignored if encrypt_entire_message is false",deprecatedMessage="ignored (always false)")
+    @Deprecated
+    protected boolean                       sign_msgs;
 
     @Property(description="When sign_msgs is true, by default CRC32 is used to create the checksum. If use_adler is " +
-      "true, Adler32 will be used")
+      "true, Adler32 will be used",deprecatedMessage="ignored as sign_msgs has been deprecated")
+    @Deprecated
     protected boolean                       use_adler;
 
     @Property(description="Max number of keys in key_map")
@@ -94,12 +101,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     public <T extends Encrypt<E>> T asymAlgorithm(String alg)       {this.asym_algorithm=alg; return (T)this;}
     public byte[]                   symVersion()                    {return sym_version;}
     public <T extends Encrypt<E>> T localAddress(Address addr)      {this.local_addr=addr; return (T)this;}
-    public boolean                  encryptEntireMessage()          {return encrypt_entire_message;}
-    public <T extends Encrypt<E>> T encryptEntireMessage(boolean b) {this.encrypt_entire_message=b; return (T)this;}
-    public boolean                  signMessages()                  {return this.sign_msgs;}
-    public <T extends Encrypt<E>> T signMessages(boolean flag)      {this.sign_msgs=flag; return (T)this;}
-    public boolean                  adler()                         {return use_adler;}
-    public <T extends Encrypt<E>> T adler(boolean flag)             {this.use_adler=flag; return (T)this;}
     @ManagedAttribute public String version()                       {return Util.byteArrayToHexString(sym_version);}
 
     public void init() throws Exception {
@@ -283,8 +284,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         return false;
     }
 
-    protected Checksum createChecksummer() {return use_adler? new Adler32() : new CRC32();}
-
 
     /** Does the actual work for decrypting - if version does not match current cipher then tries the previous cipher */
     protected Message decryptMessage(Cipher cipher, Message msg) throws Exception {
@@ -296,72 +295,26 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
                 return null;
             }
             log.trace("%s: decrypting msg from %s using previous cipher version", local_addr, msg.src());
-            return _decrypt(cipher, msg, hdr);
+            return _decrypt(cipher, msg);
         }
-        return _decrypt(cipher, msg, hdr);
+        return _decrypt(cipher, msg);
     }
 
-    protected Message _decrypt(final Cipher cipher, Message msg, EncryptHeader hdr) throws Exception {
-        byte[] decrypted_msg;
-
-        if(!encrypt_entire_message && msg.getLength() == 0)
+    protected Message _decrypt(final Cipher cipher, Message msg) throws Exception {
+        if(msg.getLength() == 0)
             return msg;
 
-        if(encrypt_entire_message && sign_msgs) {
-            byte[] signature=hdr.signature();
-            if(signature == null) {
-                log.error("%s: dropped message from %s as the header did not have a checksum", local_addr, msg.src());
-                return null;
-            }
-
-            long msg_checksum=decryptChecksum(cipher, signature, 0, signature.length);
-            long actual_checksum=computeChecksum(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-            if(actual_checksum != msg_checksum) {
-                log.error("%s: dropped message from %s as the message's checksum (%d) did not match the computed checksum (%d)",
-                          local_addr, msg.src(), msg_checksum, actual_checksum);
-                return null;
-            }
-        }
-
+        byte[] decrypted_msg;
         if(cipher == null)
             decrypted_msg=code(msg.getRawBuffer(), msg.getOffset(), msg.getLength(), true);
         else
             decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-
-        if(!encrypt_entire_message) {
-            msg.setBuffer(decrypted_msg);
-            return msg;
-        }
-
-        Message ret=Util.streamableFromBuffer(Message::new,decrypted_msg,0,decrypted_msg.length);
-        if(ret.getDest() == null)
-            ret.setDest(msg.getDest());
-        if(ret.getSrc() == null)
-            ret.setSrc(msg.getSrc());
-        return ret;
+        return msg.setBuffer(decrypted_msg);
     }
 
 
     protected void encryptAndSend(Message msg) throws Exception {
         EncryptHeader hdr=new EncryptHeader(EncryptHeader.ENCRYPT, symVersion());
-        if(encrypt_entire_message) {
-            if(msg.getSrc() == null)
-                msg.setSrc(local_addr);
-
-            Buffer serialized_msg=Util.streamableToBuffer(msg);
-            byte[] encrypted_msg=code(serialized_msg.getBuf(),serialized_msg.getOffset(),serialized_msg.getLength(),false);
-
-            if(sign_msgs) {
-                long checksum=computeChecksum(encrypted_msg, 0, encrypted_msg.length);
-                byte[] checksum_array=encryptChecksum(checksum);
-                hdr.signature(checksum_array);
-            }
-
-            // exclude existing headers, they will be seen again when we decrypt and unmarshal the msg at the receiver
-            Message tmp=msg.copy(false, false).setBuffer(encrypted_msg).putHeader(this.id,hdr);
-            down_prot.down(tmp);
-            return;
-        }
 
         // copy neeeded because same message (object) may be retransmitted -> prevent double encryption
         Message msgEncrypted=msg.copy(false).putHeader(this.id, hdr);
@@ -385,27 +338,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         finally {
             queue.offer(cipher);
         }
-    }
-
-    protected long computeChecksum(byte[] input, int offset, int length) {
-        Checksum checksummer=createChecksummer();
-        checksummer.update(input, offset, length);
-        return checksummer.getValue();
-    }
-
-    protected byte[] encryptChecksum(long checksum) throws Exception {
-        byte[] checksum_array=new byte[Global.LONG_SIZE];
-        Bits.writeLong(checksum, checksum_array, 0);
-        return code(checksum_array, 0, checksum_array.length, false);
-    }
-
-    protected long decryptChecksum(final Cipher cipher, byte[] input, int offset, int length) throws Exception {
-        byte[] decrypted_checksum;
-        if(cipher == null)
-            decrypted_checksum=code(input, offset, length, true);
-        else
-            decrypted_checksum=cipher.doFinal(input, offset, length);
-        return Bits.readLong(decrypted_checksum, 0);
     }
 
 

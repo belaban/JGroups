@@ -58,11 +58,11 @@ public class ASYM_ENCRYPT_BlockTest extends BMNGRunner {
     }
 
 
-    protected JChannel create(String name) throws Exception {
+    protected static JChannel create(String name) throws Exception {
         Protocol[] protocols={
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
-          new ASYM_ENCRYPT().encryptEntireMessage(false).symKeylength(128)
+          new ASYM_ENCRYPT().symKeylength(128)
             .symAlgorithm("AES/ECB/PKCS5Padding").asymKeylength(512).asymAlgorithm("RSA"),
           new NAKACK2(),
           new UNICAST3(),

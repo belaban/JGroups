@@ -55,10 +55,6 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
 
     /** Same as above, but don't encrypt entire message, but just payload */
     public void testRegularMessageReceptionWithNullMessagesEncryptOnlyPayload() throws Exception {
-        Stream.of(a,b,c).forEach(ch -> {
-            Encrypt encr=ch.getProtocolStack().findProtocol(Encrypt.class);
-            encr.encryptEntireMessage(false);
-        });
         super.testRegularMessageReceptionWithNullMessages();
     }
 
@@ -67,15 +63,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
     }
 
     public void testRegularMessageReceptionWithEmptyMessagesEncryptOnlyPayload() throws Exception {
-        Stream.of(a,b,c).forEach(ch -> {
-            Encrypt encr=ch.getProtocolStack().findProtocol(Encrypt.class);
-            encr.encryptEntireMessage(false);
-        });
         super.testRegularMessageReceptionWithEmptyMessages();
-    }
-
-    public void testChecksum() throws Exception {
-        super.testChecksum();
     }
 
     public void testRogueMemberJoin() throws Exception {
@@ -330,7 +318,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         return ch;
     }
 
-    protected void printSymVersion(JChannel ... channels) {
+    protected static void printSymVersion(JChannel... channels) {
         for(JChannel ch: channels) {
             ASYM_ENCRYPT encr=ch.getProtocolStack().findProtocol(ASYM_ENCRYPT.class);
             byte[] sym_version=encr.symVersion();
@@ -341,8 +329,8 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
 
     // Note that setting encrypt_entire_message to true is critical here, or else some of the tests in this
     // unit test would fail!
-    protected ASYM_ENCRYPT createENCRYPT() throws Exception {
-        ASYM_ENCRYPT encrypt=new ASYM_ENCRYPT().encryptEntireMessage(true).signMessages(true);
+    protected static ASYM_ENCRYPT createENCRYPT() throws Exception {
+        ASYM_ENCRYPT encrypt=new ASYM_ENCRYPT();
         encrypt.init();
         return encrypt;
     }

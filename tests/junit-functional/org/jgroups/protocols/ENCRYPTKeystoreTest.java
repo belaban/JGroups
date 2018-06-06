@@ -19,7 +19,7 @@ import java.util.Map;
  * @author xenephon
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, sequential=false)
+@Test(groups=Global.FUNCTIONAL)
 public class ENCRYPTKeystoreTest {
 
     static final short ENCRYPT_ID=ClassConfigurator.getProtocolId(SYM_ENCRYPT.class);
@@ -116,13 +116,6 @@ public class ENCRYPTKeystoreTest {
         assert observer.getUpMessages().isEmpty();
     }
 
-    public void testEventUpNoMessage() throws Exception {
-        SYM_ENCRYPT encrypt=create("defaultStore.keystore");
-        MockProtocol observer=new MockProtocol();
-        encrypt.setUpProtocol(observer);
-        encrypt.up((Message)null);
-        assert observer.getUpMessages().isEmpty();
-    }
 
     public void testMessageUpNoBuffer() throws Exception {
         SYM_ENCRYPT encrypt=create("defaultStore.keystore");
@@ -133,7 +126,7 @@ public class ENCRYPTKeystoreTest {
     }
 
     public void testEncryptEntireMessage() throws Exception {
-        SYM_ENCRYPT encrypt=create("defaultStore.keystore").encryptEntireMessage(true);
+        SYM_ENCRYPT encrypt=create("defaultStore.keystore");
         Message msg=new Message(null, "hello world".getBytes()).putHeader((short)1, new TpHeader("cluster"));
         MockProtocol mock=new MockProtocol();
         encrypt.setDownProtocol(mock);
@@ -151,7 +144,7 @@ public class ENCRYPTKeystoreTest {
     }
 
     protected static SYM_ENCRYPT create(String keystore) throws Exception {
-        SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName(keystore).encryptEntireMessage(false);
+        SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName(keystore);
         encrypt.init();
         return encrypt;
     }

@@ -1,11 +1,15 @@
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.demos.KeyStoreGenerator;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.MyReceiver;
@@ -101,18 +105,6 @@ public abstract class EncryptTest {
         assertForEachMessage(msg -> Arrays.equals(msg.getRawBuffer(), new byte[0]));
     }
 
-    //@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
-    public void testChecksum() throws Exception {
-        Encrypt encrypt=a.getProtocolStack().findProtocol(Encrypt.class);
-
-        byte[] buffer="Hello world".getBytes();
-        long checksum=encrypt.computeChecksum(buffer, 0, buffer.length);
-        byte[] checksum_array=encrypt.encryptChecksum(checksum);
-
-        long actual_checksum=encrypt.decryptChecksum(null, checksum_array, 0, checksum_array.length);
-        assert checksum == actual_checksum : String.format("checksum: %d, actual: %d", checksum, actual_checksum);
-    }
-
 
     /** A rogue member should not be able to join a cluster */
     //@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
@@ -166,7 +158,6 @@ public abstract class EncryptTest {
     //@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
     public void testMessageSendingByRogueUsingEncryption() throws Exception {
         SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName("/tmp/ignored.keystore");
-        encrypt.encryptEntireMessage(true).signMessages(true);
 
         SecretKey secret_key=KeyStoreGenerator.createSecretKey();
         Field secretKey=Util.getField(SYM_ENCRYPT.class, "secret_key");
@@ -181,9 +172,6 @@ public abstract class EncryptTest {
         byte[] buf="hello from rogue".getBytes();
         byte[] encrypted_buf=encrypt.code(buf, 0, buf.length, false);
         msg.setBuffer(encrypted_buf);
-        long checksum=encrypt.computeChecksum(encrypted_buf, 0, encrypted_buf.length);
-        byte[] tmp=encrypt.encryptChecksum(checksum);
-        hdr.signature(tmp);
 
         rogue.send(msg);
 
@@ -239,10 +227,17 @@ public abstract class EncryptTest {
     /**
      * Tests the scenario where the non-member R captures a message from some cluster member in {A,B,C}, then
      * increments the NAKACK2 seqno and resends that message. The message must not be received by {A,B,C};
-     * it should be discarded.
+     * it should be discarded. see https://issues.jboss.org/browse/JGRP-2273
      */
-    //@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
     public void testCapturingOfMessageByNonMemberAndResending() throws Exception {
+
+        // add SERIALIZE over the encryption protocol, so headers are encrypted, too, and therefore a replay attack as
+        // this one won't succeed
+        for(JChannel ch: Arrays.asList(a,b,c)) {
+            ch.getProtocolStack().insertProtocol(new SERIALIZE(), ProtocolStack.Position.ABOVE, Encrypt.class);
+        }
+
+
         rogue.setReceiver(msg -> {
             System.out.printf("rogue: modifying and resending msg %s, hdrs: %s\n", msg, msg.printHeaders());
             rogue.setReceiver(null); // to prevent recursive cycle

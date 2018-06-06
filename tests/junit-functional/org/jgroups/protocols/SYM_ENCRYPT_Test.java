@@ -9,8 +9,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.stream.Stream;
-
 /**
  * Tests use cases for {@link SYM_ENCRYPT} described in https://issues.jboss.org/browse/JGRP-2021.
  * Make sure you create the keystore before running this test (ant make-keystore).
@@ -41,10 +39,6 @@ public class SYM_ENCRYPT_Test extends EncryptTest {
 
     /** Same as above, but don't encrypt entire message, but just payload */
     public void testRegularMessageReceptionWithNullMessagesEncryptOnlyPayload() throws Exception {
-        Stream.of(a,b,c).forEach(ch -> {
-            Encrypt encr=ch.getProtocolStack().findProtocol(Encrypt.class);
-            encr.encryptEntireMessage(false);
-        });
         super.testRegularMessageReceptionWithNullMessages();
     }
 
@@ -53,15 +47,7 @@ public class SYM_ENCRYPT_Test extends EncryptTest {
     }
 
     public void testRegularMessageReceptionWithEmptyMessagesEncryptOnlyPayload() throws Exception {
-        Stream.of(a,b,c).forEach(ch -> {
-            Encrypt encr=ch.getProtocolStack().findProtocol(Encrypt.class);
-            encr.encryptEntireMessage(false);
-        });
         super.testRegularMessageReceptionWithEmptyMessages();
-    }
-
-    public void testChecksum() throws Exception {
-        super.testChecksum();
     }
 
     public void testRogueMemberJoin() throws Exception {
@@ -106,9 +92,8 @@ public class SYM_ENCRYPT_Test extends EncryptTest {
 
     // Note that setting encrypt_entire_message to true is critical here, or else some of the tests in this
     // unit test would fail!
-    protected SYM_ENCRYPT createENCRYPT(String keystore_name, String store_pwd) throws Exception {
-        SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName(keystore_name).alias("myKey")
-          .storePassword(store_pwd).encryptEntireMessage(true).signMessages(true);
+    protected static SYM_ENCRYPT createENCRYPT(String keystore_name, String store_pwd) throws Exception {
+        SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName(keystore_name).alias("myKey").storePassword(store_pwd);
         encrypt.init();
         return encrypt;
     }

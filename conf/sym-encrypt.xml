@@ -15,8 +15,7 @@
     <SYM_ENCRYPT
         provider="SunJCE"
         sym_algorithm="AES"
-        encrypt_entire_message="true"
-        keystore_name="/home/bela/JGroups/keystore/defaultStore.keystore" 
+        keystore_name="/home/bela/JGroups/keystore/defaultStore.keystore"
         store_password="changeit" alias="myKey"/>
     <pbcast.NAKACK2/>
     <UNICAST3/>
