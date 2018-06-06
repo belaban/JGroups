@@ -239,9 +239,10 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
 
 
     protected Object handleEncryptedMessage(Message msg, byte[] version) throws Exception {
-        if(!Arrays.equals(sym_version, version)) // only check if msg needs to be queued if versions differ
-            if(!process(msg))
-                return null;
+        if(!Arrays.equals(sym_version, version)) { // only check if msg needs to be queued if versions differ
+            versionMismatch(msg);
+            return null;
+        }
 
         // try and decrypt the message - we need to copy msg as we modify its
         // buffer (http://jira.jboss.com/jira/browse/JGRP-538)
@@ -256,8 +257,19 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         return null;
     }
 
-    /** Whether or not to process this received message */
-    protected boolean process(Message msg) {return true;}
+    /** Called when the installed version is null, or doesn't match the version shipped with the received message */
+    protected void versionMismatch(Message msg) {}
+
+    /** Called when the version shipped in the header can't be found */
+    protected void handleUnknownVersion(byte[] version) {
+
+    }
+
+    /** Called when the secret key is null */
+    protected void secretKeyNotAvailable() {
+
+    }
+
 
     protected void handleView(View view) {
         this.view=view;
@@ -404,16 +416,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     }
 
 
-    /** Called when the version shipped in the header can't be found */
-    protected void handleUnknownVersion(byte[] version) {
-
-    }
-
-    /** Called when the secret key is null */
-    protected void secretKeyNotAvailable() {
-
-    }
-
 
     /** Decrypts all messages in a batch, replacing encrypted messages in-place with their decrypted versions */
     protected class Decrypter implements BiConsumer<Message,MessageBatch> {
@@ -434,10 +436,9 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             if(hdr.type() == EncryptHeader.ENCRYPT) {
                 try {
                     if(!Arrays.equals(sym_version, hdr.version)) { // only check if msg needs to be queued if versions differ
-                        if(!process(msg)) {
-                            batch.remove(msg);
-                            return;
-                        }
+                        versionMismatch(msg);
+                        batch.remove(msg);
+                        return;
                     }
                     Message tmpMsg=decryptMessage(cipher, msg.copy()); // need to copy for possible xmits
                     if(tmpMsg != null)

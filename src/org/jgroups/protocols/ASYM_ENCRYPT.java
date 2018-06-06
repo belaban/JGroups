@@ -20,10 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiPredicate;
 
 /**
@@ -47,8 +43,7 @@ import java.util.function.BiPredicate;
  * distributed by the keyserver.
  *
  * Since messages can only get encrypted and decrypted when the secret key was received from the keyserver, messages
- * other then join and merge requests/responses are dropped when the secret key isn't yet available. Join and merge
- * requests / responses are handled by {@link AUTH}.
+ * other then join and merge requests/responses are dropped when the secret key isn't yet available.
  *
  * @author Bela Ban
  * @author Steve Woodcock
@@ -72,14 +67,6 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
     protected volatile Address                     key_server_addr;
     protected KeyPair                              key_pair;     // to store own's public/private Key
     protected Cipher                               asym_cipher;  // decrypting cypher for secret key requests
-    protected final Lock                           queue_lock=new ReentrantLock();
-
-    // queue all up msgs until the secret key has been received/created
-    @ManagedAttribute(description="whether or not to queue received messages (until the secret key was received)")
-    protected boolean                              queue_up_msgs=true;
-
-    // queues a bounded number of messages received during a null secret key (for fetching the key from a new coord)
-    protected final BlockingQueue<Message>         up_queue=new ArrayBlockingQueue<>(100);
 
     @Property(description="Min time (in millis) between key requests")
     protected long                                 min_time_between_key_requests=2000;
@@ -122,8 +109,6 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         return this;
     }
 
-    @ManagedAttribute(description="Number of received messages currently queued")
-    public int queueSize() {return up_queue.size();}
 
     @ManagedAttribute(description="The current key server")
     public String getKeyServerAddress() {return key_server_addr != null? key_server_addr.toString() : "null";}
@@ -155,7 +140,6 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
     public void stop() {
         if(key_requesters != null)
             key_requesters.stop();
-        stopQueueing();
         super.stop();
     }
 
@@ -312,14 +296,21 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         return null;
     }
 
-    @Override protected boolean process(Message msg) {
-        if(enqueue(msg)) {
-            log.trace("%s: queuing %s message from %s as secret key hasn't been retrieved from keyserver %s yet, hdrs: %s",
-                      local_addr, msg.dest() == null? "mcast" : "unicast", msg.src(), key_server_addr, msg.printHeaders());
+    @Override protected void versionMismatch(Message msg) {
+        sendKeyRequest(key_server_addr);
+    }
+
+    @Override protected void handleUnknownVersion(byte[] version) {
+        if(!isKeyServer()) {
+            log.debug("%s: received msg encrypted with version %s (my version: %s), getting new secret key from %s",
+                      local_addr, Util.byteArrayToHexString(version), Util.byteArrayToHexString(sym_version), key_server_addr);
             sendKeyRequest(key_server_addr);
-            return false;
         }
-        return true;
+    }
+
+    @Override protected void secretKeyNotAvailable() {
+        if(!isKeyServer())
+            sendKeyRequest(key_server_addr);
     }
 
     protected void handleSecretKeyRequest(final Message msg) {
@@ -343,17 +334,14 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         if(Arrays.equals(sym_version, key_version)) {
             log.debug("%s: secret key (version %s) already installed, ignoring key response from %s",
                       local_addr, Util.byteArrayToHexString(key_version), msg.src());
-            stopQueueing();
             return;
         }
         try {
             SecretKey tmp=decodeKey(msg.getBuffer());
             if(tmp == null)
                 sendKeyRequest(key_server_addr); // unable to understand response, let's try again
-            else {
-                // otherwise set the received key as the shared key
-                setKeys(msg.src(), tmp, key_version);
-            }
+            else
+                setKeys(msg.src(), tmp, key_version); // otherwise set the received key as the shared key
         }
         catch(Exception e) {
             log.warn("%s: unable to process key received from %s: %s", local_addr, msg.src(), e);
@@ -445,7 +433,6 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             this.secret_key=createSecretKey();
             initSymCiphers(sym_algorithm, secret_key);
             log.debug("%s: created new secret key (version: %s)", local_addr, Util.byteArrayToHexString(sym_version));
-            stopQueueing();
         }
         catch(Exception ex) {
             log.error("%s: failed creating secret key and initializing ciphers", local_addr, ex);
@@ -455,7 +442,6 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
     /** If the keyserver changed, send a request for the secret key to the keyserver */
     protected void handleNewKeyServer(Address old_key_server, boolean merge_view, boolean left_mbrs) {
         if(change_key_on_leave && (keyServerChanged(old_key_server) || merge_view || left_mbrs)) {
-            startQueueing();
             sendKeyRequest(key_server_addr);
         }
     }
@@ -465,25 +451,21 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
 	}
 
 
-    protected void setKeys(Address sender, SecretKey key, byte[] version) throws Exception {
-        synchronized(this) {
-            if(Arrays.equals(this.sym_version, version)) {
-                stopQueueing();
-                log.debug("%s: ignoring secret key received from %s (version: %s), as it has already been installed",
-                          local_addr, sender != null? sender : "key exchange protocol", Util.byteArrayToHexString(version));
-                return;
-            }
-            Cipher decoding_cipher=secret_key != null? decoding_ciphers.take() : null;
-            // put the previous key into the map, keep the cipher: no leak, as we'll clear decoding_ciphers in initSymCiphers()
-            if(decoding_cipher != null)
-                key_map.putIfAbsent(new AsciiString(version), decoding_cipher);
-            log.debug("%s: installing secret key received from %s (version: %s)",
+    protected synchronized void setKeys(Address sender, SecretKey key, byte[] version) throws Exception {
+        if(Arrays.equals(this.sym_version, version)) {
+            log.debug("%s: ignoring secret key received from %s (version: %s), as it has already been installed",
                       local_addr, sender != null? sender : "key exchange protocol", Util.byteArrayToHexString(version));
-            secret_key=key;
-            initSymCiphers(key.getAlgorithm(), key);
-            sym_version=version;
+            return;
         }
-        stopQueueing();
+        Cipher decoding_cipher=secret_key != null? decoding_ciphers.take() : null;
+        // put the previous key into the map, keep the cipher: no leak, as we'll clear decoding_ciphers in initSymCiphers()
+        if(decoding_cipher != null)
+            key_map.putIfAbsent(new AsciiString(version), decoding_cipher);
+        log.debug("%s: installing secret key received from %s (version: %s)",
+                  local_addr, sender != null? sender : "key exchange protocol", Util.byteArrayToHexString(version));
+        secret_key=key;
+        initSymCiphers(key.getAlgorithm(), key);
+        sym_version=version;
     }
 
 
@@ -557,74 +539,6 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         catch(Exception e) {
             log.error(Util.getMessage("FailedDecodingKey"), e);
             return null;
-        }
-    }
-
-    protected void startQueueing() {
-        queue_lock.lock();
-        try {
-            queue_up_msgs=true;
-        }
-        finally {
-            queue_lock.unlock();
-        }
-    }
-
-    protected boolean enqueue(Message msg) {
-        queue_lock.lock();
-        try {
-            return queue_up_msgs && up_queue.offer(msg);
-        }
-        finally {
-            queue_lock.unlock();
-        }
-    }
-
-
-    // Drains the queued messages. Doesn't have to be 100% correct: leftover messages wll be delivered later and will
-    // be discarded as dupes, as retransmission is likely to have kicked in before, anyway
-    protected void stopQueueing() {
-        List<Message> sink=new ArrayList<>(up_queue.size());
-        queue_lock.lock();
-        try {
-            queue_up_msgs=false;
-            up_queue.drainTo(sink);
-        }
-        finally {
-            queue_lock.unlock();
-        }
-
-        if(log.isTraceEnabled() && !sink.isEmpty())
-            log.trace("%s: sending %d queued messages up the stack", local_addr, sink.size());
-
-        for(Message queued_msg: sink) {
-            try {
-                Message decrypted_msg=decryptMessage(null, queued_msg.copy());
-                if(decrypted_msg != null)
-                    up_prot.up(decrypted_msg);
-            }
-            catch(Exception ex) {
-                log.error("failed decrypting message from %s: %s", queued_msg.src(), ex);
-            }
-        }
-    }
-
-
-    @Override protected void handleUnknownVersion(byte[] version) {
-        if(!isKeyServer()) {
-            log.debug("%s: received msg encrypted with version %s (my version: %s), getting new secret key from %s",
-                      local_addr, Util.byteArrayToHexString(version), Util.byteArrayToHexString(sym_version), key_server_addr);
-            sendKeyRequest(key_server_addr);
-        }
-    }
-
-    @Override protected void secretKeyNotAvailable() {
-        if(!isKeyServer()) {
-            if(key_server_addr == null) {
-                log.warn("%s: key server's address is null, dropping request message for secret key", local_addr);
-                return;
-            }
-            sendKeyRequest(key_server_addr);
         }
     }
 
