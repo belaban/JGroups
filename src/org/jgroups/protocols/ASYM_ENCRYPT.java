@@ -7,7 +7,6 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.util.*;
 
 import javax.crypto.Cipher;
@@ -29,8 +28,7 @@ import java.util.function.BiPredicate;
  * The secret key is identical for all cluster members and is used to encrypt messages when sending and decrypt them
  * when receiving messages.
  *
- * This protocol is typically placed under {@link org.jgroups.protocols.pbcast.NAKACK2}, so that most important
- * headers are encrypted as well, to prevent replay attacks.<br>
+ * This protocol is typically placed under {@link org.jgroups.protocols.pbcast.NAKACK2}.<br>
  *
  * The current keyserver (always the coordinator) generates a secret key. When a new member joins, it asks the keyserver
  * for the secret key. The keyserver encrypts the secret key with the joiner's public key and the joiner decrypts it with
@@ -39,11 +37,11 @@ import java.util.function.BiPredicate;
  * View changes that identify a new keyserver will result in a new secret key being generated and then distributed to
  * all cluster members. This overhead can be substantial in an application with a reasonable member churn.<br>
  *
- * This protocol is suited to an application that does not ship with a known key but instead it is generated and
+ * This protocol is suited for an application that does not ship with a known key but instead it is generated and
  * distributed by the keyserver.
  *
  * Since messages can only get encrypted and decrypted when the secret key was received from the keyserver, messages
- * other then join and merge requests/responses are dropped when the secret key isn't yet available.
+ * are dropped when the secret key hasn't been installed yet.
  *
  * @author Bela Ban
  * @author Steve Woodcock
@@ -73,7 +71,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
     protected volatile long                        last_key_request;
 
     // use registerBypasser to add code that is called to check if a message should bypass ASYM_ENCRYPT
-    protected volatile List<BiPredicate<Message,Boolean>> bypassers;
+    protected List<BiPredicate<Message,Boolean>>   bypassers;
 
     protected ResponseCollectorTask<Boolean>       key_requesters;
 
@@ -144,7 +142,8 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
     }
 
     public Object down(Message msg) {
-        if(skip(msg) || bypass(msg, false))
+        GMS.GmsHeader hdr=msg.getHeader(GMS_ID);
+        if(skip(hdr) || bypass(msg, false))
             return down_prot.down(msg);
         return super.down(msg);
     }
@@ -169,39 +168,50 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
     public Object up(Message msg) {
         if(bypass(msg, true))
             return up_prot.up(msg);
-        if(skip(msg)) {
-            GMS.GmsHeader hdr=msg.getHeader(GMS_ID);
-            Address key_server=getCoordinator(msg, hdr);
-            if(key_server != null)
-                sendKeyRequest(key_server);
+
+        GMS.GmsHeader hdr=msg.getHeader(GMS_ID);
+        if(hdr == null)
+            return super.up(msg);
+
+        if(skip(hdr))
             return up_prot.up(msg);
+
+        if(isJoinOrInstallViewMessage(hdr)) {
+            Address key_server=msg.getSrc();
+            sendKeyRequest(key_server);
         }
         return super.up(msg);
     }
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
-            if(bypass(msg, false)) {
+            if(bypass(msg, true)) {
                 up_prot.up(msg);
                 batch.remove(msg);
                 continue;
             }
-            if(skip(msg)) {
-                try {
-                    up_prot.up(msg);
-                    batch.remove(msg);
-                    GMS.GmsHeader hdr=msg.getHeader(GMS_ID);
-                    Address key_server=getCoordinator(msg, hdr);
-                    if(key_server != null)
-                        sendKeyRequest(key_server);
+
+            GMS.GmsHeader hdr=msg.getHeader(GMS_ID);
+            if(hdr != null) {
+                if(skip(hdr)) {
+                    try {
+                        up_prot.up(msg);
+                        batch.remove(msg);
+                    }
+                    catch(Throwable t) {
+                        log.error("failed passing up message from %s: %s, ex=%s", msg.src(), msg.printHeaders(), t);
+                    }
+                    continue;
                 }
-                catch(Throwable t) {
-                    log.error("failed passing up message from %s: %s, ex=%s", msg.src(), msg.printHeaders(), t);
+                if(isJoinOrInstallViewMessage(hdr)) {
+                    Address key_server=batch.sender(); // getCoordinator(msg, hdr);
+                    sendKeyRequest(key_server);
                 }
             }
-            EncryptHeader hdr=msg.getHeader(this.id);
-            if(hdr != null && hdr.type != EncryptHeader.ENCRYPT) {
-                handleUpEvent(msg,hdr);
+
+            EncryptHeader eh=msg.getHeader(this.id);
+            if(eh != null && eh.type != EncryptHeader.ENCRYPT) {
+                handleUpEvent(msg,eh);
                 batch.remove(msg);
             }
         }
@@ -209,50 +219,31 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             super.up(batch); // decrypt the rest of the messages in the batch (if any)
     }
 
-    /** Tries to find out if this is a JOIN_RSP or INSTALL_MERGE_VIEW message and returns the coordinator of the view */
-    protected Address getCoordinator(Message msg, GMS.GmsHeader hdr) {
-        switch(hdr.getType()) {
-            case GMS.GmsHeader.JOIN_RSP:
-                try {
-                    JoinRsp join_rsp=Util.streamableFromBuffer(JoinRsp::new, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                    View new_view=join_rsp != null? join_rsp.getView() : null;
-                    return new_view != null? new_view.getCoord() : null;
-                }
-                catch(Throwable t) {
-                    log.error("%s: failed getting coordinator (keyserver) from JoinRsp: %s", local_addr, t);
-                }
-                break;
-            case GMS.GmsHeader.INSTALL_MERGE_VIEW:
-                try {
-                    Tuple<View,Digest> tuple=GMS._readViewAndDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                    View new_view=tuple != null? tuple.getVal1() : null;
-                    return new_view != null? new_view.getCoord() : null;
-                }
-                catch(Throwable t) {
-                    log.error("%s: failed getting coordinator (keyserver) from INSTALL_MERGE_VIEW: %s", local_addr, t);
-                }
-                break;
-        }
-        return null;
-    }
 
 
-    /** Checks if a message needs to be encrypted/decrypted. Join and merge requests/responses don't need to be
-     * encrypted as they're authenticated by {@link AUTH} */
-    protected static boolean skip(Message msg) {
-        GMS.GmsHeader hdr=msg.getHeader(GMS_ID);
+    /** Checks if a message needs to be encrypted/decrypted, or whether it can bypass encryption */
+    protected static boolean skip(GMS.GmsHeader hdr) {
         if(hdr == null)
             return false;
         switch(hdr.getType()) {
             case GMS.GmsHeader.JOIN_REQ:
             case GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
-            case GMS.GmsHeader.JOIN_RSP:
             case GMS.GmsHeader.MERGE_REQ:
             case GMS.GmsHeader.MERGE_RSP:
             case GMS.GmsHeader.VIEW_ACK:
-            case GMS.GmsHeader.INSTALL_MERGE_VIEW:
             case GMS.GmsHeader.GET_DIGEST_REQ:
             case GMS.GmsHeader.GET_DIGEST_RSP:
+                return true;
+        }
+        return false;
+    }
+
+    protected static boolean isJoinOrInstallViewMessage(GMS.GmsHeader hdr) {
+        if(hdr == null)
+            return false;
+        switch(hdr.getType()) {
+            case GMS.GmsHeader.JOIN_RSP:
+            case GMS.GmsHeader.INSTALL_MERGE_VIEW:
                 return true;
         }
         return false;
@@ -339,7 +330,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         try {
             SecretKey tmp=decodeKey(msg.getBuffer());
             if(tmp == null)
-                sendKeyRequest(key_server_addr); // unable to understand response, let's try again
+                sendKeyRequest(key_server_addr);      // unable to understand response, let's try again
             else
                 setKeys(msg.src(), tmp, key_version); // otherwise set the received key as the shared key
         }
