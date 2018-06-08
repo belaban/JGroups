@@ -251,7 +251,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
             out.write(secret_key);
         }
         catch(Throwable t) {
-            log.warn("failure handling client socket", t);
+            log.trace("failure handling client socket", t);
         }
     }
 

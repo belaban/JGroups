@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Demo config showing how to configure ASYM_ENCRYPT with a keystore and certificates -->
+<config>
+    <TCP bind_addr="localhost" bind_port="7600"/>
+    <TCPPING initial_hosts="localhost[7600]" port_range="10"/>
+    <MERGE3/> 
+    <FD_SOCK start_port="57600"/>
+    <FD_ALL/>
+    <!--INJECT_VIEW/-->
+    <VERIFY_SUSPECT/>
+    <SSL_KEY_EXCHANGE
+        keystore_name="my-keystore.jks"
+        keystore_password="password"
+        port_range="10"
+    />
+    <ASYM_ENCRYPT
+            use_external_key_exchange="true"
+            sym_keylength="128"
+            sym_algorithm="AES" 
+            asym_keylength="512"
+            asym_algorithm="RSA"/>
+
+    <pbcast.NAKACK2 use_mcast_xmit="false"/>
+    <UNICAST3/>
+    <pbcast.STABLE/>
+    <pbcast.GMS join_timeout="1000"/>
+    <MFC/>
+    <FRAG2/>
+</config>
+
