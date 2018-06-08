@@ -126,7 +126,15 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
             }
         }
         key_store=KeyStore.getInstance(keystore_type != null? keystore_type : KeyStore.getDefaultType());
-        key_store.load(new FileInputStream(keystore_name), keystore_password.toCharArray());
+
+        InputStream input=null;
+        try {
+            input=new FileInputStream(keystore_name);
+        }
+        catch(FileNotFoundException not_found) {
+            input=Util.getResourceAsStream(keystore_name, getClass());
+        }
+        key_store.load(input, keystore_password.toCharArray());
         if(session_verifier_class != null) {
             Class<? extends SessionVerifier> verifier_class=Util.loadClass(session_verifier_class, getClass());
             session_verifier=verifier_class.newInstance();
