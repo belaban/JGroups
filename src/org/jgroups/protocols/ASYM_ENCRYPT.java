@@ -81,6 +81,15 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         this.key_pair = new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey());
     }
 
+    public boolean      getChangeKeyOnLeave()                {return change_key_on_leave;}
+    public ASYM_ENCRYPT setChangeKeyOnLeave(boolean c)       {change_key_on_leave=c; return this;}
+
+    public boolean      getUseExternalKeyExchange()          {return use_external_key_exchange;}
+    public ASYM_ENCRYPT setUseExternalKeyExchange(boolean u) {use_external_key_exchange=u; return this;}
+
+    public long         getKeyserverInterval()               {return key_server_interval;}
+    public ASYM_ENCRYPT setKeyserverInterval(long i)         {key_server_interval=i; return this;}
+
     public KeyPair      keyPair()                  {return key_pair;}
     public Cipher       asymCipher()               {return asym_cipher;}
     public Address      keyServerAddr()            {return key_server_addr;}

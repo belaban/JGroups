@@ -85,6 +85,8 @@ public class TCPPING extends Discovery {
         initial_hosts=hosts.stream().map(h -> new IpAddress(h.getAddress(), h.getPort())).collect(Collectors.toList());
     }
 
+    public TCPPING initialHosts(Collection<InetSocketAddress> hosts) {setInitialHosts(hosts); return this;}
+
     public int getPortRange() {
         return port_range;
     }
@@ -92,6 +94,8 @@ public class TCPPING extends Discovery {
     public void setPortRange(int port_range) {
         this.port_range=port_range;
     }
+
+    public TCPPING portRange(int r) {this.port_range=r; return this;}
 
     @ManagedAttribute
     public String getDynamicHostList() {

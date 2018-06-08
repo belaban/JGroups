@@ -112,6 +112,11 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected SessionVerifier session_verifier;
 
 
+    public SSL_KEY_EXCHANGE setKeystoreName(String name)    {this.keystore_name=name; return this;}
+    public SSL_KEY_EXCHANGE setKeystorePassword(String pwd) {this.keystore_password=pwd; return this;}
+    public SSL_KEY_EXCHANGE setPortRange(int r)             {this.port_range=r; return this;}
+    public SSL_KEY_EXCHANGE setPort(int p)                  {this.port=p; return this;}
+
     public void init() throws Exception {
         super.init();
         if(port == 0)
