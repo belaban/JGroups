@@ -112,7 +112,7 @@ public class MERGE3 extends Protocol {
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<ViewId,Set<Address>> entry: convertViews().entrySet())
             sb.append(entry.getKey()).append(": [")
-              .append(Util.printListWithDelimiter(entry.getValue(), ", ", Util.MAX_LIST_PRINT_SIZE)).append("]");
+              .append(Util.printListWithDelimiter(entry.getValue(), ", ", Util.MAX_LIST_PRINT_SIZE)).append("]\n");
         return sb.toString();
     }
 
@@ -375,7 +375,7 @@ public class MERGE3 extends Protocol {
 
         public void run() {
             if(view == null) {
-                log.warn("view is null, cannot send INFO message");
+                log.warn("%s: view is null, cannot send INFO message", local_addr);
                 return;
             }
 
@@ -395,7 +395,7 @@ public class MERGE3 extends Protocol {
             if(rsps.isEmpty())
                 return;
 
-            log.trace("discovery protocol returned %d responses: %s", rsps.size(), rsps);
+            log.trace("%s: discovery protocol returned %d responses: %s", local_addr, rsps.size(), rsps);
             for(PingData rsp: rsps) {
                 Address target=rsp.getAddress();
                 if(local_addr.equals(target))
@@ -457,20 +457,20 @@ public class MERGE3 extends Protocol {
 
             Address merge_leader=coords.isEmpty() ? null : coords.first();
             if(merge_leader == null || local_addr == null || !merge_leader.equals(local_addr)) {
-                log.trace("I (%s) won't be the merge leader", local_addr);
+                log.trace("%s: I won't be the merge leader (merge leader is %s)", local_addr, merge_leader);
                 return;
             }
 
-            log.debug("I (%s) will be the merge leader", local_addr);
+            log.debug("%s: I will be the merge leader", local_addr);
 
             // add merge participants
             coords.addAll(converted_views.values().stream().filter(set -> !set.isEmpty()).map(set -> set.iterator().next()).collect(Collectors.toList()));
 
             if(coords.size() <= 1) {
-                log.trace("cancelling merge as we only have 1 coordinator: %s", coords);
+                log.trace("%s: cancelling merge as we only have 1 coordinator: %s", local_addr, coords);
                 return;
             }
-            log.trace("merge participants are %s", coords);
+            log.trace("%s: merge participants are %s", local_addr, coords);
 
             if(max_participants_in_merge > 0 && coords.size() > max_participants_in_merge) {
                 int old_size=coords.size();

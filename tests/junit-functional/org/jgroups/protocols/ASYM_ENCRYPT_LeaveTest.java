@@ -70,13 +70,13 @@ public class ASYM_ENCRYPT_LeaveTest {
         JChannel[] remaining_channels=new JChannel[channels.length-2];
         System.arraycopy(channels, 2, remaining_channels, 0, channels.length-2);
 
-        // Util.close(channels[0], channels[1]);
+        Util.close(channels[0], channels[1]);
 
-        new Thread(() -> {
+       /* new Thread(() -> {
             Util.sleep(500);
             Util.close(channels[1]);
         }).start();
-        Util.close(channels[0]);
+        Util.close(channels[0]);*/
 
 
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, remaining_channels);
