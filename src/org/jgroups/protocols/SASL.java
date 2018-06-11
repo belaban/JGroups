@@ -154,7 +154,7 @@ public class SASL extends Protocol {
         this.server_name = server_name;
     }
 
-    public String getServerName(String server_name) {
+    public String getServerName() {
         return this.server_name;
     }
 
