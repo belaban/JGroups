@@ -980,6 +980,17 @@ public class UtilTest {
         assert list.isEmpty();
     }
 
+    public void testPickRandomElementFromSet() {
+        Set<Integer> set=new TreeSet<>();
+        for(int i=10; i > 0; i--)
+            set.add(i);
+
+        for(int i=0; i < 100; i++) {
+            Integer n=Util.pickRandomElement(set);
+            assert n >= 0 && n <= 10 : "n: " + n;
+        }
+    }
+
 
     public void testPickNext() {
         List<Integer> list=new ArrayList<>(10);

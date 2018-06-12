@@ -11,9 +11,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.util.Collections;
 
 /**
  * Tests graceful leaving of the coordinator and second-in-line in a 10 node cluster with ASYM_ENCRYPT configured
@@ -22,18 +19,16 @@ import java.util.Collections;
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ASYM_ENCRYPT_LeaveTest {
-    // protected static final String CONFIG="asym-ssl.xml";
     protected static final String      KEYSTORE="my-keystore.jks";
     protected static final String      KEYSTORE_PWD="password";
     protected static final int         NUM=10;
-    protected static final int         BIND_PORT=7600;
     protected static final InetAddress LOOPBACK;
 
     static {
         try {
             LOOPBACK=Util.getLocalhost();
         }
-        catch(UnknownHostException e) {
+        catch(Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -47,9 +42,7 @@ public class ASYM_ENCRYPT_LeaveTest {
     protected void setup() throws Exception {
         for(int i=0; i < channels.length; i++) {
             channels[i]=create(String.valueOf(i+1)).connect(ASYM_ENCRYPT_LeaveTest.class.getSimpleName());
-            if(i == 0)
-                Util.sleep(2000);
-            else Util.sleep(500);
+            Util.sleep(i == 0? 2000 : 1000);
         }
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, channels);
     }
@@ -71,15 +64,7 @@ public class ASYM_ENCRYPT_LeaveTest {
         System.arraycopy(channels, 2, remaining_channels, 0, channels.length-2);
 
         Util.close(channels[0], channels[1]);
-
-       /* new Thread(() -> {
-            Util.sleep(500);
-            Util.close(channels[1]);
-        }).start();
-        Util.close(channels[0]);*/
-
-
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, remaining_channels);
+        Util.waitUntilAllChannelsHaveSameView(20000, 1000, remaining_channels);
         for(int i=0; i < remaining_channels.length; i++)
             System.out.printf("%-4s: view is %s\n", remaining_channels[i].getAddress(), remaining_channels[i].getView());
     }
@@ -89,11 +74,10 @@ public class ASYM_ENCRYPT_LeaveTest {
 
     /** Creates a channel with a config similar to ./conf/asym-ssl.xml */
     protected static JChannel create(String name) throws Exception {
-        // return new JChannel(CONFIG).name(name);
         return new JChannel(
-          new TCP().setBindAddress(LOOPBACK).setBindPort(BIND_PORT),
-          new TCPPING().portRange(10).initialHosts(Collections.singleton(new InetSocketAddress(LOOPBACK, BIND_PORT))),
-          new MERGE3(),
+          new TCP().setBindAddress(LOOPBACK), // .setBindPort(BIND_PORT),
+          new MPING(), // new TCPPING().portRange(10).initialHosts(Collections.singleton(new InetSocketAddress(LOOPBACK, BIND_PORT))),
+          new MERGE3().setMinInterval(2000).setMaxInterval(5000),
           new FD_SOCK(),
           new FD_ALL(),
           new VERIFY_SUSPECT(),

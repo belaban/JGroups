@@ -139,6 +139,8 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         catch(FileNotFoundException not_found) {
             input=Util.getResourceAsStream(keystore_name, getClass());
         }
+        if(input == null)
+            throw new FileNotFoundException(keystore_name);
         key_store.load(input, keystore_password.toCharArray());
         if(session_verifier_class != null) {
             Class<? extends SessionVerifier> verifier_class=Util.loadClass(session_verifier_class, getClass());

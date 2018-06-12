@@ -77,7 +77,7 @@ public class MergeTest5 {
 
 
 
-    protected View createView(int id, JChannel ... mbrs) {
+    protected static View createView(int id, JChannel... mbrs) {
         Address[] members=new Address[mbrs.length];
         for(int i=0; i < mbrs.length; i++)
             members[i]=mbrs[i].getAddress();
@@ -86,7 +86,7 @@ public class MergeTest5 {
 
 
 
-    protected JChannel createChannel(String name) throws Exception {
+    protected static JChannel createChannel(String name) throws Exception {
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
                             new MERGE3().setValue("min_interval", 3000).setValue("max_interval", 4000).setValue("check_interval", 7000),
@@ -106,14 +106,14 @@ public class MergeTest5 {
 
 
 
-    protected void injectView(View view, JChannel ... channels) {
+    protected static void injectView(View view, JChannel... channels) {
         for(JChannel ch: channels) {
             GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.installView(view);
         }
     }
 
-    protected void checkInconsistencies(JChannel ... channels) {
+    protected static void checkInconsistencies(JChannel... channels) {
         for(JChannel ch: channels) {
             MERGE3 merge=ch.getProtocolStack().findProtocol(MERGE3.class);
             merge.checkInconsistencies();

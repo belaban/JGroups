@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 
 /**
- * Tests https://issues.jboss.org/browse/JGRP-2070:
+ * Tests merging with a dead merge leader https://issues.jboss.org/browse/JGRP-2276:
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class MergeTest6 {
@@ -58,9 +58,9 @@ public class MergeTest6 {
             System.out.printf("%s: %s\n", ch.getAddress(), ch.getView());
 
         ProtocolStack stack=seven.getProtocolStack();
-        Protocol drop_view=new DropView();
+        Protocol drop_view=new DropView().setAddress(seven.getAddress());
 
-        stack.insertProtocol(drop_view, ProtocolStack.Position.BELOW, GMS.class);
+        stack.insertProtocol(drop_view, ProtocolStack.Position.BELOW, NAKACK2.class); // GMS.class);
 
         Util.close(two);
 
@@ -89,7 +89,8 @@ public class MergeTest6 {
         stack.removeProtocol(drop_view);
 
         System.out.println("-- waiting for merge to heal partition");
-        Util.waitUntilAllChannelsHaveSameView(150000, 1000, three,four,five,six,seven);
+        Util.waitUntilAllChannelsHaveSameView(1500000, 1000, three,four,five,six,seven);
+        Stream.of(three,four,five,six,seven).forEach(ch -> System.out.printf("%s: %s\n", ch.getAddress(), ch.getView()));
     }
 
 
@@ -108,7 +109,6 @@ public class MergeTest6 {
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
           new MERGE3().setMinInterval(3000).setMaxInterval(4000).setValue("check_interval", 7000),
-
           new FD_ALL().setValue("timeout", 8000).setValue("interval", 3000)
             .setValue("timeout_check_interval", 10000),
 
@@ -124,6 +124,7 @@ public class MergeTest6 {
             .setValue("view_ack_collection_timeout", 50)
             .setValue("log_collect_msgs", false))
           .name(String.valueOf(num));
+        // the address generator makes sure that 2's UUID is lower than 3's UUID, so 2 is chose as merge leader
         ch.addAddressGenerator(() -> new UUID(0, num));
         return ch.connect("MergeTest6");
     }
@@ -148,12 +149,25 @@ public class MergeTest6 {
 
     /** Drops a received VIEW message (needs to be placed below GMS) */
     protected static class DropView extends Protocol {
+        protected Address local_addr;
+        protected boolean first_view_received;
+
+        protected DropView setAddress(Address addr) {this.local_addr=addr; return this;}
+
+        public Object down(Event evt) {
+            if(evt.type() == Event.SET_LOCAL_ADDRESS)
+                local_addr=evt.arg();
+            return down_prot.down(evt);
+        }
 
         public Object up(Message msg) {
             GMS.GmsHeader hdr=msg.getHeader(GMS_ID); View view;
             if(hdr != null && hdr.getType() == GMS.GmsHeader.VIEW && (view=readView(msg)) != null) {
-                System.out.printf("%s: dropped view %s\n", getName(), view);
-                return null;
+                if(!first_view_received) {
+                    System.out.printf("%s: dropped view %s\n", local_addr, view);
+                    first_view_received=true;
+                    return null;
+                }
             }
             return up_prot.up(msg);
         }
@@ -163,8 +177,11 @@ public class MergeTest6 {
                 GMS.GmsHeader hdr=msg.getHeader(GMS_ID); View view;
                 if(hdr != null && hdr.getType() == GMS.GmsHeader.VIEW) {
                     view=readView(msg);
-                    batch.remove(msg);
-                    System.out.printf("%s: dropped view %s (in message batch)\n", getName(), view);
+                    if(!first_view_received) {
+                        first_view_received=true;
+                        batch.remove(msg);
+                        System.out.printf("%s: dropped view %s (in message batch)\n", local_addr, view);
+                    }
                 }
             }
             if(!batch.isEmpty())

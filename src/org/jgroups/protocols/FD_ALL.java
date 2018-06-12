@@ -349,13 +349,13 @@ public class FD_ALL extends Protocol {
 
         num_suspect_events+=suspects.size();
 
-        final List<Address> eligible_mbrs=new ArrayList<>();
+        final List<Address> eligible_mbrs;
         synchronized(this) {
             for(Address suspect: suspects) {
                 suspect_history.add(new Tuple<>(suspect, System.currentTimeMillis())); // need wall clock time
                 suspected_mbrs.add(suspect);
             }
-            eligible_mbrs.addAll(members);
+            eligible_mbrs=new ArrayList<>(members);
             eligible_mbrs.removeAll(suspected_mbrs);
             has_suspected_mbrs=!suspected_mbrs.isEmpty();
         }

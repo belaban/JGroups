@@ -51,8 +51,10 @@ public class MERGE3 extends Protocol {
     protected int     max_participants_in_merge=100;
 
     @Property(description="If true, only coordinators periodically check view consistency, otherwise everybody runs " +
-      "this task (https://issues.jboss.org/browse/JGRP-2092). Might get removed without notice.")
-    protected boolean only_coords_run_consistency_checker=false;
+      "this task (https://issues.jboss.org/browse/JGRP-2092). Might get removed without notice.",
+      deprecatedMessage="false by default; everybody runs periodic consistency checks")
+    @Deprecated
+    protected boolean only_coords_run_consistency_checker;
 
     /* ---------------------------------------------- JMX -------------------------------------------------------- */
     @Property(description="Interval (in ms) after which we check for view inconsistencies")
@@ -245,18 +247,12 @@ public class MERGE3 extends Protocol {
                     max_participants_in_merge=Math.max(100, view.size() / 3);
 
                 startInfoSender();
-                if(only_coords_run_consistency_checker == false)
-                    startViewConsistencyChecker();
+                startViewConsistencyChecker();
 
                 Address coord=view.getCoord();
-                if(Objects.equals(coord, local_addr)) {
+                if(Objects.equals(coord, local_addr))
                     is_coord=true;
-                    if(only_coords_run_consistency_checker)
-                        startViewConsistencyChecker(); // start task if we became coordinator (doesn't start if already running)
-                }
                 else {
-                    // if we were coordinator, but are no longer, stop task. this happens e.g. when we merge and someone
-                    // else becomes the new coordinator of the merged group
                     is_coord=false;
                     clearViews();
                 }
@@ -440,31 +436,14 @@ public class MERGE3 extends Protocol {
         }
 
         protected void _run() {
-            SortedSet<Address> coords=new TreeSet<>();
-
-            // Only add view creators which *are* actually in the set as well, e.g.
-            // A|4: {A,B,C} and
-            // B|4: {D} would only add A to the coords list. A is a real coordinator
+            SortedSet<Address>       coords=new TreeSet<>();
             Map<ViewId,Set<Address>> converted_views=convertViews();
-            for(Map.Entry<ViewId,Set<Address>> entry: converted_views.entrySet()) {
-                Address coord=entry.getKey().getCreator();
-                Set<Address> members=entry.getValue();
-                if(only_coords_run_consistency_checker && members != null && members.contains(coord))
-                    coords.add(coord);
-                else
-                    coords.add(coord);
-            }
 
-            Address merge_leader=coords.isEmpty() ? null : coords.first();
-            if(merge_leader == null || local_addr == null || !merge_leader.equals(local_addr)) {
-                log.trace("%s: I won't be the merge leader (merge leader is %s)", local_addr, merge_leader);
-                return;
-            }
-
-            log.debug("%s: I will be the merge leader", local_addr);
+            converted_views.keySet().stream().map(ViewId::getCreator).forEach(coords::add);
 
             // add merge participants
-            coords.addAll(converted_views.values().stream().filter(set -> !set.isEmpty()).map(set -> set.iterator().next()).collect(Collectors.toList()));
+            coords.addAll(converted_views.values().stream().filter(set -> !set.isEmpty())
+                            .map(set -> set.iterator().next()).collect(Collectors.toList()));
 
             if(coords.size() <= 1) {
                 log.trace("%s: cancelling merge as we only have 1 coordinator: %s", local_addr, coords);
@@ -474,13 +453,7 @@ public class MERGE3 extends Protocol {
 
             if(max_participants_in_merge > 0 && coords.size() > max_participants_in_merge) {
                 int old_size=coords.size();
-                for(Iterator<Address> it=coords.iterator(); it.hasNext();) {
-                    Address next=it.next();
-                    if(next.equals(merge_leader))
-                        continue;
-                    if(coords.size() > max_participants_in_merge)
-                        it.remove();
-                }
+                coords.removeIf(next -> coords.size() > max_participants_in_merge);
                 log.trace("%s: reduced %d coords to %d", local_addr, old_size, max_participants_in_merge);
             }
 

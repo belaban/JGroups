@@ -41,7 +41,7 @@ public class OrderingTest {
         }
         Util.waitUntilAllChannelsHaveSameView(10000, 500, channels);
         for(JChannel ch: channels) {
-            SHUFFLE shuffle=new SHUFFLE();
+            SHUFFLE shuffle=new SHUFFLE(); // reorders messages
             ch.getProtocolStack().insertProtocol(shuffle, ProtocolStack.Position.ABOVE, Discovery.class);
             shuffle.init();
         }
@@ -56,7 +56,6 @@ public class OrderingTest {
     protected static JChannel createChannel(int index) throws Exception {
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
-                            // new SHUFFLE(), // reorders messages and message batches
                             new NAKACK2().setValue("use_mcast_xmit", false).setValue("discard_delivered_msgs", true),
                             new UNICAST3(),
                             new STABLE().setValue("max_bytes", 50000).setValue("desired_avg_gossip", 1000),
@@ -68,6 +67,7 @@ public class OrderingTest {
     }
 
 
+    @Test(invocationCount=100)
     public void testMulticastFIFOOrdering() throws Exception {
         System.out.println("\n-- sending " + NUM_MSGS + " messages");
         final CountDownLatch latch=new CountDownLatch(1);

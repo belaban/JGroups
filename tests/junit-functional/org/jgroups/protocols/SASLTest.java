@@ -4,7 +4,6 @@ import org.jgroups.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -37,10 +36,9 @@ public class SASLTest {
             sasl.sasl_props.put("com.sun.security.sasl.digest.realm", REALM);
         }
         sasl.setLevel("trace");
-        GMS gms = new GMS();
-        gms.setJoinTimeout(3000);
-        return new JChannel(new Protocol[] { new SHARED_LOOPBACK(), new PING(), new MERGE3(), new NAKACK2(),
-                new UNICAST3(), new STABLE(), sasl, gms }).name(channelName);
+        GMS gms = new GMS().joinTimeout(3000);
+        return new JChannel(new SHARED_LOOPBACK(), new PING(), new MERGE3(), new NAKACK2(),
+                            new UNICAST3(), new STABLE(), sasl, gms).name(channelName);
     }
 
     public void testSASLDigestMD5() throws Exception {
@@ -76,14 +74,13 @@ public class SASLTest {
         assertTrue(checkViewSize(1, a, b));
         dropDiscard(a, b);
         mergePartitions(a, b);
-        for(int i = 0; i < 10 && !checkViewSize(2, a, b); i++) {
-            Util.sleep(500);
-        }
+        for(int i = 0; i < 10 && !checkViewSize(2, a, b); i++)
+            Util.sleep(1000);
         assertTrue(viewContains(a.getView(), a, b));
         assertTrue(viewContains(b.getView(), a, b));
     }
 
-    private boolean viewContains(View view, JChannel... channels) {
+    private static boolean viewContains(View view, JChannel... channels) {
         boolean b = true;
         for (JChannel ch : channels) {
             b = b && view.containsMember(ch.getAddress());
@@ -91,13 +88,13 @@ public class SASLTest {
         return b;
     }
 
-    private void dropDiscard(JChannel... channels) {
+    private static void dropDiscard(JChannel... channels) {
         for (JChannel ch : channels) {
             ch.getProtocolStack().removeProtocol(DISCARD.class);
         }
     }
 
-    private boolean checkViewSize(int expectedSize, JChannel... channels) {
+    private static boolean checkViewSize(int expectedSize, JChannel... channels) {
         boolean b = true;
         for (JChannel ch : channels) {
             b = b && ch.getView().size() == expectedSize;
@@ -113,33 +110,26 @@ public class SASLTest {
 
     private static void createPartitions(JChannel... channels) throws Exception {
         for (JChannel ch : channels) {
-            DISCARD discard = new DISCARD();
-            discard.setDiscardAll(true);
+            DISCARD discard = new DISCARD().setDiscardAll(true);
             ch.getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
         }
 
         for (JChannel ch : channels) {
             View view = View.create(ch.getAddress(), 10, ch.getAddress());
-            GMS gms = (GMS) ch.getProtocolStack().findProtocol(GMS.class);
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.installView(view);
         }
     }
 
     private static void mergePartitions(JChannel... channels) throws Exception {
-        Membership membership = new Membership();
-        for (JChannel ch : channels) {
-            membership.add(ch.getAddress());
-        }
-        membership.sort();
-        Address leaderAddress = membership.elementAt(0);
-        JChannel leader = findChannelByAddress(leaderAddress, channels);
-        GMS gms = (GMS) leader.getProtocolStack().findProtocol(GMS.class);
-        gms.setLevel("trace");
         Map<Address, View> views =new HashMap<>();
-        for (JChannel ch : channels) {
+        for (JChannel ch : channels)
             views.put(ch.getAddress(), ch.getView());
+        for(JChannel ch: channels) {
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class).setLevel("trace");
+            gms.up(new Event(Event.MERGE, views));
+            Util.sleep(2000);
         }
-        gms.up(new Event(Event.MERGE, views));
     }
 
     private static JChannel findChannelByAddress(Address address, JChannel... channels) {
@@ -153,7 +143,7 @@ public class SASLTest {
 
     private static void print(JChannel... channels) {
         for (JChannel ch : channels) {
-            System.out.println(ch.getName() + ": " + ch.getView());
+            System.out.println(ch.getAddress() + ": " + ch.getView());
         }
     }
 

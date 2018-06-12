@@ -2562,8 +2562,6 @@ public class Util {
     /**
      * Similar to {@link #determineMergeCoords(java.util.Map)} but only actual coordinators are counted: an actual
      * coord is when the sender of a view is the first member of that view
-     * @param map
-     * @return
      */
     public static Collection<Address> determineActualMergeCoords(Map<Address,View> map) {
         Set<Address> retval=new HashSet<>();
@@ -2618,6 +2616,18 @@ public class Util {
         int size=list.size();
         int index=(int)Util.random(size)-1;
         return list.get(index);
+    }
+
+    public static <T> T pickRandomElement(Set<T> set) {
+        if(set == null || set.isEmpty()) return null;
+        int size=set.size();
+        int random=(int)Util.random(size)-1;
+        for(Iterator<T> it=set.iterator(); it.hasNext();) {
+            T el=it.next();
+            if(random-- <= 0)
+                return el;
+        }
+        return null;
     }
 
     public static <T> T pickRandomElement(T[] array) {

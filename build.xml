@@ -285,7 +285,7 @@
 
     <target name="copy-conf-dir" description="Copies the relevant files from ./conf to ./classes">
         <copy todir="${compile.dir}/">
-            <fileset dir="${conf.dir}" includes="*.xml, *.properties, *.btm">
+            <fileset dir="${conf.dir}" includes="*.xml, *.properties, *.btm *.jks">
                 <include name="scripts/**"/>
                 <exclude name="log4j*.xml"/>
                 <exclude name="settings.xml"/>
@@ -358,7 +358,7 @@
              basedir="${compile.dir}"
              manifest="${conf.dir}/MANIFEST.MF"
              includes="org/jgroups/**">
-            <fileset dir="${conf.dir}" includes="*.xml, jg-messages*.properties, JGROUPS_VERSION.properties">
+            <fileset dir="${conf.dir}" includes="*.xml, jg-messages*.properties, JGROUPS_VERSION.properties *.jks">
                 <exclude name="log4j*.xml"/>
                 <exclude name="settings.xml"/>
             </fileset>
