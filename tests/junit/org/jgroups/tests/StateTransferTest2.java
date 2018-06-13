@@ -25,8 +25,8 @@ public class StateTransferTest2 extends ChannelTestBase {
 
 
     @DataProvider(name="createChannels")
-    protected Iterator<Class<?>[]> createChannels() {
-        return new ArrayIterator<>(new Class<?>[][]{{STATE_TRANSFER.class}, {STATE.class}, {STATE_SOCK.class}});
+    protected Iterator<Object[]> createChannels() {
+        return new ArrayIterator<>(new Object[][]{{STATE_TRANSFER.class}, {STATE.class}, {STATE_SOCK.class}});
     }
 
 
@@ -111,7 +111,7 @@ public class StateTransferTest2 extends ChannelTestBase {
         else { // no state transfer protocol found in stack
             Protocol flush=stack.findProtocol(FLUSH.class);
             if(flush != null)
-                stack.insertProtocol(new_state_transfer_protcol, ProtocolStack.BELOW, FLUSH.class);
+                stack.insertProtocol(new_state_transfer_protcol, ProtocolStack.Position.BELOW, FLUSH.class);
             else
                 stack.insertProtocolAtTop(new_state_transfer_protcol);
         }

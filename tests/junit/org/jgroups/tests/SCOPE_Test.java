@@ -53,7 +53,7 @@ public class SCOPE_Test extends ChannelTestBase {
         ProtocolStack stack=b.getProtocolStack();
         Protocol neighbor=stack.findProtocol(Util.getUnicastProtocols());
         SCOPE scope=new SCOPE();
-        stack.insertProtocolInStack(scope, neighbor, ProtocolStack.ABOVE);
+        stack.insertProtocolInStack(scope, neighbor, ProtocolStack.Position.ABOVE);
         scope.init();
 
         a.connect("SCOPE_Test");
@@ -114,7 +114,7 @@ public class SCOPE_Test extends ChannelTestBase {
             ProtocolStack stack=b.getProtocolStack();
             Protocol neighbor=stack.findProtocol(Util.getUnicastProtocols());
             SCOPE scope=new SCOPE();
-            stack.insertProtocolInStack(scope, neighbor, ProtocolStack.ABOVE);
+            stack.insertProtocolInStack(scope, neighbor, ProtocolStack.Position.ABOVE);
             scope.init();
         }
 

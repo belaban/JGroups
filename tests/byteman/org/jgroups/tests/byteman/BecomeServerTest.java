@@ -32,7 +32,7 @@ public class BecomeServerTest extends BMNGRunner {
      * we need to make sure the channel is connected, or else the JOIN will fail as the exception happens on the same
      * thread. Note that the suggested fix on JGRP-1522 will solve this. Issue: https://issues.jboss.org/browse/JGRP-1522
      */
-    @BMScript(dir="scripts/BecomeServerTest", value="testSendingOfMsgsOnUnconnectedChannel")
+    @BMScript(dir="conf/scripts/BecomeServerTest", value="testSendingOfMsgsOnUnconnectedChannel")
     public void testSendingOfMsgsOnUnconnectedChannel() throws Exception {
         a=createChannel("A");
         a.setReceiver(new ReceiverAdapter() {

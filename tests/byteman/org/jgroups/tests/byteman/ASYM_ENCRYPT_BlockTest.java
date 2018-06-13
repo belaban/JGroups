@@ -40,7 +40,7 @@ public class ASYM_ENCRYPT_BlockTest extends BMNGRunner {
         Util.close(b, a);
     }
 
-    @BMScript(dir="scripts/ASYM_ENCRYPT_BlockTest", value="testASYM_ENCRYPT_NotBlockingJoin")
+    @BMScript(dir="conf/scripts/ASYM_ENCRYPT_BlockTest", value="testASYM_ENCRYPT_NotBlockingJoin")
     public void testASYM_ENCRYPT_NotBlockingJoin() throws Exception {
         a.send(b.getAddress(), "one");
         b.send(a.getAddress(), "two");

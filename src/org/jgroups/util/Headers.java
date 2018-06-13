@@ -36,14 +36,34 @@ public final class Headers {
      * @param id The ID
      * @return
      */
-    public static Header getHeader(final Header[] hdrs, short id) {
+    public static <T extends Header> T getHeader(final Header[] hdrs, short id) {
         if(hdrs == null)
             return null;
         for(Header hdr: hdrs) {
             if(hdr == null)
                 return null;
             if(hdr.getProtId() == id)
-                return hdr;
+                return (T)hdr;
+        }
+        return null;
+    }
+
+    /**
+     * Returns the header associated with a set of IDs
+     * @param hdrs
+     * @param ids The IDs
+     * @param <T>
+     * @return
+     */
+    public static <T extends Header> T getHeader(final Header[] hdrs, short ... ids) {
+        if(hdrs == null || ids == null || ids.length == 0)
+            return null;
+        for(Header hdr: hdrs) {
+            if(hdr == null)
+                return null;
+            for(short id: ids)
+                if(hdr.getProtId() == id)
+                    return (T)hdr;
         }
         return null;
     }

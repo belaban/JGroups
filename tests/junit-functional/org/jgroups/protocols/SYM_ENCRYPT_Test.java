@@ -100,7 +100,7 @@ public class SYM_ENCRYPT_Test extends EncryptTest {
         catch(Throwable t) {
             encrypt=createENCRYPT("defaultStore.keystore", DEF_PWD);
         }
-        ch.getProtocolStack().insertProtocol(encrypt, ProtocolStack.BELOW, NAKACK2.class);
+        ch.getProtocolStack().insertProtocol(encrypt, ProtocolStack.Position.BELOW, NAKACK2.class);
         return ch;
     }
 

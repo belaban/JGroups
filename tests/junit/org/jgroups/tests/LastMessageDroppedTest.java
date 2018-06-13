@@ -40,8 +40,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
     public void testLastMessageDropped() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(discard,ProtocolStack.BELOW,NAKACK2.class);
-        a.setDiscardOwnMessages(true);
+        stack.insertProtocol(discard,ProtocolStack.Position.BELOW,NAKACK2.class);
 
         MyReceiver receiver=new MyReceiver();
         b.setReceiver(receiver);

@@ -59,7 +59,7 @@ public class RingBufferSeqnoTest extends BMNGRunner {
      * T1 does a CAS(null, 5) and succeeds because T2 just nulled the element
      ==> We now deliver the message at index 5 TWICE (or multiple times) !
      */
-    @BMScript(dir="scripts/RingBufferSeqnoTest", value="testRemoveAndConcurrentAdd")
+    @BMScript(dir="conf/scripts/RingBufferSeqnoTest", value="testRemoveAndConcurrentAdd")
     public void testRemoveAndConcurrentAdd() throws InterruptedException {
         final RingBufferSeqnoLockless<Integer> buf=new RingBufferSeqnoLockless<>(10, 0);
         for(int i=1; i <= 5; i++)

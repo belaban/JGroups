@@ -7,6 +7,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ArrayIterator;
 import org.jgroups.util.Util;
+import org.junit.Ignore;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -29,7 +30,7 @@ public class StateTransferTest extends ChannelTestBase {
     static final int                     MSG_SEND_COUNT=1000;
     static final String[]                names= {"A", "B", "C", "D"};
     static final int                     APP_COUNT=names.length;
-    static final Class<?>[]              NAK_PROTS={NAKACK2.class,NAKACK.class};
+    static final Class<?>[]              NAK_PROTS={NAKACK2.class};
     static final short[]                 ids=new short[NAK_PROTS.length];
     protected StateTransferApplication[] apps=new StateTransferApplication[APP_COUNT];
 
@@ -40,8 +41,8 @@ public class StateTransferTest extends ChannelTestBase {
     }
 
     @DataProvider(name="createChannels")
-    protected Iterator<Class<?>[]> createChannels() {
-        return new ArrayIterator<>(new Class<?>[][]{{STATE_TRANSFER.class}, {STATE.class}, {STATE_SOCK.class}});
+    protected Iterator<Object[]> createChannels() {
+        return new ArrayIterator<>(new Object[][]{{STATE_TRANSFER.class}, {STATE.class}, {STATE_SOCK.class}});
     }
 
 
@@ -218,7 +219,7 @@ public class StateTransferTest extends ChannelTestBase {
         else { // no state transfer protocol found in stack
             Protocol flush=stack.findProtocol(FLUSH.class);
             if(flush != null)
-                stack.insertProtocol(new_state_transfer_protcol, ProtocolStack.BELOW, FLUSH.class);
+                stack.insertProtocol(new_state_transfer_protcol, ProtocolStack.Position.BELOW, FLUSH.class);
             else
                 stack.insertProtocolAtTop(new_state_transfer_protcol);
         }

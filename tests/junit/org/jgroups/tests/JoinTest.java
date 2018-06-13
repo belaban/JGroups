@@ -144,7 +144,7 @@ public class JoinTest extends ChannelTestBase {
 
         stack=a.getProtocolStack();
         DELAY_JOIN_REQ delay=new DELAY_JOIN_REQ().delay(delay_join_req);
-        stack.insertProtocol(delay, ProtocolStack.BELOW, GMS.class);
+        stack.insertProtocol(delay, ProtocolStack.Position.BELOW, GMS.class);
 
         System.out.println(new Date() + ": joining c2");
         long start=System.currentTimeMillis(), stop;

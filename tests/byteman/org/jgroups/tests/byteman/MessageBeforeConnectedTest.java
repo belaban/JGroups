@@ -56,7 +56,7 @@ public class MessageBeforeConnectedTest extends BMNGRunner {
      * trigger an exception.
      * Issue: https://issues.jboss.org/browse/JGRP-1545
      */
-    @BMScript(dir="scripts/MessageBeforeConnectedTest", value="testSendingOfMsgsOnUnconnectedChannel")
+    @BMScript(dir="conf/scripts/MessageBeforeConnectedTest", value="testSendingOfMsgsOnUnconnectedChannel")
     public void testSendingOfMsgsOnUnconnectedChannel() throws Throwable {
         a=createChannel("A");
         a.setReceiver(new ReceiverAdapter() {

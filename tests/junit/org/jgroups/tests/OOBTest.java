@@ -63,7 +63,7 @@ public class OOBTest extends ChannelTestBase {
     public void testRegularAndOOBUnicasts() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.BELOW,(Class<? extends Protocol>[])Util.getUnicastProtocols());
+        stack.insertProtocol(discard, ProtocolStack.Position.BELOW,(Class<? extends Protocol>[])Util.getUnicastProtocols());
 
         Address dest=b.getAddress();
         Message m1=new Message(dest, 1);
@@ -91,7 +91,7 @@ public class OOBTest extends ChannelTestBase {
     public void testRegularAndOOBUnicasts2() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.BELOW,(Class<? extends Protocol>[])Util.getUnicastProtocols());
+        stack.insertProtocol(discard, ProtocolStack.Position.BELOW,(Class<? extends Protocol>[])Util.getUnicastProtocols());
 
         Address dest=b.getAddress();
         Message m1=new Message(dest, 1);
@@ -122,7 +122,7 @@ public class OOBTest extends ChannelTestBase {
     public void testRegularAndOOBMulticasts() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK2.class);
+        stack.insertProtocol(discard, ProtocolStack.Position.BELOW, NAKACK2.class);
         a.setDiscardOwnMessages(true);
 
         Address dest=null; // send to all
@@ -158,7 +158,7 @@ public class OOBTest extends ChannelTestBase {
         discard.setLocalAddress(a.getAddress());
         discard.setUpDiscardRate(0.5);
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.ABOVE, TP.class);
+        stack.insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
         MyReceiver r1=new MyReceiver("A"), r2=new MyReceiver("B");
         a.setReceiver(r1);
         b.setReceiver(r2);
