@@ -67,7 +67,7 @@ public class OrderingTest {
     }
 
 
-    @Test(invocationCount=100)
+   // @Test(invocationCount=100)
     public void testMulticastFIFOOrdering() throws Exception {
         System.out.println("\n-- sending " + NUM_MSGS + " messages");
         final CountDownLatch latch=new CountDownLatch(1);
