@@ -11,7 +11,7 @@ import java.io.DataOutput;
  * Represents an 'owner', which is an address and thread ID
  * @author Bela Ban
  */
-public class Owner implements Streamable {
+public class Owner implements Streamable, Comparable<Owner> {
     protected Address address;
     protected long    thread_id;
 
@@ -52,7 +52,13 @@ public class Owner implements Streamable {
         return (int)(address.hashCode() + thread_id);
     }
 
+    public int compareTo(Owner o) {
+        return thread_id < o.thread_id? -1 : thread_id > o.thread_id? 1 : address.compareTo(o.address);
+    }
+
     public String toString() {
         return thread_id < 0? address.toString() : address + "::" + thread_id;
     }
+
+
 }

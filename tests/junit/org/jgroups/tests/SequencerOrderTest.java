@@ -103,7 +103,7 @@ public class SequencerOrderTest {
             shuffle.setUp(true);
             shuffle.setMaxSize(10);
             shuffle.setMaxTime(1000);
-            ch.getProtocolStack().insertProtocol(shuffle, ProtocolStack.BELOW, NAKACK2.class);
+            ch.getProtocolStack().insertProtocol(shuffle, ProtocolStack.Position.BELOW, NAKACK2.class);
             shuffle.init(); // starts the timer
         }
     }

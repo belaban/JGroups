@@ -14,6 +14,7 @@ import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import javax.xml.transform.sax.SAXSource;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
@@ -29,7 +30,7 @@ public class PrioTest {
 
     @BeforeTest void init() throws Exception {
         c1=createChannel("A");
-        c1.getProtocolStack().insertProtocol(new PRIO(), ProtocolStack.ABOVE, NAKACK2.class);
+        c1.getProtocolStack().insertProtocol(new PRIO(), ProtocolStack.Position.ABOVE, NAKACK2.class);
         c2=createChannel("B");
         c1.connect("PrioTest");
         c1.setReceiver(r1=new PrioReceiver());
@@ -68,6 +69,7 @@ public class PrioTest {
         }
 
         System.out.println("R1: " + Util.print(list1) + "\nR2: " + Util.print(list2));
+        System.out.println("R1 size: " + list1.size() + " R2 size: " + list2.size() + " prios: " + prios.length);
         assert list1.size() == prios.length;
         assert list2.size() == prios.length;
         

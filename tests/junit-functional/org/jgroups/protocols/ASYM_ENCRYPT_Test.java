@@ -92,11 +92,11 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
 
         rogue=new JChannel(Util.getTestStack()).name("rogue");
         DISCARD discard=new DISCARD().setDiscardAll(true);
-        rogue.getProtocolStack().insertProtocol(discard, ProtocolStack.ABOVE, TP.class);
+        rogue.getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
         CustomENCRYPT encrypt=new CustomENCRYPT();
         encrypt.init();
 
-        rogue.getProtocolStack().insertProtocol(encrypt, ProtocolStack.BELOW, NAKACK2.class);
+        rogue.getProtocolStack().insertProtocol(encrypt, ProtocolStack.Position.BELOW, NAKACK2.class);
         rogue.connect(cluster_name); // creates a singleton cluster
 
         assert rogue.getView().size() == 1;
@@ -138,7 +138,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         GMS gms=(GMS)stack.findProtocol(GMS.class);
         gms.setMaxJoinAttempts(1);
         DISCARD discard=new DISCARD().setDiscardAll(true);
-        stack.insertProtocol(discard, ProtocolStack.ABOVE, TP.class);
+        stack.insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
         rogue.connect(cluster_name);
         assert rogue.getView().size() == 1;
         discard.setDiscardAll(false);
@@ -270,11 +270,11 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         JChannel ch=new JChannel(Util.getTestStack()).name(name);
         ProtocolStack stack=ch.getProtocolStack();
         EncryptBase encrypt=createENCRYPT();
-        stack.insertProtocol(encrypt, ProtocolStack.BELOW, NAKACK2.class);
+        stack.insertProtocol(encrypt, ProtocolStack.Position.BELOW, NAKACK2.class);
         AUTH auth=new AUTH();
         auth.setAuthCoord(true);
         auth.setAuthToken(new MD5Token("mysecret")); // .setAuthCoord(false);
-        stack.insertProtocol(auth, ProtocolStack.BELOW, GMS.class);
+        stack.insertProtocol(auth, ProtocolStack.Position.BELOW, GMS.class);
         stack.findProtocol(GMS.class).setValue("join_timeout", 2000); // .setValue("view_ack_collection_timeout", 10);
         return ch;
     }

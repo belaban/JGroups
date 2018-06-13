@@ -115,7 +115,7 @@ public class UNICAST_RetransmitTest {
 
     protected static void insertDiscardProtocol(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        stack.insertProtocolInStack(new DiscardEveryOtherUnicastMessage(), stack.getTransport(), ProtocolStack.ABOVE);
+        stack.insertProtocolInStack(new DiscardEveryOtherUnicastMessage(), stack.getTransport(), ProtocolStack.Position.ABOVE);
     }
 
     protected static void removeDiscardProtocol(JChannel ch) {

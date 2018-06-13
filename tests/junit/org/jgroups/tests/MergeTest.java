@@ -123,7 +123,7 @@ public class MergeTest extends ChannelTestBase {
         for(JChannel ch: channels) {
             DISCARD discard=new DISCARD();
             discard.setDiscardAll(true);
-            ch.getProtocolStack().insertProtocol(discard, ProtocolStack.ABOVE,TP.class);
+            ch.getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE,TP.class);
         }
 
         for(JChannel ch: channels) {

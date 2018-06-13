@@ -440,6 +440,16 @@ public abstract class Protocol {
     }
 
 
+    /**
+     * A message is sent down the stack. Protocols may examine the message and do something (e.g. add a header) with it
+     * before passing it down.
+     * @since 4.0
+     */
+    public Object down(Message msg) {
+        return down_prot.down(msg);
+    }
+
+
 
 
 }

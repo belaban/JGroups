@@ -550,7 +550,8 @@ public class Message implements Streamable {
     }
 
 
-    public Header getHeader(short id) {
+
+    public <T extends Header> T getHeader(short id) {
         if(id <= 0)
             throw new IllegalArgumentException("An ID of " + id + " is invalid. Add the protocol which calls " +
                                                  "getHeader() to jg-protocol-ids.xml");

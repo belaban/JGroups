@@ -36,7 +36,7 @@ public class LockServiceConcurrencyTest extends BMNGRunner {
     }
 
     /** Tests JIRA https://issues.jboss.org/browse/JGRP-1679 */
-    @BMScript(dir="scripts/LockServiceConcurrencyTest", value="testConcurrentClientLocks")
+    @BMScript(dir="conf/scripts/LockServiceConcurrencyTest", value="testConcurrentClientLocks")
     public void testConcurrentClientLocks() throws InterruptedException {
         Lock lock=lock_service.getLock("L");
 

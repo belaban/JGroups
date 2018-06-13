@@ -51,7 +51,7 @@ public class ForwardToCoordFailoverTest extends BMNGRunner {
      * <p/>
      * https://issues.jboss.org/browse/JGRP-1517
      */
-    @BMScript(dir="scripts/ForwardToCoordFailoverTest", value="testSendingDuringViewChange")
+    @BMScript(dir="conf/scripts/ForwardToCoordFailoverTest", value="testSendingDuringViewChange")
     public void testSendingDuringViewChange() throws Exception {
         MyReceiver rb=new MyReceiver("B");
         b.setReceiver(rb);

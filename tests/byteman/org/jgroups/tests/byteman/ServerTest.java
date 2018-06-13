@@ -118,7 +118,7 @@ public class ServerTest extends BMNGRunner {
      * <li>A.connect(B) || B.connect(A)</li>
      * </ul>
      */
-    @BMScript(dir="scripts/ServerTest", value="testConcurrentConnect")
+    @BMScript(dir="conf/scripts/ServerTest", value="testConcurrentConnect")
     // @Test(dataProvider="configProvider",invocationCount=5)
     public void testConcurrentConnect(BaseServer first, BaseServer second) throws Exception {
         setup(first, second);

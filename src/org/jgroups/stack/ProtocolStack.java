@@ -35,9 +35,7 @@ import java.util.concurrent.ConcurrentMap;
  * @author Bela Ban
  */
 public class ProtocolStack extends Protocol {
-    public static final int       ABOVE = 1; // used by insertProtocol()
-    public static final int       BELOW = 2; // used by insertProtocol()
-
+    public enum Position {ABOVE, BELOW};
     protected static final String max_list_print_size="max-list-print-size";
     /**
      * Holds the shared transports, keyed by 'TP.singleton_name'. The values are the transport and the use count for
@@ -144,7 +142,7 @@ public class ProtocolStack extends Protocol {
                         log.error(Util.getMessage("NeighborProtocol") + neighbor_prot + " not found in stack");
                         break;
                     }
-                    int position=tmp.equalsIgnoreCase("above")? ABOVE : BELOW;
+                    Position position=tmp.equalsIgnoreCase("above")? Position.ABOVE : Position.BELOW;
                     try {
                         insertProtocol(prot, position, neighbor.getClass());
                     }
@@ -558,25 +556,22 @@ public class ProtocolStack extends Protocol {
      *                      is not found
      * @exception Exception Will be thrown when the new protocol cannot be created, or inserted.
      */
-    public void insertProtocol(Protocol prot, int position, String neighbor_prot) throws Exception {
+    public void insertProtocol(Protocol prot, Position position, String neighbor_prot) throws Exception {
         if(neighbor_prot == null) throw new IllegalArgumentException("neighbor_prot is null");
-        if(position != ProtocolStack.ABOVE && position != ProtocolStack.BELOW)
-            throw new IllegalArgumentException("position has to be ABOVE or BELOW");
-
         Protocol neighbor=findProtocol(neighbor_prot);
         if(neighbor == null)
             throw new IllegalArgumentException("protocol " + neighbor_prot + " not found in " + printProtocolSpec(false));
 
-        if(position == ProtocolStack.BELOW && neighbor instanceof TP)
+        if(position == Position.BELOW && neighbor instanceof TP)
             throw new IllegalArgumentException("Cannot insert protocol " + prot.getName() + " below transport protocol");
 
         insertProtocolInStack(prot, neighbor,  position);
     }
 
 
-    public void insertProtocolInStack(Protocol prot, Protocol neighbor, int position) {
+    public void insertProtocolInStack(Protocol prot, Protocol neighbor, Position position) {
      // connect to the protocol layer below and above
-        if(position == ProtocolStack.BELOW) {
+        if(position == Position.BELOW) {
             prot.setUpProtocol(neighbor);
             Protocol below=neighbor.getDownProtocol();
             prot.setDownProtocol(below);
@@ -602,28 +597,21 @@ public class ProtocolStack extends Protocol {
         }
     }
 
-    public void insertProtocol(Protocol prot, int position, Class<? extends Protocol> neighbor_prot) throws Exception {
+    public void insertProtocol(Protocol prot, Position position, Class<? extends Protocol> neighbor_prot) throws Exception {
         if(neighbor_prot == null) throw new IllegalArgumentException("neighbor_prot is null");
-        if(position != ProtocolStack.ABOVE && position != ProtocolStack.BELOW)
-            throw new IllegalArgumentException("position has to be ABOVE or BELOW");
-
         Protocol neighbor=findProtocol(neighbor_prot);
         if(neighbor == null)
             throw new IllegalArgumentException("protocol \"" + neighbor_prot + "\" not found in " + stack.printProtocolSpec(false));
 
-        if(position == ProtocolStack.BELOW && neighbor instanceof TP)
-            throw new IllegalArgumentException("protocol \"" + prot + "\" cannot be inserted below the transport protocol (" +
-                                                 neighbor + ")");
-
+        if(position == Position.BELOW && neighbor instanceof TP)
+            throw new IllegalArgumentException("\"" + prot + "\" cannot be inserted below the transport (" + neighbor + ")");
         insertProtocolInStack(prot, neighbor,  position);
     }
 
 
-    public void insertProtocol(Protocol prot, int position, Class<? extends Protocol> ... neighbor_prots) throws Exception {
+    @SafeVarargs
+    public final void insertProtocol(Protocol prot, Position position, Class<? extends Protocol>... neighbor_prots) throws Exception {
         if(neighbor_prots == null) throw new IllegalArgumentException("neighbor_prots is null");
-        if(position != ProtocolStack.ABOVE && position != ProtocolStack.BELOW)
-            throw new IllegalArgumentException("position has to be ABOVE or BELOW");
-
         Protocol neighbor=findProtocol(neighbor_prots);
         if(neighbor == null)
             throw new IllegalArgumentException("protocol \"" + Arrays.toString(neighbor_prots) + "\" not found in " + stack.printProtocolSpec(false));

@@ -45,8 +45,8 @@ public class ForkChannel extends JChannel implements ChannelListener {
      * @param create_fork_if_absent If true, and FORK doesn't exist, a new FORK protocol will be created and inserted
      *                              into the main-stack at the given position. If false, and FORK doesn't exist, an
      *                              exception will be thrown
-     * @param position The position at which the newly created FORK will be inserted. {@link ProtocolStack#ABOVE} or
-     *                 {@link ProtocolStack#BELOW} are accepted. Ignored if create_fork_if_absent is false.
+     * @param position The position at which the newly created FORK will be inserted. {@link ProtocolStack.Position#ABOVE} or
+     *                 {@link ProtocolStack.Position#BELOW} are accepted. Ignored if create_fork_if_absent is false.
      * @param neighbor The class of the neighbor protocol below or above which the newly created FORK protocol will
      *                 be inserted. Ignored if create_fork_if_absent is false.
      * @param protocols A list of protocols (<em>from bottom to top</em> !) to insert as the fork_stack in FORK under the
@@ -57,8 +57,8 @@ public class ForkChannel extends JChannel implements ChannelListener {
      *
      * @throws Exception
      */
-    public ForkChannel(final Channel main_channel, String fork_stack_id, String fork_channel_id,
-                       boolean create_fork_if_absent, int position, Class<? extends Protocol> neighbor,
+    public ForkChannel(final JChannel main_channel, String fork_stack_id, String fork_channel_id,
+                       boolean create_fork_if_absent, ProtocolStack.Position position, Class<? extends Protocol> neighbor,
                        Protocol ... protocols) throws Exception {
 
         super(false);
@@ -95,9 +95,9 @@ public class ForkChannel extends JChannel implements ChannelListener {
      *                  a ForkChannel to mux/demux messages, but doesn't need a different protocol stack.
      * @throws Exception
      */
-    public ForkChannel(final Channel main_channel, String fork_stack_id, String fork_channel_id,
+    public ForkChannel(final JChannel main_channel, String fork_stack_id, String fork_channel_id,
                        Protocol ... protocols) throws Exception {
-        this(main_channel, fork_stack_id, fork_channel_id, false, 0, null, protocols);
+        this(main_channel, fork_stack_id, fork_channel_id, false, ProtocolStack.Position.ABOVE, null, protocols);
     }
 
     @Override
@@ -263,7 +263,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
     /**
      * Creates a new FORK protocol, or returns the existing one, or throws an exception. Never returns null.
      */
-    protected static FORK getFORK(Channel ch, int position, Class<? extends Protocol> neighbor,
+    protected static FORK getFORK(JChannel ch, ProtocolStack.Position position, Class<? extends Protocol> neighbor,
                                   boolean create_fork_if_absent) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         FORK fork=(FORK)stack.findProtocol(FORK.class);

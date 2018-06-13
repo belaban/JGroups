@@ -18,6 +18,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,14 +64,15 @@ abstract public class Locking extends Protocol {
     protected final Set<LockNotification> lock_listeners=new CopyOnWriteArraySet<>();
 
     protected final static AtomicInteger  current_lock_id=new AtomicInteger(1);
-    
 
 
-    protected enum Type {
+
+    public enum Type {
         GRANT_LOCK,        // request to acquire a lock
         LOCK_GRANTED,      // response to sender of GRANT_LOCK on succcessful lock acquisition
         LOCK_DENIED,       // response to sender of GRANT_LOCK on unsuccessful lock acquisition (e.g. on tryLock())
         RELEASE_LOCK,      // request to release a lock
+        RELEASE_LOCK_OK,   // response to RELEASE_LOCK request
         CREATE_LOCK,       // request to create a server lock (sent by coordinator to backups). Used by CentralLockService
         DELETE_LOCK,       // request to delete a server lock (sent by coordinator to backups). Used by CentralLockService
         LOCK_AWAIT,        // request to await until condition is signaled
@@ -241,6 +243,9 @@ abstract public class Locking extends Protocol {
                     case LOCK_GRANTED:
                         handleLockGrantedResponse(req.lock_name, req.lock_id, req.owner);
                         break;
+                    case RELEASE_LOCK_OK:
+                        handleLockReleasedResponse(req.lock_name, req.lock_id, req.owner);
+                        break;
                     case LOCK_DENIED:
                         handleLockDeniedResponse(req.lock_name, req.lock_id, req.owner);
                         break;
@@ -308,9 +313,21 @@ abstract public class Locking extends Protocol {
         return sb.toString();
     }
 
+
+    @ManagedOperation(description="Dumps all server locks")
+    public String printServerLocks() {
+        StringBuilder tmp = new StringBuilder();
+        for(Map.Entry<String,ServerLock> entry: server_locks.entrySet()){
+            tmp.append(entry.getKey()).append(": ").append(entry.getValue()).append(", ");
+        }
+
+        tmp = tmp.delete(tmp.length() - 2, tmp.length());
+        return tmp.toString();
+    }
+
     protected void handleView(View view) {
         this.view=view;
-        log.debug("view=%s", view);
+        log.debug("[%s] view=%s", local_addr, view);
         List<Address> members=view.getMembers();
         List<Response> responses=new ArrayList<>();
         for(Map.Entry<String,ServerLock> entry: server_locks.entrySet()) {
@@ -352,7 +369,7 @@ abstract public class Locking extends Protocol {
     }
 
     abstract protected void sendGrantLockRequest(String lock_name, int lock_id, Owner owner, long timeout, boolean is_trylock);
-    abstract protected void sendReleaseLockRequest(String lock_name, Owner owner);
+    abstract protected void sendReleaseLockRequest(String lock_name, int lock_id, Owner owner);
     abstract protected void sendAwaitConditionRequest(String lock_name, Owner owner);
     abstract protected void sendSignalConditionRequest(String lock_name, boolean all);
     abstract protected void sendDeleteAwaitConditionRequest(String lock_name, Owner owner);
@@ -378,12 +395,12 @@ abstract public class Locking extends Protocol {
         Message msg=new Message(dest, Util.streamableToBuffer(req)).putHeader(id, new LockingHeader());
         if(bypass_bundling)
             msg.setFlag(Message.Flag.DONT_BUNDLE);
-        log.trace("[%s] --> %s] %s", local_addr, dest == null? "ALL" : dest, req);
+        log.trace("[%s] --> [%s] %s", local_addr, dest == null? "ALL" : dest, req);
         try {
             down_prot.down(new Event(Event.MSG, msg));
         }
         catch(Exception ex) {
-            log.error("failed sending %s request: %s", req.type, ex);
+            log.error("[%s] failed sending %s request: %s", local_addr, req.type, ex);
         }
     }
 
@@ -422,12 +439,18 @@ abstract public class Locking extends Protocol {
             lock.handleLockGrantedResponse(lock_id);
     }
 
+    protected void handleLockReleasedResponse(String lock_name, int lock_id, Owner owner) {
+        ClientLock lock=client_lock_table.getLock(lock_name,owner,false);
+        if(lock != null)
+            lock.handleLockReleasedResponse(lock_id);
+    }
+
     protected void handleLockDeniedResponse(String lock_name, int lock_id, Owner owner) {
          ClientLock lock=client_lock_table.getLock(lock_name,owner,false);
          if(lock != null)
              lock.lockDenied(lock_id);
     }
-    
+
     protected void handleAwaitRequest(String lock_name, Owner owner) {
         Lock lock=_getLock(lock_name);
         lock.lock();
@@ -442,7 +465,7 @@ abstract public class Locking extends Protocol {
             lock.unlock();
         }
     }
-    
+
     protected void handleDeleteAwaitRequest(String lock_name, Owner owner) {
         Lock lock=_getLock(lock_name);
         lock.lock();
@@ -457,7 +480,7 @@ abstract public class Locking extends Protocol {
             lock.unlock();
         }
     }
-    
+
     protected void handleSignalResponse(String lock_name, Owner owner) {
         ClientLock lock=client_lock_table.getLock(lock_name,owner,false);
         if(lock != null) {
@@ -467,7 +490,7 @@ abstract public class Locking extends Protocol {
             log.error(Util.getMessage("ConditionResponseWasClientLockWasNotPresentIgnoredSignal"));
         }
     }
-    
+
     protected void handleSignalRequest(Request req) {
         Response rsp=null;
         Lock lock=_getLock(req.lock_name);
@@ -487,7 +510,7 @@ abstract public class Locking extends Protocol {
         if(rsp != null)
             sendLockResponse(rsp.type, rsp.owner, rsp.lock_name, rsp.lock_id);
     }
-    
+
     protected void handleCreateLockRequest(String lock_name, Owner owner) {
         Lock lock=_getLock(lock_name);
         lock.lock();
@@ -562,7 +585,7 @@ abstract public class Locking extends Protocol {
                 listener.lockCreated(lock_name);
             }
             catch(Throwable t) {
-                log.error("failed notifying %s: %s", listener, t.toString());
+                log.error("[%s] failed notifying %s: %s", local_addr, listener, t.toString());
             }
         }
     }
@@ -573,7 +596,7 @@ abstract public class Locking extends Protocol {
                 listener.lockDeleted(lock_name);
             }
             catch(Throwable t) {
-                log.error("failed notifying %s: %s", listener, t.toString());
+                log.error("[%s] failed notifying %s: %s", local_addr, listener, t.toString());
             }
         }
     }
@@ -584,7 +607,7 @@ abstract public class Locking extends Protocol {
                 listener.locked(lock_name,owner);
             }
             catch(Throwable t) {
-                log.error("failed notifying %s: %s", listener, t.toString());
+                log.error("[%s] failed notifying %s: %s", local_addr, listener, t.toString());
             }
         }
     }
@@ -595,7 +618,7 @@ abstract public class Locking extends Protocol {
                 listener.unlocked(lock_name,owner);
             }
             catch(Throwable t) {
-                log.error("failed notifying %s: %s", listener, t.toString());
+                log.error("[%s] failed notifying %s: %s", local_addr, listener, t.toString());
             }
         }
     }
@@ -606,7 +629,7 @@ abstract public class Locking extends Protocol {
                 listener.awaiting(lock_name,owner);
             }
             catch(Throwable t) {
-                log.error("failed notifying %s: %s", listener, t.toString());
+                log.error("[%s] failed notifying %s: %s", local_addr, listener, t.toString());
             }
         }
     }
@@ -617,7 +640,7 @@ abstract public class Locking extends Protocol {
                 listener.awaited(lock_name,owner);
             }
             catch(Throwable t) {
-                log.error("failed notifying %s: %s", listener, t.toString());
+                log.error("[%s] failed notifying %s: %s", local_addr, listener, t.toString());
             }
         }
     }
@@ -661,10 +684,11 @@ abstract public class Locking extends Protocol {
                     break;
                 case RELEASE_LOCK:
                 case LOCK_AWAIT:
-                    if(current_owner == null)
-                        break;
-                    if(current_owner.equals(req.owner))
+                    if(Objects.equals(current_owner, req.owner)) {
                         setOwner(null);
+                        if(req.type == Type.RELEASE_LOCK)
+                            sendLockResponse(Type.RELEASE_LOCK_OK, req.owner, req.lock_name, req.lock_id);
+                    }
                     else
                         addToQueue(req);
                     break;
@@ -685,7 +709,7 @@ abstract public class Locking extends Protocol {
             if(current_owner != null && !members.contains(current_owner.getAddress())) {
                 Owner tmp=current_owner;
                 setOwner(null);
-                log.debug("unlocked \"%s\" because owner %s left", lock_name, tmp);
+                log.debug("[%s] unlocked \"%s\" because owner %s left", local_addr, lock_name, tmp);
             }
 
             synchronized(queue) {
@@ -695,7 +719,7 @@ abstract public class Locking extends Protocol {
                         it.remove();
                 }
             }
-            
+
             for(Iterator<Owner> it=condition.queue.iterator(); it.hasNext();) {
                 Owner own=it.next();
                 if(!members.contains(own.getAddress()))
@@ -763,9 +787,16 @@ abstract public class Locking extends Protocol {
                 return null;
             Request req;
             while((req=getNextRequest()) != null) {
-                if(req.type == Type.GRANT_LOCK) {
-                    setOwner(req.owner);
-                    return new Response(Type.LOCK_GRANTED, req.owner, req.lock_name, req.lock_id);
+                switch(req.type) {
+                    case GRANT_LOCK:
+                        setOwner(req.owner);
+                        return new Response(Type.LOCK_GRANTED, req.owner, req.lock_name, req.lock_id);
+                    case RELEASE_LOCK:
+                        if(current_owner == null)
+                            break;
+                        if(current_owner.equals(req.owner))
+                            setOwner(null);
+                        return new Response(Type.RELEASE_LOCK_OK, req.owner, req.lock_name, req.lock_id);
                 }
             }
             return null;
@@ -809,32 +840,32 @@ abstract public class Locking extends Protocol {
     protected class ServerCondition {
         protected final ServerLock   lock;
         protected final Queue<Owner> queue=new ArrayDeque<>();
-        
+
         public ServerCondition(ServerLock lock) {
             this.lock = lock;
         }
 
         public void addWaiter(Owner waiter) {
             notifyAwaiting(lock.lock_name, waiter);
-            log.trace("Waiter [%s] was added for %s", waiter, lock.lock_name);
+            log.trace("[%s] waiter [%s] was added for %s", local_addr, waiter, lock.lock_name);
             queue.add(waiter);
         }
-        
+
         public void removeWaiter(Owner waiter) {
             notifyAwaited(lock.lock_name, waiter);
-            log.trace("Waiter [%s] was removed for %s", waiter, lock.lock_name);
+            log.trace("[%s] waiter [%s] was removed for %s", local_addr, waiter, lock.lock_name);
             queue.remove(waiter);
         }
-        
+
         public void signal(boolean all) {
             if (queue.isEmpty())
-                log.trace("Signal for [%s] ignored since, no one is waiting in queue", lock.lock_name);
+                log.trace("[%s] signal for [%s] ignored since, no one is waiting in queue", local_addr, lock.lock_name);
 
             Owner entry;
             if (all) {
                 while ((entry = queue.poll()) != null) {
                     notifyAwaited(lock.lock_name, entry);
-                    log.trace("Signalled %s for %s", entry, lock.lock_name);
+                    log.trace("[%s] signalled %s for %s", local_addr, entry, lock.lock_name);
                     sendSignalResponse(entry, lock.lock_name);
                 }
             }
@@ -842,7 +873,7 @@ abstract public class Locking extends Protocol {
                 entry = queue.poll();
                 if (entry != null) {
                     notifyAwaited(lock.lock_name, entry);
-                    log.trace("Signalled %s for %s", entry, lock.lock_name);
+                    log.trace("[%s] signalled %s for %s", local_addr, entry, lock.lock_name);
                     sendSignalResponse(entry, lock.lock_name);
                 }
             }
@@ -855,7 +886,7 @@ abstract public class Locking extends Protocol {
      * more or less those of {@link Lock}, but may differ slightly.
      * For details see {@link org.jgroups.blocks.locking.LockService}.
      */
-    protected class ClientLock implements Lock {
+    protected class ClientLock implements Lock, Comparable<ClientLock> {
         protected final String          name;
         protected Owner                 owner;
         protected volatile boolean      acquired;
@@ -916,7 +947,7 @@ abstract public class Locking extends Protocol {
         }
 
         public String toString() {
-            return name + " (id=" + lock_id + ", locked=" + acquired + ")";
+            return String.format("%s (id=%d, locked=%b, owner=%s)", name, lock_id, acquired, owner != null? owner : "n/a");
         }
 
         protected synchronized void lockGranted(int lock_id) {
@@ -939,6 +970,14 @@ abstract public class Locking extends Protocol {
 
         protected void handleLockGrantedResponse(int lock_id) {
             lockGranted(lock_id);
+        }
+
+        protected void handleLockReleasedResponse(int lock_id) {
+            if(this.lock_id != lock_id) {
+                log.error(Util.getMessage("DiscardedLOCKGRANTEDResponseWithLockId") + lock_id + ", my lock-id=" + this.lock_id);
+                return;
+            }
+            _unlockOK();
         }
 
         protected synchronized void acquire(boolean throwInterrupt) throws InterruptedException {
@@ -971,13 +1010,23 @@ abstract public class Locking extends Protocol {
                 return;
             this.timeout=0;
             this.is_trylock=false;
-            if(!denied)
-                sendReleaseLockRequest(name, owner);
+            if(!denied) {
+                sendReleaseLockRequest(name, lock_id, owner); // lock will be released on RELEASE_LOCK_OK response
+                if(client_lock_table.removeClientLock(name,owner)) {
+                    client_lock_table.addToPendingReleaseRequests(this);
+                    notifyLockDeleted(name);
+                }
+            }
+            else
+                _unlockOK();
+        }
+
+        protected synchronized void _unlockOK() {
             acquired=denied=false;
             notifyAll();
-
-            client_lock_table.removeClientLock(name,owner);
-            notifyLockDeleted(name);
+            client_lock_table.removeFromPendingReleaseRequests(this);
+            if(client_lock_table.removeClientLock(name,owner))
+                notifyLockDeleted(name);
             owner=null;
         }
 
@@ -1034,11 +1083,17 @@ abstract public class Locking extends Protocol {
                 _unlock(true);
             return retval;
         }
+
+        public int compareTo(ClientLock o) {
+            int rc=owner.compareTo(o.owner);
+            return rc != 0? rc : name.compareTo(o.name);
+        }
     }
 
     /** Manages access to client locks */
     protected class ClientLockTable {
         protected final ConcurrentMap<String,Map<Owner,ClientLock>> table=Util.createConcurrentMap(20);
+        protected final Set<ClientLock>                             pending_release_reqs=new ConcurrentSkipListSet<>();
 
 
         protected synchronized ClientLock getLock(String name, Owner owner, boolean create_if_absent) {
@@ -1061,15 +1116,18 @@ abstract public class Locking extends Protocol {
             return lock;
         }
 
-        protected synchronized void removeClientLock(String lock_name, Owner owner) {
+        protected synchronized boolean removeClientLock(String lock_name, Owner owner) {
+            for (ClientLock lock: pending_release_reqs) {
+                return Objects.equals(lock.name, lock_name) && Objects.equals(lock.owner, owner);
+            }
             Map<Owner,ClientLock> owners=table.get(lock_name);
             if(owners != null) {
                 ClientLock lock=owners.remove(owner);
-                if(lock != null) {
-                    if(owners.isEmpty())
-                        table.remove(lock_name);
-                }
+                if(lock != null && owners.isEmpty())
+                    table.remove(lock_name);
+                return lock != null;
             }
+            return false;
         }
 
         protected void unlockAll() {
@@ -1083,15 +1141,52 @@ abstract public class Locking extends Protocol {
                 lock.unlock();
         }
 
+        //FELIX - REVIEW
         protected void resendPendingLockRequests() {
-            if(!table.isEmpty()) {
-                for(Map<Owner,ClientLock> map: table.values()) {
-                    for(ClientLock lock: map.values()) {
-                        if(!lock.acquired && !lock.denied)
-                            sendGrantLockRequest(lock.name, lock.lock_id, lock.owner, lock.timeout, lock.is_trylock);
+            final List<ClientLock> pending_lock_reqs=new ArrayList<>();
+
+            synchronized (this) {
+                if (!table.isEmpty()) {
+                    for (Map<Owner, ClientLock> map : table.values()) {
+                        for (ClientLock lock : map.values()) {
+                            if (!lock.acquired && !lock.denied) {
+                                pending_lock_reqs.add(lock);
+                            }
+                        }
                     }
                 }
             }
+
+            if (pending_lock_reqs != null) { // send outside of the synchronized block
+                if (!pending_lock_reqs.isEmpty()) {
+                    String tmp = createLockStringList(pending_release_reqs);
+                    log.trace("[%s] resending pending lock requests: %s", local_addr, tmp);
+                }
+
+                for (ClientLock lock : pending_lock_reqs) {
+                    sendGrantLockRequest(lock.name, lock.lock_id, lock.owner, lock.timeout, lock.is_trylock);
+                }
+            }
+
+            if (!pending_release_reqs.isEmpty()) {
+                final String tmp = createLockStringList(pending_release_reqs);
+                log.trace("[%s] resending pending release requests: %s", local_addr, tmp);
+            }
+
+            for (ClientLock lock : pending_release_reqs) {
+                sendReleaseLockRequest(lock.name, lock.lock_id, lock.owner);
+            }
+        }
+
+        //FELIX improve the name LocksRequestsToString
+        private String createLockStringList(final Set<ClientLock> pendingReleaseReqs){
+            StringBuilder stringBuilder = new StringBuilder();
+            for (ClientLock lock : pendingReleaseReqs) {
+                stringBuilder.append(lock.toString() + ", ");
+            }
+            stringBuilder = stringBuilder.delete(stringBuilder.length() - 2, stringBuilder.length());
+
+            return stringBuilder.toString();
         }
 
         protected synchronized Collection<Map<Owner,ClientLock>> values() {
@@ -1124,22 +1219,33 @@ abstract public class Locking extends Protocol {
             }
             return sb.toString();
         }
+
+        public void addToPendingReleaseRequests(ClientLock cl) {
+            if(cl != null)
+                pending_release_reqs.add(cl);
+        }
+
+
+        public void removeFromPendingReleaseRequests(ClientLock cl) {
+            if(cl != null)
+                pending_release_reqs.remove(cl);
+        }
     }
-    
+
     protected class ClientCondition implements Condition {
 
         protected final ClientLock    lock;
         protected final AtomicBoolean signaled = new AtomicBoolean(false);
         /**
-         * This is okay only having 1 since a client condition is 1 per 
+         * This is okay only having 1 since a client condition is 1 per
          * lock_name, thread id combination.
          */
         protected volatile AtomicReference<Thread> parker=new AtomicReference<>();
-        
+
         public ClientCondition(ClientLock lock) {
             this.lock = lock;
         }
-        
+
         @Override
         public void await() throws InterruptedException {
             InterruptedException ex = null;
@@ -1152,7 +1258,7 @@ abstract public class Locking extends Protocol {
             }
             finally {
                 lock.lock();
-                
+
                 // If we are throwing an InterruptedException
                 // then clear the interrupt state as well.
                 if (ex != null) {
@@ -1186,7 +1292,7 @@ abstract public class Locking extends Protocol {
             }
             finally {
                 lock.lock(); // contract mandates we need to re-acquire the lock (see overridden method)
-                
+
                 // If we are throwing an InterruptedException then clear the interrupt state as well
                 if (ex != null)
                     Thread.interrupted();
@@ -1197,7 +1303,7 @@ abstract public class Locking extends Protocol {
          * Note this wait will only work correctly if the converted value is less
          * than 292 years.  This is due to the limitation in System.nano and long
          * values that can only store up to 292 years (22<sup>63</sup> nanoseconds).
-         * 
+         *
          * For more information please see {@link System#nanoTime()}
          */
         @Override
@@ -1209,7 +1315,7 @@ abstract public class Locking extends Protocol {
         public boolean awaitUntil(Date deadline) throws InterruptedException {
             long waitUntilTime = deadline.getTime();
             long currentTime = System.currentTimeMillis();
-            
+
             long waitTime = waitUntilTime - currentTime;
             if (waitTime > 0) {
                 return await(waitTime, TimeUnit.MILLISECONDS);
@@ -1218,7 +1324,7 @@ abstract public class Locking extends Protocol {
                 return false;
             }
         }
-        
+
         protected void await(boolean throwInterrupt) throws InterruptedException {
             if(!signaled.get()) {
                 lock.acquired = false;
@@ -1227,7 +1333,7 @@ abstract public class Locking extends Protocol {
                 while(!signaled.get()) {
                     parker.set(Thread.currentThread());
                     LockSupport.park(this);
-                    
+
                     if (Thread.interrupted()) {
                         // If we were interrupted and haven't received a response yet then we try to
                         // clean up the lock request and throw the exception
@@ -1238,13 +1344,13 @@ abstract public class Locking extends Protocol {
                         // In the case that we were signaled and interrupted
                         // we want to return the signal but still interrupt
                         // our thread
-                        interrupted = true; 
+                        interrupted = true;
                     }
                 }
                 if(interrupted)
                     Thread.currentThread().interrupt();
             }
-            
+
             // We set as if this signal was no released.  This way if the
             // condition is reused again, but the client condition isn't lost
             // we won't think we were signaled immediately
@@ -1260,7 +1366,7 @@ abstract public class Locking extends Protocol {
                 // condition
                 lock.acquired = false;
                 sendAwaitConditionRequest(lock.name, lock.owner);
-                
+
                 boolean interrupted = false;
                 while(!signaled.get()) {
                     long wait_nano=nanoSeconds - (System.nanoTime() - start);
@@ -1269,7 +1375,7 @@ abstract public class Locking extends Protocol {
                     if(wait_nano > 0) {
                         parker.set(Thread.currentThread());
                         LockSupport.parkNanos(this, wait_nano);
-                        
+
                         if (Thread.interrupted()) {
                             // If we were interrupted and haven't received a response yet then we try to
                             // clean up the lock request and throw the exception
@@ -1280,7 +1386,7 @@ abstract public class Locking extends Protocol {
                             // In the case that we were signaled and interrupted
                             // we want to return the signal but still interrupt
                             // our thread
-                            interrupted = true; 
+                            interrupted = true;
                         }
                     }
                     else {
@@ -1290,7 +1396,7 @@ abstract public class Locking extends Protocol {
                 if(interrupted)
                     Thread.currentThread().interrupt();
             }
-            
+
             // We set as if this signal was no released.  This way if the
             // condition is reused again, but the client condition isn't lost
             // we won't think we were signaled immediately
@@ -1310,7 +1416,7 @@ abstract public class Locking extends Protocol {
         public void signalAll() {
             sendSignalConditionRequest(lock.name, true);
         }
-        
+
         protected void signaled() {
             signaled.set(true);
             Thread thread = parker.getAndSet(null);
@@ -1320,7 +1426,7 @@ abstract public class Locking extends Protocol {
     }
 
 
-    protected static class Request implements Streamable {
+    public static class Request implements Streamable {
         protected Type    type;
         protected String  lock_name;
         protected int     lock_id;
@@ -1344,6 +1450,7 @@ abstract public class Locking extends Protocol {
             this.is_trylock=is_trylock;
         }
 
+        public Type getType()              {return type;}
         public Request lockId(int lock_id) {this.lock_id=lock_id; return this;}
         public int lockId()                {return lock_id;}
 

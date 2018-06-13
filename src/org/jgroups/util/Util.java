@@ -454,7 +454,7 @@ public class Util {
         discard.setDiscardAll(true);
         ProtocolStack stack=ch.getProtocolStack();
         TP transport=stack.getTransport();
-        stack.insertProtocol(discard,ProtocolStack.ABOVE,transport.getClass());
+        stack.insertProtocol(discard,ProtocolStack.Position.ABOVE,transport.getClass());
 
         //abruptly shutdown FD_SOCK just as in real life when member gets killed non gracefully
         FD_SOCK fd=(FD_SOCK)ch.getProtocolStack().findProtocol(FD_SOCK.class);

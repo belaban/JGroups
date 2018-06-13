@@ -326,7 +326,7 @@ public class GMS_MergeTest {
              discard.addIgnoreMember(c.getAddress());
 
              // A should drop all traffic from B or C
-             a.getProtocolStack().insertProtocol(discard, ProtocolStack.ABOVE, SHARED_LOOPBACK.class);
+             a.getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE, SHARED_LOOPBACK.class);
 
              System.out.println("B and C exchange " + NUM + " messages, A discards them");
              for(int i=0; i < NUM; i++)
