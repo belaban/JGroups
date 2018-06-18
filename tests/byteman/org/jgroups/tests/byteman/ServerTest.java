@@ -90,6 +90,7 @@ public class ServerTest extends BMNGRunner {
     public void testSimpleSend(BaseServer a, BaseServer b) throws Exception {
         setup(a,b);
         send(STRING_A, a, B);
+        check(receiver_b.getList(), STRING_A);
     }
 
 
