@@ -137,8 +137,10 @@ public abstract class NioBaseServer extends BaseServer {
                             handleAccept(key);
                         else if(key.isConnectable()) {
                             SocketChannel ch=(SocketChannel)key.channel();
-                            if(ch.finishConnect() || ch.isConnected())
+                            if(ch.finishConnect() || ch.isConnected()) {
                                 conn.clearSelectionKey(SelectionKey.OP_CONNECT);
+                                conn.connected(true);
+                            }
                         }
                     }
                     catch(Throwable ex) {

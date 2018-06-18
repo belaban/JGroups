@@ -42,6 +42,7 @@ public class NioConnection extends Connection {
     protected Buffers             recv_buf=new Buffers(4).add(ByteBuffer.allocate(cookie.length));
     protected Reader              reader=new Reader(); // manages the thread which receives messages
     protected long                reader_idle_time=20000; // number of ms a reader can be idle (no msgs) until it terminates
+    protected boolean             connected;
 
 
 
@@ -63,6 +64,7 @@ public class NioConnection extends Connection {
         this.server=server;
         setSocketParameters(this.channel.socket());
         channel.configureBlocking(false);
+        this.connected=channel.isConnected();
         send_buf=new Buffers(server.maxSendBuffers() *2); // space for actual bufs and length bufs!
         this.peer_addr=server.usePeerConnections()? null /* read by first receive() */
           : new IpAddress((InetSocketAddress)channel.getRemoteAddress());
@@ -79,8 +81,11 @@ public class NioConnection extends Connection {
 
     @Override
     public boolean isConnected() {
-        return channel != null && channel.isConnected();
+        return connected;
     }
+
+    @Override
+    public boolean isConnectionPending() {return channel != null && channel.isConnectionPending();}
 
     @Override
     public boolean isExpired(long now) {
@@ -110,6 +115,7 @@ public class NioConnection extends Connection {
     public long          readerIdleTime()              {return reader_idle_time;}
     public NioConnection readerIdleTime(long t)        {this.reader_idle_time=t; return this;}
     public boolean       readerRunning()               {return this.reader.isRunning();}
+    public NioConnection connected(boolean c)          {connected=c; return this;}
 
     public synchronized void registerSelectionKey(int interest_ops) {
         if(key == null)
@@ -138,9 +144,9 @@ public class NioConnection extends Connection {
                 throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
 
             this.key=server.register(channel, SelectionKey.OP_CONNECT | SelectionKey.OP_READ, this);
-            if(Util.connect(channel, destAddr)) {
-                if(channel.finishConnect())
-                    clearSelectionKey(SelectionKey.OP_CONNECT);
+            if(Util.connect(channel, destAddr) && channel.finishConnect()) {
+                clearSelectionKey(SelectionKey.OP_CONNECT);
+                this.connected=channel.isConnected();
             }
             if(send_local_addr)
                 sendLocalAddress(server.localAddress());
@@ -253,6 +259,7 @@ public class NioConnection extends Connection {
             Util.close(channel, reader);
         }
         finally {
+            connected=false;
             send_lock.unlock();
         }
     }
@@ -269,11 +276,12 @@ public class NioConnection extends Connection {
                              status(), recv_buf.get(1) != null? recv_buf.get(1).capacity() : 0, readerRunning());
     }
 
-    protected String status() {
-        if(channel == null) return "n/a";
-        if(isConnected())   return "connected";
-        if(channel.isConnectionPending()) return "connection pending";
-        if(isOpen())        return "open";
+    @Override
+    public String status() {
+        if(channel == null)       return "n/a";
+        if(isConnected())         return "connected";
+        if(isConnectionPending()) return "connection pending";
+        if(isOpen())              return "open";
         return "closed";
     }
 
