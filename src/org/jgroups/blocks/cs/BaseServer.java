@@ -257,7 +257,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public Connection getConnection(Address dest) throws Exception {
         Connection conn;
         synchronized(this) {
-            if((conn=conns.get(dest)) != null && conn.isOpen()) // keep FAST path on the most common case
+            if((conn=conns.get(dest)) != null
+              && (conn.isConnected() || conn.isConnectionPending())) // keep FAST path on the most common case
                 return conn;
         }
 
@@ -267,10 +268,9 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             // lock / release, create new conn under sock_creation_lock, it can be skipped but then it takes
             // extra check in conn map and closing the new connection, w/ sock_creation_lock it looks much simpler
             // (slow path, so not important)
-
             synchronized(this) {
                 conn=conns.get(dest); // check again after obtaining sock_creation_lock
-                if(conn != null && conn.isOpen())
+                if(conn != null && (conn.isConnected() || conn.isConnectionPending()))
                     return conn;
 
                 // create conn stub
@@ -291,7 +291,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
             synchronized(this) {
                 Connection existing_conn=conns.get(dest); // check again after obtaining sock_creation_lock
-                if(existing_conn != null && existing_conn.isOpen() // added by a successful accept()
+                // added by a successful accept()
+                if(existing_conn != null && (existing_conn.isConnected() || existing_conn.isConnectionPending())
                   && existing_conn != conn) {
                     log.trace("%s: found existing connection to %s, using it and deleting own conn-stub", local_addr, dest);
                     Util.close(conn); // close our connection; not really needed as conn was closed by accept()
@@ -315,7 +316,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public void replaceConnection(Address address, Connection conn) {
         Connection previous=conns.put(address, conn);
         Util.close(previous); // closes previous connection (if present)
-        notifyConnectionEstablished(conn);
     }
 
     public void closeConnection(Connection conn, Throwable ex) {

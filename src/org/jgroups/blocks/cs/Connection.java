@@ -16,6 +16,7 @@ public abstract class Connection implements Closeable {
 
     abstract public boolean isOpen();
     abstract public boolean isConnected();
+    abstract public boolean isConnectionPending();
     abstract public Address localAddress();
     abstract public Address peerAddress();
     abstract public boolean isExpired(long millis);
@@ -23,4 +24,5 @@ public abstract class Connection implements Closeable {
     abstract public void    start() throws Exception;
     abstract public void    send(byte[] buf, int offset, int length) throws Exception;
     abstract public void    send(ByteBuffer buf) throws Exception;
+    abstract public String  status();
 }

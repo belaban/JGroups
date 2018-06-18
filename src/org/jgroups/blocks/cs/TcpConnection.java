@@ -28,6 +28,7 @@ public class TcpConnection extends Connection {
     protected volatile Receiver      receiver;
     protected final TcpBaseServer    server;
     protected final AtomicInteger    writers=new AtomicInteger(0); // to determine the last writer to flush
+    protected boolean                connected;
 
     /** Creates a connection stub and binds it, use {@link #connect(Address)} to connect */
     public TcpConnection(Address peer_addr, TcpBaseServer server) throws Exception {
@@ -48,6 +49,7 @@ public class TcpConnection extends Connection {
         setSocketParameters(s);
         this.out=new DataOutputStream(createBufferedOutputStream(s.getOutputStream()));
         this.in=new DataInputStream(createBufferedInputStream(s.getInputStream()));
+        this.connected=sock.isConnected();
         this.peer_addr=server.usePeerConnections()? readPeerAddress(s)
           : new IpAddress((InetSocketAddress)s.getRemoteSocketAddress());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
@@ -94,11 +96,13 @@ public class TcpConnection extends Connection {
             Util.connect(this.sock, destAddr, server.sock_conn_timeout);
             this.out=new DataOutputStream(createBufferedOutputStream(sock.getOutputStream()));
             this.in=new DataInputStream(createBufferedInputStream(sock.getInputStream()));
+            connected=sock.isConnected();
             if(send_local_addr)
                 sendLocalAddress(server.localAddress());
         }
         catch(Exception t) {
             Util.close(this.sock);
+            connected=false;
             throw t;
         }
     }
@@ -217,6 +221,7 @@ public class TcpConnection extends Connection {
         }
         catch(Exception ex) {
             server.socket_factory.close(this.sock);
+            connected=false;
             throw ex;
         }
     }
@@ -320,7 +325,8 @@ public class TcpConnection extends Connection {
                              status(), receiver != null? receiver.bufferSize() : 0);
     }
 
-    protected String status() {
+    @Override
+    public String status() {
         if(sock == null)    return "n/a";
         if(isConnected())   return "connected";
         if(isOpen())        return "open";
@@ -332,7 +338,11 @@ public class TcpConnection extends Connection {
     }
 
     public boolean isConnected() {
-        return sock != null && sock.isConnected();
+        return connected;
+    }
+
+    public boolean isConnectionPending() {
+        return false;
     }
 
     public boolean isOpen() {
@@ -349,6 +359,7 @@ public class TcpConnection extends Connection {
             }
         }
         finally {
+            connected=false;
             send_lock.unlock();
         }
     }
