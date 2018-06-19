@@ -1,8 +1,2 @@
-# Author: Bela Ban
-
-
 #!/bin/bash
-
-JG=$HOME/JGroups
-
-jgroups.sh org.jgroups.tests.$*
+`dirname $0`/jgroups.sh org.jgroups.tests.$*
