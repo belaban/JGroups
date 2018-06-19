@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Message;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
@@ -44,6 +45,8 @@ public class SHUFFLE extends Protocol {
     protected long                max_time=1500L;
 
 
+    public int     getUpMessages()           {return up_msgs.size();}
+    public int     getDownMessages()         {return down_msgs.size();}
     public boolean isUp()                    {return up;}
     public SHUFFLE setUp(boolean up)         {this.up=up; return this;}
     public boolean isDown()                  {return down;}
@@ -72,16 +75,23 @@ public class SHUFFLE extends Protocol {
     }
 
     public Object down(Message msg) {
+        Protocol dn_prot=down_prot;
+        if(dn_prot == null)
+            return null;
+
         if(!down)
-            return down_prot.down(msg);
-        add(down_msgs, msg, down_lock, m -> down_prot.down(m));
+            return dn_prot.down(msg);
+        add(down_msgs, msg, down_lock, dn_prot::down);
         return null;
     }
 
     public Object up(Message msg) {
+        Protocol up_protocol=up_prot;
+        if(up_protocol == null)
+            return null;
         if(!up)
-            return up_prot.up(msg);
-        add(up_msgs, msg, up_lock, m -> up_prot.up(msg));
+            return up_protocol.up(msg);
+        add(up_msgs, msg, up_lock, m -> up_protocol.up(msg));
         return null;
     }
 
@@ -98,6 +108,31 @@ public class SHUFFLE extends Protocol {
         }
         else
             add(up_msgs, batch, up_lock, m -> up_prot.up(m));
+    }
+
+    @ManagedOperation(description="Flushes all pending up and down messages. Optionally disables shuffling")
+    public void flush(boolean stop_shuffling) {
+        up_lock.lock();
+        try {
+            if(stop_shuffling)
+                up=false;
+            up_msgs.forEach(msg -> up_prot.up(msg));
+            up_msgs.clear();
+        }
+        finally {
+            up_lock.unlock();
+        }
+
+        down_lock.lock();
+        try {
+            if(stop_shuffling)
+                down=false;
+            down_msgs.forEach(msg -> down_prot.down(msg));
+            down_msgs.clear();
+        }
+        finally {
+            down_lock.unlock();
+        }
     }
 
 
@@ -119,7 +154,7 @@ public class SHUFFLE extends Protocol {
 
     public synchronized void stopTask() {
         if(task != null)
-            task.cancel(true);
+            task.cancel(false);
     }
 
     protected SHUFFLE add(List<Message> queue, Message msg, Lock lock, Consumer<Message> send_function) {
