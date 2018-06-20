@@ -146,7 +146,7 @@ public class ServerUnitTest {
     }
 
 
-
+    // @Test(invocationCount=100)
     public void testSendToOtherGetResponse() throws Exception {
         for(boolean nio : new boolean[]{false, true}) {
             try(BaseServer a=create(nio, 0);
@@ -291,7 +291,7 @@ public class ServerUnitTest {
         }
     }
 
-    protected void waitForOpenConns(int expected, BaseServer... servers) {
+    protected static void waitForOpenConns(int expected, BaseServer... servers) {
         for(int i=0; i < 20; i++) {
             if(Arrays.stream(servers).allMatch(srv -> srv.getNumOpenConnections() == expected))
                 break;
@@ -300,7 +300,7 @@ public class ServerUnitTest {
     }
 
 
-    protected void connectionEstablished(BaseServer server, Address dest) {
+    protected static void connectionEstablished(BaseServer server, Address dest) {
         for(int i=0; i < 10; i++) {
             if(server.connectionEstablishedTo(dest))
                 break;
@@ -332,18 +332,16 @@ public class ServerUnitTest {
         }
 
 
-        public long getNumReceived() {return num_received.get();}
-        public long getNumExpected() {return num_expected;}
+        public synchronized long getNumReceived() {return num_received.get();}
+        public synchronized long getNumExpected() {return num_expected;}
 
 
-        public void receive(Address sender, byte[] data, int offset, int length) {
+        public synchronized void receive(Address sender, byte[] data, int offset, int length) {
             System.out.printf("[nio] from %s: %d bytes\n", sender, length);
             long tmp=num_received.incrementAndGet();
             if(tmp >= num_expected) {
-                synchronized(this) {
-                    if(stop_time == 0)
-                        stop_time=System.currentTimeMillis();
-                }
+                if(stop_time == 0)
+                    stop_time=System.currentTimeMillis();
                 done.signal(true);
             }
             if(send_response && tmp <= num_expected) {
@@ -358,17 +356,15 @@ public class ServerUnitTest {
             }
         }
 
-        public void receive(Address sender, DataInput in) throws Exception {
+        public synchronized void receive(Address sender, DataInput in) throws Exception {
             int len=in.readInt();
             byte[] buf=new byte[len];
             in.readFully(buf);
             System.out.printf("[tcp] from %s: %d bytes\n", sender, len);
             long tmp=num_received.incrementAndGet();
             if(tmp >= num_expected) {
-                synchronized(this) {
-                    if(stop_time == 0)
-                        stop_time=System.currentTimeMillis();
-                }
+                if(stop_time == 0)
+                    stop_time=System.currentTimeMillis();
                 done.signal(true);
             }
             if(send_response && tmp <= num_expected) {
