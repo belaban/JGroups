@@ -78,6 +78,10 @@ public class SEQUENCER extends Protocol {
       "0 disables this, which means that ack-mode is always on")
     protected int                               threshold=10;
 
+    @Property(description="If true, all messages in the forward-table are sent to the new coord, else thye're " +
+      "dropped (https://issues.jboss.org/browse/JGRP-2268)")
+    protected boolean                           flush_forward_table=true;
+
     @ManagedAttribute protected int  num_acks;
     @ManagedAttribute protected long forwarded_msgs;
     @ManagedAttribute protected long bcast_msgs;
@@ -276,7 +280,8 @@ public class SEQUENCER extends Protocol {
                 log.trace(local_addr + ": coord changed from " + coord + " to " + new_coord);
             coord=new_coord;
             is_coord=Objects.equals(local_addr, coord);
-            flushMessagesInForwardTable();
+            if(flush_forward_table)
+                flushMessagesInForwardTable();
         }
         finally {
             if(log.isTraceEnabled())
@@ -303,7 +308,7 @@ public class SEQUENCER extends Protocol {
      * Sends all messages currently in forward_table to the new coordinator (changing the dest field).
      * This needs to be done, so the underlying reliable unicast protocol (e.g. UNICAST) adds these messages
      * to its retransmission mechanism<br/>
-     * Note that we need to resend the messages in order of their seqnos ! We also need to prevent other message
+     * Note that we need to resend the messages in order of their seqnos! We also need to prevent other message
      * from being inserted until we're done, that's why there's synchronization.<br/>
      * Access to the forward_table doesn't need to be synchronized as there won't be any insertions during flushing
      * (all down-threads are blocked)
