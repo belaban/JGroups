@@ -317,8 +317,7 @@ public class TotalOrder extends Frame {
                 continue;
             }
             if("-help".equals(arg)) {
-                System.out.println("\nTotalOrder [-timeout <value>] [-num_fields <value>] " +
-                        "[-field_size <value>] [-props <properties (can be URL)>] [-num <num requests>]\n");
+                help();
                 return;
             }
             if("-props".equals(arg)) {
@@ -328,6 +327,8 @@ public class TotalOrder extends Frame {
             if("-num".equals(arg)) {
                 num=Integer.parseInt(args[++i]);
             }
+            help();
+            return;
         }
 
 
@@ -341,6 +342,10 @@ public class TotalOrder extends Frame {
         }
     }
 
+    protected static void help() {
+        System.out.println("\nTotalOrder [-timeout <value>] [-num_fields <value>] " +
+                             "[-field_size <value>] [-props <properties (can be URL)>] [-num <num requests>]\n");
+    }
 
 }
 
@@ -430,7 +435,7 @@ class MyCanvas extends Canvas {
     int y_offset=30;
 
     final Font def_font=new Font("Helvetica", Font.BOLD, 14);
-    int[][] array=null;      // state
+    final int[][] array;      // state
 
     Dimension off_dimension=null;
     Image off_image=null;
@@ -674,11 +679,7 @@ class MyCanvas extends Canvas {
 
     Point index2Coord(int i, int j) {
         int x=x_offset + i * field_size + field_size / 2;
-
-        // int y=y_offset + j*field_size + field_size/2;
-
         int y=y_offset + num_fields * field_size - j * field_size - field_size / 2;
-
         return new Point(x, y);
     }
 
