@@ -16,7 +16,7 @@ if [ ! -d $LIB ]; then
     LIB=$JG
 fi;
 
-CP=$CP:$LIB/*.jar
+CP=$CP:$LIB/*
 
 if [ -f $HOME/log4j.properties ]; then
     LOG="-Dlog4j.configuration=file:$HOME/log4j.properties"
