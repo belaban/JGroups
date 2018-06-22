@@ -29,6 +29,7 @@ import java.util.List;
  * create a customized table.</p>
  * 
  * @author Sanne Grinovero
+ * @author Bela Ban
  * @since 2.12
  */
 public class JDBC_PING extends FILE_PING {
@@ -124,24 +125,14 @@ public class JDBC_PING extends FILE_PING {
             writeToDB(data, clustername, true);
     }
 
-   /* *//** Contrary to the superclass' method, we only write our own address *//*
-    protected void writeAll() {
-        if(local_addr != null) {
-            PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-            PingData data=new PingData(local_addr, true, NameCache.get(local_addr), physical_addr).coord(is_coord);
-            writeToDB(data, cluster_name, true);
-        }
 
-    }*/
-
-
-    //It's possible that multiple threads in the same cluster node invoke this concurrently;
-    //Since delete and insert operations are not atomic
-    //(and there is no SQL standard way to do this without introducing a transaction)
-    //we need the synchronization or risk a duplicate insertion on same primary key.
-    //This synchronization should not be a performance problem as this is just a Discovery protocol.
-    //Many SQL dialects have some "insert or update" expression, but that would need
-    //additional configuration and testing on each database. See JGRP-1440
+    // It's possible that multiple threads in the same cluster node invoke this concurrently;
+    // Since delete and insert operations are not atomic
+    // (and there is no SQL standard way to do this without introducing a transaction)
+    // we need the synchronization or risk a duplicate insertion on same primary key.
+    // This synchronization should not be a performance problem as this is just a Discovery protocol.
+    // Many SQL dialects have some "insert or update" expression, but that would need
+    // additional configuration and testing on each database. See JGRP-1440
     protected synchronized void writeToDB(PingData data, String clustername, boolean overwrite) {
         final String ownAddress = addressAsString(data.getAddress());
         final Connection connection = getConnection();
@@ -229,6 +220,8 @@ public class JDBC_PING extends FILE_PING {
     protected void readAll(Connection connection, List<Address> members, String clustername, Responses rsps) throws SQLException {
         try (PreparedStatement ps=prepareStatement(connection, select_all_pingdata_sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE)) {
             ps.setString(1, clustername);
+            if(log.isTraceEnabled())
+                log.trace("%s: SQL for reading: %s", local_addr, ps);
             try (ResultSet resultSet=ps.executeQuery()) {
 	            while(resultSet.next()) {
 	                byte[] bytes=resultSet.getBytes(1);
@@ -266,8 +259,10 @@ public class JDBC_PING extends FILE_PING {
         if(connection == null)
             return;
 
-        try {
-            connection.prepareStatement(initialize_sql).execute();
+        try(PreparedStatement ps=connection.prepareStatement(initialize_sql)) {
+            if(log.isTraceEnabled())
+                log.trace("SQL for initializing schema: %s", ps);
+            ps.execute();
             log.debug("Table created for JDBC_PING Discovery Protocol");
         }
         catch(SQLException e) {
@@ -328,6 +323,8 @@ public class JDBC_PING extends FILE_PING {
             ps.setString(1, address);
             ps.setString(2, clustername);
             ps.setBytes(3, serializedPingData);
+            if(log.isTraceEnabled())
+                log.trace("%s: SQL for insertion: %s", local_addr, ps);
             ps.executeUpdate();
             log.debug("Registered %s for clustername %s into database", address, clustername);
         }
@@ -337,6 +334,8 @@ public class JDBC_PING extends FILE_PING {
         try(PreparedStatement ps=connection.prepareStatement(delete_single_sql)) {
             ps.setString(1, addressToDelete);
             ps.setString(2, clustername);
+            if(log.isTraceEnabled())
+                log.trace("%s: SQL for deletion: %s", local_addr, ps);
             ps.executeUpdate();
             log.debug("Removed %s for clustername %s from database", addressToDelete, clustername);
         }
@@ -367,6 +366,8 @@ public class JDBC_PING extends FILE_PING {
 				} else {
 					log.debug("Please update your clear_sql to include cluster_name parameter.");
 				}
+                if(log.isTraceEnabled())
+                    log.trace("%s: SQL for clearing the table: %s", local_addr, ps);
                 ps.execute();
             }
         }
@@ -481,8 +482,8 @@ public class JDBC_PING extends FILE_PING {
                 select=args[++i];
                 continue;
             }
-            System.out.printf("JDBC_PING [-driver driver] [-conn conn-url] [-user user] [-pwd password] " +
-                                "[-cluster cluster-name] [-select select-stmt]\n");
+            System.out.println("JDBC_PING [-driver driver] [-conn conn-url] [-user user] [-pwd password] " +
+                               "[-cluster cluster-name] [-select select-stmt]");
             return;
         }
 
