@@ -76,6 +76,17 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     public VERIFY_SUSPECT() {       
     }
 
+    /* ------------------------------------------ Builder-like methods  ------------------------------------------ */
+
+    public VERIFY_SUSPECT setTimeout(long timeout) {
+        this.timeout = timeout;
+        return this;
+    }
+
+    public long getTimeout() {
+        return timeout;
+    }
+
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.SET_LOCAL_ADDRESS:
