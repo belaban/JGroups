@@ -109,6 +109,10 @@ public class FD_ALL extends Protocol {
     public long getInterval() {return interval;}
     public void setInterval(long interval) {this.interval=interval;}
 
+    public FD_ALL interval(long i)             {this.interval=i; return this;}
+    public FD_ALL timeout(long t)              {this.timeout=t; return this;}
+    public FD_ALL timeoutCheckInterval(long i) {timeout_check_interval=i; return this;}
+
     @ManagedAttribute(description="Are heartbeat tasks running")
     public boolean isRunning() {
         lock.lock();

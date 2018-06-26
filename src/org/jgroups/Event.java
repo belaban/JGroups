@@ -16,6 +16,7 @@ public class Event {
     public static final int BLOCK                              = 10;  // arg = null (used by FLUSH)
     public static final int FIND_MBRS                          = 11;  // arg = List<Address> (can be null) -> Responses
     public static final int FIND_INITIAL_MBRS                  = 12;  // arg = null -> Responses
+    public static final int FIND_MBRS_ASYNC                    = 13;  // arg = Consumer<PingData>
     public static final int MERGE                              = 14;  // arg = Map<Address,View>
     public static final int TMP_VIEW                           = 15;  // arg = View
     public static final int BECOME_SERVER                      = 16;  // sent when client has joined group
@@ -108,6 +109,7 @@ public class Event {
             case BLOCK:	                 return "BLOCK";
             case FIND_MBRS:              return "FIND_MBRS";
             case FIND_INITIAL_MBRS:	     return "FIND_INITIAL_MBRS";
+            case FIND_MBRS_ASYNC:        return "FIND_MBRS_ASYNC";
             case TMP_VIEW:	             return "TMP_VIEW";
             case BECOME_SERVER:	         return "BECOME_SERVER";
             case GET_APPLSTATE:          return "GET_APPLSTATE";

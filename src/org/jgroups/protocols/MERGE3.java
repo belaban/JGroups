@@ -15,6 +15,7 @@ import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -41,58 +42,63 @@ public class MERGE3 extends Protocol {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     @Property(description="Minimum time in ms before sending an info message")
-    protected long    min_interval=1000;
+    protected long                          min_interval=1000;
 
     @Property(description="Interval (in milliseconds) when the next info " +
             "message will be sent. A random value is picked from range [1..max_interval]")
-    protected long    max_interval=10000;
+    protected long                          max_interval=10000;
 
     @Property(description="The max number of merge participants to be involved in a merge. 0 sets this to unlimited.")
-    protected int     max_participants_in_merge=100;
+    protected int                           max_participants_in_merge=100;
 
     @Property(description="If true, only coordinators periodically check view consistency, otherwise everybody runs " +
       "this task (https://issues.jboss.org/browse/JGRP-2092). Might get removed without notice.",
       deprecatedMessage="false by default; everybody runs periodic consistency checks")
     @Deprecated
-    protected boolean only_coords_run_consistency_checker;
+    protected boolean                       only_coords_run_consistency_checker;
 
     /* ---------------------------------------------- JMX -------------------------------------------------------- */
     @Property(description="Interval (in ms) after which we check for view inconsistencies")
-    protected long    check_interval;
+    protected long                          check_interval;
 
     @ManagedAttribute(description="Number of cached ViewIds")
     public int getViews() {return views.size();}
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    protected Address          local_addr;
+    protected Address                       local_addr;
 
-    protected volatile View    view;
+    protected volatile View                 view;
 
-    protected TimeScheduler    timer;
+    protected TimeScheduler                 timer;
 
-    protected final InfoSender info_sender=new InfoSender();
+    protected final InfoSender              info_sender=new InfoSender();
 
-    protected Future<?>        info_sender_future;
+    protected Future<?>                     info_sender_future;
 
-    protected Future<?>        view_consistency_checker;
+    protected Future<?>                     view_consistency_checker;
 
     // hashmap to keep track of view-id sent in INFO messages. Keys=senders, values = ViewId sent
-    protected final Map<Address,ViewId> views=new HashMap<>();
+    protected final Map<Address,ViewId>     views=new HashMap<>();
 
     protected final ResponseCollector<View> view_rsps=new ResponseCollector<>();
 
-    protected boolean          transport_supports_multicasting=true;
+    protected boolean                       transport_supports_multicasting=true;
 
-    protected String           cluster_name;
+    protected String                        cluster_name;
 
+    protected final Consumer<PingData>      discovery_rsp_cb=this::sendInfoMessage;
+
+    protected final Event                   ASYNC_DISCOVERY_EVENT=new Event(Event.FIND_MBRS_ASYNC, discovery_rsp_cb);
 
 
     @ManagedAttribute(description="Whether or not the current member is the coordinator")
-    protected volatile boolean is_coord;
+    protected volatile boolean              is_coord;
     
     @ManagedAttribute(description="Number of times a MERGE event was sent up the stack")
-    protected int           num_merge_events;
+    protected int                           num_merge_events;
+
+
 
     public int getNumMergeEvents() {return num_merge_events;}
 
@@ -180,6 +186,8 @@ public class MERGE3 extends Protocol {
         return this;
     }
 
+    public long    getCheckInterval()        {return check_interval;}
+    public MERGE3  setCheckInterval(long ci) {this.check_interval=ci; return this;}
 
     protected long computeCheckInterval() {
         return (long)(max_interval * 1.6);
@@ -198,7 +206,7 @@ public class MERGE3 extends Protocol {
     protected synchronized void stopInfoSender() {
         if(info_sender_future != null) {
             info_sender_future.cancel(true);
-            info_sender.stop();
+            // info_sender.stop();
             info_sender_future=null;
         }
     }
@@ -365,10 +373,24 @@ public class MERGE3 extends Protocol {
         return false;
     }
 
-    protected class InfoSender implements TimeScheduler.Task {
-        protected final long discovery_timeout=(max_interval + min_interval) /2;
-        protected Responses  rsps;
+    protected void sendInfoMessage(PingData data) {
+        if(data == null)
+            return;
+        Address target=data.getAddress();
+        if(local_addr.equals(target))
+            return;
+        Address dest=data.getPhysicalAddr();
+        if(dest == null) {
+            log.warn("%s: physical address for %s not found; dropping INFO message to %s",
+                     local_addr, target, target);
+            return;
+        }
+        MergeHeader hdr=createInfo();
+        Message info=new Message(dest).setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr);
+        down_prot.down(info);
+    }
 
+    protected class InfoSender implements TimeScheduler.Task {
         public void run() {
             if(view == null) {
                 log.warn("%s: view is null, cannot send INFO message", local_addr);
@@ -376,8 +398,6 @@ public class MERGE3 extends Protocol {
             }
 
             MergeHeader hdr=createInfo();
-            // not needed; this is done below in ViewConsistencyChecker
-            // addInfo(local_addr, hdr.view_id, hdr.logical_name, hdr.physical_addr);
             if(transport_supports_multicasting) { // mcast the discovery request to all but self
                 Message msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr)
                   .setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
@@ -385,27 +405,7 @@ public class MERGE3 extends Protocol {
                 return;
             }
 
-            rsps=(Responses)down_prot.down(Event.FIND_MBRS_EVT);
-            rsps.waitFor(discovery_timeout); // return immediately if done
-            rsps.done();
-            if(rsps.isEmpty())
-                return;
-
-            log.trace("%s: discovery protocol returned %d responses: %s", local_addr, rsps.size(), rsps);
-            for(PingData rsp: rsps) {
-                Address target=rsp.getAddress();
-                if(local_addr.equals(target))
-                    continue; // skip discovery request to self
-                Address dest=rsp.getPhysicalAddr();
-                if(dest == null) continue;
-                Message info=new Message(dest).setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr);
-                down_prot.down(info);
-            }
-        }
-
-        public void stop() {
-            if(rsps != null)
-                rsps.clear();
+            down_prot.down(ASYNC_DISCOVERY_EVENT);
         }
 
         public long nextInterval() {

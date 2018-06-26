@@ -1,29 +1,17 @@
 package org.jgroups.tests;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
 import org.jgroups.JChannel;
 import org.jgroups.View;
-import org.jgroups.protocols.FD_ALL;
-import org.jgroups.protocols.FD_SOCK;
-import org.jgroups.protocols.FRAG3;
-import org.jgroups.protocols.MERGE3;
-import org.jgroups.protocols.MFC;
-import org.jgroups.protocols.MPING;
-import org.jgroups.protocols.TCP;
-import org.jgroups.protocols.TP;
-import org.jgroups.protocols.UDP;
-import org.jgroups.protocols.UNICAST3;
-import org.jgroups.protocols.VERIFY_SUSPECT;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.util.Util;
+
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This test runs number of merge events with a similar stack configuration that current Infinispan and WildFly is using to
@@ -33,17 +21,14 @@ import org.jgroups.util.Util;
  */
 public class InfinispanStackMerge3Test {
 
-    private static List<Supplier<TP>> TRANSPORTS;
-    private static int RUNS;
-    private static int MEMBERS;
+    private static final List<Supplier<TP>> TRANSPORTS;
+    private static final int                RUNS;
+    private static final int                MEMBERS;
 
     static {
-        TRANSPORTS = new LinkedList<>();
-        TRANSPORTS.add(TCP::new);
-        TRANSPORTS.add(UDP::new);
+        TRANSPORTS =Arrays.asList(TCP::new /*,UDP::new*/);
 
-        RUNS = Integer.valueOf(System.getProperty("runs", "10"));
-
+        RUNS = Integer.valueOf(System.getProperty("runs", "1"));
         MEMBERS = Integer.valueOf(System.getProperty("members", "10"));
     }
 
@@ -57,11 +42,10 @@ public class InfinispanStackMerge3Test {
                 JChannel[] channels = new JChannel[MEMBERS];
 
                 // Setup
-                for (int member = 0; member < MEMBERS; member++) {
-                    channels[member] = createChannel(transport.get(),
-                            InfinispanStackMerge3Test.class.getSimpleName() + member);
-                }
-                Util.waitUntilAllChannelsHaveSameView(10_000, 100, channels);
+                for (int member = 0; member < MEMBERS; member++)
+                    channels[member] = createChannel(transport.get(), String.valueOf(member+1));
+                Util.waitUntilAllChannelsHaveSameView(10_000, 500, channels);
+                System.out.printf("-- run #%d: cluster formed:\n%s\n", run+1, printViews(channels));
 
                 // Partition
                 Stream.of(channels).forEach(channel -> {
@@ -70,10 +54,15 @@ public class InfinispanStackMerge3Test {
                     gms.installView(view);
                 });
 
+                System.out.printf("-- injected partition (waiting for merge):\n%s\n", printViews(channels));
+
                 // Merge
                 long timeBeforeMerge = System.currentTimeMillis();
                 Util.waitUntilAllChannelsHaveSameView(360_000, 100, channels);
                 long timeAfterMerge = System.currentTimeMillis();
+
+                System.out.printf("-- run #%d: %s cluster merged in %d ms:\n%s\n",
+                                  run+1, transport.get().getClass().getSimpleName(), timeAfterMerge - timeBeforeMerge, printViews(channels));
 
                 // Cleanup
                 Stream.of(channels).forEach(JChannel::close);
@@ -85,35 +74,36 @@ public class InfinispanStackMerge3Test {
         printStats(results);
     }
 
-    protected static JChannel createChannel(TP transport, String name) throws Exception {
-        // Workaround FD_ALL not being builder-like
-        FD_ALL fd_all = new FD_ALL();
-        fd_all.setInterval(15_000);
-        fd_all.setTimeout(60_000);
-        fd_all.setTimeoutCheckInterval(5_000);
+    protected static String printViews(JChannel ... channels) {
+        return Stream.of(channels).map(ch -> String.format("%s: %s", ch.getAddress(), ch.getView()))
+          .collect(Collectors.joining("\n"));
 
-        JChannel channel = new JChannel(
-                transport,
-                new MPING(),
-                new MERGE3()
-                        .setMinInterval(10_000)
-                        .setMaxInterval(30_000),
-                new FD_SOCK(),
-                fd_all,
-                new VERIFY_SUSPECT()
-                        .setTimeout(5_000),
-                new NAKACK2()
-                        .setUseMcastXmit(false),
-                new UNICAST3(),
-                new STABLE(),
-                new GMS(),
-                new MFC(),
-                new FRAG3()
-                        .fragSize(8_000)
-        );
-        channel.setName(name);
-        channel.connect(InfinispanStackMerge3Test.class.getSimpleName());
-        return channel;
+    }
+
+    protected static JChannel createChannel(TP transport, String name) throws Exception {
+        return new JChannel(transport.setBindAddress(Util.getLocalhost()),
+                            new MPING().returnEntireCache(true),
+                            //new SHARED_LOOPBACK(),
+                            //new SHARED_LOOPBACK_PING(),
+                            new MERGE3()
+                              .setMinInterval(5_000)
+                              .setMaxInterval(10_000),
+                            new FD_SOCK(),
+                            new FD_ALL()
+                              .interval(2_000)
+                              .timeout(8_000)
+                              .timeoutCheckInterval(2_000),
+                            new VERIFY_SUSPECT()
+                              .setTimeout(5_000),
+                            new NAKACK2()
+                              .setUseMcastXmit(false),
+                            new UNICAST3(),
+                            new STABLE(),
+                            new GMS().joinTimeout(1000).printLocalAddress(false),
+                            new MFC(),
+                            new FRAG3()
+                              .fragSize(8_000)
+        ).setName(name).connect(InfinispanStackMerge3Test.class.getSimpleName());
     }
 
     private static void printStats(Map<String, List<Long>> results) {

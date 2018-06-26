@@ -257,6 +257,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     public void setPrintLocalAddress(boolean flag) {print_local_addr=flag;}
     public void setPrintLocalAddr(boolean flag) {setPrintLocalAddress(flag);}
+    public GMS  printLocalAddress(boolean flag) {print_local_addr=flag; return this;}
 
     public long getViewAckCollectionTimeout() {
         return view_ack_collection_timeout;

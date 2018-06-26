@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 
 /**
@@ -99,6 +100,7 @@ public abstract class Discovery extends Protocol {
     protected boolean                    use_ip_addrs; // caches TP.use_ip_addrs
     @ManagedAttribute(description="True if sending a message can block at the transport level")
     protected boolean                    sends_can_block=true;
+    protected Consumer<PingData>         discovery_rsp_callback; // called when a discovery response is received
     protected static final byte[]        WHITESPACE=" \t".getBytes();
 
 
@@ -352,6 +354,10 @@ public abstract class Discovery extends Protocol {
             case Event.FIND_MBRS:
                 return findMembers(evt.getArg(), false, false); // triggered by MERGE3
 
+            case Event.FIND_MBRS_ASYNC:
+                discovery_rsp_callback=evt.arg();
+                return findMembers(null, false, false); // triggered by MERGE3
+
             case Event.VIEW_CHANGE:
                 View old_view=view;
                 view=evt.getArg();
@@ -465,6 +471,14 @@ public abstract class Discovery extends Protocol {
     }
 
     protected void addResponse(PingData rsp, boolean overwrite) {
+        if(discovery_rsp_callback != null) {
+            try {
+                discovery_rsp_callback.accept(rsp);
+            }
+            catch(Throwable t) {
+                log.error("%s: failed invoking callback for discovery response: %s", local_addr, t);
+            }
+        }
         synchronized(ping_responses) {
             for(Iterator<Map.Entry<Long,Responses>> it=ping_responses.entrySet().iterator(); it.hasNext();) {
                 Map.Entry<Long,Responses> entry=it.next();
