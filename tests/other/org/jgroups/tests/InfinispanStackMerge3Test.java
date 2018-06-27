@@ -26,9 +26,9 @@ public class InfinispanStackMerge3Test {
     private static final int                MEMBERS;
 
     static {
-        TRANSPORTS =Arrays.asList(TCP::new /*,UDP::new*/);
+        TRANSPORTS =Arrays.asList(TCP::new,UDP::new);
 
-        RUNS = Integer.valueOf(System.getProperty("runs", "1"));
+        RUNS = Integer.valueOf(System.getProperty("runs", "5"));
         MEMBERS = Integer.valueOf(System.getProperty("members", "10"));
     }
 
@@ -82,9 +82,7 @@ public class InfinispanStackMerge3Test {
 
     protected static JChannel createChannel(TP transport, String name) throws Exception {
         return new JChannel(transport.setBindAddress(Util.getLocalhost()),
-                            new MPING().returnEntireCache(true),
-                            //new SHARED_LOOPBACK(),
-                            //new SHARED_LOOPBACK_PING(),
+                            new MPING(),
                             new MERGE3()
                               .setMinInterval(5_000)
                               .setMaxInterval(10_000),
