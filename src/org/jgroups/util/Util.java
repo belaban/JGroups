@@ -3546,6 +3546,31 @@ public class Util {
     }
 
 
+    public static void bind(Socket sock, InetAddress bind_addr, int start_port, int end_port) throws Exception {
+        int original_start_port=start_port;
+
+        while(true) {
+            try {
+                InetSocketAddress sock_addr=new InetSocketAddress(bind_addr, start_port);
+                sock.bind(sock_addr);
+            }
+            catch(SocketException bind_ex) {
+                if(start_port == end_port)
+                    throw new BindException("No available port to bind to in range [" + original_start_port + " .. " + end_port + "]");
+                if(bind_addr != null && !bind_addr.isLoopbackAddress()) {
+                    NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
+                    if(nic == null)
+                        throw new BindException("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
+                }
+                start_port++;
+                continue;
+            }
+            break;
+        }
+    }
+
+
+
     public static ServerSocketChannel createServerSocketChannelAndBind(InetAddress bind_addr,
                                                                 int start_port, int end_port) throws Exception {
         ServerSocketChannel channel=ServerSocketChannel.open();

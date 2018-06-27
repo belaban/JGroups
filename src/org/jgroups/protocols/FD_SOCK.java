@@ -156,14 +156,15 @@ public class FD_SOCK extends Protocol implements Runnable {
     public int getNumSuspectEventsGenerated() {return num_suspect_events;}
     @ManagedAttribute(description="Whether the node crash detection monitor is running")
     public boolean isNodeCrashMonitorRunning() {return isPingerThreadRunning(); }
-
+    @ManagedAttribute(description="Whether or not to log suspect messages")
     public boolean isLogSuspectedMessages() {
         return log_suspected_msgs;
     }
-
     public void setLogSuspectedMessages(boolean log_suspected_msgs) {
         this.log_suspected_msgs=log_suspected_msgs;
     }
+    @ManagedAttribute(description="The actual client_bind_port")
+    public int  getClientBindPortActual() {return ping_sock != null? ping_sock.getLocalPort() : 0;}
 
     @ManagedOperation(description="Print suspect history")
     public String printSuspectHistory() {
@@ -601,7 +602,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         try {
             SocketAddress destAddr=new InetSocketAddress(dest.getIpAddress(), dest.getPort());
             ping_sock=getSocketFactory().createSocket("jgroups.fd.ping_sock");
-            ping_sock.bind(new InetSocketAddress(bind_addr, client_bind_port));
+            Util.bind(ping_sock, bind_addr, client_bind_port, client_bind_port+port_range);
             ping_sock.setSoLinger(true, 1);
             ping_sock.setKeepAlive(keep_alive);
             Util.connect(ping_sock, destAddr, sock_conn_timeout);
