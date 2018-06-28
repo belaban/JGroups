@@ -76,6 +76,10 @@ public class SaslHeader extends Header {
 
     @Override
     public String toString() {
-        return "payload=" + payload;
+        return "SaslHeader{" +
+                "type=" + type +
+                ", serializedSize=" + this.serializedSize() +
+                ", prot_id=" + prot_id +
+                '}';
     }
 }
