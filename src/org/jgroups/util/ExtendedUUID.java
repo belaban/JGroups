@@ -182,6 +182,9 @@ public class ExtendedUUID extends FlagsUUID {
         if(keys == null)
             return super.toString();
         StringBuilder sb=new StringBuilder(super.toString());
+        boolean first=true;
+        if(keys != null)
+            sb.append("(");
         for(int i=0; i < keys.length; i++) {
             byte[] key=keys[i];
             if(key == null)
@@ -198,7 +201,11 @@ public class ExtendedUUID extends FlagsUUID {
                     }
                 }
             }
-            sb.append(", ").append(new AsciiString(key)).append("=").append(obj);
+            if(first)
+                first=false;
+            else
+                sb.append(", ");
+            sb.append(new AsciiString(key)).append("=").append(obj);
         }
         if(keys != null)
             sb.append(")");

@@ -339,6 +339,12 @@ public class RELAY2 extends Protocol {
         return relayer != null? relayer.printRoutes() : "n/a (not site master)";
     }
 
+    @ManagedOperation(description="Prints the routes that are currently up. " +
+      "Only available if we're the current coordinator (site master)")
+    public String printSites() {
+        return relayer != null? Util.print(relayer.getSiteNames()) : "n/a (not site master)";
+    }
+
     /**
      * Returns the bridge channel to a given site
      * @param site_name The site name, e.g. "SFO"
