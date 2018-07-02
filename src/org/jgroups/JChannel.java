@@ -897,6 +897,9 @@ public class JChannel implements Closeable {
             down(connect_event);
             return this;
         }
+        catch(SecurityException sex) {
+            throw new SecurityException("connecting to channel " + connect_event.getArg() + " failed", sex);
+        }
         catch(Throwable t) {
             stopStack(true, false);
             state=State.OPEN;
