@@ -1,9 +1,11 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.Address;
+import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.util.MergeId;
 import org.jgroups.util.Digest;
+import org.jgroups.util.MergeId;
+import org.jgroups.util.Promise;
 
 import java.util.Collection;
 import java.util.Map;
@@ -13,9 +15,15 @@ import java.util.Map;
  * @author Bela Ban
  */
 public abstract class ServerGmsImpl extends GmsImpl {
+    protected final Promise<Boolean> leave_promise=new Promise<>();
 
     protected ServerGmsImpl(GMS gms) {
         super(gms);
+    }
+
+    public void init() throws Exception {
+        super.init();
+        leave_promise.reset();
     }
 
     /**
@@ -58,4 +66,33 @@ public abstract class ServerGmsImpl extends GmsImpl {
     public void handleDigestResponse(Address sender, Digest digest) {
         merger.handleDigestResponse(sender, digest);
     }
+
+    public void handleLeaveResponse() {
+        leave_promise.setResult(true);  // unblocks thread waiting in leave()
+    }
+
+    /**
+     * Sends a leave request to coord and blocks until a leave response has been received, or the leave timeout has elapsed
+     */
+    protected void sendLeaveReqTo(Address coord) {
+        leave_promise.reset();
+        leaving=true;
+        log.trace("%s: sending LEAVE request to %s", gms.local_addr, coord);
+        long start=System.currentTimeMillis();
+        sendLeaveMessage(coord, gms.local_addr);
+        Boolean result=leave_promise.getResult(gms.leave_timeout);
+        long time=System.currentTimeMillis()-start;
+        if(result != null)
+            log.trace("%s: got LEAVE response from %s in %d ms", gms.local_addr, coord, time);
+        else
+            log.trace("%s: timed out waiting for LEAVE response from %s (after %d ms)", gms.local_addr, coord, time);
+    }
+
+    protected void sendLeaveMessage(Address coord, Address mbr) {
+        Message msg=new Message(coord).setFlag(Message.Flag.OOB)
+          .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.LEAVE_REQ, mbr));
+        gms.getDownProtocol().down(msg);
+    }
+
+
 }

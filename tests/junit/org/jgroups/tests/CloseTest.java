@@ -23,8 +23,6 @@ public class CloseTest extends ChannelTestBase {
 
     @AfterMethod void tearDown() throws Exception {Util.close(c,b,a);}
 
-    protected boolean useBlocking() {return false;}
-
 
     public void testDoubleClose() throws Exception {
         a=createChannel(true, 1, "A");
