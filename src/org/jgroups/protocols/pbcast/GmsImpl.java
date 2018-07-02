@@ -26,30 +26,30 @@ public abstract class GmsImpl {
         log=gms.getLog();
     }
 
-    public abstract void      join(Address mbr, boolean useFlushIfPresent);
-    public abstract void      joinWithStateTransfer(Address local_addr,boolean useFlushIfPresent);
+    public abstract void   join(Address mbr, boolean useFlushIfPresent);
+    public abstract void   joinWithStateTransfer(Address local_addr,boolean useFlushIfPresent);
     
-    public abstract void      leave(Address mbr);
+    public abstract void   leave(Address mbr);
 
-    public void               handleJoinResponse(JoinRsp join_rsp) {}
-    public void               handleLeaveResponse() {}
+    public void            handleJoinResponse(JoinRsp join_rsp) {}
+    public void            handleLeaveResponse() {}
 
-    public void               suspect(Address mbr)   {}
-    public void               unsuspect(Address mbr) {}
+    public void            suspect(Address mbr)   {}
+    public void            unsuspect(Address mbr) {}
 
-    public void               merge(Map<Address,View> views)                        {}
-    public void               handleMergeRequest(Address sender, MergeId merge_id, Collection<? extends Address> mbrs)  {}
-    public void               handleMergeResponse(MergeData data, MergeId merge_id) {}
-    public void               handleMergeView(MergeData data, MergeId merge_id)     {}
-    public void               handleMergeCancelled(MergeId merge_id)                {} // only processed by coords
-    public void               handleDigestResponse(Address sender, Digest digest)   {} // only processed by coords
+    public void            merge(Map<Address,View> views)                        {}
+    public void            handleMergeRequest(Address sender, MergeId merge_id, Collection<? extends Address> mbrs)  {}
+    public void            handleMergeResponse(MergeData data, MergeId merge_id) {}
+    public void            handleMergeView(MergeData data, MergeId merge_id)     {}
+    public void            handleMergeCancelled(MergeId merge_id)                {} // only processed by coords
+    public void            handleDigestResponse(Address sender, Digest digest)   {} // only processed by coords
 
-    public void               handleMembershipChange(Collection<Request> requests)  {}
-    public void               handleViewChange(View new_view, Digest digest)        {}
+    public void            handleMembershipChange(Collection<Request> requests)  {}
+    public void            handleViewChange(View new_view, Digest digest)        {}
 
-    public void               init() throws Exception {leaving=false;}
-    public void               start() throws Exception {leaving=false;}
-    public void               stop() {leaving=true;}
+    public void            init() throws Exception {leaving=false;}
+    public void            start() throws Exception {leaving=false;}
+    public void            stop() {leaving=true;}
 
 
 

@@ -114,7 +114,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
-    protected int num_views;
+    protected int                 num_views;
 
     /** Stores the last 20 views */
     protected BoundedList<String> prev_views;
@@ -133,7 +133,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected Merger                    merger;
 
     protected Address                   local_addr;
-    protected final Membership          members=new Membership(); // real membership
+    protected final Membership          members=new Membership();     // real membership
 
     protected final Membership          tmp_members=new Membership(); // base for computing next view
 
@@ -720,6 +720,13 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected Address determineCoordinator() {
         synchronized(members) {
             return members.size() > 0? members.elementAt(0) : null;
+        }
+    }
+
+    /** Returns the second-in-line */
+    protected Address determineNextCoordinator() {
+        synchronized(members) {
+            return members.size() > 1? members.elementAt(1) : null;
         }
     }
 

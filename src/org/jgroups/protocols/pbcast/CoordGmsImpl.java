@@ -48,13 +48,17 @@ public class CoordGmsImpl extends ServerGmsImpl {
             if(log.isErrorEnabled()) log.error(Util.getMessage("MemberSAddressIsNull"));
             return;
         }
-        if(mbr.equals(gms.local_addr))
-            leaving=true;
-        gms.getViewHandler().add(new Request(Request.LEAVE, mbr));
-
-        // If we're the coord leaving, ignore gms.leave_timeout: https://issues.jboss.org/browse/JGRP-1509
-        long timeout=(long)(Math.max(gms.leave_timeout, gms.view_ack_collection_timeout) * 1.10);
-        gms.getViewHandler().waitUntilComplete(timeout);
+        leaving=true;
+        Address next_coord=gms.determineNextCoordinator();
+        if(next_coord != null)
+            sendLeaveReqTo(next_coord);
+        else {
+            gms.getViewHandler().add(new Request(Request.LEAVE, mbr));
+            // If we're the coord leaving, ignore gms.leave_timeout: https://issues.jboss.org/browse/JGRP-1509
+            long timeout=(long)(Math.max(gms.leave_timeout, gms.view_ack_collection_timeout) * 1.10);
+            gms.getViewHandler().waitUntilComplete(timeout);
+        }
+        gms.becomeClient();
     }
 
 

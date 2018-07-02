@@ -70,6 +70,12 @@ public class ViewHandler<R> {
         return this;
     }
 
+    public ViewHandler<R> add(Collection<R> reqs) {
+        if(_add(reqs))
+            process(requests);
+        return this;
+    }
+
 
     /** Clears the queue and discards new requests from now on */
     public void suspend() {
@@ -176,6 +182,29 @@ public class ViewHandler<R> {
     @SuppressWarnings("unchecked")
     protected boolean _add(R ... reqs) {
         if(reqs == null || reqs.length == 0 || suspended.get()) {
+            log().trace("%s: queue is suspended; requests are discarded", gms.getLocalAddress());
+            return false;
+        }
+
+        count.incrementAndGet();
+        lock.lock();
+        try {
+            for(R req: reqs) {
+                if(!requests.contains(req)) {
+                    requests.add(req);
+                    history.add(new Date() + ": " + req.toString());
+                }
+            }
+            return count.decrementAndGet() == 0 && !processing && setProcessing(true);
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+
+    protected boolean _add(Collection<R> reqs) {
+        if(reqs == null || reqs.isEmpty() || suspended.get()) {
             log().trace("%s: queue is suspended; requests are discarded", gms.getLocalAddress());
             return false;
         }

@@ -1,22 +1,19 @@
 
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.View;
+import org.jgroups.ViewId;
 import org.jgroups.util.Digest;
-import org.jgroups.util.Promise;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.*;
 
 
 /**
  * @author Bela Ban
  */
 public class ParticipantGmsImpl extends ServerGmsImpl {
-    private final List<Address>     suspected_mbrs=new ArrayList<>(11);
-    private final Promise<Boolean>  leave_promise=new Promise<>();
+    private final Collection<Address> suspected_mbrs=new LinkedHashSet<>();
 
 
     public ParticipantGmsImpl(GMS g) {
@@ -27,7 +24,6 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
     public void init() throws Exception {
         super.init();
         suspected_mbrs.clear();
-        leave_promise.reset();
     }
 
     public void join(Address mbr, boolean useFlushIfPresent) {
@@ -44,24 +40,9 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
      * Else send handleLeave() to coord until success
      */
     public void leave(Address mbr) {
-        leave_promise.reset();
-        if(mbr.equals(gms.local_addr))
-            leaving=true;
-
         Address coord=gms.determineCoordinator();
-        if(coord != null) {
-            if(gms.local_addr.equals(coord)) { // I'm the coordinator
-                gms.becomeCoordinator();
-                gms.getImpl().leave(mbr);      // regular leave
-                return;
-            }
-
-            log.trace("%s: sending LEAVE request to %s", gms.local_addr, coord);
-            sendLeaveMessage(coord, mbr);
-            Boolean result=leave_promise.getResult(gms.leave_timeout);
-            if(result != null)
-                log.trace("%s: got LEAVE response from %s", gms.local_addr, coord);
-        }
+        if(coord != null)
+            sendLeaveReqTo(coord);
         gms.becomeClient();
     }
 
@@ -81,9 +62,6 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
         }
     }
 
-    public void handleLeaveResponse() {
-        leave_promise.setResult(true);  // unblocks thread waiting in leave()
-    }
 
 
     public void suspect(Address mbr) {
@@ -101,22 +79,28 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
 
 
     public void handleMembershipChange(Collection<Request> requests) {
-        Collection<Address> suspectedMembers=requests.stream().filter(req -> req.type == Request.SUSPECT)
-          .collect(() -> new LinkedHashSet(requests.size()), (list,req) -> list.add(req.mbr), (l,r) -> {});
+        Collection<Address> leaving_mbrs=new LinkedHashSet<>(requests.size());
+        requests.forEach(r -> {
+            if(r.type == Request.SUSPECT)
+                suspected_mbrs.add(r.mbr);
+            else if(r.type == Request.LEAVE)
+                leaving_mbrs.add(r.mbr);
+        });
 
-        if(suspectedMembers.isEmpty())
+        if(suspected_mbrs.isEmpty() && leaving_mbrs.isEmpty())
             return;
-        suspectedMembers.stream().filter(mbr -> !suspected_mbrs.contains(mbr)).forEach(suspected_mbrs::add);
 
-        if(wouldIBeCoordinator()) {
+        if(wouldIBeCoordinator(leaving_mbrs)) {
             log.debug("%s: members are %s, coord=%s: I'm the new coordinator", gms.local_addr, gms.members, gms.local_addr);
-
             gms.becomeCoordinator();
+            Collection<Request> leavingOrSuspectedMembers=new LinkedHashSet<>();
+            leaving_mbrs.forEach(mbr -> leavingOrSuspectedMembers.add(new Request(Request.LEAVE, mbr)));
             suspected_mbrs.forEach(mbr -> {
-                gms.getViewHandler().add(new Request(Request.SUSPECT, mbr));
+                leavingOrSuspectedMembers.add(new Request(Request.SUSPECT, mbr));
                 gms.ack_collector.suspect(mbr);
             });
             suspected_mbrs.clear();
+            gms.getViewHandler().add(leavingOrSuspectedMembers);
         }
     }
 
@@ -125,8 +109,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
      * If we are leaving, we have to wait for the view change (last msg in the current view) that
      * excludes us before we can leave.
      * @param new_view The view to be installed
-     * @param digest   If view is a MergeView, digest contains the seqno digest of all members and has to
-     *                 be set by GMS
+     * @param digest   If view is a MergeView, digest contains the seqno digest of all members and has to be set by GMS
      */
     public void handleViewChange(View new_view, Digest digest) {
         suspected_mbrs.clear();
@@ -147,18 +130,11 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
      * D}. The resulting list is {B, C}. The first member of {B, C} is B, which is equal to the
      * local_addr. Therefore, true is returned.
      */
-    boolean wouldIBeCoordinator() {
-        List<Address> mbrs=gms.computeNewMembership(gms.members.getMembers(), null, null, suspected_mbrs);
+    boolean wouldIBeCoordinator(Collection<Address> leaving_mbrs) {
+        List<Address> mbrs=gms.computeNewMembership(gms.members.getMembers(), null, leaving_mbrs, suspected_mbrs);
         if(mbrs.isEmpty()) return false;
         Address new_coord=mbrs.get(0);
         return gms.local_addr.equals(new_coord);
-    }
-
-
-    void sendLeaveMessage(Address coord, Address mbr) {
-        Message msg=new Message(coord).setFlag(Message.Flag.OOB)
-          .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.LEAVE_REQ, mbr));
-        gms.getDownProtocol().down(msg);
     }
 
 
