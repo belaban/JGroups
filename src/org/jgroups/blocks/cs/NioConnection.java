@@ -140,14 +140,13 @@ public class NioConnection extends Connection {
         try {
             if(!server.deferClientBinding())
                 this.channel.bind(new InetSocketAddress(server.clientBindAddress(), server.clientBindPort()));
-            if(this.channel.getLocalAddress() != null && this.channel.getLocalAddress().equals(destAddr))
-                throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
-
             this.key=server.register(channel, SelectionKey.OP_CONNECT | SelectionKey.OP_READ, this);
             if(Util.connect(channel, destAddr) && channel.finishConnect()) {
                 clearSelectionKey(SelectionKey.OP_CONNECT);
                 this.connected=channel.isConnected();
             }
+            if(this.channel.getLocalAddress() != null && this.channel.getLocalAddress().equals(destAddr))
+                throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
             if(send_local_addr)
                 sendLocalAddress(server.localAddress());
         }
