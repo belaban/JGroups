@@ -91,9 +91,9 @@ public class TcpConnection extends Connection {
         try {
             if(!server.defer_client_binding)
                 this.sock.bind(new InetSocketAddress(server.client_bind_addr, server.client_bind_port));
+            Util.connect(this.sock, destAddr, server.sock_conn_timeout);
             if(this.sock.getLocalSocketAddress() != null && this.sock.getLocalSocketAddress().equals(destAddr))
                 throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
-            Util.connect(this.sock, destAddr, server.sock_conn_timeout);
             this.out=new DataOutputStream(createBufferedOutputStream(sock.getOutputStream()));
             this.in=new DataInputStream(createBufferedInputStream(sock.getInputStream()));
             connected=sock.isConnected();
