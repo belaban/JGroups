@@ -132,7 +132,7 @@
         <dependency>
             <groupId>org.jboss.byteman</groupId>
             <artifactId>byteman-bmunit</artifactId>
-            <version>[3,)</version>
+            <version>[4,)</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
