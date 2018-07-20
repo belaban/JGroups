@@ -64,7 +64,7 @@ public class ASYM_ENCRYPT_LeaveTest {
         System.arraycopy(channels, 2, remaining_channels, 0, channels.length-2);
 
         Util.close(channels[0], channels[1]);
-        Util.waitUntilAllChannelsHaveSameView(20000, 1000, remaining_channels);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, remaining_channels);
         for(int i=0; i < remaining_channels.length; i++)
             System.out.printf("%-4s: view is %s\n", remaining_channels[i].getAddress(), remaining_channels[i].getView());
     }
