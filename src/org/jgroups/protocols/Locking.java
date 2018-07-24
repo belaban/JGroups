@@ -73,15 +73,16 @@ abstract public class Locking extends Protocol {
         LOCK_DENIED,       // response to sender of GRANT_LOCK on unsuccessful lock acquisition (e.g. on tryLock())
         RELEASE_LOCK,      // request to release a lock
         RELEASE_LOCK_OK,   // response to RELEASE_LOCK request
-        CREATE_LOCK,       // request to create a server lock (sent by coordinator to backups). Used by CentralLockService
-        DELETE_LOCK,       // request to delete a server lock (sent by coordinator to backups). Used by CentralLockService
+        CREATE_LOCK,       // request to create a server lock (sent by coordinator to backups). Used by LockService
+        DELETE_LOCK,       // request to delete a server lock (sent by coordinator to backups). Used by LockService
+
         LOCK_AWAIT,        // request to await until condition is signaled
         COND_SIG,          // request to signal awaiting thread
         COND_SIG_ALL,      // request to signal all awaiting threads
         SIG_RET,           // response to alert of signal
         DELETE_LOCK_AWAIT, // request to delete a waiter
-        CREATE_AWAITER,    // request to create a server lock await (sent by coordinator to backups). Used by CentralLockService
-        DELETE_AWAITER,    // request to delete a server lock await (sent by coordinator to backups). Used by CentralLockService
+        CREATE_AWAITER,    // request to create a server lock await (sent by coordinator to backups). Used by LockService
+        DELETE_AWAITER,    // request to delete a server lock await (sent by coordinator to backups). Used by LockService
 
         LOCK_INFO_REQ,     // request to get information about all acquired locks and all pending lock/unlock requests
         LOCK_INFO_RSP,     // response to LOCK_INFO_REQ
