@@ -179,6 +179,7 @@ public class FRAG3 extends Protocol {
                 if(assembled_msg != null) {
                     // the reassembled msg has to be add in the right place (https://issues.jboss.org/browse/JGRP-1648),
                     // and canot be added to the tail of the batch !
+                    assembled_msg.setSrc(batch.sender());
                     batch.replace(msg, assembled_msg);
                     avg_size_up.add(assembled_msg.length());
                 }
