@@ -130,10 +130,8 @@ public class DNS_PING extends Discovery {
         log.debug("Entries collected from DNS: %s", dns_discovery_members);
         if (dns_discovery_members != null) {
             for (Address address : dns_discovery_members) {
-                if (physical_addr != null && address.equals(physical_addr)) {
-                    // no need to send the request to myself
+                if (address.equals(physical_addr)) // no need to send the request to myself
                     continue;
-                }
 
                 Address addressToBeAdded = address;
                 if (address instanceof IpAddress) {
