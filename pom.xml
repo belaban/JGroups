@@ -126,7 +126,7 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>[6.9,)</version>
+            <version>[6.9,6.999]</version>
             <scope>test</scope>
         </dependency>
         <dependency>
