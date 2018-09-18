@@ -87,7 +87,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         return timeout;
     }
 
-    @Override
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.SET_LOCAL_ADDRESS:
@@ -101,7 +100,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         return down_prot.down(evt);
     }
 
-    @Override
     public Object up(Event evt) {
         switch(evt.getType()) {
 
@@ -126,29 +124,29 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         return up_prot.up(evt);
     }
 
-    @Override
     public Object up(Message msg) {
         VerifyHeader hdr=msg.getHeader(this.id);
         if(hdr == null)
             return up_prot.up(msg);
         switch(hdr.type) {
             case VerifyHeader.ARE_YOU_DEAD:
-                short type = hdr.suspected.equals(this.local_addr) ? VerifyHeader.I_AM_NOT_DEAD : VerifyHeader.MBR_IS_DEAD;
+                if(hdr.from == null) {
+                    log.error(Util.getMessage("AREYOUDEADHdrFromIsNull"));
+                    return null;
+                }
                 Address target=use_mcast_rsps? null : hdr.from;
                 for(int i=0; i < num_msgs; i++) {
                     Message rsp=new Message(target).setFlag(Message.Flag.INTERNAL)
-                      .putHeader(this.id, new VerifyHeader(type, hdr.suspected, local_addr));
+                      .putHeader(this.id, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
                     down_prot.down(rsp);
                 }
                 return null;
             case VerifyHeader.I_AM_NOT_DEAD:
-                log.debug("Received %s response from suspected member: %s", hdr, hdr.suspected);
-                unsuspect(hdr.suspected);
-                return null;
-            case VerifyHeader.MBR_IS_DEAD:
-                log.debug("Received %s response from %s on behalf of suspected member: %s", hdr, hdr.from, hdr.suspected);
-                removeSuspect(hdr.suspected);
-                up_prot.up(new Event(Event.SUSPECT, Collections.singleton(hdr.suspected)));
+                if(hdr.from == null) {
+                    log.error(Util.getMessage("IAMNOTDEADHdrFromIsNull"));
+                    return null;
+                }
+                unsuspect(hdr.from);
                 return null;
         }
         return null;
@@ -169,7 +167,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
      * it and removes a suspect when the timeout for it has elapsed. Sends up a SUSPECT event for every removed suspect.
      * When a suspected member is un-suspected, the member is removed from the queue.
      */
-    @Override
     public void run() {
         while(!suspects.isEmpty() && timer != null) {
             try {
@@ -209,7 +206,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         for(Address mbr: mbrs) {
             for(int i=0; i < num_msgs; i++) {
                 Message msg=new Message(mbr).setFlag(Message.Flag.INTERNAL)
-                  .putHeader(this.id, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, mbr, local_addr));
+                  .putHeader(this.id, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
                 down_prot.down(msg);
             }
         }
@@ -281,7 +278,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
     }
 
-    @Override
     public void init() throws Exception {
         super.init();
         if(bind_addr != null)
@@ -289,7 +285,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     }
 
 
-    @Override
+
     public synchronized void stop() {
         Thread tmp;
         if(timer != null && timer.isAlive()) {
@@ -331,58 +327,51 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     public static class VerifyHeader extends Header {
         static final short ARE_YOU_DEAD=1;  // 'from' is sender of verify msg
         static final short I_AM_NOT_DEAD=2;  // 'from' is suspected member
-        static final short MBR_IS_DEAD=3; // 'from' is sender of msg on behalf of suspected mbr
 
         short type=ARE_YOU_DEAD;
-        Address suspected;
-        Address from;     // member who wants to verify that suspected mbr is dead
+        Address from;     // member who wants to verify that suspected_mbr is dead
+
 
         public VerifyHeader() {
         } // used for externalization
 
-        VerifyHeader(short type, Address suspected, Address from) {
+        VerifyHeader(short type) {
             this.type=type;
-            this.suspected = suspected;
+        }
+
+        VerifyHeader(short type, Address from) {
+            this(type);
             this.from=from;
         }
 
-        @Override
         public short getMagicId() {return 54;}
 
-        @Override
         public Supplier<? extends Header> create() {return VerifyHeader::new;}
 
-        @Override
         public String toString() {
             switch(type) {
                 case ARE_YOU_DEAD:
                     return "[VERIFY_SUSPECT: ARE_YOU_DEAD]";
                 case I_AM_NOT_DEAD:
                     return "[VERIFY_SUSPECT: I_AM_NOT_DEAD]";
-                case MBR_IS_DEAD:
-                    return "[VERIFY_SUSPECT: MBR_IS_DEAD]";
                 default:
                     return "[VERIFY_SUSPECT: unknown type (" + type + ")]";
             }
         }
 
-        @Override
+
         public void writeTo(DataOutput out) throws Exception {
             out.writeShort(type);
-            Util.writeAddress(suspected, out);
             Util.writeAddress(from, out);
         }
 
-        @Override
         public void readFrom(DataInput in) throws Exception {
             type=in.readShort();
-            suspected=Util.readAddress(in);
-            from = Util.readAddress(in);
+            from=Util.readAddress(in);
         }
 
-        @Override
         public int serializedSize() {
-            return Global.SHORT_SIZE + Util.size(suspected) + Util.size(from);
+            return Global.SHORT_SIZE + Util.size(from);
         }
     }
 
