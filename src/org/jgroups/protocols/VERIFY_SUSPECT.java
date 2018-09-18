@@ -309,7 +309,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         public int compareTo(Delayed o) {
             Entry other=(Entry)o;
             long my_delay=getDelay(TimeUnit.MILLISECONDS), other_delay=other.getDelay(TimeUnit.MILLISECONDS);
-            return my_delay < other_delay ? -1 : my_delay > other_delay? 1 : 0;
+            return Long.compare(my_delay, other_delay);
         }
 
         public long getDelay(TimeUnit unit) {
