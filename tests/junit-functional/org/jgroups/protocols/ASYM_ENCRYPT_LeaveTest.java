@@ -11,6 +11,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
+import java.util.stream.Stream;
 
 /**
  * Tests graceful leaving of the coordinator and second-in-line in a 10 node cluster with ASYM_ENCRYPT configured
@@ -22,6 +23,7 @@ public class ASYM_ENCRYPT_LeaveTest {
     protected static final String      KEYSTORE="my-keystore.jks";
     protected static final String      KEYSTORE_PWD="password";
     protected static final int         NUM=10;
+    protected static final int         NUM_LEAVERS=2;
     protected static final InetAddress LOOPBACK;
 
     static {
@@ -49,7 +51,7 @@ public class ASYM_ENCRYPT_LeaveTest {
 
     @AfterMethod
     protected void destroy() {
-        for(int i=channels.length-2; i >= 0; i--)
+        for(int i=channels.length-NUM_LEAVERS; i >= 0; i--)
             channels[i].close();
     }
 
@@ -60,10 +62,10 @@ public class ASYM_ENCRYPT_LeaveTest {
         }
         System.out.println("\n");
 
-        JChannel[] remaining_channels=new JChannel[channels.length-2];
-        System.arraycopy(channels, 2, remaining_channels, 0, channels.length-2);
+        JChannel[] remaining_channels=new JChannel[channels.length-NUM_LEAVERS];
+        System.arraycopy(channels, NUM_LEAVERS, remaining_channels, 0, channels.length-NUM_LEAVERS);
 
-        Util.close(channels[0], channels[1]);
+        Stream.of(channels).limit(NUM_LEAVERS).forEach(Util::close);
         Util.waitUntilAllChannelsHaveSameView(30000, 1000, remaining_channels);
         for(int i=0; i < remaining_channels.length; i++)
             System.out.printf("%-4s: view is %s\n", remaining_channels[i].getAddress(), remaining_channels[i].getView());
