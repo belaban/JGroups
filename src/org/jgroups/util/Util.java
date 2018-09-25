@@ -295,6 +295,16 @@ public class Util {
                 throw new TimeoutException("Timeout " + timeout + " kicked in, views are:\n" + sb);
     }
 
+    public static void waitUntil(long timeout, long interval, Condition condition) throws TimeoutException {
+        long target_time=System.currentTimeMillis() + timeout;
+        while(System.currentTimeMillis() <= target_time) {
+            if(condition.isMet())
+                return;
+            Util.sleep(interval);
+        }
+        throw new TimeoutException("Timeout " + timeout + " kicked in");
+    }
+
     public static boolean allChannelsHaveSameView(JChannel... channels) {
         View first=channels[0].getView();
         for(JChannel ch : channels) {

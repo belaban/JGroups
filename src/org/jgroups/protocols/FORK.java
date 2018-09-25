@@ -68,6 +68,13 @@ public class FORK extends Protocol {
 
     public void setUnknownForkHandler(UnknownForkHandler unknownForkHandler) {
         this.unknownForkHandler = unknownForkHandler;
+        fork_stacks.values().forEach(p -> {
+            if(p instanceof ForkProtocol) {
+                ForkProtocolStack st=getForkStack(p);
+                if(st != null)
+                    st.setUnknownForkHandler(unknownForkHandler);
+            }
+        });
     }
 
     public UnknownForkHandler getUnknownForkHandler() {
@@ -141,11 +148,7 @@ public class FORK extends Protocol {
             ForkHeader hdr=msg.getHeader(id);
             if(hdr != null) {
                 batch.remove(msg);
-                List<Message> list=map.get(hdr.fork_stack_id);
-                if(list == null) {
-                    list=new ArrayList<>();
-                    map.put(hdr.fork_stack_id, list);
-                }
+                List<Message> list=map.computeIfAbsent(hdr.fork_stack_id, k -> new ArrayList<>());
                 list.add(msg);
             }
         }
@@ -155,8 +158,11 @@ public class FORK extends Protocol {
             String fork_stack_id=entry.getKey();
             List<Message> list=entry.getValue();
             Protocol bottom_prot=get(fork_stack_id);
-            if(bottom_prot == null)
+            if(bottom_prot == null) {
+                for(Message m: list)
+                    unknownForkHandler.handleUnknownForkStack(m, fork_stack_id);
                 continue;
+            }
             MessageBatch mb=new MessageBatch(batch.dest(), batch.sender(), batch.clusterName(), batch.multicast(), list);
             try {
                 bottom_prot.up(mb);
@@ -242,7 +248,7 @@ public class FORK extends Protocol {
                 }
             }
         }
-        catch(EOFException eof) {
+        catch(EOFException ignored) {
         }
         catch(Throwable ex) {
             log.error("%s: failed setting state in main channel", local_addr, ex);
@@ -330,7 +336,7 @@ public class FORK extends Protocol {
             try {
                 configStream=new URL(config).openStream();
             }
-            catch (MalformedURLException mre) {
+            catch (MalformedURLException ignored) {
             }
         }
 

@@ -10,10 +10,7 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -26,7 +23,7 @@ public class ForkProtocolStack extends ProtocolStack {
     protected       Address                        local_addr;
     protected final String                         fork_stack_id;
     protected final ConcurrentMap<String,JChannel> fork_channels=new ConcurrentHashMap<>();
-    protected final UnknownForkHandler             unknownForkHandler;
+    protected UnknownForkHandler                   unknownForkHandler;
     protected final List<Protocol>                 protocols;
 
     // init() increments and destroy() decrements
@@ -54,6 +51,8 @@ public class ForkProtocolStack extends ProtocolStack {
     public void                           remove(String fork_channel_id)      {fork_channels.remove(fork_channel_id);}
     public synchronized int               getInits()                          {return inits;}
     public synchronized int               getConnects()                       {return connects;}
+    public void                           setUnknownForkHandler(UnknownForkHandler ufh) {unknownForkHandler=ufh;}
+    public UnknownForkHandler             getUnknownForkHandler()             {return unknownForkHandler;}
 
     public Object down(Event evt) {
         return down_prot.down(evt);
@@ -64,7 +63,7 @@ public class ForkProtocolStack extends ProtocolStack {
     }
 
     public void setLocalAddress(Address addr) {
-        if(local_addr != null && addr != null && local_addr.equals(addr))
+        if(Objects.equals(local_addr, addr))
             return;
         this.local_addr=addr;
         down_prot.down(new Event(Event.SET_LOCAL_ADDRESS, addr));
@@ -152,7 +151,9 @@ public class ForkProtocolStack extends ProtocolStack {
             List<Message> list=entry.getValue();
             JChannel fork_channel=get(fork_channel_id);
             if(fork_channel == null) {
-                log.debug("fork-channel for id=%s not found; discarding message", fork_channel_id);
+                for(Message m: list)
+                    unknownForkHandler.handleUnknownForkChannel(m, fork_channel_id);
+                // log.debug("fork-channel for id=%s not found; discarding message", fork_channel_id);
                 continue;
             }
             MessageBatch mb=new MessageBatch(batch.dest(), batch.sender(), batch.clusterName(), batch.multicast(), list);

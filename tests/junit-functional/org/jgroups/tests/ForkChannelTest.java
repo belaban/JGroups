@@ -6,6 +6,7 @@ import org.jgroups.blocks.atomic.Counter;
 import org.jgroups.blocks.atomic.CounterService;
 import org.jgroups.fork.ForkChannel;
 import org.jgroups.fork.ForkProtocolStack;
+import org.jgroups.fork.UnknownForkHandler;
 import org.jgroups.protocols.COUNTER;
 import org.jgroups.protocols.FORK;
 import org.jgroups.protocols.FRAG2;
@@ -19,6 +20,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -312,6 +315,47 @@ public class ForkChannelTest {
             assert r1.list().contains(i) && r2.list().contains(i+5);
     }
 
+    public void testUnknownForkStack() throws Exception {
+        a.connect(CLUSTER);
+        fc1=new ForkChannel(a, "stack", "fc1").connect("bla");
+        fc2=new ForkChannel(a, "stack", "fc2").connect("bla");
+
+        b=new JChannel(protocols()).name("B").connect(CLUSTER);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b);
+        FORK f=b.getProtocolStack().findProtocol(FORK.class);
+        MyUnknownForkHandler ufh=new MyUnknownForkHandler();
+        f.setUnknownForkHandler(ufh);
+
+        fc1.send(new Message(null, "hello"));
+        fc2.send(new Message(null, "world"));
+
+        List<String> l=ufh.getUnknownForkStacks();
+        Util.waitUntil(10000, 500, () -> l.size() == 2);
+        assert l.size() == 2 && l.containsAll(Arrays.asList("stack", "stack"));
+    }
+
+    public void testUnknownForkChannel() throws Exception {
+        a.connect(CLUSTER);
+        fc1=new ForkChannel(a, "stack", "fc1").connect("bla");
+        fc2=new ForkChannel(a, "stack", "fc2").connect("bla");
+
+        b=new JChannel(protocols()).name("B").connect(CLUSTER);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b);
+        fc3=new ForkChannel(b, "stack", "fc1").connect("bla");
+        // "stack"/"fc2" is missing on B
+
+        FORK f=b.getProtocolStack().findProtocol(FORK.class);
+        MyUnknownForkHandler ufh=new MyUnknownForkHandler();
+        f.setUnknownForkHandler(ufh);
+
+        fc2.send(new Message(null, "hello"));
+        fc2.send(new Message(null, "world"));
+
+        List<String> l=ufh.getUnknownForkChannels();
+        Util.waitUntil(10000, 500, () -> l.size() == 2);
+        assert l.size() == 2 && l.containsAll(Arrays.asList("fc2", "fc2"));
+    }
+
 
     /**
      * Tests CounterService on 2 different fork-channels, using the *same* fork-stack. This means the 2 counter
@@ -455,6 +499,24 @@ public class ForkChannelTest {
 
         public String toString() {
             return myname;
+        }
+    }
+
+    protected static class MyUnknownForkHandler implements UnknownForkHandler {
+        protected final List<String> unknown_fork_stacks=new ArrayList<>();
+        protected final List<String> unknown_fork_channels=new ArrayList<>();
+
+        public List<String> getUnknownForkStacks()   {return unknown_fork_stacks;}
+        public List<String> getUnknownForkChannels() {return unknown_fork_channels;}
+
+        public Object handleUnknownForkStack(Message message, String forkStackId) {
+            unknown_fork_stacks.add(forkStackId);
+            return null;
+        }
+
+        public Object handleUnknownForkChannel(Message message, String forkChannelId) {
+            unknown_fork_channels.add(forkChannelId);
+            return null;
         }
     }
 }
