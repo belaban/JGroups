@@ -104,9 +104,9 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     protected volatile List<Address> members=new ArrayList<>(11); // volatile eliminates the lock
 
-    protected final Set<Address>     suspected_mbrs=new CopyOnWriteArraySet<>();
+    protected final Set<Address>     suspected_mbrs=Collections.synchronizedSet(new HashSet<>());
 
-    protected final List<Address>    pingable_mbrs=new CopyOnWriteArrayList<>();
+    protected final List<Address>    pingable_mbrs=Collections.synchronizedList(new ArrayList<>());
 
     protected volatile boolean srv_sock_sent; // has own socket been broadcast yet ?
     /** Used to rendezvous on GET_CACHE and GET_CACHE_RSP */
@@ -467,11 +467,10 @@ public class FD_SOCK extends Protocol implements Runnable {
             return;
 
         suspects.remove(local_addr);
-        List<Address> eligible_mbrs=new ArrayList<>();
         suspects.forEach(suspect -> suspect_history.add(String.format("%s: %s", new Date(), suspect)));
 
         suspected_mbrs.addAll(suspects);
-        eligible_mbrs.addAll(this.members);
+        List<Address> eligible_mbrs=new ArrayList<>(this.members);
         eligible_mbrs.removeAll(suspected_mbrs);
 
         // Check if we're coord, then send up the stack
