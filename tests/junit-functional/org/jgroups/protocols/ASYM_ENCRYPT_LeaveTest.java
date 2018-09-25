@@ -8,20 +8,24 @@ import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
+import java.util.stream.Stream;
 
 /**
  * Tests graceful leaving of the coordinator and second-in-line in a 10 node cluster with ASYM_ENCRYPT configured
  * @author Bela Ban
  * @since  4.0.12
  */
+@Ignore("Reproducer for https://issues.jboss.org/browse/JGRP-2297")
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ASYM_ENCRYPT_LeaveTest {
     protected static final String      KEYSTORE="my-keystore.jks";
     protected static final String      KEYSTORE_PWD="password";
     protected static final int         NUM=10;
+    protected static final int         NUM_LEAVERS=2;
     protected static final InetAddress LOOPBACK;
 
     static {
@@ -49,7 +53,7 @@ public class ASYM_ENCRYPT_LeaveTest {
 
     @AfterMethod
     protected void destroy() {
-        for(int i=channels.length-2; i >= 0; i--)
+        for(int i=channels.length-NUM_LEAVERS; i >= 0; i--)
             channels[i].close();
     }
 
@@ -60,10 +64,10 @@ public class ASYM_ENCRYPT_LeaveTest {
         }
         System.out.println("\n");
 
-        JChannel[] remaining_channels=new JChannel[channels.length-2];
-        System.arraycopy(channels, 2, remaining_channels, 0, channels.length-2);
+        JChannel[] remaining_channels=new JChannel[channels.length-NUM_LEAVERS];
+        System.arraycopy(channels, NUM_LEAVERS, remaining_channels, 0, channels.length-NUM_LEAVERS);
 
-        Util.close(channels[0], channels[1]);
+        Stream.of(channels).limit(NUM_LEAVERS).forEach(Util::close);
         Util.waitUntilAllChannelsHaveSameView(30000, 1000, remaining_channels);
         for(int i=0; i < remaining_channels.length; i++)
             System.out.printf("%-4s: view is %s\n", remaining_channels[i].getAddress(), remaining_channels[i].getView());
@@ -77,7 +81,8 @@ public class ASYM_ENCRYPT_LeaveTest {
         return new JChannel(
           new TCP().setBindAddress(LOOPBACK), // .setBindPort(BIND_PORT),
           new MPING(), // new TCPPING().portRange(10).initialHosts(Collections.singleton(new InetSocketAddress(LOOPBACK, BIND_PORT))),
-          new MERGE3().setMinInterval(2000).setMaxInterval(5000),
+          // omit MERGE3 from the stack -- nodes are leaving gracefully
+          //new MERGE3().setMinInterval(2000).setMaxInterval(5000),
           new FD_SOCK(),
           new FD_ALL(),
           new VERIFY_SUSPECT(),
