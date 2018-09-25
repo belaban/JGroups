@@ -1,32 +1,26 @@
 package org.jgroups.tests;
 
-import java.net.InetAddress;
-import java.util.stream.Stream;
-
 import org.jgroups.Global;
 import org.jgroups.JChannel;
-import org.jgroups.protocols.FD_ALL;
-import org.jgroups.protocols.FD_SOCK;
-import org.jgroups.protocols.MPING;
-import org.jgroups.protocols.TCP;
-import org.jgroups.protocols.UNICAST3;
-import org.jgroups.protocols.VERIFY_SUSPECT;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
+
+import java.net.InetAddress;
+import java.util.stream.Stream;
 
 /**
  * Tests gracefully and concurrently leaving coordinator and a successor coordinator.
- * Nodes are leaving gracefully so no merging is expected.
+ * Nodes are leaving gracefully so no merging is expected.<br/
+ * Reproducer for https://issues.jboss.org/browse/JGRP-2293.
  *
  * @author Radoslav Husar
  */
-@Ignore("Reproducer for https://issues.jboss.org/browse/JGRP-2293")
 @Test(groups = Global.FUNCTIONAL, singleThreaded = true)
 public class ConcurrentLeaversTest {
 
@@ -78,6 +72,7 @@ public class ConcurrentLeaversTest {
                 new TCP().setBindAddress(LOOPBACK),
                 new MPING(),
                 // omit MERGE3 from the stack -- nodes are leaving gracefully
+                // new MERGE3().setMinInterval(1000).setMaxInterval(3000).setCheckInterval(5000),
                 new FD_SOCK(),
                 new FD_ALL(),
                 new VERIFY_SUSPECT(),
