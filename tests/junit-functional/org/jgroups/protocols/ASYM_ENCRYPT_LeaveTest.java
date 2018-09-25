@@ -8,18 +8,17 @@ import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
 import java.util.stream.Stream;
 
 /**
- * Tests graceful leaving of the coordinator and second-in-line in a 10 node cluster with ASYM_ENCRYPT configured
+ * Tests graceful leaving of the coordinator and second-in-line in a 10 node cluster with ASYM_ENCRYPT configured<br/>
+ * Reproducer for https://issues.jboss.org/browse/JGRP-2297
  * @author Bela Ban
  * @since  4.0.12
  */
-@Ignore("Reproducer for https://issues.jboss.org/browse/JGRP-2297")
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ASYM_ENCRYPT_LeaveTest {
     protected static final String      KEYSTORE="my-keystore.jks";
