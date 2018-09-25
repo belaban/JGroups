@@ -8,6 +8,7 @@ import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
@@ -18,6 +19,7 @@ import java.util.stream.Stream;
  * @author Bela Ban
  * @since  4.0.12
  */
+@Ignore("Reproducer for https://issues.jboss.org/browse/JGRP-2297")
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ASYM_ENCRYPT_LeaveTest {
     protected static final String      KEYSTORE="my-keystore.jks";
@@ -79,7 +81,8 @@ public class ASYM_ENCRYPT_LeaveTest {
         return new JChannel(
           new TCP().setBindAddress(LOOPBACK), // .setBindPort(BIND_PORT),
           new MPING(), // new TCPPING().portRange(10).initialHosts(Collections.singleton(new InetSocketAddress(LOOPBACK, BIND_PORT))),
-          new MERGE3().setMinInterval(2000).setMaxInterval(5000),
+          // omit MERGE3 from the stack -- nodes are leaving gracefully
+          //new MERGE3().setMinInterval(2000).setMaxInterval(5000),
           new FD_SOCK(),
           new FD_ALL(),
           new VERIFY_SUSPECT(),
