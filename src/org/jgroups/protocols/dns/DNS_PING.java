@@ -22,12 +22,11 @@ public class DNS_PING extends Discovery {
 
     private static final String DEFAULT_DNS_FACTORY = "com.sun.jndi.dns.DnsContextFactory";
     private static final String DEFAULT_DNS_RECORD_TYPE = "A";
-    private static final String DNS_QUERY_SUFFIX = ".svc.cluster.local";
 
-    @Property(description = "DNS Context Factory")
+    @Property(description = "DNS Context Factory.  Used when DNS_PING is configured to use SRV record types and when using A types with a specific dns_address.")
     protected String dns_context_factory = DEFAULT_DNS_FACTORY;
 
-    @Property(description = "DNS Address. This property will be assembled with the 'dns://' prefix")
+    @Property(description = "DNS Address. This property will be assembled with the 'dns://' prefix.  If this is specified, A records will be resolved through DnsContext.")
     protected String dns_address = "";
 
     @Property(description = "DNS Record type")
@@ -51,17 +50,17 @@ public class DNS_PING extends Discovery {
             log.warn("Unable to discover transport port. This may prevent members from being discovered.");
         }
         if (dns_resolver == null) {
-            dns_resolver = new DefaultDNSResolver(dns_context_factory, dns_address);
+            if (dns_address == null || dns_address.length() == 0) {
+                dns_resolver = new DefaultDNSResolver(dns_context_factory, dns_address);
+            } else {
+                dns_resolver = new AddressedDNSResolver(dns_context_factory, dns_address);
+            }
         }
     }
 
     protected void validateProperties() {
         if (dns_query == null) {
             throw new IllegalArgumentException("dns_query can not be null or empty");
-        }
-        // Auto-append query suffix if missing
-        if (!dns_query.endsWith(DNS_QUERY_SUFFIX)) {
-            dns_query += DNS_QUERY_SUFFIX;
         }
     }
 

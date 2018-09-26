@@ -12,6 +12,8 @@ import javax.naming.directory.Attributes;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import java.lang.invoke.MethodHandles;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -64,7 +66,11 @@ class DefaultDNSResolver implements DNSResolver {
         }
     }
 
-    private List<Address> resolveSRVEntries(String dnsQuery) {
+    protected DirContext getDnsContext() {
+        return dnsContext;
+    }
+
+    protected List<Address> resolveSRVEntries(String dnsQuery) {
         List<Address> addresses = new ArrayList<>();
         try {
             // We are parsing this kind of structure:
@@ -96,25 +102,14 @@ class DefaultDNSResolver implements DNSResolver {
         return addresses;
     }
 
-    private List<Address> resolveAEntries(String dnsQuery) {
+    protected List<Address> resolveAEntries(String dnsQuery) {
         List<Address> addresses = new ArrayList<>();
         try {
-            // We are parsing this kind of structure:
-            // {a=A: 172.17.0.2, 172.17.0.7}
-            // The frst attribute is the type of record. We are not interested in this. Next are addresses.
-            Attributes attributes = dnsContext.getAttributes(dnsQuery, new String[] { DNSRecordType.A.toString() });
-            if (attributes != null && attributes.getAll().hasMoreElements()) {
-                NamingEnumeration<?> namingEnumeration = attributes.get(DNSRecordType.A.toString()).getAll();
-                while (namingEnumeration.hasMoreElements()) {
-                    try {
-                        addresses.add(new IpAddress(namingEnumeration.nextElement().toString()));
-                    } catch (Exception e) {
-                        log.trace("Non critical DNS resolution error", e);
-                        continue;
-                    }
-                }
+            InetAddress[] inetAddresses = InetAddress.getAllByName(dnsQuery);
+            for (InetAddress address : inetAddresses) {
+                addresses.add(new IpAddress(address, 0));
             }
-        } catch (NamingException e) {
+        } catch (UnknownHostException e) {
             log.trace("No DNS records for query: " + dnsQuery);
         }
         return addresses;
