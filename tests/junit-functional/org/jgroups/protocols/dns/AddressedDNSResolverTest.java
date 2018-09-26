@@ -8,7 +8,7 @@ import org.jgroups.stack.IpAddress;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class DefaultDNSResolverTest {
+public class AddressedDNSResolverTest {
 
    @Test
    public void test_parsing_a_entries() throws Exception {
@@ -17,7 +17,7 @@ public class DefaultDNSResolverTest {
             .addEntry("test", "192.168.0.1", DNSResolver.DNSRecordType.A)
             .addEntry("test", "192.168.0.2", DNSResolver.DNSRecordType.A);
 
-      DefaultDNSResolver resolver = new DefaultDNSResolver(mockDirContext);
+      AddressedDNSResolver resolver = new AddressedDNSResolver(mockDirContext);
 
       //when
       List<Address> addresses = resolver.resolveIps("test", DNSResolver.DNSRecordType.A);
@@ -51,7 +51,7 @@ public class DefaultDNSResolverTest {
             .addEntry("9089f34a.jgroups-dns-ping.local", "192.168.0.1", DNSResolver.DNSRecordType.A)
             .addEntry("9089f34a.jgroups-dns-ping.local", "192.168.0.2", DNSResolver.DNSRecordType.A);
 
-      DefaultDNSResolver resolver = new DefaultDNSResolver(mockDirContext);
+      AddressedDNSResolver resolver = new AddressedDNSResolver(mockDirContext);
 
       //when
       List<Address> addresses = resolver.resolveIps("test", DNSResolver.DNSRecordType.SRV);
