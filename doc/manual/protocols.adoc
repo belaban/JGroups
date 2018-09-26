@@ -763,9 +763,9 @@ https://github.com/jgroups-extras/jgroups-google.
 DNS_PING uses DNS `A` or `SRV` entries to perform discovery. Initially this protocol was designed for
 https://kubernetes.io[Kubernetes] and https://www.openshift.org[OpenShift] but it suitable for any type of DNS discovery.
 
-In order to enable DNS discovery for application deployed on Kubernetes/OpenShift one must create a
-https://kubernetes.io/docs/user-guide/services/#headless-services[Governing Headless Service] with proper
-selector covering desired Pods. The Service will ensure that DNS entries are populated as soon as Pods are in Ready state.
+NOTE: In order to enable DNS discovery for application deployed on Kubernetes/OpenShift one must create a
+      https://kubernetes.io/docs/user-guide/services/#headless-services[Governing Headless Service] with proper
+      selector covering desired Pods. The Service will ensure that DNS entries are populated as soon as Pods are in Ready state.
 
 
 The snippet below shows a sample config:
@@ -783,8 +783,8 @@ The snippet below shows a sample config:
 
 This will turn on DNS discovery using DNS server at address `192.168.0.17` and DNS query `jgroups-dns-ping.myproject.svc.cluster.local`.
 
-The `dns_address` parameter is optional and when it's missing, the protocol will use the default DNS server configured
-on the machine (usually, it's the first entry of `/etc/resolv.conf`).
+The `dns_address` parameter is optional and when it's missing, the protocol will use the default DNS resolver configured
+on the machine.
 
 The `dns_query` parameter is mandatory. It is used for querying the DNS Server and obtaining information about the cluster members.
 The `svc.cluster.local` part is specific to Kubernetes and OpenShift and might be omitted.
