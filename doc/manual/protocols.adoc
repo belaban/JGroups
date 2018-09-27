@@ -1911,7 +1911,6 @@ Here's a typical configuration:
     />
     <ASYM_ENCRYPT
             use_external_key_exchange="true" // <1>
-            encrypt_entire_message="true"
             sym_keylength="128"
             sym_algorithm="AES"
             asym_keylength="512"

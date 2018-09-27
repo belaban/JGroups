@@ -63,7 +63,7 @@ The cost of encrypting the entire message includes serializing the entire messag
 address etc) and encrypting it into the buffer of a new message (to the same destination). If message signing is enabled,
 the cost of computing a hashcode and encrypting it is added to the above cost.
 
-Attributes present in both symmetric and asymmetric encryption include sign_msgs and encrypt_entire_message.
+Attributes present in both symmetric and asymmetric encryption include sign_msgs.
 
 
 Symmetric encryption

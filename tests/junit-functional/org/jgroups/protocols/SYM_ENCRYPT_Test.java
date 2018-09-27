@@ -89,9 +89,6 @@ public class SYM_ENCRYPT_Test extends EncryptTest {
         return ch;
     }
 
-
-    // Note that setting encrypt_entire_message to true is critical here, or else some of the tests in this
-    // unit test would fail!
     protected static SYM_ENCRYPT createENCRYPT(String keystore_name, String store_pwd) throws Exception {
         SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName(keystore_name).alias("myKey").storePassword(store_pwd);
         encrypt.init();
