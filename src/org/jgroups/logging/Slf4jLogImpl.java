@@ -16,8 +16,7 @@ import java.util.function.Function;
  */
 public class Slf4jLogImpl implements Log {
     private static final Map<Function<Logger, Boolean>, String> LEVELS = new LinkedHashMap<>();
-    private static final Locale                 LOCALE = new Locale(System.getProperty("user.language"),
-                                                                    System.getProperty("user.country"));
+    private static final Locale LOCALE = Locale.getDefault();
 
     static {
         LEVELS.put(Logger::isErrorEnabled, "ERROR");
