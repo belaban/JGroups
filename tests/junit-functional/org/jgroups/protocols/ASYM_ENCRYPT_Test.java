@@ -326,9 +326,6 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         }
     }
 
-
-    // Note that setting encrypt_entire_message to true is critical here, or else some of the tests in this
-    // unit test would fail!
     protected static ASYM_ENCRYPT createENCRYPT() throws Exception {
         ASYM_ENCRYPT encrypt=new ASYM_ENCRYPT();
         encrypt.init();
