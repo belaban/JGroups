@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 class DefaultDNSResolver implements DNSResolver {
 
-    private static final Pattern SRV_REGEXP = Pattern.compile("\\d+ \\d+ \\d+ ([\\w+.-]+)\\.");
+    private static final Pattern SRV_REGEXP = Pattern.compile("\\d+ \\d+ (\\d+) ([\\w+.-]+)\\.");
 
     private static final Log log = LogFactory.getLog(MethodHandles.lookup().lookupClass());
 
@@ -84,10 +84,11 @@ class DefaultDNSResolver implements DNSResolver {
                         String srvEntry = namingEnumeration.nextElement().toString();
                         Matcher matcher = SRV_REGEXP.matcher(srvEntry);
                         if (matcher.find()) {
-                            String srcDNSRecord = matcher.group(1);
+                            String srcPort = matcher.group(1);
+                            String srcDNSRecord = matcher.group(2);
                             // The implementation here is not optimal but it's easy to read. SRV discovery will be performed
                             // extremely rare only when a fine grained discovery using ports is needed.
-                            addresses.addAll(resolveAEntries(srcDNSRecord));
+                            addresses.addAll(resolveAEntries(srcDNSRecord, srcPort));
                         }
                     } catch (Exception e) {
                         log.trace("Non critical DNS resolution error", e);
@@ -108,6 +109,19 @@ class DefaultDNSResolver implements DNSResolver {
             InetAddress[] inetAddresses = InetAddress.getAllByName(dnsQuery);
             for (InetAddress address : inetAddresses) {
                 addresses.add(new IpAddress(address, 0));
+            }
+        } catch (UnknownHostException e) {
+            log.trace("No DNS records for query: " + dnsQuery);
+        }
+        return addresses;
+    }
+
+    protected List<Address> resolveAEntries(String dnsQuery, String srcPort) {
+        List<Address> addresses = new ArrayList<>();
+        try {
+            InetAddress[] inetAddresses = InetAddress.getAllByName(dnsQuery);
+            for (InetAddress address : inetAddresses) {
+                addresses.add(new IpAddress(address, Integer.parseInt(srcPort)));
             }
         } catch (UnknownHostException e) {
             log.trace("No DNS records for query: " + dnsQuery);
