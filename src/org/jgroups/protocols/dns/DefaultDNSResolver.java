@@ -87,7 +87,7 @@ class DefaultDNSResolver implements DNSResolver {
                             String srcPort = matcher.group(1);
                             String srcDNSRecord = matcher.group(2);
                             // The implementation here is not optimal but it's easy to read. SRV discovery will be performed
-                            // extremely rare only when a fine grained discovery using ports is needed.
+                            // extremely rarely, only when a fine grained discovery using ports is needed (ie: when using containers).
                             addresses.addAll(resolveAEntries(srcDNSRecord, srcPort));
                         }
                     } catch (Exception e) {
@@ -104,16 +104,7 @@ class DefaultDNSResolver implements DNSResolver {
     }
 
     protected List<Address> resolveAEntries(String dnsQuery) {
-        List<Address> addresses = new ArrayList<>();
-        try {
-            InetAddress[] inetAddresses = InetAddress.getAllByName(dnsQuery);
-            for (InetAddress address : inetAddresses) {
-                addresses.add(new IpAddress(address, 0));
-            }
-        } catch (UnknownHostException e) {
-            log.trace("No DNS records for query: " + dnsQuery);
-        }
-        return addresses;
+        return resolveAEntries(dnsQuery, "0");
     }
 
     protected List<Address> resolveAEntries(String dnsQuery, String srcPort) {
