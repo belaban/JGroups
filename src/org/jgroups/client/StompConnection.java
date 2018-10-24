@@ -327,7 +327,10 @@ public class StompConnection implements Runnable {
                 timeout = 0;
             }
             catch(IOException e) {
-                log.error(Util.getMessage("ConnectionClosedUnexpectedly"), e);
+                if (running) {
+                    // only unexpected if running is true, otherwise disconnect was already called
+                    log.error(Util.getMessage("ConnectionClosedUnexpectedly"), e);
+                }
                 if (reconnect) {
                     closeConnections();
                 }
