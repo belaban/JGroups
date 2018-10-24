@@ -40,8 +40,8 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     @Property(description="Cipher engine transformation for symmetric algorithm. Default is AES")
     protected String                        sym_algorithm=DEFAULT_SYM_ALGO;
 
-    @Property(description="Initial public/private key length. Default is 512")
-    protected int                           asym_keylength=512;
+    @Property(description="Initial public/private key length. Default is 2048")
+    protected int                           asym_keylength=2048;
 
     @Property(description="Initial key length for matching symmetric algorithm. Default is 128")
     protected int                           sym_keylength=128;
