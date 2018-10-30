@@ -77,16 +77,6 @@
     </path>
 
 
-    <!-- properties to determine IP version used -->
-    <condition property="java.net.preferIPv4Stack" value="true" else="false">
-        <isfalse value="${jgroups.useIPv6}"/>
-    </condition>
-
-    <condition property="java.net.preferIPv6Addresses" value="true" else="false">
-        <istrue value="${jgroups.useIPv6}"/>
-    </condition>
-
-
     <target name="check-lib-exists">
         <available file="${lib.dir}" type="dir" property="lib.dir.exists"/>
     </target>
@@ -814,8 +804,6 @@
                 <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
                 <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
                 <jvmarg value="-Dlog4j.configurationFile=${conf.dir}/log4j2.xml"/>
-                <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
-                <jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
                 <jvmarg value="-Xms400M"/>
                 <jvmarg value="-Xmx800M"/>
                 <jvmarg value="@{jvmarg1}"/>

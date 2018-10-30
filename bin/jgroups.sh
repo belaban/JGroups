@@ -31,7 +31,6 @@ if [ -f $HOME/logging.properties ]; then
 fi;
 
 #JG_FLAGS="-Djgroups.bind_addr=match-address:192.168.1.*"
-JG_FLAGS="$JG_FLAGS -Djava.net.preferIPv4Stack=true"
 FLAGS="-server -Xmx1G -Xms500M"
 GC="-XX:+UseG1GC"
 

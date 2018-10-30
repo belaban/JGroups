@@ -91,6 +91,7 @@ public class Util {
 
     public enum AddressScope {GLOBAL,SITE_LOCAL,LINK_LOCAL,LOOPBACK,NON_LOOPBACK}
 
+    private static boolean   ipv4_stack_available=false, ipv6_stack_available=false;
     private static StackType ip_stack_type=_getIpStackType();
 
     protected static ResourceBundle resource_bundle;
@@ -122,7 +123,7 @@ public class Util {
             if(cchm_initial_capacity != null)
                 CCHM_INITIAL_CAPACITY=Integer.valueOf(cchm_initial_capacity);
         }
-        catch(SecurityException ex) {
+        catch(SecurityException ignored) {
         }
 
         try {
@@ -130,7 +131,7 @@ public class Util {
             if(cchm_load_factor != null)
                 CCHM_LOAD_FACTOR=Float.valueOf(cchm_load_factor);
         }
-        catch(SecurityException ex) {
+        catch(SecurityException ignored) {
         }
 
         try {
@@ -138,7 +139,7 @@ public class Util {
             if(cchm_concurrency_level != null)
                 CCHM_CONCURRENCY_LEVEL=Integer.valueOf(cchm_concurrency_level);
         }
-        catch(SecurityException ex) {
+        catch(SecurityException ignored) {
         }
 
         try {
@@ -146,7 +147,7 @@ public class Util {
             if(tmp != null)
                 MAX_LIST_PRINT_SIZE=Integer.valueOf(tmp);
         }
-        catch(SecurityException ex) {
+        catch(SecurityException ignored) {
         }
 
         try {
@@ -412,7 +413,7 @@ public class Util {
             try {
                 closeable.close();
             }
-            catch(Throwable t) {
+            catch(Throwable ignored) {
             }
         }
     }
@@ -880,7 +881,7 @@ public class Util {
                 retval=ctor.newInstance(message);
             }
         }
-        catch(Throwable t) {
+        catch(Throwable ignored) {
         }
 
         if(retval == null)
@@ -2927,7 +2928,7 @@ public class Util {
             try {
                 return curr.getDeclaredField(field_name);
             }
-            catch(NoSuchFieldException e) {
+            catch(NoSuchFieldException ignored) {
             }
         }
         if(field == null && throw_exception)
@@ -2968,7 +2969,7 @@ public class Util {
                 try {
                     return clazz.getDeclaredField(name);
                 }
-                catch(Exception e) {
+                catch(Exception ignored) {
                 }
             }
         }
@@ -2989,7 +2990,7 @@ public class Util {
                 try {
                     return clazz.getDeclaredMethod(name,parameter_types);
                 }
-                catch(Exception e) {
+                catch(Exception ignored) {
                 }
             }
         }
@@ -3062,7 +3063,7 @@ public class Util {
                         return retval;
                 }
             }
-            catch(Throwable t) {
+            catch(Throwable ignored) {
             }
         }
 
@@ -3074,7 +3075,7 @@ public class Util {
                     return retval;
             }
         }
-        catch(Throwable t) {
+        catch(Throwable ignored) {
         }
 
         try {
@@ -3083,7 +3084,7 @@ public class Util {
                 return loader.getResourceAsStream(name);
             }
         }
-        catch(Throwable t) {
+        catch(Throwable ignored) {
         }
 
         return retval;
@@ -3452,7 +3453,7 @@ public class Util {
         try {
             retval=shortName(InetAddress.getLocalHost().getHostName());
         }
-        catch(Throwable e) {
+        catch(Throwable ignored) {
         }
         if(retval == null) {
             try {
@@ -3900,7 +3901,7 @@ public class Util {
                         return address;
                 }
             }
-            catch(SocketException e) {
+            catch(SocketException ignored) {
             }
         }
         return null;
@@ -3961,7 +3962,7 @@ public class Util {
                         break;
                 }
             }
-            catch(SocketException e) {
+            catch(SocketException ignored) {
             }
         }
         return null;
@@ -4042,6 +4043,14 @@ public class Util {
         return ip_stack_type;
     }
 
+    public static boolean isIpv4StackAvailable() {
+        return ipv4_stack_available;
+    }
+
+    public static boolean isIpv6StackAvailable() {
+        return ipv6_stack_available;
+    }
+
     /** Returns true if the 2 addresses are of the same type (IPv4 or IPv6) */
     public static boolean sameAddresses(InetAddress one,InetAddress two) {
         return one == null
@@ -4057,23 +4066,21 @@ public class Util {
      * if the type cannot be detected
      */
     private static StackType _getIpStackType() {
-        boolean isIPv4StackAvailable=isStackAvailable(true);
-        boolean isIPv6StackAvailable=isStackAvailable(false);
+        ipv4_stack_available=isStackAvailable(true);
+        ipv6_stack_available=isStackAvailable(false);
 
         // if only IPv4 stack available
-        if(isIPv4StackAvailable && !isIPv6StackAvailable) {
+        if(ipv4_stack_available && !ipv6_stack_available) {
             return StackType.IPv4;
         }
         // if only IPv6 stack available
-        else if(isIPv6StackAvailable && !isIPv4StackAvailable) {
+        else if(ipv6_stack_available && !ipv4_stack_available) {
             return StackType.IPv6;
         }
         // if dual stack
-        else if(isIPv4StackAvailable && isIPv6StackAvailable) {
+        else if(ipv4_stack_available && ipv6_stack_available) {
             // get the System property which records user preference for a stack on a dual stack machine
-            if(Boolean.getBoolean(Global.IPv4)) // has preference over java.net.preferIPv6Addresses
-                return StackType.IPv4;
-            return StackType.IPv6;
+            return Boolean.getBoolean(Global.IPv6)? StackType.IPv6 : StackType.IPv4;
         }
         return StackType.Unknown;
     }
@@ -4162,7 +4169,7 @@ public class Util {
                         if(tmp != null)
                             return tmp;
                     }
-                    catch(SecurityException ex) {
+                    catch(SecurityException ignored) {
                     }
                 }
             }
@@ -4183,7 +4190,7 @@ public class Util {
         if(view == null || local_addr == null)
             return false;
         Address coord=view.getCoord();
-        return coord != null && local_addr.equals(coord);
+        return local_addr.equals(coord);
     }
 
 
@@ -4445,8 +4452,7 @@ public class Util {
         if(tmp == null)
             return val;
         StringBuilder sb = new StringBuilder();
-        sb.append(val.substring(0, start_index))
-                .append(tmp).append(val.substring(end_index + 1));
+        sb.append(val, 0, start_index).append(tmp).append(val.substring(end_index + 1));
         return sb.toString();
     }
 
@@ -4493,7 +4499,7 @@ public class Util {
                 if((retval=System.getenv(prop)) != null)
                     return retval;
             }
-            catch(Throwable e) {
+            catch(Throwable ignored) {
             }
         }
         return default_value;

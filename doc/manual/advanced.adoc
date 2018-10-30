@@ -1369,12 +1369,12 @@ To test whether we have 3 different clusters, start the Draw application (shippe
 
 
 ....
-java -Djgroups.bind_addr=127.0.0.1 -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props ./sfo.xml -name sfo1
-java -Djgroups.bind_addr=127.0.0.1 -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props ./sfo.xml -name sfo2
-java -Djgroups.bind_addr=127.0.0.1 -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props ./lon.xml -name lon1
-java -Djgroups.bind_addr=127.0.0.1 -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props ./lon.xml -name lon2
-java -Djgroups.bind_addr=127.0.0.1 -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props ./nyc.xml -name nyc1
-java -Djgroups.bind_addr=127.0.0.1 -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props ./nyc.xml -name nyc2
+java -Djgroups.bind_addr=127.0.0.1 org.jgroups.demos.Draw -props ./sfo.xml -name sfo1
+java -Djgroups.bind_addr=127.0.0.1 org.jgroups.demos.Draw -props ./sfo.xml -name sfo2
+java -Djgroups.bind_addr=127.0.0.1 org.jgroups.demos.Draw -props ./lon.xml -name lon1
+java -Djgroups.bind_addr=127.0.0.1 org.jgroups.demos.Draw -props ./lon.xml -name lon2
+java -Djgroups.bind_addr=127.0.0.1 org.jgroups.demos.Draw -props ./nyc.xml -name nyc1
+java -Djgroups.bind_addr=127.0.0.1 org.jgroups.demos.Draw -props ./nyc.xml -name nyc2
 ....
 
 We should now have 3 local clusters (= sites) of 2 instances each. When RELAY2.relay_multicasts is true,
@@ -1393,7 +1393,7 @@ To test unicasts between sites, you can use the org.jgroups.demos.RelayDemoRpc p
 
 
 ----
-java -Djava.net.preferIPv4Stack=true org.jgroups.demos.RelayDemoRpc -props ./sfo.xml -name sfo1
+java org.jgroups.demos.RelayDemoRpc -props ./sfo.xml -name sfo1
 ----
 
 Start 2 instances in 3 sites and then use 
@@ -1641,7 +1641,7 @@ MPerf can be started as follows:
             
 ----
 
-java -cp $CLASSPATH -Djava.net.preferIPv4Stack=true org.jgroups.tests.perf.MPerf -props ./fast.xml
+java -cp $CLASSPATH org.jgroups.tests.perf.MPerf -props ./fast.xml
 ----
 
 This assumes that we're using IPv4 addresses (otherwise IPv6 addresses are used) and the JGroups JAR on the classpath.
@@ -1759,7 +1759,7 @@ restarted manually.
 UPerf is used to measure point-to-point (= unicast) communication between members. Start a few members like this:
 
 ----
-java -cp $CLASSPATH -Djava.net.preferIPv4Stack=true org.jgroups.tests.perf.UPerf -props ./fast.xml
+java -cp $CLASSPATH org.jgroups.tests.perf.UPerf -props ./fast.xml
 ----
 
 They will form a cluster. When `[1]` is pressed, every node will invoke 20000 synchronous RPCs on other members, each
@@ -1979,10 +1979,8 @@ essentially calls `org.jgroups.tests.Probe` which is part of the JGroups JAR.
 Otherwise, probe can be run as follows:
 
 ....
-java -cp jgroups.jar -Djava.net.preferIPv4Stack=true org.jgroups.tests.Probe
+java -cp jgroups.jar org.jgroups.tests.Probe
 ....
-
-For IPv6 stacks, the `java.net.preferIPv4Stack` system property can be omitted.
 
 
 NOTE: Probe by default uses IP multicasting to send probe requests to all cluster nodes. However, if IP multicasting

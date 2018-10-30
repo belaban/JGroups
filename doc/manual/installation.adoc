@@ -180,7 +180,7 @@ $  java org.jgroups.Version
 To test whether JGroups works okay on your machine, run the following command twice:
 
 ----
-java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw
+java org.jgroups.demos.Draw
 ----
 
 2 whiteboard windows should appear as shown in <<DrawScreenshotFig>>.
@@ -252,10 +252,9 @@ The options are:
 Start multiple instances of mcast:
 
 ----
-java -Djava.net.preferIPv4Stack=true org.jgroups.tests.mcast
+java org.jgroups.tests.mcast
 ----
 
-Note that java.net.preferIpv4Stack forces IPv4. If omitted, IPv6 will be used.
 
 If you want to bind to a specific network interface card (NIC), use `-bind_addr 192.168.0.2`, where `192.168.0.2`
 is the IP address of the NIC to which you want to bind. Use this parameter in both sender and receiver.
@@ -272,7 +271,7 @@ for questions. Also consider subscribing to the javagroups-users mailing list to
 === Problems with IPv6
 
 Another source of problems might be the use of IPv6, and/or misconfiguration of `/etc/hosts`. If you communicate between
-an IPv4 and an IPv6 host, and they are not able to find each other, try the `-Djava.net.preferIP4Stack=true`
+an IPv4 and an IPv6 host, and they are not able to find each other, try the `-Djava.net.preferIPv4Stack=true`
 property, e.g.
 
 ----

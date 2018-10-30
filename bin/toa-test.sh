@@ -13,7 +13,7 @@ CP="${WORKING_DIR}/jgroups*.jar"
 JMX="-Dcom.sun.management.jmxremote.port=8081 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
 
 #jgroups flags
-JG_FLAGS="-Dresolve.dns=false -Djgroups.bind_addr=${HOSTNAME} -Djava.net.preferIPv4Stack=true -Djgroups.timer.num_threads=4"
+JG_FLAGS="-Dresolve.dns=false -Djgroups.bind_addr=${HOSTNAME} -Djgroups.timer.num_threads=4"
 
 #log4j
 LOG4J="-Dlog4j.configuration=file:${WORKING_DIR}/log4j.properties"
