@@ -79,7 +79,7 @@ public class ClientGmsImpl extends GmsImpl {
             responses.done();
             long diff=System.currentTimeMillis() - start;
             if(responses.isEmpty()) {
-                log.trace("%s: no members discovered after %d ms: creating cluster as first member", gms.local_addr, diff);
+                log.info("%s: no members discovered after %d ms: creating cluster as first member", gms.local_addr, diff);
                 becomeSingletonMember(mbr);
                 return;
             }
