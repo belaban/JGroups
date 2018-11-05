@@ -38,7 +38,10 @@ public class LazyThreadFactory extends DefaultThreadFactory {
             cluster_name=CLUSTER;
 
         retval=super.newThread(r, name, addr, cluster_name);
+        int size=threads.size();
         threads.add(new WeakReference<>(retval));
+        if(size > 0)
+            removeTerminatedThreads();
         return retval;
     }
 
@@ -61,8 +64,27 @@ public class LazyThreadFactory extends DefaultThreadFactory {
             renameThreads();
     }
 
+    public int size() {return threads.size();}
+
     public void destroy() {
         threads.clear();
+    }
+
+    public void removeTerminatedThreads() {
+        for(Iterator<WeakReference<Thread>> it=threads.iterator(); it.hasNext();) {
+            WeakReference<Thread> ref=it.next();
+            Thread thread=ref.get();
+            if(thread == null || thread.getState() == Thread.State.TERMINATED)
+                it.remove();
+        }
+    }
+
+    public String dumpThreads() {
+        StringBuilder sb=new StringBuilder();
+        int cnt=1;
+        for(WeakReference<Thread> ref: threads)
+            sb.append(String.format("ref %d: %s (%s)\n", cnt++, ref.get(), ref.get().getState()));
+        return sb.toString();
     }
 
     protected void renameThreads() {
@@ -80,7 +102,7 @@ public class LazyThreadFactory extends DefaultThreadFactory {
     }
 
     /** Replaces "<ADDR>" with the local address and <CLUSTER> with the cluster name */
-    private String changeName(String name) {
+    protected String changeName(String name) {
         String retval=name;
         StringBuilder tmp;
 
