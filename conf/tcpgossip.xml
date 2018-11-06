@@ -19,6 +19,7 @@
     <UNICAST3/>
     <pbcast.STABLE/>
     <pbcast.GMS/>
+    <UFC/>
     <MFC/>
     <FRAG2/>
 </config>
