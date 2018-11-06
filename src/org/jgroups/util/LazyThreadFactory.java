@@ -93,6 +93,8 @@ public class LazyThreadFactory extends DefaultThreadFactory {
             String name=thread.getName();
             name=changeName(name);
             thread.setName(name);
+            if(!name.contains(ADDR) && !name.contains(CLUSTER))
+                it.remove();
         }
     }
 
