@@ -3,6 +3,7 @@ package org.jgroups.auth;
 import org.ietf.jgss.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.util.Base64;
 import org.jgroups.util.Bits;
 import org.jgroups.util.Util;
 
@@ -10,7 +11,6 @@ import javax.security.auth.Subject;
 import javax.security.auth.callback.*;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
-import javax.xml.bind.DatatypeConverter;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -39,7 +39,7 @@ public class Krb5TokenUtils {
     }
     
     // Authenticate against the KDC using JAAS.
-    public Subject generateSecuritySubject(String jassLoginConfig, String username, String password) throws LoginException {
+    public static Subject generateSecuritySubject(String jassLoginConfig, String username, String password) throws LoginException {
   	  
         LoginContext loginCtx = null;
       
@@ -103,7 +103,7 @@ public class Krb5TokenUtils {
     }
     
     public static void encodeDataToStream(byte[] data, DataOutput out) throws Exception {
-        String encodedToken = DatatypeConverter.printBase64Binary(data);
+        String encodedToken =Base64.encodeBytes(data); //  DatatypeConverter.printBase64Binary(data);
 		
         log.debug(" : Written Encoded Data: \n%s", encodedToken);
 		
@@ -113,7 +113,7 @@ public class Krb5TokenUtils {
     public static byte[] decodeDataFromStream(DataInput in) throws Exception {
         String str = Bits.readString(in);
         log.debug(" : Read Encoded Data: \n%s", str);
-        return DatatypeConverter.parseBase64Binary(str);
+        return Base64.decode(str); //  DatatypeConverter.parseBase64Binary(str);
     }
     
     /*

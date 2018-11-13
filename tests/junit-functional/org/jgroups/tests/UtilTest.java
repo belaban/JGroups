@@ -12,6 +12,7 @@ import org.testng.annotations.Test;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
+import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -54,8 +55,7 @@ public class UtilTest {
         assert expected_permutations == permutation_size:
           String.format("expected %d combinations, got %d\n", expected_permutations, permutation_size);
 
-        Set<List<Integer>> set=new HashSet<>();
-        set.addAll(permutations);
+        Set<List<Integer>> set=new HashSet<>(permutations);
         assert set.size() == permutations.size();
     }
 
@@ -67,9 +67,8 @@ public class UtilTest {
 
         System.setProperty("name", "Michelle");
         System.setProperty("name2", "Nicole");
-        String retval;
 
-        retval=Util.getProperty(new String[]{"name", "name2"}, props, "name", "Jeannette");
+        String retval=Util.getProperty(new String[]{"name", "name2"}, props, "name", "Jeannette");
         Assert.assertEquals("Bela", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
@@ -259,6 +258,8 @@ public class UtilTest {
         long num;
         String s;
 
+        char decimal_sep=DecimalFormatSymbols.getInstance().getDecimalSeparator();
+
         num=1;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
@@ -272,57 +273,57 @@ public class UtilTest {
         num=1000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1.00KB", s);
+        Assert.assertEquals("1" + decimal_sep +"00KB", s);
 
         num=1001;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1.00KB", s);
+        Assert.assertEquals("1"+decimal_sep+"00KB", s);
 
         num=1010;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1.01KB", s);
+        Assert.assertEquals("1"+decimal_sep+"01KB", s);
 
         num=1543;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1.54KB", s);
+        Assert.assertEquals("1"+decimal_sep+"54KB", s);
 
         num=10000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("10.00KB", s);
+        Assert.assertEquals("10"+decimal_sep+"00KB", s);
 
         num=150000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("150.00KB", s);
+        Assert.assertEquals("150"+decimal_sep+"00KB", s);
 
         num=150023;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("150.02KB", s);
+        Assert.assertEquals("150"+decimal_sep+"02KB", s);
 
         num=1200000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1.20MB", s);
+        Assert.assertEquals("1"+decimal_sep+"20MB", s);
 
         num=150000000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("150.00MB", s);
+        Assert.assertEquals("150"+decimal_sep+"00MB", s);
 
         num=150030000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("150.03MB", s);
+        Assert.assertEquals("150"+decimal_sep+"03MB", s);
 
         num=1200000000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1.20GB", s);
+        Assert.assertEquals("1"+decimal_sep+"20GB", s);
     }
 
 
@@ -443,7 +444,7 @@ public class UtilTest {
           false,
           Boolean.FALSE,
           (byte)22,
-          new Byte("2"),
+          Byte.valueOf("2"),
           '5',
           3.14,
           352.3f,

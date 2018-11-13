@@ -17,6 +17,7 @@ import org.testng.annotations.Test;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -32,6 +33,7 @@ public class ViewHandlerTest {
     protected ViewHandler<Integer>            view_handler;
     protected Consumer<Collection<Integer>>   req_handler;
     protected BiPredicate<Integer,Integer>    req_matcher;
+    protected GMS                             gms;
 
     protected static final Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B");
 
@@ -50,7 +52,7 @@ public class ViewHandlerTest {
     }
 
     @BeforeMethod protected void init() {
-        GMS gms=new GMS();
+        gms=new GMS();
         configureGMS(gms);
         view_handler=new ViewHandler<>(gms, this::process, this::match);
     }
@@ -234,6 +236,12 @@ public class ViewHandlerTest {
         System.out.println("view_handler = " + view_handler);
     }
 
+    public void testWaitUntilCompleteOnEmptyQueue2() {
+        view_handler.add(10);
+        view_handler.waitUntilComplete(10000);
+        System.out.println("view_handler = " + view_handler);
+       }
+
     // @Test(invocationCount=10)
     public void testWaitUntilComplete() throws Exception {
         req_handler=list -> list.forEach(n -> Util.sleep(30));
@@ -258,7 +266,41 @@ public class ViewHandlerTest {
         assert view_handler.size() == 0;
     }
 
-    protected void configureGMS(GMS gms) {
+    public void testCoordLeave() {
+        final AtomicBoolean result=new AtomicBoolean(true);
+        Consumer<Collection<GmsImpl.Request>> req_processor=l -> {
+            System.out.printf("setting result to %b: list: %s\n", l.size() < 2, l);
+            if(l.size() >=2)
+                result.set(false);
+        };
+        ViewHandler<GmsImpl.Request> handler=new ViewHandler<>(gms, req_processor, GmsImpl.Request::canBeProcessedTogether);
+        Address coord1=Util.createRandomAddress("coord1"), coord2=Util.createRandomAddress("coord2");
+        handler.add(new GmsImpl.Request(GmsImpl.Request.COORD_LEAVE, coord1),
+                    new GmsImpl.Request(GmsImpl.Request.COORD_LEAVE, coord2));
+
+        assert result.get();
+    }
+
+    public void testCoordLeave2() {
+        final AtomicBoolean result=new AtomicBoolean(true);
+        Consumer<Collection<GmsImpl.Request>> req_processor=l -> {
+            int num_coord_leave_req=(int)l.stream().filter(req -> req.getType() == GmsImpl.Request.COORD_LEAVE).count();
+            System.out.printf("setting result to %b: list: %s\n", num_coord_leave_req < 2, l);
+            if(num_coord_leave_req >=2)
+                result.set(false);
+        };
+        ViewHandler<GmsImpl.Request> handler=new ViewHandler<>(gms, req_processor, GmsImpl.Request::canBeProcessedTogether);
+        Address coord1=Util.createRandomAddress("coord1"), coord2=Util.createRandomAddress("coord2");
+        handler.add(new GmsImpl.Request(GmsImpl.Request.LEAVE, a),
+                    new GmsImpl.Request(GmsImpl.Request.JOIN, b),
+                    new GmsImpl.Request(GmsImpl.Request.COORD_LEAVE, coord1),
+                    new GmsImpl.Request(GmsImpl.Request.COORD_LEAVE, coord2));
+
+        assert result.get();
+    }
+
+
+    protected static void configureGMS(GMS gms) {
         Address local_addr=Util.createRandomAddress("A");
         ThreadFactory fac=new DefaultThreadFactory("test", true);
         set(gms, "local_addr", local_addr);
@@ -270,7 +312,7 @@ public class ViewHandlerTest {
         });
     }
 
-    protected void set(GMS gms, String field, Object value) {
+    protected static void set(GMS gms, String field, Object value) {
         Field f=Util.getField(gms.getClass(), field);
         Util.setField(f, gms, value);
     }

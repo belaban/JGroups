@@ -311,7 +311,7 @@ public class UDP extends TP {
 
 
     public void stop() {
-        log.debug("closing sockets and stopping threads");
+        log.debug("%s: closing sockets and stopping threads", local_addr);
         destroySockets();
         stopThreads();
         super.stop();
@@ -592,7 +592,7 @@ public class UDP extends TP {
                 }
                 getSocketFactory().close(mcast_sock); // this will cause the mcast receiver thread to break out of its loop
                 mcast_sock=null;
-                if(log.isDebugEnabled()) log.debug("multicast socket closed");
+                if(log.isDebugEnabled()) log.debug("%s: multicast socket closed", local_addr);
             }
             catch(IOException ex) {
             }
@@ -711,7 +711,7 @@ public class UDP extends TP {
                 }
                 catch(SocketException sock_ex) {
                     if(receiver_socket.isClosed()) {
-                        log.debug("receiver socket is closed, exception=" + sock_ex);
+                        log.debug("%s: receiver socket is closed, exception=%s", local_addr, sock_ex);
                         break;
                     }
                     log.error(Util.getMessage("FailedReceivingPacket"), sock_ex);

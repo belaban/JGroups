@@ -42,7 +42,6 @@ public class ConfiguratorTest {
         Util.close(ch);
     }
 
-
     public void testRemovalOfTop() throws Exception {
         Protocol prot=stack.removeProtocol("MFC");
         assert prot != null;

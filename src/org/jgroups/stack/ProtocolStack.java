@@ -653,6 +653,13 @@ public class ProtocolStack extends Protocol {
         return this;
     }
 
+    @SafeVarargs
+    public final ProtocolStack removeProtocols(Class<? extends Protocol>... protocols) {
+        for(Class<? extends Protocol> protocol: protocols)
+            removeProtocol(protocol);
+        return this;
+    }
+
 
     @SafeVarargs
     public final <T extends Protocol> T removeProtocol(Class<? extends Protocol>... protocols) {

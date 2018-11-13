@@ -21,6 +21,8 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 /**
@@ -202,10 +204,6 @@ public class ServerUnitTest {
                 System.out.println(msg);
 
                 waitForOpenConns(1, a, b);
-                num_conns=a.getNumOpenConnections();
-                assert num_conns == 1 : "num_conns for A is " + num_conns + ", " + msg;
-                num_conns=b.getNumOpenConnections();
-                assert num_conns == 1 : "num_conns for B is " + num_conns + ", " + msg;
 
                 // done in a loop because connect() might be non-blocking (NioServer)
                 connectionEstablished(a, addr2);
@@ -237,8 +235,6 @@ public class ServerUnitTest {
 
                 Util.close(b,a);
                 waitForOpenConns(0, a, b);
-                assert a.getNumOpenConnections() == 0 : "A should have 0 connections: " + a.printConnections();
-                assert b.getNumOpenConnections() == 0 : "B should have 0 connections: " + b.printConnections();
             }
         }
     }
@@ -291,11 +287,16 @@ public class ServerUnitTest {
         }
     }
 
-    protected static void waitForOpenConns(int expected, BaseServer... servers) {
+    protected static void waitForOpenConns(int expected, BaseServer... servers) throws Exception {
         for(int i=0; i < 20; i++) {
-            if(Arrays.stream(servers).allMatch(srv -> srv.getNumOpenConnections() == expected))
-                break;
-            Util.sleep(1000);
+            if(!Arrays.stream(servers).allMatch(srv -> srv.getNumOpenConnections() == expected))
+                Util.sleep(1000);
+        }
+        if(!Arrays.stream(servers).allMatch(srv -> srv.getNumOpenConnections() == expected)) {
+            String msg=String.format("expected connections: %d, actual:\n%s\n", expected,
+                                     Stream.of(servers).map(s -> String.format("%s: %s", s.getNumOpenConnections(), s.printConnections()))
+                                       .collect(Collectors.joining("\n")));
+            throw new Exception(msg);
         }
     }
 

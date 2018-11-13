@@ -269,6 +269,8 @@ public class Util {
     public static void waitUntilAllChannelsHaveSameView(long timeout, long interval, JChannel... channels) throws TimeoutException {
         if(interval >= timeout || timeout <= 0)
             throw new IllegalArgumentException("interval needs to be smaller than timeout or timeout needs to be > 0");
+        if(channels == null || channels.length == 0)
+            return;
         long target_time=System.currentTimeMillis() + timeout;
         while(System.currentTimeMillis() <= target_time) {
             boolean all_channels_have_correct_view=true;
@@ -294,6 +296,17 @@ public class Util {
         for(View view : views)
             if(!Objects.equals(view, first) || view.size() != channels.length)
                 throw new TimeoutException("Timeout " + timeout + " kicked in, views are:\n" + sb);
+    }
+
+    public static void waitUntilAllChannelsHaveSameView(long timeout, long interval,
+                                                        Collection<JChannel> channels) throws TimeoutException {
+        JChannel[] tmp=new JChannel[channels != null? channels.size() : 0];
+        if(tmp == null)
+            return;
+        int index=0;
+        for(Iterator<JChannel> it=channels.iterator(); it.hasNext();)
+            tmp[index++]=it.next();
+        waitUntilAllChannelsHaveSameView(timeout, interval, tmp);
     }
 
     public static void waitUntil(long timeout, long interval, Condition condition) throws TimeoutException {

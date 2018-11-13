@@ -58,9 +58,8 @@ public class ASYM_ENCRYPT_LeaveTest {
 
 
     public void testGracefulLeave() throws Exception {
-        for(int j=0; j < channels.length; j++) {
+        for(int j=0; j < channels.length; j++)
             System.out.printf("%-4s: view is %s\n", channels[j].getAddress(), channels[j].getView());
-        }
         System.out.println("\n");
 
         JChannel[] remaining_channels=new JChannel[channels.length-NUM_LEAVERS];

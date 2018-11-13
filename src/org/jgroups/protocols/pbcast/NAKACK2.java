@@ -726,10 +726,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected void queueMessage(Message msg, long seqno) {
         if(become_server_queue != null) {
             become_server_queue.add(msg);
-            log.trace("%s: message %s::%d was added to queue (not yet server)", local_addr, msg.getSrc(), seqno);
+            log.trace("%s: message %s#%d was added to queue (not yet server)", local_addr, msg.getSrc(), seqno);
         }
         else
-            log.trace("%s: message %s::%d was discarded (not yet server)", local_addr, msg.getSrc(), seqno);
+            log.trace("%s: message %s#%d was discarded (not yet server)", local_addr, msg.getSrc(), seqno);
     }
 
     protected void unknownMember(Address sender, Object message) {
@@ -785,7 +785,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
         // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
         if(is_trace)
-            log.trace("%s: sending %s#%d", local_addr, local_addr, msg_id);
+            log.trace("%s --> [all]: #%d", local_addr, msg_id);
         down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
         num_messages_sent++;
 
@@ -815,9 +815,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         // removal. Else insert the real message
         boolean added=loopback || buf.add(hdr.seqno, msg.isFlagSet(Message.Flag.OOB)? DUMMY_OOB_MSG : msg);
 
-        if(added && is_trace)
-            log.trace("%s: received %s#%d", local_addr, sender, hdr.seqno);
-
+        //if(added && is_trace)
+          //  log.trace("%s <-- %s: #%d", local_addr, sender, hdr.seqno);
 
         // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
         if(added && msg.isFlagSet(Message.Flag.OOB)) {
@@ -844,10 +843,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         boolean loopback=local_addr.equals(sender);
         boolean added=loopback || buf.add(msgs, oob, oob? DUMMY_OOB_MSG : null);
 
-        if(added && is_trace)
-            log.trace("%s: received %s#%d-%d (%d messages)",
-                      local_addr, sender, msgs.get(0).getVal1(), msgs.get(msgs.size() -1).getVal1(), msgs.size());
-
+        //if(added && is_trace)
+          //  log.trace("%s <-- %s: #%d-%d (%d messages)",
+            //          local_addr, sender, msgs.get(0).getVal1(), msgs.get(msgs.size() -1).getVal1(), msgs.size());
 
         // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
         if(added && oob) {
@@ -910,7 +908,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      * @param original_sender The member who originally sent the messsage. Guaranteed to be non-null
      */
     protected void handleXmitReq(Address xmit_requester, SeqnoList missing_msgs, Address original_sender) {
-        log.trace("%s: received xmit request from %s for %s%s", local_addr, xmit_requester, original_sender, missing_msgs);
+        log.trace("%s <-- %s: XMIT(%s%s)", local_addr, xmit_requester, original_sender, missing_msgs);
 
         if(stats)
             xmit_reqs_received.add(missing_msgs.size());
@@ -929,14 +927,14 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 continue;
             }
             if(is_trace)
-                log.trace(local_addr + ": resending " + original_sender + "::" + i);
+                log.trace("%s --> [all]: resending %s#%d", local_addr, original_sender, i);
             sendXmitRsp(xmit_requester, msg);
         }
     }
 
     protected void deliver(Message msg, Address sender, long seqno, String error_msg) {
         if(is_trace)
-            log.trace("%s: delivering %s#%d", local_addr, sender, seqno);
+            log.trace("%s <-- %s: #%d", local_addr, sender, seqno);
         try {
             up_prot.up(msg);
         }
@@ -951,7 +949,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 return;
             if(is_trace) {
                 Message first=batch.first(), last=batch.last();
-                StringBuilder sb=new StringBuilder(local_addr + ": delivering " + batch.sender());
+                StringBuilder sb=new StringBuilder(local_addr + " <-- " + batch.sender() + ": ");
                 if(first != null && last != null) {
                     NakAckHeader2 hdr1=first.getHeader(id), hdr2=last.getHeader(id);
                     sb.append("#").append(hdr1.seqno).append("-").append(hdr2.seqno);
@@ -1294,8 +1292,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
         sb.append("\n").append("resulting digest: " + getDigest().toString(digest));
         digest_history.add(sb.toString());
-        if(log.isDebugEnabled())
-            log.debug(sb.toString());
+        log.debug(sb.toString());
     }
 
 
@@ -1347,7 +1344,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             sb.append("\nnew seqno for " + local_addr + ": " + seqno);
         if(sb != null)
             digest_history.add(sb.toString());
-        if(log.isDebugEnabled())
+        if(sb != null)
             log.debug(sb.toString());
     }
 
@@ -1425,7 +1422,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
           .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .putHeader(this.id, NakAckHeader2.createXmitRequestHeader(sender));
 
-        log.trace("%s: sending XMIT_REQ (%s) to %s", local_addr, missing_msgs, dest);
+        log.trace("%s --> %s: XMIT_REQ(%s)", local_addr, dest, missing_msgs);
         down_prot.down(retransmit_msg);
         if(stats)
             xmit_reqs_sent.add(missing_msgs.size());

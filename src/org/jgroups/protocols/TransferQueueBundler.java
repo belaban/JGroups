@@ -84,7 +84,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                 try {tmp.join(500);} catch(InterruptedException e) {}
             }
         }
-        queue.clear();
+        drain();
     }
 
 
@@ -103,13 +103,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
             try {
                 if((msg=queue.take()) == null)
                     continue;
-                long size=msg.size();
-                if(count + size >= transport.getMaxBundleSize()) {
-                    num_sends_because_full_queue++;
-                    fill_count.add(count);
-                    _sendBundledMessages();
-                }
-                _addMessage(msg, size);
+                addAndSendIfSizeExceeded(msg);
                 while(true) {
                     remove_queue.clear();
                     int num_msgs=queue.drainTo(remove_queue);
@@ -117,13 +111,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                         break;
                     for(int i=0; i < remove_queue.size(); i++) {
                         msg=remove_queue.get(i);
-                        size=msg.size();
-                        if(count + size >= transport.getMaxBundleSize()) {
-                            num_sends_because_full_queue++;
-                            fill_count.add(count);
-                            _sendBundledMessages();
-                        }
-                        _addMessage(msg, size);
+                        addAndSendIfSizeExceeded(msg);
                     }
                 }
                 if(count > 0) {
@@ -136,6 +124,27 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
             }
         }
     }
+
+
+    protected void addAndSendIfSizeExceeded(Message msg) {
+        long size=msg.size();
+        if(count + size >= transport.getMaxBundleSize()) {
+            num_sends_because_full_queue++;
+            fill_count.add(count);
+            _sendBundledMessages();
+        }
+        _addMessage(msg, size);
+    }
+
+
+    /** Takes all messages from the queue, adds them to the hashmap and then sends all bundled messages */
+    protected void drain() {
+        Message msg;
+        while((msg=queue.poll()) != null)
+            addAndSendIfSizeExceeded(msg);
+        _sendBundledMessages();
+    }
+
 
     // This should not affect perf, as the lock is uncontended most of the time
     protected void _sendBundledMessages() {

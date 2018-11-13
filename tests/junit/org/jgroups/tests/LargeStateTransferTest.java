@@ -31,10 +31,6 @@ public class LargeStateTransferTest extends ChannelTestBase {
     final static int  SIZE_1=100000, SIZE_2=1000000, SIZE_3=5000000, SIZE_4=10000000;
 
 
-    protected boolean useBlocking() {
-        return true;
-    }
-
 
     @BeforeMethod
     protected void setUp() throws Exception {

@@ -79,6 +79,9 @@ public class MergeTest2 {
         for(JChannel ch: new JChannel[]{a,b,c,d}) {
             ProtocolStack stack=ch.getProtocolStack();
             String cluster_name=ch.getClusterName();
+            GMS gms=stack.findProtocol(GMS.class);
+            if(gms != null)
+                gms.setLevel("warn");
             stack.stopStack(cluster_name);
             stack.destroy();
         }

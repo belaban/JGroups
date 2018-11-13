@@ -49,6 +49,7 @@ public class Promise<T> {
         }
     }
 
+    /** Returns when the result is available (blocking until tthe result is available) */
     public T getResult() {
         try {
             return getResultWithTimeout(0);

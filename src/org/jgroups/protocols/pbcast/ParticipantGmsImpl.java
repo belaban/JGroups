@@ -6,7 +6,9 @@ import org.jgroups.View;
 import org.jgroups.ViewId;
 import org.jgroups.util.Digest;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 
 /**
@@ -35,23 +37,16 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
     }
 
 
-    /**
-     * Loop: determine coord. If coord is me --> handleLeave().
-     * Else send handleLeave() to coord until success
-     */
     public void leave(Address mbr) {
-        Address coord=gms.determineCoordinator();
-        if(coord != null)
-            sendLeaveReqTo(coord);
-        gms.becomeClient();
+        if(sendLeaveReqToCoord(gms.determineCoordinator()))
+            gms.initState();
     }
 
 
     /** In case we get a different JOIN_RSP from a previous JOIN_REQ sent by us (as a client), we simply apply the
      * new view if it is greater than ours
-     *
-     * @param join_rsp
      */
+    @Override
     public void handleJoinResponse(JoinRsp join_rsp) {
         View v=join_rsp.getView();
         ViewId tmp_vid=v != null? v.getViewId() : null;
@@ -92,6 +87,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
 
         if(wouldIBeCoordinator(leaving_mbrs)) {
             log.debug("%s: members are %s, coord=%s: I'm the new coordinator", gms.local_addr, gms.members, gms.local_addr);
+            boolean leaving=gms.isLeaving();
             gms.becomeCoordinator();
             Collection<Request> leavingOrSuspectedMembers=new LinkedHashSet<>();
             leaving_mbrs.forEach(mbr -> leavingOrSuspectedMembers.add(new Request(Request.LEAVE, mbr)));
@@ -100,25 +96,25 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
                 gms.ack_collector.suspect(mbr);
             });
             suspected_mbrs.clear();
+            if(leaving)
+                leavingOrSuspectedMembers.add(new Request(Request.COORD_LEAVE, gms.local_addr));
             gms.getViewHandler().add(leavingOrSuspectedMembers);
         }
     }
 
 
-    /**
-     * If we are leaving, we have to wait for the view change (last msg in the current view) that
-     * excludes us before we can leave.
-     * @param new_view The view to be installed
-     * @param digest   If view is a MergeView, digest contains the seqno digest of all members and has to be set by GMS
-     */
-    public void handleViewChange(View new_view, Digest digest) {
+    public void handleViewChange(View view, Digest digest) {
         suspected_mbrs.clear();
-        if(leaving && !new_view.containsMember(gms.local_addr)) // received a view in which I'm not member: ignore
-            return;
-        gms.installView(new_view, digest);
+        super.handleViewChange(view, digest);
     }
 
-
+    @Override protected void coordChanged(Address from, Address to) {
+        super.coordChanged(from, to);
+        if(gms.isLeaving()) {
+            log.trace("%s: resending LEAVE request to new coordinator %s (prev coord=%s)", gms.local_addr, to, from);
+            sendLeaveMessage(to, gms.local_addr);
+        }
+    }
 
     /* ---------------------------------- Private Methods --------------------------------------- */
 

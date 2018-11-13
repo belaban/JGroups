@@ -76,7 +76,7 @@ public class MergeTest extends ChannelTestBase {
 
     protected static void level(String level, JChannel ... channels) {
         for(JChannel ch: channels) {
-            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.setLevel(level);
         }
     }
@@ -96,7 +96,7 @@ public class MergeTest extends ChannelTestBase {
             tmp.setName(members[i]);
             ProtocolStack stack=tmp.getProtocolStack();
 
-            NAKACK2 nakack=(NAKACK2)stack.findProtocol(NAKACK2.class);
+            NAKACK2 nakack=stack.findProtocol(NAKACK2.class);
             if(nakack != null)
                 nakack.setLogDiscardMessages(false);
 
@@ -128,7 +128,7 @@ public class MergeTest extends ChannelTestBase {
 
         for(JChannel ch: channels) {
             View view=View.create(ch.getAddress(), view_id, ch.getAddress());
-            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.installView(view);
         }
     }
@@ -147,7 +147,7 @@ public class MergeTest extends ChannelTestBase {
         }
 
         JChannel coord=findChannel(leader_addr, channels);
-        GMS gms=(GMS)coord.getProtocolStack().findProtocol(GMS.class);
+        GMS gms=coord.getProtocolStack().findProtocol(GMS.class);
         gms.setLevel("trace");
         gms.up(new Event(Event.MERGE, views));
     }
@@ -204,7 +204,7 @@ public class MergeTest extends ChannelTestBase {
              for(JChannel ch: channels) {
                  Address addr=ch.getAddress();
                  if(members.contains(addr)) {
-                     GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+                     GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
                      gms.installView(view);
                  }
              }

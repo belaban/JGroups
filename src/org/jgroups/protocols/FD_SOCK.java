@@ -104,7 +104,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     protected volatile List<Address> members=new ArrayList<>(11); // volatile eliminates the lock
 
-    protected final Set<Address>     suspected_mbrs=Collections.synchronizedSet(new HashSet<>());
+    protected final Set<Address>     suspected_mbrs=new ConcurrentSkipListSet<>();
 
     protected final List<Address>    pingable_mbrs=Collections.synchronizedList(new ArrayList<>());
 

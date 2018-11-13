@@ -751,6 +751,24 @@
     </target>
 
 
+    <target name="single-test" description="Run a single test" depends="define-testng-task">
+        <fail unless="test-class" message="Property not set: 'test-class'"/>
+        <echo message="                             -- Running single test ${test-class}"/>
+        <testng classpathref="jg.classpath"
+                outputdir="${tmp.dir}/test-results/xml"
+                suitename="single-test"
+                threadcount="1"
+                usedefaultlisteners="false"
+                listeners="org.jgroups.util.JUnitXMLReporter">
+            <classfileset dir="${compile.dir}" includes="**/${test-class}.class"/>
+
+            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+            <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
+            <jvmarg value="-Dlog4j.configurationFile=${conf.dir}/log4j2.xml"/>
+        </testng>
+    </target>
+
     <macrodef name="runtest" description="Runs a configuration-dependent test suite">
         <attribute name="classpath"          default="jg.classpath"/>
         <attribute name="suitename" />
@@ -801,7 +819,6 @@
                 <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
                 <jvmarg value="-Djgroups.tunnel.gossip_router_hosts=${jgroups.tunnel.gossip_router_hosts}"/>
                 <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
-                <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
                 <jvmarg value="-Dlog4j.configurationFile=${conf.dir}/log4j2.xml"/>
                 <jvmarg value="-Xms400M"/>
                 <jvmarg value="-Xmx800M"/>

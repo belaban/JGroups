@@ -121,9 +121,17 @@ public class INJECT_VIEWTest {
 
     private static void close(JChannel[] channels) {
         if(channels == null) return;
+        disableTracing(channels);
         for(int i=channels.length -1; i >= 0; i--) {
             JChannel ch=channels[i];
             Util.close(ch);
+        }
+    }
+
+    protected static void disableTracing(JChannel ... channels) {
+        for(JChannel ch: channels) {
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
+            gms.setLevel("warn");
         }
     }
 

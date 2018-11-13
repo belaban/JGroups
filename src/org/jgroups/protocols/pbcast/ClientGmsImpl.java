@@ -61,10 +61,10 @@ public class ClientGmsImpl extends GmsImpl {
      */
     protected void joinInternal(Address mbr, boolean joinWithStateTransfer, boolean useFlushIfPresent) {
         long  join_attempts=0;
-        leaving=false;
+        gms.setLeaving(false);
         join_promise.reset();
 
-        while(!leaving) {
+        while(!gms.isLeaving()) {
             if(installViewIfValidJoinRsp(join_promise, false))
                 return;
 
@@ -120,7 +120,7 @@ public class ClientGmsImpl extends GmsImpl {
 
 
     public void leave(Address mbr) {
-        leaving=true;
+        gms.setLeaving(true);
         wrongMethod("leave");
     }
 

@@ -50,14 +50,12 @@ public class MessageBundlingTest extends ChannelTestBase {
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
     }
 
-    protected JChannel create(String name) throws Exception {
+    protected static JChannel create(String name) throws Exception {
         return new JChannel(Util.getTestStack()).name(name);
     }
 
     @AfterMethod void tearDown() throws Exception {promise.reset(false); Util.close(b,a);}
 
-    protected boolean useBlocking() {return false;}
-    
 
     public void testSimple() throws Exception {
         long start=System.nanoTime();

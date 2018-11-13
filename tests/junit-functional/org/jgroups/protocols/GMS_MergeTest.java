@@ -135,7 +135,7 @@ public class GMS_MergeTest {
             assert merge_id == null : "MergeCanceller didn't kick in";
         }
         finally {
-            Util.close(c1);
+            close(c1);
         }
     }
 
@@ -344,10 +344,6 @@ public class GMS_MergeTest {
              System.out.println("Digest A: " + da + "\nDigest B: " + db + "\nDigest C: " + dc);
              System.out.println("Running stability protocol on B and C now");
 
-//             a.getProtocolStack().findProtocol(STABLE.class).setLevel("trace");
-//             b.getProtocolStack().findProtocol(STABLE.class).setLevel("trace");
-//             c.getProtocolStack().findProtocol(STABLE.class).setLevel("trace");
-
              for(int i=0; i < 3; i++) {
                  ((STABLE)b.getProtocolStack().findProtocol(STABLE.class)).gc();
                  ((STABLE)c.getProtocolStack().findProtocol(STABLE.class)).gc();
@@ -497,8 +493,9 @@ public class GMS_MergeTest {
     }
 
 
-    private static void close(JChannel[] channels) {
+    private static void close(JChannel ... channels) {
         if(channels == null) return;
+        disableTracing(channels);
         for(int i=channels.length -1; i >= 0; i--) {
             JChannel ch=channels[i];
             Util.close(ch);
@@ -581,7 +578,7 @@ public class GMS_MergeTest {
         }
     }
 
-    protected static void disableTracing(JChannel[] channels) {
+    protected static void disableTracing(JChannel ... channels) {
         for(JChannel ch: channels) {
             GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.setLevel("warn");

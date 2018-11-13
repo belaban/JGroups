@@ -135,7 +135,7 @@ public class Krb5Token extends AuthToken {
     }
     
     private void authenticateClientPrincipal() throws LoginException {
-        subject  = kerb5Utils.generateSecuritySubject(JASS_SECURITY_CONFIG,client_principal_name,client_password);
+        subject  = Krb5TokenUtils.generateSecuritySubject(JASS_SECURITY_CONFIG, client_principal_name, client_password);
     }
     
     private void generateServiceTicket() throws IOException {
