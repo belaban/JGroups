@@ -29,14 +29,16 @@ public class Chat extends ReceiverAdapter {
         channel.close();
     }
 
-    private void start(String props, String name) throws Exception {
+    private void start(String props, String name, boolean nohup) throws Exception {
         channel=new JChannel(props);
         if(name != null)
             channel.name(name);
         channel.setReceiver(this);
         channel.connect("ChatCluster");
-        eventLoop();
-        channel.close();
+        if(!nohup) {
+            eventLoop();
+            channel.close();
+        }
     }
 
     private void eventLoop() {
@@ -51,15 +53,16 @@ public class Chat extends ReceiverAdapter {
                 Message msg=new Message(null, line);
                 channel.send(msg);
             }
-            catch(Exception e) {
+            catch(Exception ignored) {
             }
         }
     }
 
 
     public static void main(String[] args) throws Exception {
-        String props="udp.xml";
-        String name=null;
+        String  props="udp.xml";
+        String  name=null;
+        boolean nohup=false;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-props")) {
@@ -70,14 +73,18 @@ public class Chat extends ReceiverAdapter {
                 name=args[++i];
                 continue;
             }
+            if(args[i].equals("-nohup")) {
+                nohup=true;
+                continue;
+            }
             help();
             return;
         }
 
-        new Chat().start(props, name);
+        new Chat().start(props, name, nohup);
     }
 
     protected static void help() {
-        System.out.println("Chat [-props XML config] [-name name]");
+        System.out.println("Chat [-props XML config] [-name name] [-nohup]");
     }
 }
