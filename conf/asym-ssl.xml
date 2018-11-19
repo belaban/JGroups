@@ -25,6 +25,7 @@
     <UNICAST3/>
     <pbcast.STABLE/>
     <pbcast.GMS join_timeout="1000"/>
+    <UFC/>
     <MFC/>
     <FRAG2/>
 </config>

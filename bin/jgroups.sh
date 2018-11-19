@@ -2,18 +2,20 @@
 
 #!/bin/bash
 
-CURR=`dirname $0`
-CURRENT=$CURR/../
+if [ -z $JGROUPS_HOME ];
+then
+    JGROUPS_HOME=$HOME/JGroups
+    echo "JGROUPS_HOME is not set! Setting it to $JGROUPS_HOME"
+fi
 
-JG=${JG-$CURRENT}
 
-LIB=$JG/lib
+LIB=$JGROUPS_HOME/lib
 
-CP=$JG/classes:$JG/conf
+CP=$JGROUPS_HOME/classes:$JGROUPS_HOME/conf
 
 # If this is a bin dist, JARs are in the $JG directory.
 if [ ! -d $LIB ]; then
-    LIB=$JG
+    LIB=$JGROUPS_HOME
 fi;
 
 CP=$CP:$LIB/*
@@ -31,7 +33,6 @@ if [ -f $HOME/logging.properties ]; then
 fi;
 
 #JG_FLAGS="-Djgroups.bind_addr=match-address:192.168.1.*"
-JG_FLAGS="$JG_FLAGS -Djava.net.preferIPv4Stack=true"
 FLAGS="-server -Xmx1G -Xms500M"
 GC="-XX:+UseG1GC"
 

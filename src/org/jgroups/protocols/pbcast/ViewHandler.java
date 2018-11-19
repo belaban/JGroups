@@ -97,7 +97,7 @@ public class ViewHandler<R> {
                 try {
                     processing_done.await();
                 }
-                catch(InterruptedException e) {
+                catch(InterruptedException ignored) {
                 }
             }
         }

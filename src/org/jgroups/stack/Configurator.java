@@ -88,19 +88,16 @@ public class Configurator {
         Map<String, Map<String,InetAddressInfo>> inetAddressMap = createInetAddressMap(protocol_configs, protocols) ;
         Collection<InetAddress> addrs=getAddresses(inetAddressMap);
 
-        StackType ip_version=Util.getIpStackType(); // 0 = n/a, 4 = IPv4, 6 = IPv6
+        StackType ip_version=Util.getIpStackType();
 
         if(!addrs.isEmpty()) {
             // check that all user-supplied InetAddresses have a consistent version:
-            // 1. If an addr is IPv6 and we have an IPv4 stack --> FAIL
-            // 2. If an address is an IPv4 class D (multicast) address and the stack is IPv6: FAIL
-            // Else pass
-
+            // 1. If an addr is IPv6 and we have an IPv4 stack *only* --> FAIL
             for(InetAddress addr: addrs) {
-                if(addr instanceof Inet6Address && ip_version == StackType.IPv4)
-                    throw new IllegalArgumentException("found IPv6 address " + addr + " in an IPv4 stack");
-                if(addr instanceof Inet4Address && addr.isMulticastAddress() && ip_version == StackType.IPv6)
-                    throw new Exception("found IPv4 multicast address " + addr + " in an IPv6 stack");
+                if(addr instanceof Inet6Address && ip_version == StackType.IPv4 && !Util.isIpv6StackAvailable())
+                    throw new IllegalArgumentException("found IPv6 address " + addr + " in an IPv4-only stack");
+                // if(addr instanceof Inet4Address && addr.isMulticastAddress() && ip_version == StackType.IPv6)
+                   // throw new Exception("found IPv4 multicast address " + addr + " in an IPv6 stack");
             }
         }
 

@@ -280,7 +280,7 @@ public final class PropertyConverters {
                             if(retval != null)
                                 break;
                         }
-                        catch(Throwable t) {
+                        catch(Throwable ignored) {
                         }
                     }
                     if(retval == null)
@@ -312,7 +312,7 @@ public final class PropertyConverters {
             try {
                 addr_scope=Util.AddressScope.valueOf(value.toUpperCase());
             }
-            catch(Throwable ex) {
+            catch(Throwable ignored) {
             }
 
             if(addr_scope != null)
