@@ -40,11 +40,10 @@ class AddressedDNSResolver extends DefaultDNSResolver {
                         addresses.add(new IpAddress(namingEnumeration.nextElement().toString()));
                     } catch (Exception e) {
                         log.trace("Non critical DNS resolution error", e);
-                        continue;
                     }
                 }
             }
-        } catch (NamingException e) {
+        } catch (NamingException ignored) {
             log.trace("No DNS records for query: " + dnsQuery);
         }
         return addresses;

@@ -121,8 +121,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port. See also port_range",writable=false)
     protected int bind_port;
 
-    @Property(description="The range of valid ports, from bind_port to end_port. 0 only binds to bind_port and fails if taken")
-    protected int port_range=50; // 27-6-2003 bgooren, Only try one port by default
+    @Property(description="The range of valid ports: [bind_port .. bind_port+port_range ]. " +
+      "0 only binds to bind_port and fails if taken")
+    protected int port_range=10; // 27-6-2003 bgooren, Only try one port by default
 
     @Property(description="Whether or not to make a copy of a message before looping it back up. Don't use this; might " +
       "get removed without warning")

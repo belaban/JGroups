@@ -1,12 +1,5 @@
 package org.jgroups.protocols.dns;
 
-import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.ReceiverAdapter;
@@ -17,6 +10,12 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
+
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class DNSDiscoveryTester {
 
@@ -51,7 +50,7 @@ public class DNSDiscoveryTester {
          ping.dns_address = "fake.com";
 
          Protocol[] protocols={
-               new TCP().setValue("bind_addr", InetAddress.getLoopbackAddress()).setValue("bind_port", portStart + i),
+               new TCP().setBindAddress(InetAddress.getLoopbackAddress()). setBindPort(portStart).setPortRange(1),
                ping,
                new NAKACK2(),
                new UNICAST3(),
@@ -59,7 +58,7 @@ public class DNSDiscoveryTester {
                new GMS().joinTimeout(timeout)
          };
 
-         JChannel c = new JChannel(protocols).name(UUID.randomUUID().toString());
+         JChannel c = new JChannel(protocols).name(String.valueOf(i+1));
          channels.add(c);
 
          c.setReceiver(new ReceiverAdapter() {

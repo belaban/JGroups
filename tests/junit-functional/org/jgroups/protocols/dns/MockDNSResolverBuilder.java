@@ -1,15 +1,12 @@
 package org.jgroups.protocols.dns;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.jgroups.Address;
+
+import java.util.*;
 
 public class MockDNSResolverBuilder {
 
-   private Map<DNSResolverKey, List<Address>> resolutionMap = new HashMap<>();
+   private final Map<DNSResolverKey, List<Address>> resolutionMap = new HashMap<>();
 
    private MockDNSResolverBuilder() {
 
@@ -45,7 +42,7 @@ public class MockDNSResolverBuilder {
 
          DNSResolverKey that = (DNSResolverKey) o;
 
-         if (hostName != null ? !hostName.equals(that.hostName) : that.hostName != null) return false;
+         if (!Objects.equals(hostName, that.hostName)) return false;
          return recordType == that.recordType;
       }
 

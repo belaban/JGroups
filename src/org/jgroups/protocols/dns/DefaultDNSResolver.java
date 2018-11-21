@@ -92,11 +92,10 @@ class DefaultDNSResolver implements DNSResolver {
                         }
                     } catch (Exception e) {
                         log.trace("Non critical DNS resolution error", e);
-                        continue;
                     }
                 }
             }
-        } catch (NamingException e) {
+        } catch (NamingException ignored) {
             log.trace("No DNS records for query: " + dnsQuery);
         }
 
@@ -107,14 +106,14 @@ class DefaultDNSResolver implements DNSResolver {
         return resolveAEntries(dnsQuery, "0");
     }
 
-    protected List<Address> resolveAEntries(String dnsQuery, String srcPort) {
+    protected static List<Address> resolveAEntries(String dnsQuery, String srcPort) {
         List<Address> addresses = new ArrayList<>();
         try {
             InetAddress[] inetAddresses = InetAddress.getAllByName(dnsQuery);
             for (InetAddress address : inetAddresses) {
                 addresses.add(new IpAddress(address, Integer.parseInt(srcPort)));
             }
-        } catch (UnknownHostException e) {
+        } catch (UnknownHostException ignored) {
             log.trace("No DNS records for query: " + dnsQuery);
         }
         return addresses;
