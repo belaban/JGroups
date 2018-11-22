@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.protocols.Discovery;
 import org.jgroups.protocols.PingData;
@@ -11,7 +12,9 @@ import org.jgroups.protocols.PingHeader;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
+import org.jgroups.util.Util;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,19 +55,26 @@ public class DNS_PING extends Discovery {
     }
 
     protected void validateProperties() {
-        if (dns_query == null) {
+        if (dns_query == null || dns_query.trim().isEmpty()) {
             throw new IllegalArgumentException("dns_query can not be null or empty");
         }
     }
 
     @Override
     public void destroy() {
-        dns_resolver.close();
+        Util.close((Closeable)dns_resolver);
     }
 
     @Override
     public boolean isDynamic() {
         return true;
+    }
+
+    @ManagedOperation(description="Executes the DNS query and returns the result in string format")
+    public String fetchFromDns() {
+        List<Address> dns_discovery_members = dns_resolver.resolveIps(dns_query,
+                                                                      DNSResolver.DNSRecordType.valueOf(dns_record_type));
+        return dns_discovery_members != null? dns_discovery_members.toString() : null;
     }
 
 
