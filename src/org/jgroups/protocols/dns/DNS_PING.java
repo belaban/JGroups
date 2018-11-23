@@ -98,7 +98,13 @@ public class DNS_PING extends Discovery {
         List<Address> dns_discovery_members = dns_resolver.resolveIps(dns_query,
                 DNSResolver.DNSRecordType.valueOf(dns_record_type));
         long time=System.currentTimeMillis()-start;
-        log.debug("Entries collected from DNS (in %d ms): %s", time, dns_discovery_members);
+        if(log.isDebugEnabled()) {
+            if(dns_discovery_members != null && !dns_discovery_members.isEmpty())
+                log.debug("Entries collected from DNS (in %d ms): %s", time, dns_discovery_members);
+            else
+                log.debug("No entries collected from DNS (in %d ms)", time);
+        }
+
         int num_reqs=dns_discovery_members != null? dns_discovery_members.size() * portRange : 16;
         cluster_members=new ArrayList<>(num_reqs);
         if (dns_discovery_members != null) {
@@ -116,15 +122,16 @@ public class DNS_PING extends Discovery {
             }
         }
 
-        log.debug("%s: sending discovery requests to hosts %s on ports [%d .. %d]",
-                  local_addr, dns_discovery_members, transportPort, transportPort+portRange);
+        if(dns_discovery_members != null && !dns_discovery_members.isEmpty() && log.isDebugEnabled())
+            log.debug("%s: sending discovery requests to hosts %s on ports [%d .. %d]",
+                      local_addr, dns_discovery_members, transportPort, transportPort+portRange);
 
         PingHeader hdr = new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name).initialDiscovery(initial_discovery);
-        for (final Address addr : cluster_members) {
+        for (Address addr : cluster_members) {
 
             // the message needs to be DONT_BUNDLE, see explanation above
-            final Message msg = new Message(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
-                    .putHeader(this.id, hdr);
+            Message msg = new Message(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
+              .putHeader(this.id, hdr);
             if (data != null)
                 msg.setBuffer(marshal(data));
 
