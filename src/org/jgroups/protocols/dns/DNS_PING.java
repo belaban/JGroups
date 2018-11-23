@@ -12,9 +12,7 @@ import org.jgroups.protocols.PingHeader;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
-import org.jgroups.util.Util;
 
-import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,7 +60,7 @@ public class DNS_PING extends Discovery {
 
     @Override
     public void destroy() {
-        Util.close((Closeable)dns_resolver);
+        dns_resolver.close();
     }
 
     @Override
