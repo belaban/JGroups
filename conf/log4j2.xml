@@ -5,14 +5,15 @@
             <!--PatternLayout pattern="%-7d{HH:mm:ss,SSS} [%p] %c: %m%n"/-->
             <PatternLayout pattern="%r [%p] %c{1}: %m%n"/> 
         </Console>
-        <File name="File" fileName="test.log">
+        <!--File name="File" fileName="test.log">
             <PatternLayout pattern="%r [%p] %c{1}: %m%n"/>
-        </File>
+        </File-->
     </appenders>
     <loggers>
         <root level="warn">
             <appender-ref ref="STDOUT"/>
         </root>
         <logger name="org.jgroups" level="warn"/>
+        <!--logger name="org.jgroups.protocols.UNICAST3" level="trace"/-->
     </loggers>
 </configuration>
