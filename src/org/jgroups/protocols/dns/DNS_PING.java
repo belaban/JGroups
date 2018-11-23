@@ -72,9 +72,12 @@ public class DNS_PING extends Discovery {
 
     @ManagedOperation(description="Executes the DNS query and returns the result in string format")
     public String fetchFromDns() {
+        long start=System.currentTimeMillis();
         List<Address> dns_discovery_members = dns_resolver.resolveIps(dns_query,
                                                                       DNSResolver.DNSRecordType.valueOf(dns_record_type));
-        return dns_discovery_members != null? dns_discovery_members.toString() : null;
+        String ret=dns_discovery_members != null? dns_discovery_members.toString() : null;
+        long time=System.currentTimeMillis()-start;
+        return String.format("%s\n(took %d ms)\n", ret, time);
     }
 
 
@@ -93,9 +96,11 @@ public class DNS_PING extends Discovery {
                 data.mbrs(members);
         }
 
+        long start=System.currentTimeMillis();
         List<Address> dns_discovery_members = dns_resolver.resolveIps(dns_query,
                 DNSResolver.DNSRecordType.valueOf(dns_record_type));
-        log.debug("Entries collected from DNS: %s", dns_discovery_members);
+        long time=System.currentTimeMillis()-start;
+        log.debug("Entries collected from DNS (in %d ms): %s", time, dns_discovery_members);
         int num_reqs=dns_discovery_members != null? dns_discovery_members.size() * portRange : 16;
         cluster_members=new ArrayList<>(num_reqs);
         if (dns_discovery_members != null) {
