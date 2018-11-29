@@ -9,7 +9,9 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.util.*;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -523,7 +525,13 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         byte[] keyBytes;
 
         synchronized(this) {
-            keyBytes=asym_cipher.doFinal(encodedKey);
+            try {
+                keyBytes=asym_cipher.doFinal(encodedKey);
+            } catch (BadPaddingException | IllegalBlockSizeException e) {
+                //  if any exception is thrown, this cipher object may need to be reset before it can be used again.
+                asym_cipher.init(Cipher.DECRYPT_MODE, key_pair.getPrivate());
+                throw e;
+            }
         }
 
         try {
