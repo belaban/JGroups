@@ -458,7 +458,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             return;
         }
         Cipher decoding_cipher=secret_key != null? decoding_ciphers.take() : null;
-        // put the previous key into the map, keep the cipher: no leak, as we'll clear decoding_ciphers in initSymCiphers()
+        // put the previous key into the map, keep the cipher: no leak, as we'll recreate decoding_ciphers in initSymCiphers()
         if(decoding_cipher != null)
             key_map.putIfAbsent(new AsciiString(version), decoding_cipher);
         log.debug("%s: installing secret key received from %s (version: %s)",
