@@ -113,18 +113,22 @@ public class DNS_PING extends Discovery {
                     continue;
                 if (address instanceof IpAddress) {
                     IpAddress ip = ((IpAddress) address);
-                    for(int i=0; i <= portRange; i++) {
-                        IpAddress addr=new IpAddress(ip.getIpAddress(), transportPort + i);
-                        if(!cluster_members.contains(addr))
-                            cluster_members.add(addr);
+                    if (ip.getPort() != 0) {
+                        cluster_members.add(ip);
+                    }
+                    else {
+                        for (int i = 0; i <= portRange; i++) {
+                            IpAddress addr = new IpAddress(ip.getIpAddress(), transportPort + i);
+                            if (!cluster_members.contains(addr))
+                                cluster_members.add(addr);
+                        }
                     }
                 }
             }
         }
 
-        if(dns_discovery_members != null && !dns_discovery_members.isEmpty() && log.isDebugEnabled())
-            log.debug("%s: sending discovery requests to hosts %s on ports [%d .. %d]",
-                      local_addr, dns_discovery_members, transportPort, transportPort+portRange);
+        if(!cluster_members.isEmpty() && log.isDebugEnabled())
+            log.debug("%s: sending discovery requests to hosts %s", local_addr, cluster_members);
 
         PingHeader hdr = new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name).initialDiscovery(initial_discovery);
         for (Address addr : cluster_members) {
