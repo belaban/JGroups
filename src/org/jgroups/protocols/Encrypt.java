@@ -209,13 +209,11 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
 
         // set the version
         MessageDigest digest=MessageDigest.getInstance("MD5");
-        digest.reset();
-        digest.update(secret.getEncoded());
+        byte[] sym_version=digest.digest(secret.getEncoded());
 
-        byte[] tmp=digest.digest();
         this.encoding_ciphers = encoding_ciphers;
         this.decoding_ciphers = decoding_ciphers;
-        sym_version=Arrays.copyOf(tmp, tmp.length);
+        this.sym_version = sym_version;
     }
 
 
