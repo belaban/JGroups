@@ -12,7 +12,9 @@ import org.jgroups.util.BoundedHashMap;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.MessageDigest;
@@ -308,7 +310,14 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         if(cipher == null)
             decrypted_msg=code(msg.getRawBuffer(), msg.getOffset(), msg.getLength(), true);
         else
-            decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+            try {
+                decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+            }
+            catch(BadPaddingException | IllegalBlockSizeException e) {
+                //  if any exception is thrown, this cipher object may need to be reset before it can be used again.
+                cipher.init(Cipher.DECRYPT_MODE, secret_key);
+                throw e;
+            }
         return msg.setBuffer(decrypted_msg);
     }
 
@@ -334,6 +343,10 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         Cipher cipher=queue.take();
         try {
             return cipher.doFinal(buf, offset, length);
+        } catch(BadPaddingException | IllegalBlockSizeException e) {
+            //  if any exception is thrown, this cipher object may need to be reset before it can be used again.
+            cipher.init(decode ? Cipher.DECRYPT_MODE : Cipher.ENCRYPT_MODE, secret_key);
+            throw e;
         }
         finally {
             queue.offer(cipher);
