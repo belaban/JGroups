@@ -100,9 +100,9 @@ public class DNS_PING extends Discovery {
         long time=System.currentTimeMillis()-start;
         if(log.isDebugEnabled()) {
             if(dns_discovery_members != null && !dns_discovery_members.isEmpty())
-                log.debug("Entries collected from DNS (in %d ms): %s", time, dns_discovery_members);
+                log.debug("%s: entries collected from DNS (in %d ms): %s", local_addr, time, dns_discovery_members);
             else
-                log.debug("No entries collected from DNS (in %d ms)", time);
+                log.debug("%s: no entries collected from DNS (in %d ms)", local_addr, time);
         }
 
         int num_reqs=dns_discovery_members != null? dns_discovery_members.size() * portRange : 16;
