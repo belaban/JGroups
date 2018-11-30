@@ -50,14 +50,14 @@ public class DiscoveryTest {
         testLeak(d);
     }
 
-    protected void testLeak(JChannel discovery_initiator) throws Exception {
+    protected static void testLeak(JChannel discovery_initiator) throws Exception {
         ProtocolStack stack=discovery_initiator.getProtocolStack();
         Discovery ping=stack.findProtocol(Discovery.class);
         ping.discoveryRspExpiryTime(1000);
         Field ping_rsps_field=Util.getField(Discovery.class, "ping_responses");
         Map<Long,Responses> ping_rsps=(Map<Long,Responses>)Util.getField(ping_rsps_field, ping);
         for(int i=1; i <= 10; i++) {
-            ping.down(Event.FIND_INITIAL_MBRS_EVT);
+            ping.down(new Event(Event.FIND_INITIAL_MBRS, 1000L));
         }
         for(int i=0; i < 10; i++) {
             Util.sleep(500);

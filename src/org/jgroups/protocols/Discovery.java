@@ -369,7 +369,8 @@ public abstract class Discovery extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.FIND_INITIAL_MBRS:      // sent by GMS layer
-                return findMembers(null, true, false, evt.arg()); // triggered by JOIN process (ClientGmsImpl)
+                long timeout=evt.getArg();
+                return findMembers(null, true, false, timeout); // triggered by JOIN process (ClientGmsImpl)
 
             case Event.FIND_MBRS:
                 return findMembers(evt.getArg(), false, false, 0); // triggered by MERGE3

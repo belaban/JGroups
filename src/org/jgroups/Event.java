@@ -73,10 +73,6 @@ public class Event {
 
 
     public static final Event GET_DIGEST_EVT        = new Event(Event.GET_DIGEST);
-    public static final Event FIND_INITIAL_MBRS_EVT = new Event(Event.FIND_INITIAL_MBRS);
-    public static final Event FIND_MBRS_EVT         = new Event(Event.FIND_MBRS);
-
-
 
 
     private final int    type;       // type of event
