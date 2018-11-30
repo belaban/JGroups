@@ -12,7 +12,9 @@ import org.jgroups.util.BoundedHashMap;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.MessageDigest;
@@ -72,7 +74,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     protected volatile View                 view;
 
     // Cipher pools used for encryption and decryption. Size is cipher_pool_size
-    protected BlockingQueue<Cipher>         encoding_ciphers, decoding_ciphers;
+    protected volatile BlockingQueue<Cipher> encoding_ciphers, decoding_ciphers;
 
     // version filed for secret key
     protected volatile byte[]               sym_version;
@@ -110,8 +112,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             cipher_pool_size=tmp;
         }
         key_map=new BoundedHashMap<>(key_map_max_size);
-        encoding_ciphers=new ArrayBlockingQueue<>(cipher_pool_size);
-        decoding_ciphers=new ArrayBlockingQueue<>(cipher_pool_size);
         initSymCiphers(sym_algorithm, secret_key);
     }
 
@@ -168,15 +168,21 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        Cipher cipher=null;
+        if(secret_key == null) {
+            log.trace("%s: discarded %s batch from %s as secret key is null",
+                      local_addr, batch.dest() == null? "mcast" : "unicast", batch.sender());
+            return;
+        }
+        BlockingQueue<Cipher> cipherQueue = decoding_ciphers;
         try {
-            if(secret_key == null) {
-                log.trace("%s: discarded %s batch from %s as secret key is null",
-                          local_addr, batch.dest() == null? "mcast" : "unicast", batch.sender());
-                return;
+            Cipher cipher=cipherQueue.take();
+            try {
+                BiConsumer<Message,MessageBatch> decrypter=new Decrypter(cipher);
+                batch.forEach(decrypter);
             }
-            BiConsumer<Message,MessageBatch> decrypter=new Decrypter(cipher=decoding_ciphers.take());
-            batch.forEach(decrypter);
+            finally {
+                cipherQueue.offer(cipher);
+            }
         }
         catch(InterruptedException e) {
             log.error("%s: failed processing batch; discarding batch", local_addr, e);
@@ -185,10 +191,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             // is below NAKACK2 or UNICAST3, so messages will get retransmitted
             return;
         }
-        finally {
-            if(cipher != null)
-                decoding_ciphers.offer(cipher);
-        }
         if(!batch.isEmpty())
             up_prot.up(batch);
     }
@@ -196,23 +198,24 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
 
 
     /** Initialises the ciphers for both encryption and decryption using the generated or supplied secret key */
-    protected synchronized void initSymCiphers(String algorithm, Key secret) throws Exception {
+    protected void initSymCiphers(String algorithm, Key secret) throws Exception {
         if(secret == null)
             return;
-        encoding_ciphers.clear();
-        decoding_ciphers.clear();
+
+        BlockingQueue<Cipher> encoding_ciphers=new ArrayBlockingQueue<>(cipher_pool_size);
+        BlockingQueue<Cipher> decoding_ciphers=new ArrayBlockingQueue<>(cipher_pool_size);
         for(int i=0; i < cipher_pool_size; i++ ) {
             encoding_ciphers.offer(createCipher(Cipher.ENCRYPT_MODE, secret, algorithm));
             decoding_ciphers.offer(createCipher(Cipher.DECRYPT_MODE, secret, algorithm));
-        };
+        }
 
         // set the version
         MessageDigest digest=MessageDigest.getInstance("MD5");
-        digest.reset();
-        digest.update(secret.getEncoded());
+        byte[] sym_version=digest.digest(secret.getEncoded());
 
-        byte[] tmp=digest.digest();
-        sym_version=Arrays.copyOf(tmp, tmp.length);
+        this.encoding_ciphers = encoding_ciphers;
+        this.decoding_ciphers = decoding_ciphers;
+        this.sym_version = sym_version;
     }
 
 
@@ -308,7 +311,14 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         if(cipher == null)
             decrypted_msg=code(msg.getRawBuffer(), msg.getOffset(), msg.getLength(), true);
         else
-            decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+            try {
+                decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+            }
+            catch(BadPaddingException | IllegalBlockSizeException e) {
+                //  if any exception is thrown, this cipher object may need to be reset before it can be used again.
+                cipher.init(Cipher.DECRYPT_MODE, secret_key);
+                throw e;
+            }
         return msg.setBuffer(decrypted_msg);
     }
 
@@ -334,6 +344,10 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         Cipher cipher=queue.take();
         try {
             return cipher.doFinal(buf, offset, length);
+        } catch(BadPaddingException | IllegalBlockSizeException e) {
+            //  if any exception is thrown, this cipher object may need to be reset before it can be used again.
+            cipher.init(decode ? Cipher.DECRYPT_MODE : Cipher.ENCRYPT_MODE, secret_key);
+            throw e;
         }
         finally {
             queue.offer(cipher);

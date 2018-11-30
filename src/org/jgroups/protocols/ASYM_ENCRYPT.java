@@ -9,7 +9,9 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.util.*;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -458,7 +460,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             return;
         }
         Cipher decoding_cipher=secret_key != null? decoding_ciphers.take() : null;
-        // put the previous key into the map, keep the cipher: no leak, as we'll clear decoding_ciphers in initSymCiphers()
+        // put the previous key into the map, keep the cipher: no leak, as we'll recreate decoding_ciphers in initSymCiphers()
         if(decoding_cipher != null)
             key_map.putIfAbsent(new AsciiString(version), decoding_cipher);
         log.debug("%s: installing secret key received from %s (version: %s)",
@@ -523,7 +525,13 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         byte[] keyBytes;
 
         synchronized(this) {
-            keyBytes=asym_cipher.doFinal(encodedKey);
+            try {
+                keyBytes=asym_cipher.doFinal(encodedKey);
+            } catch (BadPaddingException | IllegalBlockSizeException e) {
+                //  if any exception is thrown, this cipher object may need to be reset before it can be used again.
+                asym_cipher.init(Cipher.DECRYPT_MODE, key_pair.getPrivate());
+                throw e;
+            }
         }
 
         try {
