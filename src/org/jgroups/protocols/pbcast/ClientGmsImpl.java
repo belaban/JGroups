@@ -69,7 +69,7 @@ public class ClientGmsImpl extends GmsImpl {
                 return;
 
             long start=System.currentTimeMillis();
-            Responses responses=(Responses)gms.getDownProtocol().down(Event.FIND_INITIAL_MBRS_EVT);
+            Responses responses=(Responses)gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS, gms.getJoinTimeout()));
 
             // Sept 2008 (bela): return if we got a belated JoinRsp (https://jira.jboss.org/jira/browse/JGRP-687)
             if(installViewIfValidJoinRsp(join_promise, false))

@@ -168,7 +168,7 @@ public class TCPPING extends Discovery {
 
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name).initialDiscovery(initial_discovery);
         for(final PhysicalAddress addr: cluster_members) {
-            if(physical_addr != null && addr.equals(physical_addr)) // no need to send the request to myself
+            if(addr.equals(physical_addr)) // no need to send the request to myself
                 continue;
 
             // the message needs to be DONT_BUNDLE, see explanation above

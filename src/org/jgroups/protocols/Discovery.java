@@ -15,6 +15,8 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -78,6 +80,10 @@ public abstract class Discovery extends Protocol {
       "everybody will reply. This attribute is ignored if TP.use_ip_addrs is false.")
     protected int                        max_rank_to_reply;
 
+    @Property(description="The number of times a discovery process is executed when finding initial members " +
+      "(https://issues.jboss.org/browse/JGRP-2317)")
+    protected int                        num_discovery_runs=1;
+
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
 
     @ManagedAttribute(description="Total number of discovery requests sent ")
@@ -95,6 +101,7 @@ public abstract class Discovery extends Protocol {
     protected volatile Address           current_coord;
     protected String                     cluster_name;
     protected final Map<Long,Responses>  ping_responses=new HashMap<>();
+    protected final Set<Future<?>>       discovery_req_futures=new ConcurrentSkipListSet<>();
     @ManagedAttribute(description="Whether the transport supports multicasting")
     protected boolean                    transport_supports_multicasting=true;
     protected boolean                    use_ip_addrs; // caches TP.use_ip_addrs
@@ -112,6 +119,8 @@ public abstract class Discovery extends Protocol {
             throw new Exception("timer cannot be retrieved from protocol stack");
         if(stagger_timeout < 0)
             throw new IllegalArgumentException("stagger_timeout cannot be negative");
+        if(num_discovery_runs < 1)
+            throw new IllegalArgumentException("num_discovery_runs must be >= 1");
         transport_supports_multicasting=tp.supportsMulticasting();
         sends_can_block=getTransport() instanceof TCP; // UDP and TCP_NIO2 won't block
         use_ip_addrs=tp.getUseIpAddresses();
@@ -179,6 +188,7 @@ public abstract class Discovery extends Protocol {
 
     public void stop() {
         is_server=false;
+        clearRequestFutures();
     }
 
     public void addResponse(Responses rsp) {
@@ -199,16 +209,26 @@ public abstract class Discovery extends Protocol {
      */
     protected abstract void findMembers(List<Address> members, boolean initial_discovery, Responses responses);
 
-    public Responses findMembers(final List<Address> members, final boolean initial_discovery, boolean async) {
+    public Responses findMembers(final List<Address> members, final boolean initial_discovery, boolean async, long timeout) {
         num_discovery_requests++;
         int num_expected=members != null? members.size() : 0;
         int capacity=members != null? members.size() : 16;
-        final Responses rsps=new Responses(num_expected, initial_discovery && break_on_coord_rsp, capacity);
-        synchronized(ping_responses) {
-            ping_responses.put(System.nanoTime(), rsps);
-        }
-        if(async || async_discovery)
+        Responses rsps=new Responses(num_expected, initial_discovery && break_on_coord_rsp, capacity);
+        addResponse(rsps);
+        if(async || async_discovery || (num_discovery_runs > 1) && initial_discovery) {
             timer.execute(() -> findMembers(members, initial_discovery, rsps));
+            if(num_discovery_runs > 1 && initial_discovery) {
+                int num_reqs_to_send=num_discovery_runs-1;
+                long last_send=timeout - (timeout/num_discovery_runs);
+                long interval=last_send/num_reqs_to_send;
+                for(long i=0,delay=interval; i < num_reqs_to_send; i++,delay+=interval) {
+                    Future<?> future=timer.schedule(() -> findMembers(members, initial_discovery, rsps),
+                                                    delay, TimeUnit.MILLISECONDS);
+                    this.discovery_req_futures.add(future);
+                    num_discovery_requests++;
+                }
+            }
+        }
         else
             findMembers(members, initial_discovery, rsps);
         weedOutCompletedDiscoveryResponses();
@@ -218,7 +238,7 @@ public abstract class Discovery extends Protocol {
 
     @ManagedOperation(description="Runs the discovery protocol to find initial members")
     public String findInitialMembersAsString() {
-        Responses rsps=findMembers(null, false, false);
+        Responses rsps=findMembers(null, false, false, 0);
         if(!rsps.isDone())
             rsps.waitFor(300);
         if(rsps.isEmpty()) return "<empty>";
@@ -258,7 +278,7 @@ public abstract class Discovery extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.FIND_MBRS:
-                return findMembers(evt.getArg(), false, true); // this is done asynchronously
+                return findMembers(evt.getArg(), false, true, 0); // this is done asynchronously
         }
         return up_prot.up(evt);
     }
@@ -349,20 +369,20 @@ public abstract class Discovery extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.FIND_INITIAL_MBRS:      // sent by GMS layer
-                return findMembers(null, true, false); // triggered by JOIN process (ClientGmsImpl)
+                return findMembers(null, true, false, evt.arg()); // triggered by JOIN process (ClientGmsImpl)
 
             case Event.FIND_MBRS:
-                return findMembers(evt.getArg(), false, false); // triggered by MERGE3
+                return findMembers(evt.getArg(), false, false, 0); // triggered by MERGE3
 
             case Event.FIND_MBRS_ASYNC:
                 discovery_rsp_callback=evt.arg();
-                return findMembers(null, false, false); // triggered by MERGE3
+                return findMembers(null, false, false, 0); // triggered by MERGE3
 
             case Event.VIEW_CHANGE:
                 View old_view=view;
                 view=evt.getArg();
                 current_coord=view.getCoord();
-                is_coord=current_coord != null && local_addr != null && current_coord.equals(local_addr);
+                is_coord=Objects.equals(current_coord, local_addr);
                 Object retval=down_prot.down(evt);
                 if(send_cache_on_join && !isDynamic() && is_coord) {
                     List<Address> curr_mbrs, left_mbrs, new_mbrs;
@@ -488,6 +508,7 @@ public abstract class Discovery extends Protocol {
                 if(rsps.isDone() || TimeUnit.MILLISECONDS.convert(System.nanoTime() - timestamp, TimeUnit.NANOSECONDS) > discovery_rsp_expiry_time) {
                     it.remove();
                     rsps.done();
+                    clearRequestFutures();
                 }
             }
         }
@@ -504,6 +525,7 @@ public abstract class Discovery extends Protocol {
                 if(rsps.isDone() || TimeUnit.MILLISECONDS.convert(System.nanoTime() - timestamp, TimeUnit.NANOSECONDS) > discovery_rsp_expiry_time) {
                     it.remove();
                     rsps.done();
+                    clearRequestFutures();
                 }
             }
         }
@@ -518,6 +540,11 @@ public abstract class Discovery extends Protocol {
         if(physical_addr != null)
             return (Boolean)down(new Event(Event.ADD_PHYSICAL_ADDRESS, new Tuple<>(mbr, physical_addr)));
         return false;
+    }
+
+    protected void clearRequestFutures() {
+        discovery_req_futures.forEach(f->f.cancel(true));
+        discovery_req_futures.clear();
     }
 
     protected synchronized void startCacheDissemination(List<Address> curr_mbrs, List<Address> left_mbrs, List<Address> new_mbrs) {

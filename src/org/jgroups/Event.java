@@ -15,7 +15,7 @@ public class Event {
     public static final int SUSPECT                            =  9;  // arg = Collection<Address> (suspected members)
     public static final int BLOCK                              = 10;  // arg = null (used by FLUSH)
     public static final int FIND_MBRS                          = 11;  // arg = List<Address> (can be null) -> Responses
-    public static final int FIND_INITIAL_MBRS                  = 12;  // arg = null -> Responses
+    public static final int FIND_INITIAL_MBRS                  = 12;  // timeout (ms) = null -> Responses
     public static final int FIND_MBRS_ASYNC                    = 13;  // arg = Consumer<PingData>
     public static final int MERGE                              = 14;  // arg = Map<Address,View>
     public static final int TMP_VIEW                           = 15;  // arg = View
