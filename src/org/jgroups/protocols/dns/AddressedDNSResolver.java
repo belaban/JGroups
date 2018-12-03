@@ -39,12 +39,12 @@ class AddressedDNSResolver extends DefaultDNSResolver {
                     try {
                         addresses.add(new IpAddress(namingEnumeration.nextElement().toString()));
                     } catch (Exception e) {
-                        log.trace("Non critical DNS resolution error", e);
+                        log.trace("non critical DNS resolution error", e);
                     }
                 }
             }
-        } catch (NamingException ignored) {
-            log.trace("No DNS records for query: " + dnsQuery);
+        } catch (NamingException ex) {
+            log.trace("no DNS records for query %s, ex: %a", dnsQuery, ex);
         }
         return addresses;
     }

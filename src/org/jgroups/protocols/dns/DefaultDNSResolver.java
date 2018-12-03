@@ -33,7 +33,7 @@ class DefaultDNSResolver implements DNSResolver {
     }
 
     public DefaultDNSResolver(String dnsContextFactory, String dnsAddress) throws NamingException {
-        log.trace("Initializing DNS Context with factory: %s and url: %s", dnsContextFactory, dnsAddress);
+        log.trace("initializing DNS Context with factory: %s and url: %s", dnsContextFactory, dnsAddress);
         Properties env = new Properties();
         env.put(Context.INITIAL_CONTEXT_FACTORY, dnsContextFactory);
         if (dnsAddress != null) {
@@ -54,7 +54,7 @@ class DefaultDNSResolver implements DNSResolver {
     @Override
     public List<Address> resolveIps(String dnsQuery, DNSRecordType recordType) {
 
-        log.trace("Resolving DNS Query: %s of a type: %s", dnsQuery, recordType.toString());
+        log.trace("resolving DNS query: %s of a type: %s", dnsQuery, recordType.toString());
 
         switch (recordType) {
             case A:
@@ -91,12 +91,12 @@ class DefaultDNSResolver implements DNSResolver {
                             addresses.addAll(resolveAEntries(srcDNSRecord, srcPort));
                         }
                     } catch (Exception e) {
-                        log.trace("Non critical DNS resolution error", e);
+                        log.trace("non critical DNS resolution error", e);
                     }
                 }
             }
         } catch (NamingException ex) {
-            log.trace("No DNS records for query %s, ex: %s", dnsQuery, ex);
+            log.trace("no DNS records for query %s, ex: %s", dnsQuery, ex);
         }
 
         return addresses;
@@ -113,8 +113,8 @@ class DefaultDNSResolver implements DNSResolver {
             for (InetAddress address : inetAddresses) {
                 addresses.add(new IpAddress(address, Integer.parseInt(srcPort)));
             }
-        } catch (UnknownHostException ignored) {
-            log.trace("No DNS records for query: " + dnsQuery);
+        } catch (UnknownHostException ex) {
+            log.trace("failed to resolve query %s, ex: %s", dnsQuery, ex);
         }
         return addresses;
     }
