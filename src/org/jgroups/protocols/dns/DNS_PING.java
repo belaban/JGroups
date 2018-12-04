@@ -13,8 +13,9 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
 
-import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class DNS_PING extends Discovery {
 
@@ -22,20 +23,26 @@ public class DNS_PING extends Discovery {
     private static final String DEFAULT_DNS_RECORD_TYPE = "A";
 
     @Property(description = "DNS Context Factory.  Used when DNS_PING is configured to use SRV record types and when using A types with a specific dns_address.")
-    protected String dns_context_factory = DEFAULT_DNS_FACTORY;
+    protected String  dns_context_factory = DEFAULT_DNS_FACTORY;
 
     @Property(description = "DNS Address. This property will be assembled with the 'dns://' prefix.  If this is specified, A records will be resolved through DnsContext.")
-    protected String dns_address = "";
+    protected String  dns_address = "";
 
     @Property(description = "DNS Record type")
-    protected String dns_record_type = DEFAULT_DNS_RECORD_TYPE;
+    protected String  dns_record_type = DEFAULT_DNS_RECORD_TYPE;
 
     @Property(description = "DNS query for fetching members")
-    protected String dns_query;
+    protected String  dns_query;
+
+    @Property(description="For SRV records returned by the DNS query, the non-0 ports returned by DNS are" +
+      "used. If this attribute is true, then the transport ports will also be used. Ignored for A records.")
+    protected boolean probe_transport_ports;
+
+
 
     protected volatile DNSResolver dns_resolver;
 
-    private int transportPort, portRange;
+    private int                    transportPort, portRange;
 
     @Override
     public void init() throws Exception {
@@ -81,13 +88,13 @@ public class DNS_PING extends Discovery {
 
     @Override
     public void findMembers(List<Address> members, boolean initial_discovery, Responses responses) {
-        PingData              data = null;
-        PhysicalAddress       physical_addr = null;
-        List<PhysicalAddress> cluster_members;
+        PingData                  data = null;
+        PhysicalAddress           physical_addr = null;
+        Set<PhysicalAddress>      cluster_members=new LinkedHashSet<>();
+        DNSResolver.DNSRecordType record_type=DNSResolver.DNSRecordType.valueOf(dns_record_type);
 
         if (!use_ip_addrs || !initial_discovery) {
             physical_addr = (PhysicalAddress) down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-
             // https://issues.jboss.org/browse/JGRP-1670
             data = new PingData(local_addr, false, NameCache.get(local_addr), physical_addr);
             if (members != null && members.size() <= max_members_in_discovery_request)
@@ -95,8 +102,7 @@ public class DNS_PING extends Discovery {
         }
 
         long start=System.currentTimeMillis();
-        List<Address> dns_discovery_members = dns_resolver.resolveIps(dns_query,
-                DNSResolver.DNSRecordType.valueOf(dns_record_type));
+        List<Address> dns_discovery_members = dns_resolver.resolveIps(dns_query, record_type);
         long time=System.currentTimeMillis()-start;
         if(log.isDebugEnabled()) {
             if(dns_discovery_members != null && !dns_discovery_members.isEmpty())
@@ -105,26 +111,32 @@ public class DNS_PING extends Discovery {
                 log.debug("%s: no entries collected from DNS (in %d ms)", local_addr, time);
         }
 
-        int num_reqs=dns_discovery_members != null? dns_discovery_members.size() * portRange : 16;
-        cluster_members=new ArrayList<>(num_reqs);
+        boolean ports_found=false;
         if (dns_discovery_members != null) {
             for (Address address : dns_discovery_members) {
                 if (address.equals(physical_addr)) // no need to send the request to myself
                     continue;
-                if (address instanceof IpAddress) {
+                if(address instanceof IpAddress) {
                     IpAddress ip = ((IpAddress) address);
-                    for(int i=0; i <= portRange; i++) {
-                        IpAddress addr=new IpAddress(ip.getIpAddress(), transportPort + i);
-                        if(!cluster_members.contains(addr))
-                            cluster_members.add(addr);
+                    if(record_type == DNSResolver.DNSRecordType.SRV && ip.getPort() > 0) {
+                        ports_found=true;
+                        cluster_members.add(ip);
+                        if(!probe_transport_ports)
+                            continue;
                     }
+                    for(int i=0; i <= portRange; i++)
+                        cluster_members.add(new IpAddress(ip.getIpAddress(), transportPort + i));
                 }
             }
         }
 
-        if(dns_discovery_members != null && !dns_discovery_members.isEmpty() && log.isDebugEnabled())
-            log.debug("%s: sending discovery requests to hosts %s on ports [%d .. %d]",
-                      local_addr, dns_discovery_members, transportPort, transportPort+portRange);
+        if(dns_discovery_members != null && !dns_discovery_members.isEmpty() && log.isDebugEnabled()) {
+            if(ports_found)
+                log.debug("%s: sending discovery requests to %s", local_addr, cluster_members);
+            else
+                log.debug("%s: sending discovery requests to hosts %s on ports [%d .. %d]",
+                          local_addr, dns_discovery_members, transportPort, transportPort + portRange);
+        }
 
         PingHeader hdr = new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name).initialDiscovery(initial_discovery);
         for (Address addr : cluster_members) {
