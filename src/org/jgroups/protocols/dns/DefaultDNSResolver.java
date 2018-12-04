@@ -96,7 +96,7 @@ class DefaultDNSResolver implements DNSResolver {
                 }
             }
         } catch (NamingException ex) {
-            log.trace("no DNS records for query %s, ex: %s", dnsQuery, ex);
+            log.trace("no DNS records for query %s, ex: %s", dnsQuery, ex.getMessage());
         }
 
         return addresses;
@@ -114,7 +114,7 @@ class DefaultDNSResolver implements DNSResolver {
                 addresses.add(new IpAddress(address, Integer.parseInt(srcPort)));
             }
         } catch (UnknownHostException ex) {
-            log.trace("failed to resolve query %s, ex: %s", dnsQuery, ex);
+            log.trace("failed to resolve query %s, ex: %s", dnsQuery, ex.getMessage());
         }
         return addresses;
     }
