@@ -136,7 +136,14 @@ public class FILE_PING extends Discovery {
                     ; // use case #1 if we have predefined files: most members join but are not coord
             }
             else {
-                sendDiscoveryResponse(local_addr, phys_addr, UUID.get(local_addr), null, false);
+                if (data == null && is_coord) { 
+                    // a coordinator in a separate partition may have deleted this coordinator's file
+                    PingData coord_data=new PingData(local_addr, true, UUID.get(local_addr), phys_addr).coord(is_coord);
+                    write(Collections.singletonList(coord_data), cluster_name);
+                }
+                else {
+                    sendDiscoveryResponse(local_addr, phys_addr, UUID.get(local_addr), null, false);
+                }
             }
         }
         finally {
