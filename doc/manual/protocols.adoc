@@ -765,46 +765,123 @@ https://kubernetes.io[Kubernetes] and https://www.openshift.org[OpenShift] but i
 
 NOTE: In order to enable DNS discovery for application deployed on Kubernetes/OpenShift one must create a
       https://kubernetes.io/docs/user-guide/services/#headless-services[Governing Headless Service] with proper
-      selector covering desired Pods. The Service will ensure that DNS entries are populated as soon as Pods are in Ready state.
-
+      selectors covering desired pods. The service will ensure that DNS entries are populated as soon as pods are in
+      Ready state.
 
 The snippet below shows a sample config:
 
-
-
 [source,xml]
 ----
-
 <dns.DNS_PING
             dns_address="192.168.0.17"
             dns_query="jgroups-dns-ping.myproject.svc.cluster.local" />
-
 ----
 
-This will turn on DNS discovery using DNS server at address `192.168.0.17` and DNS query `jgroups-dns-ping.myproject.svc.cluster.local`.
+This will turn on DNS discovery using the DNS server at address `192.168.0.17` and DNS query
+`jgroups-dns-ping.myproject.svc.cluster.local` using DNS `A` records.
 
 The `dns_address` parameter is optional and when it's missing, the protocol will use the default DNS resolver configured
 on the machine.
 
-The `dns_query` parameter is mandatory. It is used for querying the DNS Server and obtaining information about the cluster members.
-The `svc.cluster.local` part is specific to Kubernetes and OpenShift and might be omitted.
+The `dns_query` parameter is mandatory. It is used for querying the DNS Server and obtaining information about the
+cluster members. The `svc.cluster.local` part is specific to Kubernetes and OpenShift and might be omitted.
 
 It is also possible to use `SRV` entries for discovery as shown below:
 
-
-
 [source,xml]
 ----
-
 <dns.DNS_PING
             dns_query="_ping._tcp.jgroups-dns-ping.myproject.svc.cluster.local"
             dns_record_type="SRV" />
-
 ----
 
 Kubernetes SRV entries are created using the following scheme: `_my-port-name._my-port-protocol.my-svc.my-namespace.svc.cluster.local`.
-When the above example is used in Kubernetes or OpenShift, the <<DNS_PING>> will form a cluster of all the Pods governed
-by a Service named `jgroups-dns-ping` in `myproject` Namespace, which expose a TCP port named `ping`.
+
+When the above example is used in Kubernetes or OpenShift, <<DNS_PING>> will form a cluster of all the pods governed
+by a service named `jgroups-dns-ping` in namespace `myproject`, which exposes a TCP port named `ping`.
+
+Here's an example of a YAML file which shows how to run a service and a pod using `DNS_PING`:
+[source.yaml]
+----
+apiVersion: v1
+items:
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    annotations:
+    labels:
+      run: jgrp
+    name: jgrp
+  spec:
+    replicas: 3
+    template:
+      metadata:
+        labels:
+          run: jgrp
+          deploymentConfig: jgrp
+      spec:
+        containers:
+        - image: belaban/jgroups
+          command: ["chat.sh"]
+          args: ["-props dns-ping.xml -o"]
+          env:
+            - name: DNS_QUERY
+              value: "_ping._tcp.jgrp.default.svc.cluster.local."
+            - name: DNS_RECORD_TYPE
+              value: SRV
+#            - name: DNS_ADDRESS
+#              value: 10.96.0.10
+#            - name: DNS_PROBE_TRANSPORT_PORTS
+#              value: "true"
+          name: jgrp
+kind: List
+metadata: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  name: jgrp
+  labels:
+    run: jgrp
+spec:
+  publishNotReadyAddresses: true
+  clusterIP: None
+  ports:
+    - name: ping
+      port: 7800
+      protocol: TCP
+      targetPort: 7800
+  selector:
+     deploymentConfig: jgrp
+---
+----
+
+Configuration `dns_ping.xml` sets up `DNS_PING` as follows:
+[source,xml]
+----
+<TCP bind_port="7800" .../>
+<dns.DNS_PING
+   dns_query="${DNS_QUERY:chat-service}"
+   async_discovery_use_separate_thread_per_request="true"
+   probe_transport_ports="${DNS_PROBE_TRANSPORT_PORTS:false}"
+   num_discovery_runs="1"
+   dns_address="${DNS_ADDRESS}"
+   dns_record_type="${DNS_RECORD_TYPE:A}"/>
+...
+----
+
+The `DNS_QUERY` system property (overriding the `dns_query` attribute) is defined in the Yaml as
+`_ping._tcp.jgrp.default.svc.cluster.local.`, which corresponds to the port (7800) advertized in the `ports` section:
+`_ping` is the port name, `_tcp` the protocol, `jgrp` the project and `default` the namespace.
+
+As can also be seen in the Yaml file, `DNS_RECORD_TYPE` is set to `SRV`, overriding the default type of `A`.
+
+NOTE: If the `ports` section does not list the correct port (corresponding to the transport's port, `TCP.bind_port`),
+`DNS_PING` will not be able to find any cluster members. However, in this case, we can make `DNS_PING` probe members
+at the transport's port (plus `port_range`) by setting `probe_transport_ports` to true.
+
 For more information, please refer to https://kubernetes.io/docs/admin/dns[Kubernetes DNS Admin Guide].
 
 NOTE: Note that both <<KUBE_PING>> and <<DNS_PING>> can be used in Kubernetes/OpenShift. The main difference between them is that
