@@ -47,7 +47,8 @@ public class AddressedDNSResolverTest {
       MockDirContext mockDirContext = MockDirContext.newDefault()
             // This one is a bit weird - it seems that default DNS resolver implementation leaves the dot at the end.
             // Since we are tied to the implementation, we need to do the same (even though it's silly).
-            .addEntry("test", "10 100 8888 9089f34a.jgroups-dns-ping.local.", DNSResolver.DNSRecordType.SRV)
+            .addEntry("test", "10 100 8888 192.168.1.16", DNSResolver.DNSRecordType.SRV)
+            .addEntry("test", "10 100 8888 192.168.1.17", DNSResolver.DNSRecordType.SRV)
             .addEntry("9089f34a.jgroups-dns-ping.local", "192.168.0.1", DNSResolver.DNSRecordType.A)
             .addEntry("9089f34a.jgroups-dns-ping.local", "192.168.0.2", DNSResolver.DNSRecordType.A);
 
@@ -57,7 +58,7 @@ public class AddressedDNSResolverTest {
       List<Address> addresses = resolver.resolveIps("test", DNSResolver.DNSRecordType.SRV);
 
       //then
-      List<Address> expectedResults = Arrays.asList(new IpAddress("192.168.0.1"), new IpAddress("192.168.0.2"));
+      List<Address> expectedResults = Arrays.asList(new IpAddress("192.168.1.16:8888"), new IpAddress("192.168.1.17:8888"));
       Assert.assertEquals(addresses, expectedResults);
    }
 

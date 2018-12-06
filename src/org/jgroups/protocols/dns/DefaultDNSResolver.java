@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 class DefaultDNSResolver implements DNSResolver {
 
-    private static final Pattern SRV_REGEXP = Pattern.compile("\\d+ \\d+ (\\d+) ([\\w+.-]+)\\.");
+    private static final Pattern SRV_REGEXP = Pattern.compile("\\d+ \\d+ (\\d+) ([\\w+\\.-]+)");
 
     private static final Log log = LogFactory.getLog(MethodHandles.lookup().lookupClass());
 
