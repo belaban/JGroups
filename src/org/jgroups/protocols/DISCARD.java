@@ -62,6 +62,9 @@ public class DISCARD extends Protocol {
 
     public DISCARD localAddress(Address addr) {setLocalAddress(addr); return this;}
 
+    @ManagedAttribute(description="The set of ignored members")
+    public String getIgnoredMembers() {return ignoredMembers.toString();}
+
     public Address                      localAddress() {
         if(localAddress == null)
             localAddress=(Address)up_prot.up(new Event(Event.GET_LOCAL_ADDRESS));
