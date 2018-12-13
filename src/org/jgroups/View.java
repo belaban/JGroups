@@ -56,7 +56,7 @@ public class View implements Comparable<View>, SizeStreamable, Iterable<Address>
      * @param view_id The view id of this view (can not be null)
      * @param members Contains a list of all the members in the view, can be empty but not null.
      */
-    public View(ViewId view_id, List<Address> members) {
+    public View(ViewId view_id, Collection<Address> members) {
         this.view_id=view_id;
         if(members == null)
             throw new IllegalArgumentException("members cannot be null");
@@ -90,6 +90,10 @@ public class View implements Comparable<View>, SizeStreamable, Iterable<Address>
     }
 
     public static View create(Address coord, long id, Address ... members) {
+        return new View(new ViewId(coord, id), members);
+    }
+
+    public static View create(Address coord, long id, Collection<Address> members) {
         return new View(new ViewId(coord, id), members);
     }
 

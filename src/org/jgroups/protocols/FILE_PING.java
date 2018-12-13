@@ -51,6 +51,10 @@ public class FILE_PING extends Discovery {
     @Property(description="Interval (in ms) at which the info writer should kick in")
     protected long    info_writer_sleep_time=10000;
 
+    @Property(description="When a non-initial discovery is run, and InfoWriter is not running, write the data to " +
+      "disk (if true). JIRA: https://issues.jboss.org/browse/JGRP-2288")
+    protected boolean write_data_on_find;
+
     @Property(description = "If set, a shutdown hook is registered with the JVM to remove the local address "
       + "from the store. Default is true", writable = false)
     protected boolean register_shutdown_hook = true;
@@ -71,9 +75,11 @@ public class FILE_PING extends Discovery {
     protected static final FilenameFilter filter=(dir, name1) -> name1.endsWith(SUFFIX);
     protected Future<?>                   info_writer;
 
-    public boolean   isDynamic()           {return true;}
-    public String    getLocation()         {return location;}
-    public FILE_PING setLocation(String l) {this.location=l; return this;}
+    public boolean   isDynamic()                             {return true;}
+    public String    getLocation()                           {return location;}
+    public FILE_PING setLocation(String l)                   {this.location=l; return this;}
+    public boolean   getRemoveAllDataOnViewChange()          {return remove_all_data_on_view_change;}
+    public FILE_PING setRemoveAllDataOnViewChange(boolean r) {remove_all_data_on_view_change=r; return this;}
 
     @ManagedAttribute(description="Whether the InfoWriter task is running")
     public synchronized boolean isInfoWriterRunning() {return info_writer != null && !info_writer.isDone();}
@@ -122,7 +128,10 @@ public class FILE_PING extends Discovery {
                 write(Collections.singletonList(coord_data), cluster_name);
                 return;
             }
-
+            if(!initial_discovery) {
+                for(PingData data : responses)
+                    handleDiscoveryResponse(data, data.sender);
+            }
             PhysicalAddress phys_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
             PingData data=responses.findResponseFrom(local_addr);
             // the logical addr *and* IP address:port have to match
@@ -134,6 +143,12 @@ public class FILE_PING extends Discovery {
             }
             else {
                 sendDiscoveryResponse(local_addr, phys_addr, NameCache.get(local_addr), null, false);
+            }
+            // write the data if write_data_on_find is true
+            if(write_data_on_find && (remove_all_data_on_view_change || remove_old_coords_on_view_change)
+              && !initial_discovery && is_coord && (data == null || !data.isCoord()) && !isInfoWriterRunning()) {
+                // a coordinator in a separate partition may have deleted this coordinator's file
+                writeAll();
             }
         }
         finally {
@@ -284,7 +299,7 @@ public class FILE_PING extends Discovery {
         }
         write(list, cluster_name);
         if(log.isTraceEnabled())
-            log.trace("wrote to backend store: %s", list.stream().map(PingData::getAddress).collect(Collectors.toList()));
+            log.trace("%s: wrote to backend store: %s", local_addr, list.stream().map(PingData::getAddress).collect(Collectors.toList()));
     }
 
     protected void write(List<PingData> list, String clustername) {
