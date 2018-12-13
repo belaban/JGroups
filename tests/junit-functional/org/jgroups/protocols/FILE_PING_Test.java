@@ -73,14 +73,14 @@ public class FILE_PING_Test {
 
         System.out.println("A leaves the cluster:");
         a.close();
-        Util.waitUntilAllChannelsHaveSameView(100000000, 1000, b);
+        Util.waitUntilAllChannelsHaveSameView(10_000, 1000, b);
         System.out.printf("new views:\n%s\n",
                           Stream.of(b,c,d).map(ch -> ch.getAddress() + ": " + ch.getView()).collect(Collectors.joining("\n")));
 
         Stream.of(a,b,c,d).forEach(ch -> ch.getProtocolStack().removeProtocol(DISCARD.class));
 
         System.out.println("waiting for partitions to merge");
-        Util.waitUntilAllChannelsHaveSameView(3000000, 1000, b,c,d);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, b,c,d);
         System.out.printf("merged views:\n%s\n",
                           Stream.of(b,c,d).map(ch -> ch.getAddress() + ": " + ch.getView()).collect(Collectors.joining("\n")));
 
@@ -104,7 +104,7 @@ public class FILE_PING_Test {
                               .setValue("info_writer_max_writes_after_view", 0)
                               .setValue("info_writer_sleep_time", 2000),
                             new MERGE3().setMinInterval(2000).setMaxInterval(5000),
-                            new FD_SOCK(), new NAKACK2(), new UNICAST3(), new STABLE(), new GMS().joinTimeout(1000))
+                            new FD_SOCK(), new NAKACK2(), new UNICAST3(), new STABLE(), new GMS().joinTimeout(3000))
           .addAddressGenerator(() -> new UUID(uuid, 0))
           .name(name);
     }
