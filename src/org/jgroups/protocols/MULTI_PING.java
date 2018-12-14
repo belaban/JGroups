@@ -61,14 +61,11 @@ public class MULTI_PING extends Discovery {
         ; // not used
     }
 
-    public Responses findMembers(List<Address> members, boolean initial_discovery, boolean async) {
-        num_discovery_requests++;
-        int num_expected=members != null? members.size() : 0;
-        int capacity=members != null? members.size() : 16;
-        final Responses rsps=new Responses(num_expected, initial_discovery && break_on_coord_rsp, capacity);
+    @Override
+    protected void invokeFindMembers(List<Address> members, boolean initial_discovery, Responses rsps, boolean async) {
         findMembers(members, initial_discovery, rsps, async);
-        return rsps;
     }
+
 
     protected void findMembers(List<Address> members, boolean initial_discovery, Responses rsps, boolean async) {
         for(Discovery discovery_protocol: discovery_protocols) {

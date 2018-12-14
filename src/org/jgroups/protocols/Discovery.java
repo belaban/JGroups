@@ -209,6 +209,12 @@ public abstract class Discovery extends Protocol {
      */
     protected abstract void findMembers(List<Address> members, boolean initial_discovery, Responses responses);
 
+    /** Calls {@link #findMembers(List, boolean, Responses)} */
+    protected void invokeFindMembers(List<Address> members, boolean initial_discovery, Responses rsps, boolean async) {
+        findMembers(members, initial_discovery, rsps); // ignores 'async' parameter
+    }
+
+
     public Responses findMembers(final List<Address> members, final boolean initial_discovery, boolean async, long timeout) {
         num_discovery_requests++;
         int num_expected=members != null? members.size() : 0;
@@ -216,13 +222,13 @@ public abstract class Discovery extends Protocol {
         Responses rsps=new Responses(num_expected, initial_discovery && break_on_coord_rsp, capacity);
         addResponse(rsps);
         if(async || async_discovery || (num_discovery_runs > 1) && initial_discovery) {
-            timer.execute(() -> findMembers(members, initial_discovery, rsps));
+            timer.execute(() -> invokeFindMembers(members, initial_discovery, rsps, async));
             if(num_discovery_runs > 1 && initial_discovery) {
                 int num_reqs_to_send=num_discovery_runs-1;
                 long last_send=timeout - (timeout/num_discovery_runs);
                 long interval=last_send/num_reqs_to_send;
                 for(long i=0,delay=interval; i < num_reqs_to_send; i++,delay+=interval) {
-                    Future<?> future=timer.schedule(() -> findMembers(members, initial_discovery, rsps),
+                    Future<?> future=timer.schedule(() -> invokeFindMembers(members, initial_discovery, rsps, async),
                                                     delay, TimeUnit.MILLISECONDS);
                     this.discovery_req_futures.add(future);
                     num_discovery_requests++;
@@ -230,7 +236,7 @@ public abstract class Discovery extends Protocol {
             }
         }
         else
-            findMembers(members, initial_discovery, rsps);
+            invokeFindMembers(members, initial_discovery, rsps, async);
         weedOutCompletedDiscoveryResponses();
         return rsps;
     }
