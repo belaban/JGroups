@@ -74,7 +74,7 @@ public class ExecutionCompletionService<V> implements CompletionService<V> {
      * @param executor the executor to use
      * @param completionQueue the queue to use as the completion queue
      * normally one dedicated for use by this service
-     * @param listener the listener to notify.  To work properly this listner
+     * @param listener the listener to notify.  To work properly this listener
      *        should at minimum call the super.futureDone or else this
      *        completion service may not work correctly.
      * @throws NullPointerException if executor is <tt>null</tt>

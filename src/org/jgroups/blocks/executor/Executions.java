@@ -32,7 +32,7 @@ public final class Executions {
      * constructor array returned from {@link Class#getConstructors()}
      * <p>
      * The amount of arguments must match the amount of arguments required
-     * by the constructor.  Also the arguments must be compatibile with the
+     * by the constructor.  Also the arguments must be compatible with the
      * types required of the constructor.
      * <p>
      * Unfortunately it isn't easy to pass a Constructor<? extends Callable<T>>
