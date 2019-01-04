@@ -299,6 +299,7 @@ public class FD_ALL extends Protocol {
     protected void update(Address sender) {
         if(sender != null && !sender.equals(local_addr))
             timestamps.put(sender, getTimestamp());
+        if (log.isTraceEnabled()) log.trace("Received heartbeat from %s", sender);
     }
 
     protected void addIfAbsent(Address mbr) {
@@ -382,8 +383,10 @@ public class FD_ALL extends Protocol {
         boolean do_unsuspect;
         synchronized(this) {
             do_unsuspect=!suspected_mbrs.isEmpty() && suspected_mbrs.remove(mbr);
-            if(do_unsuspect)
+            if(do_unsuspect) {
                 has_suspected_mbrs=!suspected_mbrs.isEmpty();
+                log.debug("Unsuspecting %s", mbr);
+            }
         }
         if(do_unsuspect) {
             up_prot.up(new Event(Event.UNSUSPECT, mbr));
@@ -412,6 +415,7 @@ public class FD_ALL extends Protocol {
             Message heartbeat=new Message().setFlag(Message.Flag.INTERNAL).putHeader(id, new HeartbeatHeader());
             down_prot.down(heartbeat);
             num_heartbeats_sent++;
+            log.trace("Sent heartbeat");
         }
 
         public String toString() {
