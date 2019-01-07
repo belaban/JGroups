@@ -289,6 +289,8 @@ public class XMLSchemaGenerator {
             entry.getValue().writeElement();
         }
 
+        complexType.appendChild(xmldoc.createElement("xs:anyAttribute"));
+
         return classElement;
     }
 
