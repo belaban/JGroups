@@ -150,7 +150,7 @@ public class Buffers implements Iterable<ByteBuffer> {
     /**
      * Performs a scattering read into all (contiguous) non-null buffers in range [position .. limit]. Returns true if
      * the scattering read was successful, else false. Note that to read the contents of the individual buffers,
-     * {@link ByteBuffer#clear()} has to be called (all buffers have their position == limit on a successfull read).
+     * {@link ByteBuffer#clear()} has to be called (all buffers have their position == limit on a successful read).
      */
     public boolean read(SocketChannel ch) throws Exception {
         long bytes=ch.read(bufs, position, limit-position);

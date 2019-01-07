@@ -36,9 +36,9 @@ import java.util.Map;
  * its layer and so on, until a layer handles the Message and sends a response or discards it,
  * the former resulting in another Event being passed down the stack.
  * <p/>
- * The important thing to bear in mind is that Events have to passed on between layers in FIFO
- * order which is guaranteed by the Protocol implementation and must be guranteed by subclasses
- * implementing their on Event queuing.<p>
+ * The important thing to bear in mind is that <a href=org.jgroups.Event.html>Events</a> have to
+ * be passed on between layers in FIFO order which is guaranteed by the Protocol implementation
+ * and must be guaranteed by subclasses implementing their on Event queuing.<p>
  * <b>Note that each class implementing interface Protocol MUST provide an empty, public
  * constructor !</b>
  *
