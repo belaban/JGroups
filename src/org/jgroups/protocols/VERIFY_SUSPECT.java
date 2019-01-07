@@ -177,7 +177,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     Collection<Address> suspect_list=new LinkedHashSet<>();
                     suspect_list.add(entry.suspect);
                     expired.forEach(e -> suspect_list.add(e.suspect));
-                    log.trace("%s %s dead (passing up SUSPECT event)",
+                    log.debug("%s %s dead (passing up SUSPECT event)",
                               suspect_list, suspect_list.size() > 1? "are" : "is");
                     up_prot.up(new Event(Event.SUSPECT, suspect_list));
                 }
