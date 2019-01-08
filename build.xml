@@ -353,7 +353,7 @@
                 <exclude name="settings.xml"/>
             </fileset>
             <fileset dir="${compile.dir}/schema">
-                <include name="jgroups.xsd"/>
+                <include name="*.xsd"/>
             </fileset>
         </jar>
     </target>
@@ -505,20 +505,19 @@
 			<arg line="-o ${compile.dir}/schema"/>
 			<jvmarg value="-Djava.awt.headless=true"/>
 		</java>
-        <copy todir="${compile.dir}/schema">
-            <fileset dir="${conf.dir}">
-                <include name="*.xsd"/>
-            </fileset>
-        </copy>
-        <!-- Leave a schema named jgrous-4.x.xsd -->
-       <!-- <copy todir="${compile.dir}/schema">
-            <fileset dir="${compile.dir}/schema">
-                <include name="jgroups*.xsd"/>
-            </fileset>
-            <globmapper from="jgroups*.xsd" to="jgroups.xsd"/>
-        </copy>-->
+      <copy todir="${compile.dir}/schema">
+         <fileset dir="${conf.dir}">
+            <include name="*.xsd"/>
+         </fileset>
+      </copy>
+      <!-- Leave a schema named jgrous-4.x.xsd -->
+      <!-- <copy todir="${compile.dir}/schema">
+         <fileset dir="${compile.dir}/schema">
+            <include name="jgroups*.xsd"/>
+         </fileset>
+         <globmapper from="jgroups*.xsd" to="jgroups.xsd"/>
+      </copy>-->
     </target>
-
 
     <target name="clean"
             description="Removes all class files and ./dist">

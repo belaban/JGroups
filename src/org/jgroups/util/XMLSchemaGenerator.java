@@ -69,8 +69,9 @@ public class XMLSchemaGenerator {
             DOMImplementation impl = builder.getDOMImplementation();
             Document xmldoc = impl.createDocument("http://www.w3.org/2001/XMLSchema", "xs:schema", null);
             xmldoc.getDocumentElement().setAttribute("targetNamespace", "urn:org:jgroups");
+            xmldoc.getDocumentElement().setAttribute("xmlns:tns", "urn:org:jgroups");
             xmldoc.getDocumentElement().setAttribute("elementFormDefault", "qualified");
-            xmldoc.getDocumentElement().setAttribute("attributeFormDefault", "qualified");
+            xmldoc.getDocumentElement().setAttribute("attributeFormDefault", "unqualified");
             xmldoc.getDocumentElement().setAttribute("version", version);
 
             Element complexType = xmldoc.createElement("xs:complexType");
@@ -85,7 +86,7 @@ public class XMLSchemaGenerator {
 
             Element xsElement = xmldoc.createElement("xs:element");
             xsElement.setAttribute("name", "config");
-            xsElement.setAttribute("type", "ConfigType");
+            xsElement.setAttribute("type", "tns:ConfigType");
             xmldoc.getDocumentElement().appendChild(xsElement);
 
             DOMSource domSource = new DOMSource(xmldoc);
@@ -109,7 +110,7 @@ public class XMLSchemaGenerator {
             String package_name=PROT_PACKAGE + (suffix == null || suffix.isEmpty()? "" : "." + suffix);
             Set<Class<?>> classes=getClasses(Protocol.class, package_name);
             List<Class<?>> sortedClasses = new LinkedList<>(classes);
-            Collections.sort(sortedClasses, (o1, o2) -> o1.getCanonicalName().compareTo(o2.getCanonicalName()));
+            Collections.sort(sortedClasses, Comparator.comparing(Class::getCanonicalName));
             for (Class<?> clazz : sortedClasses)
                 classToXML(xmldoc, parent, clazz, package_name);
         }
@@ -117,7 +118,7 @@ public class XMLSchemaGenerator {
 
 
     private static Set<Class<?>> getClasses(Class<?> assignableFrom, String packageName)
-      throws IOException, ClassNotFoundException {
+      throws ClassNotFoundException {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         Set<Class<?>> classes = new HashSet<>();
         String path = packageName.replace('.', '/');

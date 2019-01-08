@@ -2,25 +2,25 @@
 
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
            targetNamespace="fork"
-           elementFormDefault="qualified" attributeFormDefault="qualified"
+           elementFormDefault="qualified"
+           xmlns:tns="fork"
            xmlns:jgroups="urn:org:jgroups">
 
-   <xs:import namespace="urn:org:jgroups" schemaLocation="http://www.jgroups.org/schema/jgroups.xsd"/>
+   <xs:import namespace="urn:org:jgroups" schemaLocation="http://www.jgroups.org/schema/jgroups-4.0.xsd"/>
 
-    <xs:complexType name="ForkStack">
-        <xs:sequence>
-            <xs:element name="config" type="jgroups:ConfigType"/>
-        </xs:sequence>
-        <xs:attribute name="id" type="xs:string" use="required"/>
-    </xs:complexType>
+   <xs:complexType name="ForkStack">
+      <xs:sequence>
+         <xs:element name="config" type="jgroups:ConfigType"/>
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:string" use="required"/>
+   </xs:complexType>
 
-    <xs:complexType name="ForkStacksType">
-        <xs:sequence minOccurs="1" maxOccurs="unbounded">
-            <xs:element name="fork-stack" type="ForkStack"/>
-        </xs:sequence>
-    </xs:complexType>
+   <xs:complexType name="ForkStacksType">
+      <xs:sequence maxOccurs="unbounded">
+         <xs:element name="fork-stack" type="tns:ForkStack"/>
+      </xs:sequence>
+   </xs:complexType>
 
-    <xs:element name="fork-stacks" type="ForkStacksType"/>
-
+   <xs:element name="fork-stacks" type="tns:ForkStacksType"/>
 
 </xs:schema>
