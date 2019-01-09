@@ -228,9 +228,9 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         try {
             if(log.isTraceEnabled())
                 log.trace("pinging host " + suspected_mbr + " using interface " + intf);
-            long start=System.currentTimeMillis(), stop;
+            long start=getCurrentTimeMillis(), stop;
             boolean rc=host.isReachable(intf, 0, (int)timeout);
-            stop=System.currentTimeMillis();
+            stop=getCurrentTimeMillis();
             if(rc) // success
                 log.trace("successfully received response from " + host + " (after " + (stop-start) + "ms)");
             else { // failure
@@ -257,7 +257,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             for(Address suspected_mbr : list) {
                 boolean found_dupe=suspects.stream().anyMatch(e -> e.suspect.equals(suspected_mbr));
                 if(!found_dupe) {
-                    suspects.add(new Entry(suspected_mbr, System.currentTimeMillis() + timeout));
+                    suspects.add(new Entry(suspected_mbr, getCurrentTimeMillis() + timeout));
                     added=true;
                 }
             }
@@ -313,6 +313,10 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
         timer=null;
     }
+
+    private static long getCurrentTimeMillis() {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+    }
     /* ----------------------------- End of Private Methods -------------------------------- */
 
     protected static class Entry implements Delayed {
@@ -331,7 +335,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
 
         public long getDelay(TimeUnit unit) {
-            long delay=target_time - System.currentTimeMillis();
+            long delay=target_time - getCurrentTimeMillis();
             return unit.convert(delay, TimeUnit.MILLISECONDS);
         }
 
