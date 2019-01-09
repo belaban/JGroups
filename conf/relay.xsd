@@ -1,32 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema attributeFormDefault="qualified"
+<xs:schema
            elementFormDefault="qualified"
            targetNamespace="urn:jgroups:relay:1.0"
-           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+           xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:tns="urn:jgroups:relay:1.0">
 
     <xs:complexType name="RelayConfigurationType">
         <xs:sequence>
-            <xs:element name="sites" type="sitesType" minOccurs="1" maxOccurs="unbounded"/>
+            <xs:element name="sites" type="tns:sitesType" maxOccurs="unbounded"/>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="sitesType">
 		<xs:sequence>
-			<xs:element maxOccurs="unbounded" minOccurs="1" name="site" type="siteType"/>
+			<xs:element maxOccurs="unbounded" name="site" type="tns:siteType"/>
 		</xs:sequence>
 	</xs:complexType>
 
     <xs:complexType name="siteType">
         <xs:sequence>
-            <xs:element name="bridges" type="bridgesType"   minOccurs="1"/>
-            <xs:element name="forwards" type="forwardsType" minOccurs="0"/>
+            <xs:element name="bridges" type="tns:bridgesType"/>
+            <xs:element name="forwards" type="tns:forwardsType" minOccurs="0"/>
         </xs:sequence>
 		<xs:attribute name="name" type="xs:string" use="required"/>
     </xs:complexType>
 
     <xs:complexType name="bridgesType">
         <xs:sequence>
-            <xs:element minOccurs="0" maxOccurs="unbounded" name="bridge" type="bridgeType"/>
+            <xs:element minOccurs="0" maxOccurs="unbounded" name="bridge" type="tns:bridgeType"/>
         </xs:sequence>
     </xs:complexType>
 
@@ -41,7 +42,7 @@
 
     <xs:complexType name="forwardsType">
         <xs:sequence>
-            <xs:element minOccurs="0" maxOccurs="unbounded" name="forward" type="forwardType"/>
+            <xs:element minOccurs="0" maxOccurs="unbounded" name="forward" type="tns:forwardType"/>
         </xs:sequence>
     </xs:complexType>
 
@@ -54,7 +55,7 @@
 		</xs:simpleContent>
 	</xs:complexType>
 
-    <xs:element name="RelayConfiguration" type="RelayConfigurationType">
+    <xs:element name="RelayConfiguration" type="tns:RelayConfigurationType">
         <xs:annotation>
             <xs:documentation>Sample configuration of multiple sites, to be used in RELAY2</xs:documentation>
         </xs:annotation>

@@ -153,6 +153,9 @@
             </resource>
             <resource>
                 <directory>${project.build.directory}/schema</directory>
+                <includes>
+                    <include>*.xsd</include>
+                </includes>
             </resource>
             <resource>
                <directory>${project.basedir}</directory>
@@ -274,6 +277,11 @@
                                     </classpath>
                                     <arg line="-o ${project.build.directory}/schema"/>
                                 </java>
+                                <copy todir="${project.build.directory}/schema">
+                                    <fileset dir="conf">
+                                        <include name="*.xsd"/>
+                                    </fileset>
+                                </copy>
                             </target>
                         </configuration>
                     </execution>
