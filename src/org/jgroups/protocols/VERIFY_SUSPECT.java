@@ -69,7 +69,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
     }
 
-    protected Thread timer;
+    protected volatile Thread timer;
     
     
     
@@ -109,10 +109,11 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                 if(s == null)
                     return null;
                 s.remove(local_addr); // ignoring suspect of self
-                if(!use_icmp)
-                    verifySuspect(s);
-                else
+                if (use_icmp) {
                     s.forEach(this::verifySuspectWithICMP);
+                } else {
+                    verifySuspect(s);
+                }
                 return null;  // don't pass up; we will decide later (after verification) whether to pass it up
 
             case Event.CONFIG:
