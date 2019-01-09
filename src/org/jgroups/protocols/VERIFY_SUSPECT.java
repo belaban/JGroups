@@ -2,10 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.LocalAddress;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
@@ -33,34 +30,38 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     /* ------------------------------------------ Properties  ------------------------------------------ */
     
     @Property(description="Number of millisecs to wait for a response from a suspected member")
-    protected long        timeout=2000;
+    protected long                    timeout=2000;
     
     @Property(description="Number of verify heartbeats sent to a suspected member")
-    protected int         num_msgs=1;
+    protected int                     num_msgs=1;
     
     @Property(description="Use InetAddress.isReachable() to verify suspected member instead of regular messages")
-    protected boolean     use_icmp;
+    protected boolean                 use_icmp;
 
     @Property(description="Send the I_AM_NOT_DEAD message back as a multicast rather than as multiple unicasts " +
       "(default is false)")
-    protected boolean     use_mcast_rsps;
+    protected boolean                 use_mcast_rsps;
 
     @LocalAddress
     @Property(description="Interface for ICMP pings. Used if use_icmp is true " +
             "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
               systemProperty={Global.BIND_ADDR})
-    protected InetAddress bind_addr; // interface for ICMP pings
+    protected InetAddress             bind_addr; // interface for ICMP pings
     
     /* --------------------------------------------- Fields ------------------------------------------------ */
     
     
     /** network interface to be used to send the ICMP packets */
     protected NetworkInterface        intf;
-    
     protected Address                 local_addr;
 
     // a list of suspects, ordered by time when a SUSPECT event needs to be sent up
     protected final DelayQueue<Entry> suspects=new DelayQueue<>();
+
+    protected volatile Thread         timer;
+    protected volatile boolean        running;
+
+
 
     @ManagedAttribute(description = "List of currently suspected members")
     public String getSuspects() {
@@ -69,7 +70,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
     }
 
-    protected volatile Thread timer;
+
     
     
     
@@ -109,11 +110,10 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                 if(s == null)
                     return null;
                 s.remove(local_addr); // ignoring suspect of self
-                if (use_icmp) {
+                if(use_icmp)
                     s.forEach(this::verifySuspectWithICMP);
-                } else {
+                else
                     verifySuspect(s);
-                }
                 return null;  // don't pass up; we will decide later (after verification) whether to pass it up
 
             case Event.CONFIG:
@@ -169,7 +169,14 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
      * When a suspected member is un-suspected, the member is removed from the queue.
      */
     public void run() {
-        while(!suspects.isEmpty() && timer != null) {
+        for(;;) {
+            synchronized(suspects) {
+                // atomically checks for the empty queue and sets running to false (JGRP-2287)
+                if(suspects.isEmpty()) {
+                    running=false;
+                    return;
+                }
+            }
             try {
                 Entry entry=suspects.poll(timeout,TimeUnit.MILLISECONDS);
                 if(entry != null) {
@@ -184,10 +191,11 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                 }
             }
             catch(InterruptedException e) {
+                if(!running)
+                    break;
             }
         }
     }
-
 
 
     /* --------------------------------- Private Methods ----------------------------------- */
@@ -196,11 +204,10 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     /**
      * Sends ARE_YOU_DEAD message to suspected_mbr, wait for return or timeout
      */
-    void verifySuspect(Collection<Address> mbrs) {
+    protected void verifySuspect(Collection<Address> mbrs) {
         if(mbrs == null || mbrs.isEmpty())
             return;
-        boolean added=addSuspects(mbrs);
-        if(added) {
+        if(addSuspects(mbrs)) {
             startTimer(); // start timer before we send out are you dead messages
             log.trace("verifying that %s %s dead", mbrs, mbrs.size() == 1? "is" : "are");
         }
@@ -214,7 +221,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     }
 
 
-    void verifySuspectWithICMP(Address suspected_mbr) {
+    protected void verifySuspectWithICMP(Address suspected_mbr) {
         InetAddress host=suspected_mbr instanceof IpAddress? ((IpAddress)suspected_mbr).getIpAddress() : null;
         if(host == null)
             throw new IllegalArgumentException("suspected_mbr is not of type IpAddress - FD_ICMP only works with these");
@@ -237,6 +244,11 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
     }
 
+    /**
+     * Adds suspected members to the suspect list. Returns true if a member is not present and the timer is not running.
+     * @param list The list of suspected members
+     * @return true if the timer needs to be started, or false otherwise
+     */
     protected boolean addSuspects(Collection<Address> list) {
         if(list == null || list.isEmpty())
             return false;
@@ -249,8 +261,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     added=true;
                 }
             }
+            return (added && !running) && (running=true);
         }
-        return added;
     }
 
     protected boolean removeSuspect(Address suspect) {
@@ -258,6 +270,12 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             return false;
         synchronized(suspects) {
             return suspects.removeIf(e -> Objects.equals(e.suspect, suspect));
+        }
+    }
+
+    protected void clearSuspects() {
+        synchronized(suspects) {
+            suspects.clear();
         }
     }
 
@@ -272,11 +290,9 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
     protected synchronized void startTimer() {
-        if(timer == null || !timer.isAlive()) {            
-            timer=getThreadFactory().newThread(this,"VERIFY_SUSPECT.TimerThread");
-            timer.setDaemon(true);
-            timer.start();
-        }
+        timer=getThreadFactory().newThread(this,"VERIFY_SUSPECT.TimerThread");
+        timer.setDaemon(true);
+        timer.start();
     }
 
     public void init() throws Exception {
@@ -288,9 +304,10 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
     public synchronized void stop() {
-        Thread tmp;
+        clearSuspects();
+        running=false;
         if(timer != null && timer.isAlive()) {
-            tmp=timer;
+            Thread tmp=timer;
             timer=null;
             tmp.interrupt();
         }
@@ -300,7 +317,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
     protected static class Entry implements Delayed {
         protected final Address suspect;
-        protected final long target_time;
+        protected final long    target_time;
 
         public Entry(Address suspect, long target_time) {
             this.suspect=suspect;
