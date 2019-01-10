@@ -41,14 +41,7 @@ public abstract class BaseBundler implements Bundler {
     public void send(Message msg) throws Exception {}
 
     public void viewChange(View view) {
-        lock.lock();
-        try {
-            // remove all members not in the current view; skip dst == null
-            msgs.keySet().removeIf(mbr -> mbr != null && !view.containsMember(mbr));
-        }
-        finally {
-            lock.unlock();
-        }
+        // code removed (https://issues.jboss.org/browse/JGRP-2324)
     }
 
     public int size() {
