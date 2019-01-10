@@ -51,6 +51,10 @@ public class Owner implements Streamable {
     public int hashCode() {
         return (int)(address.hashCode() + thread_id);
     }
+    
+    public int compareTo(Owner o) {
+        return thread_id < o.thread_id? -1 : thread_id > o.thread_id? 1 : address.compareTo(o.address);
+    }
 
     public String toString() {
         return thread_id < 0? address.toString() : address + "::" + thread_id;
