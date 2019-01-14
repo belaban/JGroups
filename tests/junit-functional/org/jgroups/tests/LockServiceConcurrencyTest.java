@@ -56,7 +56,7 @@ public class LockServiceConcurrencyTest {
         a.getProtocolStack().insertProtocol(dropper, ProtocolStack.BELOW, CENTRAL_LOCK.class);
 
         // we're dropping the LOCK-GRANTED response for lock-id #1, so this lock acquisition must fail; lock L will not be released!
-        boolean success=lock.tryLock(10, TimeUnit.MILLISECONDS);
+        boolean success=lock.tryLock(4, TimeUnit.MILLISECONDS);
         assert !success : "the lock acquisition should have failed";
 
 
