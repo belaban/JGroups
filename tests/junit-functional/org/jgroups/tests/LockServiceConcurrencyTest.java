@@ -9,6 +9,7 @@ import org.jgroups.blocks.locking.LockService;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.CENTRAL_LOCK;
 import org.jgroups.protocols.Locking;
+import org.jgroups.protocols.Locking.LockingHeader;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MessageBatch;
@@ -56,7 +57,7 @@ public class LockServiceConcurrencyTest {
         a.getProtocolStack().insertProtocol(dropper, ProtocolStack.BELOW, CENTRAL_LOCK.class);
 
         // we're dropping the LOCK-GRANTED response for lock-id #1, so this lock acquisition must fail; lock L will not be released!
-        boolean success=lock.tryLock(4, TimeUnit.MILLISECONDS);
+        boolean success=lock.tryLock(1, TimeUnit.MILLISECONDS);
         assert !success : "the lock acquisition should have failed";
 
 
@@ -71,8 +72,8 @@ public class LockServiceConcurrencyTest {
 
     protected void printLocks(JChannel ... channels) {
         for(JChannel ch: channels) {
-            Protocol l=ch.getProtocolStack().findProtocol(CENTRAL_LOCK.class);
-            System.out.printf("**** server locks on %s: %s\n", ch.getAddress(), l.printStats());
+            Locking l=(Locking) ch.getProtocolStack().findProtocol(CENTRAL_LOCK.class);
+            System.out.printf("**** server locks on %s: %s\n", ch.getAddress(), l.printLocks());
         }
     }
 
@@ -84,8 +85,8 @@ public class LockServiceConcurrencyTest {
         protected int     num_grant_lock_reqs_received;
         protected Message lock_granted_req;
 
-
-        public Object down(Message msg) {
+        @Override
+        public boolean accept(Message msg) {
             Header hdr=msg.getHeader(CENTRAL_LOCK_ID);
             if(hdr != null) {
                 try {
@@ -95,7 +96,7 @@ public class LockServiceConcurrencyTest {
                             if(num_grant_lock_reqs_received == 1) {
                                 lock_granted_req=msg;
                                 System.out.printf("==> queued the LOCK_GRANTED response to be sent %s\n", req);
-                                return null; // drops the LOCK_GRANTED response and queues the response
+                                return false; // drops the LOCK_GRANTED response and queues the response
                             }
                             if(num_grant_lock_reqs_received == 2) {
                                 // send the queued LOCK_GRANTED response
@@ -103,7 +104,7 @@ public class LockServiceConcurrencyTest {
                                     System.out.printf("==> sending the queued LOCK_GRANTED response\n");
                                     down_prot.down(new Event(Event.MSG, lock_granted_req));
                                     lock_granted_req=null;
-                                    return null; // and drop the real LOCK_GRANTED response
+                                    return false; // and drop the real LOCK_GRANTED response
                                 }
                             }
                             break;
@@ -113,15 +114,24 @@ public class LockServiceConcurrencyTest {
                     log.error("failed deserializing request", ex);
                 }
             }
-            return down_prot.down(new Event(Event.MSG, msg));
-            
+            return true;
         }
 
-        public Object up(Message msg) {
-            handleMessage(msg);
-            return up_prot.up(new Event(Event.MSG, msg));
+        @Override
+        public Object down(Event event) {
+            Message message = (Message) event.getArg();
+            accept(message);
+            return new Event(event.getType(), message);
         }
 
+        @Override
+        public Object up(Event event) {
+            Message message = (Message) event.arg();
+            handleMessage(message);
+            return up_prot.up(new Event(Event.MSG, message));
+        }
+
+        @Override
         public void up(MessageBatch batch) {
             for(Message msg: batch)
                 handleMessage(msg);
@@ -130,7 +140,9 @@ public class LockServiceConcurrencyTest {
         }
 
         protected void handleMessage(Message msg) {
-            Header hdr=msg.getHeader(CENTRAL_LOCK_ID);
+            Locking lock_prot=(Locking) up_prot;
+            short lock_prot_id = ClassConfigurator.getProtocolId(lock_prot.getClass());
+            Locking.LockingHeader hdr = (LockingHeader) msg.getHeader(lock_prot_id);
             if(hdr != null) {
                 try {
                     Locking.Request req=Util.streamableFromBuffer(Locking.Request.class, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
