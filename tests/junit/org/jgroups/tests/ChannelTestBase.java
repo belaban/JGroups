@@ -34,8 +34,8 @@ public class ChannelTestBase {
     protected Log     log;
 
     @BeforeClass
-    @Parameters(value = { "channel.conf", "use_blocking" })
-    protected void initializeBase(@Optional("udp.xml") String chconf, @Optional("false") String use_blocking) throws Exception {
+    @Parameters(value = { "channel.conf"})
+    protected void initializeBase(@Optional("udp.xml") String chconf) throws Exception {
         log=LogFactory.getLog(this.getClass());
         Test annotation = this.getClass().getAnnotation(Test.class);
         // this should never ever happen!
@@ -45,8 +45,6 @@ public class ChannelTestBase {
         StackType type=Util.getIpStackType();
         bind_addr=type == StackType.IPv6 ? "::1" : "127.0.0.1";
         this.channel_conf = chconf;
-        bind_addr = Util.getProperty(new String[]{Global.BIND_ADDR}, null, "bind_addr", bind_addr);
-        System.setProperty(Global.BIND_ADDR, bind_addr);
     }
 
 
@@ -183,7 +181,7 @@ public class ChannelTestBase {
 
         protected void makeUnique(JChannel channel, int num, String mcast_address) throws Exception {
             ProtocolStack stack = channel.getProtocolStack();
-            Protocol transport = stack.getTransport();
+            TP transport = stack.getTransport();
 
             if (transport instanceof UDP) {
                 short mcast_port = ResourceManager.getNextMulticastPort(InetAddress.getByName(bind_addr));
@@ -196,8 +194,7 @@ public class ChannelTestBase {
                 }
             } else if (transport instanceof BasicTCP) {
                 List<Integer> ports = ResourceManager.getNextTcpPorts(InetAddress.getByName(bind_addr), num);
-                ((TP) transport).setBindPort(ports.get(0));
-                // ((TP) transport).setPortRange(num);
+                transport.setBindPort(ports.get(0));
 
                 Protocol ping = stack.findProtocol(TCPPING.class);
                 if (ping == null)

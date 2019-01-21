@@ -53,10 +53,6 @@ public class ViewDemo extends ReceiverAdapter {
                 props=args[++i];
                 continue;
             }
-            if("-bind_addr".equals(args[i])) {
-                System.setProperty("jgroups.bind_addr", args[++i]);
-                continue;
-            }
             help();
             return;
         }
@@ -70,7 +66,7 @@ public class ViewDemo extends ReceiverAdapter {
     }
 
     static void help() {
-        System.out.println("ViewDemo [-props <properties>] [-help] [-use_additional_data <flag>] [-bind_addr <address>]");
+        System.out.println("ViewDemo [-props <properties>] [-help] [-use_additional_data <flag>]");
     }
 
 }

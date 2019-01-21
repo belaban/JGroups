@@ -12,31 +12,20 @@ import java.util.concurrent.CyclicBarrier;
  */
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class ConcurrentCloseTest extends ChannelTestBase {
-    JChannel c1, c2;
+    JChannel a, b;
 
 
-    @AfterMethod
-    void tearDown() throws Exception {
-        Util.close(c2, c1);
-    }
+    @AfterMethod void tearDown() throws Exception {Util.close(b, a);}
 
-    /**
-     * 2 channels, both call Channel.close() at exactly the same time
-     */
+    /** 2 channels, both call Channel.close() at exactly the same time */
     public void testConcurrentClose() throws Exception {
-        System.setProperty("useBlocking", "true"); // enables reception of block() and unblock() callbacks
-        c1=createChannel(true);
-        c1.setReceiver(new MyReceiver("C1"));
+        final String GROUP="ConcurrentCloseTest";
+        a=createChannel(true).name("A").setReceiver(new MyReceiver("A")).connect(GROUP);
+        b=createChannel(a).name("B").setReceiver(new MyReceiver("B")).connect(GROUP);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b);
 
-        c2=createChannel(c1);
-        c2.setReceiver(new MyReceiver("C2"));
-
-        final String GROUP=getUniqueClusterName("ConcurrentCloseTest");
-        c1.connect(GROUP);
-        c2.connect(GROUP);
         CyclicBarrier barrier=new CyclicBarrier(3);
-
-        Closer one=new Closer(c1, barrier), two=new Closer(c2, barrier);
+        Closer one=new Closer(a, barrier), two=new Closer(b, barrier);
         one.start(); two.start();
         Util.sleep(500);
         barrier.await(); // starts the closing of the 2 channels
