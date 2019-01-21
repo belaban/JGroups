@@ -47,6 +47,11 @@ public class PEER_LOCK extends Locking {
     protected void sendReleaseLockRequest(String lock_name, Owner owner) {
         sendRequest(null, Type.RELEASE_LOCK, lock_name, owner, 0, false);
     }
+    
+	@Override
+	protected void sendReleaseLockRequest(String lock_name, int lock_id, Owner owner) {
+		sendRequest(null, Type.RELEASE_LOCK, lock_name, owner, 0, false);		
+	}
 
 
     @Override
