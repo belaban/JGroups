@@ -127,10 +127,6 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
                 state_timeout=Long.parseLong(args[++i]);
                 continue;
             }
-            if("-bind_addr".equals(args[i])) {
-                System.setProperty("jgroups.bind_addr", args[++i]);
-                continue;
-            }
             if("-use_unicasts".equals(args[i])) {
                 use_unicasts=true;
                 continue;
@@ -169,7 +165,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
     static void help() {
         System.out.println("\nDraw [-help] [-no_channel] [-props <protocol stack definition>]" +
                 " [-clustername <name>] [-state] [-timeout <state timeout>] [-use_unicasts] " +
-                "[-bind_addr <addr>] [-jmx <true | false>] [-name <logical name>] [-send_own_state_on_merge true|false] " +
+                "[-jmx <true | false>] [-name <logical name>] [-send_own_state_on_merge true|false] " +
                              "[-uuid <UUID>]");
         System.out.println("-no_channel: doesn't use JGroups at all, any drawing will be relected on the " +
                 "whiteboard directly");

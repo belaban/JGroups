@@ -2,16 +2,19 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.JChannel;
+import org.jgroups.annotations.Property;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.NAKACK2;
+import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.Util;
 import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.net.InetAddress;
-import java.util.List;
+import java.util.*;
 
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
@@ -35,7 +38,11 @@ public class ConfiguratorTest {
         stack=ch.getProtocolStack();
     }
 
-    
+    @AfterMethod protected void destroy() {
+        Util.close(ch);
+    }
+
+
     public void testRemovalOfTop() throws Exception {
         Protocol prot=stack.removeProtocol("MFC");
         assert prot != null;
@@ -127,17 +134,31 @@ public class ConfiguratorTest {
 
     /** Tests that vars are substituted correctly when creating a channel programmatically (https://issues.jboss.org/browse/JGRP-1908) */
     public void testProgrammaticCreationAndVariableSubstitution() throws Exception {
-        System.setProperty(Global.EXTERNAL_PORT, "10000");
-        System.setProperty(Global.BIND_ADDR, "127.0.0.1");
-        JChannel channel=new JChannel(
-          new SHARED_LOOPBACK() /* dummy stack */
-        ).name("A");
+        try {
+            System.setProperty("person.name", "Bela");
+            System.setProperty("person.age", "50");
 
-        TP tp=channel.getProtocolStack().getTransport();
-        assert tp.getValue("external_port").equals(10000);
-        assert tp.getValue("bind_addr").equals(InetAddress.getByName("127.0.0.1"));
+            Map<String,String> map=new HashMap<>();
+            Map<Object,Object> table=System.getProperties();
+            for(Map.Entry entry: table.entrySet())
+                map.put((String)entry.getKey(), (String)entry.getValue());
 
+            Person p=new Person();
+            Configurator.resolveAndAssignFields(p, map);
+            assert Objects.equals(p.name, "Bela");
+            assert p.age == 50;
+        }
+        finally {
+            System.clearProperty("person.name");
+            System.clearProperty("person.age");
+        }
     }
 
+    protected static final class Person extends Protocol {
+        @Property(systemProperty="person.name")
+        protected String name;
+        @Property(systemProperty="person.age")
+        protected int age;
+    }
 
 }
