@@ -454,7 +454,7 @@ public class NioConnection extends Connection {
         }
 
         protected void _run() {
-            final Condition is_data_available=() -> data_available;
+            final Condition is_data_available=() -> data_available || !running;
             while(running) {
                 for(;;) { // try to receive as many msgs as possible, until no more msgs are ready or the conn is closed
                     try {
