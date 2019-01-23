@@ -11,7 +11,6 @@ import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -60,7 +59,7 @@ public class NioServerTest2 {
 
         TCP_NIO2 ta=(TCP_NIO2)a.getProtocolStack().getTransport(), tb=(TCP_NIO2)b.getProtocolStack().getTransport();
         System.out.printf("A.partial_writes=%d, B.partial_writes=%d\n", ta.numPartialWrites(), tb.numPartialWrites());
-        NAKACK2 na=(NAKACK2)a.getProtocolStack().findProtocol(NAKACK2.class), nb=(NAKACK2)b.getProtocolStack().findProtocol(NAKACK2.class);
+        NAKACK2 na=a.getProtocolStack().findProtocol(NAKACK2.class), nb=b.getProtocolStack().findProtocol(NAKACK2.class);
         System.out.printf("A.xmit_reqs_sent|received=%d|%d, B.xmit_reqs_sent|received=%d|%d\n",
                           na.getXmitRequestsSent(), na.getXmitRequestsReceived(), nb.getXmitRequestsSent(), nb.getXmitRequestsReceived());
 
@@ -69,7 +68,7 @@ public class NioServerTest2 {
         check(rb, "B");
     }
 
-    protected void check(MyReceiver r, String name) {
+    protected static void check(MyReceiver r, String name) {
         if(r.bad() > 0) {
             List<byte[]> bad_msgs=r.badMsgs();
             for(byte[] arr: bad_msgs)
@@ -81,7 +80,7 @@ public class NioServerTest2 {
 
 
     protected static JChannel create(String name) throws Exception {
-        return new JChannel(new Protocol[] {
+        return new JChannel(
           new TCP_NIO2()
             .setValue("bind_addr", Util.getLocalhost())
             .setValue("recv_buf_size", recv_buf_size).setValue("send_buf_size", send_buf_size),
@@ -90,14 +89,7 @@ public class NioServerTest2 {
           new UNICAST3(),
           new STABLE(),
           new GMS().joinTimeout(1000),
-          new FRAG2()
-        }
-        ).name(name);
-
-       // JChannel ch=new JChannel("/home/bela/bad-tcp-nio.xml").name(name);
-        //TCP_NIO2 tp=(TCP_NIO2)ch.getProtocolStack().getTransport();
-        //tp.setValue("recv_buf_size", recv_buf_size).setValue("send_buf_size", send_buf_size);
-        //return ch;
+          new FRAG2()).name(name);
     }
 
 
