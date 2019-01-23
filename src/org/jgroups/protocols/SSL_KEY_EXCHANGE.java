@@ -1,12 +1,11 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Global;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Runner;
 import org.jgroups.util.Tuple;
@@ -35,11 +34,11 @@ import java.util.Objects;
  * @author Bela Ban
  * @since  4.0.5
  */
-@SuppressWarnings("unused")
 @MBean(description="Key exchange protocol based on an SSL connection between secret key requester and provider " +
   "(key server) to fetch a shared secret group key from the key server. That shared (symmetric) key is subsequently " +
   "used to encrypt communication between cluster members")
 public class SSL_KEY_EXCHANGE extends KeyExchange {
+    protected static final short GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
 
     protected enum Type {
         SECRET_KEY_REQ,
@@ -101,21 +100,21 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected String          session_verifier_arg;
 
 
-    protected SSLServerSocket srv_sock;
-
-    protected Runner          srv_sock_handler;
-
-    protected KeyStore        key_store;
-
-    protected View            view;
-
-    protected SessionVerifier session_verifier;
+    protected SSLServerSocket              srv_sock;
+    protected Runner                       srv_sock_handler;
+    protected KeyStore                     key_store;
+    protected View                         view;
+    protected SessionVerifier              session_verifier;
 
 
     public SSL_KEY_EXCHANGE setKeystoreName(String name)    {this.keystore_name=name; return this;}
     public SSL_KEY_EXCHANGE setKeystorePassword(String pwd) {this.keystore_password=pwd; return this;}
     public SSL_KEY_EXCHANGE setPortRange(int r)             {this.port_range=r; return this;}
     public SSL_KEY_EXCHANGE setPort(int p)                  {this.port=p; return this;}
+
+    public Address getServerLocation() {
+        return srv_sock == null? null : new IpAddress(getTransport().getBindAddress(), srv_sock.getLocalPort());
+    }
 
     public void init() throws Exception {
         super.init();
@@ -125,7 +124,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         if(asym_encrypt != null) {
             String sym_alg=asym_encrypt.symAlgorithm();
             if(!Util.match(sym_alg, secret_key_algorithm)) {
-                log.warn("overriding %s=%s to %s from %s", "secret_key_algorithm", secret_key_algorithm,
+                log.warn("%s: overriding %s=%s to %s from %s", "secret_key_algorithm", local_addr, secret_key_algorithm,
                          sym_alg, ASYM_ENCRYPT.class.getSimpleName());
                 secret_key_algorithm=sym_alg;
             }
@@ -156,19 +155,13 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
 
     public void stop() {
         super.stop();
-        if(srv_sock_handler != null) {
-            srv_sock_handler.stop(); // should also close srv_sock
-            srv_sock_handler=null;
-            Util.close(srv_sock);  // not needed, but second line of defense
-            srv_sock=null;
-        }
+        stopKeyserver();
     }
 
     public void destroy() {
         super.destroy();
     }
 
-    @SuppressWarnings("unchecked")
     public Object up(Event evt) {
         if(evt.getType() == Event.CONFIG) {
             if(bind_addr == null) {
@@ -210,27 +203,6 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         }
     }
 
-    protected void handleView(View view) {
-        Address old_coord=this.view != null? this.view.getCoord() : null;
-        this.view=view;
-
-        if(Objects.equals(view.getCoord(), local_addr)) {
-            if(!Objects.equals(old_coord, local_addr)) {
-                try {
-                    becomeKeyserver();
-                }
-                catch(Exception e) {
-                    log.error("failed becoming key server", e);
-                }
-            }
-        }
-        else { // stop being keyserver, close the server socket and handler
-            if(Objects.equals(old_coord, local_addr))
-                stopKeyserver();
-        }
-    }
-
-
 
     protected void accept() {
         try(SSLSocket client_sock=(SSLSocket)srv_sock.accept()) {
@@ -266,7 +238,28 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
             out.write(secret_key);
         }
         catch(Throwable t) {
-            log.trace("failure handling client socket", t);
+            log.trace("%s: failure handling client socket: %s", local_addr, t.getMessage());
+        }
+    }
+
+
+    protected void handleView(View view) {
+        Address old_coord=this.view != null? this.view.getCoord() : null;
+        this.view=view;
+
+        if(Objects.equals(view.getCoord(), local_addr)) {
+            if(!Objects.equals(old_coord, local_addr)) {
+                try {
+                    becomeKeyserver();
+                }
+                catch(Throwable e) {
+                    log.error("failed becoming key server", e);
+                }
+            }
+        }
+        else { // stop being keyserver, close the server socket and handler
+            if(Objects.equals(old_coord, local_addr))
+                stopKeyserver();
         }
     }
 
@@ -278,19 +271,19 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
             srv_sock_handler=new Runner(getThreadFactory(), SSL_KEY_EXCHANGE.class.getSimpleName() + "-runner",
                                         this::accept, () -> Util.close(srv_sock));
             srv_sock_handler.start();
-            log.debug("SSL server socket listening on %s", srv_sock.getLocalSocketAddress());
+            log.debug("%s: SSL server socket listening on %s", local_addr, srv_sock.getLocalSocketAddress());
         }
     }
 
     protected synchronized void stopKeyserver() {
+        if(srv_sock != null) {
+            Util.close(srv_sock); // should not be necessary (check)
+            srv_sock=null;
+        }
         if(srv_sock_handler != null) {
             log.debug("%s: ceasing to be the keyserver; closing the server socket", local_addr);
             srv_sock_handler.stop();
             srv_sock_handler=null;
-        }
-        if(srv_sock != null) {
-            Util.close(srv_sock); // should not be necessary (check)
-            srv_sock=null;
         }
     }
 
@@ -315,6 +308,9 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected SSLSocket createSocketTo(Address target) throws Exception {
         SSLContext ctx=getContext();
         SSLSocketFactory sslSocketFactory=ctx.getSocketFactory();
+
+        if(target instanceof IpAddress)
+            return createSocketTo((IpAddress)target, sslSocketFactory);
 
         IpAddress dest=(IpAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, target));
         SSLSocket sock=null;
@@ -343,7 +339,28 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
                                                       dest.getIpAddress(), port, port+port_range));
     }
 
+    protected SSLSocket createSocketTo(IpAddress dest, SSLSocketFactory sslSocketFactory) {
+        try {
+            SSLSocket sock=(SSLSocket)sslSocketFactory.createSocket(dest.getIpAddress(), dest.getPort());
+            sock.setSoTimeout(socket_timeout);
+            sock.setEnabledCipherSuites(sock.getSupportedCipherSuites());
+            sock.startHandshake();
+            SSLSession sslSession=sock.getSession();
 
+            log.debug("%s: created SSL connection to %s (%s); protocol: %s, cipher suite: %s",
+                      local_addr, dest, sock.getRemoteSocketAddress(), sslSession.getProtocol(), sslSession.getCipherSuite());
+
+            if(session_verifier != null)
+                session_verifier.verify(sslSession);
+            return sock;
+        }
+        catch(SecurityException sec_ex) {
+            throw sec_ex;
+        }
+        catch(Throwable t) {
+            throw new IllegalStateException(String.format("failed connecting to %s: %s", dest, t.getMessage()));
+        }
+    }
 
 
     protected SSLContext getContext() throws Exception {

@@ -1,9 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.demos.KeyStoreGenerator;
 import org.jgroups.protocols.pbcast.GMS;
@@ -23,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -30,19 +28,19 @@ import java.util.stream.Stream;
  * @author Bela Ban
  * @since  4.0
  */
-@Test(enabled=false)
+@Test(groups={Global.FUNCTIONAL,Global.ENCRYPT},singleThreaded=true)
 public abstract class EncryptTest {
-    protected JChannel            a,b,c,rogue;
-    protected MyReceiver<Message> ra, rb, rc, r_rogue;
-    protected String              cluster_name;
-    protected static final short  GMS_ID;
+    protected JChannel                 a,b,c,d,rogue;
+    protected MyReceiver<Message>      ra, rb, rc, r_rogue;
+    protected final String             cluster_name=getClass().getSimpleName();
+    protected static final short       GMS_ID;
 
     static {
         GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
     }
 
-    protected void init(String cluster_name) throws Exception {
-        this.cluster_name=cluster_name;
+
+    protected void init() throws Exception {
         a=create("A").connect(cluster_name).setReceiver(ra=new MyReceiver<>().rawMsgs(true));
         b=create("B").connect(cluster_name).setReceiver(rb=new MyReceiver<>().rawMsgs(true));
         c=create("C").connect(cluster_name).setReceiver(rc=new MyReceiver<>().rawMsgs(true));
@@ -52,10 +50,9 @@ public abstract class EncryptTest {
         System.out.println("");
     }
 
-    @Test(enabled=false) protected void destroy() {Util.close(rogue, c, b, a);}
+    protected void destroy() {Util.close(rogue,d,c,b,a);}
 
     protected abstract JChannel create(String name) throws Exception;
-
 
 
     /** Tests A,B or C sending messages and their reception by everyone in cluster {A,B,C} */
@@ -166,7 +163,7 @@ public abstract class EncryptTest {
         encrypt.init();
 
         short encrypt_id=ClassConfigurator.getProtocolId(SYM_ENCRYPT.class);
-        EncryptHeader hdr=new EncryptHeader(EncryptHeader.ENCRYPT, encrypt.symVersion());
+        EncryptHeader hdr=new EncryptHeader(encrypt.symVersion());
         Message msg=new Message(null).putHeader(encrypt_id, hdr);
 
         byte[] buf="hello from rogue".getBytes();
@@ -271,7 +268,7 @@ public abstract class EncryptTest {
         }
 
         Stream.of(ra, rb, rc).map(MyReceiver::list).map(l -> l.stream().map(msg -> (String)msg.getObject())
-          .collect(ArrayList::new, ArrayList::add, (x, y) -> {})).forEach(System.out::println);
+          .collect(Collectors.toList())).forEach(System.out::println);
         assert ra.size() == 1 : String.format("received msgs from non-member: '%s'; this should not be the case", print(ra.list()));
         assert rb.size() == 1 : String.format("received msgs from non-member: '%s'; this should not be the case", print(rb.list()));
         assert rc.size() == 1 : String.format("received msgs from non-member: '%s'; this should not be the case", print(rc.list()));
@@ -331,7 +328,8 @@ public abstract class EncryptTest {
     }
 
     protected static String print(List<Message> msgs) {
-        return msgs.stream().collect(ArrayList::new, (l,msg) -> l.add(msg.getObject()), (x, y) -> {}).toString();
+        return msgs.stream().map(Message::getObject).map(obj -> obj== null? "null" : obj.toString())
+          .collect(Collectors.joining(", ", "[", "]"));
     }
 
     protected static String print(byte[] buf, int offset, int length) {

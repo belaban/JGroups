@@ -1850,7 +1850,7 @@ keystore (symmetric encryption) or a new joiner fetches it from the coordinator 
 
 A sender encrypts a message with the shared secret key and the receivers decrypt it with the same secret key.
 
-By default, only the payload of a message is encrypted, but not the other metadata (e.g. headers, destination address,
+By default, only the _payload_ of a message is encrypted, but not the other metadata (e.g. headers, destination address,
 flags etc).
 
 If (for example) headers are not encrypted, it is possible to use replay attacks, because the sequence number (seqno)
@@ -1901,8 +1901,7 @@ ${SYM_ENCRYPT}
 [[ASYM_ENCRYPT]]
 ===== ASYM_ENCRYPT
 Contrary to SYM_ENCRYPT, the secret key is not fetched from a shared keystore, but from the current coordinator C. After
-new member P joins the cluster (passing the join check done by AUTH), P sends a request to get the secret key
-(including P's public key) to C.
+new member P joins the cluster, it sends a request to get the secret key (including P's public key).
 
 C then sends the secret key back to P, encrypted with P's public key, and P decrypts it with its private key
 and installs it. From then on, P encrypts and decrypts messages using the secret key.
@@ -1935,6 +1934,8 @@ The configuration snippet shows ASYM_ENCRYPT positioned just below NAKACK2, so t
 retransmission protocols NAKACK2 and UNICAST3 are encrypted, too. Note that AUTH should be part of the configuration, or
 else unauthenticated nodes would be able to acquire the secret key from the coordinator.
 
+For details on the design of ASYM_ENCRYPT see https://github.com/belaban/JGroups/blob/master/doc/design/ASYM_ENCRYPT.txt.
+
 ${ASYM_ENCRYPT}
 
 
@@ -1951,7 +1952,7 @@ ${SERIALIZE}
 <<ASYM_ENCRYPT>> uses a built-in key exchange protocol for a requester to fetch the secret group key from the key server
 (usually the coordinator). Such secret key requests are accompanied by the requester's public key. The key server
 encrypts the secret key response with the public key of the requester, and the requester decrypts the response with its
-private key and can then install the new secret group key to encrypt and decrypt group messages.
+private key and can then install the new secret group key to encrypt and decrypt messages.
 
 This works well, however, it is not immune against man-in-the-middle attacks. If MitM attack prevention is required,
 a separate key exchange protocol can be added to the stack. ASYM_ENCRYPT needs to be told to use the key exchange
@@ -2006,6 +2007,21 @@ protocol (1). The former is configured with a keystore and password (2).
 
 ${SSL_KEY_EXCHANGE}
 
+====== SSL_KEY_EXCHANGE and left members
+Note that when we have members `{A,B,C}` and `change_key_on_leave` is true in ASYM_ENCRYPT, then A will install a new
+shared group key in `{A,B}` when C leaves (or crashes).
+
+This works fine as long as we _don't_ use an external key exchange mechanism (such as SSL_KEY_EXCHANGE): C will _not_ be
+able to decrypt A's or B's messages, as it doesn't have the new secret group key.
+
+However, as (for example) SSL_KEY_EXCHANGE works by connecting to the key server (the coordinator) and validating the
+identity of the key requester via a certificate chain, the left member will still be able to decrypt the traffic in
+the new cluster `{A,B}` by simply fetching and installing the new secret group key.
+
+There's no way around this as we assume that any member with a valid certificate (chain) can fetch the secret
+group key. As a matter of fact, even a rogue member having the correct certficates would be able to acquire the secret
+group key!
+
 
 [[AUTH]]
 ==== AUTH
@@ -2051,7 +2067,6 @@ The AuthToken implememntations are listed below. Check the javadoc for details.
 | Krb5Token | Uses Kerberos for authentication
 | MD5Token | Uses an MD5 hash of a simple string (similar to SimpleString above, but hashed instead of plaintext)
 | X509Token | Uses a shared X.509 certificate
-| ChallengeResponseToken | Uses a challenge-response mechanism
 |=================
 
 

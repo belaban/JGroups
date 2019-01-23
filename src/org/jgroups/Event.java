@@ -63,10 +63,10 @@ public class Event {
     public static final int CLOSE_HOLE                         = 107; // arg = Address (member)
     public static final int GET_VIEW_FROM_COORD                = 108;
     public static final int GET_PING_DATA                      = 109; // arg = cluster_name
-    public static final int FETCH_SECRET_KEY                   = 110; // arg = Address (target)
     public static final int GET_SECRET_KEY                     = 111; // arg = null -> Tuple<SecretKey,byte[]> // PK+version
     public static final int SET_SECRET_KEY                     = 112; // arg = Tuple<SecretKey,byte[]> // PK+version
     public static final int UNLOCK_FORCE                       = 113; // arg = lock name
+    public static final int INSTALL_MERGE_VIEW                 = 114; // arg = MergeView
 
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
 
@@ -153,10 +153,10 @@ public class Event {
             case CLOSE_HOLE:             return "CLOSE_HOLE";
             case GET_VIEW_FROM_COORD:    return "GET_VIEW_FROM_COORD";
             case GET_PING_DATA:          return "GET_PING_DATA";
-            case FETCH_SECRET_KEY:       return "FETCH_SECRET_KEY";
             case GET_SECRET_KEY:         return "GET_SECRET_KEY";
             case SET_SECRET_KEY:         return "SET_SECRET_KEY";
             case UNLOCK_FORCE:           return "UNLOCK_FORCE";
+            case INSTALL_MERGE_VIEW:     return "INSTALL_MERGE_VIEW";
 
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";

@@ -69,7 +69,6 @@
     <class id="87"  name="org.jgroups.protocols.ABP$ABPHeader"/>
     <class id="88"  name="org.jgroups.protocols.EncryptHeader"/>
     <class id="89"  name="org.jgroups.protocols.NAMING$Header"/>
-    <class id="90"  name="org.jgroups.auth.ChallengeResponseHeader"/>
     <class id="91"  name="org.jgroups.protocols.Frag3Header"/>
     <class id="92"  name="org.jgroups.protocols.DH_KEY_EXCHANGE$DhHeader"/>
 </magic-number-class-mapping>

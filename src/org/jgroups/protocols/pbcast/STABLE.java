@@ -330,7 +330,7 @@ public class STABLE extends Protocol {
             case Event.SUSPEND_STABLE:
                 long timeout=MAX_SUSPEND_TIME;
                 Object t=evt.getArg();
-                if(t != null && t instanceof Long)
+                if(t instanceof Long)
                     timeout=(Long)t;
                 suspend(timeout);
                 break;

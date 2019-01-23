@@ -1776,7 +1776,7 @@ public class Util {
         writeByteBuffer(buf,0,buf.length,out);
     }
 
-    public static void writeByteBuffer(byte[] buf,int offset,int length,DataOutput out) throws Exception {
+    public static void writeByteBuffer(byte[] buf, int offset, int length, DataOutput out) throws Exception {
         if(buf != null) {
             out.write(1);
             out.writeInt(length);

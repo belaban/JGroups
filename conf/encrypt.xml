@@ -15,20 +15,17 @@
         sym_algorithm="AES"
         keystore_name="/home/bela/JGroups/keystore/defaultStore.keystore"
         store_password="changeit" alias="myKey"/-->
+    <!-- Possibly use a second FRAG2 if the public/private keys added in ASYM_ENCRYPT to the payload make the message too big -->
+    <!--FRAG2 id="1234"/-->
     <!-- Asymmetric encryption using public/private encryption to fetch the shared secret key -->
     <ASYM_ENCRYPT
             sym_keylength="128"
             sym_algorithm="AES/ECB/PKCS5Padding"
             asym_keylength="512"
             asym_algorithm="RSA"/>
-
     <pbcast.NAKACK2/>
     <UNICAST3/>
     <pbcast.STABLE/>
     <FRAG2/>
-
-    <AUTH auth_class="org.jgroups.auth.MD5Token"
-          auth_value="chris"
-          token_hash="MD5"/>
     <pbcast.GMS join_timeout="2000" />
 </config>

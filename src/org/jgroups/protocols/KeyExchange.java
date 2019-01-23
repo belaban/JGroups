@@ -8,7 +8,6 @@ import org.jgroups.util.Tuple;
 
 import javax.crypto.SecretKey;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -22,10 +21,6 @@ import java.util.List;
 public abstract class KeyExchange extends Protocol {
     protected Address local_addr;
 
-    public List<Integer> providedUpServices() {
-        return Collections.singletonList(Event.FETCH_SECRET_KEY);
-    }
-
     public List<Integer> requiredUpServices() {
         return Arrays.asList(Event.GET_SECRET_KEY, Event.SET_SECRET_KEY);
     }
@@ -37,6 +32,9 @@ public abstract class KeyExchange extends Protocol {
      */
     public abstract void fetchSecretKeyFrom(Address target) throws Exception;
 
+    /** Returns the address of the server, e.g. server socket (if any) */
+    public abstract Address getServerLocation();
+
 
     public Object down(Event evt) {
         switch(evt.type()) {
@@ -46,16 +44,6 @@ public abstract class KeyExchange extends Protocol {
             case Event.VIEW_CHANGE:
                 handleView(evt.arg());
                 break;
-            case Event.FETCH_SECRET_KEY:
-                Address target=evt.arg();
-                try {
-                    fetchSecretKeyFrom(target);
-                }
-                catch(Exception e) {
-                    // throw new RuntimeException(e);
-                    log.warn("failed fetching secret key from %s: %s", target, e);
-                }
-                return null; // the event is consumed and should not be passed further down
         }
         return down_prot.down(evt);
     }

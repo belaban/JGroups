@@ -58,7 +58,7 @@ public class AsciiString implements Comparable<AsciiString> {
                 return c1 > c2? 1 : -1;
             k++;
         }
-        return len1 > len2? 1 : len1 < len2? -1 : 0;
+        return Integer.compare(len1, len2);
     }
 
 

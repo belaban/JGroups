@@ -131,6 +131,7 @@ public class DISCARD extends Protocol {
 
     /** Messages from this sender will get dropped */
     public DISCARD addIgnoreMember(Address sender) {ignoredMembers.add(sender); return this;}
+    public DISCARD addIgnoredMembers(Address ... senders) {ignoredMembers.addAll(Arrays.asList(senders)); return this;}
 
     public DISCARD removeIgnoredMember(Address member) {ignoredMembers.remove(member); return this;}
 

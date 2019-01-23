@@ -212,8 +212,6 @@ public class CoordGmsImpl extends ServerGmsImpl {
                 gms.getDownProtocol().down(new Event(Event.RESUME_STABLE));
             if(!joinAndStateTransferInitiated && useFlushIfPresent)
                 gms.stopFlush();
-            //if(self_leaving)
-              //  gms.initState(); // in case connect() is called again
         }
     }
 

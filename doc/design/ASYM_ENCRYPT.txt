@@ -1,0 +1,248 @@
+
+Changing the key exchange in ASYM_ENCRYPT from pull to push model
+=================================================================
+
+Author: Bela Ban
+Date:   Jan 2019
+
+
+Problem
+=======
+
+ASYM_ENCRYPT has a shared group key (SGK) which is used by all group members to encrypt / decrypt messages.
+
+The SGK is created by the coordinator and transferred to new members in the following scenarios:
+
+1: When a new member joins
+2: When a member leaves and change_key_on_leave is true (default), then the new shared key needs to be sent to all
+   remaining members
+3: On a merge, the new coordinator needs to send the changed shared key to all members of the merge view
+
+The transfer of the SGK from the coordinator to members is called _key exchange_. This can be done in 2 ways:
+
+- The coordinator encrypts the SGK with the public key of a member, which decrypts it with its private key.
+  However, this is prone to man-in-the-middle attacks.
+
+- Via an SSL connection between member and coordinator. This is currently done via an additional protocol
+  (e.g. SSL_KEY_EXCHANGE).
+
+In both cases, a *pull mechanism* is used: the client notices (or is told) that the SGK is no longer valid, and *pulls*
+it from the coordinator. Until the new SGK is installed, all messages will be discarded.
+
+This can lead to problems, e.g. in the following scenario:
+* Coordinator A installs a new view V=A,B,C,D (E left)
+* V is encrypted with the new SGK that the coordinator just created
+* Members B, C and D now fetch the new SGK from the coordinator
+* V is received by B, C and D: those members who have the new SGK will be able to decrypt and deliver V, the others
+  will discard it.
+==> Unless the coordinator sends a new multicast message, V will not get delivered by some members (until STABLE kicks
+    in and retransmits V), leading to a plethora of issues.
+
+
+Solution
+========
+
+Instead of using a *pull* approach for key exchange, a *push* approach should be used: the transfer of the SGK needs to
+be initiated by the *coordinator* rather than the joiners (on JOIN) or other members (on VIEW / MERGE-VIEW).
+
+The SGK is sent (piggy-backed) *with the JOIN-RSP or VIEW/MERGE-VIEW message*, and installed by the recipients _before_
+the new view (or join response) is decrypted. This eliminates the delays in view installation associated with the pull
+approach. It may also simplify the code.
+
+Piggy-backing on reliable messages, and not sending messages on its own, means that ASYM_ENCRYPT can be placed somewhere
+_below_ the reliable protocols (UNICAST3, NAKACK2), and that sequence number replay [2] cannot happen (if SERIALIZABLE
+is placed on top of ASYM_ENCRYPT).
+
+The design below describes both external (SSL_KEY_EXCHANGE) and internal (SGK encrypted by recipient's public key)
+approaches to key exchange.
+
+
+
+
+Design
+======
+- View is V1={A,B,C,D}; A is the coordinator
+- use_external_key_exchange: EX
+- pub-map: map of addresses and their associated public keys
+
+
+
+
+1: New member E joining the group
+=================================
+
+E sends a JOIN-REQ to A
+-----------------------
+- If EX == false:
+    - ASYM_ENCRYPT adds the public key (addKeys()) to the payload of the JOIN-REQ and adds an INSTALL-KEYS header
+- Pass the JOIN-REQ down
+
+
+A receives the JOIN-REQ from E
+------------------------------
+- If the header is INSTALL-KEYS:
+    - Add the public key of E to pub-map
+- Pass the JOIN-REQ up
+
+
+A sends the JOIN-RSP to E
+-------------------------
+- If EX == false:
+    - ASYM_ENCRYPT gets E's public key from pub-map, encrypts the SGK with it, and adds the
+      encrypted SGK and the public keys of all members (except E) to the JOIN-RSP
+    - This is done by copying the JOIN-RSP [5] and prepending the keys to the copy's payload (addKeys()),
+      and adding an INSTALL-KEYS header to it
+- Else
+    - ASYM_ENCRYPT adds a FETCH-SHARED-KEY header to the JOIN-RSP
+- Pass the JOIN-RSP down
+
+
+E receives the JOIN-RSP from A
+------------------------------
+- If the header is
+    - INSTALL-KEYS:
+        - Get all public keys from the payload and add them to pub-map
+        - Get the encrypted SGK for E from the message, decrypt it with E's private key and install it
+    - FETCH-SHARED-KEY:
+        - E asks its KEY_EXCHANGE protocol to fetch the SGK
+        - E *blocks* until the SGK has been retrieved and installed. This prevents the delivery of the JOIN-RSP
+          until the SGK has been installed. This means that the JOIN-RSP will have a valid SGK in place to decrypt it.
+- Pass the message up (this will install the first view)
+
+
+
+Function addKeys():
+-------------------
+- This method adds (a) the public keys (from pub-map) and (b) the encrypted SGKs to the payload of a given message
+- This is done by copying the message [5]
+- The format is the number of public keys followed by all {address| public key} pairs, then the same for the encrypted
+  SGKs. Finally, the existing payload (if any) is added and the payload of the copied message is set to this new buffer.
+- If a number is 0, then that means we don't have any keys
+
+
+
+
+
+2: Member D leaves the group and change_key_on_leave enabled
+============================================================
+
+***************************************************************************
+*** Note that if change_key_on_leave is false, nothing needs to be done ***
+***************************************************************************
+
+
+A multicasts view V2={A,B,C}
+----------------------------
+- If EX:
+    - ASYM_ENCRYPT adds a FETCH-SHARED-KEY header to the VIEW message
+- Else
+    - The list of public keys is added to a copy of the VIEW message (payload) [5]
+    - If members left:
+        - ASYM_ENCRYPT creates a map of members (B and C), grabs their public keys from pub-map (only if members were
+          added), and adds the SGKs encrypted with the respective member's public key to the payload (addKeys())
+        - An INSTALL-KEYS header is added to the message
+- The VIEW message passed down (sent to B and C)
+
+
+
+B and C receive an INSTALL-SHARED-KEY message from A
+----------------------------------------------------
+- Each member reads the map from the payload and gets the encrypted SGK associated with itself from the map
+- The encrypted SGK is then decrypted with the member's private key, and the resulting SGK is installed
+
+
+On reception of a VIEW
+----------------------
+- Remove all mappings from pub-map whose members are not in the view
+- (Same processing as for reception of JOIN-RSP)
+
+
+
+
+3. Cluster merge
+================
+- Clusters are V5={A,B,C} and V5={D,E,F}
+
+
+A and D send a MERGE-RSP
+------------------------
+- If !EX:
+    - A and D piggyback the public keys of all members of their subgroup with the MERGE-RSP
+    - This is done by prepending the public keys to a copy of the the MERGE-RSP
+
+
+On reception of a MERGE-RSP
+---------------------------
+- If the header type is INSTALL-KEYS
+    - Add the public keys from the payload to pub-map
+
+
+A sends an INSTALL-MERGE-VIEW to itself and D
+---------------------------------------------
+- If !EX:
+    - Create a new SGK and attach it to the message
+- Else:
+    - Add header FETCH-SHARED-KEY to message
+
+
+On reception of an INSTALL-MERGE-VIEW message
+---------------------------------------------
+- If the header is
+    - INSTALL-KEYS:
+        - Get all public keys from the payload and add them to pub-map
+        - Get the encrypted SGK for self from the message, decrypt it with the private key and install it
+    - FETCH-SHARED-KEY:
+        - Ask the KEY_EXCHANGE protocol to fetch the SGK
+        - This *blocks* until the SGK has been retrieved and installed. This prevents the delivery of the
+          INSTALL-MERGE-VIEW message until the SGK has been installed.
+- Pass the message up (this will multicast a VIEW message to the local subcluster)
+
+
+
+Subgroup coordinators A and D multicast MERGE-VIEW
+--------------------------------------------------
+- Same as sending regular VIEW
+
+
+
+
+Misc
+====
+
+[1] Why can't we use a multicast when merging?
+----------------------------------------------
+- When subgroup coordinators A and D multicast V6 in their respective subgroups, installation of V6 might occur at
+  different wall clock times, e.g. V6 might get installed at T5 in {D,E,F}, but at T100 in {A,B,C}.
+- If D multicast GET_SHARED_KEY at T50, then subgroup {A,B,C} would reject the message, because at T50, D was not (yet)
+  a member of that subgroup. Unless FLUSH was configured, MergeViews are installed asynchronously in subgroups.
+- Therefore *unicast messages* to all members are used to make sure the FETCH-SHARED-KEY messages are received by all
+  members of a MergeView: unicast messages can be delivered to members outside the current view.
+
+
+[2] Sequence number replay
+--------------------------
+- When a rogue member captures an encrypted message, it can resend it, but with a different sequence number. (Resending
+  the same message would cause UNICAST3 or NAKACK2 to drop the message, as it has already been delivered.) However, if
+  the rogue member increases the seqno by 1, it may be able to resend the same message a if it was a new message.
+  See unit test ASYM_ENCRYPT_Test.testCapturingOfMessageByNonMemberAndResending().
+
+[3] Copying a message
+---------------------
+- This is needed to prevent _retransmission_ from sending the _modified_ message and the code modifying the message
+  again
+- Example:
+  - If a VIEW is sent, the payload consists of the serialized view. ASYM_ENCRYPT (if !EX) then prepends the
+    payload with the public keys and the encrypted SGKs.
+  - If the original message was modified, retransmission would send down the VIEW message already containing the
+    modified payload, and we'd prepend the keys again!
+  - To prevent this, the code intercepting the sending of a VIEW message would either have to check if there was
+    already prepended data in the payload, or simply copy the message and make the modifications. This latter approach
+    was chosen, mainly because of its simplicity.
+
+
+[4] Use of second FRAG2 below ASYM_ENCRYPT
+------------------------------------------
+- If !EX, the public keys and encrypted SGKs of all members are add to the payload of JOIN-RSP and VIEW messages
+- For large clusters, this may increase the size of messages such that they become too big to be sent (e.g. UDP has
+  a max datagram size of 65K)
+- If this is the case, FRAG2 (with a different ID than the first FRAG2!) can be added below ASYM_ENCRYPT

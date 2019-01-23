@@ -118,7 +118,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected long logical_addr_cache_reaper_interval=60000;
 
     /** The port to which the transport binds. 0 means to bind to any (ephemeral) port. See also {@link #port_range} */
-    @Property(description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port. See also port_range",writable=false)
+    @Property(description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port." +
+      " See also port_range",systemProperty={Global.BIND_PORT},writable=false)
     protected int bind_port;
 
     @Property(description="The range of valid ports: [bind_port .. bind_port+port_range ]. " +

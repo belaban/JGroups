@@ -1,5 +1,6 @@
 package org.jgroups.protocols;
 
+import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.util.Util;
@@ -13,14 +14,12 @@ import java.util.function.Supplier;
  * @since  4.0
  */
 public class EncryptHeader extends Header {
-    public static final byte ENCRYPT           = 1 << 0;
-    public static final byte SECRET_KEY_REQ    = 1 << 1;
-    public static final byte SECRET_KEY_RSP    = 1 << 2;
-    public static final byte NEW_KEYSERVER     = 1 << 3;
-    public static final byte NEW_KEYSERVER_ACK = 1 << 4;
+    public static final byte INSTALL_KEYS       = 1; // body of the message contains public and/or shared keys
+    public static final byte FETCH_SHARED_KEY   = 2; // the receiver fetches the shared key via an external key exchange
 
-    protected byte   type;
-    protected byte[] version;
+    protected byte    type;
+    protected byte[]  version;
+    protected Address server; // used with FETCH_SHARED_KEY
 
 
     public EncryptHeader() {}
@@ -31,37 +30,42 @@ public class EncryptHeader extends Header {
         this.version=version;
     }
 
-    public byte          type()              {return type;}
-    public byte[]        version()           {return version;}
-    public short getMagicId() {return 88;}
-    public Supplier<? extends Header> create() {
-        return EncryptHeader::new;
+    public EncryptHeader(byte[] version) {
+        this.version=version;
     }
+
+    public byte                       type()            {return type;}
+    public byte[]                     version()         {return version;}
+    public Address                    server()          {return server;}
+    public EncryptHeader              server(Address s) {this.server=s; return this;}
+    public short                      getMagicId()      {return 88;}
+    public Supplier<? extends Header> create()          {return EncryptHeader::new;}
 
     public void writeTo(DataOutput out) throws Exception {
         out.writeByte(type);
         Util.writeByteBuffer(version, 0, version != null? version.length : 0, out);
+        Util.writeAddress(server, out);
     }
 
     public void readFrom(DataInput in) throws Exception {
         type=in.readByte();
         version=Util.readByteBuffer(in);
+        server=Util.readAddress(in);
     }
 
     public String toString() {
-        return String.format("%s [version=%s]", typeToString(type), (version != null? Util.byteArrayToHexString(version) : "null"));
+        return String.format("%s [version=%s]",
+                             typeToString(type), (version != null? Util.byteArrayToHexString(version) : "null"))
+          + (server == null? "" : " [server=" + server + "]");
     }
 
-    public int serializedSize() {return Global.BYTE_SIZE + Util.size(version);}
+    public int serializedSize() {return Global.BYTE_SIZE + Util.size(version) + Util.size(server);}
 
     protected static String typeToString(byte type) {
         switch(type) {
-            case ENCRYPT:           return "ENCRYPT";
-            case SECRET_KEY_REQ:    return "SECRET_KEY_REQ";
-            case SECRET_KEY_RSP:    return "SECRET_KEY_RSP";
-            case NEW_KEYSERVER:     return "NEW_KEYSERVER";
-            case NEW_KEYSERVER_ACK: return "NEW_KEYSERVER_ACK";
-            default:                return "<unrecognized type " + type;
+            case INSTALL_KEYS:       return "INSTALL_KEYS";
+            case FETCH_SHARED_KEY:   return "FETCH_SHARED_KEY";
+            default:                 return EncryptHeader.class.getSimpleName();
         }
     }
 }

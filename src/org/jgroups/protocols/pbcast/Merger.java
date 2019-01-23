@@ -304,14 +304,11 @@ public class Merger {
     }
 
     /**
-     * Sends the new view and digest to all subgroup coordinors in coords. Each coord will in turn
-     * <ol>
-     * <li>broadcast the new view and digest to all the members of its subgroup (MergeView)
-     * <li>on reception of the view, if it is a MergeView, each member will set the digest and install the new view
-     * </ol>
+     * Sends the new view and digest to all subgroup coordinators. Each coord will in turn broadcast the new view and
+     * digest to all the members of its subgroup
      */
     protected void sendMergeView(Collection<Address> coords, MergeData combined_merge_data, MergeId merge_id) {
-        if(coords == null || combined_merge_data == null)
+        if(coords == null || coords.isEmpty() || combined_merge_data == null)
             return;
 
         View view=combined_merge_data.view;
@@ -327,6 +324,10 @@ public class Merger {
             size=gms.merge_ack_collector.size();
         }
 
+        Event install_merge_view_evt=new Event(Event.INSTALL_MERGE_VIEW, view);
+        gms.getUpProtocol().up(install_merge_view_evt);
+        gms.getDownProtocol().down(install_merge_view_evt);
+
         long start=System.currentTimeMillis();
         for(Address coord: coords) {
             Message msg=new Message(coord).setBuffer(GMS.marshal(view, digest))
@@ -334,7 +335,7 @@ public class Merger {
             gms.getDownProtocol().down(msg);
         }
 
-        //[JGRP-700] - FLUSH: flushing should span merge; if flush is in stack wait for acks from subview coordinators
+        //[JGRP-700] - FLUSH: flushing should span merge; if flush is in stack, wait for acks from subview coordinators
         if(gms.flushProtocolInStack) {
             try {
                 gms.merge_ack_collector.waitForAllAcks(gms.view_ack_collection_timeout);
@@ -583,18 +584,7 @@ public class Merger {
             if(combined_merge_data == null)
                 throw new Exception("could not consolidate merge");
 
-            // If we have a duplicate MergeView, throw an exception (https://issues.jboss.org/browse/JGRP-2136)
-            // Reverted - see JGRP-2136 for details
-            /*if(gms.view != null && combined_merge_data.view != null && View.sameMembersOrdered(gms.view, combined_merge_data.view)) {
-                List<Address> existing=gms.view.getMembers(), merge_mbrs=combined_merge_data.view.getMembers();
-                String ex=String.format("merge view has same members as existing view, aborting merge view installation;" +
-                                          "\nexisting view: %s\nmerge view:    %s\n",
-                                        Util.printListWithDelimiter(existing, ", ", Util.MAX_LIST_PRINT_SIZE),
-                                        Util.printListWithDelimiter(merge_mbrs, ", ", Util.MAX_LIST_PRINT_SIZE));
-                throw new Exception(ex);
-            }*/
-
-            // Send the new View/Digest to all coordinators (including myself). On reception, they will
+            // send the new view/digest to all coords (including myself). On reception, they will
             // install the digest and view in all of their subgroup members
             log.debug("%s: installing merge view %s (%d members) in %d coords",
                       gms.local_addr, combined_merge_data.view.getViewId(), combined_merge_data.view.size(), coords.keySet().size());

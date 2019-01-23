@@ -40,7 +40,7 @@
     <property name="asciidoc.executable"   value="asciidoctor"/>
     <!-- Also available: colony.css, github.css etc -->
     <property name="asciidoctor-style"     value="./asciidoctor.css"/>
-    <property name="ivy.version"           value="2.4.0" />
+    <property name="ivy.version"           value="2.5.0-rc1" />
     <property name="pom.template"          value="${conf.dir}/pom.template.xml"/>
 
 
@@ -720,7 +720,16 @@
         <runtest suitename="time-sensitive"
                  groups="time-sensitive"
                  parallel="${parallel.classes}"
-                 threadcount="1" />
+                 threadcount="10" />
+    </target>
+
+
+    <target name="encrypt" depends="postcompile,define-testng-task" description="Runs encryption tests">
+        <mkdir dir="${tmp.dir}/test-results/xml/encrypt"/>
+        <runtest suitename="encrypt"
+                 groups="encrypt"
+                 parallel="${parallel.classes}"
+                 threadcount="10" />
     </target>
 
 

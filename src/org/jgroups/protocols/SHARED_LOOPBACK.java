@@ -136,7 +136,9 @@ public class SHARED_LOOPBACK extends TP {
             case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                 register(cluster_name, local_addr, this);
                 break;
-
+            case Event.DISCONNECT:
+                unregister(cluster_name, local_addr);
+                break;
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=evt.getArg();
                 break;
@@ -151,6 +153,13 @@ public class SHARED_LOOPBACK extends TP {
                 break;
             case Event.GET_PING_DATA:
                 return getDiscoveryResponsesFor(evt.getArg()); // don't pass further down
+            case Event.GET_PHYSICAL_ADDRESS:
+                if(cluster_name == null)
+                    return retval;
+                Address mbr=evt.getArg();
+                Map<Address,SHARED_LOOPBACK> map=routing_table.get(cluster_name);
+                SHARED_LOOPBACK lp=map != null? map.get(mbr) : null;
+                return lp != null? lp.getPhysicalAddress() : null;
         }
 
         return retval;
@@ -175,14 +184,8 @@ public class SHARED_LOOPBACK extends TP {
     }
 
     protected static void register(AsciiString channel_name, Address local_addr, SHARED_LOOPBACK shared_loopback) {
-        Map<Address,SHARED_LOOPBACK> map=routing_table.get(channel_name);
-        if(map == null) {
-            map=new ConcurrentHashMap<>();
-            Map<Address,SHARED_LOOPBACK> tmp=routing_table.putIfAbsent(channel_name,map);
-            if(tmp != null)
-                map=tmp;
-        }
-        map.put(local_addr, shared_loopback);
+        Map<Address,SHARED_LOOPBACK> map=routing_table.computeIfAbsent(channel_name, n -> new ConcurrentHashMap<>());
+        map.putIfAbsent(local_addr, shared_loopback);
     }
 
     protected static void unregister(AsciiString channel_name, Address local_addr) {

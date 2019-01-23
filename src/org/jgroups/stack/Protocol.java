@@ -261,7 +261,6 @@ public abstract class Protocol {
 
 
     /** List of events that are required to be answered by some layer above */
-    @SuppressWarnings("MethodMayBeStatic")
     public List<Integer> requiredUpServices() {return null;}
 
     /** List of events that are required to be answered by some layer below */

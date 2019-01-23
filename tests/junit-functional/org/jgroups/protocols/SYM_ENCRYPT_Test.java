@@ -2,9 +2,9 @@ package org.jgroups.protocols;
 
 import org.jgroups.Global;
 import org.jgroups.JChannel;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.Util;
+import org.jgroups.protocols.pbcast.STABLE;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -15,84 +15,42 @@ import org.testng.annotations.Test;
  * @author Bela Ban
  * @since  4.0
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
+@Test(groups={Global.FUNCTIONAL,Global.ENCRYPT},singleThreaded=true)
 public class SYM_ENCRYPT_Test extends EncryptTest {
     protected static final String DEF_PWD="changeit";
 
     @BeforeMethod protected void init() throws Exception {
-        super.init(getClass().getSimpleName());
+        super.init();
     }
 
     @AfterMethod protected void destroy() {
         super.destroy();
     }
 
-
-    /** Calling methods in superclass. Kludge because TestNG doesn't call methods in superclass correctly **/
-    public void testRegularMessageReception() throws Exception {
-        super.testRegularMessageReception();
-    }
-
-    public void testRegularMessageReceptionWithNullMessages() throws Exception {
-        super.testRegularMessageReceptionWithNullMessages();
-    }
-
-    /** Same as above, but don't encrypt entire message, but just payload */
-    public void testRegularMessageReceptionWithNullMessagesEncryptOnlyPayload() throws Exception {
-        super.testRegularMessageReceptionWithNullMessages();
-    }
-
-    public void testRegularMessageReceptionWithEmptyMessages() throws Exception {
-        super.testRegularMessageReceptionWithEmptyMessages();
-    }
-
-    public void testRegularMessageReceptionWithEmptyMessagesEncryptOnlyPayload() throws Exception {
-        super.testRegularMessageReceptionWithEmptyMessages();
-    }
-
-    public void testRogueMemberJoin() throws Exception {
-        super.testRogueMemberJoin();
-    }
-
-    public void testMessageSendingByRogue() throws Exception {
-        super.testMessageSendingByRogue();
-    }
-
-    public void testMessageSendingByRogueUsingEncryption() throws Exception {
-        super.testMessageSendingByRogueUsingEncryption();
-    }
-
-    public void testMessageReceptionByRogue() throws Exception {
-        super.testMessageReceptionByRogue();
-    }
-
-    public void testCapturingOfMessageByNonMemberAndResending() throws Exception {
-        super.testCapturingOfMessageByNonMemberAndResending();
-    }
-
-    public void testRogueViewInstallation() throws Exception {
-        super.testRogueViewInstallation();
-    }
-
+    /** For some obscure TestNG reasons, this method is needed. Remove it and all tests are executed in separate threads,
+     * which makes the testsuite fail!!! */
+    public void dummy() {}
 
 
     protected JChannel create(String name) throws Exception {
-        JChannel ch=new JChannel(Util.getTestStack()).name(name);
-        SYM_ENCRYPT encrypt;
+        SYM_ENCRYPT encr;
         try {
-            encrypt=createENCRYPT("keystore/defaultStore.keystore", DEF_PWD);
+            encr=new SYM_ENCRYPT().keystoreName("keystore/defaultStore.keystore").alias("myKey").storePassword(DEF_PWD);
         }
         catch(Throwable t) {
-            encrypt=createENCRYPT("defaultStore.keystore", DEF_PWD);
+            encr=new SYM_ENCRYPT().keystoreName("defaultStore.keystore").alias("myKey").storePassword(DEF_PWD);
         }
-        ch.getProtocolStack().insertProtocol(encrypt, ProtocolStack.Position.BELOW, NAKACK2.class);
-        return ch;
-    }
 
-    protected static SYM_ENCRYPT createENCRYPT(String keystore_name, String store_pwd) throws Exception {
-        SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName(keystore_name).alias("myKey").storePassword(store_pwd);
-        encrypt.init();
-        return encrypt;
+        return new JChannel(
+          new SHARED_LOOPBACK(),
+          new SHARED_LOOPBACK_PING(),
+          // omit MERGE3 from the stack -- nodes are leaving gracefully
+          encr,
+          new NAKACK2().setUseMcastXmit(false),
+          new UNICAST3(),
+          new STABLE(),
+          new GMS().joinTimeout(2000).leaveTimeout(10000))
+          .name(name);
     }
 
 }

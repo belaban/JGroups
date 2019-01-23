@@ -202,7 +202,6 @@ public class View implements Comparable<View>, SizeStreamable, Iterable<Address>
         Util.writeAddresses(members,out);
     }
 
-    @SuppressWarnings("unchecked") 
     public void readFrom(DataInput in) throws Exception {
         view_id=new ViewId();
         view_id.readFrom(in);

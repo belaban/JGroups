@@ -125,6 +125,7 @@ public class DH_KEY_EXCHANGE extends KeyExchange {
         }
     }
 
+    public Address getServerLocation() {return null;}
 
     public Object up(Message msg) {
         DhHeader hdr=msg.getHeader(id);

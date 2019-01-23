@@ -74,7 +74,7 @@ public class ENCRYPTKeystoreTest {
         digest.update(encrypt.secretKey().getEncoded());
 
         byte[] symVersion=digest.digest();
-        Message msg=new Message(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, symVersion));
+        Message msg=new Message(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader(symVersion));
         encrypt.up(msg);
         Message rcvdMsg=observer.getUpMessages().get("message0");
         String decText=new String(rcvdMsg.getBuffer());
@@ -98,7 +98,7 @@ public class ENCRYPTKeystoreTest {
 
         byte[] symVersion=digest.digest();
 
-        Message msg=new Message(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, symVersion));
+        Message msg=new Message(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader(symVersion));
         encrypt.up(msg);
         assert observer.getUpMessages().isEmpty();
     }
@@ -121,7 +121,7 @@ public class ENCRYPTKeystoreTest {
         SYM_ENCRYPT encrypt=create("defaultStore.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
-        encrypt.up(new Message().putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, "bla".getBytes())));
+        encrypt.up(new Message().putHeader(ENCRYPT_ID, new EncryptHeader("bla".getBytes())));
         assert observer.getUpMessages().isEmpty();
     }
 

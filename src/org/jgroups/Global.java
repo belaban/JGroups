@@ -26,6 +26,7 @@ public final class Global {
 
 
     public static final String BIND_ADDR="jgroups.bind_addr";
+    public static final String BIND_PORT="jgroups.bind_port";
     public static final String EXTERNAL_ADDR="jgroups.external_addr";
     public static final String EXTERNAL_PORT="jgroups.external_port";
     public static final String TCP_CLIENT_BIND_ADDR="jgroups.tcp.client_bind_addr";
@@ -80,6 +81,7 @@ public final class Global {
     public static final String FLUSH="flush";
     public static final String BYTEMAN="byteman";
     public static final String EAP_EXCLUDED="eap-excluded"; // tests not supported by EAP
+    public static final String ENCRYPT="encrypt";
 
     public static final String INITIAL_MCAST_ADDR="INITIAL_MCAST_ADDR";
     public static final String INITIAL_MCAST_PORT="INITIAL_MCAST_PORT";

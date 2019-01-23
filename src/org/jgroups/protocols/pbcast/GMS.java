@@ -169,7 +169,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     //[JGRP-700] - FLUSH: flushing should span merge
     protected final AckCollector        merge_ack_collector=new AckCollector();
 
-    protected boolean                   flushProtocolInStack=false;
+    protected boolean                   flushProtocolInStack;
 
     // Has this coord sent its first view since becoming coord ? Used to send a full- or delta- view */
     protected boolean                   first_view_sent;
@@ -570,7 +570,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
      */
     public void castViewChangeAndSendJoinRsps(View new_view, Digest digest, Collection<Address> expected_acks,
                                               Collection<Address> joiners, JoinRsp jr) {
-        log.trace("%s: mcasting view %s", local_addr, new_view);
 
         // Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
         // in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
@@ -594,6 +593,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         ack_collector.reset(expected_acks, local_addr); // exclude self, as we'll install the view locally
         long start=System.currentTimeMillis();
         impl.handleViewChange(full_view, digest); // install the view locally first
+        log.trace("%s: mcasting view %s", local_addr, new_view);
         down_prot.down(view_change_msg);
         sendJoinResponses(jr, joiners);
         try {
@@ -632,7 +632,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     protected void sendJoinResponse(Buffer marshalled_rsp, Address dest) {
         Message m=new Message(dest, marshalled_rsp).putHeader(this.id, new GmsHeader(GmsHeader.JOIN_RSP))
-          .setFlag(OOB, INTERNAL);
+          .setFlag(INTERNAL);
         getDownProtocol().down(m);
     }
 
@@ -1070,11 +1070,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
             case Event.DISCONNECT:
                 impl.leave(evt.getArg());
-                //if(!(impl instanceof CoordGmsImpl)) {
-                  //  initState(); // in case connect() is called again
-               // }
-                down_prot.down(evt); // notify the other protocols, but ignore the result
-                return null;
+                return down_prot.down(evt); // notify the other protocols, but ignore the result
 
             case Event.CONFIG :
                Map<String,Object> config=evt.getArg();

@@ -2,11 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.auth.MD5Token;
-import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.protocols.pbcast.DeltaView;
-import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.JoinRsp;
-import org.jgroups.protocols.pbcast.NAKACK2;
+import org.jgroups.protocols.pbcast.*;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.ByteArrayDataOutputStream;
@@ -15,9 +11,11 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import javax.crypto.SecretKey;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static org.jgroups.util.Util.shutdown;
@@ -27,113 +25,26 @@ import static org.jgroups.util.Util.shutdown;
  * @author Bela Ban
  * @since  4.0
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
+@Test(groups={Global.FUNCTIONAL,Global.ENCRYPT},singleThreaded=true)
 public class ASYM_ENCRYPT_Test extends EncryptTest {
-    protected static final short  ASYM_ENCRYPT_ID;
+    protected static final String KEYSTORE="my-keystore.jks";
+    protected static final String KEYSTORE_PWD="password";
 
-    static {
-        ASYM_ENCRYPT_ID=ClassConfigurator.getProtocolId(ASYM_ENCRYPT.class);
-    }
 
 
     @BeforeMethod protected void init() throws Exception {
-        super.init(getClass().getSimpleName());
+        super.init();
     }
+
+    protected boolean useExternalKeyExchange() {return false;}
 
     @AfterMethod protected void destroy() {
         super.destroy();
     }
 
-    /** Calling methods in superclass. Kludge because TestNG doesn't call methods in superclass correctly **/
-    public void testRegularMessageReception() throws Exception {
-        super.testRegularMessageReception();
-    }
-
-    public void testRegularMessageReceptionWithNullMessages() throws Exception {
-        super.testRegularMessageReceptionWithNullMessages();
-    }
-
-    /** Same as above, but don't encrypt entire message, but just payload */
-    public void testRegularMessageReceptionWithNullMessagesEncryptOnlyPayload() throws Exception {
-        super.testRegularMessageReceptionWithNullMessages();
-    }
-
-    public void testRegularMessageReceptionWithEmptyMessages() throws Exception {
-        super.testRegularMessageReceptionWithEmptyMessages();
-    }
-
-    public void testRegularMessageReceptionWithEmptyMessagesEncryptOnlyPayload() throws Exception {
-        super.testRegularMessageReceptionWithEmptyMessages();
-    }
-
-    public void testRogueMemberJoin() throws Exception {
-        super.testRogueMemberJoin();
-    }
-
-    public void testMessageSendingByRogue() throws Exception {
-        super.testMessageSendingByRogue();
-    }
-
-    public void testMessageSendingByRogueUsingEncryption() throws Exception {
-        super.testMessageSendingByRogueUsingEncryption();
-    }
-
-    public void testMessageReceptionByRogue() throws Exception {
-        super.testMessageReceptionByRogue();
-    }
-
-    public void testCapturingOfMessageByNonMemberAndResending() throws Exception {
-        super.testCapturingOfMessageByNonMemberAndResending();
-    }
-
-    public void testRogueViewInstallation() throws Exception {
-        super.testRogueViewInstallation();
-    }
-
-
-
-    /**
-     * A non-member sends a {@link EncryptHeader#SECRET_KEY_REQ} request to the key server. Asserts that the rogue member
-     * doesn't get the secret key. If it did, it would be able to decrypt all messages from cluster members!
-     */
-    public void nonMemberGetsSecretKeyFromKeyServer() throws Exception {
-        Util.close(rogue);
-
-        rogue=new JChannel(Util.getTestStack()).name("rogue");
-        DISCARD discard=new DISCARD().setDiscardAll(true);
-        rogue.getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
-        CustomENCRYPT encrypt=new CustomENCRYPT();
-        encrypt.init();
-
-        rogue.getProtocolStack().insertProtocol(encrypt, ProtocolStack.Position.BELOW, NAKACK2.class);
-        rogue.connect(cluster_name); // creates a singleton cluster
-
-        assert rogue.getView().size() == 1;
-        GMS gms=rogue.getProtocolStack().findProtocol(GMS.class);
-        View rogue_view=new View(a.getAddress(), a.getView().getViewId().getId(),
-                                 Arrays.asList(a.getAddress(),b.getAddress(),c.getAddress(),rogue.getAddress()));
-        gms.installView(rogue_view);
-
-
-        // now fabricate a KEY_REQUEST message and send it to the key server (A)
-        Message newMsg=new Message(a.getAddress(), encrypt.keyPair().getPublic().getEncoded()).src(rogue.getAddress())
-          .putHeader(encrypt.getId(),new EncryptHeader(EncryptHeader.SECRET_KEY_REQ, encrypt.symVersion()));
-
-        discard.setDiscardAll(false);
-        System.out.printf("-- sending KEY_REQUEST to key server %s\n", a.getAddress());
-        encrypt.getDownProtocol().down(newMsg);
-        for(int i=0; i < 10; i++) {
-            SecretKey secret_key=encrypt.key;
-            if(secret_key != null)
-                break;
-            Util.sleep(500);
-        }
-
-        discard.setDiscardAll(true);
-        gms.installView(View.create(rogue.getAddress(), 20, rogue.getAddress()));
-        System.out.printf("-- secret key is %s (should be null)\n", encrypt.key);
-        assert encrypt.key == null : String.format("should not have received secret key %s", encrypt.key);
-    }
+    /** For some obscure TestNG reasons, this method is needed. Remove it and all tests are executed in separate threads,
+     * which makes the testsuite fail!!! */
+    public void dummy() {}
 
 
 
@@ -216,49 +127,50 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
     /** Tests that when {ABC} -> {AB}, neither A nor B can receive a message from non-member C */
     public void testMessagesByLeftMember() throws Exception {
         View view=View.create(a.getAddress(), a.getView().getViewId().getId()+1, a.getAddress(),b.getAddress());
-        Stream.of(a,b).forEach(ch -> {
-            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
-            gms.installView(view);
-        });
-        Stream.of(a,b).forEach(ch -> System.out.printf("%s: %s\n", ch.getAddress(), ch.getView()));
-        System.out.printf("%s: %s\n", c.getAddress(), c.getView());
 
-        c.getProtocolStack().removeProtocol(NAKACK2.class); // to prevent A and B from discarding C as non-member
+        // Enable changing of the group key when a member leaves, so A and B drop C's messages after it was excluded
+        forAll(ASYM_ENCRYPT.class, asym -> asym.setChangeKeyOnLeave(true), a,b);
+
+        GMS gms_a=a.getProtocolStack().findProtocol(GMS.class);
+        gms_a.castViewChangeAndSendJoinRsps(view, null, Collections.singletonList(b.getAddress()), null, null);
+
+        printSymVersion(a,b,c);
 
         Util.sleep(1000); // give members time to handle the new view
-        c.send(null, "hello world from left member C!");
+        c.send(null, "hello from left member C!");
+        c.send(a.getAddress(), "hello from C");
+        c.send(b.getAddress(), "hello from C");
         for(int i=0; i < 10; i++) {
             if(ra.size() > 0 || rb.size() > 0)
                 break;
             Util.sleep(500);
         }
-        assert ra.size() == 0 : String.format("A: received msgs from non-member C: %s", print(ra.list()));
-        assert rb.size() == 0 : String.format("B: received msgs from non-member C: %s", print(rb.list()));
+        assert ra.size() == 0 && rb.size() == 0: String.format("A and/or B: received msgs from non-member C: %s / %s",
+                                                               print(ra.list()), print(rb.list()));
     }
 
     /** Tests that a left member C cannot decrypt messages from the cluster */
     public void testEavesdroppingByLeftMember() throws Exception {
         printSymVersion(a,b,c);
         View view=View.create(a.getAddress(), a.getView().getViewId().getId()+1, a.getAddress(),b.getAddress());
-        Stream.of(a,b).forEach(ch -> {
-            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
-            gms.installView(view);
-        });
-        Stream.of(a,b).forEach(ch -> System.out.printf("%s: %s\n", ch.getAddress(), ch.getView()));
-        System.out.printf("%s: %s\n", c.getAddress(), c.getView());
+        GMS gms_a=a.getProtocolStack().findProtocol(GMS.class);
+
+        // Enable changing of the group key when a member leaves, so A and B drop C's messages after it was excluded
+        forAll(ASYM_ENCRYPT.class, asym -> asym.setChangeKeyOnLeave(true), a,b);
+
+        gms_a.castViewChangeAndSendJoinRsps(view, null, Collections.singletonList(b.getAddress()), null, null);
+
+        printSymVersion(a,b,c);
         c.getProtocolStack().removeProtocol(NAKACK2.class); // to prevent A and B from discarding C as non-member
 
         Util.sleep(2000); // give members time to handle the new view
-
-
-        printSymVersion(a,b,c);
         a.send(null, "hello from A");
         b.send(null, "hello from B");
 
         for(int i=0; i < 10; i++) {
-            if(rc.size() > 0)
+            if(rc.size() > 0 && rc.list().stream().anyMatch(m -> m.getLength() > 0))
                 break;
-            Util.sleep(500);
+            Util.sleep(1000);
         }
         assert rc.size() == 0 : String.format("C: received msgs from cluster: %s", print(rc.list()));
     }
@@ -272,12 +184,12 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         Address crashed_coord=a.getAddress();
         shutdown(a);
 
-        System.out.printf("** Crashing %s **\n", crashed_coord);
+        //System.out.printf("** Crashing %s **\n", crashed_coord);
         GMS gms=b.getProtocolStack().findProtocol(GMS.class);
         gms.up(new Event(Event.SUSPECT, Collections.singletonList(crashed_coord)));
 
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, b,c);
-        for(JChannel ch: Arrays.asList(a,b,c))
+        for(JChannel ch: Arrays.asList(b,c))
             System.out.printf("View for %s: %s\n", ch.getName(), ch.getView());
         for(JChannel ch: Arrays.asList(b,c)) {
             assert ch.getView().size() == 2;
@@ -307,29 +219,71 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         }
     }
 
+    public void testMerge() throws Exception {
+        Util.close(rogue);
+        d=create("D");
+        d.connect(getClass().getSimpleName());
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b,c,d);
+
+        GMS gms_a=a.getProtocolStack().findProtocol(GMS.class), gms_c=c.getProtocolStack().findProtocol(GMS.class);
+        printSymVersion(a,b,c,d);
+        Util.sleep(500);
+
+        System.out.println("\n=== Injecting view {A,B} into A and B, and {C,D} into C and D ===\n");
+        View a_view=View.create(a.getAddress(), a.getView().getViewId().getId()+1, a.getAddress(), b.getAddress());
+        View c_view=View.create(c.getAddress(), c.getView().getViewId().getId()+1, c.getAddress(), d.getAddress());
+
+        discardTraffic(a, c.getAddress(), d.getAddress()); // A,B discard traffic from C,D
+        discardTraffic(b, c.getAddress(), d.getAddress());
+        discardTraffic(c, a.getAddress(), b.getAddress()); // C,D discard traffic from A,B
+        discardTraffic(d, a.getAddress(), b.getAddress());
+
+        gms_a.castViewChangeAndSendJoinRsps(a_view, null, Arrays.asList(a.getAddress(), b.getAddress()), null, null);
+        gms_c.castViewChangeAndSendJoinRsps(c_view, null, Arrays.asList(c.getAddress(), d.getAddress()), null, null);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a,b);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, c,d);
+        printSymVersion(a,b,c,d);
+
+        Stream.of(a,b,c,d).forEach(ch -> ch.getProtocolStack().removeProtocol(DISCARD.class));
+
+        Address leader=determineLeader(a,c);
+        JChannel leader_channel=Stream.of(a,b,c,d).filter(ch -> leader.equals(ch.getAddress())).findFirst()
+          .orElse(null);
+        GMS gms=leader_channel.getProtocolStack().findProtocol(GMS.class);
+        System.out.printf("\n=== Injecting merge event into leader %s ===\n", leader);
+
+        Map<Address,View> merge_views=new HashMap<>();
+        Stream.of(a,b,c,d).forEach(ch -> merge_views.put(ch.getAddress(), ch.getView()));
+        gms.up(new Event(Event.MERGE, merge_views));
+
+        Util.waitUntilAllChannelsHaveSameView(1000000, 1000, a,b,c,d); // todo: reduce timeout
+        printSymVersion(a,b,c,d);
+    }
+
+
+
     protected JChannel create(String name) throws Exception {
-        JChannel ch=new JChannel(Util.getTestStack()).name(name);
-        ProtocolStack stack=ch.getProtocolStack();
-        Encrypt encrypt=createENCRYPT();
-        stack.insertProtocol(encrypt, ProtocolStack.Position.BELOW, NAKACK2.class);
-        AUTH auth=new AUTH().setAuthCoord(true).setAuthToken(new MD5Token("mysecret")); // .setAuthCoord(false);
-        stack.insertProtocol(auth, ProtocolStack.Position.BELOW, GMS.class);
-        stack.findProtocol(GMS.class).setValue("join_timeout", 2000); // .setValue("view_ack_collection_timeout", 10);
-        return ch;
+        return new JChannel(
+          new SHARED_LOOPBACK(),
+          new SHARED_LOOPBACK_PING(),
+          // omit MERGE3 from the stack -- nodes are leaving gracefully
+          new SSL_KEY_EXCHANGE().setKeystoreName(KEYSTORE).setKeystorePassword(KEYSTORE_PWD).setPortRange(10),
+          new ASYM_ENCRYPT().setUseExternalKeyExchange(useExternalKeyExchange())
+            .symKeylength(128).symAlgorithm("AES").asymKeylength(512).asymAlgorithm("RSA"),
+          new NAKACK2().setUseMcastXmit(false),
+          new UNICAST3(),
+          new STABLE(),
+          new AUTH().setAuthCoord(true).setAuthToken(new MD5Token("mysecret")),
+          new GMS().joinTimeout(2000).leaveTimeout(10000))
+          .name(name);
     }
 
     protected static void printSymVersion(JChannel... channels) {
         for(JChannel ch: channels) {
             ASYM_ENCRYPT encr=ch.getProtocolStack().findProtocol(ASYM_ENCRYPT.class);
             byte[] sym_version=encr.symVersion();
-            System.out.printf("sym-version %s: %s\n", ch.getAddress(), Util.byteArrayToHexString(sym_version));
+            System.out.printf("%s: %s [%s]\n", ch.getAddress(), ch.getView(), Util.byteArrayToHexString(sym_version));
         }
-    }
-
-    protected static ASYM_ENCRYPT createENCRYPT() throws Exception {
-        ASYM_ENCRYPT encrypt=new ASYM_ENCRYPT();
-        encrypt.init();
-        return encrypt;
     }
 
 
@@ -352,25 +306,24 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         return retval;
     }
 
+    protected static Address determineLeader(JChannel... channels) {
+        Membership membership=new Membership();
+        for(JChannel ch: channels)
+            membership.add(ch.getAddress());
+        return membership.sort().elementAt(0);
+    }
 
-    protected static class CustomENCRYPT extends ASYM_ENCRYPT {
-        protected SecretKey key;
+    protected static void discardTraffic(JChannel ch, Address ... addrs) {
+        ProtocolStack stack=ch.getProtocolStack();
+        DISCARD d=new DISCARD().addIgnoredMembers(addrs);
+        stack.insertProtocolInStack(d, stack.getTransport(), ProtocolStack.Position.ABOVE);
+    }
 
-        public CustomENCRYPT() {
-            this.id=ASYM_ENCRYPT_ID;
-        }
-
-        protected Object handleUpEvent(Message msg, EncryptHeader hdr) {
-            if(hdr.type() == EncryptHeader.SECRET_KEY_RSP) {
-                try {
-                    key=decodeKey(msg.getBuffer());
-                    System.out.printf("received secret key %s !\n", key);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            return super.handleUpEvent(msg, hdr);
+    protected static void forAll(Class<? extends ASYM_ENCRYPT> cl, Consumer<? super ASYM_ENCRYPT> c, JChannel... channels) {
+        for(JChannel ch: channels) {
+            ProtocolStack stack=ch.getProtocolStack();
+            ASYM_ENCRYPT asym=stack.findProtocol(cl);
+            c.accept(asym);
         }
     }
 
