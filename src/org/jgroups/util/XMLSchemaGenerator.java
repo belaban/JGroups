@@ -20,7 +20,6 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -40,7 +39,7 @@ public class XMLSchemaGenerator {
 
     protected static final String PROT_PACKAGE="org.jgroups.protocols";
 
-    protected static final String[] PACKAGES={"", "pbcast", "tom", "relay", "rules"};
+    protected static final String[] PACKAGES={"", "pbcast", "tom", "relay", "rules", "dns"};
 
     static {
         System.setProperty("java.awt.headless", "true");
