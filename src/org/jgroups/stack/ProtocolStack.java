@@ -675,7 +675,7 @@ public class ProtocolStack extends Protocol {
     public <T extends Protocol> T removeProtocol(Class<? extends Protocol> prot) {
         if(prot == null)
             return null;
-        return removeProtocol((T)findProtocol(prot));
+        return removeProtocol(findProtocol(prot));
     }
 
     public <T extends Protocol> T removeProtocol(T prot) {
