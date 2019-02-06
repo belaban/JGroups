@@ -3879,14 +3879,19 @@ public class Util {
 
     /** IP related utilities */
     public static InetAddress getLocalhost(StackType ip_version) throws UnknownHostException {
-        if(ip_version == StackType.IPv4)
-            return InetAddress.getByName("127.0.0.1");
-        else
+        if(ip_version == StackType.IPv6)
             return InetAddress.getByName("::1");
+        return InetAddress.getByName("127.0.0.1");
     }
 
     public static InetAddress getLocalhost() throws UnknownHostException {
         return getLocalhost(Util.getIpStackType());
+    }
+
+    public static InetAddress getLocalMulticastAddress(StackType ip_version) throws UnknownHostException {
+        if(ip_version == StackType.IPv6)
+            return InetAddress.getByName("ff0e::5:5:5");
+        return InetAddress.getByName("225.5.5.5");
     }
 
 

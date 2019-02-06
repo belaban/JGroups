@@ -138,9 +138,8 @@ public class MPING extends PING implements Runnable {
         return mcast_addr;
     }
 
-    public void setMcastAddr(InetAddress mcast_addr) {
-        this.mcast_addr=mcast_addr;
-    }
+    public MPING mcastAddress(InetAddress addr) {this.mcast_addr=addr; return this;}
+    public void setMcastAddr(InetAddress mcast_addr) {this.mcast_addr=mcast_addr;}
 
     public void setMulticastAddress(String addr) throws UnknownHostException {
         mcast_addr=InetAddress.getByName(addr);

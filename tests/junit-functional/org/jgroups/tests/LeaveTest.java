@@ -30,11 +30,12 @@ import java.util.stream.Stream;
 public class LeaveTest {
 
     protected static final int NUM = 10;
-    protected static final InetAddress LOOPBACK;
+    protected static final InetAddress LOOPBACK, MCAST_ADDR;
 
     static {
         try {
             LOOPBACK = Util.getLocalhost();
+            MCAST_ADDR=Util.getLocalMulticastAddress(Util.getIpStackType());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -208,7 +209,7 @@ public class LeaveTest {
     protected static JChannel create(String name) throws Exception {
         return new JChannel(
           new TCP().setBindAddress(LOOPBACK).setBindPort(7800),
-          new MPING(),
+          new MPING().mcastAddress(MCAST_ADDR),
           // omit MERGE3 from the stack -- nodes are leaving gracefully
           // new MERGE3().setMinInterval(1000).setMaxInterval(3000).setCheckInterval(5000),
           new FD_SOCK(),
