@@ -149,7 +149,7 @@ public class ConcurrentFlushTest {
         return result;
     }
 
-    protected boolean startFlush(JChannel ch, int num_attempts, long timeout, boolean automatic_resume) {
+    protected static boolean startFlush(JChannel ch, int num_attempts, long timeout, boolean automatic_resume) {
         boolean result=Util.startFlush(ch, num_attempts, 10, timeout);
         if(automatic_resume)
             ch.stopFlush();
@@ -157,7 +157,7 @@ public class ConcurrentFlushTest {
     }
 
 
-    protected JChannel createChannel(String name) throws Exception {
+    protected static JChannel createChannel(String name) throws Exception {
         return new JChannel(Util.getTestStack(new FLUSH())).name(name);
     }
 

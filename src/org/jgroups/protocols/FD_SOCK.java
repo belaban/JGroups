@@ -873,8 +873,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
 
         public String toString() {
-            StringBuilder sb=new StringBuilder();
-            sb.append(type2String(type));
+            StringBuilder sb=new StringBuilder(type2String(type));
             if(mbr != null)
                 sb.append(", mbr=").append(mbr);
             if(sock_addr != null)

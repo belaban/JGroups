@@ -200,9 +200,7 @@ public class ResponseCollector<T> {
 
 
     public String toString() {
-        StringBuilder sb=new StringBuilder();
-        sb.append(responses).append(", complete=").append(hasAllResponses());
-        return sb.toString();
+        return String.format("%s, complete=%s", responses, hasAllResponses());
     }
 
 

@@ -44,13 +44,11 @@ public class MergeData  {
 
 
     public String toString() {
-        StringBuilder sb=new StringBuilder();
-        sb.append("sender=").append(sender);
+        StringBuilder sb=new StringBuilder("sender=").append(sender);
         if(merge_rejected)
             sb.append(" (merge_rejected)");
-        else {
+        else
             sb.append(", view=").append(view).append(", digest=").append(digest);
-        }
         return sb.toString();
     }
 

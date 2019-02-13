@@ -865,7 +865,6 @@ public class JChannel implements Closeable {
             sb.append("state_transfer_supported=").append(state_transfer_supported).append('\n');
             sb.append("props=").append(getProperties()).append('\n');
         }
-
         return sb.toString();
     }
 

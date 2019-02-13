@@ -230,9 +230,7 @@ public class UDP extends TP {
     }
 
     public String getInfo() {
-        StringBuilder sb=new StringBuilder();
-        sb.append("group_addr=").append(mcast_group_addr.getHostName()).append(':').append(mcast_port).append("\n");
-        return sb.toString();
+        return String.format("group_addr=%s:%d\n", mcast_group_addr.getHostName(), mcast_port);
     }
 
     public void sendMulticast(byte[] data, int offset, int length) throws Exception {

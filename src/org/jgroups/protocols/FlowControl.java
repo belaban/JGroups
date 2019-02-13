@@ -173,12 +173,10 @@ public abstract class FlowControl extends Protocol {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
         for(Map.Entry<Long,Long> entry: max_block_times.entrySet()) {
-            if(!first) {
+            if(!first)
                 sb.append(", ");
-            }
-            else {
+            else
                 first=false;
-            }
             sb.append(entry.getKey()).append(":").append(entry.getValue());
         }
         return sb.toString();
@@ -217,9 +215,7 @@ public abstract class FlowControl extends Protocol {
 
 
     public String printCredits() {
-        StringBuilder sb=new StringBuilder();
-        sb.append("receivers:\n").append(printMap(received));
-        return sb.toString();
+        return String.format("receivers:\n%s", printMap(received));
     }
 
 

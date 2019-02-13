@@ -323,7 +323,7 @@ public class FRAG2 extends Protocol {
         // each fragment is a byte buffer
         final Message fragments[];
         //the number of fragments we have received
-        int number_of_frags_recvd=0;
+        int number_of_frags_recvd;
 
         protected final Lock lock=new ReentrantLock();
 
@@ -412,9 +412,7 @@ public class FRAG2 extends Protocol {
         }
 
         public String toString() {
-            StringBuilder ret=new StringBuilder();
-            ret.append("[tot_frags=").append(fragments.length).append(", number_of_frags_recvd=").append(number_of_frags_recvd).append(']');
-            return ret.toString();
+            return String.format("[tot_frags=%d, number_of_frags_recvd=%d]", fragments.length, number_of_frags_recvd);
         }
 
     }

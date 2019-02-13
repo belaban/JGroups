@@ -107,8 +107,7 @@ public class PingData implements SizeStreamable, Constructable<PingData> {
     }
 
     public String toString() {
-        StringBuilder sb=new StringBuilder();
-        sb.append(sender);
+        StringBuilder sb=new StringBuilder().append(sender);
         if(logical_name != null)
             sb.append(", name=").append(logical_name);
         if(physical_addr != null)

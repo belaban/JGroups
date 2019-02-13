@@ -35,6 +35,7 @@ import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static java.lang.System.nanoTime;
 import static org.jgroups.protocols.TP.LIST;
@@ -2757,30 +2758,9 @@ public class Util {
     }
 
 
-    public static String printViews(Collection<View> views) {
-        StringBuilder sb=new StringBuilder();
-        boolean first=true;
-        for(View view : views) {
-            if(first)
-                first=false;
-            else
-                sb.append(", ");
-            sb.append(view.getViewId());
-        }
-        return sb.toString();
-    }
 
     public static <T> String print(Collection<T> objs) {
-        StringBuilder sb=new StringBuilder();
-        boolean first=true;
-        for(T obj : objs) {
-            if(first)
-                first=false;
-            else
-                sb.append(", ");
-            sb.append(obj);
-        }
-        return sb.toString();
+        return objs == null? "null" : objs.stream().map(Objects::toString).collect(Collectors.joining(", "));
     }
 
 
@@ -3358,25 +3338,12 @@ public class Util {
 
 
     public static String print(List<NetworkInterface> interfaces) {
-        StringBuilder sb=new StringBuilder();
-        boolean first=true;
-
-        for(NetworkInterface intf : interfaces) {
-            if(first) {
-                first=false;
-            }
-            else {
-                sb.append(", ");
-            }
-            sb.append(intf.getName());
-        }
-        return sb.toString();
+        return interfaces == null? "null" : interfaces.stream().map(NetworkInterface::getName).collect(Collectors.joining(", "));
     }
 
 
     public static String shortName(String hostname) {
         if(hostname == null) return null;
-
         int index=hostname.indexOf('.');
         if(index > 0 && !Character.isDigit(hostname.charAt(0)))
             return hostname.substring(0,index);
@@ -4589,7 +4556,7 @@ public class Util {
 
         // Pattern p=Pattern.compile("[A-Z]+");
         Matcher m=METHOD_NAME_TO_ATTR_NAME_PATTERN.matcher(name);
-        StringBuffer sb=new StringBuffer();
+        StringBuffer sb=new StringBuffer(); // todo: switch to StringBuilder when the JDK version is >= 9
         while(m.find()) {
             int start=m.start(), end=m.end();
             String str=name.substring(start,end).toLowerCase();
@@ -4630,7 +4597,7 @@ public class Util {
         if(attr_name.contains("_")) {
             // Pattern p=Pattern.compile("_.");
             Matcher m=ATTR_NAME_TO_METHOD_NAME_PATTERN.matcher(attr_name);
-            StringBuffer sb=new StringBuffer();
+            StringBuffer sb=new StringBuffer(); // todo: switch to StringBuilder when the JDK version is >= 9
             while(m.find()) {
                 m.appendReplacement(sb,attr_name.substring(m.end() - 1,m.end()).toUpperCase());
             }

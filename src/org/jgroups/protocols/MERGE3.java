@@ -555,12 +555,8 @@ public class MERGE3 extends Protocol {
         }
 
         public String toString() {
-            StringBuilder sb=new StringBuilder();
-            sb.append(type + ": ");
-            if(view_id != null)
-                sb.append("view_id=" + view_id);
-            sb.append(", logical_name=" + logical_name + ", physical_addr=" + physical_addr);
-            return sb.toString();
+            return String.format("%s: %s, logical_name=%s, physical_addr=%s",
+                                 type, view_id != null? "view_id=" + view_id : "", logical_name, physical_addr);
         }
 
         protected enum Type {INFO, VIEW_REQ, VIEW_RSP}

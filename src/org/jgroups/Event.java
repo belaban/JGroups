@@ -164,10 +164,6 @@ public class Event {
         }
     }
 
-    public String toString() {
-        StringBuilder ret=new StringBuilder(64);
-        ret.append(type2String(type)).append(", arg=").append(arg);
-        return ret.toString();
-    }
+    public String toString() {return String.format("%s, arg=%s", type2String(type), arg);}
 
 }

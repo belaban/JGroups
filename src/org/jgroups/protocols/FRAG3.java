@@ -375,9 +375,7 @@ public class FRAG3 extends Protocol {
         }
 
         public String toString() {
-            StringBuilder ret=new StringBuilder();
-            ret.append("[tot_frags=").append(num_frags).append(", number_of_frags_recvd=").append(received.cardinality()).append(']');
-            return ret.toString();
+            return String.format("[tot_frags=%d, number_of_frags_recvd=%d]", num_frags, received.cardinality());
         }
 
     }

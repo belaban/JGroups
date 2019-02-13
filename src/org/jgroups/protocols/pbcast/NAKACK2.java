@@ -449,16 +449,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
 
 
-    public String printStabilityHistory() {
-        StringBuilder sb=new StringBuilder();
-        int i=1;
-        for(String digest: stability_msgs)
-            sb.append(i++).append(": ").append(digest).append("\n");
-        return sb.toString();
-    }
-
-
-
     public List<Integer> providedUpServices() {
         return Arrays.asList(Event.GET_DIGEST,Event.SET_DIGEST,Event.OVERWRITE_DIGEST,Event.MERGE_DIGEST);
     }
@@ -1338,14 +1328,13 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             buf=createTable(highest_delivered_seqno);
             xmit_table.put(member, buf);
         }
-        if(sb != null)
+        if(sb != null) {
             sb.append("\n").append("resulting digest: " + getDigest().toString(digest));
-        if(set_own_seqno && sb != null)
-            sb.append("\nnew seqno for " + local_addr + ": " + seqno);
-        if(sb != null)
+            if(set_own_seqno)
+                sb.append("\nnew seqno for " + local_addr + ": " + seqno);
             digest_history.add(sb.toString());
-        if(sb != null)
             log.debug(sb.toString());
+        }
     }
 
 

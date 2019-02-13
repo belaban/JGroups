@@ -15,6 +15,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Responsible for dispatching JOIN/LEAVE/MERGE requests to the GMS protocol. Bundles multiple concurrent requests into
@@ -147,13 +148,11 @@ public class ViewHandler<R> {
     }
 
     public String dumpQueue() {
-        return requests.stream()
-          .collect(StringBuilder::new, (sb,el) -> sb.append(el).append("\n"), StringBuilder::append).toString();
+        return requests.stream().map(Object::toString).collect(Collectors.joining("\n"));
     }
 
     public String dumpHistory() {
-        return history.stream()
-          .collect(StringBuilder::new, (sb,el) -> sb.append(el + "\n"), StringBuilder::append).toString();
+        return String.join("\n", history);
     }
 
     public String toString() {

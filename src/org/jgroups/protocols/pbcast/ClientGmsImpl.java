@@ -217,20 +217,6 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
 
-    protected static String print(List<PingData> rsps) {
-        StringBuilder sb=new StringBuilder();
-        for(PingData rsp: rsps)
-            sb.append(rsp.getAddress() + " ");
-        return sb.toString();
-    }
-
-    protected static String print(Responses rsps) {
-        StringBuilder sb=new StringBuilder();
-        for(PingData rsp: rsps)
-            sb.append(rsp.getAddress() + " ");
-        return sb.toString();
-    }
-
     void sendJoinMessage(Address coord, Address mbr,boolean joinWithTransfer, boolean useFlushIfPresent) {
         byte type=joinWithTransfer? GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER : GMS.GmsHeader.JOIN_REQ;
         GMS.GmsHeader hdr=new GMS.GmsHeader(type, mbr, useFlushIfPresent);

@@ -362,10 +362,8 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
        }
 
        public String toString() {
-           StringBuilder sb=new StringBuilder(String.format("[%s] %s:", state, thread_name));
-           sb.append(String.format(" blocks=%d (%.2f ms) waits=%d (%.2f ms)", blocks, block_time, waits, wait_time));
-           sb.append(String.format(" sys=%.2f ms user=%.2f ms\n", cpu_time, user_time));
-           return sb.toString();
+           return String.format("[%s] %s: blocks=%d (%.2f ms) waits=%d (%.2f ms) sys=%.2f ms user=%.2f ms\n",
+                                state, thread_name, blocks, block_time, waits, wait_time, cpu_time, user_time);
        }
 
        protected String print(String format) {

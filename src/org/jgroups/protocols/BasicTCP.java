@@ -111,9 +111,7 @@ public abstract class BasicTCP extends TP implements Receiver {
     }
 
     public String getInfo() {
-        StringBuilder sb=new StringBuilder();
-        sb.append("connections: ").append(printConnections()).append("\n");
-        return sb.toString();
+        return String.format("connections: %s\n", printConnections());
     }
 
 

@@ -699,10 +699,7 @@ public class Table<T> implements Iterable<T> {
 
 
     public String toString() {
-        StringBuilder sb=new StringBuilder();
-        sb.append("[" + low + " | " + hd + " | " + hr + "] (" + size() +
-                    " elements, " + getNumMissing() + " missing)");
-        return sb.toString();
+        return String.format("[%d | %d | %d] (%d elements, %d missing)", low, hd, hr, size(), getNumMissing());
     }
 
 

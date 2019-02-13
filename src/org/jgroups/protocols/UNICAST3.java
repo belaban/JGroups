@@ -1288,8 +1288,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             StringBuilder sb=new StringBuilder();
             if(msgs != null)
                 sb.append(msgs).append(", ");
-            sb.append("recv_conn_id=" + conn_id)
-                    .append(" (" + age() / 1000 + " secs old) - " + state);
+            sb.append("recv_conn_id=" + conn_id).append(" (" + age() / 1000 + " secs old) - " + state);
             if(send_ack)
                 sb.append(" [ack pending]");
             return sb.toString();

@@ -41,8 +41,7 @@ public class Buffer {
     }
 
     public String toString() {
-        StringBuilder sb=new StringBuilder();
-        sb.append(length).append(" bytes");
+        StringBuilder sb=new StringBuilder(length + " bytes");
         if(offset > 0)
             sb.append(" (offset=").append(offset).append(")");
         return sb.toString();

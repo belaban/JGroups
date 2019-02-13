@@ -20,6 +20,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -331,11 +332,7 @@ public class Configurator {
     }
 
     protected static String printEvents(List<Integer> events) {
-        StringBuilder sb=new StringBuilder("[");
-        for(int evt: events)
-            sb.append(Event.type2String(evt)).append(" ");
-        sb.append("]");
-        return sb.toString();
+        return events.stream().map(Event::type2String).collect(Collectors.joining(" " , "[", "]"));
     }
 
     /**

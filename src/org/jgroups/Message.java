@@ -22,8 +22,8 @@ import java.util.function.Supplier;
  * @author Bela Ban
  */
 public class Message implements Streamable, Constructable<Message> {
-    protected Address           dest_addr;
-    protected Address           src_addr;
+    protected Address           dest;
+    protected Address           sender;
 
     /** The payload */
     protected byte[]            buf;
@@ -160,14 +160,14 @@ public class Message implements Streamable, Constructable<Message> {
         return Message::new;
     }
 
-    public Address getDest()                 {return dest_addr;}
-    public Address dest()                    {return dest_addr;}
-    public Message setDest(Address new_dest) {dest_addr=new_dest; return this;}
-    public Message dest(Address new_dest)    {dest_addr=new_dest; return this;}
-    public Address getSrc()                  {return src_addr;}
-    public Address src()                     {return src_addr;}
-    public Message setSrc(Address new_src)   {src_addr=new_src; return this;}
-    public Message src(Address new_src)      {src_addr=new_src; return this;}
+    public Address getDest()                 {return dest;}
+    public Address dest()                    {return dest;}
+    public Message setDest(Address new_dest) {dest=new_dest; return this;}
+    public Message dest(Address new_dest)    {dest=new_dest; return this;}
+    public Address getSrc()                  {return sender;}
+    public Address src()                     {return sender;}
+    public Message setSrc(Address new_src)   {sender=new_src; return this;}
+    public Message src(Address new_src)      {sender=new_src; return this;}
     public int     getOffset()               {return offset;}
     public int     offset()                  {return offset;}
     public int     getLength()               {return length;}
@@ -518,8 +518,8 @@ public class Message implements Streamable, Constructable<Message> {
     */
     public Message copy(boolean copy_buffer, boolean copy_headers) {
         Message retval=new Message(false);
-        retval.dest_addr=dest_addr;
-        retval.src_addr=src_addr;
+        retval.dest=dest;
+        retval.sender=sender;
         short tmp_flags=this.flags;
         byte tmp_tflags=this.transient_flags;
         retval.flags=tmp_flags;
@@ -563,42 +563,21 @@ public class Message implements Streamable, Constructable<Message> {
 
 
     public Message makeReply() {
-        Message retval=new Message(src_addr);
-        if(dest_addr != null)
-            retval.setSrc(dest_addr);
+        Message retval=new Message(sender);
+        if(dest != null)
+            retval.setSrc(dest);
         return retval;
     }
 
 
     public String toString() {
-        StringBuilder ret=new StringBuilder(64);
-        ret.append("[dst: ");
-        if(dest_addr == null)
-            ret.append("<null>");
-        else
-            ret.append(dest_addr);
-        ret.append(", src: ");
-        if(src_addr == null)
-            ret.append("<null>");
-        else
-            ret.append(src_addr);
-
-        int size;
-        if((size=getNumHeaders()) > 0)
-            ret.append(" (").append(size).append(" headers)");
-
-        ret.append(", size=");
-        if(buf != null && length > 0)
-            ret.append(length);
-        else
-            ret.append('0');
-        ret.append(" bytes");
-        if(flags > 0)
-            ret.append(", flags=").append(flagsToString(flags));
-        if(transient_flags > 0)
-            ret.append(", transient_flags=" + transientFlagsToString(transient_flags));
-        ret.append(']');
-        return ret.toString();
+        int size=getNumHeaders();
+        return String.format("[dest: %s sender: %s%s, size=%d bytes%s%s]",
+                             dest, sender,
+                             size > 0? " (" + size + " headers)" : "",
+                             length,
+                             flags > 0? ", flags=" + flagsToString(flags) : "",
+                             transient_flags > 0? ", transient_flags=" + transientFlagsToString(transient_flags) : "");
     }
 
 
@@ -621,10 +600,10 @@ public class Message implements Streamable, Constructable<Message> {
     public void writeTo(DataOutput out) throws Exception {
         byte leading=0;
 
-        if(dest_addr != null)
+        if(dest != null)
             leading=Util.setFlag(leading, DEST_SET);
 
-        if(src_addr != null)
+        if(sender != null)
             leading=Util.setFlag(leading, SRC_SET);
 
         if(buf != null)
@@ -637,12 +616,12 @@ public class Message implements Streamable, Constructable<Message> {
         out.writeShort(flags);
 
         // 3. dest_addr
-        if(dest_addr != null)
-            Util.writeAddress(dest_addr, out);
+        if(dest != null)
+            Util.writeAddress(dest, out);
 
         // 4. src_addr
-        if(src_addr != null)
-            Util.writeAddress(src_addr, out);
+        if(sender != null)
+            Util.writeAddress(sender, out);
 
         // 5. headers
         Header[] hdrs=this.headers;
@@ -676,7 +655,7 @@ public class Message implements Streamable, Constructable<Message> {
     public void writeToNoAddrs(Address src, DataOutput out, short ... excluded_headers) throws Exception {
         byte leading=0;
 
-        boolean write_src_addr=src == null || src_addr != null && !src_addr.equals(src);
+        boolean write_src_addr=src == null || sender != null && !sender.equals(src);
 
         if(write_src_addr)
             leading=Util.setFlag(leading, SRC_SET);
@@ -692,7 +671,7 @@ public class Message implements Streamable, Constructable<Message> {
 
         // 4. src_addr
         if(write_src_addr)
-            Util.writeAddress(src_addr, out);
+            Util.writeAddress(sender, out);
 
         // 5. headers
         Header[] hdrs=this.headers;
@@ -703,7 +682,7 @@ public class Message implements Streamable, Constructable<Message> {
                 if(hdr == null)
                     break;
                 short id=hdr.getProtId();
-                if(excluded_headers != null && Util.containsId(id, excluded_headers))
+                if(Util.containsId(id, excluded_headers))
                     continue;
                 out.writeShort(id);
                 writeHeader(hdr, out);
@@ -728,11 +707,11 @@ public class Message implements Streamable, Constructable<Message> {
 
         // 3. dest_addr
         if(Util.isFlagSet(leading, DEST_SET))
-            dest_addr=Util.readAddress(in);
+            dest=Util.readAddress(in);
 
         // 4. src_addr
         if(Util.isFlagSet(leading, SRC_SET))
-            src_addr=Util.readAddress(in);
+            sender=Util.readAddress(in);
 
         // 5. headers
         int len=in.readShort();
@@ -765,11 +744,11 @@ public class Message implements Streamable, Constructable<Message> {
 
         // 3. dest_addr
         if(Util.isFlagSet(leading, DEST_SET))
-            dest_addr=Util.readAddress(in);
+            dest=Util.readAddress(in);
 
         // 4. src_addr
         if(Util.isFlagSet(leading, SRC_SET))
-            src_addr=Util.readAddress(in);
+            sender=Util.readAddress(in);
 
         // 5. headers
         int len=in.readShort();
@@ -803,10 +782,10 @@ public class Message implements Streamable, Constructable<Message> {
     public long size() {
         long retval=(long)Global.BYTE_SIZE   // leading byte
                 + Global.SHORT_SIZE;   // flags
-        if(dest_addr != null)
-            retval+=Util.size(dest_addr);
-        if(src_addr != null)
-            retval+=Util.size(src_addr);
+        if(dest != null)
+            retval+=Util.size(dest);
+        if(sender != null)
+            retval+=Util.size(sender);
 
         retval+=Global.SHORT_SIZE;  // number of headers
         retval+=Headers.marshalledSize(this.headers);

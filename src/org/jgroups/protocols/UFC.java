@@ -53,9 +53,7 @@ public class UFC extends FlowControl {
     
     @ManagedOperation(description="Print credits")
     public String printCredits() {
-        StringBuilder sb=new StringBuilder(super.printCredits());
-        sb.append("\nsenders:\n").append(printMap(sent));
-        return sb.toString();
+        return String.format("%s\nsenders:\n%s", super.printCredits(), printMap(sent));
     }
 
 

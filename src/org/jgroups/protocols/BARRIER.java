@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 /**
  * All messages up the stack have to go through a barrier (read lock, RL). By default, the barrier is open.
@@ -276,10 +277,7 @@ public class BARRIER extends Protocol {
 
     @ManagedOperation(description="Lists the in-flight threads")
     protected String printInFlightThreads() {
-        StringBuilder sb=new StringBuilder();
-        for(Thread thread: in_flight_threads.keySet())
-            sb.append(thread.toString()).append("\n");
-        return sb.toString();
+        return in_flight_threads.keySet().stream().map(Object::toString).collect(Collectors.joining("\n"));
     }
 
     protected void flushQueue(final Map<Address,Message> queue) {

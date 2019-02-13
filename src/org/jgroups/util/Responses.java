@@ -163,9 +163,7 @@ public class Responses implements Iterable<PingData> {
     }
 
     @GuardedBy("lock") protected List<PingData> toList() {
-        List<PingData> retval=new ArrayList<>();
-        retval.addAll(Arrays.asList(ping_rsps).subList(0, index));
-        return retval;
+        return new ArrayList<>(Arrays.asList(ping_rsps).subList(0, index));
     }
 
     protected void resize(int new_size) {

@@ -20,6 +20,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static org.jgroups.Message.Flag.INTERNAL;
 import static org.jgroups.Message.Flag.OOB;
@@ -253,13 +254,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     @ManagedOperation
     public String printPreviousMembers() {
-        StringBuilder sb=new StringBuilder();
-        if(prev_members != null) {
-            for(Address addr: prev_members) {
-                sb.append(addr).append("\n");
-            }
-        }
-        return sb.toString();
+        return prev_members == null? "" : prev_members.stream().map(Object::toString).collect(Collectors.joining(", "));
     }
 
     public void setPrintLocalAddress(boolean flag) {print_local_addr=flag;}
@@ -315,10 +310,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     @ManagedOperation
     public String printPreviousViews() {
-        StringBuilder sb=new StringBuilder();
-        for(String view_rep: prev_views)
-            sb.append(view_rep).append("\n");
-        return sb.toString();
+        return prev_views.stream().map(Object::toString).collect(Collectors.joining("\n"));
     }
 
     @ManagedOperation
@@ -1485,16 +1477,13 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 case GET_DIGEST_REQ:
                     sb.append(": mbr=" + mbr);
                     break;
-
                 case MERGE_REQ:
                     sb.append(": merge_id=" + merge_id);
                     break;
-
                 case MERGE_RSP:
                     sb.append("merge_id=" + merge_id);
                     if(merge_rejected) sb.append(", merge_rejected=" + merge_rejected);
                     break;
-
                 case CANCEL_MERGE:
                     sb.append(", merge_id=" + merge_id);
                     break;
