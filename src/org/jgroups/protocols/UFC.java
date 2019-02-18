@@ -81,12 +81,6 @@ public class UFC extends FlowControl {
         return sent.values().stream().mapToDouble(c -> c.getAverageBlockTime() / 1_000_000).average().orElse(0.0);
     }
 
-    public void init() throws Exception {
-        super.init();
-        TP transport=getTransport();
-        if(transport instanceof BasicTCP)
-            log.info(this.getClass().getSimpleName() + " is not needed (and can be removed) as we're running on a TCP transport");
-    }
 
     public void stop() {
         super.stop();
