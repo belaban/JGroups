@@ -9,6 +9,8 @@
     <url>http://www.jgroups.org</url>
 
     <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- nexus-staging-maven-plugin -->
         <autoReleaseAfterClose>true</autoReleaseAfterClose>
@@ -126,7 +128,7 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>[6.9,6.999]</version>
+            <version>[6.14,6.20]</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -185,9 +187,12 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.0</version>
                 <configuration>
-                    <release>1.8</release>
+                    <!--<source>1.6</source>
+                    <target>1.8</target>-->
                     <excludes>
                         <exclude>org/jgroups/util/JUnitXMLReporter.java</exclude>
                         <!--<exclude>org/jgroups/demos/**</exclude>-->
