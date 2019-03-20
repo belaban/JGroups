@@ -189,7 +189,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     @ManagedAttribute
-    public String getView() {return view != null? view.getViewId().toString() : "null";}
+    public String getView() {return view != null? view.toString() : "null";}
     @ManagedAttribute
     public int getNumberOfViews() {return num_views;}
     @ManagedAttribute
