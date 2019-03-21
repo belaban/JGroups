@@ -81,8 +81,7 @@
                 <updatePolicy>never</updatePolicy>
             </releases>
             <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>interval:120</updatePolicy>
+                <enabled>false</enabled>
             </snapshots>
         </repository>
 
