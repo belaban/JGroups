@@ -2,7 +2,6 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.JChannel;
-import org.jgroups.PhysicalAddress;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.BasicTCP;
@@ -19,6 +18,8 @@ import org.testng.annotations.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,9 +30,9 @@ import java.util.stream.Collectors;
  */
 @Test(groups = "base", sequential = true)
 public class ChannelTestBase {
-    protected String  channel_conf = "udp.xml";
-    protected String  bind_addr = null;
-    protected Log     log;
+    protected String      channel_conf = "udp.xml";
+    protected InetAddress bind_addr;
+    protected Log         log;
 
     @BeforeClass
     @Parameters(value = { "channel.conf"})
@@ -43,7 +44,7 @@ public class ChannelTestBase {
             throw new Exception("Test is not marked with @Test annotation");
 
         StackType type=Util.getIpStackType();
-        bind_addr=type == StackType.IPv6 ? "::1" : "127.0.0.1";
+        bind_addr=InetAddress.getByName(type == StackType.IPv6 ? "::1" : "127.0.0.1");
         this.channel_conf = chconf;
     }
 
@@ -62,10 +63,6 @@ public class ChannelTestBase {
                 }
             }
         }
-    }
-
-    protected String getBindAddress() {
-        return bind_addr;
     }
 
 
@@ -182,9 +179,9 @@ public class ChannelTestBase {
         protected void makeUnique(JChannel channel, int num, String mcast_address) throws Exception {
             ProtocolStack stack = channel.getProtocolStack();
             TP transport = stack.getTransport();
-
+            transport.setBindAddress(bind_addr);
             if (transport instanceof UDP) {
-                short mcast_port = ResourceManager.getNextMulticastPort(InetAddress.getByName(bind_addr));
+                short mcast_port = ResourceManager.getNextMulticastPort(bind_addr);
                 ((UDP) transport).setMulticastPort(mcast_port);
                 if (mcast_address != null) {
                     ((UDP) transport).setMulticastAddress(InetAddress.getByName(mcast_address));
@@ -193,18 +190,14 @@ public class ChannelTestBase {
                     ((UDP) transport).setMulticastAddress(InetAddress.getByName(mcast_addr));
                 }
             } else if (transport instanceof BasicTCP) {
-                List<Integer> ports = ResourceManager.getNextTcpPorts(InetAddress.getByName(bind_addr), num);
+                List<Integer> ports = ResourceManager.getNextTcpPorts(bind_addr, num);
                 transport.setBindPort(ports.get(0));
-
                 Protocol ping = stack.findProtocol(TCPPING.class);
                 if (ping == null)
                     throw new IllegalStateException("TCP stack must consist of TCP:TCPPING - other config are not supported");
-
-                List<String> initial_hosts=ports.stream().map(port -> String.format("%s[%d]", bind_addr, port))
-                  .collect(Collectors.toList());
-                String tmp = Util.printListWithDelimiter(initial_hosts, ",", 2000, false);
-                List<PhysicalAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 0);
-                ((TCPPING)ping).setInitialHosts(init_hosts);
+                Collection<InetSocketAddress> hosts=ports.stream()
+                  .map(p -> new InetSocketAddress(bind_addr, p)).collect(Collectors.toList());
+                ((TCPPING)ping).setInitialHosts(hosts);
             } else {
                 throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
             }

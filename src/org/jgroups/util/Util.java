@@ -3886,7 +3886,7 @@ public class Util {
         while(intfs.hasMoreElements()) {
             NetworkInterface intf=(NetworkInterface)intfs.nextElement();
             try {
-                if(intf.isUp()) {
+                if(isUp(intf)) {
                     address=getAddress(intf,scope);
                     if(address != null)
                         return address;
@@ -3932,7 +3932,7 @@ public class Util {
         while(intfs.hasMoreElements()) {
             NetworkInterface intf=(NetworkInterface)intfs.nextElement();
             try {
-                if(!intf.isUp())
+                if(!isUp(intf))
                     continue;
                 switch(type) {
                     case 1: // match by interface name
@@ -3959,6 +3959,19 @@ public class Util {
         return null;
     }
 
+    /** Always returns true unless there is a socket exception - will be removed when GraalVM issue
+     * https://github.com/oracle/graal/pull/1076 has been fixed */
+    public static boolean isUp(NetworkInterface ni) throws SocketException {
+        try {
+            return ni.isUp();
+        }
+        catch(SocketException sock_ex) {
+            throw sock_ex;
+        }
+        catch(Throwable t) {
+            return true;
+        }
+    }
 
     /**
      * Returns the first address on the given interface on the current host, which satisfies scope

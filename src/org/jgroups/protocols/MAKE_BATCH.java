@@ -52,14 +52,14 @@ public class MAKE_BATCH extends Protocol {
     public MAKE_BATCH sleepTime(long time)     {this.sleep_time=time; return this;}
 
 
-    public void init() throws Exception {
+    public void start() throws Exception {
         super.init();
         timer=getTransport().getTimer();
         startBatcher();
     }
 
-    public void destroy() {
-        super.destroy();
+    public void stop() {
+        super.stop();
         stopBatcher();
     }
 

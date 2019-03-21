@@ -132,6 +132,8 @@ public interface TimeScheduler {
      */
     String dumpTimerTasks();
 
+    void removeCancelledTasks();
+
     /**
      * Returns the configured core threads, or -1 if not applicable
      * @return
@@ -174,10 +176,10 @@ public interface TimeScheduler {
      */
     int size();
 
+    /** Starts the runner thread */
+    void start();
 
-    /**
-     * Stops the scheduler if running, cancelling all pending tasks
-     */
+    /** Stops the scheduler if running, cancelling all pending tasks */
     void stop();
     
 

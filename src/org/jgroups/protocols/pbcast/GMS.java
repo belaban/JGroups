@@ -199,11 +199,11 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @ManagedAttribute
     public int getNumMembers() {return members.size();}
     public long getJoinTimeout() {return join_timeout;}
-    public void setJoinTimeout(long t) {join_timeout=t;}
+    public GMS setJoinTimeout(long t) {join_timeout=t; return this;}
     public GMS joinTimeout(long timeout) {this.join_timeout=timeout; return this;}
     public GMS leaveTimeout(long timeout) {this.leave_timeout=timeout; return this;}
     public long getMergeTimeout() {return merge_timeout;}
-    public void setMergeTimeout(long timeout) {merge_timeout=timeout;}
+    public GMS setMergeTimeout(long timeout) {merge_timeout=timeout; return this;}
     public long getMaxJoinAttempts() {return max_join_attempts;}
     public GMS setMaxJoinAttempts(long t) {max_join_attempts=t; return this;}
 
@@ -225,9 +225,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         return membership_change_policy;
     }
 
-    public void setMembershipChangePolicy(MembershipChangePolicy membership_change_policy) {
+    public GMS setMembershipChangePolicy(MembershipChangePolicy membership_change_policy) {
         if(membership_change_policy != null)
             this.membership_change_policy=membership_change_policy;
+        return this;
     }
 
     @ManagedAttribute(description="Stringified version of merge_id")
@@ -240,9 +241,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public Merger getMerger() {return merger;}
 
     @Property(description="The fully qualified name of a class implementing MembershipChangePolicy.")
-    public void setMembershipChangePolicy(String classname) {
+    public GMS setMembershipChangePolicy(String classname) {
         try {
             membership_change_policy=(MembershipChangePolicy)Util.loadClass(classname, getClass()).newInstance();
+            return this;
         }
         catch(Throwable e) {
             throw new IllegalArgumentException("membership_change_policy could not be created", e);
@@ -257,18 +259,19 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         return prev_members == null? "" : prev_members.stream().map(Object::toString).collect(Collectors.joining(", "));
     }
 
-    public void setPrintLocalAddress(boolean flag) {print_local_addr=flag;}
-    public void setPrintLocalAddr(boolean flag) {setPrintLocalAddress(flag);}
-    public GMS  printLocalAddress(boolean flag) {print_local_addr=flag; return this;}
+    public GMS setPrintLocalAddress(boolean flag) {print_local_addr=flag; return this;}
+    public GMS setPrintLocalAddr(boolean flag) {setPrintLocalAddress(flag); return this;}
+    public GMS printLocalAddress(boolean flag) {print_local_addr=flag; return this;}
 
     public long getViewAckCollectionTimeout() {
         return view_ack_collection_timeout;
     }
 
-    public void setViewAckCollectionTimeout(long view_ack_collection_timeout) {
+    public GMS setViewAckCollectionTimeout(long view_ack_collection_timeout) {
         if(view_ack_collection_timeout <= 0)
             throw new IllegalArgumentException("view_ack_collection_timeout has to be greater than 0");
         this.view_ack_collection_timeout=view_ack_collection_timeout;
+        return this;
     }
     public GMS viewAckCollectionTimeout(long view_ack_collection_timeout) {
         if(view_ack_collection_timeout <= 0)
@@ -276,18 +279,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         this.view_ack_collection_timeout=view_ack_collection_timeout;
         return this;
     }
-
-    @Deprecated
-    public boolean isViewBundling() {return true;}
-
-    @Deprecated
-    public void setViewBundling(@SuppressWarnings("unused") boolean ignored) {}
-
-    @Deprecated
-    public long getMaxBundlingTime() {return 0;}
-
-    @Deprecated
-    public void setMaxBundlingTime(long max_bundling_time) {}
 
     @ManagedAttribute
     public int getViewHandlerSize() {return view_handler.size();}
@@ -337,9 +328,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         return impl instanceof CoordGmsImpl? ((CoordGmsImpl)impl).getMergeId() : null;
     }
 
-    public void setLogCollectMessages(boolean flag) {
-        log_collect_msgs=flag;
-    }
+    public GMS setLogCollectMessages(boolean flag) {log_collect_msgs=flag; return this;}
 
     public boolean getLogCollectMessages() {
         return log_collect_msgs;
@@ -383,15 +372,15 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         prev_members=new BoundedList<>(num_prev_mbrs);
         prev_views=new BoundedList<>(num_prev_views);
         TP transport=getTransport();
-        timer=transport.getTimer();
-        if(timer == null)
-            throw new Exception("timer is null");
         if(impl != null)
             impl.init();
         transport.registerProbeHandler(this);
     }
 
     public void start() throws Exception {
+        timer=getTransport().getTimer();
+        if(timer == null)
+            throw new Exception("timer is null");
         leave_promise.reset();
         initState();
         if(impl != null) impl.start();

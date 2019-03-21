@@ -53,11 +53,9 @@ public class TCP extends BasicTCP {
     }
 
     @ManagedOperation(description="Clears all connections (they will get re-established). For testing only, don't use !")
-    public void clearConnections() {
-        server.clearConnections();
-    }
+    public TCP clearConnections() {server.clearConnections(); return this;}
 
-    public void setSocketFactory(SocketFactory factory) {
+    @Override public void setSocketFactory(SocketFactory factory) {
         super.setSocketFactory(factory);
         if(server != null)
             server.socketFactory(factory);

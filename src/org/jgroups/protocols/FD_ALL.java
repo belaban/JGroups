@@ -175,7 +175,6 @@ public class FD_ALL extends Protocol {
         has_suspected_mbrs=false;
     }
 
-
     public synchronized void stop() {
         stopHeartbeatSender();
         stopTimeoutChecker();

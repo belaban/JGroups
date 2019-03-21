@@ -6,9 +6,6 @@ import org.jgroups.logging.Log;
 import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-
 /**
  * Bundler which doesn't bundle :-) Can be used to measure the diff between bundling and non-bundling (e.g. at runtime)
  * This bundler doesn't use a pool of buffers, but creates a new buffer every time a message is sent.
@@ -42,10 +39,6 @@ public class NoBundler implements Bundler {
             transport.doSend(output.buffer(), 0, output.position(), dest);
             if(transport.statsEnabled())
                 transport.incrNumSingleMsgsSent(1);
-        }
-        catch(SocketException | SocketTimeoutException sock_ex) {
-            log.trace(Util.getMessage("SendFailure"),
-                      transport.localAddress(), (dest == null? "cluster" : dest), msg.size(), sock_ex.toString(), msg.printHeaders());
         }
         catch(Throwable e) {
             log.error(Util.getMessage("SendFailure"),

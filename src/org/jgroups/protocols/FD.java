@@ -131,12 +131,12 @@ public class FD extends Protocol {
     }
 
 
-    public void init() throws Exception {
+    public void start() throws Exception {
+        super.start();
         timer=getTransport().getTimer();
         if(timer == null)
             throw new Exception("timer cannot be retrieved");
     }
-
 
     public void stop() {
         lock.lock();

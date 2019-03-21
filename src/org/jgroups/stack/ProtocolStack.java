@@ -837,6 +837,7 @@ public class ProtocolStack extends Protocol {
         initProtocolStack();
     }
 
+    /** Calls @link{{@link Protocol#init()}} in all protocols, from bottom to top */
     public void initProtocolStack() throws Exception {
         List<Protocol> protocols = getProtocols();
         Collections.reverse(protocols);
@@ -858,13 +859,14 @@ public class ProtocolStack extends Protocol {
 
 
     /**
-     * Start all layers. The {@link Protocol#start()} method is called in each protocol,
-     * <em>from top to bottom</em>.
-     * Each layer can perform some initialization, e.g. create a multicast socket
+     * Start all protocols. The {@link Protocol#start()} method is called in each protocol,
+     * <em>from bottom to top</em>. Each protocol can perform some initialization, e.g. create a multicast socket
      */
     public void startStack() throws Exception {
         if(!stopped) return;
-        for(Protocol prot: getProtocols())
+        List<Protocol> protocols=getProtocols();
+        Collections.reverse(protocols);
+        for(Protocol prot: protocols)
             prot.start();
         TP transport=getTransport();
         transport.registerProbeHandler(props_handler);

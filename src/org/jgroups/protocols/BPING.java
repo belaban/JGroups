@@ -123,7 +123,7 @@ public class BPING extends PING implements Runnable {
         DatagramPacket  packet=new DatagramPacket(receive_buf, receive_buf.length);
         DataInput       inp;
 
-        while(sock != null && receiver != null && Thread.currentThread().equals(receiver)) {
+        while(sock != null && Thread.currentThread().equals(receiver)) {
             packet.setData(receive_buf, 0, receive_buf.length);
             try {
                 sock.receive(packet);

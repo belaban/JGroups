@@ -202,7 +202,6 @@ public class RpcDispatcher extends MessageDispatcher {
                 throw new Exception("no method found for " + method_call.methodId());
             method_call.method(m);
         }
-            
         return method_call.invoke(server_obj);
     }
 

@@ -74,10 +74,10 @@ public abstract class BasicTCP extends TP implements Receiver {
 
     public boolean  supportsMulticasting()           {return false;}
     public long     getReaperInterval()              {return reaper_interval;}
-    public void     setReaperInterval(long interval) {this.reaper_interval=interval;}
+    public BasicTCP setReaperInterval(long interval) {this.reaper_interval=interval; return this;}
     public BasicTCP reaperInterval(long interval)    {this.reaper_interval=interval; return this;}
     public long     getConnExpireTime()              {return conn_expire_time;}
-    public void     setConnExpireTime(long time)     {this.conn_expire_time=time;}
+    public BasicTCP setConnExpireTime(long time)     {this.conn_expire_time=time; return this;}
     public BasicTCP connExpireTime(long time)        {this.conn_expire_time=time; return this;}
 
 

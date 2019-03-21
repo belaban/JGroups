@@ -31,7 +31,7 @@ public class TCPPING_Test {
         TCPGOSSIP gossip=new TCPGOSSIP();
         List<InetSocketAddress> gossip_router=Collections.singletonList(new InetSocketAddress(InetAddress.getLoopbackAddress(), 12000));
         gossip.setInitialHosts(gossip_router);
-        ping.setInitialHosts(Collections.singletonList(new IpAddress(transport.getBindAddress(), transport.getBindPort())));
+        ping.setInitialHosts2(Collections.singletonList(new IpAddress(transport.getBindAddress(), transport.getBindPort())));
         ch=new JChannel(transport, ping, gossip);
         assert !ping.getInitialHosts().isEmpty() : "No initial hosts!";
         assert !gossip.getInitialHosts().isEmpty(): "no initial hosts!";

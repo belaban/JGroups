@@ -317,10 +317,15 @@ public class NioConnection extends Connection {
 
         client_sock.setKeepAlive(true);
         client_sock.setTcpNoDelay(server.tcpNodelay());
-        if(server.linger() > 0)
-            client_sock.setSoLinger(true, server.linger());
-        else
-            client_sock.setSoLinger(false, -1);
+        try { // todo: remove try-catch clause one https://github.com/oracle/graal/issues/1087 has been fixed
+            if(server.linger() > 0)
+                client_sock.setSoLinger(true, server.linger());
+            else
+                client_sock.setSoLinger(false, -1);
+        }
+        catch(Throwable t) {
+            server.log().warn("%s: failed setting SO_LINGER option: %s", server.localAddress(), t);
+        }
     }
 
     protected void sendLocalAddress(Address local_addr) throws Exception {

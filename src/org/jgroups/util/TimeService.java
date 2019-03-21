@@ -49,13 +49,17 @@ public class TimeService  implements Runnable {
 
     public boolean running() {return task != null && !task.isDone();}
 
-    public TimeService start() {
-        startTask();
+    public synchronized TimeService start() {
+        if(task == null || task.isDone())
+            task=timer.scheduleWithFixedDelay(this, interval, interval, TimeUnit.MILLISECONDS, false);
         return this;
     }
 
-    public TimeService stop() {
-        stopTask();
+    public synchronized TimeService stop() {
+        if(task != null) {
+            task.cancel(false);
+            task=null;
+        }
         return this;
     }
 
@@ -68,15 +72,4 @@ public class TimeService  implements Runnable {
         return getClass().getSimpleName() + " (interval=" + interval + "ms)";
     }
 
-    protected synchronized void startTask() {
-        stopTask();
-        task=timer.scheduleWithFixedDelay(this, interval, interval, TimeUnit.MILLISECONDS, false);
-    }
-
-    protected synchronized void stopTask() {
-        if(task != null) {
-            task.cancel(false);
-            task=null;
-        }
-    }
 }

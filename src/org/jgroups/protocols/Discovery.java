@@ -114,9 +114,6 @@ public abstract class Discovery extends Protocol {
 
     public void init() throws Exception {
         TP tp=getTransport();
-        timer=tp.getTimer();
-        if(timer == null)
-            throw new Exception("timer cannot be retrieved from protocol stack");
         if(stagger_timeout < 0)
             throw new IllegalArgumentException("stagger_timeout cannot be negative");
         if(num_discovery_runs < 1)
@@ -124,6 +121,18 @@ public abstract class Discovery extends Protocol {
         transport_supports_multicasting=tp.supportsMulticasting();
         sends_can_block=getTransport() instanceof TCP; // UDP and TCP_NIO2 won't block
         use_ip_addrs=tp.getUseIpAddresses();
+    }
+
+    public void start() throws Exception {
+        super.start();
+        timer=getTransport().getTimer();
+        if(timer == null)
+            throw new Exception("timer cannot be retrieved from protocol stack");
+    }
+
+    public void stop() {
+        is_server=false;
+        clearRequestFutures();
     }
 
     public abstract boolean isDynamic();
@@ -139,16 +148,16 @@ public abstract class Discovery extends Protocol {
 
     }
 
-    public int       getNumberOfDiscoveryRequestsSent() {return num_discovery_requests;}
-    public boolean   breakOnCoordResponse()             {return break_on_coord_rsp;}
-    public Discovery breakOnCoordResponse(boolean flag) {break_on_coord_rsp=flag; return this;}
-    public boolean   returnEntireCache()                {return return_entire_cache;}
-    public Discovery returnEntireCache(boolean flag)    {return_entire_cache=flag; return this;}
-    public long      staggerTimeout()                   {return stagger_timeout;}
-    public Discovery staggerTimeout(long timeout)       {stagger_timeout=timeout; return this;}
-    public boolean   useDiskCache()                     {return use_disk_cache;}
-    public Discovery useDiskCache(boolean flag)         {use_disk_cache=flag; return this;}
-    public Discovery discoveryRspExpiryTime(long t)     {this.discovery_rsp_expiry_time=t; return this;}
+    public int                     getNumberOfDiscoveryRequestsSent() {return num_discovery_requests;}
+    public boolean                 breakOnCoordResponse()             {return break_on_coord_rsp;}
+    public <T extends Discovery> T breakOnCoordResponse(boolean flag) {break_on_coord_rsp=flag; return (T)this;}
+    public boolean                 returnEntireCache()                {return return_entire_cache;}
+    public <T extends Discovery> T returnEntireCache(boolean flag)    {return_entire_cache=flag; return (T)this;}
+    public long                    staggerTimeout()                   {return stagger_timeout;}
+    public <T extends Discovery> T staggerTimeout(long timeout)       {stagger_timeout=timeout; return (T)this;}
+    public boolean                 useDiskCache()                     {return use_disk_cache;}
+    public <T extends Discovery> T useDiskCache(boolean flag)         {use_disk_cache=flag; return (T)this;}
+    public <T extends Discovery> T discoveryRspExpiryTime(long t)     {this.discovery_rsp_expiry_time=t; return (T)this;}
 
 
 
@@ -182,14 +191,6 @@ public abstract class Discovery extends Protocol {
         num_discovery_requests=0;
     }
 
-    public void start() throws Exception {
-        super.start();
-    }
-
-    public void stop() {
-        is_server=false;
-        clearRequestFutures();
-    }
 
     public void addResponse(Responses rsp) {
         synchronized(ping_responses) {
@@ -222,14 +223,14 @@ public abstract class Discovery extends Protocol {
         Responses rsps=new Responses(num_expected, initial_discovery && break_on_coord_rsp, capacity);
         addResponse(rsps);
         if(async || async_discovery || (num_discovery_runs > 1) && initial_discovery) {
-            timer.execute(() -> invokeFindMembers(members, initial_discovery, rsps, async));
+            final Runnable find_method=() -> invokeFindMembers(members, initial_discovery, rsps, async);
+            timer.execute(find_method);
             if(num_discovery_runs > 1 && initial_discovery) {
                 int num_reqs_to_send=num_discovery_runs-1;
                 long last_send=timeout - (timeout/num_discovery_runs);
                 long interval=last_send/num_reqs_to_send;
                 for(long i=0,delay=interval; i < num_reqs_to_send; i++,delay+=interval) {
-                    Future<?> future=timer.schedule(() -> invokeFindMembers(members, initial_discovery, rsps, async),
-                                                    delay, TimeUnit.MILLISECONDS);
+                    Future<?> future=timer.schedule(find_method, delay, TimeUnit.MILLISECONDS);
                     this.discovery_req_futures.add(future);
                     num_discovery_requests++;
                 }
@@ -371,7 +372,6 @@ public abstract class Discovery extends Protocol {
     }
 
 
-    @SuppressWarnings("unchecked")
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.FIND_INITIAL_MBRS:      // sent by GMS layer

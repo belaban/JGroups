@@ -59,9 +59,13 @@ public class SHUFFLE extends Protocol {
 
     public void init() throws Exception {
         super.init();
-        timer=getTransport().getTimer();
         up_msgs=new ArrayList<>(max_size);
         down_msgs=new ArrayList<>(max_size);
+    }
+
+    public void start() throws Exception {
+        super.start();
+        timer=getTransport().getTimer();
     }
 
     public void stop() {

@@ -138,9 +138,6 @@ public class MERGE3 extends Protocol {
 
 
     public void init() throws Exception {
-        timer=getTransport().getTimer();
-        if(timer == null)
-            throw new Exception("timer cannot be retrieved");
         if(min_interval >= max_interval)
             throw new IllegalArgumentException("min_interval (" + min_interval + ") has to be < max_interval (" + max_interval + ")");
         if(check_interval == 0)
@@ -154,6 +151,13 @@ public class MERGE3 extends Protocol {
         if(max_interval <= 0)
             throw new Exception("max_interval must be > 0");
         transport_supports_multicasting=getTransport().supportsMulticasting();
+    }
+
+    public void start() throws Exception {
+        super.start();
+        timer=getTransport().getTimer();
+        if(timer == null)
+            throw new Exception("timer cannot be retrieved");
     }
 
     public void stop() {
@@ -492,7 +496,7 @@ public class MERGE3 extends Protocol {
         }
 
         public String toString() {
-            return MERGE3.class.getSimpleName() + ": " + getClass().getSimpleName();
+            return String.format("%s: %s (interval=%dms", MERGE3.class.getSimpleName(), getClass().getSimpleName(), check_interval);
         }
 
     }

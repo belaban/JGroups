@@ -306,7 +306,7 @@ public final class PropertyConverters {
         }
 
 
-        protected static InetAddress convertBindAddress(String value) throws Exception {
+        public static InetAddress convertBindAddress(String value) throws Exception {
             InetAddress retval=null;
             Util.AddressScope addr_scope=null;
             try {

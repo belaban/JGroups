@@ -4,6 +4,7 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
@@ -12,6 +13,8 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Collections;
 
 /**
  * @author Bela Ban
@@ -19,14 +22,29 @@ import java.net.InetAddress;
 public class ProgrammaticChat {
 
     public static void main(String[] args) throws Exception {
+        String name=null, bind_addr=null;
+        for(int i=0; i < args.length; i++) {
+            if("-name".equals(args[i])) {
+                name=args[++i];
+                continue;
+            }
+            if("-bind_addr".equals(args[i])) {
+                bind_addr=args[++i];
+                continue;
+            }
+            System.out.printf("%s [-h] [-name name] [-bind_addr addr]\n", ProgrammaticChat.class.getSimpleName());
+            return;
+        }
+
+        InetAddress bind_address=bind_addr != null? PropertyConverters.Default.convertBindAddress(bind_addr) : Util.getLocalhost();
         Protocol[] prot_stack={
-          new UDP().setValue("bind_addr", InetAddress.getByName("127.0.0.1")),
-          new PING(),
+          new TCP().setBindAddress(bind_address).setBindPort(7800)
+            .setDiagnosticsEnabled(false), // todo: remove when MulticastSocket works
+          new TCPPING().initialHosts(Collections.singletonList(new InetSocketAddress(bind_address, 7800))),
           new MERGE3(),
           new FD_SOCK(),
           new FD_ALL(),
           new VERIFY_SUSPECT(),
-          new BARRIER(),
           new NAKACK2(),
           new UNICAST3(),
           new STABLE(),
@@ -34,7 +52,7 @@ public class ProgrammaticChat {
           new UFC(),
           new MFC(),
           new FRAG2()};
-        JChannel ch=new JChannel(prot_stack).name(args[0]);
+        JChannel ch=new JChannel(prot_stack).name(name);
 
         ch.setReceiver(new ReceiverAdapter() {
             public void viewAccepted(View new_view) {

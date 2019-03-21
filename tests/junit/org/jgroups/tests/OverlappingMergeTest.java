@@ -1,4 +1,4 @@
-package org.jgroups.tests;
+ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.*;
@@ -57,7 +57,6 @@ public class OverlappingMergeTest extends ChannelTestBase {
         ra.clear(); rb.clear(); rc.clear();
     }
 
-    @SuppressWarnings("unchecked")
     public void testRegularMessageSending() throws Exception {
         sendMessages(5, a, b, c);
         checkReceivedMessages(make(ra, 15), make(rb,15), make(rc,15));
@@ -360,6 +359,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
                 merge_prot.setMinInterval(500).setMaxInterval(1000).setValue("check_interval", 3000);
                 ch.getProtocolStack().insertProtocol(merge_prot, ProtocolStack.Position.ABOVE, Discovery.class);
                 merge_prot.init();
+                merge_prot.start();
                 merge_prot.down(new Event(Event.SET_LOCAL_ADDRESS, ch.getAddress()));
             }
         }
@@ -469,7 +469,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         }
     }
 
-    protected boolean isMulticastTransport(JChannel ch) {
+    protected static boolean isMulticastTransport(JChannel ch) {
         return ch.getProtocolStack().getTransport().supportsMulticasting();
     }
 
@@ -511,8 +511,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    protected Tuple<MyReceiver,Integer> make(MyReceiver r, int expected_msgs) {
+    protected static Tuple<MyReceiver,Integer> make(MyReceiver r, int expected_msgs) {
         return new Tuple<>(r, expected_msgs);
     }
 
@@ -526,7 +525,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
     }
 
 
-    protected boolean isCoord(JChannel ch) {
+    protected static boolean isCoord(JChannel ch) {
         GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
         return gms.getImpl() instanceof CoordGmsImpl;
     }

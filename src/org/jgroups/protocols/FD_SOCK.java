@@ -202,14 +202,15 @@ public class FD_SOCK extends Protocol implements Runnable {
         cache=new LazyRemovalCache<>(cache_max_elements, cache_max_age);
         shuttin_down=false;
         srv_sock_handler=new ServerSocketHandler();
-        timer=getTransport().getTimer();
-        if(timer == null)
-            throw new Exception("timer is null");
     }
 
 
     public void start() throws Exception {
-        shuttin_down=false; super.start();
+        shuttin_down=false;
+        super.start();
+        timer=getTransport().getTimer();
+        if(timer == null)
+            throw new Exception("timer is null");
     }
 
     public void stop() {

@@ -916,7 +916,7 @@ public class JChannel implements Closeable {
 
         if(target == null)
             target=determineCoordinator();
-        if(target != null && local_addr != null && target.equals(local_addr)) {
+        if(Objects.equals(target, local_addr)) {
             log.trace(local_addr + ": cannot get state from myself (" + target + "): probably the first member");
             return this;
         }
@@ -1019,7 +1019,7 @@ public class JChannel implements Closeable {
         checkClosed();
 
         this.cluster_name=cluster_name;
-        prot_stack.startStack(); // calls start() in all protocols, from top to bottom
+        prot_stack.startStack(); // calls start() in all protocols, from bottom to top
 
         /*create a temporary view, assume this channel is the only member and is the coordinator*/
         view=new View(local_addr, 0, Collections.singletonList(local_addr));  // create a dummy view
@@ -1135,14 +1135,6 @@ public class JChannel implements Closeable {
         return view != null? view.getCoord() : null;
     }
 
-    protected TimeScheduler getTimer() {
-        if(prot_stack != null) {
-            TP transport=prot_stack.getTransport();
-            if(transport != null)
-                return transport.getTimer();
-        }
-        return null;
-    }
 
 
     protected JChannel notifyChannelConnected(JChannel c) {

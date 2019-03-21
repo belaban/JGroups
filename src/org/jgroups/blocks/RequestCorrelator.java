@@ -299,7 +299,7 @@ public class RequestCorrelator {
         if(hdr instanceof MultiDestinationHeader) {
             // if we are part of the exclusion list, then we discard the request (addressed to different members)
             Address[] exclusion_list=((MultiDestinationHeader)hdr).exclusion_list;
-            if(exclusion_list != null && local_addr != null && Util.contains(local_addr, exclusion_list)) {
+            if(local_addr != null && Util.contains(local_addr, exclusion_list)) {
                 log.trace("%s: dropped req from %s as we are in the exclusion list, hdr=%s", local_addr, msg.src(), hdr);
                 return true; // don't pass this message further up
             }
@@ -317,7 +317,7 @@ public class RequestCorrelator {
             if(hdr instanceof MultiDestinationHeader) {
                 // if we are part of the exclusion list, then we discard the request (addressed to different members)
                 Address[] exclusion_list=((MultiDestinationHeader)hdr).exclusion_list;
-                if(exclusion_list != null && local_addr != null && Util.contains(local_addr, exclusion_list)) {
+                if(local_addr != null && Util.contains(local_addr, exclusion_list)) {
                     log.trace("%s: dropped req from %s as we are in the exclusion list, hdr=%s", local_addr, msg.src(), hdr);
                     batch.remove(msg);
                     continue; // don't pass this message further up

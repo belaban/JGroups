@@ -8,8 +8,6 @@ import org.jgroups.logging.Log;
 import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -92,10 +90,6 @@ public abstract class BaseBundler implements Bundler {
             if(transport.statsEnabled())
                 transport.incrNumSingleMsgsSent(1);
         }
-        catch(SocketException | SocketTimeoutException sock_ex) {
-            log.trace(Util.getMessage("SendFailure"),
-                      transport.localAddress(), (dest == null? "cluster" : dest), msg.size(), sock_ex.toString(), msg.printHeaders());
-        }
         catch(Throwable e) {
             log.error(Util.getMessage("SendFailure"),
                       transport.localAddress(), (dest == null? "cluster" : dest), msg.size(), e.toString(), msg.printHeaders());
@@ -108,9 +102,6 @@ public abstract class BaseBundler implements Bundler {
         try {
             Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, output, dest == null, transport.getId());
             transport.doSend(output.buffer(), 0, output.position(), dest);
-        }
-        catch(SocketException | SocketTimeoutException sock_ex) {
-            log.debug(Util.getMessage("FailureSendingMsgBundle"), transport.localAddress(),sock_ex);
         }
         catch(Throwable e) {
             log.error(Util.getMessage("FailureSendingMsgBundle"), transport.localAddress(), e);

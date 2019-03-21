@@ -229,7 +229,7 @@ public class MPING extends PING implements Runnable {
         final byte[]   receive_buf=new byte[65535];
         DatagramPacket packet=new DatagramPacket(receive_buf, receive_buf.length);
 
-        while(mcast_sock != null && receiver != null && Thread.currentThread().equals(receiver)) {
+        while(mcast_sock != null && Thread.currentThread().equals(receiver)) {
             packet.setData(receive_buf, 0, receive_buf.length);
             try {
                 mcast_sock.receive(packet);

@@ -1,0 +1,61 @@
+
+Changes in JGroups to make it run natively in GraalVM
+=====================================================
+
+Author: Bela Ban
+Date:   March 2019
+JIRA:   https://issues.jboss.org/browse/JGRP-2332
+
+The command to create a native image is JGroups/bin/compile.sh org.jgroups.demos.ProgrammaticChat. Files needed by this
+are:
+* conf/jni.json: contains the JNI methods that should be translated to native code
+* conf/reflection.json: contains the methods that use reflection
+
+Current limitations
+===================
+* UDP is not supported because of the MulticastSocket issue, see [2] and [3]. Should be fixed son by the GraalVM
+* Diagnostics cannot be used, as it also uses a MulticastSocket
+* Socket option SO_LINGER cannot be set due to CCE (see todos)
+* Only java.util.logging logging is supported. To enable this:
+  * Include resource logging.properties at compile time, e.g.: -H:IncludeResources=/home/bela/logging.properties
+  * Force use of the JDK logger: -Djgroups.use.jdk_logger=true
+* JMX cannot be used (flag -jmx is a no-go)
+* reflection.json should include all classes/fields that are accessed via reflection; unused classes/fields should be
+  removed
+* ObjectOutputStream.writeObject() is not yet supported [4]. This is used by the RPC framework when a request or reply
+  is an Object, but doesn't implement Streamable. A reply could be an Exception, which triggers writeObject().
+* Invoking a method which takes a long with an int via reflection throws a CCE. The argument has to be 1L *not* 1.
+* jg-protocol-ids.xml and jg-magic-map.xml are parsed to get mappings between protocols and their IDs, and classes and
+  their magic IDs (for marshalling).
+  * These files can be changed: unused protocols and classes can simply be removed
+
+
+Changes
+=======
+* The accessors of some of the protocols changed, e.g. from void setX() to <P extends TP> P setX()
+* Util.getAddress(AddressScope scope) has NetworkInterface.isUp() commented; this needs to be reverted when [1]
+  has been fixed
+* TP.timer is now created in TP.init(), but started (the threads) in TP.start(). As a requirement, start() is now
+  called in the protocol stack from _bottom to top_ (used to be top to bottom).
+
+
+Todos
+=====
+* Uncomment uses of NetworkInterface.isUp() when [1] has been resolved. The current port will return *all* interfaces,
+  even ones that are down
+
+* Try MulticastSockets (UDP). Currently, setting options fail: [2,3]
+
+* Re-enable setting socket option SO_LINGER in {Tcp,Nio}Connection.setSocketParameters()
+
+
+References
+==========
+[1] https://github.com/oracle/graal/pull/1076   // NetworkInterface.isUp0()
+
+[2] https://github.com/oracle/graal/issues/1087 // Socket.setOption(SO_LINGER, -1) [FIXED]
+
+[3] https://github.com/oracle/graal/issues/1082 // SO_REUSEADDR fails on MulticastSocket
+
+[4] https://github.com/oracle/graal/issues/460 // Serialization not supported yet (ObjectOutputStream)
+

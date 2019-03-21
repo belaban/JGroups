@@ -41,10 +41,9 @@ public class TCPPING extends Discovery {
 
     @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership. " +
       "Ideally, all members should be listed. If this is not possible, send_cache_on_join and / or return_entire_cache " +
-      "can be set to true",
-      converter=PropertyConverters.InitialHosts.class, dependsUpon="port_range",
+      "can be set to true",converter=PropertyConverters.InitialHosts.class, dependsUpon="port_range",
       systemProperty=Global.TCPPING_INITIAL_HOSTS)
-    protected List<PhysicalAddress> initial_hosts=Collections.emptyList();
+    protected Collection<PhysicalAddress> initial_hosts=Collections.emptyList();
 
     @Property(description="max number of hosts to keep beyond the ones in initial_hosts")
     protected int max_dynamic_hosts=2000;
@@ -69,33 +68,36 @@ public class TCPPING extends Discovery {
      * @return List<Address> list of initial hosts. This variable is only set after the channel has been created and
      * set Properties() has been called
      */
-    public List<PhysicalAddress> getInitialHosts() {
+    public Collection<PhysicalAddress> getInitialHosts() {
         return initial_hosts;
     }
 
 
-    /** @deprecated Use {@link #setInitialHosts(Collection)} instead (will later get renamed to setInitialHosts()) */
-    @Deprecated public void setInitialHosts(List<PhysicalAddress> initial_hosts) {
-        this.initial_hosts=initial_hosts;
-    }
-
-    public void setInitialHosts(Collection<InetSocketAddress> hosts) {
+    public <T extends TCPPING> T setInitialHosts(Collection<InetSocketAddress> hosts) {
         if(hosts == null || hosts.isEmpty())
-            return;
+            return (T)this;
         initial_hosts=hosts.stream().map(h -> new IpAddress(h.getAddress(), h.getPort())).collect(Collectors.toList());
+        return (T)this;
     }
 
-    public TCPPING initialHosts(Collection<InetSocketAddress> hosts) {setInitialHosts(hosts); return this;}
+    public <T extends TCPPING> T setInitialHosts2(Collection<PhysicalAddress> hosts) {
+        if(hosts == null || hosts.isEmpty())
+            return (T)this;
+        initial_hosts=hosts;
+        return (T)this;
+    }
+
+    public <T extends TCPPING> T initialHosts(Collection<InetSocketAddress> h) {setInitialHosts(h); return (T)this;}
 
     public int getPortRange() {
         return port_range;
     }
 
-    public void setPortRange(int port_range) {
-        this.port_range=port_range;
+    public <T extends TCPPING> T setPortRange(int port_range) {
+        this.port_range=port_range; return (T)this;
     }
 
-    public TCPPING portRange(int r) {this.port_range=r; return this;}
+    public <T extends TCPPING> T portRange(int r) {this.port_range=r; return (T)this;}
 
     @ManagedAttribute
     public String getDynamicHostList() {
@@ -103,8 +105,8 @@ public class TCPPING extends Discovery {
     }
 
     @ManagedOperation
-    public void clearDynamicHostList() {
-        dynamic_hosts.clear();
+    public <T extends TCPPING> T clearDynamicHostList() {
+        dynamic_hosts.clear(); return (T)this;
     }
 
     public void init() throws Exception {

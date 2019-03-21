@@ -278,7 +278,6 @@ public abstract class FlowControl extends Protocol {
     }
 
 
-    @SuppressWarnings("unchecked")
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.CONFIG:

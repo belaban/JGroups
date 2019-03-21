@@ -34,6 +34,8 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
     // if true, non-blocking timer tasks are run directly by the runner thread and not submitted to the thread pool
     protected boolean                     non_blocking_task_handling=true;
 
+    protected boolean                     shut_down_pool;
+
     protected enum TaskType               {dynamic, fixed_rate, fixed_delay}
 
 
@@ -44,6 +46,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         pool=new ThreadPoolExecutor(4, 10,
                                     30000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(100),
                                     Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
+        shut_down_pool=true;
         start();
     }
 
@@ -60,13 +63,19 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
           new ThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
                                  queue, factory, Util.parseRejectionPolicy(rejection_policy))
           : new DirectExecutor();
+        shut_down_pool=true;
         start();
     }
 
     public TimeScheduler3(Executor thread_pool, ThreadFactory factory) {
+        this(thread_pool, factory, true);
+    }
+
+    public TimeScheduler3(Executor thread_pool, ThreadFactory factory, boolean start) {
         timer_thread_factory=factory;
         pool=thread_pool;
-        start();
+        if(start)
+            start();
     }
 
     public void    setThreadFactory(ThreadFactory f)     {condSet((p) -> p.setThreadFactory(f));}
@@ -97,6 +106,9 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         return sb.toString();
     }
 
+    public void removeCancelledTasks() {
+        queue.removeIf(Task::isDone);
+    }
 
 
     public void execute(Runnable task, boolean can_block) {
@@ -135,16 +147,21 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
     }
 
 
-    protected void start() {
-        startRunner();
+    public synchronized void start() {
+        if(runner == null || !runner.isAlive()) {
+            runner=timer_thread_factory != null? timer_thread_factory.newThread(this, "Timer runner") : new Thread(this, "Timer runner");
+            runner.start();
+        }
     }
 
-
-    /**
-     * Stops the timer, cancelling all tasks
-     */
-    public void stop() {
-        stopRunner();
+    /** Stops the timer, cancelling all tasks */
+    public synchronized void stop() {
+        Thread tmp=runner;
+        runner=null;
+        if(tmp != null) {
+            tmp.interrupt();
+            try {tmp.join(500);} catch(InterruptedException e) {}
+        }
 
         // we may need to do multiple iterations as the iterator works on a copy and tasks might have been added just
         // after the iterator() call returned
@@ -155,7 +172,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
             }
         queue.clear();
 
-        if(pool instanceof ThreadPoolExecutor) {
+        if(pool instanceof ThreadPoolExecutor && shut_down_pool) {
             ThreadPoolExecutor p=(ThreadPoolExecutor)pool;
             List<Runnable> remaining_tasks=p.shutdownNow();
             remaining_tasks.stream().filter(task -> task instanceof Future).forEach(task -> ((Future)task).cancel(true));
@@ -179,7 +196,8 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         while(Thread.currentThread() == runner) {
             try {
                 Task task=queue.take();
-                submitToPool(task);
+                if(!task.isDone())
+                    submitToPool(task);
             }
             catch(InterruptedException interrupted) {
                 // flag is cleared and we check if the loop should be terminated at the top of the loop
@@ -239,9 +257,10 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
     }
 
     protected Task add(Task task) {
-        if(!isRunning())
-            return null;
+        //  if(!isRunning())
+        //    return null;
         queue.add(task);
+        removeCancelledTasks();
         return task;
     }
 
@@ -250,21 +269,6 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         return tmp != null && tmp.isAlive();
     }
 
-    protected synchronized void startRunner() {
-        stopRunner();
-        runner=timer_thread_factory != null? timer_thread_factory.newThread(this, "Timer runner") : new Thread(this, "Timer runner");
-        runner.start();
-    }
-
-    protected synchronized void stopRunner() {
-        Thread tmp=runner;
-        runner=null;
-        if(tmp != null) {
-            tmp.interrupt();
-            try {tmp.join(500);} catch(InterruptedException e) {}
-        }
-        queue.clear();
-    }
 
 
     public static class Task implements Runnable, Delayed, Future {
@@ -295,7 +299,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         public int compareTo(Delayed o) {
             long my_delay=getDelay(TimeUnit.NANOSECONDS), other_delay=o.getDelay(TimeUnit.NANOSECONDS);
             // return Long.compare(my_delay, other_delay); // JDK 7 only
-            return (my_delay < other_delay) ? -1 : ((my_delay == other_delay) ? 0 : 1);
+            return Long.compare(my_delay, other_delay);
         }
 
         public long getDelay(TimeUnit unit) {
