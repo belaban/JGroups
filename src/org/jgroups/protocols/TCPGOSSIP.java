@@ -167,7 +167,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
           .map(PingData::getPhysicalAddr).collect(Collectors.toSet());
 
         for(PhysicalAddress physical_addr: physical_addrs) {
-            if(physical_addr != null && own_physical_addr.equals(physical_addr)) // no need to send the request to myself
+            if(own_physical_addr.equals(physical_addr)) // no need to send the request to myself
                 continue;
             // the message needs to be DONT_BUNDLE, see explanation above
             final Message msg=new Message(physical_addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)

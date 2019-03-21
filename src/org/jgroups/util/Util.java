@@ -3189,9 +3189,12 @@ public class Util {
             String host=t.substring(0,t.indexOf('['));
             host=host.trim();
             int port=Integer.parseInt(t.substring(t.indexOf('[') + 1,t.indexOf(']')));
-            for(int i=port; i <= port + port_range; i++) {
-                addr=new IpAddress(host,i);
-                retval.add(addr);
+            InetAddress[] resolvedAddresses=InetAddress.getAllByName(host);
+            for(int i=0; i < resolvedAddresses.length; i++) {
+                for(int p=port; p <= port + port_range; p++) {
+                    addr=new IpAddress(resolvedAddresses[i], p);
+                    retval.add(addr);
+                }
             }
         }
         return new LinkedList<>(retval);
@@ -3202,7 +3205,7 @@ public class Util {
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of
      * InetSocketAddress
      */
-    public static List<InetSocketAddress> parseCommaDelimitedHosts2(String hosts,int port_range) {
+    public static List<InetSocketAddress> parseCommaDelimitedHosts2(String hosts,int port_range) throws UnknownHostException {
 
         StringTokenizer tok=new StringTokenizer(hosts,",");
         String t;
@@ -3214,9 +3217,12 @@ public class Util {
             String host=t.substring(0,t.indexOf('['));
             host=host.trim();
             int port=Integer.parseInt(t.substring(t.indexOf('[') + 1,t.indexOf(']')));
-            for(int i=port; i < port + port_range; i++) {
-                addr=new InetSocketAddress(host,i);
-                retval.add(addr);
+            InetAddress[] resolvedAddresses=InetAddress.getAllByName(host);
+            for(int i=0; i < resolvedAddresses.length; i++) {
+                for(int p=port; p <= port + port_range; p++) {
+                    addr=new InetSocketAddress(resolvedAddresses[i], p);
+                    retval.add(addr);
+                }
             }
         }
         return new LinkedList<>(retval);
