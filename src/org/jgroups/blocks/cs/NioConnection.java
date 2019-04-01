@@ -53,7 +53,7 @@ public class NioConnection extends Connection {
             throw new IllegalArgumentException("Invalid parameter peer_addr="+ peer_addr);
         this.peer_addr=peer_addr;
         send_buf=new Buffers(server.maxSendBuffers() *2); // space for actual bufs and length bufs!
-        channel=SocketChannel.open();
+        channel=server.socketFactory().createSocketChannel("jgroups.nio.client");
         channel.configureBlocking(false);
         setSocketParameters(channel.socket());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
@@ -253,7 +253,8 @@ public class NioConnection extends Connection {
             if(send_buf.remaining() > 0) { // try to flush send buffer if it still has pending data to send
                 try {send();} catch(Throwable e) {}
             }
-            Util.close(channel, reader);
+            Util.close(reader);
+            server.socketFactory().close(channel);
         }
         finally {
             connected=false;

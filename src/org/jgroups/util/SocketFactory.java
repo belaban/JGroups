@@ -3,6 +3,7 @@ package org.jgroups.util;
 import java.io.IOException;
 import java.net.*;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.Map;
 
 /**
@@ -27,7 +28,14 @@ public interface SocketFactory {
     ServerSocket createServerSocket(String service_name, int port, int backlog) throws IOException;
     ServerSocket createServerSocket(String service_name, int port, int backlog, InetAddress bindAddr) throws IOException;
 
-    @SuppressWarnings("UnusedParameters")
+    default SocketChannel createSocketChannel(String service_name) throws IOException {
+        return SocketChannel.open();
+    }
+
+    default SocketChannel createSocketChannel(String service_name, SocketAddress bindAddr) throws IOException {
+        return this.createSocketChannel(service_name).bind(bindAddr);
+    }
+
     default ServerSocketChannel createServerSocketChannel(String service_name) throws IOException {
         return ServerSocketChannel.open();
     }
@@ -56,7 +64,12 @@ public interface SocketFactory {
     void close(Socket sock) throws IOException;
     void close(ServerSocket sock) throws IOException;
     void close(DatagramSocket sock);
-    
+    default void close(SocketChannel channel) {
+        Util.close(channel);
+    }
+    default void close(ServerSocketChannel channel) {
+        Util.close(channel);
+    }
 
     /**
      * Returns all open sockets. This method can be used to list or close all open sockets.
