@@ -56,7 +56,9 @@ public interface SocketFactory {
     void close(Socket sock) throws IOException;
     void close(ServerSocket sock) throws IOException;
     void close(DatagramSocket sock);
-    
+    default void close(ServerSocketChannel channel) {
+        Util.close(channel);
+    }
 
     /**
      * Returns all open sockets. This method can be used to list or close all open sockets.

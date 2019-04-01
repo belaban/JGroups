@@ -123,8 +123,10 @@ public class NioServer extends NioBaseServer {
     @ManagedOperation(description="Stops the server")
     public synchronized void stop() {
         super.stop();
-        if(running.compareAndSet(true, false))
-            Util.close(selector, channel); // closing the selector also stops the acceptor thread
+        if(running.compareAndSet(true, false)) {
+            Util.close(selector); // closing the selector also stops the acceptor thread
+            socket_factory.close(channel);
+        }
     }
 
 
