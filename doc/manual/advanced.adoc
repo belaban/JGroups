@@ -2001,15 +2001,16 @@ The way probe works is that every stack has an additional multicast socket that 
                             Whether or not to enable diagnostics (default: true). When enabled, this will create
                             a MulticastSocket and we have one additional thread listening for probe requests. When
                             disabled, we'll have neither the thread nor the socket created.
-                        
-|diagnostics_addr|
-                            The multicast address which the MulticastSocket should join. The default is
-                            `224.0.75.75` for IPv4 and `ff0e::0:75:75` for IPv6.
-                        
-|diagnostics_port|
-                            The port on which the MulticastSocket should listen. The default is `7500`.
-                        
+|diag_enable_udp|Use a multicast socket to listen for probe requests
 
+|diag_enable_tcp|Use a TCP socket to listen for probe requests (ignored if enable_diagnostics is false)
+
+|diagnostics_addr| The multicast address which the MulticastSocket should join. The default is
+                   `224.0.75.75` for IPv4 and `ff0e::0:75:75` for IPv6.
+
+|diagnostics_bind_addr|Bind address for diagnostic probing. Used when diag_enable_tcp is true")
+
+|diagnostics_port|The port on which the MulticastSocket should listen. The default is `7500`.
 |===============
 
 
@@ -2138,7 +2139,7 @@ all cluster members. We can also pass a list of attributes:
 
 
 ----
-[belasmac] /Users/bela$ probe.sh  jmx=NAKACK2.xmit,num
+[belasmac] /Users/bela$ probe.sh jmx=NAKACK2.xmit,num
 
 -- sending probe on /224.0.75.75:7500
 
@@ -2262,6 +2263,16 @@ The example output shows stats for members C, A, B and D. When looking at the ou
 * invoked 63340 sync unicast RPCs on D, which took a min of 0.13 ms, a max of 63.74 ms and an average of 2.469 ms per RPC.
 
 To reset the numbers, `probe.sh rpcs-reset` can be called.
+
+==== Using probe with TCP
+Probe uses IP multicasting by default. To enable TCP, `diag_enable_tcp` has to be set to true in the transport
+(and optionally `diag_enable_udp` to false).
+
+Probe can then be started by pointing it to the address of one member,
+using the `-addr` argument, e.g.: `probe.sh -addr 192.168.1.105 -port 7500` (note that port 7500 can be omitted, as
+it is the default). In this mode, probe will ask the member running at `192.168.1.105:7500` for a list of all other
+members, and then send the request to all of the returned members.
+
 
 
 

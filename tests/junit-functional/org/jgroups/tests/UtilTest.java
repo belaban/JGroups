@@ -1076,7 +1076,7 @@ public class UtilTest {
     }
 
 
-    public static void testReadLine() throws IOException {
+    public void testReadLine() throws IOException {
         final String input="   hello world\nthis is \r\n just an example\r\nthis is line 2 \r\n";
         String line;
         InputStream in=new BufferedInputStream(new ByteArrayInputStream(input.getBytes()));

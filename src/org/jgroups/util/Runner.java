@@ -1,17 +1,21 @@
 package org.jgroups.util;
 
+import java.io.Closeable;
+import java.io.IOException;
+
 /**
  * Runs a given function in a loop (in a separate thread) until it is stopped
  * @author Bela Ban
  * @since  4.0
  */
-public class Runner implements Runnable {
+public class Runner implements Runnable, Closeable {
     protected final ThreadFactory factory;
-    protected final String        thread_name;
+    protected       String        thread_name;
     protected final Runnable      function;
     protected final Runnable      stop_function;
     protected volatile boolean    running;
     protected Thread              thread;
+    protected boolean             daemon;
 
 
     public Runner(ThreadFactory factory, String thread_name, Runnable function, Runnable stop_function) {
@@ -21,22 +25,28 @@ public class Runner implements Runnable {
         this.stop_function=stop_function;
     }
 
-    public Thread  getThread()  {return thread;}
-    public boolean isRunning()  {return running;}
+    public Thread  getThread()          {return thread;}
+    public boolean isRunning()          {return running;}
+    public boolean daemon()             {return daemon;}
+    public Runner  daemon(boolean d)    {daemon=d; return this;}
+    public String  threadName()         {return thread_name;}
+    public Runner  threadName(String n) {thread_name=n; if(thread != null) thread.setName(n); return this;}
 
 
-    public synchronized void start() {
+    public synchronized Runner start() {
         if(running)
-            return;
+            return this;
         if(thread == null || !thread.isAlive()) {
             String name=thread_name != null? thread_name : "runner";
             thread=factory != null? factory.newThread(this, name) : new Thread(this, name);
+            thread.setDaemon(daemon);
             running=true;
             thread.start();
         }
+        return this;
     }
 
-    public synchronized void stop() {
+    public synchronized Runner stop() {
         running=false;
         Thread tmp=thread;
         thread=null;
@@ -48,6 +58,11 @@ public class Runner implements Runnable {
         }
         if(stop_function != null)
             stop_function.run();
+        return this;
+    }
+
+    public void close() throws IOException {
+        stop();
     }
 
 

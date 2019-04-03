@@ -3295,7 +3295,7 @@ public class Util {
         while(true) {
             ch=in.read();
             if(ch == -1)
-                return null;
+                return sb.toString();
             if(ch == '\r')
                 ;
             else {
@@ -3972,6 +3972,8 @@ public class Util {
             return true;
         }
     }
+
+
 
     /**
      * Returns the first address on the given interface on the current host, which satisfies scope

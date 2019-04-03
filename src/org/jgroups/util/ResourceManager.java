@@ -25,7 +25,7 @@ public final class ResourceManager {
         StackType type=Util.getIpStackType();
 
         String tmp_addr = System.getProperty(Global.INITIAL_MCAST_ADDR,
-                                             type == StackType.IPv6? "ff0e::9:9:9" : "225.5.5.5");
+                                             type == StackType.IPv6? "ff0e::9:9:9" : "228.8.8.8");
         mcast_port = Short.valueOf(System.getProperty(Global.INITIAL_MCAST_PORT, "7000"));
 		tcp_port = Short.valueOf(System.getProperty(Global.INITIAL_TCP_PORT, "10000"));
 		try {

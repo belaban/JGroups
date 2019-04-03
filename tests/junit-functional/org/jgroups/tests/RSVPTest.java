@@ -19,7 +19,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.util.concurrent.Future;
@@ -245,7 +244,7 @@ public class RSVPTest {
             super(diagnostics_addr,diagnostics_port,log,socket_factory,thread_factory);
         }
 
-        public void start() throws IOException {super.start();}
+        public void start() throws Exception {super.start();}
         public void stop() {}
         public void destroy() {super.stop();}
     }

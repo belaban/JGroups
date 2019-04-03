@@ -1,114 +1,114 @@
 package org.jgroups.tests;
 
+import org.jgroups.util.Buffer;
+import org.jgroups.util.DefaultThreadFactory;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.*;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
  */
 public class Probe {
-    protected MulticastSocket     mcast_sock;
-    protected volatile boolean    running=true;
-    protected final Set<String>   senders=new HashSet<>();
+    protected final Set<String>     senders=new HashSet<>();
+    protected boolean               weed_out_duplicates;
+    protected String                match;
+    protected static final String   DEFAULT_DIAG_ADDR="224.0.75.75";
+    protected static final String   DEFAULT_DIAG_ADDR_IPv6="ff0e::0:75:75";
+    protected static final int      DEFAULT_DIAG_PORT=7500;
+    protected static final String   MEMBER_ADDRS="member-addrs";
+    protected ExecutorService       thread_pool;
+    protected final List<Requester> requesters=new ArrayList<>();
+    protected final AtomicInteger   matched=new AtomicInteger(), not_matched=new AtomicInteger(), count=new AtomicInteger();
 
 
-    public Probe() {
-
-    }
 
     public void start(List<InetAddress> addrs, InetAddress bind_addr, int port, int ttl,
-                      final long timeout, List<String> query, String match,
-                      boolean weed_out_duplicates, String passcode) throws Exception {
-
+                      final long timeout, String request, String match,
+                      boolean weed_out_duplicates, String passcode, boolean udp, boolean tcp) throws Exception {
+        this.weed_out_duplicates=weed_out_duplicates;
+        this.match=match;
+        thread_pool=Executors.newCachedThreadPool(new DefaultThreadFactory("probe", true, true));
         for(InetAddress addr: addrs) {
             boolean unicast_dest=addr != null && !addr.isMulticastAddress();
-            if(unicast_dest) {
-                Collection<InetAddress> targets=getPhysicalAddresses(addr, bind_addr, port, timeout);
-                if(targets == null || targets.isEmpty()) {
-                    System.err.println("Found no valid hosts - terminating");
+            if(unicast_dest)
+                fetchAddressesAndInvoke(new InetSocketAddress(addr, port), bind_addr, request, passcode, timeout, ttl, udp, tcp);
+            else { // multicast - requires a UdpRequester
+                Requester req=new UdpRequester(new InetSocketAddress(addr, port), request, passcode, null)
+                  .start(bind_addr, timeout, ttl);
+                requesters.add(req);
+                thread_pool.execute(req);
+            }
+        }
+        Util.sleep(timeout);
+        requesters.forEach(Requester::stop);
+        thread_pool.shutdown();
+        thread_pool.awaitTermination(timeout, TimeUnit.MILLISECONDS);
+        System.out.printf("%d responses (%d matches, %d non matches)\n", count.get(), matched.get(), not_matched.get());
+    }
+
+
+    protected void fetchAddressesAndInvoke(SocketAddress dest, InetAddress bind_addr, String request, String passcode,
+                                           long timeout, int ttl, boolean udp, boolean tcp) throws IOException {
+        Consumer<Buffer> on_rsp_handler=buf -> {
+            String response=new String(buf.getBuf(), 0, buf.getLength());
+            try {
+                Collection<SocketAddress> targets=parseAddresses(response, ((InetSocketAddress)dest).getPort());
+                if(targets == null || targets.isEmpty())
                     return;
+                for(SocketAddress target: targets) {
+                    Requester req;
+                    if(udp) {
+                        req=new UdpRequester(target, request, passcode, null).start(bind_addr, timeout, ttl);
+                        req.run();
+                    }
+                    if(tcp) {
+                        req=new TcpRequester(target, request, passcode, null).start(bind_addr, timeout, ttl);
+                        req.run();
+                    }
                 }
-                for(InetAddress target : targets)
-                    sendRequest(target, bind_addr, port, ttl, query, passcode);
-            }
-            else
-                sendRequest(addr, bind_addr, port, ttl, query, passcode);
-        }
-
-        new Thread(() -> {
-            Util.sleep(timeout);
-            mcast_sock.close();
-            running=false;
-        }).start();
-
-        int matched=0, not_matched=0, count=0;
-        System.out.println("\n");
-        while(running) {
-            byte[] buf=new byte[70000];
-            DatagramPacket rsp=new DatagramPacket(buf, 0, buf.length);
-            try {
-                mcast_sock.receive(rsp);
             }
             catch(Throwable t) {
-                System.out.println("\n");
-                break;
             }
+        };
 
-            byte[] data=rsp.getData();
-            String response=new String(data, 0, rsp.getLength());
-            if(weed_out_duplicates && checkDuplicateResponse(response))
-                continue;
-
-            count++;
-            if(matches(response, match)) {
-                matched++;
-                System.out.printf("#%d (%d bytes):\n%s\n", count, rsp.getLength(), response);
-            }
-            else
-                not_matched++;
+        if(udp) {
+            Requester r=new UdpRequester(dest, MEMBER_ADDRS, passcode, on_rsp_handler)
+              .start(bind_addr, timeout, ttl);
+            requesters.add(r);
+            thread_pool.execute(r);
         }
-        System.out.printf("%d responses (%d matches, %d non matches)\n", count, matched, not_matched);
+        if(tcp) {
+            Requester r=new TcpRequester(dest, MEMBER_ADDRS, passcode, on_rsp_handler)
+              .start(bind_addr, timeout, ttl);
+            requesters.add(r);
+            thread_pool.execute(r);
+        }
     }
 
-    protected static Collection<InetAddress> getPhysicalAddresses(InetAddress addr, InetAddress bind_addr,
-                                                                  int port, final long timeout) throws Exception {
-        final DatagramSocket sock=new DatagramSocket(new InetSocketAddress(bind_addr, 0));
-        byte[] payload="member-addrs".getBytes();
-        DatagramPacket probe=new DatagramPacket(payload, 0, payload.length, addr, port);
-        sock.send(probe);
 
-        new Thread(() -> {
-            Util.sleep(timeout);
-            sock.close();
-        }).start();
-
-        long end_time=System.currentTimeMillis() + timeout;
-        while(System.currentTimeMillis() < end_time) {
-            byte[] buf=new byte[70000];
-            DatagramPacket rsp=new DatagramPacket(buf, 0, buf.length);
-            try {
-                sock.receive(rsp);
-            }
-            catch(Throwable t) {
-                break;
-            }
-
-            byte[] data=rsp.getData();
-            String response=new String(data, 0, rsp.getLength());
-            Collection<InetAddress> retval=parseAddresses(response);
-            if(retval != null && !retval.isEmpty())
-                return retval;
-        }
-        return null;
-    }
-
-    protected static Collection<InetAddress> parseAddresses(String input) throws Exception {
-        final String ADDRS="member-addrs=";
-        Collection<InetAddress> retval=new ArrayList<>();
+    /**
+     * Returns a list of addr:port responses. Counting the occurrences of a given address, e.g. 3 assumes we have 3
+     * processes on the same host, yielding requests to host:port, host:port+1 and host_port+3. This is a quick-n-dirty
+     * scheme and it will fail when processes don't occupy adjacent ports.
+     */
+    protected static Collection<SocketAddress> parseAddresses(String input, int port) throws Exception {
+        final String ADDRS=MEMBER_ADDRS + "=";
+        Map<InetAddress,Integer> map=new ConcurrentHashMap<>();
+        Collection<SocketAddress> retval=new ArrayList<>();
         int start_index=-1, end_index=-1;
         if(input != null && (start_index=input.indexOf(ADDRS)) >= 0) {
             input=input.substring(start_index + ADDRS.length()).trim();
@@ -120,46 +120,21 @@ public class Probe {
                 int index2=tmp.lastIndexOf(':');
                 if(index2 != -1)
                     tmp=tmp.substring(0, index2);
-                retval.add(InetAddress.getByName(tmp));
+                InetAddress key=InetAddress.getByName(tmp);
+                Integer val=map.putIfAbsent(key, 1);
+                if(val != null)
+                    map.put(key, val+1);
             }
+        }
+        for(Map.Entry<InetAddress,Integer> entry: map.entrySet()) {
+            InetAddress key=entry.getKey();
+            int val=entry.getValue();
+            for(int j=0; j < val; j++)
+                retval.add(new InetSocketAddress(key, port+j));
         }
         return retval;
     }
 
-
-
-
-    protected void sendRequest(InetAddress addr, InetAddress bind_addr, int port, int ttl,
-                               List<String> query, String passcode) throws Exception {
-        if(mcast_sock == null) {
-            mcast_sock=new MulticastSocket();
-            mcast_sock.setTimeToLive(ttl);
-            if(bind_addr != null)
-                mcast_sock.setInterface(bind_addr);
-        }
-
-        StringBuilder request=new StringBuilder();
-        byte[] authenticationDigest = null;
-        if(passcode != null){
-            long t1 = (new Date()).getTime();
-            double q1 = Math.random();
-            authenticationDigest = Util.createAuthenticationDigest(passcode, t1, q1);
-        }
-        for(int i=0; i < query.size(); i++) {
-            request.append(query.get(i)).append(" ");
-        }
-        byte[] queryPayload = request.toString().getBytes();
-        byte[] payload = queryPayload;
-        if (authenticationDigest != null) {
-            payload = new byte[authenticationDigest.length + queryPayload.length];
-            System.arraycopy(authenticationDigest, 0, payload, 0, authenticationDigest.length);
-            System.arraycopy(queryPayload, 0, payload, authenticationDigest.length, queryPayload.length);
-        }
-
-        DatagramPacket probe=new DatagramPacket(payload, 0, payload.length, addr, port);
-        mcast_sock.send(probe);
-        // System.out.printf("-- sending probe request to %s:%d\n", addr, port);
-    }
 
     private boolean checkDuplicateResponse(String response) {
         int index=response.indexOf("local_addr");
@@ -167,7 +142,6 @@ public class Probe {
             String addr=parseAddress(response.substring(index+1 + "local_addr".length()));
             return senders.add(addr) == false;
         }
-
         return false;
     }
 
@@ -192,12 +166,9 @@ public class Probe {
         int               port=0;
         int               ttl=32;
         long              timeout=500;
-        final String      DEFAULT_DIAG_ADDR="224.0.75.75";
-        final String      DEFAULT_DIAG_ADDR_IPv6="ff0e::0:75:75";
-        final int         DEFAULT_DIAG_PORT=7500;
-        List<String>      query=new ArrayList<>();
+        StringBuilder     request=new StringBuilder();
         String            match=null;
-        boolean           weed_out_duplicates=false;
+        boolean           weed_out_duplicates=false, udp=true, tcp=false;
         String            passcode=null;
 
         try {
@@ -236,20 +207,27 @@ public class Probe {
                 }
                 if("-cluster".equals(args[i])) {
                     String cluster=args[++i];
-                    query.add("cluster=" + cluster);
+                    request.append("cluster=" + cluster + " ");
                     continue;
                 }
-               /* if("-node".equals(args[i])) {
-                    String node=args[++i];
-                    query.add("node=" + node);
+                if("-udp".equals(args[i])) {
+                    udp=Boolean.parseBoolean(args[++i]);
                     continue;
-                }*/
+                }
+                if("-tcp".equals(args[i])) {
+                    tcp=Boolean.parseBoolean(args[++i]);
+                    continue;
+                                }
                 if("-help".equals(args[i]) || "-h".equals(args[i]) || "--help".equals(args[i])) {
                     help();
                     return;
                 }
-                query.add(args[i]);
+                request.append(args[i] + " ");
             }
+
+            if(!udp && !tcp)
+                throw new IllegalArgumentException("either UDP or TCP mode has to be enabled");
+
             Probe p=new Probe();
             if(addrs.isEmpty()) {
                 StackType stack_type=Util.getIpStackType();
@@ -259,22 +237,208 @@ public class Probe {
             }
             if(port == 0)
                 port=DEFAULT_DIAG_PORT;
-            p.start(addrs, bind_addr, port, ttl, timeout, query, match, weed_out_duplicates, passcode);
+            p.start(addrs, bind_addr, port, ttl, timeout, request.toString(), match, weed_out_duplicates, passcode, udp, tcp);
         }
         catch(Throwable t) {
             t.printStackTrace();
         }
     }
 
-    static void help() {
+    protected static void help() {
         System.out.println("Probe [-help] [-addr <addr>] [-bind_addr <addr>] " +
                              "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-passcode <code>] [-weed_out_duplicates] " +
-                             "[-cluster regexp-pattern] [-match pattern] [key[=value]]*\n\n" +
+                             "[-cluster regexp-pattern] [-match pattern] [-udp true|false] [-tcp true|false] [key[=value]]*\n\n" +
                              "Examples:\n" +
                              "probe.sh keys // dumps all valid commands\n" +
                              "probe.sh jmx=NAKACK // dumps JMX info about all NAKACK protocols\n" +
                              "probe.sh op=STABLE.runMessageGarbageCollection // invokes the method in all STABLE protocols\n" +
                              "probe.sh jmx=UDP.oob,thread_pool // dumps all attrs of UDP starting with oob* or thread_pool*\n" +
                              "probe.sh jmx=FLUSH.bypass=true\n");
+    }
+
+
+    protected abstract class Requester implements Runnable {
+        protected final SocketAddress dest;
+        protected final String        request, passcode;
+        protected Consumer<Buffer>    on_rsp;
+
+
+        protected final Consumer<Buffer> ON_RSP=buf -> {
+            if(buf == null) {
+                System.out.println("\n");
+                return;
+            }
+            String response=new String(buf.getBuf(), 0, buf.getLength());
+            if(weed_out_duplicates && checkDuplicateResponse(response))
+                return;
+            count.incrementAndGet();
+            if(matches(response, Probe.this.match)) {
+                matched.incrementAndGet();
+                System.out.printf("#%d (%d bytes):\n%s\n", count.get(), buf.getLength(), response);
+            }
+            else
+                not_matched.incrementAndGet();
+        };
+
+
+        protected Requester(SocketAddress dest, String request, String passcode, Consumer<Buffer> on_rsp) {
+            this.dest=dest;
+            this.request=request;
+            this.passcode=passcode;
+            this.on_rsp=on_rsp != null? on_rsp : ON_RSP;
+        }
+
+        protected abstract <T extends Requester> T start(InetAddress bind_addr, long timeout, int ttl) throws IOException;
+        protected abstract <T extends Requester> T stop();
+        protected abstract boolean                 isRunning();
+        protected abstract <T extends Requester> T sendRequest(byte[] request) throws IOException;
+        protected abstract Buffer                  fetchResponse();
+        protected <T extends Requester> T          setResponseHandler(Consumer<Buffer> rh) {this.on_rsp=rh; return (T)this;}
+
+
+        public void run() {
+            try {
+                byte[] req=createRequest();
+                sendRequest(req);
+                // System.out.println("\n");
+                while(isRunning()) {
+                    Buffer data=fetchResponse();
+                    if(data == null)
+                        break;
+                    if(on_rsp != null)
+                        on_rsp.accept(data);
+                }
+            }
+            catch(Throwable t) {
+                System.err.printf("failed sending request to %s: %s\n", dest, t);
+            }
+        }
+
+
+        protected byte[] createRequest() throws IOException, NoSuchAlgorithmException {
+            byte[] authenticationDigest=null;
+            if(passcode != null) {
+                long t1=(new Date()).getTime();
+                double q1=Math.random();
+                authenticationDigest=Util.createAuthenticationDigest(passcode, t1, q1);
+            }
+            byte[] queryPayload=request.getBytes();
+            byte[] payload=queryPayload;
+            if(authenticationDigest != null) {
+                payload=new byte[authenticationDigest.length + queryPayload.length];
+                System.arraycopy(authenticationDigest, 0, payload, 0, authenticationDigest.length);
+                System.arraycopy(queryPayload, 0, payload, authenticationDigest.length, queryPayload.length);
+            }
+            return payload;
+        }
+
+    }
+
+    protected class UdpRequester extends Requester {
+        protected MulticastSocket sock;
+        protected final byte[]    buf=new byte[70000];
+
+        protected UdpRequester(SocketAddress dest, String request, String passcode, Consumer<Buffer> on_rsp) {
+            super(dest, request, passcode, on_rsp);
+        }
+
+        protected <T extends Requester> T start(InetAddress bind_addr, long timeout, int ttl) throws IOException {
+            sock=new MulticastSocket();
+            sock.setSoTimeout((int)timeout);
+            sock.setTimeToLive(ttl);
+            if(bind_addr != null)
+                sock.setInterface(bind_addr);
+            return (T)this;
+        }
+
+        protected <T extends Requester> T stop() {
+            Util.close(sock);
+            return (T)this;
+        }
+
+        protected boolean isRunning() {
+            return sock != null && !sock.isClosed();
+        }
+
+        protected <T extends Requester> T sendRequest(byte[] request) throws IOException {
+            DatagramPacket probe=new DatagramPacket(request, 0, request.length, dest);
+            sock.send(probe);
+            return (T)this;
+        }
+
+        protected Buffer fetchResponse() {
+            DatagramPacket rsp=new DatagramPacket(buf, 0, buf.length);
+            try {
+                sock.receive(rsp);
+                return new Buffer(rsp.getData(), 0, rsp.getLength());
+            }
+            catch(Throwable t) {
+                return null;
+            }
+        }
+    }
+
+    protected class TcpRequester extends Requester {
+        protected Socket       sock;
+        protected InputStream  in;
+        protected OutputStream out;
+
+
+        protected TcpRequester(SocketAddress dest, String request, String passcode,
+                               Consumer<Buffer> on_rsp) {
+            super(dest, request, passcode, on_rsp);
+        }
+
+        protected <T extends Requester> T start(InetAddress bind_addr, long timeout, int ttl) throws IOException {
+            sock=new Socket();
+            sock.setSoTimeout((int)timeout);
+            sock.bind(new InetSocketAddress(bind_addr, 0));
+            sock.connect(dest);
+            in=sock.getInputStream();
+            out=sock.getOutputStream();
+            return (T)this;
+        }
+
+        protected <T extends Requester> T stop() {
+            Util.close(sock,in,out);
+            return (T)this;
+        }
+
+        protected boolean isRunning() {
+            return sock != null && !sock.isClosed();
+        }
+
+        protected <T extends Requester> T sendRequest(byte[] request) throws IOException {
+            out.write(request);
+            out.write('\n');
+            // out.flush();
+            return (T)this;
+        }
+
+        protected Buffer fetchResponse() {
+            byte[] buf=new byte[1024];
+            int    index=0;
+
+            for(;;) {
+                try {
+                    int bytes_read=in.read(buf, index, buf.length - index);
+                    if(bytes_read == -1) {
+                        if(index > 0)
+                            break;
+                        return null;
+                    }
+                    index+=bytes_read;
+                    if(index >= buf.length) {
+                        byte[] tmp=new byte[buf.length + 1024];
+                        System.arraycopy(buf, 0, tmp, 0, index);
+                        buf=tmp;
+                    }
+                }
+                catch(IOException e) {
+                    break;
+                }
+            }
+            return new Buffer(buf, 0, index);
+        }
     }
 }

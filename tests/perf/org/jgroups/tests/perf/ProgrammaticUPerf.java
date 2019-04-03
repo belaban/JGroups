@@ -113,7 +113,9 @@ public class ProgrammaticUPerf extends ReceiverAdapter {
         InetAddress bind_address=bind_addr != null? PropertyConverters.Default.convertBindAddress(bind_addr) : Util.getLocalhost();
         Protocol[] prot_stack={
           new TCP().setBindAddress(bind_address).setBindPort(7800)
-            .setDiagnosticsEnabled(false), // todo: remove when MulticastSocket works
+            .setDiagnosticsEnabled(true)
+            .diagEnableUdp(false) // todo: enable when MulticastSocket works
+            .diagEnableTcp(true),
           new TCPPING().initialHosts(Collections.singletonList(new InetSocketAddress(bind_address, 7800))),
           new MERGE3(),
           new FD_SOCK(),

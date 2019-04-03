@@ -18,7 +18,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.util.*;
 
@@ -162,7 +161,7 @@ public class MergeTest2 {
             super(diagnostics_addr,diagnostics_port,log,socket_factory,thread_factory);
         }
 
-        public void start() throws IOException {
+        public void start() throws Exception {
             super.start();
         }
 

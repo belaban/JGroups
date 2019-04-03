@@ -10,9 +10,9 @@ import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.*;
-import org.jgroups.util.*;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.UUID;
+import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.InterruptedIOException;
@@ -174,9 +174,18 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="Switch to enable diagnostic probing. Default is true")
     protected boolean enable_diagnostics=true;
 
-    @Property(description="Address for diagnostic probing. Default is 224.0.75.75", 
+    @Property(description="Use a multicast socket to listen for probe requests (ignored if enable_diagnostics is false)")
+    protected boolean diag_enable_udp=true;
+
+    @Property(description="Use a TCP socket to listen for probe requests (ignored if enable_diagnostics is false)")
+    protected boolean diag_enable_tcp;
+
+    @Property(description="Multicast address for diagnostic probing. Used when diag_enable_udp is true",
               defaultValueIPv4="224.0.75.75",defaultValueIPv6="ff0e::0:75:75")
     protected InetAddress diagnostics_addr;
+
+    @Property(description="Bind address for diagnostic probing. Used when diag_enable_tcp is true")
+    protected InetAddress diagnostics_bind_addr;
 
     @Property(converter=PropertyConverters.NetworkInterfaceList.class,
               description="Comma delimited list of interfaces (IP addresses or interface names) that the " +
@@ -185,6 +194,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property(description="Port for diagnostic probing. Default is 7500")
     protected int diagnostics_port=7500;
+
+    @Property(description="The number of ports to be probed for an available port (TCP)")
+    protected int diagnostics_port_range=50;
 
     @Property(description="TTL of the diagnostics multicast socket")
     protected int diagnostics_ttl=8;
@@ -355,7 +367,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
         try {
             Class<MessageProcessingPolicy> clazz=Util.loadClass(policy, getClass());
-            msg_processing_policy=clazz.newInstance();
+            msg_processing_policy=clazz.getDeclaredConstructor().newInstance();
             message_processing_policy=policy;
             msg_processing_policy.init(this);
         }
@@ -579,11 +591,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * Sets a {@link DiagnosticsHandler}. Should be set before the stack is started
      * @param handler
      */
-    public <T extends TP> T setDiagnosticsHandler(DiagnosticsHandler handler) {
+    public <T extends TP> T setDiagnosticsHandler(DiagnosticsHandler handler) throws Exception {
         if(handler != null) {
             if(diag_handler != null)
                 diag_handler.stop();
             diag_handler=handler;
+            if(diag_handler != null)
+                diag_handler.start();
         }
         return (T)this;
     }
@@ -755,7 +769,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public static int getNumThreads() {return ManagementFactory.getThreadMXBean().getThreadCount();}
 
     @ManagedAttribute(description="Whether the diagnostics handler is running or not")
-    public boolean isDiagnosticsHandlerRunning() {return diag_handler != null && diag_handler.isRunning();}
+    public boolean isDiagnosticsRunning() {return diag_handler != null && diag_handler.isRunning();}
 
     public <T extends TP> T setLogDiscardMessages(boolean flag)     {log_discard_msgs=flag; return (T)this;}
     public boolean          getLogDiscardMessages()                 {return log_discard_msgs;}
@@ -764,7 +778,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public boolean          getUseIpAddresses()                     {return use_ip_addrs;}
     public boolean          isDiagnosticsEnabled()                  {return enable_diagnostics;}
     public <T extends TP> T setDiagnosticsEnabled(boolean f)        {enable_diagnostics=f; return (T)this;}
-
+    public boolean          isDiagUdEnabled()                       {return diag_handler != null && diag_handler.udpEnabled();}
+    public <T extends TP> T diagEnableUdp(boolean f)                {diag_enable_udp=f;
+                                                                       if(diag_handler != null) diag_handler.enableUdp(f); return (T)this;}
+    public boolean          diagTcpEnabled()                        {return diag_enable_tcp;}
+    public <T extends TP> T diagEnableTcp(boolean f)                {diag_enable_tcp=f;
+                                                                       if(diag_handler != null) diag_handler.enableTcp(f); return (T)this;}
 
     @ManagedOperation(description="Dumps the contents of the logical address cache")
     public String printLogicalAddressCache() {
@@ -829,7 +848,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(diag_handler == null)
             diag_handler=new DiagnosticsHandler(diagnostics_addr, diagnostics_port, diagnostics_bind_interfaces,
                                                 diagnostics_ttl, log, getSocketFactory(), getThreadFactory(), diagnostics_passcode)
-              .transport(this);
+              .transport(this).setDiagnosticsBindAddress(diagnostics_bind_addr)
+              .enableUdp(diag_enable_udp).enableTcp(diag_enable_tcp)
+              .setDiagnosticsPortRange(diagnostics_port_range);
 
         who_has_cache=new ExpiryCache<>(who_has_cache_timeout);
 
@@ -1159,7 +1180,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         try {
             Class<Bundler> clazz=Util.loadClass(type, getClass());
-            return clazz.newInstance();
+            return clazz.getDeclaredConstructor().newInstance();
         }
         catch(Throwable t) {
             log.warn("failed creating instance of bundler %s: %s", type, t);
@@ -1673,16 +1694,15 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected void setThreadNames() {
         if(diag_handler != null)
-            thread_factory.renameThread(DiagnosticsHandler.THREAD_NAME, diag_handler.getThread());
-        if(bundler instanceof TransferQueueBundler) {
+            diag_handler.setThreadNames();
+        if(bundler instanceof TransferQueueBundler)
             thread_factory.renameThread(TransferQueueBundler.THREAD_NAME, ((TransferQueueBundler)bundler).getThread());
-        }
     }
 
 
     protected void unsetThreadNames() {
-        if(diag_handler != null && diag_handler.getThread() != null)
-            diag_handler.getThread().setName(DiagnosticsHandler.THREAD_NAME);
+        if(diag_handler != null)
+            diag_handler.unsetThreadNames();
         if(bundler instanceof TransferQueueBundler) {
             Thread thread=((TransferQueueBundler)bundler).getThread();
             if(thread != null)
