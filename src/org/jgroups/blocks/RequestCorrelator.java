@@ -450,7 +450,7 @@ public class RequestCorrelator {
     }
 
     protected static Buffer replyToBuffer(Object obj, Marshaller marshaller) throws Exception {
-        int estimated_size=marshaller != null? marshaller.estimatedSize(obj) : 50;
+        int estimated_size=marshaller != null? marshaller.estimatedSize(obj) : (obj == null? 2 : 50);
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(estimated_size, true);
         if(marshaller != null)
             marshaller.objectToStream(obj, out);

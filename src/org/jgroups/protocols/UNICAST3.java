@@ -345,11 +345,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             max_xmit_req_size=Math.min(max_xmit_req_size, estimated_max_msgs_in_xmit_req);
         if(old_max_xmit_size != max_xmit_req_size)
             log.trace("%s: set max_xmit_req_size from %d to %d", local_addr, old_max_xmit_size, max_xmit_req_size);
-
-
-        boolean regular_pool_enabled=(boolean)transport.getValue("thread_pool_enabled");
-        if(!regular_pool_enabled)
-            log.info("the thread pool is disabled; %s could be removed (JGRP-2069)", getClass().getSimpleName());
     }
 
     public void start() throws Exception {

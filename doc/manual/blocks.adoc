@@ -317,13 +317,99 @@ exception if the method threw an exception on the target member.
 Java's Reflection API is used to find the correct method in the target member according to the method name and
 number and types of supplied arguments. There is a runtime exception if a method cannot be resolved.
 
-As an alternative, we can use method IDs and the `MethodLookup` interface to resolve
-methods, which is faster and has every RPC carry less data across the wire. To see how this is done,
-have a look at some of the MethodLookup implementations, e.g. in RpcDispatcherSpeedTest.
+
+==== MethodLookup and MethodDispatcher
+Using reflection to find and invoke methods is rather slow.
+
+As an alternative, we can use method IDs and the `MethodLookup` or `MethodInvoker` interfaces to resolve
+methods, which is faster and has every RPC carry less data across the wire.
+
+Interface `MethodLookup` looks as follows:
+
+[source,java]
+----
+public interface MethodLookup {
+    Method findMethod(short id);
+}
+----
+
+An implementation is given an ID and needs to return the associated `Method` object. Implementations typically maintain
+the ID-method mappings in a hashmap and use the method ID as key into the map. This hashmap lookup is faster than
+having to use Java reflection to find the method for every invocation.
+
+A example of how to use a `MethodLookup` implementation is shown in
+https://github.com/belaban/JGroups/blob/master/tests/other/org/jgroups/tests/RpcDispatcherSpeedTest.java[RpcDispatcherSpeedTest].
+
+A `MethodLookup` still uses reflection to invoke the method against the target object. In some cases
+(e.g. http://quarkus.io[Quarkus]), reflection is forbidden, or at least all methods to be invoked via reflection have
+to be listed at compile-time (when generating the native image). This is tedious when adding/removing fields/methods,
+and so a way of invoking methods completely free of Java reflection has been added to RpcDispatcher:
+
+NOTE: `MethodInvoker` was added in 4.1.0
+
+[source,java]
+----
+public interface MethodInvoker {
+    /**
+     * Invokes a method associated with a given ID and the given args against the target
+     * @param target The object against which to invoke the method
+     * @param id The ID of the method
+     * @param args The arguments of the invocation
+     * @return The result. It may be null if a method returns void
+     * @throws Exception Thrown if the invocation threw an exception
+     */
+    Object invoke(Object target, short id, Object[] args) throws Exception;
+}
+----
+
+An implementation can be set in the `RpcDispatcher` using `setMethodInvoker(MethodInvoker mi)`. When a `MethodInvoker`
+is present in an `RpcDispatcher`, it takes precedence over `MethodLookup`.
+
+A `MethodInvoker` is given the target object, against which to invoke the method, the ID of the method to invoke and
+a list of arguments. A typical implementation might do the following (copied from
+https://github.com/belaban/JGroups/blob/master/tests/perf/org/jgroups/tests/perf/ProgrammaticUPerf.java[ProgrammaticUPerf]):
+
+[source,java]
+----
+ public Object invoke(Object target, short id, Object[] args) throws Exception {
+        ProgrammaticUPerf uperf=(ProgrammaticUPerf)target;
+        Boolean bool_val;
+        switch(id) {
+            case START:
+                return uperf.startTest();
+            case GET:
+                Integer key=(Integer)args[0];
+                return uperf.get(key);
+            case PUT:
+                key=(Integer)args[0];
+                byte[] val=(byte[])args[1];
+                uperf.put(key, val);
+                return null;
+            case GET_CONFIG:
+                return uperf.getConfig();
+            case SET_SYNC:
+                uperf.setSync((Boolean)args[0]);
+                return null;
+            case SET_OOB:
+                bool_val=(Boolean)args[0];
+                uperf.setOOB(bool_val);
+                return null;
+            ...
+            case QUIT_ALL:
+                uperf.quitAll();
+                return null;
+        }
+    }
+----
+
+The downside here is that this code needs to be changed when methods are added or removed, or when signatures change.
+However, if Java reflection cannot be used, then this may be feasible.
+
+
       
 
 [[RpcDispatcherExample]]
-==== Example
+==== Example of using RpcDispatcher
 
 The code below shows an example of using RpcDispatcher:
 

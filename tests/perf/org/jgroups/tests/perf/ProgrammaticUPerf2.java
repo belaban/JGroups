@@ -3,7 +3,6 @@ package org.jgroups.tests.perf;
 import org.jgroups.*;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.*;
-import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
@@ -15,8 +14,6 @@ import org.jgroups.util.*;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -38,11 +35,11 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
     private static Address                local_addr=null;
     protected static final List<Address>  members=new ArrayList<>();
     protected static volatile View        view=null;
-
     protected volatile boolean            looping=true;
     protected Thread                      event_loop_thread;
     protected final LongAdder             num_reads=new LongAdder();
     protected final LongAdder             num_writes=new LongAdder();
+
 
 
 
@@ -59,16 +56,21 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
     // ... add your own here, just don't forget to annotate them with @Property
     // =======================================================
 
-    private static final Method[] METHODS=new Method[6];
     private static final short START                 =  0;
     private static final short GET                   =  1;
     private static final short PUT                   =  2;
     private static final short GET_CONFIG            =  3;
-    private static final short SET                   =  4;
-    private static final short QUIT_ALL              =  5;
-
-    protected static final Field SYNC, OOB, NUM_THREADS, TIME, MSG_SIZE, ANYCAST_COUNT,
-      READ_PERCENTAGE, ALLOW_LOCAL_GETS, PRINT_INVOKERS, PRINT_DETAILS;
+    private static final short SET_SYNC              =  4;
+    private static final short SET_OOB               =  5;
+    private static final short SET_NUM_THREADS       =  6;
+    private static final short SET_TIME              =  7;
+    private static final short SET_MSG_SIZE          =  8;
+    private static final short SET_ANYCAST_COUNT     =  9;
+    private static final short SET_READ_PERCENTAGE   = 10;
+    private static final short ALLOW_LOCAL_GETS      = 11;
+    private static final short PRINT_INVOKERS        = 12;
+    private static final short PRINT_DETAILS         = 13;
+    private static final short QUIT_ALL              = 14;
 
 
     private final AtomicInteger COUNTER=new AtomicInteger(1);
@@ -83,25 +85,6 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
 
     static {
         try {
-            METHODS[START]                 = ProgrammaticUPerf2.class.getMethod("startTest");
-            METHODS[GET]                   = ProgrammaticUPerf2.class.getMethod("get", int.class);
-            METHODS[PUT]                   = ProgrammaticUPerf2.class.getMethod("put", int.class, byte[].class);
-            METHODS[GET_CONFIG]            = ProgrammaticUPerf2.class.getMethod("getConfig");
-            METHODS[SET]                   = ProgrammaticUPerf2.class.getMethod("set", String.class, Object.class);
-            METHODS[QUIT_ALL]              = ProgrammaticUPerf2.class.getMethod("quitAll");
-            ClassConfigurator.add((short)11000, Results.class);
-            SYNC=Util.getField(ProgrammaticUPerf2.class, "sync", true);
-            OOB=Util.getField(ProgrammaticUPerf2.class, "oob", true);
-            NUM_THREADS=Util.getField(ProgrammaticUPerf2.class, "num_threads", true);
-            TIME=Util.getField(ProgrammaticUPerf2.class, "time", true);
-            MSG_SIZE=Util.getField(ProgrammaticUPerf2.class, "msg_size", true);
-            ANYCAST_COUNT=Util.getField(ProgrammaticUPerf2.class, "anycast_count", true);
-            READ_PERCENTAGE=Util.getField(ProgrammaticUPerf2.class, "read_percentage", true);
-            ALLOW_LOCAL_GETS=Util.getField(ProgrammaticUPerf2.class, "allow_local_gets", true);
-            PRINT_INVOKERS=Util.getField(ProgrammaticUPerf2.class, "print_invokers", true);
-            PRINT_DETAILS=Util.getField(ProgrammaticUPerf2.class, "print_details", true);
-
-
             MembershipListener ml=new MembershipListener() {
                 public void viewAccepted(View new_view) {
                     view=new_view;
@@ -113,8 +96,10 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
 
             InetAddress bind_address=PropertyConverters.Default.convertBindAddress(BIND_ADDR);
             Protocol[] prot_stack={
-              new TCP().setBindAddress(Util.getNonLoopbackAddress()).setBindPort(7800)
-                .setDiagnosticsEnabled(false), // todo: remove when MulticastSocket works
+              new TCP().setBindAddress(bind_address).setBindPort(7800)
+                .setDiagnosticsEnabled(true)
+                .diagEnableUdp(false) // todo: enable when MulticastSocket works
+                .diagEnableTcp(true),
               new TCPPING().initialHosts(Collections.singletonList(new InetSocketAddress(bind_address, 7800))),
               new MERGE3(),
               new FD_SOCK(),
@@ -129,8 +114,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
               new FRAG2()};
             channel=new JChannel(prot_stack);
             disp=new RpcDispatcher(channel, null).setMembershipListener(ml)
-              .setMethodLookup(id -> METHODS[id])
-              .setMarshaller(new UPerfMarshaller());
+              .setMethodInvoker(ProgrammaticUPerf2::invoke).setMarshaller(new UPerfMarshaller());
         }
         catch(Exception e) {
             throw new RuntimeException(e);
@@ -138,9 +122,39 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
     }
 
 
-    public void init(String name) throws Throwable {
+
+    public static boolean getSync()                   {return sync;}
+    public static void    setSync(boolean s)          {sync=s;}
+    public static boolean getOOB()                    {return oob;}
+    public static void    setOOB(boolean o)           {oob=o;}
+    public static int     getNumThreads()             {return num_threads;}
+    public static void    setNumThreads(int t)        {num_threads=t;}
+    public static int     getTime()                   {return time;}
+    public static void    setTime(int t)              {time=t;}
+    public static int     getMsgSize()                {return msg_size;}
+    public static void    setMsgSize(int t)           {msg_size=t;}
+    public static int     getAnycastCount()           {return anycast_count;}
+    public static void    setAnycastCount(int t)      {anycast_count=t;}
+    public static double  getReadPercentage()         {return read_percentage;}
+    public static void    setReadPercentage(double r) {read_percentage=r;}
+    public static boolean allowLocalGets()            {return allow_local_gets;}
+    public static void    allowLocalGets(boolean a)   {allow_local_gets=a;}
+    public static boolean printInvokers()             {return print_invokers;}
+    public static void    printInvokers(boolean p)    {print_invokers=p;}
+    public static boolean printDetails()              {return print_details;}
+    public static void    printDetails(boolean p)     {print_details=p;}
+
+
+
+
+    public void init(String name, String bind_addr, int bind_port) throws Exception {
+        TP transport=channel.getProtocolStack().getTransport();
         disp.setServerObject(this);
         channel.setName(name);
+        if(bind_port > 0)
+            transport.setBindPort(bind_port);
+        if(bind_addr != null)
+            transport.setBindAddress(InetAddress.getByName(bind_addr));
         channel.connect(groupname);
         local_addr=channel.getAddress();
         if(members.size() < 2)
@@ -173,12 +187,71 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
         Util.close(channel);
     }
 
+    public void viewAccepted(View v) {
+        view=v;
+        System.out.println("** view: " + v);
+        members.clear();
+        members.addAll(v.getMembers());
+    }
 
-
+    public static Object invoke(Object target, short method_id, Object[] args) throws Exception {
+        ProgrammaticUPerf2 uperf=(ProgrammaticUPerf2)target;
+        Boolean bool_val;
+        switch(method_id) {
+            case START:
+                return uperf.startTest();
+            case GET:
+                Integer key=(Integer)args[0];
+                return uperf.get(key);
+            case PUT:
+                key=(Integer)args[0];
+                byte[] val=(byte[])args[1];
+                uperf.put(key, val);
+                return null;
+            case GET_CONFIG:
+                return ProgrammaticUPerf2.getConfig();
+            case SET_SYNC:
+                ProgrammaticUPerf2.setSync((Boolean)args[0]);
+                return null;
+            case SET_OOB:
+                bool_val=(Boolean)args[0];
+                ProgrammaticUPerf2.setOOB(bool_val);
+                return null;
+            case SET_NUM_THREADS:
+                ProgrammaticUPerf2.setNumThreads((Integer)args[0]);
+                return null;
+            case SET_TIME:
+                ProgrammaticUPerf2.setTime((Integer)args[0]);
+                return null;
+            case SET_MSG_SIZE:
+                ProgrammaticUPerf2.setMsgSize((Integer)args[0]);
+                return null;
+            case SET_ANYCAST_COUNT:
+                ProgrammaticUPerf2.setAnycastCount((Integer)args[0]);
+                return null;
+            case SET_READ_PERCENTAGE:
+                ProgrammaticUPerf2.setReadPercentage((Double)args[0]);
+                return null;
+            case ALLOW_LOCAL_GETS:
+                ProgrammaticUPerf2.allowLocalGets((Boolean)args[0]);
+                return null;
+            case PRINT_INVOKERS:
+                ProgrammaticUPerf2.printInvokers((Boolean)args[0]);
+                return null;
+            case PRINT_DETAILS:
+                ProgrammaticUPerf2.printDetails((Boolean)args[0]);
+                return null;
+            case QUIT_ALL:
+                uperf.quitAll();
+                return null;
+            default:
+                throw new IllegalArgumentException("method with id=" + method_id + " not found");
+        }
+    }
 
     // =================================== callbacks ======================================
 
-    public Results startTest() throws Throwable {
+    public Results startTest() throws Exception {
         BUFFER=new byte[msg_size];
 
         System.out.printf("running for %d seconds\n", time);
@@ -241,16 +314,6 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
     }
 
 
-    public void set(String field_name, Object value) {
-        Field field=Util.getField(this.getClass(),field_name);
-        if(field == null)
-            System.err.println("Field " + field_name + " not found");
-        else {
-            Util.setField(field, this, value);
-            System.out.println(field.getName() + "=" + value);
-        }
-    }
-
     public byte[] get(@SuppressWarnings("UnusedParameters")int key) {
         return BUFFER;
     }
@@ -260,20 +323,52 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
     public void put(int key, byte[] val) {
     }
 
-    public Config getConfig() {
-        Config config=new Config();
-        for(Field field: Util.getAllDeclaredFields(ProgrammaticUPerf2.class)) {
-            if(field.isAnnotationPresent(Property.class)) {
-                config.add(field.getName(), Util.getField(field, this));
-            }
-        }
-        return config;
+    public static Config getConfig() {
+        Config c=new Config();
+        c.add("sync", sync).add("oob", oob).add("num_threads", num_threads).add("time", time).add("msg_size", msg_size)
+          .add("anycast_count", anycast_count).add("read_percentage", read_percentage)
+          .add("allow_local_gets", allow_local_gets).add("print_invokers", print_invokers).add("print_details", print_details);
+        return c;
     }
 
-    protected void applyConfig(Config config) {
-        for(Map.Entry<String,Object> entry: config.values.entrySet()) {
-            Field field=Util.getField(getClass(), entry.getKey());
-            Util.setField(field, this, entry.getValue());
+    protected static void applyConfig(Config config) {
+        for(Map.Entry<String,Object> e: config.values.entrySet()) {
+            String name=e.getKey();
+            Object value=e.getValue();
+            switch(name) {
+                case "sync":
+                    setSync((Boolean)value);
+                    break;
+                case "oob":
+                    setOOB((Boolean)value);
+                    break;
+                case "num_threads":
+                    setNumThreads((Integer)value);
+                    break;
+                case "time":
+                    setTime((Integer)value);
+                    break;
+                case "msg_size":
+                    setMsgSize((Integer)value);
+                    break;
+                case "anycast_count":
+                    setAnycastCount((Integer)value);
+                    break;
+                case "read_percentage":
+                    setReadPercentage((Double)value);
+                    break;
+                case "allow_local_gets":
+                    allowLocalGets((Boolean)value);
+                    break;
+                case "print_invokers":
+                    printInvokers((Boolean)value);
+                    break;
+                case "print_details":
+                    printDetails((Boolean)value);
+                    break;
+                default:
+                    throw new IllegalArgumentException("field with name " + name + " not known");
+            }
         }
     }
 
@@ -295,38 +390,38 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
                         printView();
                         break;
                     case '4':
-                        changeFieldAcrossCluster(NUM_THREADS, Util.readIntFromStdin("Number of sender threads: "));
+                        invoke(SET_NUM_THREADS, Util.readIntFromStdin("Number of sender threads: "));
                         break;
                     case '6':
-                        changeFieldAcrossCluster(TIME, Util.readIntFromStdin("Time (secs): "));
+                        invoke(SET_TIME, Util.readIntFromStdin("Time (secs): "));
                         break;
                     case '7':
-                        changeFieldAcrossCluster(MSG_SIZE, Util.readIntFromStdin("Message size: "));
+                        invoke(SET_MSG_SIZE, Util.readIntFromStdin("Message size: "));
                         break;
                     case 'a':
-                        int tmp=getAnycastCount();
+                        int tmp=parseAnycastCount();
                         if(tmp >= 0)
-                            changeFieldAcrossCluster(ANYCAST_COUNT, tmp);
+                            invoke(SET_ANYCAST_COUNT, tmp);
                         break;
                     case 'o':
-                        changeFieldAcrossCluster(OOB, !oob);
+                        invoke(SET_OOB, !oob);
                         break;
                     case 's':
-                        changeFieldAcrossCluster(SYNC, !sync);
+                        invoke(SET_SYNC, !sync);
                         break;
                     case 'r':
-                        double percentage=getReadPercentage();
+                        double percentage=parseReadPercentage();
                         if(percentage >= 0)
-                            changeFieldAcrossCluster(READ_PERCENTAGE, percentage);
+                            invoke(SET_READ_PERCENTAGE, percentage);
                         break;
                     case 'd':
-                        changeFieldAcrossCluster(PRINT_DETAILS, !print_details);
+                        invoke(PRINT_DETAILS, !print_details);
                         break;
                     case 'i':
-                        changeFieldAcrossCluster(PRINT_INVOKERS, !print_invokers);
+                        invoke(PRINT_INVOKERS, !print_invokers);
                         break;
                     case 'l':
-                        changeFieldAcrossCluster(ALLOW_LOCAL_GETS, !allow_local_gets);
+                        invoke(ALLOW_LOCAL_GETS, !allow_local_gets);
                         break;
                     case 'v':
                         System.out.printf("Version: %s\n", Version.printVersion());
@@ -360,9 +455,13 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
         stop();
     }
 
+    protected static void invoke(short method_id, Object... args) throws Exception {
+        MethodCall call=new MethodCall(method_id, args);
+        disp.callRemoteMethods(null, call, RequestOptions.SYNC());
+    }
 
     /** Kicks off the benchmark on all cluster nodes */
-    void startBenchmark() {
+    protected void startBenchmark() {
         RspList<Results> responses=null;
         try {
             RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0);
@@ -385,7 +484,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
             Results result=rsp.getValue();
             if(result != null) {
                 total_reqs+=result.num_gets + result.num_puts;
-                total_time+=result.execution_time;
+                total_time+=result.total_time;
                 if(avg_gets == null)
                     avg_gets=result.avg_gets;
                 else
@@ -409,7 +508,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
     
 
 
-    static double getReadPercentage() throws Exception {
+    static double parseReadPercentage() throws Exception {
         double tmp=Util.readDoubleFromStdin("Read percentage: ");
         if(tmp < 0 || tmp > 1.0) {
             System.err.println("read percentage must be >= 0 or <= 1.0");
@@ -418,7 +517,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
         return tmp;
     }
 
-    static int getAnycastCount() throws Exception {
+    protected static int parseAnycastCount() throws Exception {
         int tmp=Util.readIntFromStdin("Anycast count: ");
         View tmp_view=channel.getView();
         if(tmp > tmp_view.size()) {
@@ -426,11 +525,6 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
             return -1;
         }
         return tmp;
-    }
-
-
-    protected static void changeFieldAcrossCluster(Field field, Object value) throws Exception {
-        disp.callRemoteMethods(null, new MethodCall(SET, field.getName(), value), RequestOptions.SYNC());
     }
 
 
@@ -450,21 +544,9 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
     }
 
 
-    /** Picks the next member in the view */
-    private static Address getReceiver() {
-        try {
-            List<Address> mbrs=channel.getView().getMembers();
-            int index=mbrs.indexOf(local_addr);
-            int new_index=index + 1 % mbrs.size();
-            return mbrs.get(new_index);
-        }
-        catch(Exception e) {
-            System.err.println("UPerf.getReceiver(): " + e);
-            return null;
-        }
-    }
-
     protected static class UPerfMarshaller implements Marshaller {
+        protected static final byte NORMAL=0, EXCEPTION=1, CONFIG=2,RESULTS=3;
+
         public int estimatedSize(Object arg) {
             if(arg == null)
                 return 2;
@@ -480,23 +562,42 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
         public void objectToStream(Object obj, DataOutput out) throws IOException {
             if(obj instanceof Throwable) {
                 Throwable t=(Throwable)obj;
-                out.writeByte(1);
+                out.writeByte(EXCEPTION);
                 out.writeUTF(t.getMessage());
+                return;
             }
-            else {
-                out.writeByte(0);
-                Util.objectToStream(obj, out);
+            if(obj instanceof Config) {
+                out.writeByte(CONFIG);
+                ((Config)obj).writeTo(out);
+                return;
             }
+            if(obj instanceof Results) {
+                out.writeByte(RESULTS);
+                ((Results)obj).writeTo(out);
+                return;
+            }
+            out.writeByte(NORMAL);
+            Util.objectToStream(obj, out);
         }
 
         public Object objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
             byte type=in.readByte();
-            if(type == 0)
-                return Util.objectFromStream(in);
-            else {
-                // read exception
-                String message=in.readUTF();
-                return new RuntimeException(message);
+            switch(type) {
+                case NORMAL:
+                    return Util.objectFromStream(in);
+                case EXCEPTION:  // read exception
+                    String message=in.readUTF();
+                    return new RuntimeException(message);
+                case CONFIG:
+                    Config cfg=new Config();
+                    cfg.readFrom(in);
+                    return cfg;
+                case RESULTS:
+                    Results res=new Results();
+                    res.readFrom(in);
+                    return res;
+                default:
+                    throw new IllegalArgumentException("type " + type + " not known");
             }
         }
     }
@@ -591,7 +692,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
     public static class Results implements Streamable {
         protected long          num_gets;
         protected long          num_puts;
-        protected long          execution_time;     // in ms
+        protected long          total_time;     // in ms
         protected AverageMinMax avg_gets; // RTT in ns
         protected AverageMinMax avg_puts; // RTT in ns
 
@@ -599,10 +700,10 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
             
         }
 
-        public Results(int num_gets, int num_puts, long execution_time, AverageMinMax avg_gets, AverageMinMax avg_puts) {
+        public Results(int num_gets, int num_puts, long total_time, AverageMinMax avg_gets, AverageMinMax avg_puts) {
             this.num_gets=num_gets;
             this.num_puts=num_puts;
-            this.execution_time=execution_time;
+            this.total_time=total_time;
             this.avg_gets=avg_gets;
             this.avg_puts=avg_puts;
         }
@@ -610,7 +711,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
         public void writeTo(DataOutput out) throws IOException {
             Bits.writeLong(num_gets, out);
             Bits.writeLong(num_puts, out);
-            Bits.writeLong(execution_time, out);
+            Bits.writeLong(total_time, out);
             Util.writeStreamable(avg_gets, out);
             Util.writeStreamable(avg_puts, out);
         }
@@ -618,14 +719,14 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
         public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             num_gets=Bits.readLong(in);
             num_puts=Bits.readLong(in);
-            execution_time=Bits.readLong(in);
+            total_time=Bits.readLong(in);
             avg_gets=Util.readStreamable(AverageMinMax::new, in);
             avg_puts=Util.readStreamable(AverageMinMax::new, in);
         }
 
         public String toString() {
             long total_reqs=num_gets + num_puts;
-            double total_reqs_per_sec=total_reqs / (execution_time / 1000.0);
+            double total_reqs_per_sec=total_reqs / (total_time / 1000.0);
             return String.format("%,.2f reqs/sec (%,d gets, %,d puts, get RTT %,.2f us, put RTT %,.2f us)",
                                  total_reqs_per_sec, num_gets, num_puts, avg_gets.average() / 1000.0,
                                  avg_puts.getAverage()/1000.0);
@@ -672,16 +773,25 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
 
 
     public static void main(String[] args) {
+        String  name=null, bind_addr=null;
         boolean run_event_loop=true;
-        String  name=null;
+        int port=0;
 
         for(int i=0; i < args.length; i++) {
+            if("-name".equals(args[i])) {
+                name=args[++i];
+                continue;
+            }
             if("-nohup".equals(args[i])) {
                 run_event_loop=false;
                 continue;
             }
-            if("-name".equals(args[i])) {
-                name=args[++i];
+            if("-port".equals(args[i])) {
+                port=Integer.valueOf(args[++i]);
+                continue;
+            }
+            if("-bind_addr".equals(args[i])) {
+                bind_addr=args[++i];
                 continue;
             }
             help();
@@ -691,7 +801,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
         ProgrammaticUPerf2 test=null;
         try {
             test=new ProgrammaticUPerf2();
-            test.init(name);
+            test.init(name, bind_addr, port);
             if(run_event_loop)
                 test.startEventThread();
         }
@@ -703,7 +813,8 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
     }
 
     static void help() {
-        System.out.printf("%s [-name name] [-nohup] [-h]\n", ProgrammaticUPerf2.class.getSimpleName());
+        System.out.printf("%s [-name name] [-nohup] [-port <bind port>] " +
+                             "[-bind_addr bind-address]\n", ProgrammaticUPerf2.class.getSimpleName());
     }
 
 

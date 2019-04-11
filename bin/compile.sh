@@ -3,9 +3,10 @@
 ## Creates a native image using the GraalVM compiler (needs to be on the path)
 
 
-OPTIONS="-H:ReflectionConfigurationFiles=JGroups/conf/reflection.json \
-         -H:+ReportUnsupportedElementsAtRuntime -H:+JNI \
+OPTIONS="-H:+ReportUnsupportedElementsAtRuntime -H:+JNI \
          --no-server -H:+ReportExceptionStackTraces"
+
+# OPTIONS="$OPTIONS -H:ReflectionConfigurationFiles=JGroups/conf/reflection.json"
 
 # OPTIONS="$OPTIONS -H:+PrintAnalysisCallTree"
 

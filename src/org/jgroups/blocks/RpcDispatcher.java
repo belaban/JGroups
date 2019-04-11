@@ -26,8 +26,8 @@ public class RpcDispatcher extends MessageDispatcher {
     /** Marshaller to marshall requests at the caller, unmarshal requests at the receiver(s), marshall responses at the
      * receivers and unmarshall responses at the caller */
     protected Marshaller    marshaller;
-
     protected MethodLookup  method_lookup;
+    protected MethodInvoker method_invoker;
 
 
     public RpcDispatcher() {
@@ -49,6 +49,8 @@ public class RpcDispatcher extends MessageDispatcher {
     public RpcDispatcher setMembershipListener(MembershipListener l) {return (RpcDispatcher)super.setMembershipListener(l);}
     public MethodLookup  getMethodLookup()                           {return method_lookup;}
     public RpcDispatcher setMethodLookup(MethodLookup method_lookup) {this.method_lookup=method_lookup; return this;}
+    public MethodInvoker getMethodInvoker()                          {return method_invoker;}
+    public RpcDispatcher setMethodInvoker(MethodInvoker mi)          {this.method_invoker=mi; return this;}
 
 
     /**
@@ -195,6 +197,8 @@ public class RpcDispatcher extends MessageDispatcher {
             log.trace("[sender=%s], method_call: %s", req.getSrc(), method_call);
 
         if(method_call.mode() == MethodCall.ID) {
+            if(method_invoker != null) // this trumps a method lookup
+                return method_invoker.invoke(server_obj, method_call.methodId(), method_call.args());
             if(method_lookup == null)
                 throw new Exception(String.format("MethodCall uses ID=%d, but method_lookup has not been set", method_call.methodId()));
             Method m=method_lookup.findMethod(method_call.methodId());
