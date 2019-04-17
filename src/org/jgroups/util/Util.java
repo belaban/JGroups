@@ -1,7 +1,10 @@
 package org.jgroups.util;
 
 import org.jgroups.*;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.protocols.*;
@@ -31,11 +34,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.lang.System.nanoTime;
 import static org.jgroups.protocols.TP.LIST;
@@ -2794,9 +2800,6 @@ public class Util {
         throw exception;
     }
 
-    public static Field[] getAllDeclaredFields(final Class clazz) {
-        return getAllDeclaredFieldsWithAnnotations(clazz);
-    }
 
     @SafeVarargs
     public static Field[] getAllDeclaredFieldsWithAnnotations(final Class clazz, Class<? extends Annotation>... annotations) {
@@ -2804,7 +2807,7 @@ public class Util {
         for(Class curr=clazz; curr != null; curr=curr.getSuperclass()) {
             Field[] fields=curr.getDeclaredFields();
             if(fields != null) {
-                for(Field field : fields) {
+                for(Field field: fields) {
                     if(annotations != null && annotations.length > 0) {
                         for(Class<? extends Annotation> annotation : annotations) {
                             if(field.isAnnotationPresent(annotation))
@@ -2822,6 +2825,53 @@ public class Util {
             retval[i]=list.get(i);
         return retval;
     }
+
+
+
+    /**
+     * Applies a function against all fields and methods of a given target object which satisfy a given predicate.
+     * @param obj The target object
+     * @param filter The filter. Needs to be able to handle Fields and Methods (superclass: {@link AccessibleObject}).
+     *               If null, all fields/methods will be selected
+     * @param field_func The function to be applied to all found fields. No-op if null.
+     * @param method_func The function to be applied to all found methods. No-op if null.
+     */
+    public static void forAllFieldsAndMethods(Object obj, Predicate<? super AccessibleObject> filter,
+                                              Consumer<Field> field_func, Consumer<Method> method_func) {
+        Objects.requireNonNull(obj, "target object cannot be null");
+        if(field_func != null) {
+            for(Class<?> clazz=obj.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
+                Stream.of(clazz.getDeclaredFields()).filter(f -> filter != null && filter.test(f)).forEach(field_func);
+            }
+        }
+        if(method_func != null) {
+            Stream.of(obj.getClass().getMethods())
+              .filter(m -> filter != null && filter.test(m)).forEach(method_func);
+        }
+
+        if(obj instanceof AdditionalJmxObjects) {
+            Object[] objects=((AdditionalJmxObjects)obj).getJmxObjects();
+            for(Object o: objects) {
+                if(o != null)
+                    forAllFieldsAndMethods(o, filter, field_func, method_func);
+            }
+        }
+    }
+
+    public static void forAllSetters(Object obj, Predicate<? super AccessibleObject> filter, Consumer<Method> setter_func) {
+
+    }
+
+    public static String getNameFromAnnotation(AccessibleObject obj) {
+        ManagedAttribute attr_annotation=obj.getAnnotation(ManagedAttribute.class);
+        Property prop=obj.getAnnotation(Property.class);
+        String attr_name=attr_annotation != null? attr_annotation.name() : prop != null? prop.name() : null;
+        if(attr_name != null && !attr_name.trim().isEmpty())
+            return attr_name.trim();
+        else
+            return ((Member)obj).getName();
+    }
+
 
     @SafeVarargs
     public static Method[] getAllDeclaredMethodsWithAnnotations(final Class clazz, Class<? extends Annotation>... annotations) {
@@ -3187,12 +3237,10 @@ public class Util {
         List<String> tmp=new LinkedList<>();
         StringTokenizer tok=new StringTokenizer(l,separator);
         String t;
-
         while(tok.hasMoreTokens()) {
             t=tok.nextToken();
             tmp.add(t.trim());
         }
-
         return tmp;
     }
 

@@ -246,7 +246,7 @@ public class UPerf extends ReceiverAdapter {
 
     public Config getConfig() {
         Config config=new Config();
-        for(Field field: Util.getAllDeclaredFields(UPerf.class)) {
+        for(Field field: Util.getAllDeclaredFieldsWithAnnotations(UPerf.class, Property.class)) {
             if(field.isAnnotationPresent(Property.class)) {
                 config.add(field.getName(), Util.getField(field, this));
             }

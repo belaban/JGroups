@@ -344,6 +344,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return new Object[]{msg_stats, msg_processing_policy, bundler};
     }
 
+    @Property(name="level", description="Sets the level")
     public <T extends Protocol> T setLevel(String level) {
         T retval=super.setLevel(level);
         is_trace=log.isTraceEnabled();
@@ -586,6 +587,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             diag_handler.unregisterProbeHandler(handler);
         return (T)this;
     }
+
+    public DiagnosticsHandler getDiagnosticsHandler() {return diag_handler;}
 
     /**
      * Sets a {@link DiagnosticsHandler}. Should be set before the stack is started

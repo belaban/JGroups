@@ -8,6 +8,8 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.stack.DiagnosticsHandler;
+import org.jgroups.stack.NonReflectiveProbeHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -20,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.Stream;
 
 
 /**
@@ -35,6 +38,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
     private static Address                local_addr=null;
     protected static final List<Address>  members=new ArrayList<>();
     protected static volatile View        view=null;
+    protected static NonReflectiveProbeHandler h;
     protected volatile boolean            looping=true;
     protected Thread                      event_loop_thread;
     protected final LongAdder             num_reads=new LongAdder();
@@ -115,6 +119,8 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
             channel=new JChannel(prot_stack);
             disp=new RpcDispatcher(channel, null).setMembershipListener(ml)
               .setMethodInvoker(ProgrammaticUPerf2::invoke).setMarshaller(new UPerfMarshaller());
+            h=new NonReflectiveProbeHandler(channel).initialize(channel.getProtocolStack().getProtocols());
+            // System.out.printf("\nHANDLER:\n%s\n", h.dump());
         }
         catch(Exception e) {
             throw new RuntimeException(e);
@@ -156,6 +162,17 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
         if(bind_addr != null)
             transport.setBindAddress(InetAddress.getByName(bind_addr));
         channel.connect(groupname);
+
+        DiagnosticsHandler diag_handler=transport.getDiagnosticsHandler();
+        if(diag_handler != null) {
+            Set<DiagnosticsHandler.ProbeHandler> probe_handlers=diag_handler.getProbeHandlers();
+            probe_handlers.removeIf(probe_handler -> {
+                String[] keys=probe_handler.supportedKeys();
+                return keys != null && Stream.of(keys).anyMatch(s -> s.startsWith("jmx"));
+            });
+        }
+
+        transport.registerProbeHandler(h);
         local_addr=channel.getAddress();
         if(members.size() < 2)
             return;

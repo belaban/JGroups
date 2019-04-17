@@ -255,11 +255,8 @@ public class ProtocolStack extends Protocol {
     }
 
 
-    /**
-     * @return Map<String,Map<key,val>>
-     */
-    public Map<String,Object> dumpStats() {
-        Map<String,Object> retval=new HashMap<>(); // no need to be sorted, we need order of protocols as in the config!
+    public Map<String,Map<String,Object>> dumpStats() {
+        Map<String,Map<String,Object>> retval=new HashMap<>(); // no need to be sorted, we need order of protocols as in the config!
         for(Protocol p=top_prot; p != null; p=p.getDownProtocol()) {
             String prot_name=p.getName();
             if(prot_name == null)
@@ -273,12 +270,13 @@ public class ProtocolStack extends Protocol {
     }
 
 
-    public Map<String,Object> dumpStats(String protocol_name, List<String> attrs) {
+    public Map<String,Map<String,Object>> dumpStats(String protocol_name, List<String> attrs) {
         Protocol prot=findProtocol(protocol_name);
         if(prot == null)
             return null;
 
-        Map<String,Object> retval=new HashMap<>(), tmp=new TreeMap<>();
+        Map<String,Map<String,Object>> retval=new HashMap<>();
+        Map<String,Object> tmp=new TreeMap<>();
         dumpStats(prot, tmp, log);
         if(attrs != null && !attrs.isEmpty()) {
             // weed out attrs not in list

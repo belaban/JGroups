@@ -9,10 +9,10 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Util;
 
 import javax.management.*;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * 
@@ -42,6 +42,9 @@ public class ResourceDMBean implements DynamicMBean {
     protected final List<MBeanOperationInfo>       ops=new ArrayList<>();
 
     static {OBJECT_METHODS=new ArrayList<>(Arrays.asList(Object.class.getMethods()));}
+
+    protected static final Predicate<AccessibleObject> FILTER=obj -> obj.isAnnotationPresent(ManagedAttribute.class) ||
+      (obj.isAnnotationPresent(Property.class) && obj.getAnnotation(Property.class).exposeAsManagedAttribute());
 
 
     public ResourceDMBean(Object instance) {
@@ -169,62 +172,48 @@ public class ResourceDMBean implements DynamicMBean {
 
 
     public static void dumpStats(Object obj, final Map<String,Object> map, Log log) {
-        for(Class<?> clazz=obj.getClass();clazz != null;clazz=clazz.getSuperclass()) {
-            Field[] fields=clazz.getDeclaredFields();
-            for(Field field: fields) {
-                if(field.isAnnotationPresent(ManagedAttribute.class) ||
-                  (field.isAnnotationPresent(Property.class) && field.getAnnotation(Property.class).exposeAsManagedAttribute())) {
-
-                    ManagedAttribute attr_annotation=field.getAnnotation(ManagedAttribute.class);
-                    Property         prop=field.getAnnotation(Property.class);
-                    String attr_name=attr_annotation != null? attr_annotation.name() : prop != null? prop.name() : null;
-                    if(attr_name != null && !attr_name.trim().isEmpty())
-                        attr_name=attr_name.trim();
-                    else
-                        attr_name=field.getName();
-
-                    try {
-                        field.setAccessible(true);
-                        Object value=field.get(obj);
-                        map.put(attr_name, value != null? value.toString() : null);
-                    }
-                    catch(Exception e) {
-                        log.warn("Could not retrieve value of attribute (field) " + attr_name, e);
-                    }
-                }
+        Consumer<Field> field_func=f -> {
+            String attr_name=null;
+            try {
+                f.setAccessible(true);
+                Object value=f.get(obj);
+                attr_name=Util.getNameFromAnnotation(f);
+                if(attr_name != null && !attr_name.trim().isEmpty())
+                    attr_name=attr_name.trim();
+                else
+                    attr_name=f.getName();
+                map.put(attr_name, value != null? value.toString() : null);
             }
-
-            Method[] methods=obj.getClass().getMethods();
-            for(Method method: methods) {
-                if(method.isAnnotationPresent(ManagedAttribute.class) ||
-                  (method.isAnnotationPresent(Property.class) && method.getAnnotation(Property.class).exposeAsManagedAttribute())) {
-
-                    ManagedAttribute attr_annotation=method.getAnnotation(ManagedAttribute.class);
-                    Property         prop=method.getAnnotation(Property.class);
-                    String method_name=attr_annotation != null? attr_annotation.name() : prop != null? prop.name() : null;
-                    if(method_name != null && !method_name.trim().isEmpty())
-                        method_name=method_name.trim();
-                    else {
-                        String field_name=Util.methodNameToAttributeName(method.getName());
-                        method_name=Util.attributeNameToMethodName(field_name);
-                    }
-
-                    if(ResourceDMBean.isGetMethod(method)) {
-                        try {
-                            Object value=method.invoke(obj);
-                            String attributeName=Util.methodNameToAttributeName(method_name);
-                            if(value instanceof Double)
-                                value=String.format("%.2f", (double)value);
-                            map.put(attributeName, value != null? value.toString() : null);
-                        }
-                        catch(Exception e) {
-                            log.warn("Could not retrieve value of attribute (method) " + method_name,e);
-                        }
-                    }
-                }
+            catch(Exception e) {
+                log.warn("Could not retrieve value of attribute (field) " + attr_name, e);
             }
-        }
+        };
+        Consumer<Method> getter_func=m -> {
+            String method_name=null;
+            if(!ResourceDMBean.isGetMethod(m))
+                return;
+            try {
+                Object value=m.invoke(obj);
+                method_name=Util.getNameFromAnnotation(m);
+                if(method_name != null && !method_name.trim().isEmpty())
+                    method_name=method_name.trim();
+                else {
+                    String field_name=Util.methodNameToAttributeName(m.getName());
+                    method_name=Util.attributeNameToMethodName(field_name);
+                }
+                String attributeName=Util.methodNameToAttributeName(method_name);
+                if(value instanceof Double)
+                    value=String.format("%.2f", (double)value);
+                map.put(attributeName, value != null? value.toString() : null);
+            }
+            catch(Exception e) {
+                log.warn("Could not retrieve value of attribute (method) " + method_name,e);
+            }
+        };
+        Util.forAllFieldsAndMethods(obj, FILTER, field_func, getter_func);
     }
+
+
 
 
     protected static Class<?> getClassForName(String name) throws ClassNotFoundException {
@@ -530,7 +519,7 @@ public class ResourceDMBean implements DynamicMBean {
             return new_val != null? method.invoke(target, new_val) : method.invoke(target);
         }
 
-        public String toString() {return method.getName() + "()";}
+        public String toString() {return "method[" + method.getName() + "()]";}
     }
 
     public static class FieldAccessor implements Accessor {

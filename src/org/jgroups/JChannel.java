@@ -341,27 +341,23 @@ public class JChannel implements Closeable {
 
     /** Returns a map of statistics of the various protocols and of the channel itself */
     @ManagedOperation
-    public Map<String,Object> dumpStats() {
-        Map<String,Object> retval=prot_stack.dumpStats();
-        if(retval != null) {
-            Map<String,Long> tmp=dumpChannelStats();
-            if(tmp != null)
-                retval.put("channel", tmp);
-        }
+    public Map<String,Map<String,Object>> dumpStats() {
+        Map<String,Map<String,Object>> retval=prot_stack.dumpStats();
+        retval.put("channel", dumpChannelStats());
         return retval;
     }
 
-    public Map<String,Object> dumpStats(String protocol_name, List<String> attrs) {
+    public Map<String,Map<String,Object>> dumpStats(String protocol_name, List<String> attrs) {
         return prot_stack.dumpStats(protocol_name, attrs);
     }
 
     @ManagedOperation
-    public Map<String,Object> dumpStats(String protocol_name) {
+    public Map<String,Map<String,Object>> dumpStats(String protocol_name) {
         return prot_stack.dumpStats(protocol_name, null);
     }
 
-    protected Map<String,Long> dumpChannelStats() {
-        Map<String,Long> retval=new HashMap<>();
+    protected Map<String,Object> dumpChannelStats() {
+        Map<String,Object> retval=new HashMap<>();
         retval.put("sent_msgs",      sent_msgs);
         retval.put("sent_bytes",     sent_bytes);
         retval.put("received_msgs",  received_msgs);

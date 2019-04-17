@@ -189,7 +189,7 @@ public class Channel implements Closeable {
     * @return Map<String,Map>. A map where the keys are the protocols ("channel" pseudo key is used
     *         for the channel itself") and the values are property maps.
     */
-    public Map<String,Object> dumpStats() {return ch.dumpStats();}
+    public Map<String,Map<String,Object>> dumpStats() {return ch.dumpStats();}
 
    /**
     * Sends a message. The message contains

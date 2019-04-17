@@ -9,6 +9,7 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.AddressGenerator;
+import org.jgroups.stack.NonReflectiveProbeHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -108,6 +109,7 @@ public class ProgrammaticUPerf extends ReceiverAdapter implements MethodInvoker 
 
 
     public void init(String name, AddressGenerator generator, String bind_addr, int bind_port) throws Throwable {
+
         InetAddress bind_address=bind_addr != null? PropertyConverters.Default.convertBindAddress(bind_addr) : Util.getLocalhost();
         Protocol[] prot_stack={
           new TCP().setBindAddress(bind_address).setBindPort(7800)
@@ -127,11 +129,16 @@ public class ProgrammaticUPerf extends ReceiverAdapter implements MethodInvoker 
           new MFC(),
           new FRAG2()};
         channel=new JChannel(prot_stack).addAddressGenerator(generator).setName(name);
+        TP transport=channel.getProtocolStack().getTransport();
         if(bind_port > 0) {
-            TP transport=channel.getProtocolStack().getTransport();
+            transport=channel.getProtocolStack().getTransport();
             transport.setBindPort(bind_port);
         }
-
+        // todo: remove default ProbeHandler for "jmx" and "op"
+        NonReflectiveProbeHandler h=new NonReflectiveProbeHandler(channel);
+        transport.registerProbeHandler(h);
+        h.initialize(channel.getProtocolStack().getProtocols());
+        // System.out.printf("contents:\n%s\n", h.dump());
         disp=new RpcDispatcher(channel, this).setMembershipListener(this)
           .setMethodInvoker(this).setMarshaller(new UPerfMarshaller());
         channel.connect(groupname);

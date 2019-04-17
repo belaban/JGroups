@@ -175,107 +175,63 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
         return ch.resetStats();
     }
 
-    protected void handleJmx(Map<String, String> map, String input) {
-        Map<String, Object> tmp_stats;
+    /**
+     * Dumps the attributes and their values of _all_ protocols in a stack
+     * @return A map of protocol names as keys and maps (of attribute names and values) as values
+     */
+    protected Map<String,Map<String,Object>> dumpAttrsAllProtocols() {
+        return ch.dumpStats();
+    }
+
+    /**
+     * Dumps attributes and their values of a given protocol.
+     * @param protocol_name The name of the protocol
+     * @param attrs A list of attributes that need to be returned. If null, all attributes of the given protocol will
+     *              be returned
+     * @return A map of protocol names as keys and maps (of attribute names and values) as values
+     */
+    protected Map<String,Map<String,Object>> dumpAttrsSelectedProtocol(String protocol_name, List<String> attrs) {
+        return ch.dumpStats(protocol_name, attrs);
+    }
+
+
+
+    protected void handleJmx(Map<String,String> map, String input) {
         int index=input.indexOf('=');
-        if(index > -1) {
-            List<String> list=null;
-            String protocol_name=input.substring(index +1);
-            index=protocol_name.indexOf('.');
-            if(index > -1) {
-                String rest=protocol_name;
-                protocol_name=protocol_name.substring(0, index);
-                String attrs=rest.substring(index +1); // e.g. "num_sent,msgs,num_received_msgs"
-                list=Util.parseStringList(attrs, ",");
+        if(index == -1) {
+            Map<String,Map<String,Object>> tmp_stats=dumpAttrsAllProtocols();
+            convert(tmp_stats, map); // inserts into map
+            return;
+        }
+        String protocol_name=input.substring(index +1);
+        index=protocol_name.indexOf('.');
+        if(index == -1) {
+            Map<String,Map<String,Object>> tmp_stats=dumpAttrsSelectedProtocol(protocol_name, null);
+            convert(tmp_stats, map);
+            return;
+        }
+        String rest=protocol_name;
+        protocol_name=protocol_name.substring(0, index);
+        String attrs=rest.substring(index +1); // e.g. "num_sent,msgs,num_received_msgs"
+        List<String> list=Util.parseStringList(attrs, ",");
 
-                // check if there are any attribute-sets in the list
-                for(Iterator<String> it=list.iterator(); it.hasNext();) {
-                    String tmp=it.next();
-                    index=tmp.indexOf('=');
-                    if(index != -1) {
-                        String attrname=tmp.substring(0, index);
-                        String attrvalue=tmp.substring(index+1);
-                        Object target=ch.getProtocolStack().findProtocol(protocol_name);
-                        Field field=target != null? Util.getField(target.getClass(), attrname) : null;
-                        if(field == null && target instanceof AdditionalJmxObjects) {
-                            Object[] objs=((AdditionalJmxObjects)target).getJmxObjects();
-                            if(objs != null && objs.length > 0) {
-                                for(Object o: objs) {
-                                    field=o != null? Util.getField(o.getClass(), attrname) : null;
-                                    if(field != null) {
-                                        target=o;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        if(field != null) {
-                            Object value=Util.convert(attrvalue, field.getType());
-                            if(value != null) {
-                                if(target instanceof Protocol)
-                                    ((Protocol)target).setValue(attrname, value);
-                                else
-                                    Util.setField(field, target, value);
-                            }
-                        }
-                        else {
-                            // try to find a setter for X, e.g. x(type-of-x) or setX(type-of-x)
-                            ResourceDMBean.Accessor setter=ResourceDMBean.findSetter(target, attrname);
-                            if(setter == null && target instanceof AdditionalJmxObjects) {
-                                Object[] objs=((AdditionalJmxObjects)target).getJmxObjects();
-                                if(objs != null && objs.length > 0) {
-                                    for(Object o: objs) {
-                                        setter=o != null? ResourceDMBean.findSetter(o, attrname) : null;
-                                        if(setter!= null)
-                                            break;
-                                    }
-                                }
-                            }
-
-                            if(setter != null) {
-                                try {
-                                    Class<?> type=setter instanceof ResourceDMBean.FieldAccessor?
-                                      ((ResourceDMBean.FieldAccessor)setter).getField().getType() :
-                                      setter instanceof ResourceDMBean.MethodAccessor?
-                                        ((ResourceDMBean.MethodAccessor)setter).getMethod().getParameterTypes()[0] : null;
-                                    Object converted_value=Util.convert(attrvalue, type);
-                                    setter.invoke(converted_value);
-                                }
-                                catch(Exception e) {
-                                    log.error("unable to invoke %s() on %s: %s", setter, protocol_name, e);
-                                }
-                            }
-                            else {
-                                log.warn(Util.getMessage("FieldNotFound"), attrname, protocol_name);
-                                setter=new ResourceDMBean.NoopAccessor();
-                            }
-                        }
-
-                        it.remove();
-                    }
-                }
-            }
-            tmp_stats=ch.dumpStats(protocol_name, list);
-            if(tmp_stats != null) {
-                for(Map.Entry<String,Object> entry : tmp_stats.entrySet()) {
-                    Map<String,Object> tmp_map=(Map<String,Object>)entry.getValue();
-                    String key=entry.getKey();
-                    map.put(key, tmp_map != null? tmp_map.toString() : null);
-                }
+        // check if there are any attribute-sets in the list
+        for(Iterator<String> it=list.iterator(); it.hasNext();) {
+            String tmp=it.next();
+            index=tmp.indexOf('=');
+            if(index > -1) { // an attribute write
+                it.remove();
+                String attrname=tmp.substring(0, index);
+                String attrvalue=tmp.substring(index+1);
+                handleAttrWrite(protocol_name, attrname, attrvalue);
             }
         }
-        else {
-            tmp_stats=ch.dumpStats();
-            if(tmp_stats != null) {
-                for(Map.Entry<String,Object> entry : tmp_stats.entrySet()) {
-                    Map<String,Object> tmp_map=(Map<String,Object>)entry.getValue();
-                    String key=entry.getKey();
-                    map.put(key, tmp_map != null? tmp_map.toString() : null);
-                }
-            }
+        if(!list.isEmpty()) {
+            Map<String,Map<String,Object>> tmp_stats=dumpAttrsSelectedProtocol(protocol_name, list);
+            convert(tmp_stats, map);
         }
     }
+
 
     /**
      * Invokes an operation and puts the return value into map
@@ -288,9 +244,10 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
             throw new IllegalArgumentException("operation " + operation + " is missing the protocol name");
         String prot_name=operation.substring(0, index);
         Protocol prot=ch.getProtocolStack().findProtocol(prot_name);
-        if(prot == null)
+        if(prot == null) {
+            log.error("protocol %s not found", prot_name);
             return; // less drastic than throwing an exception...
-
+        }
 
         int args_index=operation.indexOf('[');
         String method_name;
@@ -311,6 +268,21 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                 args[i]=(String)strings[i];
         }
 
+        Method method=findMethod(prot, method_name, args);
+        MethodCall call=new MethodCall(method);
+        Object[] converted_args=null;
+        if(args != null) {
+            converted_args=new Object[args.length];
+            Class<?>[] types=method.getParameterTypes();
+            for(int i=0; i < args.length; i++)
+                converted_args[i]=Util.convert(args[i], types[i]);
+        }
+        Object retval=call.invoke(prot, converted_args);
+        if(retval != null)
+            map.put(prot_name + "." + method_name, retval.toString());
+    }
+
+    protected Method findMethod(Protocol prot, String method_name, String[] args) throws Exception {
         Object target=prot;
         Method method=MethodCall.findMethod(target.getClass(), method_name, args);
         if(method == null) {
@@ -325,52 +297,104 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
             }
             if(method == null) {
                 log.warn(Util.getMessage("MethodNotFound"), ch.getAddress(), target.getClass().getSimpleName(), method_name);
-                return;
+                return null;
             }
         }
-
-        MethodCall call=new MethodCall(method);
-        Object[] converted_args=null;
-        if(args != null) {
-            converted_args=new Object[args.length];
-            Class<?>[] types=method.getParameterTypes();
-            for(int i=0; i < args.length; i++)
-                converted_args[i]=Util.convert(args[i], types[i]);
-        }
-        Object retval=call.invoke(target, converted_args);
-        if(retval != null)
-            map.put(prot_name + "." + method_name, retval.toString());
+        return method;
     }
 
-   protected static class ThreadEntry {
-       protected final Thread.State state;
-       protected final String       thread_name;
-       protected final long         blocks, waits;
-       protected final double       block_time, wait_time;  // ms
-       protected final double       cpu_time, user_time;    // ms
+    protected void handleAttrWrite(String protocol_name, String attr_name, String attr_value) {
+        Object target=ch.getProtocolStack().findProtocol(protocol_name);
+        Field field=target != null? Util.getField(target.getClass(), attr_name) : null;
+        if(field == null && target instanceof AdditionalJmxObjects) {
+            Object[] objs=((AdditionalJmxObjects)target).getJmxObjects();
+            if(objs != null && objs.length > 0) {
+                for(Object o: objs) {
+                    field=o != null? Util.getField(o.getClass(), attr_name) : null;
+                    if(field != null) {
+                        target=o;
+                        break;
+                    }
+                }
+            }
+        }
+        if(field != null) {
+            Object value=Util.convert(attr_value, field.getType());
+            if(value != null) {
+                if(target instanceof Protocol)
+                    ((Protocol)target).setValue(attr_name, value);
+                else
+                    Util.setField(field, target, value);
+            }
+        }
+        else {
+            // try to find a setter for X, e.g. x(type-of-x) or setX(type-of-x)
+            ResourceDMBean.Accessor setter=ResourceDMBean.findSetter(target, attr_name);
+            if(setter == null && target instanceof AdditionalJmxObjects) {
+                Object[] objs=((AdditionalJmxObjects)target).getJmxObjects();
+                if(objs != null && objs.length > 0) {
+                    for(Object o: objs) {
+                        setter=o != null? ResourceDMBean.findSetter(o, attr_name) : null;
+                        if(setter!= null)
+                            break;
+                    }
+                }
+            }
+            if(setter != null) {
+                try {
+                    Class<?> type=setter instanceof ResourceDMBean.FieldAccessor?
+                      ((ResourceDMBean.FieldAccessor)setter).getField().getType() :
+                      setter instanceof ResourceDMBean.MethodAccessor?
+                        ((ResourceDMBean.MethodAccessor)setter).getMethod().getParameterTypes()[0] : null;
+                    Object converted_value=Util.convert(attr_value, type);
+                    setter.invoke(converted_value);
+                }
+                catch(Exception e) {
+                    log.error("unable to invoke %s() on %s: %s", setter, protocol_name, e);
+                }
+            }
+            else {
+                log.warn(Util.getMessage("FieldNotFound"), attr_name, protocol_name);
+                setter=new ResourceDMBean.NoopAccessor();
+            }
+        }
+    }
 
-       public ThreadEntry(Thread.State state, String thread_name, long blocks, long waits, double block_time, double wait_time,
-                          double cpu_time, double user_time) {
-           this.state=state;
-           this.thread_name=thread_name;
-           this.blocks=blocks;
-           this.waits=waits;
-           this.block_time=block_time;
-           this.wait_time=wait_time;
-           this.cpu_time=cpu_time;
-           this.user_time=user_time;
-       }
-
-       public String toString() {
-           return String.format("[%s] %s: blocks=%d (%.2f ms) waits=%d (%.2f ms) sys=%.2f ms user=%.2f ms\n",
-                                state, thread_name, blocks, block_time, waits, wait_time, cpu_time, user_time);
-       }
-
-       protected String print(String format) {
-           return String.format(format, state, thread_name, cpu_time, user_time, blocks, block_time, waits, wait_time);
-       }
+    protected static void convert(Map<String,Map<String,Object>> in, Map<String,String> out) {
+        if(in != null)
+            in.entrySet().stream().filter(e -> e.getValue() != null).forEach(e -> out.put(e.getKey(), e.getValue().toString()));
+    }
 
 
-   }
+    protected static class ThreadEntry {
+        protected final Thread.State state;
+        protected final String       thread_name;
+        protected final long         blocks, waits;
+        protected final double       block_time, wait_time;  // ms
+        protected final double       cpu_time, user_time;    // ms
+
+        public ThreadEntry(Thread.State state, String thread_name, long blocks, long waits, double block_time, double wait_time,
+                           double cpu_time, double user_time) {
+            this.state=state;
+            this.thread_name=thread_name;
+            this.blocks=blocks;
+            this.waits=waits;
+            this.block_time=block_time;
+            this.wait_time=wait_time;
+            this.cpu_time=cpu_time;
+            this.user_time=user_time;
+        }
+
+        public String toString() {
+            return String.format("[%s] %s: blocks=%d (%.2f ms) waits=%d (%.2f ms) sys=%.2f ms user=%.2f ms\n",
+                                 state, thread_name, blocks, block_time, waits, wait_time, cpu_time, user_time);
+        }
+
+        protected String print(String format) {
+            return String.format(format, state, thread_name, cpu_time, user_time, blocks, block_time, waits, wait_time);
+        }
+
+
+    }
 
 }

@@ -217,7 +217,7 @@ public class Probe {
                 if("-tcp".equals(args[i])) {
                     tcp=Boolean.parseBoolean(args[++i]);
                     continue;
-                                }
+                }
                 if("-help".equals(args[i]) || "-h".equals(args[i]) || "--help".equals(args[i])) {
                     help();
                     return;

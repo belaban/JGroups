@@ -172,6 +172,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return avg_delivery_batch_size != null? avg_delivery_batch_size.toString() : "n/a";
     }
 
+    @Property(name="level", description="Sets the level")
     public <T extends Protocol> T setLevel(String level) {
         T retval= super.setLevel(level);
         is_trace=log.isTraceEnabled();

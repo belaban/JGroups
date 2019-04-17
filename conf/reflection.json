@@ -8,62 +8,9 @@
     ]
   },
   {
-    "name" : "org.jgroups.tests.perf.ProgrammaticUPerf$Config",
-    "allDeclaredConstructors" : true,
-    "allPublicConstructors" : true
-  },
-  {
-    "name" : "org.jgroups.tests.perf.ProgrammaticUPerf$Results",
-    "allDeclaredConstructors" : true,
-    "allPublicConstructors" : true
-  },
-  {
-    "name": "javax.management.MBeanServerBuilder",
-    "allDeclaredConstructors" : true,
-    "allPublicConstructors" : true
-  },
-  {
-    "name": "org.jgroups.tests.perf.ProgrammaticUPerf",
-    "allDeclaredMethods" : true,
-    "allPublicMethods" : true,
-    "fields" : [
-      { "name" : "sync", "allowWrite" : true },
-      { "name" : "oob", "allowWrite" : true },
-      { "name" : "num_threads", "allowWrite" : true },
-      { "name" : "time", "allowWrite" : true },
-      { "name" : "msg_size", "allowWrite" : true },
-      { "name" : "anycast_count", "allowWrite" : true },
-      { "name" : "read_percentage", "allowWrite" : true },
-      { "name" : "allow_local_gets", "allowWrite" : true },
-      { "name" : "print_invokers", "allowWrite" : true },
-      { "name" : "print_details", "allowWrite" : true }
-    ]
-  },
-  {
-    "name" : "org.jgroups.tests.perf.ProgrammaticUPerf2$Config",
-    "allDeclaredConstructors" : true,
-    "allPublicConstructors" : true
-  },
-  {
-    "name" : "org.jgroups.tests.perf.ProgrammaticUPerf2$Results",
-    "allDeclaredConstructors" : true,
-    "allPublicConstructors" : true
-  },
-  {
-    "name": "org.jgroups.tests.perf.ProgrammaticUPerf2",
-    "allDeclaredMethods" : true,
-    "allPublicMethods" : true,
-    "fields" : [
-      { "name" : "sync", "allowWrite" : true },
-      { "name" : "oob", "allowWrite" : true },
-      { "name" : "num_threads", "allowWrite" : true },
-      { "name" : "time", "allowWrite" : true },
-      { "name" : "msg_size", "allowWrite" : true },
-      { "name" : "anycast_count", "allowWrite" : true },
-      { "name" : "read_percentage", "allowWrite" : true },
-      { "name" : "allow_local_gets", "allowWrite" : true },
-      { "name" : "print_invokers", "allowWrite" : true },
-      { "name" : "print_details", "allowWrite" : true }
+    "name": "org.jgroups.protocols.UNICAST3",
+    "fields": [
+      {"name": "conn_close_timeout"}
     ]
   }
 ]
