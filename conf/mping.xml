@@ -14,7 +14,7 @@ Author: Bela Ban
            mcast_port="7500"/>
     <MERGE3/>
     <FD_SOCK/>
-    <FD/>
+    <FD_ALL/>
     <VERIFY_SUSPECT/>
     <pbcast.NAKACK2/>
     <UNICAST3/>

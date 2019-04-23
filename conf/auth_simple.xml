@@ -4,7 +4,7 @@
     <UDP/>
     <PING/>
     <MERGE3/>
-    <FD/>
+    <FD_ALL/>
     <VERIFY_SUSPECT/>
     <pbcast.NAKACK2/>
     <UNICAST3/>
