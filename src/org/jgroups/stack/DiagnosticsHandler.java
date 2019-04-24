@@ -174,7 +174,12 @@ public class DiagnosticsHandler extends ReceiverAdapter {
     protected DiagnosticsHandler startUDP() throws Exception {
         if(udp_sock == null || udp_sock.isClosed()) {
             udp_sock=socket_factory.createMulticastSocket("jgroups.tp.diag.udp_sock", diagnostics_port);
-            udp_sock.setTimeToLive(ttl);
+            try {
+                udp_sock.setTimeToLive(ttl);
+            }
+            catch(Exception ex) {
+                log.error("failed setting TTL %d in MulticastSocket: %s", ttl, ex.getMessage());
+            }
             List<NetworkInterface> interfaces=bind_interfaces != null? bind_interfaces : Util.getAllAvailableInterfaces();
             bindToInterfaces(interfaces, udp_sock);
         }

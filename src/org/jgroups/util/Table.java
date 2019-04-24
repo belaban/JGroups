@@ -111,7 +111,6 @@ public class Table<T> implements Iterable<T> {
      * @param resize_factor teh factor with which to increase the number of rows
      * @param max_compaction_time the max time in milliseconds after we attempt a compaction
      */
-    @SuppressWarnings("unchecked")
     public Table(int num_rows, int elements_per_row, long offset, double resize_factor, long max_compaction_time) {
         this.num_rows=num_rows;
         this.elements_per_row=Util.getNextHigherPowerOfTwo(elements_per_row);
@@ -572,7 +571,6 @@ public class Table<T> implements Iterable<T> {
     /** Moves rows down the matrix, by removing purged rows. If resizing to accommodate seqno is still needed, computes
      * a new size. Then either moves existing rows down, or copies them into a new array (if resizing took place).
      * The lock must be held by the caller of resize(). */
-    @SuppressWarnings("unchecked")
     @GuardedBy("lock")
     protected void resize(long seqno) {
         int num_rows_to_purge=computeRow(low);
@@ -615,7 +613,6 @@ public class Table<T> implements Iterable<T> {
      * Moves the contents of matrix down by the number of purged rows and resizes the matrix accordingly. The
      * capacity of the matrix should be size * resize_factor. Caller must hold the lock.
      */
-    @SuppressWarnings("unchecked")
     @GuardedBy("lock")
     protected void _compact() {
         // This is the range we need to copy into the new matrix (including from and to)
@@ -722,7 +719,6 @@ public class Table<T> implements Iterable<T> {
      * @param index
      * @return A row
      */
-    @SuppressWarnings("unchecked")
     @GuardedBy("lock")
     protected T[] getRow(int index) {
         T[] row=matrix[index];

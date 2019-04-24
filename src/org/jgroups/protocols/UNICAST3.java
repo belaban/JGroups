@@ -172,6 +172,14 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return avg_delivery_batch_size != null? avg_delivery_batch_size.toString() : "n/a";
     }
 
+    public int getAckThreshold() {
+        return ack_threshold;
+    }
+
+    public UNICAST3 setAckThreshold(int ack_threshold) {
+        this.ack_threshold=ack_threshold; return this;
+    }
+
     @Property(name="level", description="Sets the level")
     public <T extends Protocol> T setLevel(String level) {
         T retval= super.setLevel(level);
@@ -182,6 +190,24 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     public <T extends UNICAST3> T setXmitInterval(long interval) {
         xmit_interval=interval;
         return (T)this;
+    }
+
+    public int getXmitTableNumRows() {
+        return xmit_table_num_rows;
+    }
+
+    public UNICAST3 setXmitTableNumRows(int xmit_table_num_rows) {
+        this.xmit_table_num_rows=xmit_table_num_rows;
+        return this;
+    }
+
+    public int getXmitTableMsgsPerRow() {
+        return xmit_table_msgs_per_row;
+    }
+
+    public UNICAST3 setXmitTableMsgsPerRow(int xmit_table_msgs_per_row) {
+        this.xmit_table_msgs_per_row=xmit_table_msgs_per_row;
+        return this;
     }
 
     @ManagedOperation
@@ -203,23 +229,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return sb.toString();
     }
 
-    @ManagedAttribute
-    public long getNumMessagesSent() {return num_msgs_sent;}
-
-    @ManagedAttribute
-    public long getNumMessagesReceived() {return num_msgs_received;}
-
-
-    @ManagedAttribute
-    public long getNumAcksSent() {return num_acks_sent;}
-
-    @ManagedAttribute
-    public long getNumAcksReceived() {return num_acks_received;}
-
-    @ManagedAttribute
-    public long getNumXmits() {return num_xmits;}
-
-    public long getMaxRetransmitTime() {return max_retransmit_time;}
+    @ManagedAttribute public long getNumMessagesSent()     {return num_msgs_sent;}
+    @ManagedAttribute public long getNumMessagesReceived() {return num_msgs_received;}
+    @ManagedAttribute public long getNumAcksSent()         {return num_acks_sent;}
+    @ManagedAttribute public long getNumAcksReceived()     {return num_acks_received;}
+    @ManagedAttribute public long getNumXmits()            {return num_xmits;}
+    public long                   getMaxRetransmitTime()   {return max_retransmit_time;}
 
     @Property(description="Max number of milliseconds we try to retransmit a message to any given member. After that, " +
       "the connection is removed. Any new connection to that member will start with seqno #1 again. 0 disables this")
@@ -1205,7 +1220,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected static int accumulate(ToIntFunction<Table> func, Collection<? extends Entry> ... entries) {
         return Stream.of(entries).flatMap(Collection::stream)
           .map(entry -> entry.msgs).filter(Objects::nonNull)
-          .mapToInt(func::applyAsInt).sum();
+          .mapToInt(func).sum();
     }
 
 

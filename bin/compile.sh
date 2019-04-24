@@ -6,6 +6,8 @@
 OPTIONS="-H:+ReportUnsupportedElementsAtRuntime -H:+JNI \
          --no-server -H:+ReportExceptionStackTraces"
 
+OPTIONS="$OPTIONS -H:+AllowVMInspection"
+
 # OPTIONS="$OPTIONS -H:ReflectionConfigurationFiles=JGroups/conf/reflection.json"
 
 # OPTIONS="$OPTIONS -H:+PrintAnalysisCallTree"

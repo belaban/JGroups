@@ -41,6 +41,23 @@ public class TCP extends BasicTCP {
       " buffered until this size is exceeded or flush() is called. Bigger messages are sent immediately. 0: default size")
     protected int buffered_output_stream_size=8192;
 
+    public int getBufferedInputStreamSize() {
+        return buffered_input_stream_size;
+    }
+
+    public TCP setBufferedInputStreamSize(int buffered_input_stream_size) {
+        this.buffered_input_stream_size=buffered_input_stream_size;
+        return this;
+    }
+
+    public int getBufferedOutputStreamSize() {
+        return buffered_output_stream_size;
+    }
+
+    public TCP setBufferedOutputStreamSize(int buffered_output_stream_size) {
+        this.buffered_output_stream_size=buffered_output_stream_size;
+        return this;
+    }
 
     @ManagedAttribute
     public int getOpenConnections() {
