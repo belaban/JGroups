@@ -110,6 +110,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
                 .setDiagnosticsEnabled(true)
                 .diagEnableUdp(false) // todo: enable when MulticastSocket works
                 .diagEnableTcp(true),
+              // .bundler("no-bundler"),
               new TCPPING().initialHosts(Collections.singletonList(new InetSocketAddress(bind_address, 7800))),
               new MERGE3(),
               new FD_SOCK(),
@@ -127,7 +128,6 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
             disp=new RpcDispatcher(channel, null).setMembershipListener(ml)
               .setMethodInvoker(ProgrammaticUPerf2::invoke).setMarshaller(new UPerfMarshaller());
             h=new NonReflectiveProbeHandler(channel).initialize(channel.getProtocolStack().getProtocols());
-            // System.out.printf("\nHANDLER:\n%s\n", h.dump());
         }
         catch(Exception e) {
             throw new RuntimeException(e);

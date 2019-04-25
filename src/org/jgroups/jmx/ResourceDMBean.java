@@ -9,9 +9,12 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Util;
 
 import javax.management.*;
-import java.lang.reflect.*;
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
 /**
@@ -172,11 +175,11 @@ public class ResourceDMBean implements DynamicMBean {
 
 
     public static void dumpStats(Object obj, final Map<String,Object> map, Log log) {
-        Consumer<Field> field_func=f -> {
+        BiConsumer<Field,Object> field_func=(f,o) -> {
             String attr_name=null;
             try {
                 f.setAccessible(true);
-                Object value=f.get(obj);
+                Object value=f.get(o);
                 attr_name=Util.getNameFromAnnotation(f);
                 if(attr_name != null && !attr_name.trim().isEmpty())
                     attr_name=attr_name.trim();
@@ -188,12 +191,12 @@ public class ResourceDMBean implements DynamicMBean {
                 log.warn("Could not retrieve value of attribute (field) " + attr_name, e);
             }
         };
-        Consumer<Method> getter_func=m -> {
+        BiConsumer<Method,Object> getter_func=(m,o) -> {
             String method_name=null;
             if(!ResourceDMBean.isGetMethod(m))
                 return;
             try {
-                Object value=m.invoke(obj);
+                Object value=m.invoke(o);
                 method_name=Util.getNameFromAnnotation(m);
                 if(method_name != null && !method_name.trim().isEmpty())
                     method_name=method_name.trim();

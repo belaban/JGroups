@@ -991,7 +991,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @ManagedOperation(description="Creates and sets a new bundler. Type has to be either a bundler_type or the fully " +
       "qualified classname of a Bundler impl. Stops the current bundler (if running)")
-    public void bundler(String type) {
+    public <T extends TP> T bundler(String type) {
         Bundler new_bundler=createBundler(type);
         String old_bundler_class=null;
         if(bundler != null) {
@@ -1004,6 +1004,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         bundler_type=type;
         if(old_bundler_class != null)
             log.debug("%s: replaced bundler %s with %s", local_addr, old_bundler_class, bundler.getClass().getName());
+        return (T)this;
     }
 
 

@@ -5,6 +5,7 @@ import org.jgroups.JChannelProbeHandler;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.jmx.ResourceDMBean;
 import org.jgroups.util.Util;
 
@@ -12,7 +13,7 @@ import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
 /**
@@ -35,7 +36,6 @@ public class NonReflectiveProbeHandler extends JChannelProbeHandler {
     protected static final Predicate<AccessibleObject> FILTER=obj -> obj.isAnnotationPresent(ManagedAttribute.class) ||
       (obj.isAnnotationPresent(Property.class) && obj.getAnnotation(Property.class).exposeAsManagedAttribute()) ||
       obj.isAnnotationPresent(ManagedOperation.class);
-      // (obj instanceof Method && ResourceDMBean.isSetMethod((Method)obj));
 
     public NonReflectiveProbeHandler(JChannel ch) {
         super(ch);
@@ -50,27 +50,35 @@ public class NonReflectiveProbeHandler extends JChannelProbeHandler {
             String prot_name=prot.getName();
             Map<String,ResourceDMBean.Accessor> m=attrs.computeIfAbsent(prot_name, k -> new TreeMap<>());
 
-            Consumer<Field> field_func=field -> m.put(field.getName(), new ResourceDMBean.FieldAccessor(field, prot));
+            BiConsumer<Field,Object> field_func=(f,o) -> m.put(f.getName(), new ResourceDMBean.FieldAccessor(f, o));
 
-            Consumer<Method> method_func=method -> { // getter
+            BiConsumer<Method,Object> method_func=(method,obj) -> { // getter
                 if(method.isAnnotationPresent(ManagedOperation.class)) {
                     Map<String,ResourceDMBean.MethodAccessor> tmp=operations.computeIfAbsent(prot_name, k -> new TreeMap<>());
-                    tmp.put(method.getName(), new ResourceDMBean.MethodAccessor(method, prot));
+                    tmp.put(method.getName(), new ResourceDMBean.MethodAccessor(method, obj));
                 }
                 else if(ResourceDMBean.isGetMethod(method)) {
                     String method_name=Util.getNameFromAnnotation(method);
                     String attributeName=Util.methodNameToAttributeName(method_name);
-                    m.put(attributeName, new ResourceDMBean.MethodAccessor(method, prot));
+                    m.put(attributeName, new ResourceDMBean.MethodAccessor(method, obj));
                 }
                 else if(ResourceDMBean.isSetMethod(method)) { // setter
                     Map<String,ResourceDMBean.Accessor> tmp=setters.computeIfAbsent(prot_name, k -> new TreeMap<>());
                     String method_name=Util.getNameFromAnnotation(method);
                     String attributeName=Util.methodNameToAttributeName(method_name);
-                    tmp.put(attributeName, new ResourceDMBean.MethodAccessor(method, prot));
+                    tmp.put(attributeName, new ResourceDMBean.MethodAccessor(method, obj));
                 }
             };
-            Util.forAllFieldsAndMethods(prot, FILTER, field_func, method_func);
 
+            Util.forAllFieldsAndMethods(prot, FILTER, field_func, method_func);
+            if(prot instanceof AdditionalJmxObjects) {
+                Object[] objects=((AdditionalJmxObjects)prot).getJmxObjects();
+                if(objects != null) {
+                    for(Object obj: objects)
+                        if(obj != null)
+                            Util.forAllFieldsAndMethods(obj, FILTER, field_func, method_func);
+                }
+            }
         }
         return this;
     }
@@ -104,7 +112,6 @@ public class NonReflectiveProbeHandler extends JChannelProbeHandler {
         Map<String,Map<String,Object>> retval=new HashMap<>();
         for(Map.Entry<String,Map<String,ResourceDMBean.Accessor>> e: attrs.entrySet()) {
             String protocol_name=e.getKey();
-            System.out.printf("--> %s\n", protocol_name);
             Map<String,ResourceDMBean.Accessor> val=e.getValue();
             Map<String,Object> map=new TreeMap<>();
             for(Map.Entry<String,ResourceDMBean.Accessor> en: val.entrySet()) {

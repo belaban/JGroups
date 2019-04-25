@@ -4,7 +4,6 @@ import org.jgroups.*;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.protocols.*;
@@ -34,7 +33,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -2837,30 +2836,20 @@ public class Util {
      * @param method_func The function to be applied to all found methods. No-op if null.
      */
     public static void forAllFieldsAndMethods(Object obj, Predicate<? super AccessibleObject> filter,
-                                              Consumer<Field> field_func, Consumer<Method> method_func) {
+                                              BiConsumer<Field,Object> field_func, BiConsumer<Method,Object> method_func) {
         Objects.requireNonNull(obj, "target object cannot be null");
         if(field_func != null) {
             for(Class<?> clazz=obj.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
-                Stream.of(clazz.getDeclaredFields()).filter(f -> filter != null && filter.test(f)).forEach(field_func);
+                Stream.of(clazz.getDeclaredFields()).filter(f -> filter != null && filter.test(f))
+                  .forEach(f -> field_func.accept(f, obj));
             }
         }
         if(method_func != null) {
             Stream.of(obj.getClass().getMethods())
-              .filter(m -> filter != null && filter.test(m)).forEach(method_func);
-        }
-
-        if(obj instanceof AdditionalJmxObjects) {
-            Object[] objects=((AdditionalJmxObjects)obj).getJmxObjects();
-            for(Object o: objects) {
-                if(o != null)
-                    forAllFieldsAndMethods(o, filter, field_func, method_func);
-            }
+              .filter(m -> filter != null && filter.test(m)).forEach(m -> method_func.accept(m, obj));
         }
     }
 
-    public static void forAllSetters(Object obj, Predicate<? super AccessibleObject> filter, Consumer<Method> setter_func) {
-
-    }
 
     public static String getNameFromAnnotation(AccessibleObject obj) {
         ManagedAttribute attr_annotation=obj.getAnnotation(ManagedAttribute.class);
