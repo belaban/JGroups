@@ -19,4 +19,6 @@ OPTIONS="$OPTIONS -Dgraal.CompilationFailureAction=Diagnose"
 
 # OPTIONS="$OPTIONS --debug-attach=5005"
 
+#OPTIONS="$OPTIONS -J-server -J-XX:+UseG1GC -J-XX:+UseAdaptiveSizePolicy -J-XX:MinHeapFreeRatio=20 -J-XX:MaxHeapFreeRatio=20"
+
 native-image -cp $CLASSPATH $OPTIONS $*

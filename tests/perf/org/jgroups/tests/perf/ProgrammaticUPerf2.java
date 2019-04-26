@@ -100,12 +100,6 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
 
             InetAddress bind_address=PropertyConverters.Default.convertBindAddress(BIND_ADDR);
             Protocol[] prot_stack={
-              /*new UDP().setBindAddress(bind_address)
-                         .setDiagnosticsEnabled(true)
-                         .diagEnableUdp(false) // todo: enable when MulticastSocket works
-                         .diagEnableTcp(true),
-                new PING(),*/
-
               new TCP().setBindAddress(bind_address).setBindPort(7800)
                 .setDiagnosticsEnabled(true)
                 .diagEnableUdp(false) // todo: enable when MulticastSocket works
