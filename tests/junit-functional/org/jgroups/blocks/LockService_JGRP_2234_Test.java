@@ -106,7 +106,7 @@ public class LockService_JGRP_2234_Test {
 
 
     protected static JChannel createChannel(String name, Class<? extends Locking> locking_class) throws Exception {
-        Protocol[] stack=Util.getTestStack(locking_class.newInstance().level("trace"));
+        Protocol[] stack=Util.getTestStack(locking_class.getDeclaredConstructor().newInstance().level("trace"));
         return new JChannel(stack).name(name);
     }
 

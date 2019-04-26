@@ -94,7 +94,7 @@ public class ConfiguratorTest {
         }
 
         // insert below
-        Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
+        Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").getDeclaredConstructor().newInstance();
         stack.insertProtocol(new_prot, ProtocolStack.Position.BELOW, UNICAST3.class);
         protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());
@@ -116,7 +116,7 @@ public class ConfiguratorTest {
         }
 
         // insert above
-        new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
+        new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").getDeclaredConstructor().newInstance();
         stack.insertProtocol(new_prot, ProtocolStack.Position.ABOVE, UNICAST3.class);
         protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());

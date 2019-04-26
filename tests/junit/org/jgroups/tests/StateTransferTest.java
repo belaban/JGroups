@@ -175,7 +175,7 @@ public class StateTransferTest extends ChannelTestBase {
     }
 
 
-    protected String print(List<Long> list) {
+    protected static String print(List<Long> list) {
         if(list.isEmpty())
             return "[] (0 elements)";
         long first=list.get(0);
@@ -184,14 +184,14 @@ public class StateTransferTest extends ChannelTestBase {
         return "[" + first + " .. " + last + "] (" + size + " elements)";
     }
 
-    protected int getSize(Map<String,List<Long>> map) {
+    protected static int getSize(Map<String,List<Long>> map) {
         int retval=0;
         for(List<Long> list: map.values())
             retval+=list.size();
         return retval;
     }
 
-    protected long getSeqno(Message msg) {
+    protected static long getSeqno(Message msg) {
         for(short id: ids) {
             Header hdr=msg.getHeader(id);
             if(hdr != null)
@@ -200,18 +200,18 @@ public class StateTransferTest extends ChannelTestBase {
         return -1;
     }
 
-    protected long getSeqnoFromHeader(Header hdr) {
+    protected static long getSeqnoFromHeader(Header hdr) {
         Field field=Util.getField(hdr.getClass(), "seqno");
         return (Long)Util.getField(field, hdr);
     }
 
 
-    protected void replaceStateTransferProtocolWith(JChannel ch, Class<? extends Protocol> state_transfer_class) throws Exception {
+    protected static void replaceStateTransferProtocolWith(JChannel ch, Class<? extends Protocol> state_transfer_class) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         if(stack.findProtocol(state_transfer_class) != null)
             return; // protocol of the right class is already in stack
         Protocol prot=stack.findProtocol(STATE_TRANSFER.class, StreamingStateTransfer.class);
-        Protocol new_state_transfer_protcol=state_transfer_class.newInstance();
+        Protocol new_state_transfer_protcol=state_transfer_class.getDeclaredConstructor().newInstance();
         if(prot != null) {
             stack.replaceProtocol(prot, new_state_transfer_protcol);
         }
@@ -308,7 +308,6 @@ public class StateTransferTest extends ChannelTestBase {
             }
         }
 
-        @SuppressWarnings("unchecked")
         public void setState(InputStream istream) throws Exception {
             Map<String,List<Long>> tmp=Util.objectFromStream(new DataInputStream(istream));
             synchronized(map) {

@@ -73,7 +73,7 @@ public class UNICAST_DroppedAckTest {
           new MERGE3().setValue("max_interval", 3000).setValue("min_interval", 1000),
           new NAKACK2(),
           new DISCARD(),
-          unicast_class.newInstance().setValue("xmit_interval", 500),
+          unicast_class.getDeclaredConstructor().newInstance().setValue("xmit_interval", 500),
           new GMS()
         }).name(name);
     }

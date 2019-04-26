@@ -120,7 +120,7 @@ public class UNICAST_ContentionTest {
     }
 
     protected JChannel create(Class<? extends Protocol> unicast_class, String name) throws Exception {
-        return new JChannel(new SHARED_LOOPBACK(), unicast_class.newInstance().setValue("xmit_interval", 500)).name(name);
+        return new JChannel(new SHARED_LOOPBACK(), unicast_class.getDeclaredConstructor().newInstance().setValue("xmit_interval", 500)).name(name);
     }
 
     private static long getNumberOfRetransmissions(JChannel ch) {

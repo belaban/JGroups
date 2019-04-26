@@ -298,7 +298,7 @@ public class RoundTrip implements RtReceiver {
     protected static RtTransport create(String transport) throws Exception {
         String clazzname=TRANSPORTS.get(transport);
         Class<?> clazz=Util.loadClass(clazzname != null? clazzname : transport, RoundTrip.class);
-        return (RtTransport)clazz.newInstance();
+        return (RtTransport)clazz.getDeclaredConstructor().newInstance();
     }
 
     protected static String availableTransports() {

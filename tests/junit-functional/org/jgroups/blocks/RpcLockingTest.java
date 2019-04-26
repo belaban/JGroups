@@ -93,7 +93,7 @@ public class RpcLockingTest {
           new GMS().joinTimeout(1000).setValue("print_local_addr", false).setValue("leave_timeout", 100)
             .setValue("log_view_warnings", false).setValue("view_ack_collection_timeout", 2000)
             .setValue("log_collect_msgs", false),
-          locking_class.newInstance())
+          locking_class.getDeclaredConstructor().newInstance())
           .name(name);
     }
 

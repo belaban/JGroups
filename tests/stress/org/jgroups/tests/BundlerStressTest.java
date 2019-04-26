@@ -171,7 +171,7 @@ public class BundlerStressTest {
             return new NoBundler();
         try {
             Class<Bundler> clazz=Util.loadClass(bundler, getClass());
-            return clazz.newInstance();
+            return clazz.getDeclaredConstructor().newInstance();
         }
         catch(Throwable t) {
             throw new IllegalArgumentException(String.format("failed creating instance of bundler %s: %s", bundler, t));

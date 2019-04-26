@@ -150,7 +150,7 @@ public class FragTest {
     }
 
     protected static JChannel createChannel(String name, Class<? extends Protocol> clazz) throws Exception {
-        Protocol frag_prot=clazz.newInstance();
+        Protocol frag_prot=clazz.getDeclaredConstructor().newInstance();
         frag_prot.setValue("frag_size", FRAG_SIZE);
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),

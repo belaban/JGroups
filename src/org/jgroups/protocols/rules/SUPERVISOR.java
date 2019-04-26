@@ -147,7 +147,7 @@ public class SUPERVISOR extends Protocol {
     @ManagedOperation(description="Installs the given rule with the given classname")
     public void installRule(String name, long interval, String classname) throws Exception {
         Class<Rule> clazz=Util.loadClass(classname,getClass());
-        Rule rule=clazz.newInstance();
+        Rule rule=clazz.getDeclaredConstructor().newInstance();
         installRule(name, interval, rule);
     }
 
@@ -291,7 +291,7 @@ public class SUPERVISOR extends Protocol {
           interval_attr=(Attr)attrs.getNamedItem(INTERVAL);
 
         Class<Rule> clazz=Util.loadClass(classname_attr.getValue(), getClass());
-        Rule rule=clazz.newInstance();
+        Rule rule=clazz.getDeclaredConstructor().newInstance();
         long interval=Long.parseLong(interval_attr.getValue());
         installRule(name_attr.getValue(), interval, rule);
     }

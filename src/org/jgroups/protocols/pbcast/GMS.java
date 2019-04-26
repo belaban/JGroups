@@ -244,7 +244,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @Property(description="The fully qualified name of a class implementing MembershipChangePolicy.")
     public GMS setMembershipChangePolicy(String classname) {
         try {
-            membership_change_policy=(MembershipChangePolicy)Util.loadClass(classname, getClass()).newInstance();
+            membership_change_policy=(MembershipChangePolicy)Util.loadClass(classname, getClass()).getDeclaredConstructor().newInstance();
             return this;
         }
         catch(Throwable e) {
@@ -1019,7 +1019,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
 
-    @SuppressWarnings("unchecked")
     public Object down(Event evt) {
         int type=evt.getType();
 

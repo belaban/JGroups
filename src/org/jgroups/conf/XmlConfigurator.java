@@ -1,10 +1,6 @@
 
 package org.jgroups.conf;
 
-/**
- * Uses XML to configure a protocol stack
- * @author Vladimir Blagojevic
- */
 
 import org.jgroups.Global;
 import org.jgroups.logging.Log;
@@ -26,6 +22,10 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Uses XML to configure a protocol stack
+ * @author Vladimir Blagojevic
+ */
 public class XmlConfigurator implements ProtocolStackConfigurator {
     private static final String               JAXP_SCHEMA_LANGUAGE = "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
     private static final String               W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
@@ -102,11 +102,10 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
 
     protected static XmlConfigurator parse(InputStream stream, Boolean validate) throws java.io.IOException {
-        /**
-         * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty
-         * amateurish... But it seems to work, and it is executed only on startup, so no perf loss
-         * on the critical path. If somebody wants to improve this, please be my guest.
-         */
+
+        // CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty amateurish...
+        // But it seems to work, and it is executed only on startup, so no perf loss on the critical path.
+        // If somebody wants to improve this, please be my guest.
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             boolean validation = false;
@@ -185,11 +184,9 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
 
     public static List<ProtocolConfiguration> parseProtocols(Element root_element) throws Exception {
-        /**
-         * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty amateurish...
-         * But it seems to work, and it is executed only on startup, so no perf loss on the critical path. If
-         * somebody wants to improve this, please be my guest.
-         */
+        // CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty amateurish...
+        // But it seems to work, and it is executed only on startup, so no perf loss on the critical path.
+        // If somebody wants to improve this, please be my guest.
         String root_name=root_element.getNodeName().trim().toLowerCase();
         if(!"config".equals(root_name))
             throw new IOException("the configuration does not start with a <config> element: " + root_name);
@@ -300,21 +297,21 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     }
 
     private static String trim(String val) {
-        String retval="";
+        StringBuilder retval=new StringBuilder();
         int index;
 
         val=val.trim();
         while(true) {
             index=val.indexOf('\n');
             if(index == -1) {
-                retval+=val;
+                retval.append(val);
                 break;
             }
-            retval+=val.substring(0, index);
+            retval.append(val, 0, index);
             val=val.substring(index + 1);
         }
 
-        return retval;
+        return retval.toString();
     }
 
     private static String inputAsString(InputStream input) throws IOException {
@@ -331,10 +328,10 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         while(true) {
             new_index=input.indexOf(expr, index);
             if(new_index == -1) {
-                sb.append(input.substring(index, input_len));
+                sb.append(input, index, input_len);
                 break;
             }
-            sb.append(input.substring(index, new_index));
+            sb.append(input, index, new_index);
             sb.append(replacement);
             index=new_index + len;
         }

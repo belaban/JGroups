@@ -247,7 +247,7 @@ public class Configurator {
         }
 
         try {
-            retval=(Protocol)clazz.newInstance();
+            retval=(Protocol)clazz.getDeclaredConstructor().newInstance();
             if(stack != null)
                 retval.setProtocolStack(stack);
 

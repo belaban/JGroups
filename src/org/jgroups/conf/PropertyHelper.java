@@ -74,7 +74,7 @@ import java.util.Map;
 			String propertyName = getPropertyName(field, props) ;
 			String name = obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
 
-    		PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
+    		PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().getDeclaredConstructor().newInstance();
     		if(propertyConverter == null) {    				
     			throw new Exception("Could not find property converter for field " + propertyName
     					+ " in " + name);
@@ -106,7 +106,7 @@ import java.util.Map;
             String propertyName=field.getName();
             String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
 
-            PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
+            PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().getDeclaredConstructor().newInstance();
             if(propertyConverter == null) {
                 throw new Exception("Could not find property converter for field " + propertyName
                         + " in " + name);
@@ -144,7 +144,7 @@ import java.util.Map;
     		}
     		String propertyName = getPropertyName(method) ;
     		String name = obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
-    		PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
+    		PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().getDeclaredConstructor().newInstance();
     		if(propertyConverter == null) {    				
     			throw new Exception("Could not find property converter for method " + propertyName
     					+ " in " + name);

@@ -76,7 +76,7 @@ public class ClassConfigurator {
 
         Object inst=null;
         try {
-            inst=clazz.newInstance();
+            inst=clazz.getDeclaredConstructor().newInstance();
         }
         catch(Exception e) {
             throw new IllegalStateException("failed creating instance " + clazz, e);
@@ -120,8 +120,9 @@ public class ClassConfigurator {
                 return ((Supplier<T>) val).get();
             }
             try {
-                return ((Class<T>) val).newInstance();
-            } catch (IllegalAccessException | InstantiationException e) {
+                return ((Class<T>) val).getDeclaredConstructor().newInstance();
+            }
+            catch (ReflectiveOperationException e) {
                 throw new IllegalStateException(e);
             }
         }
@@ -217,13 +218,13 @@ public class ClassConfigurator {
                 alreadyInMagicMap(m, clazz.getName());
 
             if(Constructable.class.isAssignableFrom(clazz)) {
-                Constructable obj=(Constructable)clazz.newInstance();
+                Constructable obj=(Constructable)clazz.getDeclaredConstructor().newInstance();
                 magicMap[m]=obj.create();
             }
             else {
                 Supplier<? extends Object> supplier=(Supplier<Object>)() -> {
                     try {
-                        return clazz.newInstance();
+                        return clazz.getDeclaredConstructor().newInstance();
                     }
                     catch(Throwable throwable) {
                         return null;

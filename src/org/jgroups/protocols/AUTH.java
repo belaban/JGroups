@@ -70,7 +70,7 @@ public class AUTH extends Protocol {
 
     @Property(name="auth_class",description="The fully qualified name of the class implementing the AuthToken interface")
     public void setAuthClass(String class_name) throws Exception {
-        Object obj=Class.forName(class_name).newInstance();
+        Object obj=Class.forName(class_name).getDeclaredConstructor().newInstance();
         auth_token=(AuthToken)obj;
         auth_token.setAuth(this);
     }

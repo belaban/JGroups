@@ -21,7 +21,7 @@ public class CustomRejectionPolicy implements RejectedExecutionHandler {
         String className = rejection_policy.substring(7);
         try {
             Class<?> policyClass = Util.loadClass(className, Util.class);
-            Object policy = policyClass.newInstance();
+            Object policy = policyClass.getDeclaredConstructor().newInstance();
             if (!(policy instanceof RejectedExecutionHandler)) {
                 throw new IllegalArgumentException(className + " does not implement RejectedExecutionHandler");
             } else {

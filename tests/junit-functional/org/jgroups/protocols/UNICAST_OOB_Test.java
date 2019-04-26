@@ -115,7 +115,7 @@ public class UNICAST_OOB_Test {
 
 
     protected JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
-        Protocol unicast=unicast_class.newInstance().setValue("xmit_interval",500);
+        Protocol unicast=unicast_class.getDeclaredConstructor().newInstance().setValue("xmit_interval",500);
         return new JChannel(
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),

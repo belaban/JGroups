@@ -39,10 +39,10 @@ public class LockServiceConcurrencyTest {
     }
 
     protected void init(Class<? extends Locking> locking_class) throws Exception {
-        a=new JChannel(Util.getTestStack(locking_class.newInstance())).name("A");
+        a=new JChannel(Util.getTestStack(locking_class.getDeclaredConstructor().newInstance())).name("A");
         ls_a=new LockService(a);
         a.connect("LockServiceConcurrencyTest");
-        b=new JChannel(Util.getTestStack(locking_class.newInstance())).name("B");
+        b=new JChannel(Util.getTestStack(locking_class.getDeclaredConstructor().newInstance())).name("B");
         ls_b=new LockService(b);
         b.connect("LockServiceConcurrencyTest");
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);

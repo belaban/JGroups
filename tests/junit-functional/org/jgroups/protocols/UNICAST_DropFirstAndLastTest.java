@@ -108,7 +108,7 @@ public class UNICAST_DropFirstAndLastTest {
 
 
     protected JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
-        Protocol unicast=unicast_class.newInstance();
+        Protocol unicast=unicast_class.getDeclaredConstructor().newInstance();
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
                             new NAKACK2().setValue("use_mcast_xmit", false),

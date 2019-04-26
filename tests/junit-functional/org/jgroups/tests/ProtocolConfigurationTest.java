@@ -297,7 +297,7 @@ public class ProtocolConfigurationTest {
 		
 	    @Property(name="config_object_class")
 	    public void setConfigurableObjectClass(String class_name) throws Exception {
-            configObjInstance=Class.forName(class_name).newInstance();
+            configObjInstance=Class.forName(class_name).getDeclaredConstructor().newInstance();
 	    }
 	    
 	    protected List<Object> getConfigurableObjects() {

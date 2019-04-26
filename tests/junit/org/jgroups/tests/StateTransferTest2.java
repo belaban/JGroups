@@ -14,6 +14,7 @@ import org.testng.annotations.Test;
 
 import java.io.*;
 import java.util.Iterator;
+import java.util.Objects;
 
 /**
  * Tests state transfer API (including exception handling)
@@ -41,7 +42,7 @@ public class StateTransferTest2 extends ChannelTestBase {
             c2.getState(null, 30000);
             Object state=sh2.getReceivedState();
             System.out.println("state = " + state);
-            assert state != null && state.equals("Bela");
+            assert Objects.equals(state, "Bela");
         }
         finally {
             Util.close(c2, c1);
@@ -99,12 +100,12 @@ public class StateTransferTest2 extends ChannelTestBase {
         c2.connect("StateTransferTest2");
     }
 
-    protected void replaceStateTransferProtocolWith(JChannel ch, Class<? extends Protocol> state_transfer_class) throws Exception {
+    protected static void replaceStateTransferProtocolWith(JChannel ch, Class<? extends Protocol> state_transfer_class) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         if(stack.findProtocol(state_transfer_class) != null)
             return; // protocol of the right class is already in stack
         Protocol prot=stack.findProtocol(STATE_TRANSFER.class, StreamingStateTransfer.class);
-        Protocol new_state_transfer_protcol=state_transfer_class.newInstance();
+        Protocol new_state_transfer_protcol=state_transfer_class.getDeclaredConstructor().newInstance();
         if(prot != null) {
             stack.replaceProtocol(prot, new_state_transfer_protcol);
         }

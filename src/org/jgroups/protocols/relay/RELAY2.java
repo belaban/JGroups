@@ -272,7 +272,7 @@ public class RELAY2 extends Protocol {
 
         if(site_master_picker_impl != null) {
             Class<SiteMasterPicker> clazz=Util.loadClass(site_master_picker_impl, (Class)null);
-            this.site_master_picker=clazz.newInstance();
+            this.site_master_picker=clazz.getDeclaredConstructor().newInstance();
         }
 
         if(config != null)

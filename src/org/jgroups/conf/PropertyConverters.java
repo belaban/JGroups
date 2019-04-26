@@ -185,13 +185,10 @@ public final class PropertyConverters {
     public static class LongArray implements PropertyConverter {
 
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
-            long tmp [] = Util.parseCommaDelimitedLongs(propertyValue);
-            if(tmp != null && tmp.length > 0){
+            long[] tmp=Util.parseCommaDelimitedLongs(propertyValue);
+            if(tmp != null && tmp.length > 0)
                 return tmp;
-            }else{
-                // throw new Exception ("Invalid long array specified in " + propertyValue);
-                return null;
-            }
+            return null;
         }
 
         public String toString(Object value) {
@@ -336,7 +333,7 @@ public final class PropertyConverters {
 
         protected static InetAddress getAddressByCustomCode(String value) throws Exception {
             Class<Supplier<InetAddress>> clazz=(Class<Supplier<InetAddress>>)Util.loadClass(value, (ClassLoader)null);
-            Supplier<InetAddress> supplier=clazz.newInstance();
+            Supplier<InetAddress> supplier=clazz.getDeclaredConstructor().newInstance();
             return supplier.get();
         }
 

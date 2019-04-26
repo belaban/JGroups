@@ -78,7 +78,7 @@ public class SASL extends Protocol {
 
     @Property(name = "client_callback_handler_class")
     public void setClientCallbackHandlerClass(String handlerClass) throws Exception {
-        client_callback_handler = Class.forName(handlerClass).asSubclass(CallbackHandler.class).newInstance();
+        client_callback_handler = Class.forName(handlerClass).asSubclass(CallbackHandler.class).getDeclaredConstructor().newInstance();
     }
 
     public String getClientCallbackHandlerClass() {
@@ -95,7 +95,7 @@ public class SASL extends Protocol {
 
     @Property(name = "server_callback_handler_class")
     public void setServerCallbackHandlerClass(String handlerClass) throws Exception {
-        server_callback_handler = Class.forName(handlerClass).asSubclass(CallbackHandler.class).newInstance();
+        server_callback_handler = Class.forName(handlerClass).asSubclass(CallbackHandler.class).getDeclaredConstructor().newInstance();
     }
 
     public String getServerCallbackHandlerClass() {

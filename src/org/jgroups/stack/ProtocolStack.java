@@ -177,7 +177,7 @@ public class ProtocolStack extends Protocol {
     public ProtocolStack(JChannel channel) throws Exception {
         this.channel=channel;
         Class<?> tmp=ClassConfigurator.class; // load this class, trigger init()
-        tmp.newInstance();
+        tmp.getDeclaredConstructor().newInstance();
     }
 
 
@@ -205,11 +205,11 @@ public class ProtocolStack extends Protocol {
     }
 
 
-    public List<Protocol> copyProtocols(ProtocolStack targetStack) throws IllegalAccessException, InstantiationException {
+    public List<Protocol> copyProtocols(ProtocolStack targetStack) throws Exception {
         List<Protocol> list=getProtocols();
         List<Protocol> retval=new ArrayList<>(list.size());
         for(Protocol prot: list) {
-            Protocol new_prot=prot.getClass().newInstance();
+            Protocol new_prot=prot.getClass().getDeclaredConstructor().newInstance();
             new_prot.setProtocolStack(targetStack);
             retval.add(new_prot);
 
@@ -426,7 +426,7 @@ public class ProtocolStack extends Protocol {
                         Class<?> conv_class=annotation.converter();
                         PropertyConverter conv=null;
                         try {
-                            conv=(PropertyConverter)conv_class.newInstance();
+                            conv=(PropertyConverter)conv_class.getDeclaredConstructor().newInstance();
                         }
                         catch(Exception e) {
                         }
@@ -453,7 +453,7 @@ public class ProtocolStack extends Protocol {
                             Class<?> conv_class=annotation.converter();
                             PropertyConverter conv=null;
                             try {
-                                conv=(PropertyConverter)conv_class.newInstance();
+                                conv=(PropertyConverter)conv_class.getDeclaredConstructor().newInstance();
                             }
                             catch(Exception e) {
                             }
@@ -816,7 +816,7 @@ public class ProtocolStack extends Protocol {
             }
         }
 
-        Protocol retval=(Protocol)clazz.newInstance();
+        Protocol retval=(Protocol)clazz.getDeclaredConstructor().newInstance();
         if(retval == null)
             throw new Exception("creation of instance for protocol " + classname + "failed");
         retval.setProtocolStack(this);
@@ -921,7 +921,7 @@ public class ProtocolStack extends Protocol {
         if(classname == null || prot == null)
             return;
         Class<ProtocolHook> clazz=Util.loadClass(classname, prot.getClass());
-        ProtocolHook hook=clazz.newInstance();
+        ProtocolHook hook=clazz.getDeclaredConstructor().newInstance();
         hook.afterCreation(prot);
     }
 

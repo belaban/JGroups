@@ -89,8 +89,9 @@ public final class SaslUtils {
                     String className=currentProvider.getProperty((String)currentKey);
                     if(className != null && loadedClasses.add(className)) {
                         try {
-                            factories.add(Class.forName(className, true, cl).asSubclass(type).newInstance());
-                        } catch(ClassNotFoundException | ClassCastException | InstantiationException | IllegalAccessException e) {
+                            factories.add(Class.forName(className, true, cl).asSubclass(type).getDeclaredConstructor().newInstance());
+                        }
+                        catch(ClassCastException | ReflectiveOperationException e) {
                         }
                     }
                 });

@@ -76,8 +76,9 @@ public class AuthHeader extends Header {
             String classname=in.readUTF();
             Class<?> clazz=Class.forName(classname);
             try {
-                retval=(AuthToken)clazz.newInstance();
-            } catch (IllegalAccessException | InstantiationException e) {
+                retval=(AuthToken)clazz.getDeclaredConstructor().newInstance();
+            }
+            catch (ReflectiveOperationException e) {
                 throw new IllegalStateException(e);
             }
         }

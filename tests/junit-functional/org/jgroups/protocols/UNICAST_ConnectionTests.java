@@ -311,7 +311,7 @@ public class UNICAST_ConnectionTests {
 
 
     protected JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
-        Protocol unicast=unicast_class.newInstance();
+        Protocol unicast=unicast_class.getDeclaredConstructor().newInstance();
         return new JChannel(new SHARED_LOOPBACK(), unicast).name(name);
     }
 

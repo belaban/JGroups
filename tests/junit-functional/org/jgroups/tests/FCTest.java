@@ -36,7 +36,7 @@ public class FCTest {
     }
 
     protected void setUp(Class<? extends Protocol> flow_control_class) throws Exception {
-        Protocol flow_control_prot=flow_control_class.newInstance();
+        Protocol flow_control_prot=flow_control_class.getDeclaredConstructor().newInstance();
         flow_control_prot.setValue("min_credits", 1000).setValue("max_credits", 10000).setValue("max_block_time", 1000);
 
         ch=new JChannel(new SHARED_LOOPBACK(),

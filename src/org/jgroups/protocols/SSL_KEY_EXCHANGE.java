@@ -143,7 +143,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         key_store.load(input, keystore_password.toCharArray());
         if(session_verifier_class != null) {
             Class<? extends SessionVerifier> verifier_class=Util.loadClass(session_verifier_class, getClass());
-            session_verifier=verifier_class.newInstance();
+            session_verifier=verifier_class.getDeclaredConstructor().newInstance();
             if(session_verifier_arg != null)
                 session_verifier.init(session_verifier_arg);
         }

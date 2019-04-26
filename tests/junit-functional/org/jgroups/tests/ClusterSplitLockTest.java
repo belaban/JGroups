@@ -46,7 +46,7 @@ public class ClusterSplitLockTest {
 
     protected void setUp(Class<? extends Locking> locking_class) throws Exception {
         for (int i = 0; i < MEMBERS; i++) {
-            Locking lock_prot=locking_class.newInstance().level("debug");
+            Locking lock_prot=locking_class.getDeclaredConstructor().newInstance().level("debug");
             if(lock_prot instanceof CENTRAL_LOCK)
                 lock_prot.setValue("num_backups", 2);
 
