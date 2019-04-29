@@ -20,6 +20,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 
 /**
  * Router for TCP based group comunication (using layer TCP instead of UDP). Instead of the TCP
@@ -87,6 +88,9 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     // mapping between groups and <member address> - <physical addr / logical name> pairs
     protected final ConcurrentMap<String,ConcurrentMap<Address,Entry>> address_mappings=new ConcurrentHashMap<>();
 
+    protected static final BiConsumer<Short,Message> MSG_CONSUMER=(version,msg) -> {
+        System.out.printf("dst=%s src=%s (%d bytes): hdrs= %s\n", msg.dest(), msg.src(), msg.getLength(), msg.printHeaders());
+    };
 
 
     public GossipRouter(String bind_addr, int local_port) {
@@ -324,11 +328,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     }
 
     protected static void dump(GossipData data) {
-        System.out.println("");
-        List<Message> messages=Util.parse(data.buffer, data.offset, data.length);
-        if(messages != null)
-            for(Message msg : messages)
-                System.out.printf("dst=%s src=%s (%d bytes): hdrs= %s\n", msg.dest(), msg.src(), msg.getLength(), msg.printHeaders());
+        Util.parse(data.buffer, data.offset, data.length, MSG_CONSUMER, null, false);
     }
 
     @Override

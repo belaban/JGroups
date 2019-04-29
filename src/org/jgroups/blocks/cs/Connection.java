@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
  * Represents a connection to a peer
  */
 public abstract class Connection implements Closeable {
-    protected static final byte[] cookie= { 'b', 'e', 'l', 'a' };
+    public static final byte[]    cookie= { 'b', 'e', 'l', 'a' };
     protected Address             peer_addr;    // address of the 'other end' of the connection
     protected long                last_access;  // timestamp of the last access to this connection (read or write)
 

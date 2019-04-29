@@ -2274,6 +2274,149 @@ it is the default). In this mode, probe will ask the member running at `192.168.
 members, and then send the request to all of the returned members.
 
 
+=== Analyzing wire-format packets
+When using a packet analyzer such as https://www.wireshark.org[Wireshark],
+https://www.wireshark.org/docs/man-pages/tshark.html[tshark] or https://www.tcpdump.org/[tcpdump], the output is
+either a PCAP file (e.g. submitted by customers for post-mortem analysis) or a live stream of raw network packets.
+
+Each packet has a number of headers before the data part which contains the JGroups message (or message batch). E.g.
+a UDP packet has an ethernet-, IP- and datagram header; a TCP message contains ethernet and IP headers
+plus the TCP information.
+
+To see the JGroups messages, the {{ParseMessages}} program parses the _data_ section of a UDP datagram packet or a
+TCP or TCP_NIO2 stream and prints the JGroups messages plus its headers. It can be passed a file, or it can read from
+stdin and thus be piped to a packet analyzer and print JGroups data in real-time.
+
+==== tshark
+
+tshark is the command-line version of wireshark. To capture UDP packets for the configuration below, which has nodes
+binding to the loopback (127.0.0.1) device and ports starting from 7800, the following command can be used:
+
+[source,xml]
+----
+<config>
+    <UDP
+         bind_addr="127.0.0.1" bind_port="7800"
+         mcast_addr="228.2.2.2"
+         mcast_port="${jgroups.udp.mcast_port:45588}">
+    ...
+</config>
+----
+
+`tshark -l -i en0 -i lo0 -T fields -e data udp and portrange 7800-7801 > jgroups-udp.data`
+
+This captures the _data portion only_ (`-T fields -e data`) on the loopback and `en0` devices and only captures packets
+sent to or being sent from ports 7800 and 7801.
+
+To print the packets offline, `java org.jgroups.tests.ParseMessages -file jgroups-udp.data` can be used. This would look
+like this (edited):
+
+----
+[belasmac] /Users/bela$ jt ParseMessages -file bela.dump6 -tcp
+1: [B to 192.168.1.105:7800, 33 bytes, flags=OOB|DONT_BUNDLE|INTERNAL], hdrs: TCPPING: [GET_MBRS_REQ cluster=draw initial_discovery=true], TP: [cluster=draw]
+2: [A to B, 33 bytes, flags=OOB|DONT_BUNDLE|INTERNAL], hdrs: TCPPING: [GET_MBRS_RSP cluster=null initial_discovery=false], TP: [cluster=draw]
+3: [B to A, 0 bytes, flags=OOB|INTERNAL], hdrs: GMS: GmsHeader[JOIN_REQ]: mbr=B, UNICAST3: DATA, seqno=1, first, TP: [cluster=draw]
+4: [A to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_SOCK: I_HAVE_SOCK, mbr=A, sock_addr=192.168.1.105:9000, TP: [cluster=draw]
+5: batch to B from A (1 messages):
+    1: [33 bytes, flags=OOB|DONT_BUNDLE|INTERNAL], hdrs: TCPPING: [GET_MBRS_RSP cluster=null initial_discovery=false]
+6: batch to B from A (1 messages):
+    1: [0 bytes, flags=INTERNAL], hdrs: FD_SOCK: WHO_HAS_SOCK, mbr=B
+7: [A to <all>, 57 bytes], hdrs: GMS: GmsHeader[VIEW], NAKACK2: [MSG, seqno=1], TP: [cluster=draw]
+8: [A to B, 61 bytes, flags=INTERNAL], hdrs: GMS: GmsHeader[JOIN_RSP], UNICAST3: DATA, seqno=1, first, TP: [cluster=draw]
+9: [B to A, 0 bytes, flags=INTERNAL], hdrs: FD_SOCK: I_HAVE_SOCK, mbr=B, sock_addr=192.168.1.105:9001, TP: [cluster=draw]
+10: [B to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_SOCK: I_HAVE_SOCK, mbr=B, sock_addr=192.168.1.105:9001, TP: [cluster=draw]
+11: [B to A, 0 bytes, flags=INTERNAL], hdrs: FD_SOCK: GET_CACHE, TP: [cluster=draw]
+12: [A to B, 54 bytes, flags=INTERNAL], hdrs: FD_SOCK: GET_CACHE_RSP, TP: [cluster=draw]
+13: [B to A, 0 bytes, flags=OOB|INTERNAL], hdrs: GMS: GmsHeader[VIEW_ACK], UNICAST3: DATA, seqno=2, TP: [cluster=draw]
+14: [A to B, 0 bytes, flags=INTERNAL], hdrs: UNICAST3: ACK, seqno=2, ts=1, TP: [cluster=draw]
+15: [B to A, 0 bytes, flags=INTERNAL], hdrs: UNICAST3: ACK, seqno=1, ts=1, TP: [cluster=draw]
+16: [A to <all>, 0 bytes, flags=OOB|INTERNAL], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=1], TP: [cluster=draw]
+17: [A to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+18: [B to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+19: [B to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=1], TP: [cluster=draw]
+...
+45: [B to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=27], TP: [cluster=draw]
+46: [A to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=2], TP: [cluster=draw]
+...
+70: [A to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=25], TP: [cluster=draw]
+71: [A to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+72: [B to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+73: [A to <all>, 0 bytes, flags=OOB|INTERNAL], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=25], TP: [cluster=draw]
+74: [B to A, 0 bytes, flags=OOB], hdrs: GMS: GmsHeader[LEAVE_REQ]: mbr=B, UNICAST3: DATA, seqno=3, TP: [cluster=draw]
+75: [A to B, 0 bytes, flags=OOB|NO_RELIABILITY|INTERNAL], hdrs: GMS: GmsHeader[LEAVE_RSP], TP: [cluster=draw]
+----
+
+This shows a typical conversation between A (coordinator) and B: B sends a discovery request, finds A and asks it to join
+(`JOIN_REQ`). A then multicasts (`A to <all>`) a view (`VIEW`) to all members, and sends a `JOIN_RSP` to B.
+Later, B leaves by sending a `LEAVE_REQ to A` and A responds with a `LEAVE_RSP` message back to B.
+
+Instead of redirecting the output to a file, it could be piped into `ParseMessages`:
+
+`tshark -l -i en0 -i lo0 -T fields -e data udp and portrange 7800-7801 | java org.jgroups.tests.ParseMessages`.
+
+WARNING: When using *TCP* or *TCP_NIO2* (e.g. `tshark -l -i en0 -i lo0 -T fields -e data tcp and portrange 7800-7801`),
+`ParseMessages` has to be started with command line option `-tcp`. This ensures that the length preceding each TCP
+JGroups message is not interpreted as something else (e.g. the version). Also, on connection establishment, a cookie
+and the local address is sent to the remote peer, and this additional data is also parsed correctly with the
+`-tcp` option.
+
+==== Wireshark
+
+When we have captured a number of packets in wireshark, we can select `"File"` -> `"Export Specified Packets..."`:
+
+[[WiresharkScreenshotFig]]
+.Screenshot of wireshark
+image::./images/wireshark.png[Exporting selected packets in wireshark]
+
+Here, we can export selected number of packets, or all packets. In the example, the exported packets will be written to
+a file called `jgroups-tcp.pcapng`.
+
+To parse this file and extract only the data sections, `tshark` can be used:
+----
+[belasmac] /Users/bela$ tshark -r jgroups-tcp.pcapng -Tfields -edata|jt ParseMessages -tcp
+1: [21e26d56-2928-7008-1168-0fcf2d2f2b9d to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=118], TP: [cluster=draw]
+...
+32: [21e26d56-2928-7008-1168-0fcf2d2f2b9d to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=149], TP: [cluster=draw]
+33: [21e26d56-2928-7008-1168-0fcf2d2f2b9d to <all>, 0 bytes, flags=OOB|INTERNAL], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=149], TP: [cluster=draw]
+34: [21e26d56-2928-7008-1168-0fcf2d2f2b9d to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+35: [89a4b2f9-c15e-d276-88a5-a01f8cbde58a to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+----
+
+The `-r` options reads packets from the given input file and the `-Tfields -edata` options extract the data portion
+(containing the JGroups messages) only. This is piped to `ParseMessages` (with the `-tcp` option, as the wireshark
+data was captured from a TCP connection), which prints the JGroups messages to stdout.
+
+==== tcpdump
+`tcpdump` can be used with the `-w <filename>` command line option to save all captured packets to a file in PCAPNG
+(wireshark/libpcap) format.
+
+In the example below (edited), however, we're piping (options `-U` `-w -`) the captured packets to
+`tshark` which extracts the JGroups portion and in turn pipes this to `ParseMessages`:
+
+----
+[belasmac] /Users/bela$ sudo tcpdump -n -U -i lo0 -w -  tcp and portrange 7800-7801 |tshark -l -r - -Tfields -edata|jt ParseMessages -tcp
+tcpdump: listening on lo0, link-type NULL (BSD loopback), capture size 262144 bytes
+1: [c0b6a011-16f9-699d-dd8c-68f6cc880ddd to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+2: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+3: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=426], TP: [cluster=draw]
+4: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes, flags=OOB|INTERNAL], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=426], TP: [cluster=draw]
+9: [c0b6a011-16f9-699d-dd8c-68f6cc880ddd to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+10: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+11: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=427], TP: [cluster=draw]
+12: [c0b6a011-16f9-699d-dd8c-68f6cc880ddd to 43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c, 44 bytes, flags=OOB|NO_RELIABILITY|INTERNAL], hdrs: STABLE: [STABLE_GOSSIP] view-id= [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c|1], TP: [cluster=draw]
+13: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes, flags=OOB|INTERNAL], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=427], TP: [cluster=draw]
+14: [c0b6a011-16f9-699d-dd8c-68f6cc880ddd to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+15: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+16: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=428], TP: [cluster=draw]
+17: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=429], TP: [cluster=draw]
+18: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=430], TP: [cluster=draw]
+19: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=431], TP: [cluster=draw]
+20: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=432], TP: [cluster=draw]
+54 packets captured
+134 packets received by filter
+0 packets dropped by kernel
+----
+
 
 
 [[MembershipChangePolicy]]

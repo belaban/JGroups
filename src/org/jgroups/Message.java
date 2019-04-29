@@ -571,10 +571,9 @@ public class Message implements Streamable, Constructable<Message> {
 
 
     public String toString() {
-        int size=getNumHeaders();
-        return String.format("[dest: %s sender: %s%s, size=%d bytes%s%s]",
-                             dest, sender,
-                             size > 0? " (" + size + " headers)" : "",
+        return String.format("[%s to %s, %d bytes%s%s]",
+                             sender,
+                             dest == null? "<all>" : dest,
                              length,
                              flags > 0? ", flags=" + flagsToString(flags) : "",
                              transient_flags > 0? ", transient_flags=" + transientFlagsToString(transient_flags) : "");

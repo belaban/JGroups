@@ -3,6 +3,7 @@ package org.jgroups.util;
 import org.jgroups.*;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.blocks.cs.Connection;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
@@ -1044,6 +1045,24 @@ public class Util {
         return sb.toString().toUpperCase();
     }
 
+    public static void binaryToAscii(InputStream in, OutputStream out) throws IOException {
+        byte[] input=new byte[2];
+        for(;;) {
+            input[0]=(byte)in.read();
+            if(input[0] == '\n' || input[0] == '\r')
+                continue;
+            if(input[0] < 0)
+                break;
+            input[1]=(byte)in.read();
+            if(input[1] == '\n' || input[1] < 0)
+                break;
+            String tmp=new String(input);
+            int val=Integer.parseInt(tmp, 16);
+            char c=(char)val;
+            out.write(c);
+        }
+    }
+
     public static boolean isAsciiString(String str) {
         if(str == null) return false;
         for(int i=0; i < str.length(); i++) {
@@ -1220,68 +1239,70 @@ public class Util {
         return batches;
     }
 
-    public static List<Message> parse(byte[] buf, int offset, int length) {
-        return parse(new ByteArrayInputStream(buf, offset, length));
+    public static void parse(byte[] buf, int offset, int length, BiConsumer<Short,Message> msg_consumer,
+                        BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) {
+        parse(new ByteArrayInputStream(buf, offset, length), msg_consumer, batch_consumer, tcp);
     }
 
-    public static List<Message> parse(String filename) throws FileNotFoundException {
-        return parse(new FileInputStream(filename));
+    public static void parse(String filename, BiConsumer<Short,Message> msg_consumer,
+                             BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) throws FileNotFoundException {
+        parse(new FileInputStream(filename), msg_consumer, batch_consumer, tcp);
     }
 
-    public static List<Message> parse(InputStream input) {
-        List<Message>   retval=new ArrayList<>();
-        DataInputStream dis=null;
-        try {
-            dis=new DataInputStream(input);
-
-            short version;
+    public static void parse(InputStream input, BiConsumer<Short,Message> msg_consumer,
+                             BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) {
+        if(msg_consumer == null && batch_consumer == null)
+            return;
+        byte[] tmp=new byte[Global.INT_SIZE];
+        try(DataInputStream dis=new DataInputStream(input)) {
             for(;;) {
-                try {
-                    version=dis.readShort();
+                // for TCP, we send the length first; this needs to be skipped as it is not part of the JGroups payload
+                if(tcp) { // TCP / TCP_NIO2
+                    dis.readFully(tmp);
+                    if(Arrays.equals(Connection.cookie, tmp)) {
+                        // connection establishment; parse version (short) and IpAddress
+                        dis.readShort();  // version
+                        dis.readShort(); // address length (only needed by TCP_NIO2)
+                        IpAddress peer=new IpAddress();
+                        peer.readFrom(dis);
+                        continue;
+                    }
+                    else {
+                        // do nothing - the 4 bytes were the length
+                        // int len=Bits.readInt(tmp, 0);
+                    }
                 }
-                catch(IOException io_ex) {
-                    break;
-                }
-
-                System.out.println("version = " + version + " (" + Version.print(version) + ")");
+                short version=dis.readShort();
                 byte flags=dis.readByte();
-                // System.out.println("flags: " + Message.flagsToString(flags));
-
                 boolean is_message_list=(flags & LIST) == LIST;
                 boolean multicast=(flags & MULTICAST) == MULTICAST;
-
                 if(is_message_list) { // used if message bundling is enabled
-                    final MessageBatch[] batches=Util.readMessageBatch(dis,multicast);
+                    MessageBatch[] batches=Util.readMessageBatch(dis,multicast);
                     for(MessageBatch batch: batches) {
-                        if(batch != null)
+                        if(batch == null)
+                            continue;
+                        if(batch_consumer != null)
+                            batch_consumer.accept(version, batch);
+                        else {
                             for(Message msg: batch)
-                                retval.add(msg);
+                                msg_consumer.accept(version, msg);
+                        }
                     }
                 }
                 else {
                     Message msg=Util.readMessage(dis);
-                    retval.add(msg);
+                    if(msg_consumer != null)
+                        msg_consumer.accept(version, msg);
                 }
             }
-            return retval;
+        }
+        catch(EOFException ignored) {
         }
         catch(Throwable t) {
             t.printStackTrace();
-            return null;
-        }
-        finally {
-            Util.close(dis);
         }
     }
 
-    public static String dump(byte[] buf, int offset, int length) {
-        StringBuilder sb=new StringBuilder();
-        List<Message> msgs=parse(new ByteArrayInputStream(buf, offset, length));
-        if(msgs != null)
-            for(Message msg: msgs)
-                sb.append(String.format("dst=%s src=%s (%d bytes): hdrs= %s\n", msg.dest(), msg.src(), msg.getLength(), msg.printHeaders()));
-        return sb.toString();
-    }
 
 
     public static void writeView(View view,DataOutput out) throws IOException {

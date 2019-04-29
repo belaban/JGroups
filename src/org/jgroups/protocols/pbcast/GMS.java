@@ -1465,6 +1465,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 case GET_DIGEST_REQ:
                     sb.append(": mbr=" + mbr);
                     break;
+
                 case MERGE_REQ:
                     sb.append(": merge_id=" + merge_id);
                     break;

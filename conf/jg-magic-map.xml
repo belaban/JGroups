@@ -29,9 +29,9 @@
     <class id="24" name="org.jgroups.util.FlagsUUID"/>
 
     <!-- Headers -->
-    <class id="50"   name="org.jgroups.protocols.FD$FdHeader"/>
-    <class id="51"   name="org.jgroups.protocols.FD_SOCK$FdHeader"/>
-    <class id="52"   name="org.jgroups.protocols.FragHeader"/>
+    <class id="50"  name="org.jgroups.protocols.FD$FdHeader"/>
+    <class id="51"  name="org.jgroups.protocols.FD_SOCK$FdHeader"/>
+    <class id="52"  name="org.jgroups.protocols.FragHeader"/>
     <class id="53"  name="org.jgroups.protocols.PingHeader"/>
     <class id="54"  name="org.jgroups.protocols.VERIFY_SUSPECT$VerifyHeader"/>
     <class id="55"  name="org.jgroups.protocols.pbcast.GMS$GmsHeader"/>
