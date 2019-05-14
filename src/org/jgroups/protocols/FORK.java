@@ -269,8 +269,7 @@ public class FORK extends Protocol {
             String fork_stack_id=entry.getKey();
             if(get(fork_stack_id) != null)
                 continue;
-
-            List<Protocol> prots=createProtocols(null,entry.getValue());
+            List<Protocol> prots=Configurator.createProtocolsAndInitializeAttrs(entry.getValue(), null);
             createForkStack(fork_stack_id, prots, false);
         }
     }
@@ -313,14 +312,6 @@ public class FORK extends Protocol {
         return fork_stack;
     }
 
-
-
-    /** Creates a fork-stack from the configuration, initializes all protocols (setting values),
-     * sets the protocol stack as top protocol, connects the protocols and calls init() on them. Returns
-     * the protocols in a list, from bottom to top */
-    protected static List<Protocol> createProtocols(ProtocolStack stack, List<ProtocolConfiguration> protocol_configs) throws Exception {
-        return Configurator.createProtocols(protocol_configs,stack);
-    }
 
     public static InputStream getForkStream(String config) throws IOException {
         InputStream configStream = null;

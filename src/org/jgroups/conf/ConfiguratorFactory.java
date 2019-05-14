@@ -9,8 +9,7 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.AccessControlException;
-import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 
 /**
  * The ConfigurationFactory is a factory that returns a protocol stack configurator.
@@ -49,30 +48,6 @@ public class ConfiguratorFactory {
         return XmlConfigurator.getInstance(input);
     }
 
-    /**
-     * Returns a protocol stack configurator based on the XML configuration provided at the specified URL.
-     *
-     * @param url a URL pointing to a JGroups XML configuration.
-     * @return a {@code ProtocolStackConfigurator} containing the stack configuration.
-     * @throws Exception if problems occur during the configuration of the protocol stack.
-     */
-    public static ProtocolStackConfigurator getStackConfigurator(URL url) throws Exception {
-        checkForNullConfiguration(url);
-        checkJAXPAvailability();
-        return XmlConfigurator.getInstance(url);
-    }
-
-    /**
-     * Returns a protocol stack configurator based on the XML configuration provided by the specified XML element.
-     *
-     * @param element a XML element containing a JGroups XML configuration.
-     * @return a {@code ProtocolStackConfigurator} containing the stack configuration.
-     * @throws Exception if problems occur during the configuration of the protocol stack.
-     */
-    public static ProtocolStackConfigurator getStackConfigurator(Element element) throws Exception {
-        checkForNullConfiguration(element);
-        return XmlConfigurator.getInstance(element);
-    }
 
     /**
      * Returns a protocol stack configurator based on the provided properties string.
@@ -85,10 +60,7 @@ public class ConfiguratorFactory {
             properties=Global.DEFAULT_PROTOCOL_STACK;
 
         // Attempt to treat the properties string as a pointer to an XML configuration.
-        XmlConfigurator configurator = null;
-
-        checkForNullConfiguration(properties);
-        configurator=getXmlConfigurator(properties);
+        XmlConfigurator configurator=getXmlConfigurator(Objects.requireNonNull(properties));
 
         if(configurator != null) // did the properties string point to a JGroups XML configuration ?
             return configurator;
@@ -98,15 +70,7 @@ public class ConfiguratorFactory {
 
 
     public static InputStream getConfigStream(File file) throws Exception {
-        checkForNullConfiguration(file);
-        return new FileInputStream(file);
-    }
-
-
-
-    public static InputStream getConfigStream(URL url) throws Exception {
-        checkJAXPAvailability();
-        return url.openStream();
+        return new FileInputStream(Objects.requireNonNull(file));
     }
 
 
@@ -214,15 +178,6 @@ public class ConfiguratorFactory {
     }
 
 
-    /**
-     * Check to see if the specified configuration properties are <code>null</null> which is not allowed.
-     * @param properties the specified protocol stack configuration.
-     * @throws NullPointerException if the specified configuration properties are {@code null}.
-     */
-    static void checkForNullConfiguration(Object properties) {
-        if(properties == null)
-            throw new NullPointerException("the specifed protocol stack configuration was null");
-    }
 
     /**
      * Checks the availability of the JAXP classes on the classpath.
@@ -239,25 +194,6 @@ public class ConfiguratorFactory {
         }
     }
 
-    /**
-     * Replace variables of the form ${var:default} with the getProperty(var,
-     * default)
-     * 
-     * @param configurator
-     */
-    public static void substituteVariables(ProtocolStackConfigurator configurator) {
-        List<ProtocolConfiguration> protocols=configurator.getProtocolStack();
-        protocols.stream().filter(data -> data != null).forEach(data -> {
-            Map<String,String> parms=data.getProperties();
-            for(Map.Entry<String,String> entry : parms.entrySet()) {
-                String val=entry.getValue();
-                String replacement=Util.substituteVariable(val);
-                if(!replacement.equals(val)) {
-                    entry.setValue(replacement);
-                }
-            }
-        });
-    }          
 }
 
 

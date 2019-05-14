@@ -5,18 +5,14 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
-import org.jgroups.auth.sasl.SaslClientCallbackHandler;
-import org.jgroups.auth.sasl.SaslClientContext;
-import org.jgroups.auth.sasl.SaslContext;
-import org.jgroups.auth.sasl.SaslServerContext;
-import org.jgroups.auth.sasl.SaslUtils;
+import org.jgroups.auth.sasl.*;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.conf.PropertyConverters;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.GMS.GmsHeader;
 import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.Util;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
@@ -50,7 +46,7 @@ public class SASL extends Protocol {
     @Property(name = "mech", description = "The name of the mech to require for authentication. Can be any mech supported by your local SASL provider. The JDK comes standard with CRAM-MD5, DIGEST-MD5, GSSAPI, NTLM")
     protected String mech;
 
-    @Property(name = "sasl_props", description = "Properties specific to the chosen mech", converter = PropertyConverters.StringProperties.class)
+    // @Property(name = "sasl_props", description = "Properties specific to the chosen mech", converter = PropertyConverters.StringProperties.class)
     protected Map<String, String> sasl_props = new HashMap<>();
 
     @Property(name = "server_name", description = "The fully qualified server name")
@@ -126,7 +122,12 @@ public class SASL extends Protocol {
         return mech;
     }
 
-    public void setSaslProps(Map<String, String> sasl_props) {
+    @Property(name = "sasl_props", description = "Properties specific to the chosen mech")
+    public void setSaslProps(String sasl_props) {
+        this.sasl_props =Util.parseCommaDelimitedProps(sasl_props);
+    }
+
+    public void setSaslPropsMap(Map<String, String> sasl_props) {
         this.sasl_props = sasl_props;
     }
 

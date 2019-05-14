@@ -160,8 +160,9 @@ public class Probe {
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         InetAddress       bind_addr=null;
+        StackType         ip_version=Util.getIpStackType();
         List<InetAddress> addrs=new ArrayList<>();
         int               port=0;
         int               ttl=32;
@@ -171,16 +172,38 @@ public class Probe {
         boolean           weed_out_duplicates=false, udp=true, tcp=false;
         String            passcode=null;
 
+
+        for(int i=0; i < args.length; i++) {
+            if("-addr".equals(args[i])) {
+                InetAddress addr=Util.getByName(args[++i], ip_version);
+                if(addr instanceof Inet6Address)
+                    ip_version=StackType.IPv6;
+                addrs.add(addr);
+                args[i]=args[i-1]=null;
+                continue;
+            }
+            if("-bind_addr".equals(args[i])) {
+                bind_addr=Util.getByName(args[++i], ip_version);
+                if(bind_addr instanceof Inet6Address)
+                    ip_version=StackType.IPv6;
+                args[i]=args[i-1]=null;
+                continue;
+            }
+            if("-4".equals(args[i])) {
+                ip_version=StackType.IPv4;
+                args[i]=null;
+                continue;
+            }
+            if("-6".equals(args[i])) {
+                ip_version=StackType.IPv6;
+                args[i]=null;
+            }
+        }
         try {
             for(int i=0; i < args.length; i++) {
-                if("-addr".equals(args[i])) {
-                    addrs.add(InetAddress.getByName(args[++i]));
+                if(args[i] == null)
                     continue;
-                }
-                if("-bind_addr".equals(args[i])) {
-                    bind_addr=InetAddress.getByName(args[++i]);
-                    continue;
-                }
+
                 if("-port".equals(args[i])) {
                     port=Integer.parseInt(args[++i]);
                     continue;
@@ -227,12 +250,12 @@ public class Probe {
 
             if(!udp && !tcp)
                 throw new IllegalArgumentException("either UDP or TCP mode has to be enabled");
+            if(ip_version == StackType.IPv6 && bind_addr == null)
+                bind_addr=Util.getLoopback(ip_version);
 
             Probe p=new Probe();
             if(addrs.isEmpty()) {
-                StackType stack_type=Util.getIpStackType();
-                boolean ipv6=stack_type == StackType.IPv6;
-                InetAddress addr=InetAddress.getByName(ipv6? DEFAULT_DIAG_ADDR_IPv6 : DEFAULT_DIAG_ADDR);
+                InetAddress addr=InetAddress.getByName(ip_version == StackType.IPv6? DEFAULT_DIAG_ADDR_IPv6 : DEFAULT_DIAG_ADDR);
                 addrs.add(addr);
             }
             if(port == 0)
@@ -245,7 +268,7 @@ public class Probe {
     }
 
     protected static void help() {
-        System.out.println("Probe [-help] [-addr <addr>] [-bind_addr <addr>] " +
+        System.out.println("Probe [-help] [-addr <addr>] [-4] [-6] [-bind_addr <addr>] " +
                              "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-passcode <code>] [-weed_out_duplicates] " +
                              "[-cluster regexp-pattern] [-match pattern] [-udp true|false] [-tcp true|false] [key[=value]]*\n\n" +
                              "Examples:\n" +

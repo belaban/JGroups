@@ -59,20 +59,17 @@ public class MPING extends PING implements Runnable {
     protected boolean receive_on_all_interfaces;
 
     /**
-     * List<NetworkInterface> of interfaces to receive multicasts on. The
-     * multicast receive socket will listen on all of these interfaces. This is
-     * a comma-separated list of IP addresses or interface names. E.g.
-     * "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded; we only bind to
-     * an interface once. If this property is set, it override
-     * receive_on_all_interfaces.
+     * List<NetworkInterface> of interfaces to receive multicasts on. The multicast receive socket will listen on all
+     * of these interfaces. This is a comma-separated list of IP addresses or interface names. E.g.
+     * "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded; we only bind to an interface once. If this property
+     * is set, it overrides receive_on_all_interfaces.
      */
     @Property(converter=PropertyConverters.NetworkInterfaceList.class, description="List of interfaces to receive multicasts on")
     protected List<NetworkInterface> receive_interfaces;
 
     /**
-     * If true, the transport should use all available interfaces to send
-     * multicast messages. This means the same multicast message is sent N
-     * times, so use with care
+     * If true, the transport should use all available interfaces to send multicast messages. This means the same
+     * multicast message is sent N times, so use with care
      */
     @Property(description="Whether send messages are sent on all interfaces. Default is false")
     protected boolean send_on_all_interfaces;
@@ -155,7 +152,6 @@ public class MPING extends PING implements Runnable {
 
 
 
-    @SuppressWarnings("unchecked")
     public Object up(Event evt) {
         if(evt.getType() == Event.CONFIG) {
             if(bind_addr == null) {

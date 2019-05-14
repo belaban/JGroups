@@ -81,7 +81,7 @@ public class InfinispanStackMerge3Test {
     }
 
     protected static JChannel createChannel(TP transport, String name) throws Exception {
-        return new JChannel(transport.setBindAddress(Util.getLocalhost()),
+        return new JChannel(transport.setBindAddress(Util.getLoopback()),
                             new MPING(),
                             new MERGE3()
                               .setMinInterval(5_000)

@@ -8,7 +8,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.*;
 import java.nio.channels.DatagramChannel;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -79,7 +79,7 @@ public class mcast {
         }
     }
 
-    public static void main(String args[]) throws Exception {
+    public static void main(String[] args) throws Exception {
         InetAddress mcast_addr=null, bind_addr=null;
         int mcast_port=5555;
         int local_port=0;
@@ -172,7 +172,7 @@ public class mcast {
                 mcast_sock=new MulticastSocket(mcast_port);
 
             if(bind_addr != null)
-                bindToInterfaces(Arrays.asList(NetworkInterface.getByInetAddress(bind_addr)), mcast_sock);
+                bindToInterfaces(Collections.singletonList(NetworkInterface.getByInetAddress(bind_addr)), mcast_sock);
             else {
                 List<NetworkInterface> intf_list=Util.getAllAvailableInterfaces();
                 System.out.println("Joining " + saddr + " on interfaces: " + intf_list);

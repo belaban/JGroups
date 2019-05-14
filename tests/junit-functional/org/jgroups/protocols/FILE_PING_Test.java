@@ -97,7 +97,7 @@ public class FILE_PING_Test {
 
 
     protected static JChannel create(String name, String location, long uuid) throws Exception {
-        return new JChannel(new TCP().setBindAddress(Util.getLocalhost()).setValue("bundler_type", "nb"),
+        return new JChannel(new TCP().setBindAddress(Util.getLoopback()).setValue("bundler_type", "nb"),
                             new DISCARD(),
                             new FILE_PING().setRemoveAllDataOnViewChange(true).setLocation(location)
                               .setValue("write_data_on_find", true)

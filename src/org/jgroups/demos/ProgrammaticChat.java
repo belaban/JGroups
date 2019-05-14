@@ -4,7 +4,6 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
-import org.jgroups.conf.PropertyConverters;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
@@ -36,10 +35,10 @@ public class ProgrammaticChat {
             return;
         }
 
-        InetAddress bind_address=bind_addr != null? PropertyConverters.Default.convertBindAddress(bind_addr) : Util.getLocalhost();
+        InetAddress bind_address=bind_addr != null? Util.getAddress(bind_addr, Util.getIpStackType()) : Util.getLoopback();
         Protocol[] prot_stack={
           new TCP().setBindAddress(bind_address).setBindPort(7800)
-            .setDiagnosticsEnabled(false), // todo: remove when MulticastSocket works
+            .setDiagnosticsEnabled(true).diagEnableTcp(true).diagEnableUdp(false), // todo: remove when MulticastSocket works
           new TCPPING().initialHosts(Collections.singletonList(new InetSocketAddress(bind_address, 7800))),
           new MERGE3(),
           new FD_SOCK(),

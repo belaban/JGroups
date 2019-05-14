@@ -6,7 +6,6 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.conf.PropertyConverters;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GmsImpl.Request;
 import org.jgroups.stack.DiagnosticsHandler;
@@ -18,7 +17,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -123,9 +121,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
-
-    @Property(converter=PropertyConverters.FlushInvoker.class,name="flush_invoker_class")
-    protected Class<Callable<Boolean>>  flushInvokerClass;
 
     protected GmsImpl                   impl;
     protected final Object              impl_mutex=new Object(); // synchronizes event entry into impl
@@ -774,15 +769,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
    protected boolean _startFlush(final View new_view, int maxAttempts, boolean resumeIfFailed, long randomFloor, long randomCeiling) {
        if(!flushProtocolInStack)
            return true;
-       if(flushInvokerClass != null) {
-           try {
-               Callable<Boolean> invoker = flushInvokerClass.getDeclaredConstructor(View.class).newInstance(new_view);
-               return invoker.call();
-           } catch (Throwable e) {
-               return false;
-           }
-       }
-
        try {
            boolean successfulFlush=false;
            boolean validView=new_view != null && new_view.size() > 0;

@@ -10,12 +10,12 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.*;
-import org.jgroups.util.*;
 import org.jgroups.util.UUID;
-import org.w3c.dom.Element;
+import org.jgroups.util.*;
 
 import java.io.*;
-import java.net.URL;
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -98,29 +98,6 @@ public class JChannel implements Closeable {
         this(Global.DEFAULT_PROTOCOL_STACK);
     }
 
-    /**
-     * Constructs a JChannel instance with the protocol stack configuration contained in the specified file.
-     * @param file A file containing a JGroups XML protocol stack configuration.
-     */
-    public JChannel(File file) throws Exception {
-        this(ConfiguratorFactory.getStackConfigurator(file));
-    }
-
-    /**
-     * Constructs a JChannel instance with the protocol stack configuration contained by the specified XML element.
-     * @param properties An XML element containing a JGroups XML protocol stack configuration.
-     */
-    public JChannel(Element properties) throws Exception {
-        this(ConfiguratorFactory.getStackConfigurator(properties));
-    }
-
-    /**
-     * Constructs a JChannel instance with the protocol stack configuration indicated by the specified URL.
-     * @param properties A URL pointing to a JGroups XML protocol stack configuration.
-     */
-    public JChannel(URL properties) throws Exception {
-        this(ConfiguratorFactory.getStackConfigurator(properties));
-    }
 
     /**
      * Constructs a JChannel instance with the protocol stack configuration based upon the specified properties parameter.
@@ -160,29 +137,7 @@ public class JChannel implements Closeable {
         this(Arrays.asList(protocols));
     }
 
-    /**
-     * Creates a channel from a list of protocols. Note that after a {@link org.jgroups.JChannel#close()}, the protocol
-     * list <em>should not</em> be reused, ie. new JChannel(protocols) would reuse the same protocol list, and this
-     * might lead to problems !
-     * @param protocols The list of protocols, from bottom to top, ie. the first protocol in the list is the transport,
-     *                  the last the top protocol
-     * @deprecated Use {@link JChannel#JChannel(List)} instead
-     */
-    @Deprecated
-    public JChannel(Collection<Protocol> protocols) throws Exception {
-        prot_stack=new ProtocolStack().setChannel(this);
-        for(Protocol prot: protocols) {
-            prot_stack.addProtocol(prot);
-            prot.setProtocolStack(prot_stack);
-        }
-        prot_stack.init();
 
-        // Substitute vars with defined system props (if any)
-        List<Protocol> prots=prot_stack.getProtocols();
-        Map<String,String> map=new HashMap<>();
-        for(Protocol prot: prots)
-            Configurator.resolveAndAssignFields(prot, map);
-    }
 
     /**
      * Creates a channel from a list of protocols. Note that after a {@link org.jgroups.JChannel#close()}, the protocol
@@ -199,11 +154,19 @@ public class JChannel implements Closeable {
         }
         prot_stack.init();
 
+        StackType ip_version=Util.getIpStackType();
+        TP transport=(TP)protocols.get(0);
+        InetAddress resolved_addr=Configurator.getValueFromProtocol(transport, "bind_addr");
+        if(resolved_addr != null)
+            ip_version=resolved_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
+        else if(ip_version == StackType.Dual)
+            ip_version=StackType.IPv4; // prefer IPv4 addresses
+
         // Substitute vars with defined system props (if any)
         List<Protocol> prots=prot_stack.getProtocols();
         Map<String,String> map=new HashMap<>();
         for(Protocol prot: prots)
-            Configurator.resolveAndAssignFields(prot, map);
+            Configurator.resolveAndAssignFields(prot, map, ip_version);
     }
 
 

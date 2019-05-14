@@ -14,10 +14,7 @@ import org.jgroups.util.Digest;
 import org.jgroups.util.MergeId;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
-import org.w3c.dom.Element;
 
-import java.io.File;
-import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -108,8 +105,7 @@ public class GMS_MergeTest {
      * message, the MergeCanceller has to null merge_id after a timeout
      */
     static void _testMergeRequestTimeout(boolean use_flush_props, String cluster_name) throws Exception {
-        JChannel c1=new JChannel(use_flush_props? getFlushProps() : getProps()).name("A");
-        try {
+        try(JChannel c1=new JChannel(use_flush_props? getFlushProps() : getProps()).name("A")) {
             c1.connect(cluster_name);
             Message merge_request=new Message()
               .putHeader(GMS_ID, new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ).mergeId(MergeId.create(c1.getAddress())));
@@ -133,9 +129,6 @@ public class GMS_MergeTest {
             merge_id=gms._getMergeId();
             System.out.println("merge_id = " + merge_id);
             assert merge_id == null : "MergeCanceller didn't kick in";
-        }
-        finally {
-            close(c1);
         }
     }
 
@@ -607,10 +600,9 @@ public class GMS_MergeTest {
     }
 
     private static JChannel findChannel(String tmp, JChannel[] channels) {
-        for(JChannel ch: channels) {
+        for(JChannel ch: channels)
             if(ch.getName().equals(tmp))
                 return ch;
-        }
         return null;
     }
 
@@ -697,18 +689,6 @@ public class GMS_MergeTest {
             super();
         }
 
-        private MyChannel(File properties) throws Exception {
-            super(properties);
-        }
-
-        private MyChannel(Element properties) throws Exception {
-            super(properties);
-        }
-
-        private MyChannel(URL properties) throws Exception {
-            super(properties);
-        }
-
         private MyChannel(String properties) throws Exception {
             super(properties);
         }
@@ -717,7 +697,7 @@ public class GMS_MergeTest {
             super(configurator);
         }
 
-        public MyChannel(Collection<Protocol> protocols) throws Exception {
+        public MyChannel(List<Protocol> protocols) throws Exception {
             super(protocols);
         }
 
@@ -725,9 +705,6 @@ public class GMS_MergeTest {
             super(protocols);
         }
 
-        private MyChannel(JChannel ch) throws Exception {
-            super(ch);
-        }
 
 
         public void setId(int id) {

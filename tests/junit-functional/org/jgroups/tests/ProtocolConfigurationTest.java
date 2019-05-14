@@ -76,7 +76,6 @@ public class ProtocolConfigurationTest {
 		
 		// check that the list elements are in the right order
 		List<String> actualOrder = ((ORDERING)protocol).getList() ;
-		
 		assert actualOrder.equals(correctOrder) ;
 	}
 

@@ -34,7 +34,7 @@ public class ServerUnitTest {
 
     static {
         try {
-            bind_addr=Util.getLocalhost();
+            bind_addr=Util.getLoopback();
         }
         catch(UnknownHostException e) {
             throw new RuntimeException(e);

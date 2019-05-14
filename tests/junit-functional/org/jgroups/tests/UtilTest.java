@@ -11,6 +11,7 @@ import org.testng.annotations.Test;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
@@ -877,22 +878,6 @@ public class UtilTest {
     }
 
 
-    public static void testMatch() {
-        long[] a={1,2,3};
-        long[] b={2,3,4};
-        long[] c=null;
-        long[] d={1,2,3,4};
-        long[] e={1,2,3};
-
-        assert Util.match(a,a);
-        assert !(Util.match(a, b));
-        assert !(Util.match(a, c));
-        assert !(Util.match(a, d));
-        assert Util.match(a,e);
-        assert Util.match(c,c);
-        assert !(Util.match(c, a));
-    }
-
     public static void testChanged() {
         Address a=null, b=null;
         assert !Util.different(a,b);
@@ -1288,6 +1273,43 @@ public class UtilTest {
             Util.close(b,a);
         }
     }
+
+    public void testGetLoopback() throws UnknownHostException {
+        InetAddress addr=Util.getLoopback(StackType.IPv4);
+        assert addr instanceof Inet4Address && addr.equals(InetAddress.getByName("127.0.0.1"));
+        addr=Util.getLoopback(StackType.IPv6);
+        assert addr instanceof Inet6Address && addr.equals(InetAddress.getByName("::1"));
+    }
+
+    public void testGetNonLoopbackAddress() throws SocketException {
+        InetAddress addr=Util.getNonLoopbackAddress(StackType.IPv4);
+        assert addr == null || addr instanceof Inet4Address;
+        addr=Util.getNonLoopbackAddress(StackType.IPv6);
+        assert addr == null || addr instanceof Inet6Address;
+    }
+
+    public void testGetByName() throws UnknownHostException {
+        InetAddress addr=Util.getByName("127.0.0.1", StackType.IPv4);
+        assert addr instanceof Inet4Address;
+        addr=Util.getByName("127.0.0.1", StackType.IPv6);
+        assert addr == null;
+        addr=Util.getByName("localhost", StackType.IPv4);
+        assert addr instanceof Inet4Address;
+        addr=Util.getByName("localhost", StackType.IPv6);
+        assert addr instanceof Inet6Address;
+    }
+
+
+    public void testGetAddressByScope() throws SocketException {
+        for(Util.AddressScope scope: Util.AddressScope.values()) {
+            for(StackType type: StackType.values()) {
+                InetAddress addr=Util.getAddress(scope, type);
+                System.out.printf("%s %s -> %s\n", type, scope, addr);
+                assert addr == null || addr.getClass() == (type == StackType.IPv6? Inet6Address.class : Inet4Address.class);
+            }
+        }
+    }
+
 
     private static void _testMethodNameToAttributeName(String input, String expected_output) {
         String atttr_name=Util.methodNameToAttributeName(input);

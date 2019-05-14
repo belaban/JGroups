@@ -39,7 +39,6 @@ public class InetAddressChecksTest {
 	 */
 	@Test(expectedExceptions=RuntimeException.class)
 	public void testIPVersionCheckingNoConsistentVersion() throws Exception {
-
 		List<ProtocolConfiguration> protocol_configs = new ArrayList<>() ;
 		List<Protocol> protocols = new ArrayList<>() ;
 		
@@ -53,23 +52,12 @@ public class InetAddressChecksTest {
 		try {
 	        inetAddressMap = Configurator.createInetAddressMap(protocol_configs, protocols) ;
             Collection<InetAddress> addrs=Configurator.getAddresses(inetAddressMap);
-	        Configurator.determineIpVersionFromAddresses(addrs) ;
+	        determineIpVersionFromAddresses(addrs) ;
 		}
 		catch(RuntimeException e) {
 			System.out.println("Expected exception received: " + e.getMessage()) ;
 			throw e ;
 		}
-		
-		// get the value which should have been assigned a default
-		InetAddress a = ((IPCHECK)protocol).getInetAddress1() ;
-		System.out.println("value of inetAddress1 = " + a) ;
-		
-		InetAddress b = ((IPCHECK)protocol).getInetAddress2() ;
-		System.out.println("value of inetAddress2 = " + b) ;
-		
-		InetAddress c = ((IPCHECK)protocol).getInetAddress3() ;
-		System.out.println("value of inetAddress3 = " + c) ;
-		
 	}
 
 	/*
@@ -90,7 +78,7 @@ public class InetAddressChecksTest {
 
 		inetAddressMap = Configurator.createInetAddressMap(protocol_configs, protocols) ;
         Collection<InetAddress> addrs=Configurator.getAddresses(inetAddressMap);
-		Configurator.determineIpVersionFromAddresses(addrs) ;
+		determineIpVersionFromAddresses(addrs) ;
 
 		// get the value which should have been assigned a default
 		InetAddress a = ((IPCHECK)protocol).getInetAddress1() ;
@@ -141,5 +129,20 @@ public class InetAddressChecksTest {
 
 		@Property(description="wilma")
 		int i=0;
+	}
+
+	/**
+	 * This method takes a set of InetAddresses, represented by an inetAddressmap, and:
+	 * - if the resulting set is non-empty, goes through to see if all InetAddress-related
+	 *   user settings have a consistent IP version: v4 or v6, and throws an exception if not
+	 * - if the resulting set is empty, sets the default IP version based on available stacks
+	 *   and if a dual stack, stack preferences
+	 * - sets the IP version to be used in the JGroups session
+	 * @return StackType.IPv4 for IPv4, StackType.IPv6 for IPv6, StackType.DUAL for dual stacks
+	 */
+	public static void determineIpVersionFromAddresses(Collection<InetAddress> addrs) throws Exception {
+		Class<? extends InetAddress> clazz=addrs.iterator().next().getClass();
+		if(!addrs.stream().allMatch(addr -> addr.getClass() == clazz))
+			throw new RuntimeException("all addresses have to be either IPv4 or IPv6: " + addrs);
 	}
 }        

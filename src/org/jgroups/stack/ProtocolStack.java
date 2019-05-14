@@ -13,10 +13,13 @@ import org.jgroups.jmx.ResourceDMBean;
 import org.jgroups.logging.Log;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -831,7 +834,14 @@ public class ProtocolStack extends Protocol {
         top_prot.setUpProtocol(this);
         this.setDownProtocol(top_prot);
         bottom_prot=getBottomProtocol();
-        Configurator.setDefaultValues(protocols);
+
+        StackType ip_version=Util.getIpStackType();
+        InetAddress resolved_addr=Configurator.getValueFromProtocol(bottom_prot, "bind_addr");
+        if(resolved_addr != null)
+            ip_version=resolved_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
+        else if(ip_version == StackType.Dual)
+            ip_version=StackType.IPv4; // prefer IPv4 addresses
+        Configurator.setDefaultValues(protocols, ip_version);
         initProtocolStack();
     }
 

@@ -39,7 +39,7 @@ public class ServerTest extends BMNGRunner {
 
     static {
         try {
-            loopback=Util.getLocalhost();
+            loopback=Util.getLoopback();
             PORT_A=ResourceManager.getNextTcpPort(loopback);
             PORT_B=ResourceManager.getNextTcpPort(loopback);
         }

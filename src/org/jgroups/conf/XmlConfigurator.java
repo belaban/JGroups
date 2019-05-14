@@ -2,7 +2,6 @@
 package org.jgroups.conf;
 
 
-import org.jgroups.Global;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Util;
@@ -37,28 +36,11 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         configuration.addAll(protocols);
     }
 
-    public static XmlConfigurator getInstance(URL url) throws java.io.IOException {
-        return getInstance(url, null);
-    }
-
     public static XmlConfigurator getInstance(InputStream stream) throws java.io.IOException {
-        return getInstance(stream, null);
+        return getInstance(stream, false);
     }
 
-    public static XmlConfigurator getInstance(Element el) throws Exception {
-        return parse(el);
-    }
-
-    public static XmlConfigurator getInstance(URL url, Boolean validate) throws java.io.IOException {
-        InputStream is = url.openStream();
-        try {
-            return getInstance(is, validate);
-        } finally {
-            Util.close(is);
-        }
-    }
-
-    public static XmlConfigurator getInstance(InputStream stream, Boolean validate) throws java.io.IOException {
+    public static XmlConfigurator getInstance(InputStream stream, boolean validate) throws java.io.IOException {
         return parse(stream, validate);
     }
 
@@ -101,26 +83,18 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
 
 
-    protected static XmlConfigurator parse(InputStream stream, Boolean validate) throws java.io.IOException {
+    protected static XmlConfigurator parse(InputStream stream, boolean validate) throws java.io.IOException {
 
         // CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty amateurish...
         // But it seems to work, and it is executed only on startup, so no perf loss on the critical path.
         // If somebody wants to improve this, please be my guest.
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            boolean validation = false;
-            String tmp = Util.getProperty(new String[] { Global.XML_VALIDATION }, null, null, null);
-            if (tmp != null) {
-                validation =Boolean.valueOf(tmp);
-            } else if (validate != null) {
-                validation =validate;
-            }
-            factory.setValidating(validation);
-            factory.setNamespaceAware(validation);
-            if (validation) {
+            factory.setValidating(validate);
+            factory.setNamespaceAware(validate);
+            if(validate)
                 factory.setAttribute(JAXP_SCHEMA_LANGUAGE, W3C_XML_SCHEMA);
-            }
-            
+
             DocumentBuilder builder = factory.newDocumentBuilder();
             builder.setEntityResolver((publicId, systemId) -> {
                 if (systemId != null && systemId.startsWith("http://www.jgroups.org/schema/JGroups-")) {

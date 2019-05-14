@@ -34,10 +34,10 @@ public class NioServerTest {
     protected final CountDownLatch latch=new CountDownLatch(1);
 
     @BeforeMethod protected void init() throws Exception {
-        srv=new NioServer(Util.getLocalhost(), 0);
+        srv=new NioServer(Util.getLoopback(), 0);
         srv.sendBufferSize(send_buf_size).receiveBufferSize(recv_buf_size);
         srv.start();
-        client=new NioClient(null, 0, Util.getLocalhost(), ((IpAddress)srv.localAddress()).getPort());
+        client=new NioClient(null, 0, Util.getLoopback(), ((IpAddress)srv.localAddress()).getPort());
         client.sendBufferSize(send_buf_size).receiveBufferSize(recv_buf_size);
         client.maxSendBuffers(1000);
         client.start();

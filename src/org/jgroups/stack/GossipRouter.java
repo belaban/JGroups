@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
@@ -16,6 +17,7 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -46,44 +48,51 @@ import java.util.function.BiConsumer;
  * @since 2.1.1
  */
 public class GossipRouter extends ReceiverAdapter implements ConnectionListener {
-    @ManagedAttribute(description="address to which the GossipRouter should bind", writable=true, name="bind_address")
-    protected String                                            bind_addr;
+    //@ManagedAttribute(description="address to which the GossipRouter should bind", writable=true, name="bind_address")
+    //protected String               bind_addr;
+    @LocalAddress
+    @Property(name="bind_addr",
+      description="The bind address which should be used by the GossipRouter. The following special values " +
+        "are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL, NON_LOOPBACK, match-interface, match-host, match-address",
+      defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS,
+      systemProperty={Global.BIND_ADDR},writable=false)
+    protected InetAddress          bind_addr;
 
     @ManagedAttribute(description="server port on which the GossipRouter accepts client connections", writable=true)
-    protected int                                               port=12001;
+    protected int                  port=12001;
     
     @ManagedAttribute(description="time (in msecs) until gossip entry expires. 0 disables expiration.", writable=true)
-    protected long                                              expiry_time;
+    protected long                 expiry_time;
 
     @Property(description="Time (in ms) for setting SO_LINGER on sockets returned from accept(). 0 means do not set SO_LINGER")
-    protected long                                              linger_timeout=2000L;
+    protected long                 linger_timeout=2000L;
 
     @Property(description="Time (in ms) for SO_TIMEOUT on sockets returned from accept(). 0 means don't set SO_TIMEOUT")
-    protected long                                              sock_read_timeout;
+    protected long                 sock_read_timeout;
 
-    protected ThreadFactory                                     thread_factory=new DefaultThreadFactory("gossip", false, true);
+    protected ThreadFactory        thread_factory=new DefaultThreadFactory("gossip", false, true);
 
-    protected SocketFactory                                     socket_factory=new DefaultSocketFactory();
+    protected SocketFactory        socket_factory=new DefaultSocketFactory();
 
     @Property(description="The max queue size of backlogged connections")
-    protected int                                               backlog=1000;
+    protected int                  backlog=1000;
 
     @Property(description="Expose GossipRouter via JMX",writable=false)
-    protected boolean                                           jmx=true;
+    protected boolean              jmx=true;
 
     @Property(description="Use non-blocking IO (true) or blocking IO (false). Cannot be changed at runtime",writable=false)
-    protected boolean                                           use_nio=true;
+    protected boolean              use_nio=true;
 
     @Property(description="Handles client disconnects: sends SUSPECT message to all other members of that group")
-    protected boolean                                           emit_suspect_events=true;
+    protected boolean              emit_suspect_events=true;
 
     @Property(description="Dumps messages (dest/src/length/headers to stdout if enabled")
-    protected boolean                                           dump_msgs;
+    protected boolean              dump_msgs;
 
     protected BaseServer                                        server;
-    protected final AtomicBoolean                               running=new AtomicBoolean(false);
-    protected Timer                                             timer;
-    protected final Log                                         log=LogFactory.getLog(this.getClass());
+    protected final AtomicBoolean  running=new AtomicBoolean(false);
+    protected Timer                timer;
+    protected final Log            log=LogFactory.getLog(this.getClass());
 
     // mapping between groups and <member address> - <physical addr / logical name> pairs
     protected final ConcurrentMap<String,ConcurrentMap<Address,Entry>> address_mappings=new ConcurrentHashMap<>();
@@ -94,14 +103,23 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
 
 
     public GossipRouter(String bind_addr, int local_port) {
-        this.bind_addr=bind_addr;
         this.port=local_port;
+        try {
+            this.bind_addr=InetAddress.getByName(bind_addr);
+        }
+        catch(UnknownHostException e) {
+            log.error("failed setting bind address %s: %s", bind_addr, e);
+        }
     }
 
+    public GossipRouter(InetAddress bind_addr, int local_port) {
+        this.port=local_port;
+        this.bind_addr=bind_addr;
+    }
 
     public Address       localAddress()                     {return server.localAddress();}
-    public String        bindAddress()                      {return bind_addr;}
-    public GossipRouter  bindAddress(String addr)           {this.bind_addr=addr; return this;}
+    public String        bindAddress()                      {return bind_addr != null? bind_addr.toString() : null;}
+    public GossipRouter  bindAddress(InetAddress addr)      {this.bind_addr=addr; return this;}
     public int           port()                             {return port;}
     public GossipRouter  port(int port)                     {this.port=port; return this;}
     public long          expiryTime()                       {return expiry_time;}
@@ -144,9 +162,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         if(jmx)
             JmxConfigurator.register(this, Util.getMBeanServer(), "jgroups:name=GossipRouter");
 
-        InetAddress tmp=bind_addr != null? InetAddress.getByName(bind_addr) : null;
-        server=use_nio? new NioServer(thread_factory, socket_factory, tmp, port, port, null, 0)
-          : new TcpServer(thread_factory, socket_factory, tmp, port, port, null, 0);
+        server=use_nio? new NioServer(thread_factory, socket_factory, bind_addr, port, port, null, 0)
+          : new TcpServer(thread_factory, socket_factory, bind_addr, port, port, null, 0);
         server.receiver(this);
         server.start();
         server.addConnectionListener(this);

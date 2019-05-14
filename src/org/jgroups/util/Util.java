@@ -53,64 +53,55 @@ import static org.jgroups.protocols.TP.MULTICAST;
  * @author Bela Ban
  */
 public class Util {
-
-    // private static final NumberFormat f;
-
     private static final Map<Class<? extends Object>,Byte> PRIMITIVE_TYPES=new HashMap<>(15);
-    private static final byte TYPE_NULL         =  0;
-    private static final byte TYPE_STREAMABLE   =  1;
-    private static final byte TYPE_SERIALIZABLE =  2;
-    private static final byte TYPE_BOOLEAN      = 10;
-    private static final byte TYPE_BYTE         = 11;
-    private static final byte TYPE_CHAR         = 12;
-    private static final byte TYPE_DOUBLE       = 13;
-    private static final byte TYPE_FLOAT        = 14;
-    private static final byte TYPE_INT          = 15;
-    private static final byte TYPE_LONG         = 16;
-    private static final byte TYPE_SHORT        = 17;
-    private static final byte TYPE_STRING       = 18; // ascii
-    private static final byte TYPE_BYTEARRAY    = 19;
-    private static final byte TYPE_UTF_STRING   = 21; // multibyte charset
+    private static final byte    TYPE_NULL         =  0;
+    private static final byte    TYPE_STREAMABLE   =  1;
+    private static final byte    TYPE_SERIALIZABLE =  2;
+    private static final byte    TYPE_BOOLEAN      = 10;
+    private static final byte    TYPE_BYTE         = 11;
+    private static final byte    TYPE_CHAR         = 12;
+    private static final byte    TYPE_DOUBLE       = 13;
+    private static final byte    TYPE_FLOAT        = 14;
+    private static final byte    TYPE_INT          = 15;
+    private static final byte    TYPE_LONG         = 16;
+    private static final byte    TYPE_SHORT        = 17;
+    private static final byte    TYPE_STRING       = 18; // ascii
+    private static final byte    TYPE_BYTEARRAY    = 19;
+    private static final byte    TYPE_UTF_STRING   = 21; // multibyte charset
 
-    // constants
-    public static final int MAX_PORT=65535; // highest port allocatable
+    public static final int      MAX_PORT=65535; // highest port allocatable
 
     private static final Pattern METHOD_NAME_TO_ATTR_NAME_PATTERN=Pattern.compile("[A-Z]+");
     private static final Pattern ATTR_NAME_TO_METHOD_NAME_PATTERN=Pattern.compile("_.");
 
 
-    protected static int    CCHM_INITIAL_CAPACITY=16;
-    protected static float  CCHM_LOAD_FACTOR=0.75f;
-    protected static int    CCHM_CONCURRENCY_LEVEL=16;
-    public static final int DEFAULT_HEADERS;
+    protected static int         CCHM_INITIAL_CAPACITY=16;
+    protected static float       CCHM_LOAD_FACTOR=0.75f;
+    protected static int         CCHM_CONCURRENCY_LEVEL=16;
+    public static final int      DEFAULT_HEADERS;
 
     /**
-     * The max size of an address list, e.g. used in View or Digest when toString() is called. Limiting this
+     * The max size of an address list, used in View or Digest when toString() is called. Limiting this
      * reduces the amount of log data
      */
-    public static int MAX_LIST_PRINT_SIZE=20;
+    public static int            MAX_LIST_PRINT_SIZE=20;
 
-    private static final byte[] TYPE_NULL_ARRAY={0};
-    private static final byte[] TYPE_BOOLEAN_TRUE={TYPE_BOOLEAN, 1};
-    private static final byte[] TYPE_BOOLEAN_FALSE={TYPE_BOOLEAN, 0};
+    private static final byte[]  TYPE_NULL_ARRAY={0};
+    private static final byte[]  TYPE_BOOLEAN_TRUE={TYPE_BOOLEAN, 1};
+    private static final byte[]  TYPE_BOOLEAN_FALSE={TYPE_BOOLEAN, 0};
 
     public static final Class<? extends Protocol>[] getUnicastProtocols() {return new Class[]{UNICAST3.class};}
 
     public enum AddressScope {GLOBAL,SITE_LOCAL,LINK_LOCAL,LOOPBACK,NON_LOOPBACK}
 
-    private static boolean   ipv4_stack_available=false, ipv6_stack_available=false;
-    private static StackType ip_stack_type=_getIpStackType();
-
+    private static boolean          ipv4_stack_available=false, ipv6_stack_available=false;
+    private static final StackType  ip_stack_type=_getIpStackType();
     protected static ResourceBundle resource_bundle;
 
+
     static {
+        String tmp;
         resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Util.class.getClassLoader());
-
-        /*f=NumberFormat.getNumberInstance();
-        f.setGroupingUsed(true);
-        // f.setMinimumFractionDigits(2);
-        f.setMaximumFractionDigits(2);*/
-
         PRIMITIVE_TYPES.put(Boolean.class,TYPE_BOOLEAN);
         PRIMITIVE_TYPES.put(Byte.class,TYPE_BYTE);
         PRIMITIVE_TYPES.put(Character.class,TYPE_CHAR);
@@ -121,9 +112,6 @@ public class Util {
         PRIMITIVE_TYPES.put(Short.class,TYPE_SHORT);
         PRIMITIVE_TYPES.put(String.class,TYPE_STRING);
         PRIMITIVE_TYPES.put(byte[].class,TYPE_BYTEARRAY);
-
-        if(ip_stack_type == StackType.Unknown)
-            ip_stack_type=StackType.IPv6;
 
         try {
             String cchm_initial_capacity=System.getProperty(Global.CCHM_INITIAL_CAPACITY);
@@ -150,7 +138,7 @@ public class Util {
         }
 
         try {
-            String tmp=System.getProperty(Global.MAX_LIST_PRINT_SIZE);
+            tmp=System.getProperty(Global.MAX_LIST_PRINT_SIZE);
             if(tmp != null)
                 MAX_LIST_PRINT_SIZE=Integer.valueOf(tmp);
         }
@@ -158,7 +146,7 @@ public class Util {
         }
 
         try {
-            String tmp=System.getProperty(Global.DEFAULT_HEADERS);
+            tmp=System.getProperty(Global.DEFAULT_HEADERS);
             DEFAULT_HEADERS=tmp != null? Integer.valueOf(tmp) : 4;
         }
         catch(Throwable t) {
@@ -2860,13 +2848,11 @@ public class Util {
                                               BiConsumer<Field,Object> field_func, BiConsumer<Method,Object> method_func) {
         Objects.requireNonNull(obj, "target object cannot be null");
         if(field_func != null) {
-            for(Class<?> clazz=obj.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
-                Stream.of(clazz.getDeclaredFields()).filter(f -> filter != null && filter.test(f))
-                  .forEach(f -> field_func.accept(f, obj));
-            }
+            Stream.of(Util.getAllDeclaredFieldsWithAnnotations(obj.getClass()))
+              .filter(f -> filter != null && filter.test(f)).forEach(f -> field_func.accept(f, obj));
         }
         if(method_func != null) {
-            Stream.of(obj.getClass().getMethods())
+            Stream.of(Util.getAllDeclaredMethodsWithAnnotations(obj.getClass()))
               .filter(m -> filter != null && filter.test(m)).forEach(m -> method_func.accept(m, obj));
         }
     }
@@ -3718,31 +3704,27 @@ public class Util {
 
 
     /**
-     * Method used by PropertyConverters.BindInterface to check that a bind_address is
-     * consistent with a specified interface
+     * Method used by PropertyConverters.BindInterface to check that a bind_addr is consistent with a specified interface
      * <p/>
      * Idea:
      * 1. We are passed a bind_addr, which may be null
      * 2. If non-null, check that bind_addr is on bind_interface - if not, throw exception,
-     * otherwise, return the original bind_addr
-     * 3. If null, get first non-loopback address on bind_interface, using stack preference to
-     * get the IP version. If no non-loopback address, then just return null (i.e. the
-     * bind_interface did not influence the decision).
+     *    otherwise, return the original bind_addr
+     * 3. If null, get first non-loopback address on bind_interface, using stack preference to get the IP version.
+     *    If no non-loopback address, then just return null (i.e. bind_interface did not influence the decision).
      */
-    public static InetAddress validateBindAddressFromInterface(InetAddress bind_addr,String bind_interface_str) throws UnknownHostException, SocketException {
+    public static InetAddress validateBindAddressFromInterface(InetAddress bind_addr,
+                                                               String bind_interface_str, StackType ip_version) throws UnknownHostException, SocketException {
         NetworkInterface bind_intf=null;
 
         if(bind_addr != null && bind_addr.isLoopbackAddress())
             return bind_addr;
 
-        // 1. if bind_interface_str is null, or empty, no constraint on bind_addr
+        // if bind_interface_str is null, or empty, no constraint on bind_addr
         if(bind_interface_str == null || bind_interface_str.trim().isEmpty())
             return bind_addr;
 
-        // 2. get the preferred IP version for the JVM - it will be IPv4 or IPv6
-        StackType ip_version=getIpStackType();
-
-        // 3. if bind_interface_str specified, get interface and check that it has correct version
+        // if bind_interface_str specified, get interface and check that it has correct version
         bind_intf=Util.getByName(bind_interface_str); // NetworkInterface.getByName(bind_interface_str);
         if(bind_intf != null) {
             // check that the interface supports the IP version
@@ -3750,30 +3732,23 @@ public class Util {
             if(!supportsVersion)
                 throw new IllegalArgumentException("bind_interface " + bind_interface_str + " has incorrect IP version");
         }
-        else {
-            // (bind_intf == null)
+        else
             throw new UnknownHostException("network interface " + bind_interface_str + " not found");
-        }
 
         // 3. intf and bind_addr are both are specified, bind_addr needs to be on intf
         if(bind_addr != null) {
-
             boolean hasAddress=false;
-
-            // get all the InetAddresses defined on the interface
             Enumeration addresses=bind_intf.getInetAddresses();
 
             while(addresses != null && addresses.hasMoreElements()) {
                 // get the next InetAddress for the current interface
                 InetAddress address=(InetAddress)addresses.nextElement();
-
                 // check if address is on interface
                 if(bind_addr.equals(address)) {
                     hasAddress=true;
                     break;
                 }
             }
-
             if(!hasAddress) {
                 String bind_addr_str=bind_addr.getHostAddress();
                 throw new IllegalArgumentException("network interface " + bind_interface_str + " does not contain address " + bind_addr_str);
@@ -3782,7 +3757,7 @@ public class Util {
         }
         // 4. if only interface is specified, get first non-loopback address on that interface,
         else
-            bind_addr=getAddress(bind_intf,AddressScope.NON_LOOPBACK);
+            bind_addr=getAddress(bind_intf, AddressScope.NON_LOOPBACK, ip_version);
 
         //http://jira.jboss.org/jira/browse/JGRP-739
         //check all bind_address against NetworkInterface.getByInetAddress() to see if it exists on the machine
@@ -3794,25 +3769,6 @@ public class Util {
         // if bind_addr == null, we have tried to obtain a bind_addr but were not successful
         // in such a case, return the original value of null so the default will be applied
         return bind_addr;
-    }
-
-    /** Finds a network interface of sub-interface with the given name */
-    public static NetworkInterface getByName(String name) throws SocketException {
-        if(name == null) return null;
-        Enumeration<NetworkInterface> en=NetworkInterface.getNetworkInterfaces();
-        while(en.hasMoreElements()) {
-            NetworkInterface intf=en.nextElement();
-            if(intf.getName().equals(name))
-                return intf;
-            Enumeration<NetworkInterface> en2=intf.getSubInterfaces();
-            while(en2.hasMoreElements()) {
-                NetworkInterface intf2=en2.nextElement();
-                if(intf2.getName().equals(name)) {
-                    return intf2;
-                }
-            }
-        }
-        return null;
     }
 
 
@@ -3860,14 +3816,14 @@ public class Util {
 
 
     /** IP related utilities */
-    public static InetAddress getLocalhost(StackType ip_version) throws UnknownHostException {
+    public static InetAddress getLoopback(StackType ip_version) throws UnknownHostException {
         if(ip_version == StackType.IPv6)
             return InetAddress.getByName("::1");
-        return InetAddress.getByName("127.0.0.1");
+        return InetAddress.getLoopbackAddress();
     }
 
-    public static InetAddress getLocalhost() throws UnknownHostException {
-        return getLocalhost(Util.getIpStackType());
+    public static InetAddress getLoopback() throws UnknownHostException {
+        return getLoopback(Util.getIpStackType());
     }
 
     public static InetAddress getLocalMulticastAddress(StackType ip_version) throws UnknownHostException {
@@ -3877,34 +3833,120 @@ public class Util {
     }
 
 
-    /**
-     * Returns the first non-loopback address on any interface on the current host.
-     */
+    /** Returns the first non-loopback address on any interface on the current host */
     public static InetAddress getNonLoopbackAddress() throws SocketException {
-        return getAddress(AddressScope.NON_LOOPBACK);
+        return getAddress(AddressScope.NON_LOOPBACK, Util.getIpStackType());
+    }
+
+    public static InetAddress getNonLoopbackAddress(StackType ip_version) throws SocketException {
+        return getAddress(AddressScope.NON_LOOPBACK, ip_version);
+    }
+
+    /** Finds a network interface or sub-interface with the given name */
+    public static NetworkInterface getByName(String name) throws SocketException {
+        if(name == null) return null;
+        Enumeration<NetworkInterface> en=NetworkInterface.getNetworkInterfaces();
+        while(en.hasMoreElements()) {
+            NetworkInterface intf=en.nextElement();
+            if(intf.getName().equals(name))
+                return intf;
+            Enumeration<NetworkInterface> en2=intf.getSubInterfaces();
+            while(en2.hasMoreElements()) {
+                NetworkInterface intf2=en2.nextElement();
+                if(intf2.getName().equals(name)) {
+                    return intf2;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Finds an address given a symbolic name. Parameter ip_version has precedence over system props such as
+     * java.net.preferIPv4Stack or java.net.preferIPv6Addresses
+     * @param host The symbolic nbame of the host
+     * @param ip_version The IP version, e.g. {@link StackType#IPv4} or {@link StackType#IPv6}
+     * @return The resolved address
+     * @throws UnknownHostException Thrown if host cannot be resolved to an InetAddress
+     */
+    public static InetAddress getByName(String host, StackType ip_version) throws UnknownHostException {
+        if(ip_version == null || ip_version == StackType.Dual)
+            return InetAddress.getByName(host);
+        Class<?> clazz=ip_version == StackType.IPv6? Inet6Address.class : Inet4Address.class;
+        InetAddress[] addrs=InetAddress.getAllByName(host); // always returns a non-null at least 1-element array
+        return Stream.of(addrs).filter(a -> a != null && a.getClass() == clazz)
+          .findFirst().orElse(null);
+    }
+
+    public static InetAddress getAddress(String value, StackType ip_version) throws Exception {
+        try {
+            AddressScope addr_scope=AddressScope.valueOf(value.toUpperCase());
+            return Util.getAddress(addr_scope, ip_version);
+        }
+        catch(Throwable ignored) {
+        }
+
+        if(value.startsWith("match"))
+            return Util.getAddressByPatternMatch(value, ip_version);
+        if(value.startsWith("custom:"))
+            return Util.getAddressByCustomCode(value.substring("custom:".length()));
+        return Util.getByName(value, ip_version);
     }
 
 
     /**
-     * Returns the first address on any interface of the current host, which satisfies scope
+     * Returns the first address on any interface which satisfies scope and ip_version. If ip_version is Dual, then
+     * IPv4 addresses are favored
      */
-    public static InetAddress getAddress(AddressScope scope) throws SocketException {
-        InetAddress address=null;
-
-        Enumeration intfs=NetworkInterface.getNetworkInterfaces();
-        while(intfs.hasMoreElements()) {
-            NetworkInterface intf=(NetworkInterface)intfs.nextElement();
-            try {
-                if(isUp(intf)) {
-                    address=getAddress(intf,scope);
-                    if(address != null)
-                        return address;
-                }
-            }
-            catch(SocketException ignored) {
+    public static InetAddress getAddress(AddressScope scope, StackType ip_version) throws SocketException {
+        Collection<InetAddress> all_addrs=getAllAvailableAddresses(scope != null? a -> match(a, scope) : null);
+        if(scope != null) {
+            switch(ip_version) {
+                case IPv6:
+                    return all_addrs.stream().filter(a -> a instanceof Inet6Address).findFirst().orElse(null);
+                case IPv4: case Dual:
+                    return all_addrs.stream().filter(a -> a instanceof Inet4Address).findFirst().orElse(null);
             }
         }
-        return null;
+        return all_addrs.stream().findFirst().orElse(null);
+    }
+
+    /**
+     * Returns the first address on the given interface on the current host, which satisfies scope
+     * @param intf the interface to be checked
+     */
+    public static InetAddress getAddress(NetworkInterface intf, AddressScope scope, StackType ip_version) {
+        InetAddress first=null;
+        for(Enumeration addresses=intf.getInetAddresses(); addresses.hasMoreElements(); ) {
+            InetAddress addr=(InetAddress)addresses.nextElement();
+            if(scope == null || match(addr,scope)) {
+                if((addr instanceof Inet4Address && (ip_version == StackType.IPv4 || ip_version == StackType.Dual)) ||
+                  (addr instanceof Inet6Address && ip_version == StackType.IPv6))
+                    return addr;
+                if(first == null)
+                    first=addr;
+            }
+        }
+        return ip_version == StackType.Dual? first : null;
+    }
+
+    public static boolean match(InetAddress addr, AddressScope scope) {
+        if(scope == null)
+            return true;
+        switch(scope) {
+            case GLOBAL:
+                return !addr.isLoopbackAddress() && !addr.isLinkLocalAddress() && !addr.isSiteLocalAddress();
+            case SITE_LOCAL:
+                return addr.isSiteLocalAddress();
+            case LINK_LOCAL:
+                return addr.isLinkLocalAddress();
+            case LOOPBACK:
+                return addr.isLoopbackAddress();
+            case NON_LOOPBACK:
+                return !addr.isLoopbackAddress();
+            default:
+                throw new IllegalArgumentException("scope " + scope + " is unknown");
+        }
     }
 
     /**
@@ -3914,7 +3956,7 @@ public class Util {
      *                match-addr:192.168.*
      * @return InetAddress or null if not found
      */
-    public static InetAddress getAddressByPatternMatch(String pattern) throws Exception {
+    public static InetAddress getAddressByPatternMatch(String pattern, StackType ip_version) throws Exception {
         if(pattern == null) return null;
         String real_pattern=null;
         byte type=0; // 1=match-interface, 2: match-addr, 3: match-host,
@@ -3948,17 +3990,25 @@ public class Util {
                         String interface_name=intf.getName();
                         Matcher matcher=pat.matcher(interface_name);
                         if(matcher.matches())
-                            return getAddress(intf,null);
+                            return getAddress(intf,null, ip_version);
                         break;
                     case 2: // match by host address
                     case 3: // match by host name
-                        for(Enumeration<InetAddress> en=intf.getInetAddresses(); en.hasMoreElements(); ) {
+                        InetAddress first=null;
+                        for(Enumeration<InetAddress> en=intf.getInetAddresses(); en.hasMoreElements();) {
                             InetAddress addr=en.nextElement();
                             String name=type == 3? addr.getHostName() : addr.getHostAddress();
                             matcher=pat.matcher(name);
-                            if(matcher.matches())
+                            if(matcher.matches()) {
+                                if((addr instanceof Inet4Address && (ip_version == StackType.IPv4 || ip_version == StackType.Dual)) ||
+                                  (addr instanceof Inet6Address && ip_version == StackType.IPv6))
                                 return addr;
+                                if(first == null)
+                                    first=addr;
+                            }
                         }
+                        if(first != null)
+                            return first;
                         break;
                 }
             }
@@ -3966,6 +4016,11 @@ public class Util {
             }
         }
         return null;
+    }
+    public static InetAddress getAddressByCustomCode(String value) throws Exception {
+        Class<Supplier<InetAddress>> clazz=(Class<Supplier<InetAddress>>)Util.loadClass(value, (ClassLoader)null);
+        Supplier<InetAddress> supplier=clazz.getDeclaredConstructor().newInstance();
+        return supplier.get();
     }
 
     /** Always returns true unless there is a socket exception - will be removed when GraalVM issue
@@ -3982,47 +4037,6 @@ public class Util {
         }
     }
 
-
-
-    /**
-     * Returns the first address on the given interface on the current host, which satisfies scope
-     * @param intf the interface to be checked
-     */
-    public static InetAddress getAddress(NetworkInterface intf,AddressScope scope) {
-        StackType ip_version=Util.getIpStackType();
-        for(Enumeration addresses=intf.getInetAddresses(); addresses.hasMoreElements(); ) {
-            InetAddress addr=(InetAddress)addresses.nextElement();
-            boolean match=scope == null;
-            if(scope != null) {
-                switch(scope) {
-                    case GLOBAL:
-                        match=!addr.isLoopbackAddress() && !addr.isLinkLocalAddress() && !addr.isSiteLocalAddress();
-                        break;
-                    case SITE_LOCAL:
-                        match=addr.isSiteLocalAddress();
-                        break;
-                    case LINK_LOCAL:
-                        match=addr.isLinkLocalAddress();
-                        break;
-                    case LOOPBACK:
-                        match=addr.isLoopbackAddress();
-                        break;
-                    case NON_LOOPBACK:
-                        match=!addr.isLoopbackAddress();
-                        break;
-                    default:
-                        throw new IllegalArgumentException("scope " + scope + " is unknown");
-                }
-            }
-
-            if(match) {
-                if((addr instanceof Inet4Address && ip_version == StackType.IPv4) ||
-                  (addr instanceof Inet6Address && ip_version == StackType.IPv6))
-                    return addr;
-            }
-        }
-        return null;
-    }
 
 
     /**
@@ -4066,6 +4080,13 @@ public class Util {
         return ipv6_stack_available;
     }
 
+    public static boolean isIpAddressPermissible(InetAddress addr) {
+        if(ipv4_stack_available && !ipv6_stack_available)
+            return !(addr instanceof Inet6Address);
+        // todo: when we have an IPv4 address in an IPv6 stack -> map it to an IPv6 address
+        return true;
+    }
+
     /** Returns true if the 2 addresses are of the same type (IPv4 or IPv6) */
     public static boolean sameAddresses(InetAddress one,InetAddress two) {
         return one == null
@@ -4077,32 +4098,35 @@ public class Util {
     /**
      * Tries to determine the type of IP stack from the available interfaces and their addresses and from the
      * system properties (java.net.preferIPv4Stack and java.net.preferIPv6Addresses)
-     * @return StackType.IPv4 for an IPv4 only stack, StackYTypeIPv6 for an IPv6 only stack, and StackType.Unknown
+     * @return StackType.IPv4 for an IPv4 only stack, StackType.IPv6 for an IPv6 only stack, and StackType.Unknown
      * if the type cannot be detected
      */
     private static StackType _getIpStackType() {
-        ipv4_stack_available=isStackAvailable(true);
-        ipv6_stack_available=isStackAvailable(false);
+        Collection<InetAddress> all_addresses=getAllAvailableAddresses(null);
+        for(InetAddress addr: all_addresses) {
+            if(addr instanceof Inet4Address)
+                ipv4_stack_available=true;
+            else if(addr instanceof Inet6Address)
+                ipv6_stack_available=true;
+            if(ipv4_stack_available && ipv6_stack_available)
+                break;
+        }
 
         // if only IPv4 stack available
-        if(ipv4_stack_available && !ipv6_stack_available) {
+        if(ipv4_stack_available && !ipv6_stack_available)
             return StackType.IPv4;
-        }
         // if only IPv6 stack available
-        else if(ipv6_stack_available && !ipv4_stack_available) {
+        if(ipv6_stack_available && !ipv4_stack_available)
             return StackType.IPv6;
-        }
-        // if dual stack
-        else if(ipv4_stack_available && ipv6_stack_available) {
-            // get the System property which records user preference for a stack on a dual stack machine
-            return Boolean.getBoolean(Global.IPv6)? StackType.IPv6 : StackType.IPv4;
-        }
-        return StackType.Unknown;
+        // If dual stack or no stack available: get the System property which records user pref for a stack
+        // If both java.net.preferIPv4Stack _and_ java.net.preferIPv6Addresses are set, prefer IPv4 (like the JDK does)
+        return Boolean.getBoolean(Global.IPv4)? StackType.IPv4
+          : Boolean.getBoolean(Global.IPv6)? StackType.IPv6 : StackType.Dual;
     }
 
 
     public static boolean isStackAvailable(boolean ipv4) {
-        Collection<InetAddress> all_addrs=getAllAvailableAddresses();
+        Collection<InetAddress> all_addrs=getAllAvailableAddresses(null);
         for(InetAddress addr : all_addrs)
             if(ipv4 && addr instanceof Inet4Address || (!ipv4 && addr instanceof Inet6Address))
                 return true;
@@ -4112,33 +4136,30 @@ public class Util {
 
     public static List<NetworkInterface> getAllAvailableInterfaces() throws SocketException {
         List<NetworkInterface> retval=new ArrayList<>(10);
-        NetworkInterface intf;
         for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
-            intf=(NetworkInterface)en.nextElement();
-            retval.add(intf);
+            retval.add((NetworkInterface)en.nextElement());
         }
         return retval;
     }
 
-    public static Collection<InetAddress> getAllAvailableAddresses() {
+    /** Returns all addresses of all interfaces (that are up) that satisfy a given filter (ignored if null) */
+    public static Collection<InetAddress> getAllAvailableAddresses(Predicate<InetAddress> filter) {
         Set<InetAddress> retval=new HashSet<>();
-        Enumeration en;
-
         try {
-            en=NetworkInterface.getNetworkInterfaces();
-            if(en == null)
-                return retval;
-            while(en.hasMoreElements()) {
-                NetworkInterface intf=(NetworkInterface)en.nextElement();
+            List<NetworkInterface> interfaces=getAllAvailableInterfaces();
+            for(NetworkInterface intf: interfaces) {
+                if(!intf.isUp())
+                    continue;
                 Enumeration<InetAddress> addrs=intf.getInetAddresses();
-                while(addrs.hasMoreElements())
-                    retval.add(addrs.nextElement());
+                while(addrs.hasMoreElements()) {
+                    InetAddress addr=addrs.nextElement();
+                    if(filter == null || filter.test(addr))
+                        retval.add(addr);
+                }
             }
         }
         catch(SocketException e) {
-            e.printStackTrace();
         }
-
         return retval;
     }
 
@@ -4146,7 +4167,7 @@ public class Util {
         // N.B. bind_addr.isAnyLocalAddress() is not OK
         if (bind_addr.isLoopbackAddress())
             return;
-        Collection<InetAddress> addrs=getAllAvailableAddresses();
+        Collection<InetAddress> addrs=getAllAvailableAddresses(null);
         for(InetAddress addr : addrs) {
             if(addr.equals(bind_addr))
                 return;
@@ -4156,6 +4177,21 @@ public class Util {
             sb.append('[').append(prot_name).append("] ");
         sb.append(bind_addr).append(" is not a valid address on any local network interface");
         throw new BindException(sb.toString());
+    }
+
+
+    public static InetAddress convertToIPv6(InetAddress ipv4_addr) throws UnknownHostException {
+        if(!(ipv4_addr instanceof Inet4Address))
+            throw new IllegalArgumentException(String.format("address %s is not an IPv4 address", ipv4_addr));
+        byte[] bytes=ipv4_addr.getAddress();
+        byte[] ipv4asIpV6addr=new byte[16];
+        ipv4asIpV6addr[10]=(byte)0xff;
+        ipv4asIpV6addr[11]=(byte)0xff;
+        ipv4asIpV6addr[12]=bytes[0];
+        ipv4asIpV6addr[13]=bytes[1];
+        ipv4asIpV6addr[14]=bytes[2];
+        ipv4asIpV6addr[15]=bytes[3];
+        return InetAddress.getByAddress(ipv4asIpV6addr);
     }
 
 
@@ -4413,26 +4449,6 @@ public class Util {
         return value;
     }
 
-    //    /**
-    //     * Replaces variables with values from system properties. If a system property is not found, the property is
-    //     * removed from the output string
-    //     * @param input
-    //     * @return
-    //     */
-    //    public static String substituteVariables(String input) throws Exception {
-    //        Collection<Configurator.ProtocolConfiguration> configs=Configurator.parseConfigurations(input);
-    //        for(Configurator.ProtocolConfiguration config: configs) {
-    //            for(Iterator<Map.Entry<String,String>> it=config.getProperties().entrySet().iterator(); it.hasNext();) {
-    //                Map.Entry<String,String> entry=it.next();
-    //
-    //
-    //            }
-    //        }
-    //
-    //
-    //        return null;
-    //    }
-
 
     /**
      * Replaces variables of ${var:default} with System.getProperty(var, default). If no variables are found, returns
@@ -4479,12 +4495,10 @@ public class Util {
             default_val=s.substring(index + 1);
             if(default_val != null && !default_val.isEmpty())
                 default_val=default_val.trim();
-            // retval=System.getProperty(var, default_val);
             retval=_getProperty(var,default_val);
         }
         else {
             var=s;
-            // retval=System.getProperty(var);
             retval=_getProperty(var,null);
         }
         return retval;

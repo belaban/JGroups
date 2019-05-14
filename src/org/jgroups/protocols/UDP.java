@@ -102,12 +102,7 @@ public class UDP extends TP {
       "a datagram packet")
     protected long suppress_time_out_of_buffer_space=60000;
 
-   // @Property(description="Number of unicast receiver threads, all reading from the same DatagramSocket. " +
-    //  "If de-serialization is slow, increasing the number of receiver threads might yield better performance.")
     protected int unicast_receiver_threads=1;
-
-    //@Property(description="Number of multicast receiver threads, all reading from the same MulticastSocket. " +
-    //  "If de-serialization is slow, increasing the number of receiver threads might yield better performance.")
     protected int multicast_receiver_threads=1;
 
 
@@ -504,6 +499,7 @@ public class UDP extends TP {
      */
     protected MulticastSocket createMulticastSocketWithBindPort() throws Exception {
         MulticastSocket tmp=null;
+        Exception saved_exception=null;
         // 27-6-2003 bgooren, find available port in range (start_port, start_port+port_range)
         int rcv_port=bind_port, max_port=bind_port + port_range;
         while(rcv_port <= max_port) {
@@ -512,12 +508,14 @@ public class UDP extends TP {
             }
             catch(SocketException | SecurityException bind_ex) {	// Cannot listen on this port
                 rcv_port++;
+                saved_exception=bind_ex;
             }
         }
 
         // Cannot listen at all, throw an Exception
         if(rcv_port >= max_port + 1) // +1 due to the increment above
-            throw new Exception("failed to open a port in range " + bind_port + '-' + max_port);
+            throw new Exception(String.format("failed to open a port in range %d-%d (last exception: %s)",
+                                              bind_port, max_port, saved_exception));
         return tmp;
     }
 

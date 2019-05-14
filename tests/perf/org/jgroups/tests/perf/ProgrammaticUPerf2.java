@@ -3,7 +3,6 @@ package org.jgroups.tests.perf;
 import org.jgroups.*;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.*;
-import org.jgroups.conf.PropertyConverters;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
@@ -98,7 +97,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
                 }
             };
 
-            InetAddress bind_address=PropertyConverters.Default.convertBindAddress(BIND_ADDR);
+            InetAddress bind_address=Util.getAddress(BIND_ADDR, Util.getIpStackType());
             Protocol[] prot_stack={
               new TCP().setBindAddress(bind_address).setBindPort(7800)
                 .setDiagnosticsEnabled(true)
@@ -299,7 +298,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
             invoker.join();
         long total_time=System.currentTimeMillis() - start;
 
-        System.out.println("");
+        System.out.println();
         AverageMinMax avg_gets=null, avg_puts=null;
         for(Invoker invoker: invokers) {
             if(print_invokers)

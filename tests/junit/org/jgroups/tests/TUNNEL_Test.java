@@ -10,7 +10,6 @@ import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
 import org.jgroups.util.ResourceManager;
-import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -40,12 +39,10 @@ public class TUNNEL_Test extends ChannelTestBase {
 
     @BeforeClass
     void startRouter() throws Exception {
-        StackType type=Util.getIpStackType();
-        String bind_addr_str=type == StackType.IPv6? "::1" : "127.0.0.1";
-        gossip_router_bind_addr=InetAddress.getByName(bind_addr_str);
+        gossip_router_bind_addr=Util.getLoopback();
         gossip_router_port=ResourceManager.getNextTcpPort(gossip_router_bind_addr);
         gossip_router_hosts=gossip_router_bind_addr.getHostAddress() + "[" + gossip_router_port + "]";
-        gossipRouter=new GossipRouter(bind_addr_str, gossip_router_port);
+        gossipRouter=new GossipRouter(gossip_router_bind_addr, gossip_router_port);
         gossipRouter.start();
     }
     

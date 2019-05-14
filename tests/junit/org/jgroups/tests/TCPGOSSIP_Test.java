@@ -9,7 +9,6 @@ import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.util.ResourceManager;
-import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -38,15 +37,9 @@ public class TCPGOSSIP_Test {
 
     @BeforeClass
     void startRouter() throws Exception {
-        String tmp=Util.getProperty(Global.BIND_ADDR);
-        if(tmp == null) {
-            StackType type=Util.getIpStackType();
-            tmp=type == StackType.IPv6? "::1" : "127.0.0.1";
-        }
-
-        bind_addr=InetAddress.getByName(tmp);
+        bind_addr=Util.getLoopback();
         gossip_router_port=ResourceManager.getNextTcpPort(bind_addr);
-        gossipRouter=new GossipRouter(null, gossip_router_port);
+        gossipRouter=new GossipRouter(bind_addr, gossip_router_port);
         gossipRouter.start();
     }
 

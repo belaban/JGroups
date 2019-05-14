@@ -143,7 +143,7 @@ public class ConfiguratorTest {
                 map.put((String)entry.getKey(), (String)entry.getValue());
 
             Person p=new Person();
-            Configurator.resolveAndAssignFields(p, map);
+            Configurator.resolveAndAssignFields(p, map, Util.getIpStackType());
             assert Objects.equals(p.name, "Bela");
             assert p.age == 50;
         }

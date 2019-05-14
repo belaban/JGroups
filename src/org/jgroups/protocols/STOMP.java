@@ -1,9 +1,12 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.StackType;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
@@ -106,7 +109,7 @@ public class STOMP extends Protocol implements Runnable {
             acceptor.start();
         }
 
-        endpoint=endpoint_addr != null? endpoint_addr : getAddress();
+        endpoint=endpoint_addr != null? endpoint_addr : getAddress(Util.getIpStackType());
     }
 
 
@@ -311,7 +314,7 @@ public class STOMP extends Protocol implements Runnable {
         }
     }
 
-    private String getAddress() {
+    private String getAddress(StackType ip_version) {
         InetSocketAddress saddr=(InetSocketAddress)srv_sock.getLocalSocketAddress();
         InetAddress tmp=saddr.getAddress();
         if(!tmp.isAnyLocalAddress())
@@ -319,7 +322,7 @@ public class STOMP extends Protocol implements Runnable {
 
         for(Util.AddressScope scope: Util.AddressScope.values()) {
             try {
-                InetAddress addr=Util.getAddress(scope);
+                InetAddress addr=Util.getAddress(scope, ip_version);
                 if(addr != null) return addr.getHostAddress() + ":" + srv_sock.getLocalPort();
             }
             catch(SocketException e) {
@@ -363,7 +366,7 @@ public class STOMP extends Protocol implements Runnable {
         }
 
         if(buffer != null)
-            sb.append("content-length: ").append(String.valueOf(length)).append("\n");
+            sb.append("content-length: ").append(length).append("\n");
         sb.append("\n");
 
         byte[] tmp=sb.toString().getBytes();
@@ -428,11 +431,7 @@ public class STOMP extends Protocol implements Runnable {
             for(Set<Connection> conns: subscriptions.values()) {
                 conns.remove(this);
             }
-            for(Iterator<Map.Entry<String,Set<Connection>>> it=subscriptions.entrySet().iterator(); it.hasNext();) {
-                Map.Entry<String,Set<Connection>> entry=it.next();
-                if(entry.getValue().isEmpty())
-                    it.remove();
-            }
+            subscriptions.entrySet().removeIf(entry -> entry.getValue().isEmpty());
         }
 
         public void run() {
