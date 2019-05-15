@@ -19,6 +19,10 @@ OPTIONS="$OPTIONS -Dgraal.CompilationFailureAction=Diagnose"
 
 # OPTIONS="$OPTIONS --debug-attach=5005"
 
-#OPTIONS="$OPTIONS -J-server -J-XX:+UseG1GC -J-XX:+UseAdaptiveSizePolicy -J-XX:MinHeapFreeRatio=20 -J-XX:MaxHeapFreeRatio=20"
+OPTIONS="$OPTIONS -J-server -J-XX:+UseG1GC -J-XX:+UseAdaptiveSizePolicy -J-XX:MinHeapFreeRatio=20 -J-XX:MaxHeapFreeRatio=20"
+
+OPTIONS="$OPTIONS --initialize-at-build-time" ## needed by GraalVM 19
+
+OPTIONS="$OPTIONS -J-Djava.net.preferIPv4Stack=true"
 
 native-image -cp $CLASSPATH $OPTIONS $*
