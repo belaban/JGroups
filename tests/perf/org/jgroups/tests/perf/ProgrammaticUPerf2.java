@@ -104,8 +104,11 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
                 .setDiagnosticsEnabled(true)
                 .diagEnableUdp(false) // todo: enable when MulticastSocket works
                 .diagEnableTcp(true),
-              // .bundler("no-bundler"),
               new TCPPING().initialHosts(Collections.singletonList(new InetSocketAddress(bind_address, 7800))),
+              //new UDP().setBindAddress(bind_address).setBindPort(7800)
+                //.setDiagnosticsEnabled(true).diagEnableUdp(true).diagEnableTcp(false),
+              //new PING(),
+
               new MERGE3(),
               new FD_SOCK(),
               new FD_ALL(),
