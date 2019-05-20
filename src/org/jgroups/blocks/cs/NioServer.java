@@ -124,11 +124,14 @@ public class NioServer extends NioBaseServer {
     public synchronized void stop() {
         super.stop();
         if(running.compareAndSet(true, false)) {
-            Util.close(selector); // closing the selector also stops the acceptor thread
-            socket_factory.close(channel);
+            // Util.close(selector); // closing the selector also stops the acceptor thread
+            // socket_factory.close(channel);
+            selector.wakeup();
         }
     }
 
-
-
+    protected void acceptorDone() {
+        Util.close(selector); // closing the selector also stops the acceptor thread
+        socket_factory.close(channel);
+    }
 }

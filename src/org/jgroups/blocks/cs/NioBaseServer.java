@@ -108,6 +108,9 @@ public abstract class NioBaseServer extends BaseServer {
         ;
     }
 
+    protected void acceptorDone() {
+
+    }
 
 
 
@@ -149,6 +152,7 @@ public abstract class NioBaseServer extends BaseServer {
                     }
                 }
             }
+            acceptorDone();
         }
 
 
