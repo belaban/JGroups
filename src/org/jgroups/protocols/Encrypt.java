@@ -188,6 +188,8 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             return;
         }
         BlockingQueue<Cipher> cipherQueue = decoding_ciphers;
+        if(cipherQueue == null)
+            return;
         try {
             Cipher cipher=cipherQueue.take();
             try {
