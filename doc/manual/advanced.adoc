@@ -2312,7 +2312,7 @@ To print the packets offline, `java org.jgroups.tests.ParseMessages -file jgroup
 like this (edited):
 
 ----
-[belasmac] /Users/bela$ jt ParseMessages -file bela.dump6 -tcp
+[belasmac] /Users/bela$ jt ParseMessages -file bela.dump6
 1: [B to 192.168.1.105:7800, 33 bytes, flags=OOB|DONT_BUNDLE|INTERNAL], hdrs: TCPPING: [GET_MBRS_REQ cluster=draw initial_discovery=true], TP: [cluster=draw]
 2: [A to B, 33 bytes, flags=OOB|DONT_BUNDLE|INTERNAL], hdrs: TCPPING: [GET_MBRS_RSP cluster=null initial_discovery=false], TP: [cluster=draw]
 3: [B to A, 0 bytes, flags=OOB|INTERNAL], hdrs: GMS: GmsHeader[JOIN_REQ]: mbr=B, UNICAST3: DATA, seqno=1, first, TP: [cluster=draw]
