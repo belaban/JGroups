@@ -72,7 +72,7 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
      * @param action
      */
     public void forEach(Consumer<RouterStub> action) {
-        stubs.stream().filter(RouterStub::isConnected).forEach(action::accept);
+        stubs.stream().filter(RouterStub::isConnected).forEach(action);
     }
 
     /**
@@ -166,7 +166,8 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
             return false;
         try {
             stub.connect(this.cluster_name, this.local_addr, this.logical_name, this.phys_addr);
-            log.debug("re-established connection to %s successfully for group=%s and address=%s", stub.remote(), this.cluster_name, this.local_addr);
+            log.debug("%s: re-established connection to %s successfully for group %s",
+                      local_addr, stub.remote(), this.cluster_name);
             return true;
         }
         catch(Throwable t) {
@@ -179,7 +180,7 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
         if(stub == null) return;
         remove(stub);
         if(add(new Target(stub.local(), stub.remote(), stub.receiver()))) {
-            log.debug("connection to %s closed, trying to re-establish connection", stub.remote());
+            log.debug("%s: connection to %s closed, trying to re-establish connection", local_addr, stub.remote());
             startReconnector();
         }
     }

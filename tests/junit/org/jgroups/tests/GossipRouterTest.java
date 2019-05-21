@@ -11,7 +11,6 @@ import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.ResourceManager;
-import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -41,9 +40,7 @@ public class GossipRouterTest {
 
     @BeforeClass
     protected void setUp() throws Exception {
-        StackType type=Util.getIpStackType();
-        bind_addr_str=type == StackType.IPv6? "::1" : "127.0.0.1";
-        bind_addr=InetAddress.getByName(bind_addr_str);
+        bind_addr=Util.getLoopback();
         gossip_router_port=ResourceManager.getNextTcpPort(bind_addr);
         gossip_router_hosts=bind_addr.getHostAddress() + "[" + gossip_router_port + "]";
     }
@@ -81,7 +78,7 @@ public class GossipRouterTest {
         b.connect("demo");
 
         System.out.println("-- starting GossipRouter");
-        router=new GossipRouter(bind_addr_str, gossip_router_port);
+        router=new GossipRouter(bind_addr_str, gossip_router_port).useNio(false);
         router.start();
 
         System.out.println("-- waiting for merge to happen --");
@@ -108,10 +105,12 @@ public class GossipRouterTest {
     }
 
     protected JChannel createTunnelChannel(String name, boolean include_failure_detection) throws Exception {
-        TUNNEL tunnel=new TUNNEL().setValue("bind_addr", bind_addr).setValue("reconnect_interval", 1000);
+        TUNNEL tunnel=new TUNNEL().setBindAddress(bind_addr).setValue("reconnect_interval", 1000);
         tunnel.setGossipRouterHosts(gossip_router_hosts);
-        List<Protocol> protocols=new ArrayList<>();
-        protocols.addAll(Arrays.asList(tunnel, new PING(), new MERGE3().setValue("min_interval", 1000).setValue("max_interval", 3000)));
+        List<Protocol> protocols=new ArrayList<>(Arrays.asList(tunnel,
+                                                               new PING(),
+                                                               new MERGE3().setValue("min_interval", 1000)
+                                                                 .setValue("max_interval", 3000)));
         if(include_failure_detection) {
             List<Protocol> tmp=new ArrayList<>(2);
             tmp.add(new FD().setValue("timeout", 2000).setValue("max_tries", 2));
@@ -119,7 +118,7 @@ public class GossipRouterTest {
             protocols.addAll(tmp);
         }
         protocols.addAll(Arrays.asList(new NAKACK2().setValue("use_mcast_xmit", false), new UNICAST3(), new STABLE(),
-                                       new GMS().joinTimeout(10)));
+                                       new GMS().joinTimeout(1000)));
         JChannel ch=new JChannel(protocols);
         if(name != null)
             ch.setName(name);

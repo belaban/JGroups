@@ -81,7 +81,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     protected boolean              jmx=true;
 
     @Property(description="Use non-blocking IO (true) or blocking IO (false). Cannot be changed at runtime",writable=false)
-    protected boolean              use_nio=true;
+    protected boolean              use_nio;
 
     @Property(description="Handles client disconnects: sends SUSPECT message to all other members of that group")
     protected boolean              emit_suspect_events=true;

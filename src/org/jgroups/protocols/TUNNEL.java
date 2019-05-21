@@ -130,7 +130,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
             throw new Exception("timer cannot be retrieved from protocol stack");
         if(gossip_router_hosts.isEmpty())
             throw new IllegalStateException("gossip_router_hosts needs to contain at least one address of a GossipRouter");
-        log.debug("GossipRouters are:" + gossip_router_hosts.toString());
+        log.debug("%s: gossip routers are %s", local_addr, gossip_router_hosts.toString());
         
         stubManager = RouterStubManager.emptyGossipClientStubManager(this).useNio(this.use_nio);
         sock = getSocketFactory().createDatagramSocket("jgroups.tunnel.ucast_sock", bind_port, bind_addr);
@@ -233,11 +233,12 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
             stubManager.forAny( stub -> {
                 try {
                     if(log.isTraceEnabled())
-                        log.trace("sent a message to all members, GR used %s", stub.gossipRouterAddress());
+                        log.trace("%s: sending a message to all members, GR used %s", local_addr, stub.gossipRouterAddress());
                     stub.sendToAllMembers(group, sender, data, offset, length);
                 }
                 catch (Exception ex) {
-                    log.warn("failed sending a message to all members, router used %s", stub.gossipRouterAddress());
+                    log.warn("%s: failed sending a message to all members, router used %s: %s",
+                             local_addr, stub.gossipRouterAddress(), ex);
                 }
             });
         }
@@ -247,11 +248,11 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
             stubManager.forAny( stub -> {
                 try {
                     if(log.isTraceEnabled())
-                        log.trace("sent a message to %s (router used %s)", dest, stub.gossipRouterAddress());
+                        log.trace("%s: sending a message to %s (router used %s)", local_addr, dest, stub.gossipRouterAddress());
                     stub.sendToMember(group, dest, sender, data, offset, length);
                 }
                 catch (Exception ex) {
-                    log.warn("failed sending a message to %s (router used %s):", dest,
+                    log.warn("%s: failed sending a message to %s (router used %s): %s", local_addr, dest,
                              stub.gossipRouterAddress(), ex);
                 }
             });
