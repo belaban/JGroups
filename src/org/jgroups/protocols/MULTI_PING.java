@@ -53,7 +53,9 @@ public class MULTI_PING extends Discovery {
     }
 
     public void weedOutCompletedDiscoveryResponses() {
-        ;
+        super.weedOutCompletedDiscoveryResponses();
+        for(Discovery p: discovery_protocols)
+            p.weedOutCompletedDiscoveryResponses();
     }
 
 
