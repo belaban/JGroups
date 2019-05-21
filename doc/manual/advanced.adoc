@@ -2283,7 +2283,7 @@ Each packet has a number of headers before the data part which contains the JGro
 a UDP packet has an ethernet-, IP- and datagram header; a TCP message contains ethernet and IP headers
 plus the TCP information.
 
-To see the JGroups messages, the {{ParseMessages}} program parses the _data_ section of a UDP datagram packet or a
+To see the JGroups messages, the `ParseMessages` program parses the _data_ section of a UDP datagram packet or a
 TCP or TCP_NIO2 stream and prints the JGroups messages plus its headers. It can be passed a file, or it can read from
 stdin and thus be piped to a packet analyzer and print JGroups data in real-time.
 
