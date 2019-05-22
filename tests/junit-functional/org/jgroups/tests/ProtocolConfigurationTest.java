@@ -299,7 +299,7 @@ public class ProtocolConfigurationTest {
             configObjInstance=Class.forName(class_name).getDeclaredConstructor().newInstance();
 	    }
 	    
-	    protected List<Object> getConfigurableObjects() {
+	    public List<Object> getConfigurableObjects() {
 	        List<Object> retval=new LinkedList<>();
 	        if(configObjInstance != null)
 	            retval.add(configObjInstance);

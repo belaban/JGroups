@@ -84,7 +84,7 @@ public class AUTH extends Protocol {
     public PhysicalAddress getPhysicalAddress()    {return getTransport().getPhysicalAddress();}
 
 
-    protected List<Object> getConfigurableObjects() {
+    public List<Object> getConfigurableObjects() {
         List<Object> retval=new LinkedList<>();
         if(auth_token != null)
             retval.add(auth_token);
