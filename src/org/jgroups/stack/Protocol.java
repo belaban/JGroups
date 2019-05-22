@@ -114,6 +114,34 @@ public abstract class Protocol {
     }
 
 
+    public <T extends Protocol> T setProperties(Map<String, String> properties) throws Exception {
+        return setProperties(properties, Util.getIpStackType());
+    }
+
+
+    /**
+     * Resolves and applies the specified properties to this protocol.
+     * @param properties a map of property string values
+     * @param ip_version The version of the stack (IPv4, IPv6 or Dual)
+     * @return this protocol
+     * @throws Exception if any of the specified properties are unresolvable or unrecognized.
+     */
+    public <T extends Protocol> T setProperties(Map<String,String> properties, StackType ip_version) throws Exception {
+        // These methods are destructive (remove values from properties), so make a defensive copy
+        Map<String,String> copy=new HashMap<>(properties);
+        Configurator.resolveAndAssignFields(this, copy, ip_version);
+        Configurator.resolveAndInvokePropertyMethods(this, copy, ip_version);
+        List<Object> objects=this.getConfigurableObjects();
+        if(objects != null) {
+            for(Object object: objects) {
+                Configurator.resolveAndAssignFields(object, copy, ip_version);
+                Configurator.resolveAndInvokePropertyMethods(object, copy, ip_version);
+            }
+        }
+        if(!copy.isEmpty())
+            throw new IllegalArgumentException(String.format("unrecognized %s properties: %s", this.getName(), copy.keySet()));
+        return (T)this;
+    }
 
 
     /**
