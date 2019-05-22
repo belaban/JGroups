@@ -150,7 +150,7 @@ public abstract class Protocol {
      * other objects. This call is guaranteed to be invoked <em>after</em> the protocol itself has been configured.
      * See AUTH for an example.
      */
-    protected List<Object> getConfigurableObjects() {return null;}
+    public List<Object> getConfigurableObjects() {return null;}
 
     /** Called by the XML parser when subelements are found in the configuration of a protocol. This allows
      * a protocol to define protocol-specific information and to parse it */
