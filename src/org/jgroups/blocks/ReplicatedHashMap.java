@@ -719,7 +719,7 @@ public class ReplicatedHashMap<K, V> extends
 				return it.hasNext();
 			}	
 			public Object next(){
-				Object cur= 	it.next();
+				cur= 	it.next();
 				return cur;
 			}	
 			public void remove(){
