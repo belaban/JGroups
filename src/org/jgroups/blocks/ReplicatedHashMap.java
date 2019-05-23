@@ -710,7 +710,34 @@ public class ReplicatedHashMap<K, V> extends
 
     @Override
     public Set<java.util.Map.Entry<K,V>> entrySet() {
-        return map.entrySet();
+        return new AbstractSet(){
+		public Iterator iterator(){
+			Iterator it=map.entrySet().iterator();
+			return new Iterator(){
+				Object cur= null;
+			public boolean	hasNext(){
+				return it.hasNext();
+			}	
+			public Object next(){
+				Object cur= 	it.next();
+				return cur;
+			}	
+			public void remove(){
+				if (cur==null){
+					throw new IllegalStateException();
+				}
+				map.entrySet().remove((Entry<K,V>)cur);
+				cur=null;
+			}
+
+		};
+
+			
+	};
+		public int size(){
+			return map.size();
+		}
+    };
     }
 
     @Override
@@ -719,10 +746,6 @@ public class ReplicatedHashMap<K, V> extends
     }
 
 
-    @Override
-    public int size() {
-        return map.size();
-    }
 
 
 }
