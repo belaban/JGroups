@@ -726,7 +726,7 @@ public class ReplicatedHashMap<K, V> extends
 				if (cur==null){
 					throw new IllegalStateException();
 				}
-				map.entrySet().remove((Entry<K,V>)cur);
+				ReplicatedHashMap.this.remove(((Entry<K,V>)cur).getKey());
 				cur=null;
 			}
 
