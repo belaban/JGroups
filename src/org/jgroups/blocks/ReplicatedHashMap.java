@@ -718,19 +718,11 @@ public class ReplicatedHashMap<K, V> extends
         return map.get(key);
     }
 
-    @Override
-    public Set<K> keySet() {
-        return map.keySet();
-    }
 
     @Override
     public int size() {
         return map.size();
     }
 
-    @Override
-    public Collection<V> values() {
-        return map.values();
-    }
 
 }
