@@ -25,6 +25,7 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
 
     @BeforeClass
     protected void setUp() throws Exception {
+        //channel_conf = "tcp.xml";
         JChannel c1=createChannel(true, 2);
         this.map1=new ReplicatedHashMap<>(c1);
         map1.setBlockingUpdates(true);
@@ -286,6 +287,22 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         all1.putAll(all2);
         assertTrue(this.map1.values().containsAll(all1.values()));
         assertTrue(this.map2.values().containsAll(all1.values()));
+    }
+
+
+    public void testValuesClear() {
+        Map<String,String> all1=new HashMap<>();
+        all1.put("key1", "value1");
+        all1.put("key2", "value2");
+
+        this.map1.putAll(all1);
+        assertTrue(this.map1.values().containsAll(all1.values()));
+        assertTrue(this.map2.values().containsAll(all1.values()));
+
+        this.map2.values().clear();
+        assertTrue(map2.isEmpty());
+        assertTrue(this.map1.isEmpty());
+
     }
 
 }
