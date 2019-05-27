@@ -72,6 +72,8 @@ public class MULTI_PING extends Discovery {
     protected void findMembers(List<Address> members, boolean initial_discovery, Responses rsps, boolean async) {
         for(Discovery discovery_protocol: discovery_protocols) {
             discovery_protocol.addResponse(rsps);
+            if(discovery_rsp_callback != null)
+                discovery_protocol.discovery_rsp_callback=this.discovery_rsp_callback;
             if(async || async_discovery)
                 timer.execute(() -> discovery_protocol.findMembers(members, initial_discovery, rsps));
             else
