@@ -590,8 +590,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         }
         catch(TimeoutException e) {
             if(log_collect_msgs);
-                log.warn("%s: failed to collect all ACKs (expected=%d) for view %s after %dms, missing %d ACKs from %s",
-                         local_addr, ack_collector.expectedAcks(), new_view.getViewId(), view_ack_collection_timeout,
+                log.warn("%s: failed to collect all ACKs (expected=%d) for view %s after %d ms, missing %d ACKs from %s",
+                         local_addr, ack_collector.expectedAcks(), new_view.getViewId(), System.currentTimeMillis()-start,
                          ack_collector.size(), ack_collector.printMissing());
         }
     }
