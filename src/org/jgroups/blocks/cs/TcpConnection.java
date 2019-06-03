@@ -350,9 +350,9 @@ public class TcpConnection extends Connection {
     }
 
     public void close() throws IOException {
+        Util.close(out, in, sock); // fix for https://issues.jboss.org/browse/JGRP-2350
         send_lock.lock();
         try {
-            Util.close(out, in, sock);
             if(receiver != null) {
                 receiver.stop();
                 receiver=null;
