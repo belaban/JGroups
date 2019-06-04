@@ -561,7 +561,7 @@ public class UDP extends TP {
             int actual_size=sock.getSendBufferSize();
             if(actual_size < send_buf_size && log.isWarnEnabled()) {
                 log.warn(Util.getMessage("IncorrectBufferSize"), "send", sock.getClass().getSimpleName(),
-                                         Util.printBytes(send_buf_size), Util.printBytes(actual_size), "send", "net.core.wmem_max");
+                                         Util.printBytes(send_buf_size), Util.printBytes(actual_size));
             }
         }
         catch(Throwable ex) {
@@ -573,7 +573,7 @@ public class UDP extends TP {
             int actual_size=sock.getReceiveBufferSize();
             if(actual_size < recv_buf_size && log.isWarnEnabled()) {
                 log.warn(Util.getMessage("IncorrectBufferSize"), "receive", sock.getClass().getSimpleName(),
-                                         Util.printBytes(recv_buf_size), Util.printBytes(actual_size), "receive", "net.core.rmem_max");
+                                         Util.printBytes(recv_buf_size), Util.printBytes(actual_size));
             }
         }
         catch(Throwable ex) {
