@@ -1,11 +1,12 @@
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.View;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
-import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Runner;
 import org.jgroups.util.Tuple;
@@ -38,7 +39,6 @@ import java.util.Objects;
   "(key server) to fetch a shared secret group key from the key server. That shared (symmetric) key is subsequently " +
   "used to encrypt communication between cluster members")
 public class SSL_KEY_EXCHANGE extends KeyExchange {
-    protected static final short GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
 
     protected enum Type {
         SECRET_KEY_REQ,
@@ -57,16 +57,18 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         void verify(SSLSession session) throws SecurityException;
     }
 
-    @Property(description="The port at which the key server is listening. If the port is not available, the next port " +
-      "will be probed, up to port+port_range. Used by the key server (server) to create an SSLServerSocket and " +
-      "by clients to connect to the key server.")
-    protected int             port=2157;
 
     @LocalAddress
     @Property(description="Bind address for the server or client socket. " +
       "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
       systemProperty={Global.BIND_ADDR})
     protected InetAddress     bind_addr;
+
+    @Property(description="The port at which the key server is listening. If the port is not available, the next port " +
+      "will be probed, up to port+port_range. Used by the key server (server) to create an SSLServerSocket and " +
+      "by clients to connect to the key server.")
+    protected int             port=2157;
+
 
     @Property(description="The port range to probe")
     protected int             port_range=5;
@@ -100,6 +102,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected String          session_verifier_arg;
 
 
+    protected SSLContext                   ssl_ctx;
     protected SSLServerSocket              srv_sock;
     protected Runner                       srv_sock_handler;
     protected KeyStore                     key_store;
@@ -107,10 +110,35 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected SessionVerifier              session_verifier;
 
 
-    public SSL_KEY_EXCHANGE setKeystoreName(String name)    {this.keystore_name=name; return this;}
-    public SSL_KEY_EXCHANGE setKeystorePassword(String pwd) {this.keystore_password=pwd; return this;}
-    public SSL_KEY_EXCHANGE setPortRange(int r)             {this.port_range=r; return this;}
-    public SSL_KEY_EXCHANGE setPort(int p)                  {this.port=p; return this;}
+    public InetAddress      getBindAddress()                          {return bind_addr;}
+    public SSL_KEY_EXCHANGE setBindAddress(InetAddress a)             {this.bind_addr=a; return this;}
+    public int              getPort()                                 {return port;}
+    public SSL_KEY_EXCHANGE setPort(int p)                            {this.port=p; return this;}
+    public int              getPortRange()                            {return port_range;}
+    public SSL_KEY_EXCHANGE setPortRange(int r)                       {this.port_range=r; return this;}
+    public String           getKeystoreName()                         {return keystore_name;}
+    public SSL_KEY_EXCHANGE setKeystoreName(String name)              {this.keystore_name=name; return this;}
+    public String           getKeystoreType()                         {return keystore_type;}
+    public SSL_KEY_EXCHANGE setKeystoreType(String type)              {this.keystore_type=type; return this;}
+    public String           getKeystorePassword()                     {return keystore_password;}
+    public SSL_KEY_EXCHANGE setKeystorePassword(String pwd)           {this.keystore_password=pwd; return this;}
+    public String           getSecretKeyAlgorithm()                   {return secret_key_algorithm;}
+    public SSL_KEY_EXCHANGE setSecretKeyAlgorithm(String a)           {this.secret_key_algorithm=a; return this;}
+    public boolean          getRequireClientAuthentication()          {return require_client_authentication;}
+    public SSL_KEY_EXCHANGE setRequireClientAuthentication(boolean b) {require_client_authentication=b; return this;}
+    public int              getSocketTimeout()                        {return socket_timeout;}
+    public SSL_KEY_EXCHANGE setSocketTimeout(int timeout)             {this.socket_timeout=timeout; return this;}
+    public String           getSessionVerifierClass()                 {return session_verifier_class;}
+    public SSL_KEY_EXCHANGE setSessionVerifierClass(String cl)        {this.session_verifier_class=cl; return this;}
+    public String           getSessionVerifierArg()                   {return session_verifier_arg;}
+    public SSL_KEY_EXCHANGE setSessionVerifierArg(String arg)         {this.session_verifier_arg=arg; return this;}
+    public KeyStore         getKeystore()                             {return key_store;}
+    public SSL_KEY_EXCHANGE setKeystore(KeyStore ks)                  {this.key_store=ks; return this;}
+    public SessionVerifier  getSessionVerifier()                      {return session_verifier;}
+    public SSL_KEY_EXCHANGE setSessionVerifier(SessionVerifier s)     {this.session_verifier=s; return this;}
+    public SSLContext       getSSLContext()                           {return ssl_ctx;}
+    public SSL_KEY_EXCHANGE setSSLContext(SSLContext ssl_ctx)         {this.ssl_ctx=ssl_ctx; return this;}
+
 
     public Address getServerLocation() {
         return srv_sock == null? null : new IpAddress(getTransport().getBindAddress(), srv_sock.getLocalPort());
@@ -141,7 +169,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         if(input == null)
             throw new FileNotFoundException(keystore_name);
         key_store.load(input, keystore_password.toCharArray());
-        if(session_verifier_class != null) {
+        if(session_verifier == null && session_verifier_class != null) {
             Class<? extends SessionVerifier> verifier_class=Util.loadClass(session_verifier_class, getClass());
             session_verifier=verifier_class.getDeclaredConstructor().newInstance();
             if(session_verifier_arg != null)
@@ -364,6 +392,8 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
 
 
     protected SSLContext getContext() throws Exception {
+        if(this.ssl_ctx != null)
+            return this.ssl_ctx;
         // Create key manager
         KeyManagerFactory keyManagerFactory=KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         keyManagerFactory.init(key_store, keystore_password.toCharArray());
@@ -378,7 +408,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         // Initialize SSLContext
         SSLContext sslContext=SSLContext.getInstance("TLSv1");
         sslContext.init(km, tm, null);
-        return sslContext;
+        return this.ssl_ctx=sslContext;
     }
 
 
