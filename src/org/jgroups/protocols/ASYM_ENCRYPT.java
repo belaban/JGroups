@@ -212,6 +212,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         switch(hdr.getType()) {
             case GMS.GmsHeader.JOIN_REQ:
             case GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
+            case GMS.GmsHeader.MERGE_RSP:
                 if(!use_external_key_exchange) {
                     // attach our public key to the JOIN-REQ
                     Message copy=addKeysToMessage(msg, true, false, null);
@@ -230,13 +231,6 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
                 if(Objects.equals(local_addr, msg.dest()))
                     break;
                 return addMetadata(msg, true, null, true);
-            case GMS.GmsHeader.MERGE_RSP:
-                if(!use_external_key_exchange) {
-                    Message copy=addKeysToMessage(msg, true, false, null);
-                    down_prot.down(copy);
-                    return Processing.DROP;
-                }
-                return Processing.SKIP;
             case GMS.GmsHeader.MERGE_REQ:
             case GMS.GmsHeader.VIEW_ACK:
             case GMS.GmsHeader.GET_DIGEST_REQ:

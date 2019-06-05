@@ -244,10 +244,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     protected Object handleEncryptedMessage(Message msg) throws Exception {
         // decrypt the message; we need to copy msg as we modify its buffer (http://jira.jboss.com/jira/browse/JGRP-538)
         Message tmpMsg=decryptMessage(null, msg.copy()); // need to copy for possible xmits
-        if(tmpMsg != null)
-            return up_prot.up(tmpMsg);
-        log.warn("%s: unrecognized cipher; discarding message from %s", local_addr, msg.src());
-        return null;
+        return tmpMsg != null? up_prot.up(tmpMsg) : null;
     }
 
 
