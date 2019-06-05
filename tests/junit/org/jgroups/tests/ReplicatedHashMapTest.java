@@ -25,6 +25,7 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
 
     @BeforeClass
     protected void setUp() throws Exception {
+        //channel_conf = "tcp.xml";
         JChannel c1=createChannel(true, 2);
         this.map1=new ReplicatedHashMap<>(c1);
         map1.setBlockingUpdates(true);
@@ -252,6 +253,24 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         assertEquals(all1.keySet(), this.map2.keySet());
     }
 
+    public void testKeySet_mutate() {
+        Map<String,String> all1=new HashMap<>();
+        all1.put("key1", "value1");
+        all1.put("key2", "value2");
+        Map<String,String> all2=new HashMap<>();
+        all2.put("key3", "value3");
+        all2.put("key4", "value4");
+
+        this.map1.putAll(all1);
+        assertEquals(all1.keySet(), this.map1.keySet());
+        assertEquals(all1.keySet(), this.map2.keySet());
+
+        this.map2.putAll(all2);
+	this.map1.keySet().retainAll(all1.keySet());
+        assertEquals(all1.keySet(), this.map1.keySet());
+        assertEquals(all1.keySet(), this.map2.keySet());
+    }
+
     public void testValues() {
         Map<String,String> all1=new HashMap<>();
         all1.put("key1", "value1");
@@ -268,6 +287,22 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         all1.putAll(all2);
         assertTrue(this.map1.values().containsAll(all1.values()));
         assertTrue(this.map2.values().containsAll(all1.values()));
+    }
+
+
+    public void testValuesClear() {
+        Map<String,String> all1=new HashMap<>();
+        all1.put("key1", "value1");
+        all1.put("key2", "value2");
+
+        this.map1.putAll(all1);
+        assertTrue(this.map1.values().containsAll(all1.values()));
+        assertTrue(this.map2.values().containsAll(all1.values()));
+
+        this.map2.values().clear();
+        assertTrue(map2.isEmpty());
+        assertTrue(this.map1.isEmpty());
+
     }
 
 }
