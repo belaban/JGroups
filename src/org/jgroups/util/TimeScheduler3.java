@@ -165,12 +165,12 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
 
         // we may need to do multiple iterations as the iterator works on a copy and tasks might have been added just
         // after the iterator() call returned
-        while(!queue.isEmpty())
-            for(Task entry: queue) {
+        while(!queue.isEmpty()) {
+            for(Task entry : queue) {
                 entry.cancel(true);
                 queue.remove(entry);
             }
-        queue.clear();
+        }
 
         if(pool instanceof ThreadPoolExecutor && shut_down_pool) {
             ThreadPoolExecutor p=(ThreadPoolExecutor)pool;
