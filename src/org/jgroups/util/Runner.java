@@ -16,6 +16,7 @@ public class Runner implements Runnable, Closeable {
     protected volatile boolean    running;
     protected Thread              thread;
     protected boolean             daemon;
+    protected long                join_timeout=500;
 
 
     public Runner(ThreadFactory factory, String thread_name, Runnable function, Runnable stop_function) {
@@ -25,12 +26,14 @@ public class Runner implements Runnable, Closeable {
         this.stop_function=stop_function;
     }
 
-    public Thread  getThread()          {return thread;}
-    public boolean isRunning()          {return running;}
-    public boolean daemon()             {return daemon;}
-    public Runner  daemon(boolean d)    {daemon=d; return this;}
-    public String  threadName()         {return thread_name;}
-    public Runner  threadName(String n) {thread_name=n; if(thread != null) thread.setName(n); return this;}
+    public Thread  getThread()            {return thread;}
+    public boolean isRunning()            {return running;}
+    public boolean daemon()               {return daemon;}
+    public Runner  daemon(boolean d)      {daemon=d; return this;}
+    public String  threadName()           {return thread_name;}
+    public Runner  threadName(String n)   {thread_name=n; if(thread != null) thread.setName(n); return this;}
+    public long    getJoinTimeout()       {return join_timeout;}
+    public Runner  setJoinTimeout(long t) {join_timeout=t; return this;}
 
 
     public synchronized Runner start() {
@@ -53,7 +56,7 @@ public class Runner implements Runnable, Closeable {
         if(tmp != null) {
             tmp.interrupt();
             if(tmp.isAlive()) {
-                try {tmp.join(500);} catch(InterruptedException e) {}
+                try {tmp.join(join_timeout);} catch(InterruptedException e) {}
             }
         }
         if(stop_function != null)
