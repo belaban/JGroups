@@ -847,13 +847,19 @@ public class ProtocolStack extends Protocol {
 
     /** Calls @link{{@link Protocol#init()}} in all protocols, from bottom to top */
     public void initProtocolStack() throws Exception {
-        List<Protocol> protocols = getProtocols();
+        List<Protocol> protocols=getProtocols();
         Collections.reverse(protocols);
-        for(Protocol prot: protocols) {
-            if(prot.getProtocolStack() == null)
-                prot.setProtocolStack(this);
-            callAfterCreationHook(prot, prot.afterCreationHook());
-            prot.init();
+        try {
+            for(Protocol prot : protocols) {
+                if(prot.getProtocolStack() == null)
+                    prot.setProtocolStack(this);
+                callAfterCreationHook(prot, prot.afterCreationHook());
+                prot.init();
+            }
+        }
+        catch(Exception ex) {
+            this.destroy();
+            throw ex;
         }
     }
 
