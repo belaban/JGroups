@@ -112,6 +112,7 @@ public class ForkProtocolStack extends ProtocolStack {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
+            case Event.SITE_UNREACHABLE:
                 for(JChannel ch: fork_channels.values())
                     ch.up(evt);
                 break;
