@@ -1,5 +1,9 @@
 package org.jgroups.tests;
 
+import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertNotNull;
+import static org.testng.AssertJUnit.assertTrue;
+
 import org.jgroups.*;
 import org.jgroups.blocks.ReplicatedHashMap;
 import org.jgroups.blocks.atomic.Counter;
@@ -24,6 +28,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Tests {@link org.jgroups.fork.ForkChannel}
@@ -420,8 +426,42 @@ public class ForkChannelTest {
         assert rhm_fc2.equals(rhm_fc4);
     }
 
+    public void testSiteUnreachableReceived() throws Exception {
+        a.connect(CLUSTER);
+        fc1 = createForkChannel(a, "stack1", "fc1");
+        fc2 = createForkChannel(a, "stack2", "fc2");
+
+        EventQueueUpHandler fc1Handler = new EventQueueUpHandler();
+        EventQueueUpHandler fc2Handler = new EventQueueUpHandler();
+
+        fc1.setUpHandler(fc1Handler);
+        fc2.setUpHandler(fc2Handler);
+
+        assertEmpty(fc1Handler);
+        assertEmpty(fc2Handler);
+
+        ProtocolStack stack = a.getProtocolStack();
+        FORK fork = stack.findProtocol(FORK.class);
+
+        fork.up(new Event(Event.SITE_UNREACHABLE));
+
+        assertEvent(fc1Handler, Event.SITE_UNREACHABLE);
+        assertEvent(fc2Handler, Event.SITE_UNREACHABLE);
+
+        assertEmpty(fc1Handler);
+        assertEmpty(fc2Handler);
+    }
 
 
+    private static void assertEvent(EventQueueUpHandler upHandler, int eventType) {
+        Event e = upHandler.queue.poll();
+        assertNotNull(e);
+        assertEquals(eventType, e.getType());
+    }
+
+    private static void assertEmpty(EventQueueUpHandler upHandler) {
+        assertTrue(upHandler.queue.isEmpty());
+    }
 
     protected static ForkChannel createForkChannel(JChannel main, String stack_name, String ch_name) throws Exception {
         ForkChannel fork_ch=new ForkChannel(main, stack_name, ch_name);
@@ -516,6 +556,23 @@ public class ForkChannelTest {
 
         public Object handleUnknownForkChannel(Message message, String forkChannelId) {
             unknown_fork_channels.add(forkChannelId);
+            return null;
+        }
+    }
+
+    private static class EventQueueUpHandler implements UpHandler {
+
+        private final BlockingDeque<Event> queue = new LinkedBlockingDeque<>();
+
+        @Override
+        public Object up(Event evt) {
+            queue.add(evt);
+            return null;
+        }
+
+        @Override
+        public Object up(Message msg) {
+            //no-op
             return null;
         }
     }

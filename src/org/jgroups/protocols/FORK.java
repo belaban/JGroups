@@ -112,6 +112,7 @@ public class FORK extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
+            case Event.SITE_UNREACHABLE:
                 for(Protocol bottom: fork_stacks.values())
                     bottom.up(evt);
                 break;
