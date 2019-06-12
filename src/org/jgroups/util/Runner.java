@@ -1,11 +1,14 @@
 package org.jgroups.util;
 
+import java.io.Closeable;
+import java.io.IOException;
+
 /**
  * Runs a given function in a loop (in a separate thread) until it is stopped
  * @author Bela Ban
  * @since  4.0
  */
-public class Runner implements Runnable {
+public class Runner implements Runnable, Closeable {
     protected final ThreadFactory factory;
     protected final String        thread_name;
     protected final Runnable      function;
@@ -50,6 +53,9 @@ public class Runner implements Runnable {
             stop_function.run();
     }
 
+    public void close() throws IOException {
+        stop();
+    }
 
     public void run() {
         while(running) {

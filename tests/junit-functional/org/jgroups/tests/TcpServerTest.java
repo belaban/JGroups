@@ -55,7 +55,7 @@ public class TcpServerTest {
             byte[] array=new byte[8192*4];
             int    total=0;
             try {
-                client=new TcpClient(null, 0, Util.getLoopback(), srv_sock.getLocalPort());
+                client=new TcpClient(null, 0, Util.getLocalhost(), srv_sock.getLocalPort());
                 client.start();
                 for(;;) {
                     client.send(array, 0, array.length);
