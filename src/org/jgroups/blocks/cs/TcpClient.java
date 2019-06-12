@@ -121,7 +121,7 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
 
     public String toString() {
         if(conn == null || !conn.isConnected())
-            return String.format("%s -> %s [not connected yet]", localAddress(), remoteAddress());
+            return String.format("%s -> %s [not connected]", localAddress(), remoteAddress());
         return String.format("%s", conn);
     }
 }

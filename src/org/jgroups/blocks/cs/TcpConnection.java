@@ -295,12 +295,8 @@ public class TcpConnection extends Connection {
                     server.receive(peer_addr, in, len);
                     updateLastAccessed();
                 }
-                catch(OutOfMemoryError mem_ex) {
-                    t=mem_ex;
-                    break; // continue;
-                }
-                catch(IOException io_ex) {
-                    t=io_ex;
+                catch(OutOfMemoryError | IOException ignore) {
+                    t=ignore;
                     break;
                 }
                 catch(Throwable e) {
@@ -350,13 +346,14 @@ public class TcpConnection extends Connection {
     }
 
     public void close() throws IOException {
+        Util.close(sock); // fix for https://issues.jboss.org/browse/JGRP-2350
         send_lock.lock();
         try {
-            Util.close(out, in, sock);
             if(receiver != null) {
                 receiver.stop();
                 receiver=null;
             }
+            Util.close(out,in);
         }
         finally {
             connected=false;
