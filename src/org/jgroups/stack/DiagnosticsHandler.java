@@ -319,7 +319,7 @@ public class DiagnosticsHandler extends ReceiverAdapter {
         for(Iterator<NetworkInterface> it=interfaces.iterator(); it.hasNext();) {
             NetworkInterface i=it.next();
             try {
-                if(i.isUp()) {
+                if(Util.isUp(i)) {
                     List<InterfaceAddress> inet_addrs=i.getInterfaceAddresses();
                     if(inet_addrs != null && !inet_addrs.isEmpty()) { // fix for VM crash - suggested by JJalenak@netopia.com
                         s.joinGroup(group_addr, i);

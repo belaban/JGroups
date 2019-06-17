@@ -4148,7 +4148,7 @@ public class Util {
         try {
             List<NetworkInterface> interfaces=getAllAvailableInterfaces();
             for(NetworkInterface intf: interfaces) {
-                if(!intf.isUp())
+                if(isUp(intf)  /*!intf.isUp()*/)
                     continue;
                 Enumeration<InetAddress> addrs=intf.getInetAddresses();
                 while(addrs.hasMoreElements()) {
