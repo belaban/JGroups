@@ -53,8 +53,6 @@ public class MulticastTest {
           .setOption(StandardSocketOptions.IP_MULTICAST_IF, ni);
 
         MembershipKey key = dc.join(group, ni);
-
-
         System.out.println("key = " + key);
     }
 
