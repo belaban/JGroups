@@ -395,7 +395,11 @@ public class NioConnection extends Connection {
 
 
     protected static ByteBuffer makeLengthBuffer(ByteBuffer buf) {
-        return (ByteBuffer)ByteBuffer.allocate(Global.INT_SIZE).putInt(buf.remaining()).clear();
+        ByteBuffer buffer = ByteBuffer.allocate(Global.INT_SIZE).putInt(buf.remaining());
+        // Workaround for JDK8 compatibility
+        // clear() returns java.nio.Buffer in JDK8, but java.nio.ByteBuffer since JDK9.
+        ((java.nio.Buffer) buffer).clear();
+        return buffer;
     }
 
     protected enum State {reading, waiting_to_terminate, done}
