@@ -139,7 +139,9 @@ public class Buffers implements Iterable<ByteBuffer> {
             return null;
 
         try {
-            return (ByteBuffer)bufs[1].duplicate().flip();
+            // Workaround for JDK8 compatibility
+            // flip() returns java.nio.Buffer in JDK8, but java.nio.ByteBuffer since JDK9.
+            return (ByteBuffer) ((java.nio.Buffer) bufs[1].duplicate()).flip();
         }
         finally {
             bufs[0].clear();
