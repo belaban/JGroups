@@ -471,7 +471,7 @@ public class NioConnection extends Connection {
                         if(!_receive(false))
                             break;
                     }
-                    catch(Throwable ex) {
+                    catch(Exception ex) {
                         server.closeConnection(NioConnection.this, ex);
                         state(State.done);
                         return;
@@ -497,7 +497,7 @@ public class NioConnection extends Connection {
                 registerSelectionKey(op);
                 key.selector().wakeup(); // no-op if the selector is not blocked in select()
             }
-            catch(Throwable t) {
+            catch(Exception t) {
             }
         }
 
@@ -505,7 +505,7 @@ public class NioConnection extends Connection {
             try {
                 clearSelectionKey(op);
             }
-            catch(Throwable t) {
+            catch(Exception t) {
             }
         }
 
