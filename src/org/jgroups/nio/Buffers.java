@@ -130,7 +130,9 @@ public class Buffers implements Iterable<ByteBuffer> {
         int len=bufs[0].getInt(0);
         if(bufs[1] == null || len > bufs[1].capacity())
             bufs[1]=ByteBuffer.allocate(len);
-        bufs[1].limit(len);
+        // Workaround for JDK8 compatibility
+        // limit() returns java.nio.Buffer in JDK8, but java.nio.ByteBuffer since JDK9.
+        ((java.nio.Buffer) bufs[1]).limit(len);
 
         if(bufs[1].hasRemaining() && ch.read(bufs[1]) < 0)
             throw new EOFException();
@@ -139,7 +141,9 @@ public class Buffers implements Iterable<ByteBuffer> {
             return null;
 
         try {
-            return (ByteBuffer)bufs[1].duplicate().flip();
+            // Workaround for JDK8 compatibility
+            // flip() returns java.nio.Buffer in JDK8, but java.nio.ByteBuffer since JDK9.
+            return (ByteBuffer) ((java.nio.Buffer) bufs[1].duplicate()).flip();
         }
         finally {
             bufs[0].clear();

@@ -354,7 +354,9 @@ public class NioConnection extends Connection {
             ByteBuffer buf=recv_buf.get(current_position);
             if(buf == null)
                 return null;
-            buf.flip();
+            // Workaround for JDK8 compatibility
+            // flip() returns java.nio.Buffer in JDK8, but java.nio.ByteBuffer since JDK9.
+            ((java.nio.Buffer) buf).flip();
             switch(current_position) {
                 case 0:      // cookie
                     byte[] cookie_buf=getBuffer(buf);
@@ -395,7 +397,11 @@ public class NioConnection extends Connection {
 
 
     protected static ByteBuffer makeLengthBuffer(ByteBuffer buf) {
-        return (ByteBuffer)ByteBuffer.allocate(Global.INT_SIZE).putInt(buf.remaining()).clear();
+        ByteBuffer buffer = ByteBuffer.allocate(Global.INT_SIZE).putInt(buf.remaining());
+        // Workaround for JDK8 compatibility
+        // clear() returns java.nio.Buffer in JDK8, but java.nio.ByteBuffer since JDK9.
+        ((java.nio.Buffer) buffer).clear();
+        return buffer;
     }
 
     protected enum State {reading, waiting_to_terminate, done}
@@ -467,7 +473,7 @@ public class NioConnection extends Connection {
                         if(!_receive(false))
                             break;
                     }
-                    catch(Throwable ex) {
+                    catch(Exception ex) {
                         server.closeConnection(NioConnection.this, ex);
                         state(State.done);
                         return;
@@ -493,7 +499,7 @@ public class NioConnection extends Connection {
                 registerSelectionKey(op);
                 key.selector().wakeup(); // no-op if the selector is not blocked in select()
             }
-            catch(Throwable t) {
+            catch(Exception t) {
             }
         }
 
@@ -501,7 +507,7 @@ public class NioConnection extends Connection {
             try {
                 clearSelectionKey(op);
             }
-            catch(Throwable t) {
+            catch(Exception t) {
             }
         }
 
