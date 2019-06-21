@@ -848,12 +848,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
 
-        if(diag_handler == null)
-            diag_handler=new DiagnosticsHandler(diagnostics_addr, diagnostics_port, diagnostics_bind_interfaces,
-                                                diagnostics_ttl, log, getSocketFactory(), getThreadFactory(), diagnostics_passcode)
-              .transport(this).setDiagnosticsBindAddress(diagnostics_bind_addr)
-              .enableUdp(diag_enable_udp).enableTcp(diag_enable_tcp)
-              .setDiagnosticsPortRange(diagnostics_port_range);
+        if(enable_diagnostics && diag_handler == null)
+            diag_handler=createDiagnosticsHandler();
 
         who_has_cache=new ExpiryCache<>(who_has_cache_timeout);
 
@@ -1029,6 +1025,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected void startDiagnostics() throws Exception {
         if(enable_diagnostics) {
+            if(diag_handler == null)
+                diag_handler=createDiagnosticsHandler();
             diag_handler.registerProbeHandler(this);
             diag_handler.start();
             synchronized(preregistered_probe_handlers) {
@@ -1042,8 +1040,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     protected void stopDiagnostics() {
-        diag_handler.unregisterProbeHandler(this);
-        diag_handler.stop();
+        if(diag_handler != null) {
+            diag_handler.unregisterProbeHandler(this);
+            diag_handler.stop();
+        }
         synchronized(preregistered_probe_handlers) {
             preregistered_probe_handlers.clear();
         }
@@ -1067,11 +1067,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     break;
                 case "keys":
                     StringBuilder sb=new StringBuilder();
-                    for(DiagnosticsHandler.ProbeHandler handler : diag_handler.getProbeHandlers()) {
-                        String[] tmp=handler.supportedKeys();
-                        if(tmp != null && tmp.length > 0) {
-                            for(String s : tmp)
-                                sb.append(s).append(" ");
+                    if(diag_handler != null) {
+                        for(DiagnosticsHandler.ProbeHandler handler : diag_handler.getProbeHandlers()) {
+                            String[] tmp=handler.supportedKeys();
+                            if(tmp != null && tmp.length > 0) {
+                                for(String s : tmp)
+                                    sb.append(s).append(" ");
+                            }
                         }
                     }
                     retval.put(key, sb.toString());
@@ -1144,6 +1146,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     /* ------------------------------ Private Methods -------------------------------- */
+
+  protected DiagnosticsHandler createDiagnosticsHandler() {
+      return new DiagnosticsHandler(diagnostics_addr, diagnostics_port, diagnostics_bind_interfaces,
+                                    diagnostics_ttl, log, getSocketFactory(), getThreadFactory(), diagnostics_passcode)
+        .transport(this).setDiagnosticsBindAddress(diagnostics_bind_addr)
+        .enableUdp(diag_enable_udp).enableTcp(diag_enable_tcp)
+        .setDiagnosticsPortRange(diagnostics_port_range);
+  }
 
     protected Bundler createBundler(String type) {
         if(type == null)
