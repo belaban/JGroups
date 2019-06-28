@@ -3,7 +3,6 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.annotations.Property;
 import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
 
@@ -21,22 +20,19 @@ import java.util.Map;
  * @author Gustavo Fernandes
  */
 public class RACKSPACE_PING extends FILE_PING {
-
-    protected static final Log log = LogFactory.getLog(RACKSPACE_PING.class);
-
     private static final String UKService = "https://lon.auth.api.rackspacecloud.com/v1.0";
     private static final String USService = "https://auth.api.rackspacecloud.com/v1.0";
 
-    protected RackspaceClient rackspaceClient = null;
+    protected RackspaceClient rackspaceClient;
 
     @Property(description = "Rackspace username")
-    protected String username = null;
+    protected String username;
 
     @Property(description = "Rackspace API access key",exposeAsManagedAttribute=false)
-    protected String apiKey = null;
+    protected String apiKey;
 
     @Property(description = "Rackspace region, either UK or US")
-    protected String region = null;
+    protected String region;
 
     @Property(description = "Name of the root container")
     protected String container = "jgroups";
@@ -54,7 +50,7 @@ public class RACKSPACE_PING extends FILE_PING {
         }
 
         URL authURL = new URL(region.equals("UK") ? UKService : USService);
-        rackspaceClient = new RackspaceClient(authURL, username, apiKey);
+        rackspaceClient = new RackspaceClient(authURL, username, apiKey).log(log);
 
         super.init();
 
@@ -123,8 +119,7 @@ public class RACKSPACE_PING extends FILE_PING {
     /**
      * A thread safe Rackspace ReST client
      */
-    static class RackspaceClient {
-
+    protected static class RackspaceClient {
         private static final String ACCEPT_HEADER = "Accept";
         private static final String AUTH_HEADER = "X-Auth-User";
         private static final String AUTH_KEY_HEADER = "X-Auth-Key";
@@ -135,7 +130,8 @@ public class RACKSPACE_PING extends FILE_PING {
         private final String username;
         private final String apiKey;
 
-        private volatile Credentials credentials = null;
+        private volatile Credentials credentials;
+        private Log                  log;
 
         /**
          * Constructor
@@ -148,6 +144,10 @@ public class RACKSPACE_PING extends FILE_PING {
             this.apiEndpoint = apiEndpoint;
             this.username = username;
             this.apiKey = apiKey;
+        }
+
+        RackspaceClient log(Log l) {
+            this.log=l; return this;
         }
 
         /**

@@ -5,20 +5,15 @@ import org.jgroups.Address;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
 
-import javax.script.Bindings;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import javax.script.SimpleBindings;
-
+import javax.script.*;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -32,24 +27,22 @@ import java.util.*;
 @Experimental
 public class SWIFT_PING extends FILE_PING {
 
-    private static final Log log = LogFactory.getLog(SWIFT_PING.class);
-
-    protected SwiftClient swiftClient = null;
+    protected SwiftClient swiftClient;
 
     @Property(description = "Authentication url")
-    protected String auth_url = null;
+    protected String auth_url;
 
     @Property(description = "Authentication type")
     protected String auth_type = "keystone_v_2_0";
 
     @Property(description = "Openstack Keystone tenant name")
-    protected String tenant = null;
+    protected String tenant;
 
     @Property(description = "Username")
-    protected String username = null;
+    protected String username;
 
     @Property(description = "Password",exposeAsManagedAttribute=false)
-    protected String password = null;
+    protected String password;
 
     @Property(description = "Name of the root container")
     protected String container = "jgroups";
@@ -65,7 +58,7 @@ public class SWIFT_PING extends FILE_PING {
         Authenticator authenticator = createAuthenticator();
         authenticator.validateParams();
 
-        swiftClient = new SwiftClient(authenticator);
+        swiftClient = new SwiftClient(authenticator, log);
         // Authenticate now to record credential
         swiftClient.authenticate();
 
@@ -201,9 +194,9 @@ public class SWIFT_PING extends FILE_PING {
                 LOOKUP.put(type.configName, type);
         }
 
-        private String configName;
+        private final String configName;
 
-        private AUTH_TYPE(String externalName) {
+        AUTH_TYPE(String externalName) {
             this.configName = externalName;
         }
 
@@ -262,7 +255,7 @@ public class SWIFT_PING extends FILE_PING {
                 "}" + 
                 "result;";
         
-        private static Object scriptEngineLock = new Object();
+        private static final Object scriptEngineLock = new Object();
         private static ScriptEngine scriptEngine;
         
         private final String tenant;
@@ -303,7 +296,7 @@ public class SWIFT_PING extends FILE_PING {
                     jsonBuilder.toString().getBytes(), true);
 
             if (response.isSuccessCode()) {
-                Map<String, String> result = parseJsonResponse(new String(response.payload, "UTF-8"));
+                Map<String, String> result = parseJsonResponse(new String(response.payload, StandardCharsets.UTF_8));
 
                 String authToken = result.get("id");
                 String storageUrl = result.get("url");
@@ -311,12 +304,10 @@ public class SWIFT_PING extends FILE_PING {
                 {
                     throw new IllegalStateException("Missing token id in authentication response");
                 }
-                if (storageUrl == null)
-                {
+                if (storageUrl == null) {
                     throw new IllegalStateException("Missing storage service URL in authentication response");
                 }
                 
-                log.trace("Authentication successful");
                 return new Credentials(authToken, storageUrl);
             } else {
                 throw new IllegalStateException(
@@ -325,7 +316,7 @@ public class SWIFT_PING extends FILE_PING {
             }
         }
         
-        protected Map<String,String> parseJsonResponse(String json) throws ScriptException
+        protected static Map<String,String> parseJsonResponse(String json) throws ScriptException
         {
             synchronized (scriptEngineLock)
             {
@@ -350,36 +341,22 @@ public class SWIFT_PING extends FILE_PING {
      */
     private static class ConnBuilder {
 
-        private HttpURLConnection con;
+        private final HttpURLConnection con;
 
-        public ConnBuilder(URL url) {
-            try {
-                con = (HttpURLConnection) url.openConnection();
-            } catch (IOException e) {
-                log.error(Util.getMessage("ErrorBuildingURL"), e);
-            }
+        public ConnBuilder(URL url) throws IOException {
+            con = (HttpURLConnection) url.openConnection();
         }
 
-        public ConnBuilder(Credentials credentials, String container,
-                           String object) {
-            try {
+        public ConnBuilder(Credentials credentials, String container, String object) throws IOException {
                 String url = credentials.storageUrl + "/" + container;
                 if (object != null) {
                     url = url + "/" + object;
                 }
                 con = (HttpURLConnection) new URL(url).openConnection();
-            } catch (IOException e) {
-                log.error(Util.getMessage("ErrorCreatingConnection"), e);
-            }
-
         }
 
-        public ConnBuilder method(String method) {
-            try {
-                con.setRequestMethod(method);
-            } catch (ProtocolException e) {
-                log.error(Util.getMessage("ProtocolError"), e);
-            }
+        public ConnBuilder method(String method) throws ProtocolException {
+            con.setRequestMethod(method);
             return this;
         }
 
@@ -411,21 +388,17 @@ public class SWIFT_PING extends FILE_PING {
             this.payload = payload;
         }
 
-        public List<String> payloadAsLines() {
+        public List<String> payloadAsLines() throws IOException {
             List<String> lines = new ArrayList<>();
             BufferedReader in;
-            try {
-                String line;
-                in = new BufferedReader(new InputStreamReader(
-                        new ByteArrayInputStream(payload)));
+            String line;
+            in = new BufferedReader(new InputStreamReader(
+              new ByteArrayInputStream(payload)));
 
-                while ((line = in.readLine()) != null) {
-                    lines.add(line);
-                }
-                in.close();
-            } catch (IOException e) {
-                log.error(Util.getMessage("ErrorReadingObjects"), e);
+            while ((line = in.readLine()) != null) {
+                lines.add(line);
             }
+            in.close();
             return lines;
         }
 
@@ -445,15 +418,17 @@ public class SWIFT_PING extends FILE_PING {
 
         private final Authenticator authenticator;
 
-        private volatile Credentials credentials = null;
+        private volatile Credentials credentials;
+        private final Log            log;
 
         /**
          * Constructor
          *
          * @param authenticator Swift auth provider
          */
-        public SwiftClient(Authenticator authenticator) {
+        public SwiftClient(Authenticator authenticator, Log l) {
             this.authenticator = authenticator;
+            this.log=l;
         }
 
         /**
@@ -605,9 +580,8 @@ public class SWIFT_PING extends FILE_PING {
             return response.payloadAsLines();
         }
 
-        private ConnBuilder getConnBuilder(String container, String object) {
-            ConnBuilder connBuilder = new ConnBuilder(credentials, container,
-                    object);
+        private ConnBuilder getConnBuilder(String container, String object) throws IOException {
+            ConnBuilder connBuilder = new ConnBuilder(credentials, container, object);
             connBuilder.addHeader(HttpHeaders.STORAGE_TOKEN_HEADER,
                     credentials.authToken);
             connBuilder.addHeader(HttpHeaders.ACCEPT_HEADER, "*/*");
@@ -619,7 +593,7 @@ public class SWIFT_PING extends FILE_PING {
     private static class Utils {
 
         public static void validateNotEmpty(String arg, String argname) {
-            if (arg == null || arg.trim().length() == 0) {
+            if (arg == null || arg.trim().isEmpty()) {
                 throw new IllegalArgumentException("'" + argname
                         + "' cannot be empty");
             }
