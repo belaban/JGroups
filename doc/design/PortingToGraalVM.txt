@@ -13,7 +13,7 @@ are:
 
 Current limitations
 ===================
-* UDP is not supported because of the MulticastSocket issue, see [2] and [3]. Should be fixed son by the GraalVM
+* UDP is not supported because of the MulticastSocket issue, see [2], [3] and [4]. Should be fixed soon by the GraalVM
 * Diagnostics cannot be used, as it also uses a MulticastSocket
 * Socket option SO_LINGER cannot be set due to CCE (see todos)
 * Only java.util.logging logging is supported. To enable this:
@@ -48,6 +48,10 @@ Todos
 
 * Re-enable setting socket option SO_LINGER in {Tcp,Nio}Connection.setSocketParameters()
 
+* Try the UDP:PING combo as soon as the `MulticastSocket.joinGroup()` issue [5] has been resolved
+
+* Try Diagnostics with a MulticastSocket (same cause as above).
+
 
 References
 ==========
@@ -59,3 +63,4 @@ References
 
 [4] https://github.com/oracle/graal/issues/460 // Serialization not supported yet (ObjectOutputStream)
 
+[5] https://github.com/oracle/graal/issues/1398
