@@ -219,27 +219,32 @@ public class Relayer {
             for(Map.Entry<String,List<Address>> entry: tmp.entrySet()) {
                 String key=entry.getKey();
                 List<Address> val=entry.getValue();
-                if(!routes.containsKey(key)) {
-                    routes.put(key, new ArrayList<>());
-                    if(up != null)
+
+                List<Route> newRoutes;
+                if (routes.containsKey(key)) {
+                    newRoutes = new ArrayList<>(routes.get(key));
+                } else {
+                    newRoutes = new ArrayList<>();
+                    if(up != null) {
                         up.add(key);
+                    }
                 }
 
-                List<Route> list=routes.get(key);
-
                 // Remove routes not in the view anymore:
-                list.removeIf(route -> !val.contains(route.siteMaster()));
+                newRoutes.removeIf(route -> !val.contains(route.siteMaster()));
 
                 // Add routes that aren't yet in the routing table:
-                val.stream().filter(addr -> !contains(list, addr))
-                  .forEach(addr -> list.add(new Route(addr, channel, relay, log).stats(stats)));
+                val.stream().filter(addr -> !contains(newRoutes, addr))
+                  .forEach(addr -> newRoutes.add(new Route(addr, channel, relay, log).stats(stats)));
 
-                if(list.isEmpty()) {
+                if(newRoutes.isEmpty()) {
                     routes.remove(key);
                     if(listener != null) {
                         down.add(key);
                         up.remove(key);
                     }
+                } else {
+                    routes.put(key, Collections.unmodifiableList(newRoutes));
                 }
             }
 
