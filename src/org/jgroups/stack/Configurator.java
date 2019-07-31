@@ -107,15 +107,17 @@ public class Configurator {
         // Determine how to resolve addresses that are set (e.g.) via symbolic names, by the type of bind_addr in the
         // transport. The logic below is described in https://issues.jboss.org/browse/JGRP-2343
         StackType ip_version=Util.getIpStackType();
-        TP transport=(TP)protocols.get(0);
-        ProtocolConfiguration cfg=cfgs.get(0);
-        Field bind_addr_field=Util.getField(transport.getClass(), "bind_addr");
-        resolveAndAssignField(transport, bind_addr_field, cfg.getProperties(), ip_version);
-        InetAddress resolved_addr=(InetAddress)Util.getField(bind_addr_field, transport);
-        if(resolved_addr != null)
-            ip_version=resolved_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
-        else if(ip_version == StackType.Dual)
-            ip_version=StackType.IPv4; // prefer IPv4 addresses
+        Protocol transport=protocols.get(0);
+        if(transport instanceof TP) {
+            ProtocolConfiguration cfg=cfgs.get(0);
+            Field bind_addr_field=Util.getField(transport.getClass(), "bind_addr");
+            resolveAndAssignField(transport, bind_addr_field, cfg.getProperties(), ip_version);
+            InetAddress resolved_addr=(InetAddress)Util.getField(bind_addr_field, transport);
+            if(resolved_addr != null)
+                ip_version=resolved_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
+            else if(ip_version == StackType.Dual)
+                ip_version=StackType.IPv4; // prefer IPv4 addresses
+        }
 
         for(int i=0; i < cfgs.size(); i++) {
             ProtocolConfiguration config=cfgs.get(i);
