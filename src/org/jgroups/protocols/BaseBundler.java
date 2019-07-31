@@ -91,7 +91,7 @@ public abstract class BaseBundler implements Bundler {
                 transport.incrNumSingleMsgsSent(1);
         }
         catch(Throwable e) {
-            log.error(Util.getMessage("SendFailure"),
+            log.trace(Util.getMessage("SendFailure"),
                       transport.localAddress(), (dest == null? "cluster" : dest), msg.size(), e.toString(), msg.printHeaders());
         }
     }
@@ -104,7 +104,7 @@ public abstract class BaseBundler implements Bundler {
             transport.doSend(output.buffer(), 0, output.position(), dest);
         }
         catch(Throwable e) {
-            log.error(Util.getMessage("FailureSendingMsgBundle"), transport.localAddress(), e);
+            log.trace(Util.getMessage("FailureSendingMsgBundle"), transport.localAddress(), e);
         }
     }
 

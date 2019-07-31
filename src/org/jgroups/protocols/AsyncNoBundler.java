@@ -34,7 +34,12 @@ public class AsyncNoBundler extends NoBundler {
     public void send(final Message msg) throws Exception {
         Runnable async_send=() -> {
             ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)(msg.size() + 10));
-            sendSingleMessage(msg, out);
+            try {
+                sendSingleMessage(msg, out);
+            }
+            catch(Exception e) {
+                log.error("failed sending message", e);
+            }
         };
         thread_pool.execute(async_send);
     }

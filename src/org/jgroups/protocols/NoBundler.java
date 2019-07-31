@@ -31,19 +31,13 @@ public class NoBundler implements Bundler {
     }
 
 
-    protected void sendSingleMessage(final Message msg, final ByteArrayDataOutputStream output) {
+    protected void sendSingleMessage(final Message msg, final ByteArrayDataOutputStream output) throws Exception {
         Address dest=msg.getDest();
-        try {
-            output.position(0);
-            Util.writeMessage(msg, output, dest == null);
-            transport.doSend(output.buffer(), 0, output.position(), dest);
-            if(transport.statsEnabled())
-                transport.incrNumSingleMsgsSent(1);
-        }
-        catch(Throwable e) {
-            log.error(Util.getMessage("SendFailure"),
-                      transport.localAddress(), (dest == null? "cluster" : dest), msg.size(), e.toString(), msg.printHeaders());
-        }
+        output.position(0);
+        Util.writeMessage(msg, output, dest == null);
+        transport.doSend(output.buffer(), 0, output.position(), dest);
+        if(transport.statsEnabled())
+            transport.incrNumSingleMsgsSent(1);
     }
 
 }

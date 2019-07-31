@@ -1229,7 +1229,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             Thread.currentThread().interrupt(); // let someone else handle the interrupt
         }
         catch(Throwable e) {
-            log.error(Util.getMessage("SendFailure"),
+            log.trace(Util.getMessage("SendFailure"),
                       local_addr, (dest == null? "cluster" : dest), msg.size(), e.toString(), msg.printHeaders());
         }
     }
