@@ -366,7 +366,7 @@ abstract public class Locking extends Protocol {
 
     @ManagedOperation(description="Dumps all server locks")
     public Object printServerLocks() {
-        return server_locks.entrySet().stream().map(e -> e.getValue().toString()).collect(Collectors.joining(", "));
+        return server_locks.values().stream().map(ServerLock::toString).collect(Collectors.joining(", "));
     }
 
     protected void handleView(View view) {
@@ -1071,13 +1071,34 @@ abstract public class Locking extends Protocol {
                 sendReleaseLockRequest(name, lock_id, owner); // lock will be released on RELEASE_LOCK_OK response
                 if(force && client_lock_table.removeClientLock(name,owner))
                     notifyLockDeleted(name);
+
+                if(!force) {
+                    //unlock will return only when get RELEASE_LOCK_OK or timeLeft after some seconds
+                    long time_left=10000;
+                    while(acquired || denied) {
+                        long start=System.currentTimeMillis();
+                        try {
+                            wait(time_left);
+                        }
+                        catch(InterruptedException ie) {
+                            break;
+                        }
+                        long duration=System.currentTimeMillis() - start;
+                        if(duration > 0)
+                            time_left-=duration;
+                        if(time_left <= 0) {
+                            log.warn("%s: timeout waiting for RELEASE_LOCK_OK response for lock %s", local_addr, this);
+                            break;
+                        }
+                    }
+                }
             }
             else
                 _unlockOK();
         }
 
-        protected synchronized void _unlockOK() {
-            acquired=denied=false;
+    protected synchronized void _unlockOK() {
+        acquired=denied=false;
             notifyAll();
             if(client_lock_table.removeClientLock(name,owner))
                 notifyLockDeleted(name);
@@ -1209,22 +1230,21 @@ abstract public class Locking extends Protocol {
                       .forEach(pending_lock_reqs::add));
                 }
             }
-            if(pending_lock_reqs != null) { // send outside of the synchronized block
-                if(!pending_lock_reqs.isEmpty()) {
+            if(!pending_lock_reqs.isEmpty()) { // send outside of the synchronized block
+                if(log.isTraceEnabled()) {
                     String tmp=pending_lock_reqs.stream().map(ClientLock::toString).collect(Collectors.joining(", "));
                     log.trace("%s: resending pending lock requests: %s", local_addr, tmp);
                 }
-
-                pending_lock_reqs
-                  .forEach(lock -> sendGrantLockRequest(lock.name, lock.lock_id, lock.owner, lock.timeout, lock.is_trylock));
+                pending_lock_reqs.forEach(l -> sendGrantLockRequest(l.name, l.lock_id, l.owner, l.timeout, l.is_trylock));
             }
 
             if(!pending_release_reqs.isEmpty()) {
-                String tmp=pending_release_reqs.stream().map(ClientLock::toString).collect(Collectors.joining(", "));
-                log.trace("%s: resending pending release requests: %s", local_addr, tmp);
+                if(log.isTraceEnabled()) {
+                    String tmp=pending_release_reqs.stream().map(ClientLock::toString).collect(Collectors.joining(", "));
+                    log.trace("%s: resending pending unlock requests: %s", local_addr, tmp);
+                }
+                pending_release_reqs.forEach(cl -> sendReleaseLockRequest(cl.name, cl.lock_id, cl.owner));
             }
-
-            pending_release_reqs.forEach(cl -> sendReleaseLockRequest(cl.name, cl.lock_id, cl.owner));
         }
 
         protected synchronized Collection<Map<Owner,ClientLock>> values() {

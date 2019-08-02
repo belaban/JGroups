@@ -27,6 +27,7 @@ public class LockServiceTest {
     protected static final String                   LOCK="sample-lock";
     protected static final Class<? extends Locking> LOCK_CLASS=Locking.class;
     protected static final String                   CLUSTER=LockServiceTest.class.getSimpleName();
+    protected static final int                      NUM_ITERATIONS=1_000;
 
     @DataProvider(name="createLockingProtocol")
     Object[][] createLockingProtocol() {
@@ -59,14 +60,6 @@ public class LockServiceTest {
     protected void cleanup() {
         Util.close(c3,c2,c1);
     }
-
-   /* @BeforeMethod
-    protected void unlockAll() {
-        s3.unlockAll();
-        s2.unlockAll();
-        s1.unlockAll();
-        Thread.interrupted(); // clears any possible interrupts from the previous method
-    }*/
 
 
     @Test(dataProvider="createLockingProtocol")
@@ -183,6 +176,43 @@ public class LockServiceTest {
         }
         finally {
             lock.unlock();
+        }
+    }
+
+    /** Multiple lock-unlock cycles */
+    public void testLockMultipleTimes(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
+
+        int print=NUM_ITERATIONS / 10;
+        for(int i=0; i < NUM_ITERATIONS; i++) {
+            lock(lock, LOCK);
+            try {
+                assert true: "lock not acquired!";
+            }
+            finally {
+                unlock(lock, LOCK);
+            }
+            if(i > 0 && i % print == 0)
+                System.out.printf("-- %d iterations\n", i);
+        }
+    }
+
+
+    /** Multiple trylock-unlock cycles */
+    public void testTryLockMultipleTimes(Class<? extends Locking> locking_class) throws Exception {
+        init(locking_class);
+
+        int print=NUM_ITERATIONS / 10;
+        for(int i=0; i < NUM_ITERATIONS; i++) {
+            boolean rc=tryLock(lock, 10000, LOCK);
+            try {
+                assert rc : "lock not acquired!";
+            }
+            finally {
+                unlock(lock, LOCK);
+            }
+            if(i > 0 && i % print == 0)
+                System.out.printf("-- %d iterations\n", i);
         }
     }
 
