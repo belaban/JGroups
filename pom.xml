@@ -5,7 +5,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>bundle</packaging>
     <name>JGroups</name>
-    <version>4.1.2.Final</version>
+    <version>4.1.3-SNAPSHOT</version>
     <url>http://www.jgroups.org</url>
 
     <properties>
