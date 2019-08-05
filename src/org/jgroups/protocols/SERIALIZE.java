@@ -4,6 +4,8 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
+import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.MessageBatch;
@@ -22,6 +24,8 @@ import org.jgroups.util.Util;
  */
 @MBean(description="Serializes entire message into the payload of another message")
 public class SERIALIZE extends Protocol {
+
+    protected static final short GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
     //@Property(description="If true, messages with no payload will not be serialized")
     //protected boolean exclude_empty_msgs=true;
     protected Address local_addr;
@@ -44,6 +48,9 @@ public class SERIALIZE extends Protocol {
         Buffer serialized_msg=Util.streamableToBuffer(msg);
         // exclude existing headers, they will be seen again when we unmarshal the message at the receiver
         Message tmp=msg.copy(false, false).setBuffer(serialized_msg);
+        GMS.GmsHeader hdr=msg.getHeader(GMS_ID);
+        if(hdr != null)
+            tmp.putHeader(GMS_ID, hdr);
         return down_prot.down(tmp);
     }
 
