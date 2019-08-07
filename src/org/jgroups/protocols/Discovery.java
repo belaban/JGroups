@@ -378,9 +378,6 @@ public abstract class Discovery extends Protocol {
                 long timeout=evt.getArg();
                 return findMembers(null, true, false, timeout); // triggered by JOIN process (ClientGmsImpl)
 
-            case Event.FIND_MBRS:
-                return findMembers(evt.getArg(), false, false, 0); // triggered by MERGE3
-
             case Event.FIND_MBRS_ASYNC:
                 discovery_rsp_callback=evt.arg();
                 return findMembers(null, false, false, 0); // triggered by MERGE3

@@ -142,7 +142,7 @@ public class FILE_PING extends Discovery {
                     ; // use case #1 if we have predefined files: most members join but are not coord
             }
             else {
-                sendDiscoveryResponse(local_addr, phys_addr, NameCache.get(local_addr), null, false);
+                sendDiscoveryResponse(local_addr, phys_addr, NameCache.get(local_addr), null, is_coord);
             }
             // write the data if write_data_on_find is true
             if(write_data_on_find && (remove_all_data_on_view_change || remove_old_coords_on_view_change)
