@@ -326,7 +326,7 @@ public class JDBC_PING extends FILE_PING {
             if(log.isTraceEnabled())
                 log.trace("%s: SQL for insertion: %s", local_addr, ps);
             ps.executeUpdate();
-            log.debug("Registered %s for clustername %s into database", address, clustername);
+            log.debug("Inserted %s for cluster %s into database", address, clustername);
         }
     }
 
@@ -337,7 +337,7 @@ public class JDBC_PING extends FILE_PING {
             if(log.isTraceEnabled())
                 log.trace("%s: SQL for deletion: %s", local_addr, ps);
             ps.executeUpdate();
-            log.debug("Removed %s for clustername %s from database", addressToDelete, clustername);
+            log.debug("Removed %s for cluster %s from database", addressToDelete, clustername);
         }
     }
     
@@ -358,18 +358,17 @@ public class JDBC_PING extends FILE_PING {
 
 
     protected void clearTable(String clustername) {
-        try(Connection conn=getConnection()) {
-            try (PreparedStatement ps=conn.prepareStatement(clear_sql)) {
-				// check presence of cluster_name parameter for backwards compatibility
-				if (clear_sql.indexOf('?') >= 0) {
-					ps.setString(1, clustername);
-				} else {
-					log.debug("Please update your clear_sql to include cluster_name parameter.");
-				}
-                if(log.isTraceEnabled())
-                    log.trace("%s: SQL for clearing the table: %s", local_addr, ps);
-                ps.execute();
-            }
+        try(Connection conn=getConnection();
+            PreparedStatement ps=conn.prepareStatement(clear_sql)) {
+            // check presence of cluster_name parameter for backwards compatibility
+            if (clear_sql.indexOf('?') >= 0)
+                ps.setString(1, clustername);
+            else
+                log.debug("Please update your clear_sql to include cluster_name parameter.");
+            if(log.isTraceEnabled())
+                log.trace("%s: SQL for clearing the table: %s", local_addr, ps);
+            ps.execute();
+            log.debug("%s: cleared table for cluster %s", local_addr, clustername);
         }
         catch(SQLException e) {
             log.error(Util.getMessage("ErrorClearingTable"), e);

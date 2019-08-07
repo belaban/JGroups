@@ -180,14 +180,12 @@ public class FILE_PING extends Discovery {
     // remove all files which are not from the current members
     protected void handleView(View new_view, View old_view, boolean coord_changed) {
         if(is_coord) {
-            if(coord_changed) {
-                if(remove_all_data_on_view_change)
-                    removeAll(cluster_name);
-                else if(remove_old_coords_on_view_change) {
-                    Address old_coord=old_view != null? old_view.getCreator() : null;
-                    if(old_coord != null)
-                        remove(cluster_name, old_coord);
-                }
+            if(remove_all_data_on_view_change)
+                removeAll(cluster_name);
+            else if(remove_old_coords_on_view_change) {
+                Address old_coord=old_view != null? old_view.getCreator() : null;
+                if(old_coord != null)
+                    remove(cluster_name, old_coord);
             }
             Address[] left=View.diff(old_view, new_view)[1];
             if(coord_changed || update_store_on_view_change || left.length > 0) {
@@ -282,7 +280,7 @@ public class FILE_PING extends Discovery {
 
     protected void writeAll(Address[] excluded_mbrs) {
         Map<Address,PhysicalAddress> cache_contents=
-          (Map<Address,PhysicalAddress>)down_prot.down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS, false));
+          (Map<Address,PhysicalAddress>)down_prot.down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS, true));
 
         if(excluded_mbrs != null)
             for(Address excluded_mbr : excluded_mbrs)
@@ -298,8 +296,7 @@ public class FILE_PING extends Discovery {
             list.add(data);
         }
         write(list, cluster_name);
-        if(log.isTraceEnabled())
-            log.trace("%s: wrote to backend store: %s", local_addr, list.stream().map(PingData::getAddress).collect(Collectors.toList()));
+        log.trace("%s: wrote to backend store: %s", local_addr, list.stream().map(PingData::getAddress).collect(Collectors.toList()));
     }
 
     protected void write(List<PingData> list, String clustername) {
