@@ -273,30 +273,34 @@ public class ProtocolStack extends Protocol {
     }
 
 
-    public Map<String,Map<String,Object>> dumpStats(String protocol_name, List<String> attrs) {
-        Protocol prot=findProtocol(protocol_name);
-        if(prot == null)
+    public Map<String,Map<String,Object>> dumpStats(final String protocol_name, List<String> attrs) {
+        List<Protocol> prots=findProtocols(protocol_name);
+        if(prots == null || prots.isEmpty())
             return null;
-
         Map<String,Map<String,Object>> retval=new HashMap<>();
-        Map<String,Object> tmp=new TreeMap<>();
-        dumpStats(prot, tmp, log);
-        if(attrs != null && !attrs.isEmpty()) {
-            // weed out attrs not in list
-            for(Iterator<String> it=tmp.keySet().iterator(); it.hasNext();) {
-                String attrname=it.next();
-                boolean found=false;
-                for(String attr: attrs) {
-                    if(attrname.startsWith(attr)) {
-                        found=true;
-                        break; // found
+        for(Protocol prot: prots) {
+            Map<String,Object> tmp=new TreeMap<>();
+            dumpStats(prot, tmp, log);
+            if(attrs != null && !attrs.isEmpty()) {
+                // weed out attrs not in list
+                for(Iterator<String> it=tmp.keySet().iterator(); it.hasNext(); ) {
+                    String attrname=it.next();
+                    boolean found=false;
+                    for(String attr : attrs) {
+                        if(attrname.startsWith(attr)) {
+                            found=true;
+                            break; // found
+                        }
                     }
+                    if(!found)
+                        it.remove();
                 }
-                if(!found)
-                    it.remove();
             }
+            if(retval.containsKey(protocol_name))
+                retval.put(protocol_name + "-" + prot.getId(), tmp);
+            else
+                retval.put(protocol_name, tmp);
         }
-        retval.put(protocol_name, tmp);
         return retval;
     }
 
@@ -645,7 +649,7 @@ public class ProtocolStack extends Protocol {
      */
     public <T extends Protocol> T removeProtocol(String prot_name) {
         if(prot_name == null) return null;
-        return removeProtocol((T)findProtocol(prot_name));
+        return removeProtocol(findProtocol(prot_name));
     }
 
     public ProtocolStack removeProtocols(String ... protocols) {

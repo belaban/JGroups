@@ -11,7 +11,6 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
 import javax.management.*;
-
 import java.util.List;
 import java.util.Set;
 
@@ -60,7 +59,7 @@ public final class JmxConfigurator {
                 }
             }
         }
-        register(channel, server, getChannelRegistrationName(channel, domain, cluster_name));
+        register(channel, server, getChannelRegistrationName(domain, cluster_name));
     }
 
     /**
@@ -113,7 +112,7 @@ public final class JmxConfigurator {
                 }
             }
         }
-        unregister(c, server, getChannelRegistrationName(c, domain, clusterName));
+        unregister(c, server, getChannelRegistrationName(domain, clusterName));
     }
 
 
@@ -168,15 +167,11 @@ public final class JmxConfigurator {
         try {
             ObjectName objName = getObjectName(obj, name);
             if(server.isRegistered(objName)) {
-                log.warn("unregistering already registered MBean: " + objName);
-                try {
-                    server.unregisterMBean(objName);
-                }
-                catch(InstanceNotFoundException e) {
-                    log.error(Util.getMessage("FailedToUnregisterMBean") + e.getMessage());
-                }
+                String suffix=obj instanceof Protocol?
+                  "-" + ((Protocol)obj).getId() :
+                  "duplicate-" + Util.random((long)Short.MAX_VALUE * 2);
+                objName=getObjectName(obj, name+suffix);
             }
-
             ResourceDMBean res=new ResourceDMBean(obj);
             server.registerMBean(res, objName);
         }
@@ -188,7 +183,7 @@ public final class JmxConfigurator {
         }
     }
 
-    private static void internalUnregister(Object obj, MBeanServer server, String name) throws MBeanRegistrationException {
+    private static void internalUnregister(Object obj, MBeanServer s, String name) throws MBeanRegistrationException {
         try {
             ObjectName obj_name=null;
             if(name != null && !name.isEmpty())
@@ -197,8 +192,8 @@ public final class JmxConfigurator {
                 obj_name=getObjectName(obj, null);
             else
                 throw new MBeanRegistrationException(null, "Cannot find MBean name from @MBean or passed in value");
-            if(server.isRegistered(obj_name))
-                server.unregisterMBean(obj_name);
+            if(s.isRegistered(obj_name))
+                s.unregisterMBean(obj_name);
         }
         catch (InstanceNotFoundException | MalformedObjectNameException infe) {
             throw new MBeanRegistrationException(infe);
@@ -228,7 +223,7 @@ public final class JmxConfigurator {
                 server.unregisterMBean(name);
     }
 
-    private static String getChannelRegistrationName(JChannel c, String domain, String clusterName) {
+    private static String getChannelRegistrationName(String domain, String clusterName) {
         return domain + ":type=channel,cluster=" + clusterName;
     }
 
