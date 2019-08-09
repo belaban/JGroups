@@ -209,7 +209,7 @@ public final class RelayConfig {
         }
 
         public JChannel createChannel() throws Exception {return new JChannel(config);}
-        public String toString() {return "config=" + config + super.toString();}
+        public String toString() {return String.format("config=%s\n%s", config, super.toString());}
     }
 
 

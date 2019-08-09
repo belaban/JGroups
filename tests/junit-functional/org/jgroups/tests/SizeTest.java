@@ -607,8 +607,6 @@ public class SizeTest {
         uuid_cache.put(Util.createRandomAddress("A"), "A");
         uuid_cache.put(Util.createRandomAddress("B"), "B");
         uuid_cache.put(Util.createRandomAddress("B"), "B");
-        // hdr=RELAY.RelayHeader.create(RELAY.RelayHeader.Type.UUIDS);
-        // _testSize(hdr);
     }
 
     public static void testStateHeader() throws Exception {
@@ -617,12 +615,16 @@ public class SizeTest {
     }
 
 
-    public static void testRelay2Header() throws Exception {
+    public void testRelay2Header() throws Exception {
         Address dest=new SiteMaster("sfo");
         RELAY2.Relay2Header hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, dest, null);
         _testSize(hdr);
         Address sender=new SiteUUID(UUID.randomUUID(), "dummy", "sfo");
         hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, dest, sender);
+        _testSize(hdr);
+
+        hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.SITES_UP, null, null)
+          .setSites("sfo", "lon","nyc");
         _testSize(hdr);
     }
 

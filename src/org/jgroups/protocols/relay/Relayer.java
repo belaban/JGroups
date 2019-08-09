@@ -206,13 +206,11 @@ public class Relayer {
             this.view=new_view;
             log.trace("[Relayer " + channel.getAddress() + "] view: " + new_view);
 
-            RouteStatusListener       listener=relay.getRouteStatusListener();
             Map<String,List<Address>> tmp=extract(new_view);
-            Set<String>               down=listener != null? new HashSet<>(routes.keySet()) : null;
-            Set<String>               up=listener != null? new HashSet<>() : null;
+            Set<String>               down=new HashSet<>(routes.keySet());
+            Set<String>               up=new HashSet<>();
 
-            if(listener != null)
-                down.removeAll(tmp.keySet());
+            down.removeAll(tmp.keySet());
 
             routes.keySet().retainAll(tmp.keySet()); // remove all sites which are not in the view
 
@@ -221,13 +219,12 @@ public class Relayer {
                 List<Address> val=entry.getValue();
 
                 List<Route> newRoutes;
-                if (routes.containsKey(key)) {
-                    newRoutes = new ArrayList<>(routes.get(key));
-                } else {
-                    newRoutes = new ArrayList<>();
-                    if(up != null) {
+                if(routes.containsKey(key))
+                    newRoutes=new ArrayList<>(routes.get(key));
+                else {
+                    newRoutes=new ArrayList<>();
+                    if(up != null)
                         up.add(key);
-                    }
                 }
 
                 // Remove routes not in the view anymore:
@@ -239,21 +236,16 @@ public class Relayer {
 
                 if(newRoutes.isEmpty()) {
                     routes.remove(key);
-                    if(listener != null) {
-                        down.add(key);
-                        up.remove(key);
-                    }
-                } else {
-                    routes.put(key, Collections.unmodifiableList(newRoutes));
+                    down.add(key);
+                    up.remove(key);
                 }
+                else
+                    routes.put(key, Collections.unmodifiableList(newRoutes));
             }
-
-            if(listener != null) {
-                if(!down.isEmpty())
-                    listener.sitesDown(down.toArray(new String[0]));
-                if(!up.isEmpty())
-                    listener.sitesUp(up.toArray(new String[0]));
-            }
+            if(!down.isEmpty())
+                relay.sitesChange(true, down.toArray(new String[0]));
+            if(!up.isEmpty())
+                relay.sitesChange(false, up.toArray(new String[0]));
         }
 
         protected boolean contains(List<Route> routes, Address addr) {
