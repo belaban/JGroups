@@ -384,7 +384,7 @@ public class RELAY2 extends Protocol {
 
     public Object down(Message msg) {
         Address dest=msg.getDest();
-        if(dest == null || !(dest instanceof SiteAddress))
+        if(!(dest instanceof SiteAddress))
             return down_prot.down(msg);
 
         SiteAddress target=(SiteAddress)dest;
@@ -445,9 +445,9 @@ public class RELAY2 extends Protocol {
             // forward a multicast message to all bridges except myself, then pass up
             if(dest == null && is_site_master && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
                 Address src=msg.getSrc();
-                Address sender=new SiteUUID((UUID)msg.getSrc(), NameCache.get(msg.getSrc()), site);
+                SiteUUID sender=new SiteUUID((UUID)msg.getSrc(), NameCache.get(msg.getSrc()), site);
                 if(src instanceof ExtendedUUID)
-                    ((SiteUUID)sender).addContents((ExtendedUUID)src);
+                    sender.addContents((ExtendedUUID)src);
                 sendToBridges(sender, msg, site);
             }
             return up_prot.up(msg); // pass up
@@ -470,9 +470,9 @@ public class RELAY2 extends Protocol {
                 // forward a multicast message to all bridges except myself, then pass up
                 if(dest == null && is_site_master && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
                     Address src=msg.getSrc();
-                    Address sender=new SiteUUID((UUID)msg.getSrc(), NameCache.get(msg.getSrc()), site);
+                    SiteUUID sender=new SiteUUID((UUID)msg.getSrc(), NameCache.get(msg.getSrc()), site);
                     if(src instanceof ExtendedUUID)
-                        ((SiteUUID)sender).addContents((ExtendedUUID)src);
+                        sender.addContents((ExtendedUUID)src);
                     sendToBridges(sender, msg, site);
                 }
             }

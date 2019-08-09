@@ -5,9 +5,6 @@ import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.RouteStatusListener;
 import org.jgroups.util.Util;
 
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 /** Demos RELAY. Create 2 *separate* clusters with RELAY as top protocol. Each RELAY has bridge_props="tcp.xml" (tcp.xml
  * needs to be present). Then start 2 instances in the first cluster and 2 instances in the second cluster. They should
  * find each other, and typing in a window should send the text to everyone, plus we should get 4 responses.
@@ -65,12 +62,12 @@ public class RelayDemo {
             relay.setRouteStatusListener(new RouteStatusListener() {
                 public void sitesUp(String... sites) {
                     System.out.printf("-- %s: site(s) %s came up\n",
-                                      ch.getAddress(), Stream.of(sites).collect(Collectors.joining(", ")));
+                                      ch.getAddress(), String.join(", ", sites));
                 }
 
                 public void sitesDown(String... sites) {
                     System.out.printf("-- %s: site(s) %s went down\n",
-                                      ch.getAddress(), Stream.of(sites).collect(Collectors.joining(", ")));
+                                      ch.getAddress(), String.join(", ", sites));
                 }
             });
         }

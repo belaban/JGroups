@@ -250,9 +250,9 @@ public class Relayer {
 
             if(listener != null) {
                 if(!down.isEmpty())
-                    listener.sitesDown(down.toArray(new String[down.size()]));
+                    listener.sitesDown(down.toArray(new String[0]));
                 if(!up.isEmpty())
-                    listener.sitesUp(up.toArray(new String[up.size()]));
+                    listener.sitesUp(up.toArray(new String[0]));
             }
         }
 
