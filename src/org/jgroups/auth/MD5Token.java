@@ -28,10 +28,12 @@ import java.io.DataOutput;
 public class MD5Token extends AuthToken {
 
     @Property(exposeAsManagedAttribute=false)
-    private String auth_value = null;
+    private String auth_value="password";
 
     @Property(name = "token_hash")
     private String hash_type = "MD5";
+
+    private boolean hashed;
 
     public MD5Token() {
         // need an empty constructor
@@ -66,6 +68,14 @@ public class MD5Token extends AuthToken {
         return "org.jgroups.auth.MD5Token";
     }
 
+    public void init() throws Exception {
+        super.init();
+        if(!hashed) {
+            auth_value=hash(auth_value);
+            hashed=true;
+        }
+    }
+
     /**
      * Called during setup to hash the auth_value string in to an MD5/SHA hash
      * 
@@ -92,15 +102,13 @@ public class MD5Token extends AuthToken {
     }
 
     public boolean authenticate(AuthToken token, Message msg) {
-
-        if ((token != null) && (token instanceof MD5Token)) {
+        if ((token instanceof MD5Token)) {
             // Found a valid Token to authenticate against
             MD5Token serverToken = (MD5Token) token;
 
             return (this.auth_value != null) && (serverToken.auth_value != null)
               && (this.auth_value.equalsIgnoreCase(serverToken.auth_value));
         }
-
         log.warn("Invalid AuthToken instance - wrong type or null");
         return false;
     }

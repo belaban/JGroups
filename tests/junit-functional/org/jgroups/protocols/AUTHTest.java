@@ -2,17 +2,21 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.Global;
+import org.jgroups.JChannel;
 import org.jgroups.auth.FixedMembershipToken;
 import org.jgroups.auth.MD5Token;
 import org.jgroups.auth.SimpleToken;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 /**
  * A set of JUnit tests for the AUTH protocol
  * @author Chris Mills
  */
-@Test(groups=Global.FUNCTIONAL,sequential=false)
+@Test(groups=Global.FUNCTIONAL)
 public class AUTHTest {
 
     /**
@@ -47,7 +51,7 @@ public class AUTHTest {
      * <p/>
      * Test fails if an exception is thrown or authentication fails
      */
-    public static void testMD5Token() {
+    public void testMD5Token() {
         MD5Token token1=new MD5Token();
         token1.setAuthValue("chris");
         token1.setHashType("MD5");
@@ -57,6 +61,13 @@ public class AUTHTest {
         token2.setHashType("MD5");
 
         assert token1.authenticate(token2, null);
+
+        token1=new MD5Token("chris", "MD5");
+        token2=new MD5Token("chriss", "MD5");
+        assert !token1.authenticate(token2, null);
+        token2=new MD5Token("chris", "MD5");
+        assert token2.authenticate(token1, null);
+        assert !token1.getAuthValue().equalsIgnoreCase("chris");
     }
 
     /**
