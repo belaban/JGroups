@@ -49,7 +49,7 @@ public class SimpleToken extends AuthToken {
     }
 
     public boolean authenticate(AuthToken token, Message msg) {
-        if ((token != null) && (token instanceof SimpleToken)) {
+        if ((token instanceof SimpleToken)) {
             // Found a valid Token to authenticate against
             SimpleToken serverToken = (SimpleToken) token;
 

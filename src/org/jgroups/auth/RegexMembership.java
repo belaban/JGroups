@@ -77,8 +77,7 @@ public class RegexMembership extends AuthToken {
                 boolean result=matcher.matches();
                 if(log.isTraceEnabled())
                     log.trace("matching logical_name: pattern= " + pattern + ", input= " + logical_name + ", result= " + result);
-                if(result)
-                    return true;
+                return result;
             }
         }
         return false;

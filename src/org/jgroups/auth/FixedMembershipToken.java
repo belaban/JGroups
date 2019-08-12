@@ -65,7 +65,7 @@ public class FixedMembershipToken extends AuthToken {
     } */
 
     public boolean authenticate(AuthToken token, Message msg) {
-        if ((token != null) && (token instanceof FixedMembershipToken) && (this.memberList != null)) {
+        if ((token instanceof FixedMembershipToken) && (this.memberList != null)) {
             PhysicalAddress src = (PhysicalAddress) auth.down(new Event(Event.GET_PHYSICAL_ADDRESS, msg.getSrc()));
             if (src == null) {
                 log.error(Util.getMessage("DidnTFindPhysicalAddressFor") + msg.getSrc());
