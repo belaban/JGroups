@@ -24,12 +24,12 @@ public class ResponseCollectorTest {
         ResponseCollector<Integer> coll=new ResponseCollector<>(a, b, c);
         coll.add(a, 1);
         System.out.println("coll = " + coll);
-        assert coll.size() == 3;
+        assert coll.getResponsesCount() == 3;
         assert !coll.hasAllResponses();
         coll.add(c, 3);
         coll.add(b, 2);
         System.out.println("coll = " + coll);
-        assert coll.size() == 3;
+        assert coll.getResponsesCount() == 3;
         assert coll.hasAllResponses();
     }
 
@@ -37,12 +37,12 @@ public class ResponseCollectorTest {
         ResponseCollector<Integer> coll=new ResponseCollector<>(a, b);
         coll.add(a, 1);
         System.out.println("coll = " + coll);
-        assert coll.size() == 2;
+        assert coll.getResponsesCount() == 2;
         assert !coll.hasAllResponses();
         coll.add(c, 3); // will get dropped
         coll.add(b, 2);
         System.out.println("coll = " + coll);
-        assert coll.size() == 2;
+        assert coll.getResponsesCount() == 2;
         assert coll.hasAllResponses();
     }
 
@@ -119,7 +119,7 @@ public class ResponseCollectorTest {
 
         thread.join();
         System.out.println("results = " + results);
-        assert coll.size() == 0;
+        assert coll.getResponsesCount() == 0;
     }
 
 

@@ -140,7 +140,7 @@ public class ResponseCollector<T> {
         return responses;
     }
 
-    public int size() {
+    public int getResponsesCount() {
         lock.lock();
         try {
             return responses.size();

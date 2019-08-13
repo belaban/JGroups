@@ -572,7 +572,7 @@ public class Merger {
             }
 
             removeRejectedMergeRequests(coords.keySet());
-            if(merge_rsps.size() == 0)
+            if(merge_rsps.getResponsesCount() == 0)
                 throw new Exception("did not get any merge responses from partition coordinators");
 
             if(!coords.keySet().contains(gms.local_addr)) // another member might have invoked a merge req on us before we got there...
