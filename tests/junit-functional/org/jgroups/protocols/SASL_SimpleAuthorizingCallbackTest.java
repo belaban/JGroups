@@ -1,21 +1,21 @@
 package org.jgroups.protocols;
 
-import static org.testng.AssertJUnit.assertTrue;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.util.Properties;
-
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.auth.sasl.SimpleAuthorizingCallbackHandler;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Properties;
+
+import static org.testng.AssertJUnit.assertTrue;
 
 @Test(groups = Global.FUNCTIONAL, singleThreaded = true)
 public class SASL_SimpleAuthorizingCallbackTest {
@@ -59,8 +59,8 @@ public class SASL_SimpleAuthorizingCallbackTest {
         } else {
             sasl.sasl_props.put("com.sun.security.sasl.digest.realm", REALM);
         }
-        return new JChannel(new Protocol[] { new SHARED_LOOPBACK(), new PING(), new NAKACK2(), new UNICAST3(),
-                new STABLE(), sasl, new GMS() }).name(channelName);
+        return new JChannel(new SHARED_LOOPBACK(), new PING(), new NAKACK2(), new UNICAST3(),
+                            new STABLE(), sasl, new GMS()).name(channelName);
     }
 
     public void testSASLDigestMD5() throws Exception {
@@ -76,17 +76,11 @@ public class SASL_SimpleAuthorizingCallbackTest {
         a = createChannel("A", "DIGEST-MD5", "jack");
         b = createChannel("B", "DIGEST-MD5", "jane");
         a.connect("SaslTest");
-        try {
-            b.connect("SaslTest");
-        } catch (Exception e) {
-            if (e.getCause() != null)
-                throw e.getCause();
-        }
+        b.connect("SaslTest");
     }
 
     @AfterMethod
     public void cleanup() {
-        a.close();
-        b.close();
+        Util.close(b,a);
     }
 }

@@ -850,22 +850,22 @@ public class JChannel implements Closeable {
         return true;
     }
 
-    protected JChannel _connect(Event connect_event) throws Exception {
+    protected JChannel _connect(Event evt) throws Exception {
         try {
-            down(connect_event);
+            down(evt);
             return this;
         }
-        catch(SecurityException sex) {
-            throw new SecurityException("connecting to channel " + connect_event.getArg() + " failed", sex);
-        }
-        catch(Throwable t) {
-            stopStack(true, false);
-            state=State.OPEN;
-            init();
-            throw new Exception("connecting to channel " + connect_event.getArg() + " failed", t);
+        catch(Exception ex) {
+            cleanup();
+            throw ex;
         }
     }
 
+    protected void cleanup() {
+        stopStack(true, false);
+        state=State.OPEN;
+        init();
+    }
 
     protected JChannel getState(Address target, long timeout, Callable<Boolean> flushInvoker) throws Exception {
         checkClosedOrNotConnected();

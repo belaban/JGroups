@@ -26,8 +26,6 @@ public class Krb5Token extends AuthToken {
     public  static final String CLIENT_PASSWORD        = "client_password";
     public  static final String SERVICE_PRINCIPAL_NAME = "service_principal_name";
         
-    private static final Krb5TokenUtils kerb5Utils = new Krb5TokenUtils();
-
     @Property protected String client_principal_name;
     @Property(exposeAsManagedAttribute=false) protected String client_password;
     @Property protected String service_principal_name;
@@ -78,7 +76,7 @@ public class Krb5Token extends AuthToken {
             return false;
         }
         
-        if((token != null) && token instanceof Krb5Token) {
+        if(token instanceof Krb5Token) {
                 
             Krb5Token remoteToken = (Krb5Token)token;
 

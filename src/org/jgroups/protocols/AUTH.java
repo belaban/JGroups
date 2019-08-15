@@ -22,7 +22,9 @@ import java.util.List;
 /**
  * The AUTH protocol adds a layer of authentication to JGroups. It intercepts join and merge requests and rejects them
  * if the joiner or merger is not permitted to join a or merge into a cluster. AUTH should be placed right below
- * {@link GMS} in the configuration.
+ * {@link GMS} in the configuration.<br/>
+ * Note that some of the AuthTokens (such as MD5Token, SimpleToken etc) cannot prevent rogue members from joining a
+ * cluster, and are thus deprecated. Read the manual for a detailed description of why.
  * @author Chris Mills
  * @author Bela Ban
  */

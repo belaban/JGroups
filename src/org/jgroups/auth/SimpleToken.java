@@ -23,7 +23,9 @@ import java.io.IOException;
  * 
  * @author Chris Mills
  * @see org.jgroups.auth.AuthToken
+ * @deprecated Consult the manual for a description of why this token was deprecated
  */
+@Deprecated
 public class SimpleToken extends AuthToken {
 
     @Property(exposeAsManagedAttribute=false)
@@ -61,9 +63,6 @@ public class SimpleToken extends AuthToken {
                 }
                 return true;
             } else {
-                // if(log.isWarnEnabled()){
-                // log.warn("Authentication failed on SimpleToken");
-                // }
                 return false;
             }
         }

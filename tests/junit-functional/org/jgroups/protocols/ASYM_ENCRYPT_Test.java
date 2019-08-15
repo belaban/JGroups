@@ -89,9 +89,13 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         auth.setAuthToken(new MD5Token("unknown_pwd"));
         GMS gms=rogue.getProtocolStack().findProtocol(GMS.class);
         gms.setMaxJoinAttempts(2);
-        rogue.connect(cluster_name);
-        System.out.printf("Rogue's view is %s\n", rogue.getView());
-        assert rogue.getView().size() == 1 : String.format("rogue should have a singleton view of itself, but doesn't: %s", rogue.getView());
+        try {
+            rogue.connect(cluster_name);
+            assert false : "rogue member should not have been able to connect";
+        }
+        catch(SecurityException ex) {
+            System.out.printf("rogue member's connect() got (expected) exception: %s\n", ex);
+        }
     }
 
 
@@ -101,8 +105,12 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         AUTH auth=rogue.getProtocolStack().findProtocol(AUTH.class);
         auth.setAuthToken(new MD5Token("unknown_pwd"));
         GMS gms=rogue.getProtocolStack().findProtocol(GMS.class);
-        gms.setMaxJoinAttempts(1);
+        gms.setMaxJoinAttempts(1).setJoinTimeout(1000).setLeaveTimeout(1000);
+
+        // make the rogue member become a singletone cluster
+        rogue.getProtocolStack().insertProtocol(new DISCARD().setDiscardAll(true), ProtocolStack.Position.ABOVE, TP.class);
         rogue.connect(cluster_name);
+        rogue.getProtocolStack().removeProtocol(DISCARD.class);
 
         MergeView merge_view=new MergeView(a.getAddress(), a.getView().getViewId().getId()+5,
                                            Arrays.asList(a.getAddress(), b.getAddress(), c.getAddress(), rogue.getAddress()), null);

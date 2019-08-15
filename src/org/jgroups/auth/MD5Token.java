@@ -25,7 +25,9 @@ import java.io.IOException;
  *
  * @see org.jgroups.auth.AuthToken
  * @author Chris Mills
+ * @deprecated Consult the manual for a description of why this token was deprecated
  */
+@Deprecated()
 public class MD5Token extends AuthToken {
 
     @Property(exposeAsManagedAttribute=false)

@@ -54,12 +54,7 @@ public class SASLTest {
         a = createChannel("A", "DIGEST-MD5", "jack");
         b = createChannel("B", "DIGEST-MD5", "jill");
         a.connect("SaslTest");
-        try {
-            b.connect("SaslTest");
-        } catch (Exception e) {
-            if (e.getCause() != null)
-                throw e.getCause();
-        }
+        b.connect("SaslTest");
     }
 
     public void testSASLDigestMD5Merge() throws Exception {
