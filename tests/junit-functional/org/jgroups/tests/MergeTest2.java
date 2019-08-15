@@ -50,8 +50,7 @@ public class MergeTest2 {
 
 
     protected JChannel createChannel(String name) throws Exception {
-        SHARED_LOOPBACK shared_loopback=new SHARED_LOOPBACK();
-        shared_loopback.setDiagnosticsHandler(handler);
+        SHARED_LOOPBACK shared_loopback=new SHARED_LOOPBACK().setDiagnosticsHandler(handler);
 
         JChannel retval=new JChannel(shared_loopback,
                                      new DISCARD().setValue("discard_all",true),
@@ -90,8 +89,7 @@ public class MergeTest2 {
 
     public void testMergeWithMissingMergeResponse() {
         JChannel merge_leader=findMergeLeader(a,b,c,d);
-        List<Address> non_faulty_members=new ArrayList<>();
-        non_faulty_members.addAll(Arrays.asList(a.getAddress(),b.getAddress(),c.getAddress(),d.getAddress()));
+        List<Address> non_faulty_members=new ArrayList<>(Arrays.asList(a.getAddress(), b.getAddress(), c.getAddress(), d.getAddress()));
         List<Address> tmp=new ArrayList<>(non_faulty_members);
         tmp.remove(merge_leader.getAddress());
         Address faulty_member=Util.pickRandomElement(tmp);
@@ -143,7 +141,7 @@ public class MergeTest2 {
         }
     }
 
-    protected JChannel findMergeLeader(JChannel ... channels) {
+    protected static JChannel findMergeLeader(JChannel... channels) {
         Set<Address> tmp=new TreeSet<>();
         for(JChannel ch: channels)
             tmp.add(ch.getAddress());

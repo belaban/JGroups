@@ -82,9 +82,9 @@ public class MergeTest3 {
         setMergeIdIn(busy_second, busy_merge_id);
         for(JChannel ch: new JChannel[]{a,b,c,d,e,f}) { // excluding faulty member, as it still discards messages
             assert ch.getView().size() == 3;
-            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.setJoinTimeout(3000);
-            DISCARD discard=(DISCARD)ch.getProtocolStack().findProtocol(DISCARD.class);
+            DISCARD discard=ch.getProtocolStack().findProtocol(DISCARD.class);
             discard.setDiscardAll(false);
         }
 
@@ -93,7 +93,7 @@ public class MergeTest3 {
         merge_views.put(first_coord, findChannel(first_coord).getView());
         merge_views.put(second_coord, findChannel(second_coord).getView());
 
-        GMS gms=(GMS)merge_leader.getProtocolStack().findProtocol(GMS.class);
+        GMS gms=merge_leader.getProtocolStack().findProtocol(GMS.class);
         gms.up(new Event(Event.MERGE, merge_views));
 
         for(int i=0; i < 20; i++) {
@@ -137,7 +137,7 @@ public class MergeTest3 {
 
         System.out.println("merge event is " + merge_views);
 
-        gms=(GMS)merge_leader.getProtocolStack().findProtocol(GMS.class);
+        gms=merge_leader.getProtocolStack().findProtocol(GMS.class);
         gms.up(new Event(Event.MERGE, merge_views));
 
         for(int i=0; i < 20; i++) {
@@ -154,12 +154,12 @@ public class MergeTest3 {
             Util.sleep(1000);
         }
         for(JChannel ch: new JChannel[]{a,b,c,d,e,f}) {
-            if(ch.getAddress().equals(busy_first) || ch.getAddress().equals(busy_second))
-                assert ch.getView().size() == 6 : ch.getAddress() + "'s view: " + ch.getView();
+            assert !ch.getAddress().equals(busy_first) && !ch.getAddress().equals(busy_second)
+              || ch.getView().size() == 6 : ch.getAddress() + "'s view: " + ch.getView();
         }
     }
 
-    protected JChannel createChannel(String name) throws Exception {
+    protected static JChannel createChannel(String name) throws Exception {
         JChannel retval=new JChannel(new SHARED_LOOPBACK(),
                                      new DISCARD().setValue("discard_all",true),
                                      new SHARED_LOOPBACK_PING(),
@@ -181,12 +181,12 @@ public class MergeTest3 {
     }
 
     protected void setMergeIdIn(Address mbr, MergeId busy_merge_id) {
-        GMS gms=(GMS)findChannel(mbr).getProtocolStack().findProtocol(GMS.class);
+        GMS gms=findChannel(mbr).getProtocolStack().findProtocol(GMS.class);
         gms.getMerger().setMergeId(null, busy_merge_id);
     }
 
     protected void cancelMerge(Address mbr) {
-        GMS gms=(GMS)findChannel(mbr).getProtocolStack().findProtocol(GMS.class);
+        GMS gms=findChannel(mbr).getProtocolStack().findProtocol(GMS.class);
         gms.cancelMerge();
     }
 
@@ -210,23 +210,23 @@ public class MergeTest3 {
         View view=new View(coord, view_id, members);
         MutableDigest digest=new MutableDigest(view.getMembersRaw());
         for(JChannel ch: channels) {
-            NAKACK2 nakack=(NAKACK2)ch.getProtocolStack().findProtocol(NAKACK2.class);
+            NAKACK2 nakack=ch.getProtocolStack().findProtocol(NAKACK2.class);
             digest.merge(nakack.getDigest(ch.getAddress()));
         }
         for(JChannel ch: channels) {
-            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.installView(view, digest);
         }
     }
 
-    protected List<Address> getMembers(JChannel ... channels) {
+    protected static List<Address> getMembers(JChannel... channels) {
         List<Address> members=new ArrayList<>(channels.length);
         for(JChannel ch: channels)
             members.add(ch.getAddress());
         return members;
     }
 
-    protected Address determineCoordinator(JChannel ... channels) {
+    protected static Address determineCoordinator(JChannel... channels) {
         List<Address> list=new ArrayList<>(channels.length);
         for(JChannel ch: channels)
             list.add(ch.getAddress());
@@ -234,7 +234,7 @@ public class MergeTest3 {
         return list.get(0);
     }
 
-    protected JChannel findMergeLeader(JChannel ... channels) {
+    protected static JChannel findMergeLeader(JChannel... channels) {
         Set<Address> tmp=new TreeSet<>();
         for(JChannel ch: channels)
             tmp.add(ch.getAddress());

@@ -100,6 +100,7 @@ public abstract class Discovery extends Protocol {
     protected volatile Address           local_addr;
     protected volatile Address           current_coord;
     protected String                     cluster_name;
+    protected TP                         transport;
     protected final Map<Long,Responses>  ping_responses=new HashMap<>();
     protected final Set<Future<?>>       discovery_req_futures=new ConcurrentSkipListSet<>();
     @ManagedAttribute(description="Whether the transport supports multicasting")
@@ -113,19 +114,19 @@ public abstract class Discovery extends Protocol {
 
 
     public void init() throws Exception {
-        TP tp=getTransport();
+        transport=getTransport();
         if(stagger_timeout < 0)
             throw new IllegalArgumentException("stagger_timeout cannot be negative");
         if(num_discovery_runs < 1)
             throw new IllegalArgumentException("num_discovery_runs must be >= 1");
-        transport_supports_multicasting=tp.supportsMulticasting();
-        sends_can_block=getTransport() instanceof TCP; // UDP and TCP_NIO2 won't block
-        use_ip_addrs=tp.getUseIpAddresses();
+        transport_supports_multicasting=transport.supportsMulticasting();
+        sends_can_block=transport instanceof TCP; // UDP and TCP_NIO2 won't block
+        use_ip_addrs=transport.getUseIpAddresses();
     }
 
     public void start() throws Exception {
         super.start();
-        timer=getTransport().getTimer();
+        timer=transport.getTimer();
         if(timer == null)
             throw new Exception("timer cannot be retrieved from protocol stack");
     }
