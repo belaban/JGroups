@@ -18,9 +18,6 @@ import javax.net.ssl.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.security.KeyStore;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
 import java.util.Map;
 import java.util.Objects;
 
@@ -125,7 +122,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     public String           getSecretKeyAlgorithm()                   {return secret_key_algorithm;}
     public SSL_KEY_EXCHANGE setSecretKeyAlgorithm(String a)           {this.secret_key_algorithm=a; return this;}
     public boolean          getRequireClientAuthentication()          {return require_client_authentication;}
-    public SSL_KEY_EXCHANGE setRequireClientAuthentication(boolean b) {require_client_authentication=b; return this;}
+    public SSL_KEY_EXCHANGE setRequireClientAuthentication(boolean b) {this.require_client_authentication=b; return this;}
     public int              getSocketTimeout()                        {return socket_timeout;}
     public SSL_KEY_EXCHANGE setSocketTimeout(int timeout)             {this.socket_timeout=timeout; return this;}
     public String           getSessionVerifierClass()                 {return session_verifier_class;}
@@ -159,7 +156,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         }
         key_store=KeyStore.getInstance(keystore_type != null? keystore_type : KeyStore.getDefaultType());
 
-        InputStream input=null;
+        InputStream input;
         try {
             input=new FileInputStream(keystore_name);
         }
@@ -320,7 +317,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         SSLContext ctx=getContext();
         SSLServerSocketFactory sslServerSocketFactory=ctx.getServerSocketFactory();
 
-        SSLServerSocket sslServerSocket=null;
+        SSLServerSocket sslServerSocket;
         for(int i=0; i < port_range; i++) {
             try {
                 sslServerSocket=(SSLServerSocket)sslServerSocketFactory.createServerSocket(port + i, 50, bind_addr);
@@ -341,7 +338,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
             return createSocketTo((IpAddress)target, sslSocketFactory);
 
         IpAddress dest=(IpAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, target));
-        SSLSocket sock=null;
+        SSLSocket sock;
         for(int i=0; i < port_range; i++) {
             try {
                 sock=(SSLSocket)sslSocketFactory.createSocket(dest.getIpAddress(), port+i);
@@ -400,7 +397,6 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         KeyManager[] km=keyManagerFactory.getKeyManagers();
 
         // Create trust manager
-        // TrustManagerFactory trustManagerFactory=TrustManagerFactory.getInstance("SunX509");
         TrustManagerFactory trustManagerFactory=TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(key_store);
         TrustManager[] tm=trustManagerFactory.getTrustManagers();
@@ -410,22 +406,5 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         sslContext.init(km, tm, null);
         return this.ssl_ctx=sslContext;
     }
-
-
-    protected static String print16(PublicKey pub_key) {
-        // use SHA256 to create a hash of secret_key and only then truncate it to secret_key_length
-        MessageDigest digest=null;
-        try {
-            digest=MessageDigest.getInstance("SHA-256");
-            digest.update(pub_key.getEncoded());
-            return Util.byteArrayToHexString(digest.digest(), 0, 16);
-        }
-        catch(NoSuchAlgorithmException e) {
-            return e.toString();
-        }
-    }
-
-
-
 }
 
