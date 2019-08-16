@@ -186,7 +186,7 @@ public abstract class BaseLeaveTest {
         JChannel[] remaining_channels=new JChannel[channels.length - num_leavers];
         System.arraycopy(channels, num_leavers, remaining_channels, 0, channels.length - num_leavers);
         Stream.of(channels).limit(num_leavers).parallel().forEach(Util::close);
-        Util.waitUntilAllChannelsHaveSameView(20000, 1000, remaining_channels);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, remaining_channels);
         Arrays.stream(channels, 0, channels.length).filter(JChannel::isConnected)
           .forEach(ch -> System.out.printf("%s: %s\n", ch.getAddress(), ch.getView()));
     }
@@ -198,7 +198,7 @@ public abstract class BaseLeaveTest {
         remaining.removeAll(left);
 
         List<JChannel> remaining_channels=remaining.stream().map(i -> channels[i]).collect(Collectors.toList());
-        Util.waitUntilAllChannelsHaveSameView(20000, 1000, remaining_channels);
+        Util.waitUntilAllChannelsHaveSameView(30000, 1000, remaining_channels);
         Arrays.stream(channels, 0, channels.length).filter(JChannel::isConnected)
           .forEach(ch -> System.out.printf("%s: %s\n", ch.getAddress(), ch.getView()));
     }

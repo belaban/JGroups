@@ -200,17 +200,15 @@ public class UNICAST_ConnectionTests {
         final CyclicBarrier barrier=new CyclicBarrier(NUM+1);
         for(int i=0; i < NUM; i++) {
             final int index=i;
-            threads[i]=new Thread() {
-                public void run() {
-                    try {
-                        barrier.await();
-                        ucast.up(msgs.get(index));
-                    }
-                    catch(Exception e) {
-                        e.printStackTrace();
-                    }
+            threads[i]=new Thread(() -> {
+                try {
+                    barrier.await();
+                    ucast.up(msgs.get(index));
                 }
-            };
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
+            });
             threads[i].start();
         }
 
@@ -243,7 +241,7 @@ public class UNICAST_ConnectionTests {
     }
 
 
-    protected Header createDataHeader(Protocol unicast, long seqno, short conn_id, boolean first) {
+    protected static Header createDataHeader(Protocol unicast, long seqno, short conn_id, boolean first) {
         if(unicast instanceof UNICAST3)
             return UnicastHeader3.createDataHeader(seqno, conn_id, first);
         throw new IllegalArgumentException("protocol " + unicast.getClass().getSimpleName() + " needs to be UNICAST3");
@@ -288,11 +286,11 @@ public class UNICAST_ConnectionTests {
         assert size == num : "list has " + size + " elements (expected " + num + "): " + list;
     }
 
-    protected void removeConnection(Protocol prot, Address target) {
+    protected static void removeConnection(Protocol prot, Address target) {
         removeConnection(prot, target, false);
     }
 
-    protected void removeConnection(Protocol prot, Address target, boolean remove) {
+    protected static void removeConnection(Protocol prot, Address target, boolean remove) {
         if(prot instanceof UNICAST3) {
             UNICAST3 unicast=(UNICAST3)prot;
             if(remove)
@@ -310,7 +308,7 @@ public class UNICAST_ConnectionTests {
     }
 
 
-    protected JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
+    protected static JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
         Protocol unicast=unicast_class.getDeclaredConstructor().newInstance();
         return new JChannel(new SHARED_LOOPBACK(), unicast).name(name);
     }
@@ -324,7 +322,9 @@ public class UNICAST_ConnectionTests {
         }
 
         public void receive(Message msg) {
-            msgs.add((Integer)msg.getObject());
+            synchronized(msgs) {
+                msgs.add(msg.getObject());
+            }
         }
 
         public List<Integer> getMessages() { return msgs; }
