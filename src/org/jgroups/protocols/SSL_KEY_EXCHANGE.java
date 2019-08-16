@@ -154,18 +154,22 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
                 secret_key_algorithm=sym_alg;
             }
         }
-        key_store=KeyStore.getInstance(keystore_type != null? keystore_type : KeyStore.getDefaultType());
 
-        InputStream input;
-        try {
-            input=new FileInputStream(keystore_name);
+        // Skip key store initialization if it was already provided or a ready-made SSLContext was already provided
+        if (key_store == null && ssl_ctx == null) {
+            key_store = KeyStore.getInstance(keystore_type != null ? keystore_type : KeyStore.getDefaultType());
+
+            InputStream input;
+            try {
+                input = new FileInputStream(keystore_name);
+            } catch (FileNotFoundException not_found) {
+                input = Util.getResourceAsStream(keystore_name, getClass());
+            }
+            if (input == null)
+                throw new FileNotFoundException(keystore_name);
+            key_store.load(input, keystore_password.toCharArray());
         }
-        catch(FileNotFoundException not_found) {
-            input=Util.getResourceAsStream(keystore_name, getClass());
-        }
-        if(input == null)
-            throw new FileNotFoundException(keystore_name);
-        key_store.load(input, keystore_password.toCharArray());
+
         if(session_verifier == null && session_verifier_class != null) {
             Class<? extends SessionVerifier> verifier_class=Util.loadClass(session_verifier_class, getClass());
             session_verifier=verifier_class.getDeclaredConstructor().newInstance();
