@@ -54,6 +54,7 @@ public class CENTRAL_LOCK2 extends Locking {
     protected final Runner                              req_handler;
 
 
+
     public CENTRAL_LOCK2() {
         req_handler=new Runner(new DefaultThreadFactory("lock-handler", true, true),
                                "lock-handler", this::processQueue, req_queue::clear);
@@ -63,6 +64,11 @@ public class CENTRAL_LOCK2 extends Locking {
     @ManagedAttribute public String  getCoordinator()          {return coord != null? coord.toString() : "n/a";}
     @ManagedAttribute public boolean isRequestHandlerRunning() {return req_handler.isRunning();}
     @ManagedAttribute public int     requestQueueSize()        {return req_queue.size();}
+
+    public void stop() {
+        super.stop();
+        req_handler.stop();
+    }
 
     @Override
     public void handleView(View v) {
