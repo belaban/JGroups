@@ -327,7 +327,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         SSLServerSocketFactory sslServerSocketFactory=ctx.getServerSocketFactory();
 
         SSLServerSocket sslServerSocket;
-        for(int i=0; i < port_range; i++) {
+        for(int i=0; i <= port_range; i++) {
             try {
                 sslServerSocket=(SSLServerSocket)sslServerSocketFactory.createServerSocket(port + i, 50, bind_addr);
                 sslServerSocket.setNeedClientAuth(require_client_authentication);
@@ -348,7 +348,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
 
         IpAddress dest=(IpAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, target));
         SSLSocket sock;
-        for(int i=0; i < port_range; i++) {
+        for(int i=0; i <= port_range; i++) {
             try {
                 sock=(SSLSocket)sslSocketFactory.createSocket(dest.getIpAddress(), port+i);
                 sock.setSoTimeout(socket_timeout);
