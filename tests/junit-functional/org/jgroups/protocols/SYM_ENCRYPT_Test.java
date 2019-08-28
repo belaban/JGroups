@@ -9,6 +9,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.security.SecureRandom;
+
 /**
  * Tests use cases for {@link SYM_ENCRYPT} described in https://issues.jboss.org/browse/JGRP-2021.
  * Make sure you create the keystore before running this test (ant make-keystore).
@@ -33,12 +35,16 @@ public class SYM_ENCRYPT_Test extends EncryptTest {
 
 
     protected JChannel create(String name) throws Exception {
+        // Verify that the SecureRandom instance can be customized
+        SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
         SYM_ENCRYPT encr;
         try {
-            encr=new SYM_ENCRYPT().keystoreName("keystore/defaultStore.keystore").alias("myKey").storePassword(DEF_PWD);
+            encr=new SYM_ENCRYPT().keystoreName("keystore/defaultStore.keystore").alias("myKey").storePassword(DEF_PWD)
+              .symAlgorithm(symAlgorithm()).symIvLength(symIvLength()).secureRandom(secureRandom);
         }
         catch(Throwable t) {
-            encr=new SYM_ENCRYPT().keystoreName("defaultStore.keystore").alias("myKey").storePassword(DEF_PWD);
+            encr=new SYM_ENCRYPT().keystoreName("defaultStore.keystore").alias("myKey").storePassword(DEF_PWD)
+              .symAlgorithm(symAlgorithm()).symIvLength(symIvLength()).secureRandom(secureRandom);
         }
 
         return new JChannel(

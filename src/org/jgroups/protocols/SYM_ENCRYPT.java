@@ -68,7 +68,16 @@ public class SYM_ENCRYPT extends Encrypt<KeyStore.SecretKeyEntry> {
     }
 
     public void setSecretKey(SecretKey key) {
-        this.sym_algorithm = key.getAlgorithm();
+        String key_algorithm = key.getAlgorithm();
+        if (sym_algorithm == null)
+            sym_algorithm = key_algorithm;
+        else if (!getAlgorithm(sym_algorithm).equals(key_algorithm)) {
+            // avoid overwriting the sym_algorithm transformation in case it includes a mode and padding
+            if (getModeAndPadding(sym_algorithm) != null) {
+                log.warn("%s: replacing sym_algorithm %s with key algorithm %s", local_addr, sym_algorithm, key_algorithm);
+            }
+            this.sym_algorithm = key_algorithm;
+        }
         this.secret_key = key;
     }
 
