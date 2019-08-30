@@ -1017,6 +1017,27 @@ abstract public class Locking extends Protocol {
                 sendReleaseLockRequest(name, lock_id, owner); // lock will be released on RELEASE_LOCK_OK response
                 if(force && client_lock_table.removeClientLock(name,owner))
                     notifyLockDeleted(name);
+
+                if(!force) {
+                    //unlock will return only when get RELEASE_LOCK_OK or timeLeft after some seconds
+                    long time_left=10000;
+                    while(acquired || denied) {
+                        long start=System.currentTimeMillis();
+                        try {
+                            wait(time_left);
+                        }
+                        catch(InterruptedException ie) {
+                            break;
+                        }
+                        long duration=System.currentTimeMillis() - start;
+                        if(duration > 0)
+                            time_left-=duration;
+                        if(time_left <= 0) {
+                            log.warn("%s: timeout waiting for RELEASE_LOCK_OK response for lock %s", local_addr, this);
+                            break;
+                        }
+                    }
+                }
             }
             else
                 _unlockOK();

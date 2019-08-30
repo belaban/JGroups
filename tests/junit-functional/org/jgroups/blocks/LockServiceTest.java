@@ -4,6 +4,7 @@ import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.locking.LockService;
 import org.jgroups.protocols.CENTRAL_LOCK;
+import org.jgroups.protocols.Locking;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
@@ -24,6 +25,7 @@ public class LockServiceTest {
     protected LockService s1, s2, s3;
     protected Lock        lock;
     protected static final String LOCK="sample-lock";
+    protected static final int NUM_ITERATIONS=1_000;
 
 
     @BeforeClass
@@ -167,6 +169,40 @@ public class LockServiceTest {
         }
         finally {
             lock.unlock();
+        }
+    }
+
+    /** Multiple lock-unlock cycles */
+    @Test
+    public void testLockMultipleTimes() throws Exception {
+        int print=NUM_ITERATIONS / 10;
+        for(int i=0; i < NUM_ITERATIONS; i++) {
+            lock(lock, LOCK);
+            try {
+                assert true: "lock not acquired!";
+            }
+            finally {
+                unlock(lock, LOCK);
+            }
+            if(i > 0 && i % print == 0)
+                System.out.printf("-- %d iterations\n", i);
+        }
+    }
+
+    /** Multiple trylock-unlock cycles */
+    @Test
+    public void testTryLockMultipleTimes() throws Exception {
+        int print=NUM_ITERATIONS / 10;
+        for(int i=0; i < NUM_ITERATIONS; i++) {
+            boolean rc=tryLock(lock, 10000, LOCK);
+            try {
+                assert rc : "lock not acquired!";
+            }
+            finally {
+                unlock(lock, LOCK);
+            }
+            if(i > 0 && i % print == 0)
+                System.out.printf("-- %d iterations\n", i);
         }
     }
 
