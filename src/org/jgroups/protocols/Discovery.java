@@ -8,14 +8,13 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
 import org.jgroups.util.UUID;
+import org.jgroups.util.*;
 
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -102,7 +101,7 @@ public abstract class Discovery extends Protocol {
     protected String                     cluster_name;
     protected TP                         transport;
     protected final Map<Long,Responses>  ping_responses=new HashMap<>();
-    protected final Set<Future<?>>       discovery_req_futures=new ConcurrentSkipListSet<>();
+    protected final List<Future<?>>      discovery_req_futures=new ArrayList<>();
     @ManagedAttribute(description="Whether the transport supports multicasting")
     protected boolean                    transport_supports_multicasting=true;
     protected boolean                    use_ip_addrs; // caches TP.use_ip_addrs
@@ -232,7 +231,9 @@ public abstract class Discovery extends Protocol {
                 long interval=last_send/num_reqs_to_send;
                 for(long i=0,delay=interval; i < num_reqs_to_send; i++,delay+=interval) {
                     Future<?> future=timer.schedule(find_method, delay, TimeUnit.MILLISECONDS);
-                    this.discovery_req_futures.add(future);
+                    synchronized(this.discovery_req_futures) {
+                        this.discovery_req_futures.add(future);
+                    }
                     num_discovery_requests++;
                 }
             }
@@ -548,8 +549,10 @@ public abstract class Discovery extends Protocol {
     }
 
     protected void clearRequestFutures() {
-        discovery_req_futures.forEach(f->f.cancel(true));
-        discovery_req_futures.clear();
+        synchronized(this.discovery_req_futures) {
+            discovery_req_futures.forEach(f -> f.cancel(true));
+            discovery_req_futures.clear();
+        }
     }
 
     protected synchronized void startCacheDissemination(List<Address> curr_mbrs, List<Address> left_mbrs, List<Address> new_mbrs) {
