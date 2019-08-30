@@ -105,7 +105,7 @@ public class LockServiceDemo implements LockNotification {
                 lock_names=parseLockNames(line.substring("trylock".length()).trim());
 
                 String tmp=lock_names.get(lock_names.size() -1);
-                Long timeout=(long)-1;
+                long timeout=(long)-1;
                 try {
                     timeout=Long.parseLong(tmp);
                     lock_names.remove(lock_names.size() -1);
@@ -122,6 +122,20 @@ public class LockServiceDemo implements LockNotification {
                         rc=lock.tryLock(timeout, TimeUnit.MILLISECONDS);
                     if(!rc)
                         System.err.println("Failed locking \"" + lock_name + "\"");
+                }
+            }
+            else if(line.startsWith("multilock")) { // multilock X  10
+                List<String> tokens=parseLockNames(line.substring("multilock".length()).trim());
+                if(tokens == null || tokens.size() != 2) {
+                    help();
+                    break;
+                }
+                String lock_name=tokens.get(0);
+                int num_iterations=Integer.valueOf(tokens.get(1));
+                Lock lock=lock_service.getLock(lock_name);
+                for(int i=0; i < num_iterations; i++) {
+                    lock.lock();
+                    lock.unlock();
                 }
             }
             else if(line.startsWith("unlock")) {
@@ -189,7 +203,8 @@ public class LockServiceDemo implements LockNotification {
                              "Valid commands:\n\n" +
                              "lock (<lock name>)+\n" +
                              "unlock (<lock name> | \"ALL\")+\n" +
-                             "trylock (<lock name>)+ [<timeout>]\n");
+                             "trylock (<lock name>)+ [<timeout>]\n" +
+                             "multilock <lock name> <times>\n");
         System.out.println("Example:\nlock lock lock2 lock3\nunlock all\ntrylock bela michelle 300");
     }
 
