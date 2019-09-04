@@ -27,8 +27,10 @@ import java.util.Map;
  * The SASL protocol implements authentication and, if requested by the mech, encryption
  *
  * @author Tristan Tarrant
+ * @deprecated Will be removed in 5.0 (not used anymore)
  */
 @MBean(description = "Provides SASL authentication")
+@Deprecated
 public class SASL extends Protocol {
     public static final short GMS_ID = ClassConfigurator.getProtocolId(GMS.class);
     public static final short SASL_ID = ClassConfigurator.getProtocolId(SASL.class);
