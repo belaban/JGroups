@@ -6,11 +6,9 @@ import org.jgroups.Message;
 import org.jgroups.blocks.*;
 import org.jgroups.protocols.SHARED_LOOPBACK;
 import org.jgroups.protocols.SHARED_LOOPBACK_PING;
-import org.jgroups.protocols.TP;
 import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -76,7 +74,8 @@ public class RpcDispatcherAsyncInvocationTest {
         List<Integer> list=invokeRpc(num_invocations, use_oob);
         long time=System.currentTimeMillis() - start;
         System.out.println("took " + time + " ms: " + list);
-        assert list.size() == num_invocations;
+        assert list.size() == num_invocations : String.format("expected %d, but list is %d (%s)",
+                                                              num_invocations, list.size(), list);
         assert time >= expected_min && time <= expected_max : // extreme GC could cause this (or even worse)
           "time was expected to be in range [" + expected_min + " .. " + expected_max + "] but was " + time;
     }
@@ -119,29 +118,22 @@ public class RpcDispatcherAsyncInvocationTest {
 
 
     protected static JChannel createChannel(String name) throws Exception {
-        TP transport=new SHARED_LOOPBACK();
-        transport.setThreadPoolMinThreads(10);
-        transport.setThreadPoolMaxThreads(20);
-        return new JChannel(new Protocol[]{
-          transport,
-          new SHARED_LOOPBACK_PING(),
-          new NAKACK2(),
-          new UNICAST3(),
-          new GMS()
-        }).name(name);
+        return new JChannel(new SHARED_LOOPBACK().setThreadPoolMinThreads(10).setThreadPoolMaxThreads(20),
+                            new SHARED_LOOPBACK_PING(),
+                            new NAKACK2(),
+                            new UNICAST3(),
+                            new GMS()).name(name);
     }
 
 
     protected class MyRequestHandler implements RequestHandler {
         public void handle(final Message request, final Response response) throws Exception {
             if(request.isFlagSet(Message.Flag.OOB)) {
-                new Thread() {
-                    public void run() {
-                        int val=incr();
-                        if(response != null)
-                            response.send(val, false);
-                    }
-                }.start();
+                new Thread(() -> {
+                    int val=incr();
+                    if(response != null)
+                        response.send(val, false);
+                }).start();
             }
             else {
                 int val=incr();

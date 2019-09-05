@@ -1,5 +1,7 @@
 package org.jgroups.protocols;
 
+import org.testng.annotations.AfterMethod;
+
 /**
  * Tests use cases for {@link ASYM_ENCRYPT} described in https://issues.jboss.org/browse/JGRP-2021.
  * @author Bela Ban
@@ -13,6 +15,11 @@ public class ASYM_ENCRYPT_TestKeyExchange extends ASYM_ENCRYPT_Test {
      * which makes the testsuite fail!!! */
     public void dummy() {}
 
+
+    @AfterMethod
+    protected void destroy() {
+        super.destroy();
+    }
 
     public void testEavesdroppingByLeftMember() throws Exception {
         System.out.println("Skipping this test as the use of an external key exchange will allow left members to " +

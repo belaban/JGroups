@@ -45,7 +45,7 @@ public class ASYM_ENCRYPT_LeaveTest extends BaseLeaveTest {
           new NAKACK2().setUseMcastXmit(false),
           new UNICAST3(),
           new STABLE(),
-          new GMS().joinTimeout(2000).leaveTimeout(10000))
+          new GMS().joinTimeout(2000))
           .name(name);
     }
 

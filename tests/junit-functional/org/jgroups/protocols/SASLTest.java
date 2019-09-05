@@ -99,8 +99,7 @@ public class SASLTest {
 
     @AfterMethod
     public void cleanup() {
-        a.close();
-        b.close();
+        Util.closeReverse(a,b);
     }
 
     private static void createPartitions(JChannel... channels) throws Exception {

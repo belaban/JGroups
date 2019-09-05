@@ -44,28 +44,18 @@ public class CoordGmsImpl extends ServerGmsImpl {
     }
 
     /** The coordinator itself wants to leave the group */
-    public void leave(Address mbr) {
-        if(mbr == null) {
-            if(log.isErrorEnabled()) log.error(Util.getMessage("MemberSAddressIsNull"));
-            return;
-        }
+    public void leave() {
         ViewHandler<Request> vh=gms.getViewHandler();
-        vh.add(new Request(Request.COORD_LEAVE, mbr)); // https://issues.jboss.org/browse/JGRP-2293
-        // If we're the coord leaving, ignore gms.leave_timeout: https://issues.jboss.org/browse/JGRP-1509
-        long timeout=(long)(Math.max(gms.leave_timeout, gms.view_ack_collection_timeout) * 1.5);
-        vh.waitUntilComplete(timeout);
+        vh.add(new Request(Request.COORD_LEAVE)); // https://issues.jboss.org/browse/JGRP-2293
+        vh.waitUntilComplete();
     }
 
-    public void handleCoordLeave(Address mbr) {
-        gms.setLeaving(true);
-        gms.suspendViewHandler(); // clears the queue and drops subsequent requests
-        Address next_coord=gms.determineNextCoordinator();
-
-        if(next_coord == null || sendLeaveReqToCoord(next_coord)) {
-            if(next_coord == null)
-                log.trace("%s: no next-in-line coord found to send LEAVE req to; terminating", gms.getLocalAddress());
-            // the promise is set with a dummy result as a previous ParticipantGmsImpl may still be waiting on it
-            gms.getLeavePromise().setResult(null);
+    public void handleCoordLeave() {
+        try {
+            gms.suspendViewHandler(); // clears the queue and drops subsequent requests
+            leaver.leave();
+        }
+        finally {
             gms.initState();
         }
     }

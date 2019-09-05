@@ -3,6 +3,8 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Tuple;
@@ -33,12 +35,31 @@ public class LOCAL_PING extends Discovery {
         super.stop();
     }
 
+    @ManagedOperation(description="Dumps the contents of the discovery cache")
+    public String print() {
+        StringBuilder sb=new StringBuilder();
+        synchronized(this) {
+            for(Map.Entry<String,List<PingData>> e : discovery.entrySet())
+                sb.append(e.getKey()).append(": ").append(e.getValue()).append("\n");
+        }
+        return sb.toString();
+    }
+
+    @ManagedAttribute(description="Number of keys in the discovery cache")
+    public static int getDiscoveryCacheSize() {
+        return discovery.size();
+    }
+
+    public Responses findMembers(List<Address> members, boolean initial_discovery, boolean async, long timeout) {
+        return super.findMembers(members, initial_discovery, false, timeout);
+    }
+
     @Override
     public void findMembers(List<Address> members, boolean initial_discovery, Responses responses) {
         num_discovery_requests++;
         List<PingData> list=discovery.get(cluster_name);
-        if(list != null && !list.isEmpty()) {
-            synchronized(this) {
+        synchronized(discovery) {
+            if(list != null && !list.isEmpty()) {
                 if(list.stream().noneMatch(PingData::isCoord))
                     list.get(0).coord(true);
                 list.stream().filter(el -> !el.sender.equals(local_addr))
@@ -55,11 +76,13 @@ public class LOCAL_PING extends Discovery {
         if(evt.type() == Event.VIEW_CHANGE && cluster_name != null) {
             // synchronize TP.logical_addr_cache with discovery cache
             List<PingData> data=discovery.get(cluster_name);
-            if(data != null && !data.isEmpty()) {
-                for(PingData d: data) {
-                    Address sender=d.getAddress();
-                    if(down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, sender)) == null)
-                        down_prot.down(new Event(Event.ADD_PHYSICAL_ADDRESS, new Tuple<>(sender, d.getPhysicalAddr())));
+            synchronized(discovery) {
+                if(data != null && !data.isEmpty()) {
+                    for(PingData d : data) {
+                        Address sender=d.getAddress();
+                        if(down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, sender)) == null)
+                            down_prot.down(new Event(Event.ADD_PHYSICAL_ADDRESS, new Tuple<>(sender, d.getPhysicalAddr())));
+                    }
                 }
             }
         }
@@ -74,7 +97,7 @@ public class LOCAL_PING extends Discovery {
         if(physical_addr != null) {
             PingData data=new PingData(local_addr, is_server, logical_name, physical_addr);
             final List<PingData> list=discovery.computeIfAbsent(cluster_name, func);
-            synchronized(this) {
+            synchronized(discovery) {
                 if(list.isEmpty())
                     data.coord(true); // first element is coordinator
                 list.add(data);
@@ -87,7 +110,7 @@ public class LOCAL_PING extends Discovery {
             return;
         List<PingData> list=discovery.get(cluster_name);
         if(list != null) {
-            synchronized(this) {
+            synchronized(discovery) {
                 list.removeIf(p -> local_addr.equals(p.getAddress()));
                 if(list.isEmpty())
                     discovery.remove(cluster_name);

@@ -1,11 +1,9 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.Address;
-import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MergeId;
-import org.jgroups.util.Promise;
 
 import java.util.Collection;
 import java.util.Map;
@@ -79,36 +77,4 @@ public abstract class ServerGmsImpl extends GmsImpl {
     }
 
     protected void coordChanged(Address from, Address to) {}
-
-    /** Sends a leave request to coord and blocks until a leave response has been received,
-        or the leave timeout has elapsed */
-    protected boolean sendLeaveReqToCoord(final Address coord) {
-        if(coord == null) {
-            log.warn("%s: cannot send LEAVE request to null coord", gms.getLocalAddress());
-            return false;
-        }
-        Promise<Address> leave_promise=gms.getLeavePromise();
-        gms.setLeaving(true);
-        log.trace("%s: sending LEAVE request to %s", gms.local_addr, coord);
-        long start=System.currentTimeMillis();
-        sendLeaveMessage(coord, gms.local_addr);
-        Address sender=leave_promise.getResult(gms.leave_timeout);
-        if(!Objects.equals(coord, sender))
-            return false;
-
-        long time=System.currentTimeMillis()-start;
-        if(sender != null)
-            log.trace("%s: got LEAVE response from %s in %d ms", gms.local_addr, coord, time);
-        else
-            log.trace("%s: timed out waiting for LEAVE response from %s (after %d ms)", gms.local_addr, coord, time);
-        return true;
-    }
-
-    protected void sendLeaveMessage(Address coord, Address mbr) {
-        Message msg=new Message(coord).setFlag(Message.Flag.OOB)
-          .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.LEAVE_REQ, mbr));
-        gms.getDownProtocol().down(msg);
-    }
-
-
 }

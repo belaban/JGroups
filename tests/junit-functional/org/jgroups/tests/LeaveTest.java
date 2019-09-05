@@ -34,7 +34,7 @@ public class LeaveTest extends BaseLeaveTest  {
           new NAKACK2().setUseMcastXmit(false),
           new UNICAST3(),
           new STABLE(),
-          new GMS().joinTimeout(1000).leaveTimeout(10000).printLocalAddress(false))
+          new GMS().joinTimeout(1000).printLocalAddress(false))
           .name(name);
     }
 }

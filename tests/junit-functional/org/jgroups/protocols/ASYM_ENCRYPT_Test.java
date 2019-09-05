@@ -282,7 +282,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
           new UNICAST3(),
           new STABLE(),
           new AUTH().setAuthCoord(true).setAuthToken(new MD5Token("mysecret")),
-          new GMS().joinTimeout(2000).leaveTimeout(10000))
+          new GMS().joinTimeout(2000))
           .name(name);
     }
 

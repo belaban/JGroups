@@ -40,8 +40,9 @@ public abstract class BaseLeaveTest {
         for(int i = 0; i < channels.length; i++)
             channels[i] = create(String.valueOf(i + 1)).connect(cluster_name);
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, channels);
-        System.out.printf("\n%s\n\n", Stream.of(channels).map(ch -> ch.getAddress() + ": " + ch.getView())
-          .collect(Collectors.joining("\n")));
+        System.out.printf("-- initial view fo r cluster %s:\n%s\n\n",
+                          cluster_name, Stream.of(channels).map(ch -> ch.getAddress() + ": " + ch.getView())
+                            .collect(Collectors.joining("\n")));
     }
 
     protected void destroy() {
@@ -185,17 +186,34 @@ public abstract class BaseLeaveTest {
     protected void testConcurrentLeaves(int num_leavers) throws Exception {
         JChannel[] remaining_channels=new JChannel[channels.length - num_leavers];
         System.arraycopy(channels, num_leavers, remaining_channels, 0, channels.length - num_leavers);
-        Stream.of(channels).limit(num_leavers).parallel().forEach(Util::close);
+        Stream.of(channels).limit(num_leavers).forEach(ch -> new Thread(() -> Util.close(ch)).start());
+
+        // confirm that all channels that were closed are actually in CLOSED state
+        Util.waitUntil(30000, 1000,
+                       () -> Stream.of(channels).limit(num_leavers).allMatch(ch -> ch.isClosed() && ch.getView() == null),
+                       () -> "channels:\n" + Stream.of(channels).limit(num_leavers)
+                         .map(ch -> ch.getAddress() + ": " + ch.getState() + " (view=" + ch.getView() + ")")
+                         .collect(Collectors.joining("\n")));
+
+        // confirm that all remaining channels (might be 0) are in CONNECTED state and have the same view
         Util.waitUntilAllChannelsHaveSameView(30000, 1000, remaining_channels);
         Arrays.stream(channels, 0, channels.length).filter(JChannel::isConnected)
           .forEach(ch -> System.out.printf("%s: %s\n", ch.getAddress(), ch.getView()));
     }
 
     protected void testConcurrentLeaves(int ... leavers) throws Exception {
-        IntStream.of(leavers).parallel().forEach(i -> channels[i].close());
+        IntStream.of(leavers).forEach(i -> new Thread(() -> Util.close(channels[i])).start());
         List<Integer>remaining=IntStream.range(0, channels.length).boxed().collect(Collectors.toList());
         List<Integer>left=IntStream.of(leavers).boxed().collect(Collectors.toList());
+        List<JChannel> left_channels=left.stream().map(i -> channels[i]).collect(Collectors.toList());
         remaining.removeAll(left);
+
+        // confirm that all channels that were closed are actually in CLOSED state
+        Util.waitUntil(30000, 1000,
+                       () -> left_channels.stream().allMatch(ch -> ch.isClosed() && ch.getView() == null),
+                       () -> "channels:\n" + left_channels.stream()
+                         .map(ch -> ch.getAddress() + ": " + ch.getState() + " (view=" + ch.getView() + ")")
+                         .collect(Collectors.joining("\n")));
 
         List<JChannel> remaining_channels=remaining.stream().map(i -> channels[i]).collect(Collectors.toList());
         Util.waitUntilAllChannelsHaveSameView(30000, 1000, remaining_channels);
@@ -215,7 +233,9 @@ public abstract class BaseLeaveTest {
         my_vh.processing(false);
         setViewHandler(vh, gms);
 
-        assert Arrays.stream(channels, 0, leavers).allMatch(ch -> ch.getView() == null);
+        assert Arrays.stream(channels, 0, leavers).allMatch(ch -> ch.getView() == null)
+          : "views are:\n" + Arrays.stream(channels, 0, leavers)
+          .map(ch -> ch.getAddress() + ": " + ch.getView()).collect(Collectors.joining("\n"));
         assert leavers >= channels.length || Arrays.stream(channels, leavers, channels.length - 1)
           .allMatch(ch -> ch.getView().size() == channels.length - leavers && ch.getView().getCoord().equals(channels[leavers].getAddress()));
     }

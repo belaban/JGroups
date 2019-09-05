@@ -183,13 +183,13 @@ public class JChannel implements Closeable {
     public Receiver      getReceiver()                       {return receiver;}
     public JChannel      setReceiver(Receiver r)             {receiver=r; return this;}
     public JChannel      receiver(Receiver r)                {return setReceiver(r);}
-    public Address       getAddress()                        {return state == State.CLOSED ? null : local_addr;}
+    public Address       getAddress()                        {return address();}
     public Address       address()                           {return state == State.CLOSED ? null : local_addr;}
     public String        getName()                           {return name;}
     public String        name()                              {return name;}
     public JChannel      name(String name)                   {return setName(name);}
     public String        clusterName()                       {return getClusterName();}
-    public View          getView()                           {return state == State.CONNECTED ? view : null;}
+    public View          getView()                           {return view();}
     public View          view()                              {return state == State.CONNECTED ? view : null;}
     public ProtocolStack getProtocolStack()                  {return prot_stack;}
     public ProtocolStack stack()                             {return prot_stack;}
@@ -833,7 +833,7 @@ public class JChannel implements Closeable {
         if(cluster_name == null)
             throw new IllegalArgumentException("cluster name cannot be null");
         if(state == State.CONNECTED) {
-            if(log.isTraceEnabled()) log.trace("already connected to %s", this.cluster_name);
+            log.trace("already connected to %s", this.cluster_name);
             return false;
         }
         checkClosed();

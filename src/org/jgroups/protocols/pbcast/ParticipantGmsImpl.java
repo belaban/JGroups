@@ -37,9 +37,13 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
     }
 
 
-    public void leave(Address mbr) {
-        if(sendLeaveReqToCoord(gms.determineCoordinator()))
+    public void leave() {
+        try {
+            leaver.leave();
+        }
+        finally {
             gms.initState();
+        }
     }
 
 
@@ -87,7 +91,6 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
 
         if(wouldIBeCoordinator(leaving_mbrs)) {
             log.debug("%s: members are %s, coord=%s: I'm the new coordinator", gms.local_addr, gms.members, gms.local_addr);
-            boolean leaving=gms.isLeaving();
             gms.becomeCoordinator();
             Collection<Request> leavingOrSuspectedMembers=new LinkedHashSet<>();
             leaving_mbrs.forEach(mbr -> leavingOrSuspectedMembers.add(new Request(Request.LEAVE, mbr)));
@@ -96,10 +99,12 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
                 gms.ack_collector.suspect(mbr);
             });
             suspected_mbrs.clear();
-            if(leaving)
-                leavingOrSuspectedMembers.add(new Request(Request.COORD_LEAVE, gms.local_addr));
+            if(gms.isLeaving())
+                leavingOrSuspectedMembers.add(new Request(Request.COORD_LEAVE));
             gms.getViewHandler().add(leavingOrSuspectedMembers);
         }
+        else
+            log.warn("%s: I'm not the coordinator (or next-in-line); dropping LEAVE request", gms.local_addr);
     }
 
 
@@ -110,10 +115,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
 
     @Override protected void coordChanged(Address from, Address to) {
         super.coordChanged(from, to);
-        if(gms.isLeaving()) {
-            log.trace("%s: resending LEAVE request to new coordinator %s (prev coord=%s)", gms.local_addr, to, from);
-            sendLeaveMessage(to, gms.local_addr);
-        }
+        leaver.coordChanged(to);
     }
 
     /* ---------------------------------- Private Methods --------------------------------------- */
@@ -126,7 +128,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
      * D}. The resulting list is {B, C}. The first member of {B, C} is B, which is equal to the
      * local_addr. Therefore, true is returned.
      */
-    boolean wouldIBeCoordinator(Collection<Address> leaving_mbrs) {
+    protected boolean wouldIBeCoordinator(Collection<Address> leaving_mbrs) {
         List<Address> mbrs=gms.computeNewMembership(gms.members.getMembers(), null, leaving_mbrs, suspected_mbrs);
         if(mbrs.isEmpty()) return false;
         Address new_coord=mbrs.get(0);

@@ -91,7 +91,7 @@ public class SHARED_LOOPBACK extends TP {
         }
         SHARED_LOOPBACK target=dests.get(dest);
         if(target == null) {
-            log.trace("%s: destination address %s not found", local_addr, dest);
+            log.trace("%s: destination address %s not found, routing table:\n%s\n", local_addr, dest, dumpRoutingTable());
             return;
         }
         target.receive(local_addr, buf, offset, length);

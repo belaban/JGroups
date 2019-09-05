@@ -5,7 +5,7 @@
             <!--PatternLayout pattern="%-7d{HH:mm:ss,SSS} [%p] %c: %m%n"/-->
             <PatternLayout pattern="%r [%p] %c{1}: %m%n"/> 
         </Console>
-        <!--File name="File" fileName="test.log">
+        <!--File name="File" fileName="trace.log">
             <PatternLayout pattern="%r [%p] %c{1}: %m%n"/>
         </File-->
     </appenders>
@@ -15,5 +15,9 @@
         </root>
         <logger name="org.jgroups" level="warn"/>
         <!--logger name="org.jgroups.protocols.UNICAST3" level="trace"/-->
+
+        <!--logger name="org.jgroups.protocols.pbcast.GMS" level="trace">
+            <appender-ref ref="File"/>
+        </logger-->
     </loggers>
 </configuration>

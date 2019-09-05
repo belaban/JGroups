@@ -50,14 +50,19 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @Property(description="Join timeout")
     protected long join_timeout=3000;
 
-    @Property(description="Leave timeout")
-    protected long leave_timeout=3000;
+    @Property(description="Number of join attempts before we give up and become a singleton. 0 means 'never give up'.")
+    protected int  max_join_attempts=10;
+
+    @Property(description="Max time (in ms) to wait for a LEAVE response after a LEAVE req has been sent to the coord")
+    protected long leave_timeout=2000;
+
+    @Property(description="Number of times a LEAVE request is sent to the coordinator (without receiving a LEAVE " +
+      "response, before giving up and leaving anyway (failure detection will eventually exclude the left member). " +
+      "A value of 0 means wait forever")
+    protected int max_leave_attempts=10;
 
     @Property(description="Timeout (in ms) to complete merge")
     protected long merge_timeout=5000; // time to wait for all MERGE_RSPS
-
-    @Property(description="Number of join attempts before we give up and become a singleton. 0 means 'never give up'.")
-    protected long max_join_attempts=10;
 
     @Property(description="Print local address of this member after connect. Default is true")
     protected boolean print_local_addr=true;
@@ -108,9 +113,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @Deprecated
     protected boolean             install_view_locally_first=true; // https://issues.jboss.org/browse/JGRP-1751
 
-    @ManagedAttribute(description="If true, the current member is in the process of leaving")
-    protected volatile boolean    is_leaving;
-
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
@@ -126,8 +128,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected final Object              impl_mutex=new Object(); // synchronizes event entry into impl
     protected final Map<String,GmsImpl> impls=new HashMap<>(3);
 
-    // Handles merge related tasks
-    protected Merger                    merger;
+    protected Merger                    merger; // handles merges
+
+    protected final Leaver              leaver=new Leaver(this); // handles a member leaving the cluster
 
     protected Address                   local_addr;
     protected final Membership          members=new Membership();     // real membership
@@ -142,9 +145,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     /** Members excluded from group, but for which no view has been received yet */
     protected final List<Address>       leaving=new ArrayList<>(7);
-
-    /** To block for the LEAVE-RSP when sending a LEAVE-REQ. The address is the sender of the LEAVE-RSP */
-    protected final Promise<Address>    leave_promise=new Promise<>();
 
     /** Keeps track of old members (up to num_prev_mbrs) */
     protected BoundedList<Address>      prev_members;
@@ -193,16 +193,18 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @ManagedAttribute
     public String getMembers() {return members.toString();}
     @ManagedAttribute
-    public int getNumMembers() {return members.size();}
-    public long getJoinTimeout() {return join_timeout;}
-    public GMS setJoinTimeout(long t) {join_timeout=t; return this;}
-    public GMS joinTimeout(long timeout) {this.join_timeout=timeout; return this;}
-    public GMS leaveTimeout(long timeout) {this.leave_timeout=timeout; return this;}
-    public GMS setLeaveTimeout(long t) {return leaveTimeout(t);}
-    public long getMergeTimeout() {return merge_timeout;}
+    public int getNumMembers()               {return members.size();}
+    public long getJoinTimeout()             {return join_timeout;}
+    public GMS setJoinTimeout(long t)        {join_timeout=t; return this;}
+    public GMS joinTimeout(long timeout)     {this.join_timeout=timeout; return this;}
+    public GMS leaveTimeout(long timeout)    {this.leave_timeout=timeout; return this;}
+    public GMS setLeaveTimeout(long t)       {return leaveTimeout(t);}
+    public long getMergeTimeout()            {return merge_timeout;}
     public GMS setMergeTimeout(long timeout) {merge_timeout=timeout; return this;}
-    public long getMaxJoinAttempts() {return max_join_attempts;}
-    public GMS setMaxJoinAttempts(long t) {max_join_attempts=t; return this;}
+    public int getMaxJoinAttempts()          {return max_join_attempts;}
+    public GMS setMaxJoinAttempts(int t)     {max_join_attempts=t; return this;}
+    public int getMaxLeaveAttempts()         {return max_leave_attempts;}
+    public GMS setMaxLeaveAttempts(int t)    {max_leave_attempts=t; return this;}
 
     @ManagedAttribute(description="impl")
     public String getImplementation() {
@@ -214,9 +216,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         return impl instanceof CoordGmsImpl;
     }
 
-    public boolean          isLeaving()               {return is_leaving;}
-    public GMS              setLeaving(boolean flag)  {this.is_leaving=flag; return this;}
-    public Promise<Address> getLeavePromise()         {return leave_promise;}
+    @ManagedAttribute(description="If true, the current member is in the process of leaving")
+    public boolean isLeaving()               {return leaver.leaving.get();}
 
     public MembershipChangePolicy getMembershipChangePolicy() {
         return membership_change_policy;
@@ -378,14 +379,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         timer=getTransport().getTimer();
         if(timer == null)
             throw new Exception("timer is null");
-        leave_promise.reset();
+        leaver.reset();
         initState();
         if(impl != null) impl.start();
     }
 
     public void stop() {
-        // view_handler.stop();
         if(impl != null) impl.stop();
+        leaver.reset();
         if(prev_members != null)
             prev_members.clear();
     }
@@ -709,6 +710,11 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         }
     }
 
+    protected Address getCoord() {
+        synchronized(impl_mutex) {
+            return isCoord()? determineNextCoordinator() : determineCoordinator();
+        }
+    }
 
     protected Address determineCoordinator() {
         synchronized(members) {
@@ -1045,7 +1051,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 return null;  // don't pass down: event has already been passed down
 
             case Event.DISCONNECT:
-                impl.leave(evt.getArg());
+                impl.leave();
                 return down_prot.down(evt); // notify the other protocols, but ignore the result
 
             case Event.CONFIG :
@@ -1273,7 +1279,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 impl.handleMembershipChange(requests);
                 break;
             case Request.COORD_LEAVE:
-                impl.handleCoordLeave(firstReq.mbr);
+                impl.handleCoordLeave();
                 break;
             case Request.MERGE:
                 impl.merge(firstReq.views);

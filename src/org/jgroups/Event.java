@@ -9,7 +9,7 @@ package org.jgroups;
  */
 public class Event {
     public static final int CONNECT                            =  2;  // arg = cluster name (string)
-    public static final int DISCONNECT                         =  4;  // arg = member address (Address)
+    public static final int DISCONNECT                         =  4;  // arg = null (local address)
     public static final int VIEW_CHANGE                        =  6;  // arg = View (or MergeView in case of merge)
     public static final int SET_LOCAL_ADDRESS                  =  8;  // arg = Address
     public static final int SUSPECT                            =  9;  // arg = Collection<Address> (suspected members)

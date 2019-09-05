@@ -16,23 +16,25 @@ import java.util.Objects;
 public abstract class GmsImpl {
     protected final GMS    gms;
     protected final Merger merger;
+    protected final Leaver leaver;
     protected final Log    log;
 
 
     protected GmsImpl(GMS gms) {
         this.gms=gms;
         merger=gms.merger;
+        leaver=gms.leaver;
         log=gms.getLog();
     }
 
     public abstract void   join(Address mbr, boolean useFlushIfPresent);
     public abstract void   joinWithStateTransfer(Address local_addr,boolean useFlushIfPresent);
     
-    public abstract void   leave(Address mbr);
-    public void            handleCoordLeave(Address mbr)        {wrongMethod("handleCoordLeave");}
+    public abstract void   leave();
+    public void            handleCoordLeave()        {wrongMethod("handleCoordLeave");}
 
     public void            handleJoinResponse(JoinRsp join_rsp) {}
-    public void            handleLeaveResponse(Address sender)  {gms.getLeavePromise().setResult(sender);}
+    public void            handleLeaveResponse(Address sender)  {leaver.handleLeaveResponse(sender);}
 
     public void            suspect(Address mbr)   {}
     public void            unsuspect(Address mbr) {}
@@ -47,9 +49,9 @@ public abstract class GmsImpl {
     public void            handleMembershipChange(Collection<Request> requests)  {}
     public void            handleViewChange(View new_view, Digest digest)        {}
 
-    public void            init()  throws Exception {gms.setLeaving(false);}
-    public void            start() throws Exception {gms.setLeaving(false);}
-    public void            stop()                   {gms.setLeaving(true);}
+    public void            init()  throws Exception {}
+    public void            start() throws Exception {}
+    public void            stop()                   {}
 
 
 
@@ -88,8 +90,12 @@ public abstract class GmsImpl {
         protected boolean           useFlushIfPresent;
 
 
-        public Request(int type, Address mbr) {
+        public Request(int type) {
             this.type=type;
+        }
+
+        public Request(int type, Address mbr) {
+            this(type);
             this.mbr=mbr;
         }
 
@@ -132,7 +138,7 @@ public abstract class GmsImpl {
                 case JOIN:                     return String.format("JOIN(%s)", mbr);
                 case JOIN_WITH_STATE_TRANSFER: return String.format("JOIN_WITH_STATE_TRANSFER(%s)", mbr);
                 case LEAVE:                    return String.format("LEAVE(%s)", mbr);
-                case COORD_LEAVE:              return String.format("COORD_LEAVE(%s)", mbr);
+                case COORD_LEAVE:              return "COORD_LEAVE";
                 case SUSPECT:                  return String.format("SUSPECT(%s)", mbr);
                 case MERGE:                    return String.format("MERGE(%d views)", views.size());
                 default:                       return String.format("<invalid (type=%d)", type);

@@ -192,6 +192,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
     }
 
+    public NAKACK2 resendLastSeqno(boolean flag) {setResendLastSeqno(flag); return this;}
+
     @ManagedAttribute(description="Whether or not the task to resend the last seqno is running (depends on resend_last_seqno)")
     public boolean resendTaskRunning() {return last_seqno_resender != null;}
 

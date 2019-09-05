@@ -60,8 +60,7 @@ public class ClientGmsImpl extends GmsImpl {
      * @param mbr Our own address (assigned through SET_LOCAL_ADDRESS)
      */
     protected void joinInternal(Address mbr, boolean joinWithStateTransfer, boolean useFlushIfPresent) {
-        long  join_attempts=0;
-        gms.setLeaving(false);
+        int  join_attempts=0;
         join_promise.reset();
 
         while(!gms.isLeaving()) {
@@ -119,8 +118,7 @@ public class ClientGmsImpl extends GmsImpl {
 
 
 
-    public void leave(Address mbr) {
-        gms.setLeaving(true);
+    public void leave() {
         wrongMethod("leave");
     }
 

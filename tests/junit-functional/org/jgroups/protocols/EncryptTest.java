@@ -47,7 +47,7 @@ public abstract class EncryptTest {
         Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b, c);
         rogue=createRogue("rogue").connect(cluster_name);
         Stream.of(a,b,c,rogue).forEach(ch -> System.out.printf("%s: %s\n", ch.getAddress(), ch.getView()));
-        System.out.println("");
+        System.out.println();
     }
 
     protected void destroy() {Util.close(rogue,d,c,b,a);}
@@ -282,7 +282,7 @@ public abstract class EncryptTest {
      */
     //@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
     public void testRogueViewInstallation() throws Exception {
-        final Address rogue_addr=rogue.getAddress();
+        Address rogue_addr=rogue.getAddress();
         View rogue_view=View.create(rogue_addr, a.getView().getViewId().getId()+1,
                                     rogue_addr, a.getAddress(), b.getAddress(), c.getAddress());
 

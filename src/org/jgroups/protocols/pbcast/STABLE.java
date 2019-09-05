@@ -141,6 +141,8 @@ public class STABLE extends Protocol {
         desired_avg_gossip=gossip_interval;
     }
 
+    public STABLE desiredAverageGossip(long g) {this.desired_avg_gossip=g; return this;}
+
     public long getMaxBytes() {
         return max_bytes;
     }

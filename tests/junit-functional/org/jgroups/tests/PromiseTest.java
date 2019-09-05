@@ -18,13 +18,13 @@ import java.util.concurrent.TimeoutException;
 @Test(groups=Global.FUNCTIONAL)
 public class PromiseTest {
 
-    public static void testGetWithResultAvailable() {
+    public void testGetWithResultAvailable() {
         final Promise<Integer> p=new Promise<>();
         p.setResult(22);
         assert p.getResult() == 22;
     }
 
-    public static void testGetResultNoTimeout() {
+    public void testGetResultNoTimeout() {
         final Promise p=new Promise();
         Object result;
         new ResultSetter(p, 500).start();
@@ -32,7 +32,7 @@ public class PromiseTest {
         Assert.assertEquals(Boolean.TRUE, result);
     }
 
-    public static void testGetResultWithReset() {
+    public void testGetResultWithReset() {
         final Promise<Integer> p=new Promise<>();
         p.setResult(22);
         assert p.getResult() == 22;
@@ -42,7 +42,7 @@ public class PromiseTest {
     }
 
 
-    public static final void testRepeatedGet() {
+    public final void testRepeatedGet() {
         final Promise<Integer> p=new Promise<>();
         p.setResult(10);
         System.out.println("p: " + p);
@@ -54,7 +54,7 @@ public class PromiseTest {
     }
 
 
-    public static void testGetResultNoTimeout_ResultAlreadySet() {
+    public void testGetResultNoTimeout_ResultAlreadySet() {
         final Promise p=new Promise();
         Object result;
         new ResultSetter(p, 1).start();
@@ -64,21 +64,21 @@ public class PromiseTest {
     }
 
     @Test(expectedExceptions=TimeoutException.class)
-    public static void testGetResultWithTimeout() throws TimeoutException {
+    public void testGetResultWithTimeout() throws TimeoutException {
         final Promise p=new Promise();
         p.getResultWithTimeout(500);
     }
 
 
 
-    public static void testGetResultWithTimeoutNoException() {
+    public void testGetResultWithTimeoutNoException() {
         final Promise p=new Promise();
         Object ret=p.getResult(500);
         assert ret == null;
     }
 
 
-    public static void testGetResultWithTimeoutAndInterrupt() {
+    public void testGetResultWithTimeoutAndInterrupt() {
         final Promise p=new Promise();
         new Interrupter(Thread.currentThread(), 100).start();
         Object result=p.getResult(500);
@@ -86,16 +86,13 @@ public class PromiseTest {
     }
 
 
-
-    public static void testGetResultWithTimeoutAndResultSetter() {
+    public void testGetResultWithTimeoutAndResultSetter() {
         final Promise p=new Promise();
-        Thread t=new Thread() {
-            public void run() {
-                Util.sleep(500);
-                System.out.println("-- setting promise to \"Bela\"");
-                p.setResult("Bela");
-            }
-        };
+        Thread t=new Thread(() -> {
+            Util.sleep(500);
+            System.out.println("-- setting promise to \"Bela\"");
+            p.setResult("Bela");
+        });
         t.start();
         long start=System.currentTimeMillis(), stop;
         Object result=p.getResult(30000);
@@ -108,7 +105,7 @@ public class PromiseTest {
     }
 
 
-    public static void testReset() throws TimeoutException {
+    public void testReset() throws TimeoutException {
         final Promise p=new Promise();
         Resetter resetter=new Resetter(p, 2000);
         resetter.start();
@@ -117,7 +114,7 @@ public class PromiseTest {
         assert result == null;
     }
 
-    public static void testReset2() throws TimeoutException {
+    public void testReset2() throws TimeoutException {
         final Promise p=new Promise();
         Resetter resetter=new Resetter(p, 2000);
         resetter.start();

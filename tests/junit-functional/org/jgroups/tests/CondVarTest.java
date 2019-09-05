@@ -74,14 +74,12 @@ public class CondVarTest {
 
 
     protected void signal(final long after_ms, final boolean flag, boolean signal_all) {
-        new Thread() {
-            public void run() {
-                Util.sleep(after_ms);
-                done=flag;
-                System.out.println("signalling cond-var");
-                cond.signal(true);
-            }
-        }.start();
+        new Thread(() -> {
+            Util.sleep(after_ms);
+            done=flag;
+            System.out.println("signalling cond-var");
+            cond.signal(signal_all);
+        }).start();
     }
 
     protected static void interrupt(final Thread target_thread, final long after_ms) {

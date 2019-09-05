@@ -274,9 +274,8 @@ public class ViewHandlerTest {
                 result.set(false);
         };
         ViewHandler<GmsImpl.Request> handler=new ViewHandler<>(gms, req_processor, GmsImpl.Request::canBeProcessedTogether);
-        Address coord1=Util.createRandomAddress("coord1"), coord2=Util.createRandomAddress("coord2");
-        handler.add(new GmsImpl.Request(GmsImpl.Request.COORD_LEAVE, coord1),
-                    new GmsImpl.Request(GmsImpl.Request.COORD_LEAVE, coord2));
+        handler.add(new GmsImpl.Request(GmsImpl.Request.COORD_LEAVE),
+                    new GmsImpl.Request(GmsImpl.Request.COORD_LEAVE));
 
         assert result.get();
     }
@@ -290,11 +289,10 @@ public class ViewHandlerTest {
                 result.set(false);
         };
         ViewHandler<GmsImpl.Request> handler=new ViewHandler<>(gms, req_processor, GmsImpl.Request::canBeProcessedTogether);
-        Address coord1=Util.createRandomAddress("coord1"), coord2=Util.createRandomAddress("coord2");
         handler.add(new GmsImpl.Request(GmsImpl.Request.LEAVE, a),
                     new GmsImpl.Request(GmsImpl.Request.JOIN, b),
-                    new GmsImpl.Request(GmsImpl.Request.COORD_LEAVE, coord1),
-                    new GmsImpl.Request(GmsImpl.Request.COORD_LEAVE, coord2));
+                    new GmsImpl.Request(GmsImpl.Request.COORD_LEAVE),
+                    new GmsImpl.Request(GmsImpl.Request.COORD_LEAVE));
 
         assert result.get();
     }
