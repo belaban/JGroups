@@ -57,7 +57,7 @@ public class RATE_LIMITER_Test {
 
         // 50% deviation below is ok: e.g. max_bytes=100000, and sending 50001 bytes !
         // In the real setup, there a warning if the system is not configured for max_bytes to be a multiple of frag_size
-        long min_value=(long)(target_throughput * 0.45), max_value=(long)(target_throughput * 1.1);
+        long min_value=(long)(target_throughput * 0.45), max_value=(long)(target_throughput * 1.4);
         for(long value: list) {
             assert value >= min_value && value <= max_value: "value=" + value + " (min_value=" + min_value + ",max_value=" + max_value + ")";
         }
@@ -82,7 +82,7 @@ public class RATE_LIMITER_Test {
     }
 
 
-    protected RATE_LIMITER create(long time_period, long max_bytes) throws Exception {
+    protected static RATE_LIMITER create(long time_period, long max_bytes) throws Exception {
         RATE_LIMITER prot=new RATE_LIMITER();
         prot.setTimePeriod(time_period);
         prot.setMaxBytes(max_bytes);
@@ -94,7 +94,7 @@ public class RATE_LIMITER_Test {
 
     protected class Sender extends Thread {
         protected final RATE_LIMITER limiter;
-        protected final long target_time;
+        protected final long         target_time;
 
         public Sender(RATE_LIMITER limiter, long target_time) {
             this.limiter=limiter;
@@ -102,13 +102,11 @@ public class RATE_LIMITER_Test {
         }
 
         public void run() {
-            for(;;) {
-                Message msg=new Message(false);
-                msg.setBuffer(buffer);
+            do {
+                Message msg=new Message(false).setBuffer(buffer);
                 limiter.down(msg);
-                if(System.nanoTime() > target_time)
-                    break;
             }
+            while(System.nanoTime() <= target_time);
         }
     }
 

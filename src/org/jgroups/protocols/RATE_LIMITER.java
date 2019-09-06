@@ -23,7 +23,7 @@ public class RATE_LIMITER extends Protocol {
 
     @Property(description="Max number of bytes to be sent in time_period ms. Blocks the sender if exceeded until a new " +
             "time period has started")
-    protected long max_bytes=300000;
+    protected long max_bytes=300_000;
 
     @Property(description="Number of milliseconds during which max_bytes bytes can be sent")
     protected long time_period=10L;
