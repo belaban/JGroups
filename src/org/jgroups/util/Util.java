@@ -34,6 +34,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
@@ -1947,6 +1948,17 @@ public class Util {
             retval.addAll(l1);
         if(l2 != null)
             retval.addAll(l2);
+        return retval;
+    }
+
+    @SafeVarargs
+    public static <E> E[] combine(E[] ... arrays) {
+        if(arrays == null)
+            return null;
+        int size=(int)Stream.of(arrays).flatMap(Stream::of).map(Objects::nonNull).count();
+        E[] retval=(E[])Array.newInstance(arrays[0].getClass().getComponentType(), size);
+        AtomicInteger index=new AtomicInteger();
+        Stream.of(arrays).flatMap(Stream::of).forEach(el -> retval[index.getAndIncrement()]=el);
         return retval;
     }
 

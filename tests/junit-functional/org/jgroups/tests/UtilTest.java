@@ -642,6 +642,17 @@ public class UtilTest {
         }
     }
 
+    public void testCombine() {
+        String[] arr1={"Hello", "world"};
+        String[] arr2={"from", "Bela"};
+        String[] arr3={"Ban"};
+
+        String[] combined=Util.combine(arr1, arr2, arr3);
+        assert combined.length == 5;
+        assert combined[0].equals("Hello");
+        assert combined[2].equals("from");
+    }
+
     public void testBufferToArray() {
         // test heap based ByteBuffer:
         String hello="hello";

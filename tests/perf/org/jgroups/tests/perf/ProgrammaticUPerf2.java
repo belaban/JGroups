@@ -98,16 +98,21 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
 
             InetAddress bind_address=Util.getAddress(BIND_ADDR, Util.getIpStackType());
             Protocol[] prot_stack={
-              /*
-              new TCP().setBindAddress(bind_address).setBindPort(7800)
-                .setDiagnosticsEnabled(true)
-                .diagEnableUdp(false) // todo: enable when MulticastSocket works
-                .diagEnableTcp(true),
-              new TCPPING().initialHosts(Collections.singletonList(new InetSocketAddress(bind_address, 7800))),
-              */
+
+
+              // uncomment if UDP should be used, compile, then native-image
               new UDP().setBindAddress(bind_address).setBindPort(7800)
                 .setDiagnosticsEnabled(true).diagEnableUdp(true).diagEnableTcp(false),
               new PING(),
+
+              /*
+              // uncomment if TCP should be used, compile, then native-image
+              new TCP().setBindAddress(bind_address).setBindPort(7800)
+                .setDiagnosticsEnabled(true)
+                .diagEnableUdp(false)
+                .diagEnableTcp(true),
+              new TCPPING().initialHosts(Collections.singletonList(new InetSocketAddress(bind_address, 7800))),
+              */
 
               new MERGE3(),
               new FD_SOCK(),

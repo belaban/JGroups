@@ -30,7 +30,8 @@ public class DiagnosticsHandler extends ReceiverAdapter {
     protected volatile boolean        udp_enabled=true, tcp_enabled;
     protected ServerSocket            srv_sock;  // when TCP is used
     protected Runner                  udp_runner, tcp_runner;
-    protected MulticastSocket         udp_sock;              // when UDP (IP multicasting) is used
+    protected MulticastSocket         udp_mcast_sock;        // receiving of mcast packets when UDP is used
+    protected DatagramSocket          udp_ucast_sock;        // sending of UDP responses
     protected InetAddress             diagnostics_addr;      // multicast address for the UDP multicast socket
     protected InetAddress             diagnostics_bind_addr; // to bind the TCP socket
     protected int                     diagnostics_port=7500;
@@ -44,7 +45,7 @@ public class DiagnosticsHandler extends ReceiverAdapter {
     protected final String            passcode;
 
     protected final BiConsumer<SocketAddress,String> udp_response_sender=
-      (sender,response) -> sendResponse(udp_sock, sender, response.getBytes());
+      (sender,response) -> sendResponse(udp_ucast_sock, sender, response.getBytes());
 
     public DiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port,
              Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
@@ -135,7 +136,7 @@ public class DiagnosticsHandler extends ReceiverAdapter {
         byte[] buf=new byte[10000]; // requests are small (responses might be bigger)
         DatagramPacket packet=new DatagramPacket(buf, 0, buf.length);
         try {
-            udp_sock.receive(packet);
+            udp_mcast_sock.receive(packet);
             int payloadStartOffset = 0;
             if(passcode != null)
                 payloadStartOffset=authorizeProbeRequest(packet);
@@ -172,19 +173,24 @@ public class DiagnosticsHandler extends ReceiverAdapter {
     }
 
     protected DiagnosticsHandler startUDP() throws Exception {
-        if(udp_sock == null || udp_sock.isClosed()) {
-            udp_sock=socket_factory.createMulticastSocket("jgroups.tp.diag.udp_sock", diagnostics_port);
+        if(udp_ucast_sock == null || udp_ucast_sock.isClosed())
+            udp_ucast_sock=socket_factory.createDatagramSocket("jgroups.tp.diag.udp_ucast_sock");
+
+        if(udp_mcast_sock == null || udp_mcast_sock.isClosed()) {
+            udp_mcast_sock=socket_factory.createMulticastSocket("jgroups.tp.diag.udp_mcast_sock",
+                                                                new InetSocketAddress(diagnostics_addr, diagnostics_port));
             try {
-                udp_sock.setTimeToLive(ttl);
+                udp_mcast_sock.setTimeToLive(ttl);
             }
             catch(Exception ex) {
                 log.error("failed setting TTL %d in MulticastSocket: %s", ttl, ex.getMessage());
             }
             List<NetworkInterface> interfaces=bind_interfaces != null? bind_interfaces : Util.getAllAvailableInterfaces();
-            bindToInterfaces(interfaces, udp_sock);
+            bindToInterfaces(interfaces, udp_mcast_sock);
         }
         if(udp_runner == null)
-            udp_runner=new Runner(thread_factory, UDP_THREAD_NAME, this::runUDP, () -> Util.close(udp_sock)).daemon(true);
+            udp_runner=new Runner(thread_factory, UDP_THREAD_NAME, this::runUDP,
+                                  () -> Util.close(udp_mcast_sock, udp_ucast_sock)).daemon(true);
         udp_runner.start();
         return this;
     }

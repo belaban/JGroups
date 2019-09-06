@@ -38,7 +38,7 @@ public class MulticastTest {
 
     protected void testMulticastSocket() throws IOException {
         MulticastSocket sock=new MulticastSocket(new InetSocketAddress(PORT));
-        // sock.setInterface(bind_addr);
+        sock.setInterface(bind_addr);
         sock.joinGroup(group);
         System.out.printf("%s: local=%s, remote=%s\n", sock.getClass().getSimpleName(),
                           sock.getLocalSocketAddress(), sock.getRemoteSocketAddress());

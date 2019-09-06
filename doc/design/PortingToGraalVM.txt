@@ -6,15 +6,10 @@ Author: Bela Ban
 Date:   March 2019
 JIRA:   https://issues.jboss.org/browse/JGRP-2332
 
-The command to create a native image is JGroups/bin/compile.sh org.jgroups.demos.ProgrammaticChat. Files needed by this
-are:
-* conf/jni.json: contains the JNI methods that should be translated to native code
-* conf/reflection.json: contains the methods that use reflection
+The command to create a native image is JGroups/bin/compile.sh org.jgroups.tests.perf.ProgrammaticUPerf2.
 
 Current limitations
 ===================
-* UDP is not supported because of the MulticastSocket issue, see [2], [3] and [4]. Should be fixed soon by the GraalVM
-* Diagnostics cannot be used, as it also uses a MulticastSocket
 * Socket option SO_LINGER cannot be set due to CCE (see todos)
 * Only java.util.logging logging is supported. To enable this:
   * Include resource logging.properties at compile time, e.g.: -H:IncludeResources=/home/bela/logging.properties
@@ -48,9 +43,6 @@ Todos
 
 * Re-enable setting socket option SO_LINGER in {Tcp,Nio}Connection.setSocketParameters()
 
-* Try the UDP:PING combo as soon as the `MulticastSocket.joinGroup()` issue [5] has been resolved
-
-* Try Diagnostics with a MulticastSocket (same cause as above).
 
 
 References
@@ -62,5 +54,3 @@ References
 [3] https://github.com/oracle/graal/issues/1082 // SO_REUSEADDR fails on MulticastSocket
 
 [4] https://github.com/oracle/graal/issues/460 // Serialization not supported yet (ObjectOutputStream)
-
-[5] https://github.com/oracle/graal/issues/1398
