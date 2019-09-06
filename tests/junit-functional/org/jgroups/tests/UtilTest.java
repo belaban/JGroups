@@ -169,39 +169,44 @@ public class UtilTest {
         assert Objects.equals(result, "200");
     }
 
+    public void testBeginWithDollar() {
+        Properties p = new Properties();
+        p.put("hello.world", "Hello World");
+        String input="${hello.world:foo}";
+        String out=Util.substituteVariable(input, p);
+        assert out.equals("Hello World");
+    }
+
     public void testReplaceProperties() {
         String input="hello ${my.name:Bela}";
 
-        String out=Util.replaceProperties(input, null);
+        String out=Util.substituteVariable(input);
         System.out.println("out = " + out);
 
         assert out.equals("hello Bela");
         Properties props=new Properties();
         props.put("my.name", "Michelle");
-        out=Util.replaceProperties(input, props);
+        out=Util.substituteVariable(input, props);
         System.out.println("out = " + out);
         assert out.equals("hello Michelle");
 
         input="hello \\${my.name:Bela}"; // no replacement as the trailing slash prevents this
-        out=Util.replaceProperties(input, null);
+        out=Util.substituteVariable(input, props);
         System.out.println("out = " + out);
 
-        input=input.replace("\\${", "${");
         assert out.equals(input);
 
         input="\\${escape:bla}";
-        out=Util.replaceProperties(input, null);
+        out=Util.substituteVariable(input);
         System.out.println("out = " + out);
 
-        input=input.replace("\\${", "${");
         assert input.equals(out);
 
 
         input="<UDP bind_addr=\"\\${my.bind_addr:127.0.0.1}\" ... />";
-        out=Util.replaceProperties(input, null);
+        out=Util.substituteVariable(input);
         System.out.println("out = " + out);
 
-        input=input.replace("\\${", "${");
         assert input.equals(out);
     }
 

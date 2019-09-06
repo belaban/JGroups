@@ -51,7 +51,7 @@ public class PropertiesToAsciidoc {
             Properties props = new Properties();
             for (Class<Protocol> clazz : classes)
                 convertProtocolToAsciidocTable(props,clazz);
-            String result = Util.replaceProperties(s, props);
+            String result = Util.substituteVariable(s, props);
             FileWriter fw = new FileWriter(f, false);
             fw.write(result);
             fw.flush();
@@ -70,7 +70,7 @@ public class PropertiesToAsciidoc {
             List<Class<?>> experimentalClasses = Util.findClassesAnnotatedWith("org.jgroups",Experimental.class);
             convertUnsupportedToAsciidocTable(props,experimentalClasses,"Experimental");
 
-            result=Util.replaceProperties(s,props);
+            result=Util.substituteVariable(s,props);
             fw=new FileWriter(f,false);
             fw.write(result);
             fw.flush();
