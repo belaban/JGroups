@@ -2,6 +2,7 @@ package org.jgroups.protocols.relay.config;
 
 import org.jgroups.JChannel;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 import org.w3c.dom.*;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -205,7 +206,7 @@ public final class RelayConfig {
 
         public PropertiesBridgeConfig(String cluster_name, String config) {
             super(cluster_name);
-            this.config=config;
+            this.config= Util.substituteVariable(config);
         }
 
         public JChannel createChannel() throws Exception {return new JChannel(config);}
