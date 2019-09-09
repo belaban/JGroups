@@ -4318,108 +4318,13 @@ public class Util {
      * @return the input string with all property references replaced if any. If
      *         there are no valid references the input string will be returned.
      * @throws {@link java.security.AccessControlException} when not authorised to retrieved system properties
+     *
+     * @deprecated use {@link Util#substituteVariable(String)}
+     *
      */
+    @Deprecated
     public static String replaceProperties(final String string,final Properties props) {
-        final String FILE_SEPARATOR=File.separator;
-        final String PATH_SEPARATOR=File.pathSeparator;
-        final String FILE_SEPARATOR_ALIAS="/";
-        final String PATH_SEPARATOR_ALIAS=":";
-
-        // States used in property parsing
-        final int NORMAL=0;
-        final int SEEN_DOLLAR=1;
-        final int IN_BRACKET=2;
-        final char[] chars=string.toCharArray();
-        StringBuilder buffer=new StringBuilder();
-        int state=NORMAL;
-        int start=0;
-        for(int i=0; i < chars.length; ++i) {
-            char c=chars[i];
-
-            // Dollar sign outside brackets
-            if(c == '$' && state != IN_BRACKET) {
-
-                // check for escape char '\':
-                if(i > 0 && chars[i-1] != '\\')
-                    state=SEEN_DOLLAR;
-            }
-
-                // Open bracket immediatley after dollar
-            else if(c == '{' && state == SEEN_DOLLAR) {
-                // buffer.append(string.substring(start,i - 1));
-                append(buffer, string.substring(start,i - 1));
-                state=IN_BRACKET;
-                start=i - 1;
-            }
-
-            // No open bracket after dollar
-            else if(state == SEEN_DOLLAR)
-                state=NORMAL;
-
-                // Closed bracket after open bracket
-            else if(c == '}' && state == IN_BRACKET) {
-                // No content
-                if(start + 2 == i) {
-                    buffer.append("${}"); // REVIEW: Correct?
-                }
-                else // Collect the system property
-                {
-                    String value;
-                    String key=string.substring(start + 2,i);
-
-                    // check for alias
-                    if(FILE_SEPARATOR_ALIAS.equals(key)) {
-                        value=FILE_SEPARATOR;
-                    }
-                    else if(PATH_SEPARATOR_ALIAS.equals(key)) {
-                        value=PATH_SEPARATOR;
-                    }
-                    else {
-                        // check from the properties
-                        if(props != null)
-                            value=props.getProperty(key);
-                        else
-                            value=System.getProperty(key);
-
-                        if(value == null) {
-                            // Check for a default value ${key:default}
-                            int colon=key.indexOf(':');
-                            if(colon > 0) {
-                                String realKey=key.substring(0,colon);
-                                if(props != null)
-                                    value=props.getProperty(realKey);
-                                else
-                                    value=System.getProperty(realKey);
-
-                                if(value == null) {
-                                    // Check for a composite key, "key1,key2"
-                                    value=resolveCompositeKey(realKey,props);
-
-                                    // Not a composite key either, use the specified default
-                                    if(value == null)
-                                        value=key.substring(colon + 1);
-                                }
-                            }
-                            else {
-                                // No default, check for a composite key, "key1,key2"
-                                value=resolveCompositeKey(key,props);
-                            }
-                        }
-                    }
-
-                    if(value != null) {
-                        buffer.append(value);
-                    }
-                }
-                start=i + 1;
-                state=NORMAL;
-            }
-        }
-
-        // Collect the trailing characters
-        if(start != chars.length)
-            append(buffer, string.substring(start, chars.length));
-        return buffer.toString();
+        return substituteVariable(string, props);
     }
 
     protected static void append(StringBuilder sb, String str) {
@@ -4475,29 +4380,41 @@ public class Util {
      * @return A string with vars replaced, or the same string if no vars found
      */
     public static String substituteVariable(String val) {
+        return substituteVariable(val, null);
+    }
+
+    /**
+     * Replaces variables of ${var:default} with Properties then uses System.getProperty(var, default) if the value was
+     * not found. If no variables are found, returns the same string, otherwise a copy of the string with variables
+     * substituted
+     * @param val
+     * @param p
+     * @return A string with vars replaced, or the same string if no vars found
+     */
+    public static String substituteVariable(String val, Properties p) {
         if(val == null)
             return val;
         String retval=val, prev;
 
         while(retval.contains("${")) { // handle multiple variables in val
             prev=retval;
-            retval=_substituteVar(retval);
+            retval=_substituteVar(retval, p);
             if(retval.equals(prev))
                 break;
         }
         return retval;
     }
 
-    private static String _substituteVar(String val) {
+    private static String _substituteVar(String val, Properties p) {
         int start_index, end_index;
         start_index=val.indexOf("${");
-        if(start_index == -1)
+        if(start_index == -1 || val.indexOf("\\${") >= 0)
             return val;
         end_index=val.indexOf("}",start_index + 2);
         if(end_index == -1)
             throw new IllegalArgumentException("missing \"}\" in " + val);
 
-        String tmp=getProperty(val.substring(start_index + 2,end_index));
+        String tmp=getProperty(val.substring(start_index + 2,end_index),p);
         if(tmp == null)
             return val;
         StringBuilder sb = new StringBuilder();
@@ -4505,7 +4422,7 @@ public class Util {
         return sb.toString();
     }
 
-    public static String getProperty(String s) {
+    public static String getProperty(String s, Properties p) {
         String var, default_val, retval=null;
         int index=s.indexOf(':');
         if(index >= 0) {
@@ -4513,13 +4430,17 @@ public class Util {
             default_val=s.substring(index + 1);
             if(default_val != null && !default_val.isEmpty())
                 default_val=default_val.trim();
-            retval=_getProperty(var,default_val);
+            retval=_getProperty(var,default_val,p);
         }
         else {
             var=s;
-            retval=_getProperty(var,null);
+            retval=_getProperty(var,null,p);
         }
         return retval;
+    }
+
+    public static String getProperty(String s) {
+        return getProperty(s, null);
     }
 
     /**
@@ -4529,7 +4450,7 @@ public class Util {
      * @param default_value
      * @return
      */
-    private static String _getProperty(String var,String default_value) {
+    private static String _getProperty(String var,String default_value, Properties p) {
         if(var == null)
             return null;
         List<String> list=parseCommaDelimitedStrings(var);
@@ -4537,11 +4458,12 @@ public class Util {
             list=new ArrayList<>(1);
             list.add(var);
         }
-        String retval=null;
+        String retval;
         for(String prop : list) {
             try {
-                retval=System.getProperty(prop);
-                if(retval != null)
+                if(p != null && (retval=p.getProperty(prop)) != null)
+                    return retval;
+                if((retval=System.getProperty(prop)) != null)
                     return retval;
                 if((retval=System.getenv(prop)) != null)
                     return retval;
