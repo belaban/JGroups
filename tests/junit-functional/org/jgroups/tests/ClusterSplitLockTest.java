@@ -22,10 +22,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
+import java.util.stream.Stream;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.AssertJUnit.assertTrue;
-import static org.testng.AssertJUnit.fail;
+import static org.testng.AssertJUnit.*;
 
 /** Tests https://issues.jboss.org/browse/JGRP-2234 */
 @Test(groups = {Global.FUNCTIONAL, Global.EAP_EXCLUDED}, timeOut = 60000, dataProvider="createLockingProtocol")
@@ -62,22 +62,20 @@ public class ClusterSplitLockTest {
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, channels);
 
         // Make sure A is coordinator, because we blindly assume it is in the tests below.
-        assertTrue(channels[0].getView().getCoord().equals(channels[0].getAddress()));
+        assertEquals(channels[0].getAddress(), channels[0].getView().getCoord());
     }
 
     private void disconnectAndDestroy(int i) throws Exception {
         JChannel channel = channels[i];
-        channel.disconnect();
-        channel.getProtocolStack().destroy();
+        Util.close(channel);
     }
 
     @AfterMethod
     protected void tearDown() throws Exception {
-        for (int i = MEMBERS - 1; i >= 0; i--) {
-            disconnectAndDestroy(i);
-            execs[i].shutdown();
-            assertTrue(execs[i].awaitTermination(5, SECONDS));
-        }
+        Util.closeReverse(channels);
+        Stream.of(execs).forEach(ExecutorService::shutdown);
+        for(ExecutorService ex: execs)
+            assertTrue(ex.awaitTermination(5, SECONDS));
     }
 
     /**
@@ -228,19 +226,19 @@ public class ClusterSplitLockTest {
 
     }
 
-    private String memberName(int mbrIndex) {
+    private static String memberName(int mbrIndex) {
         return String.valueOf((char) ('A' + mbrIndex));
     }
 
-    private void log(String fmt, Object... args) {
+    private static void log(String fmt, Object... args) {
         log(System.out, fmt, args);
     }
 
-    private void logError(String fmt, Object... args) {
+    private static void logError(String fmt, Object... args) {
         log(System.err, fmt, args);
     }
 
-    private void log(PrintStream out, String fmt, Object... args) {
+    private static void log(PrintStream out, String fmt, Object... args) {
         out.println(String.format(fmt, args));
     }
 }

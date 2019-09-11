@@ -140,7 +140,7 @@ public class InetAddressChecksTest {
 	 * - sets the IP version to be used in the JGroups session
 	 * @return StackType.IPv4 for IPv4, StackType.IPv6 for IPv6, StackType.DUAL for dual stacks
 	 */
-	public static void determineIpVersionFromAddresses(Collection<InetAddress> addrs) throws Exception {
+	protected static void determineIpVersionFromAddresses(Collection<InetAddress> addrs) throws Exception {
 		Class<? extends InetAddress> clazz=addrs.iterator().next().getClass();
 		if(!addrs.stream().allMatch(addr -> addr.getClass() == clazz))
 			throw new RuntimeException("all addresses have to be either IPv4 or IPv6: " + addrs);

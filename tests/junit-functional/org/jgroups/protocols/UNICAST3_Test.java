@@ -98,10 +98,8 @@ public class UNICAST3_Test {
     }
 
 
-    protected JChannel create(String name) throws Exception {
-        return new JChannel(new SHARED_LOOPBACK(),
-                            new SHARED_LOOPBACK_PING(),
-                            new UNICAST3()).name(name);
+    protected static JChannel create(String name) throws Exception {
+        return new JChannel(new SHARED_LOOPBACK(), new SHARED_LOOPBACK_PING(), new UNICAST3()).name(name);
     }
 
     /**

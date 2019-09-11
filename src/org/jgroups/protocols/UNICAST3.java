@@ -9,6 +9,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -132,6 +133,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     /** Keep track of when a SEND_FIRST_SEQNO message was sent to a given sender */
     protected ExpiryCache<Address>         last_sync_sent=null;
+
+    protected final MessageCache           msg_cache=new MessageCache();
 
     protected static final Message         DUMMY_OOB_MSG=new Message().setFlag(Message.Flag.OOB);
 
@@ -364,6 +367,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     public void start() throws Exception {
+        msg_cache.clear();
         timer=getTransport().getTimer();
         if(timer == null)
             throw new Exception("timer is null");
@@ -379,6 +383,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         stopRetransmitTask();
         xmit_task_map.clear();
         removeAllConnections();
+        msg_cache.clear();
     }
 
 
@@ -422,7 +427,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                     handleXmitRequest(sender, Util.streamableFromBuffer(SeqnoList::new, msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
                     break;
                 case UnicastHeader3.CLOSE:
-                    log.trace(local_addr + "%s <-- %s: CLOSE(conn-id=%s)", local_addr, sender, hdr.conn_id);
+                    log.trace("%s <-- %s: CLOSE(conn-id=%s)", local_addr, sender, hdr.conn_id);
                     ReceiverEntry entry=recv_table.get(sender);
                     if(entry != null && entry.connId() == hdr.conn_id) {
                         recv_table.remove(sender, entry);
@@ -445,8 +450,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             up_prot.up(batch);
             return;
         }
-
-        if(local_addr == null || local_addr.equals(batch.sender())) {
+        final Address sender=batch.sender();
+        if(local_addr == null || local_addr.equals(sender)) {
             Entry entry=local_addr != null? send_table.get(local_addr) : null;
             if(entry != null)
                 handleBatchFromSelf(batch, entry);
@@ -455,7 +460,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
         int size=batch.size();
         Map<Short,List<LongTuple<Message>>> msgs=new LinkedHashMap<>();
-        ReceiverEntry entry=recv_table.get(batch.sender());
+        ReceiverEntry entry=recv_table.get(sender);
 
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
             Message msg=it.next();
@@ -473,18 +478,27 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             list.add(new LongTuple<>(hdr.seqno(), msg));
 
             if(hdr.first)
-                entry=getReceiverEntry(batch.sender(), hdr.seqno(), hdr.first, hdr.connId());
+                entry=getReceiverEntry(sender, hdr.seqno(), hdr.first, hdr.connId());
+            else if(entry == null) {
+                msg_cache.cache(sender, msg);
+                log.trace("%s: cached %s#%d", local_addr, sender, hdr.seqno());
+            }
         }
 
         if(!msgs.isEmpty()) {
             if(entry == null)
-                sendRequestForFirstSeqno(batch.sender());
+                sendRequestForFirstSeqno(sender);
             else {
+                if(!msg_cache.isEmpty()) { // quick and dirty check
+                    List<Message> queued_msgs=msg_cache.drain(sender);
+                    if(queued_msgs != null)
+                        addQueuedMessages(sender, entry, queued_msgs);
+                }
                 if(msgs.keySet().retainAll(Collections.singletonList(entry.connId()))) // remove all conn-ids that don't match
-                    sendRequestForFirstSeqno(batch.sender());
+                    sendRequestForFirstSeqno(sender);
                 List<LongTuple<Message>> list=msgs.get(entry.connId());
                 if(list != null && !list.isEmpty())
-                    handleBatchReceived(entry, batch.sender(), list, batch.mode() == MessageBatch.Mode.OOB);
+                    handleBatchReceived(entry, sender, list, batch.mode() == MessageBatch.Mode.OOB);
             }
         }
 
@@ -726,12 +740,25 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
      */
     protected void handleDataReceived(final Address sender, long seqno, short conn_id,  boolean first, final Message msg) {
         ReceiverEntry entry=getReceiverEntry(sender, seqno, first, conn_id);
-        if(entry == null)
+        if(entry == null) {
+            msg_cache.cache(sender, msg);
+            log.trace("%s: cached %s#%d", local_addr, sender, seqno);
             return;
-        update(entry, 1);
-        boolean oob=msg.isFlagSet(Message.Flag.OOB);
+        }
+        if(!msg_cache.isEmpty()) { // quick and dirty check
+            List<Message> queued_msgs=msg_cache.drain(sender);
+            if(queued_msgs != null)
+                addQueuedMessages(sender, entry, queued_msgs);
+        }
+        addMessage(entry, sender, seqno, msg);
+        removeAndDeliver(entry.msgs, sender);
+    }
+
+    protected void addMessage(ReceiverEntry entry, Address sender, long seqno, Message msg) {
         final Table<Message> win=entry.msgs;
-        boolean added=win.add(seqno, oob? DUMMY_OOB_MSG : msg); // adding the same dummy OOB msg saves space (we won't remove it)
+        update(entry, 1);
+        boolean oob=msg.isFlagSet(Message.Flag.OOB),
+          added=win.add(seqno, oob? DUMMY_OOB_MSG : msg); // adding the same dummy OOB msg saves space (we won't remove it)
 
         if(ack_threshold <= 1)
             sendAck(sender, win.getHighestDeliverable(), entry.connId());
@@ -745,12 +772,21 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 deliverMessage(msg, sender, seqno);
 
             // we don't steal work if the message is internal (https://issues.jboss.org/browse/JGRP-1733)
-            if(msg.isFlagSet(Message.Flag.INTERNAL)) {
+            if(msg.isFlagSet(Message.Flag.INTERNAL))
                 processInternalMessage(win, sender);
-                return;
-            }
         }
-        removeAndDeliver(win, sender);
+    }
+
+    protected void addQueuedMessages(final Address sender, final ReceiverEntry entry, List<Message> queued_msgs) {
+        for(Message msg: queued_msgs) {
+            UnicastHeader3 hdr=msg.getHeader(this.id);
+            if(hdr.conn_id != entry.conn_id) {
+                log.warn("%s: dropped queued message %s#%d as its conn_id (%d) did not match (entry.conn_id=%d)",
+                         local_addr, sender, hdr.seqno, hdr.conn_id, entry.conn_id);
+                continue;
+            }
+            addMessage(entry, sender, hdr.seqno(), msg);
+        }
     }
 
     /** Called when the sender of a message is the local member. In this case, we don't need to add the message
@@ -912,17 +948,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(entry == null || entry.state() == State.CLOSED) {
             if(entry != null)
                 send_table.remove(dst, entry);
-            entry=new SenderEntry(getNewConnectionId());
-            SenderEntry existing=send_table.putIfAbsent(dst, entry);
-            if(existing != null)
-                entry=existing;
-            else {
-                log.trace("%s: created sender window for %s (conn-id=%s)", local_addr, dst, entry.connId());
-                if(cache != null && !members.contains(dst))
-                    cache.add(dst);
-            }
+            entry=send_table.computeIfAbsent(dst, k -> new SenderEntry(getNewConnectionId()));
+            log.trace("%s: created sender window for %s (conn-id=%s)", local_addr, dst, entry.connId());
+            if(cache != null && !members.contains(dst))
+                cache.add(dst);
         }
-
         if(entry.state() == State.CLOSING)
             entry.state(State.OPEN);
         return entry;
@@ -930,14 +960,14 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     protected ReceiverEntry createReceiverEntry(Address sender, long seqno, short conn_id) {
-        Table<Message> table=new Table<>(xmit_table_num_rows, xmit_table_msgs_per_row, seqno-1,
-                                                xmit_table_resize_factor, xmit_table_max_compaction_time);
-        ReceiverEntry entry=new ReceiverEntry(table, conn_id);
-        ReceiverEntry entry2=recv_table.putIfAbsent(sender, entry);
-        if(entry2 != null)
-            return entry2;
+        ReceiverEntry entry=recv_table.computeIfAbsent(sender, k -> new ReceiverEntry(createTable(seqno), conn_id));
         log.trace("%s: created receiver window for %s at seqno=#%d for conn-id=%d", local_addr, sender, seqno, conn_id);
         return entry;
+    }
+
+    protected Table createTable(long seqno) {
+        return new Table<>(xmit_table_num_rows, xmit_table_msgs_per_row, seqno-1,
+                           xmit_table_resize_factor, xmit_table_max_compaction_time);
     }
 
     /** Add the ACK to hashtable.sender.sent_msgs */
@@ -1202,6 +1232,80 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return num_removed;
     }
 
+    @ManagedOperation(description="Triggers the retransmission task")
+    public void triggerXmit() {
+        SeqnoList missing;
+
+        for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
+            Address        target=entry.getKey(); // target to send retransmit requests to
+            ReceiverEntry  val=entry.getValue();
+            Table<Message> win=val != null? val.msgs : null;
+
+            // receiver: send ack for received messages if needed
+            if(win != null && val.sendAck()) // sendAck() resets send_ack to false
+                sendAck(target, win.getHighestDeliverable(), val.connId());
+
+            // receiver: retransmit missing messages (getNumMissing() is fast)
+            if(win != null && win.getNumMissing() > 0 && (missing=win.getMissing(max_xmit_req_size)) != null) {
+                long highest=missing.getLast();
+                Long prev_seqno=xmit_task_map.get(target);
+                if(prev_seqno == null)
+                    xmit_task_map.put(target, highest); // no retransmission
+                else {
+                    missing.removeHigherThan(prev_seqno); // we only retransmit the 'previous batch'
+                    if(highest > prev_seqno)
+                        xmit_task_map.put(target, highest);
+                    if(!missing.isEmpty())
+                        retransmit(missing, target);
+                }
+            }
+            else if(!xmit_task_map.isEmpty())
+                xmit_task_map.remove(target); // no current gaps for target
+        }
+
+        // sender: only send the *highest sent* message if HA < HS and HA/HS didn't change from the prev run
+        for(SenderEntry val: send_table.values()) {
+            Table<Message> win=val != null? val.msgs : null;
+            if(win != null) {
+                long highest_acked=win.getHighestDelivered(); // highest delivered == highest ack (sender win)
+                long highest_sent=win.getHighestReceived();   // we use table as a *sender* win, so it's highest *sent*...
+
+                if(highest_acked < highest_sent && val.watermark[0] == highest_acked && val.watermark[1] == highest_sent) {
+                    // highest acked and sent hasn't moved up - let's resend the HS
+                    Message highest_sent_msg=win.get(highest_sent);
+                    if(highest_sent_msg != null)
+                        retransmit(highest_sent_msg);
+                }
+                else
+                    val.watermark(highest_acked, highest_sent);
+            }
+        }
+
+
+        // close idle connections
+        if(conn_expiry_timeout > 0)
+            closeIdleConnections();
+
+        if(conn_close_timeout > 0)
+            removeExpiredConnections();
+    }
+
+
+    @ManagedOperation(description="Sends ACKs immediately for entries which are marked as pending (ACK hasn't been sent yet)")
+    public void sendPendingAcks() {
+        for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
+            Address        target=entry.getKey(); // target to send retransmit requests to
+            ReceiverEntry  val=entry.getValue();
+            Table<Message> win=val != null? val.msgs : null;
+
+            // receiver: send ack for received messages if needed
+            if(win != null && val.sendAck())// sendAck() resets send_ack to false
+                sendAck(target, win.getHighestDeliverable(), val.connId());
+        }
+    }
+
+
+
     protected void update(Entry entry, int num_received) {
         if(conn_expiry_timeout > 0)
             entry.update();
@@ -1329,78 +1433,47 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         }
     }
 
-    @ManagedOperation(description="Triggers the retransmission task")
-    public void triggerXmit() {
-        SeqnoList missing;
+    /**
+     * Used to queue messages until a {@link ReceiverEntry} has been created. Queued messages are then removed from
+     * the cache and added to the ReceiverEntry
+     */
+    protected class MessageCache {
+        private final Map<Address,List<Message>> map=new ConcurrentHashMap<>();
+        private volatile boolean                 is_empty=true;
 
-        for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
-            Address        target=entry.getKey(); // target to send retransmit requests to
-            ReceiverEntry  val=entry.getValue();
-            Table<Message> win=val != null? val.msgs : null;
-
-            // receiver: send ack for received messages if needed
-            if(win != null && val.sendAck()) // sendAck() resets send_ack to false
-                sendAck(target, win.getHighestDeliverable(), val.connId());
-
-            // receiver: retransmit missing messages (getNumMissing() is fast)
-            if(win != null && win.getNumMissing() > 0 && (missing=win.getMissing(max_xmit_req_size)) != null) {
-                long highest=missing.getLast();
-                Long prev_seqno=xmit_task_map.get(target);
-                if(prev_seqno == null)
-                    xmit_task_map.put(target, highest); // no retransmission
-                else {
-                    missing.removeHigherThan(prev_seqno); // we only retransmit the 'previous batch'
-                    if(highest > prev_seqno)
-                        xmit_task_map.put(target, highest);
-                    if(!missing.isEmpty())
-                        retransmit(missing, target);
-                }
-            }
-            else if(!xmit_task_map.isEmpty())
-                xmit_task_map.remove(target); // no current gaps for target
+        protected MessageCache cache(Address sender, Message msg) {
+            List<Message> list=map.computeIfAbsent(sender, addr -> new ArrayList<>());
+            list.add(msg);
+            is_empty=false;
+            return this;
         }
 
-        // sender: only send the *highest sent* message if HA < HS and HA/HS didn't change from the prev run
-        for(SenderEntry val: send_table.values()) {
-            Table<Message> win=val != null? val.msgs : null;
-            if(win != null) {
-                long highest_acked=win.getHighestDelivered(); // highest delivered == highest ack (sender win)
-                long highest_sent=win.getHighestReceived();   // we use table as a *sender* win, so it's highest *sent*...
-
-                if(highest_acked < highest_sent && val.watermark[0] == highest_acked && val.watermark[1] == highest_sent) {
-                    // highest acked and sent hasn't moved up - let's resend the HS
-                    Message highest_sent_msg=win.get(highest_sent);
-                    if(highest_sent_msg != null)
-                        retransmit(highest_sent_msg);
-                }
-                else
-                    val.watermark(highest_acked, highest_sent);
-            }
+        protected List<Message> drain(Address sender) {
+            List<Message> list=map.remove(sender);
+            if(map.isEmpty())
+                is_empty=true;
+            return list;
         }
 
+        protected MessageCache clear() {
+            map.clear();
+            is_empty=true;
+            return this;
+        }
 
-        // close idle connections
-        if(conn_expiry_timeout > 0)
-            closeIdleConnections();
+        /** Returns a count of all messages */
+        protected int size() {
+            return map.values().stream().mapToInt(Collection::size).sum();
+        }
 
-        if(conn_close_timeout > 0)
-            removeExpiredConnections();
-    }
+        protected boolean isEmpty() {
+            return is_empty;
+        }
 
-
-    @ManagedOperation(description="Sends ACKs immediately for entries which are marked as pending (ACK hasn't been sent yet)")
-    public void sendPendingAcks() {
-        for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
-            Address        target=entry.getKey(); // target to send retransmit requests to
-            ReceiverEntry  val=entry.getValue();
-            Table<Message> win=val != null? val.msgs : null;
-
-            // receiver: send ack for received messages if needed
-            if(win != null && val.sendAck())// sendAck() resets send_ack to false
-                sendAck(target, win.getHighestDeliverable(), val.connId());
+        public String toString() {
+            return String.format("%d message(s)", size());
         }
     }
-
 
 
 }

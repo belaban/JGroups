@@ -46,7 +46,7 @@ public class MAKE_BATCH extends Protocol {
     protected Address                           local_addr;
     protected Future<?>                         batcher;
 
-
+    public MAKE_BATCH localAddress(Address a)  {local_addr=a;         return this;}
     public MAKE_BATCH multicasts(boolean flag) {this.multicasts=flag; return this;}
     public MAKE_BATCH unicasts(boolean flag)   {this.unicasts=flag;   return this;}
     public MAKE_BATCH sleepTime(long time)     {this.sleep_time=time; return this;}
@@ -89,6 +89,22 @@ public class MAKE_BATCH extends Protocol {
         return up_prot.up(msg);
     }
 
+    public void up(MessageBatch batch) {
+        for(Message msg: batch) {
+            if(msg.isFlagSet(Message.Flag.OOB) && msg.isFlagSet(Message.Flag.INTERNAL)) {
+                up_prot.up(msg);
+                batch.remove(msg);
+                continue;
+            }
+            if((msg.dest() == null && multicasts) || (msg.dest() != null && unicasts)) {
+                queue(msg);
+                batch.remove(msg);
+            }
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
+
     protected void queue(Message msg) {
         Address dest=msg.dest();
         Map<Address,List<Message>> map;
@@ -97,13 +113,8 @@ public class MAKE_BATCH extends Protocol {
         else
             map=msg.isFlagSet(Message.Flag.OOB)? oob_map_ucast : reg_map_ucast;
 
-        Address sender=msg.src();
-        synchronized(map) {
-            List<Message> list=map.get(sender);
-            if(list == null)
-                map.put(sender, list=new ArrayList<>());
-            list.add(msg);
-        }
+        List<Message> list=map.computeIfAbsent(msg.src(), k -> new ArrayList<>());
+        list.add(msg);
     }
 
     public synchronized void startBatcher() {
