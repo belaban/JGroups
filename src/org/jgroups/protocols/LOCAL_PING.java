@@ -1,8 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.PhysicalAddress;
+import org.jgroups.*;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.NameCache;
@@ -12,6 +10,7 @@ import org.jgroups.util.Tuple;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -60,8 +59,6 @@ public class LOCAL_PING extends Discovery {
         List<PingData> list=discovery.get(cluster_name);
         synchronized(discovery) {
             if(list != null && !list.isEmpty()) {
-                if(list.stream().noneMatch(PingData::isCoord))
-                    list.get(0).coord(true);
                 list.stream().filter(el -> !el.sender.equals(local_addr))
                   .forEach(d -> {
                       addAddressToLocalCache(d.sender, d.physical_addr);
@@ -74,17 +71,34 @@ public class LOCAL_PING extends Discovery {
 
     public Object down(Event evt) {
         if(evt.type() == Event.VIEW_CHANGE && cluster_name != null) {
+            Address old_coord=view != null? view.getCoord() : null;
+            boolean was_coord=Objects.equals(local_addr, old_coord);
+            Object retval=super.down(evt);
+
             // synchronize TP.logical_addr_cache with discovery cache
-            List<PingData> data=discovery.get(cluster_name);
+            List<PingData> list=discovery.get(cluster_name);
             synchronized(discovery) {
-                if(data != null && !data.isEmpty()) {
-                    for(PingData d : data) {
-                        Address sender=d.getAddress();
-                        if(down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, sender)) == null)
-                            down_prot.down(new Event(Event.ADD_PHYSICAL_ADDRESS, new Tuple<>(sender, d.getPhysicalAddr())));
+                if(list != null && !list.isEmpty()) {
+                    for(PingData d : list) {
+                        Address mbr=d.getAddress();
+                        if(down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, mbr)) == null)
+                            down_prot.down(new Event(Event.ADD_PHYSICAL_ADDRESS, new Tuple<>(mbr, d.getPhysicalAddr())));
+
+                        // set the coordinator based on the new view (https://issues.jboss.org/browse/JGRP-2381)
+                        if(Objects.equals(local_addr, mbr)) {
+                            if(!was_coord && is_coord) { // this member became coordinator
+                                d.coord(true);
+                                log.trace("%s: became coordinator (view: %s)", local_addr, view);
+                            }
+                            if(was_coord && !is_coord) { // this member ceased to be coord, e.g. on a merge
+                                d.coord(false);
+                                log.trace("%s: ceased to be coordinator (view: %s)", local_addr, view);
+                            }
+                        }
                     }
                 }
             }
+            return retval;
         }
         return super.down(evt);
     }
@@ -98,8 +112,6 @@ public class LOCAL_PING extends Discovery {
             PingData data=new PingData(local_addr, is_server, logical_name, physical_addr);
             final List<PingData> list=discovery.computeIfAbsent(cluster_name, func);
             synchronized(discovery) {
-                if(list.isEmpty())
-                    data.coord(true); // first element is coordinator
                 list.add(data);
             }
         }
