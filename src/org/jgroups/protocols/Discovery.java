@@ -148,6 +148,8 @@ public abstract class Discovery extends Protocol {
 
     }
 
+    public String                  getClusterName()                   {return cluster_name;}
+    public <T extends Discovery> T setClusterName(String n)           {cluster_name=n; return (T)this;}
     public int                     getNumberOfDiscoveryRequestsSent() {return num_discovery_requests;}
     public boolean                 breakOnCoordResponse()             {return break_on_coord_rsp;}
     public <T extends Discovery> T breakOnCoordResponse(boolean flag) {break_on_coord_rsp=flag; return (T)this;}
