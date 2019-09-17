@@ -26,8 +26,10 @@ import java.util.concurrent.TimeUnit;
  * https://issues.jboss.org/browse/JGRP-1557
  * @author Bela Ban
  * @since  3.3
+ * @deprecated Not really needed; all of this can be done by external code, ie. code running in the application.
  */
 @MBean(description="Supervises the running stack, taking corrective actions if necessary")
+@Deprecated
 public class SUPERVISOR extends Protocol {
     protected Address                     local_addr;
 
