@@ -24,8 +24,9 @@ import java.util.function.Supplier;
  * p2p unicasting. Design is in ./doc/design/ABP.txt
  * @author Bela Ban
  * @since  3.6.3
+ * @deprecated Mainly used as a design study of Pluscal / TLA+
  */
-@Experimental @Unsupported
+@Experimental @Unsupported @Deprecated
 @MBean(description="Alternating Bit Protocol, for reliable p2p unicasts")
 public class ABP extends Protocol {
 
