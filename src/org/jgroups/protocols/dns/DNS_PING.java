@@ -67,7 +67,9 @@ public class DNS_PING extends Discovery {
 
     @Override
     public void destroy() {
-        dns_resolver.close();
+        if (dns_resolver != null) {
+            dns_resolver.close();
+        }
     }
 
     @Override
