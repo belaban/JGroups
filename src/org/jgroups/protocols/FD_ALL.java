@@ -298,7 +298,7 @@ public class FD_ALL extends Protocol {
     protected void update(Address sender) {
         if(sender != null && !sender.equals(local_addr))
             timestamps.put(sender, getTimestamp());
-        if (log.isTraceEnabled()) log.trace("Received heartbeat from %s", sender);
+        if (log.isTraceEnabled()) log.trace("%s: received heartbeat from %s", local_addr, sender);
     }
 
     protected void addIfAbsent(Address mbr) {
@@ -384,7 +384,7 @@ public class FD_ALL extends Protocol {
             do_unsuspect=!suspected_mbrs.isEmpty() && suspected_mbrs.remove(mbr);
             if(do_unsuspect) {
                 has_suspected_mbrs=!suspected_mbrs.isEmpty();
-                log.debug("Unsuspecting %s", mbr);
+                log.debug("%s: unsuspecting %s", local_addr, mbr);
             }
         }
         if(do_unsuspect) {
@@ -409,15 +409,13 @@ public class FD_ALL extends Protocol {
     }
 
 
-    /**
-     * Class which periodically multicasts a HEARTBEAT message to the cluster
-     */
+    /** Class which periodically multicasts a HEARTBEAT message to the cluster */
     class HeartbeatSender implements Runnable {
         public void run() {
             Message heartbeat=new Message().setFlag(Message.Flag.INTERNAL).putHeader(id, new HeartbeatHeader());
             down_prot.down(heartbeat);
             num_heartbeats_sent++;
-            log.trace("Sent heartbeat");
+            log.trace("%s: sent heartbeat", local_addr);
         }
 
         public String toString() {
@@ -429,6 +427,10 @@ public class FD_ALL extends Protocol {
     class TimeoutChecker implements Runnable {
 
         public void run() {                        
+            synchronized(this) {
+                // remove all non-members (// https://issues.jboss.org/browse/JGRP-2387)
+                timestamps.keySet().retainAll(members);
+            }
             List<Address> suspects=new LinkedList<>();
             long current_time=getTimestamp(), diff;
             for(Iterator<Entry<Address,Long>> it=timestamps.entrySet().iterator(); it.hasNext();) {
@@ -441,8 +443,8 @@ public class FD_ALL extends Protocol {
                 }
                 diff=TimeUnit.MILLISECONDS.convert(current_time - val, TimeUnit.NANOSECONDS);
                 if(diff > timeout) {
-                    log.debug("haven't received a heartbeat from " + key + " for " + diff +
-                                " ms, adding it to suspect list");
+                    log.debug("%s: haven't received a heartbeat from %s for %s ms, adding it to suspect list",
+                              local_addr, key, diff);
                     suspects.add(key);
                 }
             }

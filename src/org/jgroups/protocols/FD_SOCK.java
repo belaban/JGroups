@@ -298,7 +298,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 cache.add(hdr.mbr, hdr.sock_addr); // update the cache
                 log.trace("%s: i-have-sock: %s --> %s (cache is %s)", local_addr, hdr.mbr, hdr.sock_addr, cache);
 
-                if(ping_dest != null && hdr.mbr.equals(ping_dest))
+                if(hdr.mbr.equals(ping_dest))
                     ping_addr_promise.setResult(hdr.sock_addr);
                 break;
 

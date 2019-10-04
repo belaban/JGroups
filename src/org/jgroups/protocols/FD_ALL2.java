@@ -283,7 +283,7 @@ public class FD_ALL2 extends Protocol {
             else
                 timestamps.putIfAbsent(sender, new AtomicBoolean(true));
         }
-        if (log.isTraceEnabled()) log.trace("Received heartbeat from %s", sender);
+        if(log.isTraceEnabled()) log.trace("%s: received heartbeat from %s", local_addr, sender);
     }
 
 
@@ -327,13 +327,13 @@ public class FD_ALL2 extends Protocol {
 
         num_suspect_events+=suspects.size();
 
-        final List<Address> eligible_mbrs=new ArrayList<>();
+        final List<Address> eligible_mbrs;
         synchronized(this) {
             for(Address suspect: suspects) {
                 suspect_history.add(new Tuple<>(suspect, System.currentTimeMillis()));
                 suspected_mbrs.add(suspect);
             }
-            eligible_mbrs.addAll(members);
+            eligible_mbrs=new ArrayList<>(members);
             eligible_mbrs.removeAll(suspected_mbrs);
             has_suspected_mbrs=!suspected_mbrs.isEmpty();
         }
@@ -358,7 +358,7 @@ public class FD_ALL2 extends Protocol {
             do_unsuspect=!suspected_mbrs.isEmpty() && suspected_mbrs.remove(mbr);
             if(do_unsuspect) {
                 has_suspected_mbrs=!suspected_mbrs.isEmpty();
-                log.debug("Unsuspecting %s", mbr);
+                log.debug("%s: unsuspecting %s", local_addr, mbr);
             }
         }
         if(do_unsuspect) {
@@ -391,7 +391,7 @@ public class FD_ALL2 extends Protocol {
             Message heartbeat=new Message().setFlag(Message.Flag.INTERNAL).putHeader(id, new HeartbeatHeader());
             down_prot.down(heartbeat);
             num_heartbeats_sent++;
-            log.trace("Sent heartbeat");
+            log.trace("%s: sent heartbeat", local_addr);
         }
 
         public String toString() {
@@ -403,6 +403,10 @@ public class FD_ALL2 extends Protocol {
     class TimeoutChecker implements Runnable {
 
         public void run() {                        
+            synchronized(this) {
+                // remove all non-members (// https://issues.jboss.org/browse/JGRP-2387)
+                timestamps.keySet().retainAll(members);
+            }
             List<Address> suspects=new LinkedList<>();
             for(Iterator<Entry<Address,AtomicBoolean>> it=timestamps.entrySet().iterator(); it.hasNext();) {
                 Entry<Address,AtomicBoolean> entry=it.next();
