@@ -22,6 +22,8 @@ public class ASYM_ENCRYPT_LeaveTest extends BaseLeaveTest {
     protected static final String      KEYSTORE_PWD="password";
 
     protected boolean useExternalKeyExchange() {return false;}
+    protected String symAlgorithm() { return "AES"; }
+    protected int symIvLength() { return 0; }
 
     @AfterMethod protected void destroy() {
         super.destroy();
@@ -41,7 +43,7 @@ public class ASYM_ENCRYPT_LeaveTest extends BaseLeaveTest {
           new SSL_KEY_EXCHANGE().setKeystoreName(KEYSTORE).setKeystorePassword(KEYSTORE_PWD)
             .setPortRange(30).setPort(2257),
           new ASYM_ENCRYPT().setUseExternalKeyExchange(useExternalKeyExchange())
-            .symKeylength(128).symAlgorithm("AES").asymKeylength(512).asymAlgorithm("RSA"),
+            .symKeylength(128).symAlgorithm(symAlgorithm()).symIvLength(symIvLength()).asymKeylength(512).asymAlgorithm("RSA"),
           new NAKACK2().setUseMcastXmit(false),
           new UNICAST3(),
           new STABLE(),

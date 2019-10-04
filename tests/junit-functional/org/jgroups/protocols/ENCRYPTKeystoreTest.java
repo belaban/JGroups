@@ -24,6 +24,9 @@ public class ENCRYPTKeystoreTest {
 
     static final short ENCRYPT_ID=ClassConfigurator.getProtocolId(SYM_ENCRYPT.class);
 
+    protected String symAlgorithm() { return "AES"; }
+    protected int symIvLength() { return 0; }
+
     public void testInitWrongKeystoreProperties() {
         SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName("unkownKeystore.keystore");
         try {
@@ -51,7 +54,9 @@ public class ENCRYPTKeystoreTest {
         Message sentMsg=observer.getDownMessages().get("message0");
         String encText=new String(sentMsg.getBuffer());
         assert !encText.equals(messageText);
-        byte[] decodedBytes=encrypt.code(sentMsg.getRawBuffer(), sentMsg.getOffset(), sentMsg.getLength(), true);
+        EncryptHeader encHeader = sentMsg.getHeader(ENCRYPT_ID);
+        assert encHeader != null;
+        byte[] decodedBytes=encrypt.code(sentMsg.getRawBuffer(), sentMsg.getOffset(), sentMsg.getLength(), encHeader.iv(), true);
         String temp=new String(decodedBytes);
         System.out.printf("decoded text: '%s'\n", temp);
         assert temp.equals(messageText) : String.format("sent: '%s', decoded: '%s'", messageText, temp);
@@ -66,7 +71,8 @@ public class ENCRYPTKeystoreTest {
 
         String messageText="hello this is a test message";
         byte[] bytes=messageText.getBytes();
-        byte[] encodedBytes=encrypt2.code(bytes, 0, bytes.length, false);
+        byte[] iv = encrypt2.makeIv();
+        byte[] encodedBytes=encrypt2.code(bytes, 0, bytes.length, iv, false);
         assert !new String(encodedBytes).equals(messageText);
 
         MessageDigest digest=MessageDigest.getInstance("MD5");
@@ -74,7 +80,7 @@ public class ENCRYPTKeystoreTest {
         digest.update(encrypt.secretKey().getEncoded());
 
         byte[] symVersion=digest.digest();
-        Message msg=new Message(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader(symVersion));
+        Message msg=new Message(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader((byte)0, symVersion, iv));
         encrypt.up(msg);
         Message rcvdMsg=observer.getUpMessages().get("message0");
         String decText=new String(rcvdMsg.getBuffer());
@@ -89,7 +95,8 @@ public class ENCRYPTKeystoreTest {
 
         String messageText="hello this is a test message";
         byte[] bytes=messageText.getBytes();
-        byte[] encodedBytes=encrypt2.code(bytes, 0, bytes.length, false);
+        byte[] iv = encrypt2.makeIv();
+        byte[] encodedBytes=encrypt2.code(bytes, 0, bytes.length, iv, false);
         assert !new String(encodedBytes).equals(messageText);
 
         MessageDigest digest=MessageDigest.getInstance("MD5");
@@ -98,7 +105,7 @@ public class ENCRYPTKeystoreTest {
 
         byte[] symVersion=digest.digest();
 
-        Message msg=new Message(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader(symVersion));
+        Message msg=new Message(null, encodedBytes).putHeader(ENCRYPT_ID, new EncryptHeader((byte)0, symVersion, iv));
         encrypt.up(msg);
         assert observer.getUpMessages().isEmpty();
     }
@@ -109,7 +116,7 @@ public class ENCRYPTKeystoreTest {
         encrypt.setUpProtocol(observer);
         String messageText="hello this is a test message";
         byte[] bytes=messageText.getBytes();
-        byte[] encodedBytes=encrypt2.code(bytes, 0, bytes.length, false);
+        byte[] encodedBytes=encrypt2.code(bytes, 0, bytes.length, encrypt2.makeIv(), false);
         assert !new String(encodedBytes).equals(messageText);
         Message msg=new Message(null, encodedBytes);
         encrypt.up(msg);
@@ -121,7 +128,7 @@ public class ENCRYPTKeystoreTest {
         SYM_ENCRYPT encrypt=create("defaultStore.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
-        encrypt.up(new Message().putHeader(ENCRYPT_ID, new EncryptHeader("bla".getBytes())));
+        encrypt.up(new Message().putHeader(ENCRYPT_ID, new EncryptHeader((byte)0, "bla".getBytes(), encrypt.makeIv())));
         assert observer.getUpMessages().isEmpty();
     }
 
@@ -143,8 +150,8 @@ public class ENCRYPTKeystoreTest {
         assert "hello world".equals(temp);
     }
 
-    protected static SYM_ENCRYPT create(String keystore) throws Exception {
-        SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName(keystore);
+    protected SYM_ENCRYPT create(String keystore) throws Exception {
+        SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName(keystore).symAlgorithm(symAlgorithm()).symIvLength(symIvLength());
         encrypt.init();
         return encrypt;
     }

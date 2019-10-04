@@ -327,7 +327,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
                 log.trace("%s: asking %s to fetch the shared group key %s via an external key exchange protocol (srv=%s)",
                           local_addr, encr_msg.getDest() == null? "all members" : encr_msg.getDest(),
                           Util.byteArrayToHexString(sym_version), srv);
-                encr_msg.putHeader(id, new EncryptHeader(EncryptHeader.FETCH_SHARED_KEY, symVersion()).server(srv));
+                encr_msg.putHeader(id, new EncryptHeader(EncryptHeader.FETCH_SHARED_KEY, symVersion(), getIv(encr_msg)).server(srv));
             }
             else {
                 encr_msg=addKeysToMessage(encr_msg, false, add_secret_keys, include_secret_key_only_for);
@@ -359,7 +359,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             if(msg.getLength() > 0) // add the original buffer
                 out.write(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             return (copy? msg.copy(true, true) : msg).setBuffer(out.getBuffer())
-              .putHeader(id, new EncryptHeader(EncryptHeader.INSTALL_KEYS, symVersion()));
+              .putHeader(id, new EncryptHeader(EncryptHeader.INSTALL_KEYS, symVersion(), getIv(msg)));
         }
         catch(Throwable t) {
             log.error("%s: failed adding keys to message: %s", local_addr, t.getMessage());
@@ -569,17 +569,16 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         log.debug("%s: installing group key received from %s (version: %s)",
                   local_addr, sender != null? sender : "key exchange protocol", Util.byteArrayToHexString(version));
         secret_key=key;
-        initSymCiphers(key.getAlgorithm(), key);
+        initSymCiphers(sym_algorithm, key);
         sym_version=version;
         cacheGroupKey(version);
     }
 
-    /** Cache the current shared key (and its cipher) to decrypt messages encrypted with the old shared group key */
+    /** Cache the current shared key to decrypt messages encrypted with the old shared group key */
     protected void cacheGroupKey(byte[] version) throws Exception {
-        Cipher decoding_cipher=secret_key != null? decoding_ciphers.take() : null;
-        // put the previous key into the map, keep the cipher: no leak, as we'll recreate decoding_ciphers in initSymCiphers()
-        if(decoding_cipher != null)
-            key_map.putIfAbsent(new AsciiString(version), decoding_cipher);
+        // put the previous key into the map
+        if(secret_key != null)
+            key_map.putIfAbsent(new AsciiString(version), secret_key);
     }
 
     /** Encrypts the current secret key with the requester's public key (the requester will decrypt it with its private key) */
@@ -638,6 +637,13 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             e.printStackTrace();
         }
         return pubKey;
+    }
+
+    protected byte[] getIv(Message msg) {
+        EncryptHeader h=msg.getHeader(id);
+        if (h == null)
+            return null;
+        return h.iv();
     }
 
     protected enum Processing {SKIP, PROCESS, DROP}

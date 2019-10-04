@@ -39,6 +39,8 @@ public abstract class EncryptTest {
         GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
     }
 
+    protected String symAlgorithm() { return "AES"; }
+    protected int symIvLength() { return 0; }
 
     protected void init() throws Exception {
         a=create("A").connect(cluster_name).setReceiver(ra=new MyReceiver<>().rawMsgs(true));
@@ -163,11 +165,12 @@ public abstract class EncryptTest {
         encrypt.init();
 
         short encrypt_id=ClassConfigurator.getProtocolId(SYM_ENCRYPT.class);
-        EncryptHeader hdr=new EncryptHeader(encrypt.symVersion());
+        byte[] iv = encrypt.makeIv();
+        EncryptHeader hdr=new EncryptHeader((byte)0, encrypt.symVersion(), iv);
         Message msg=new Message(null).putHeader(encrypt_id, hdr);
 
         byte[] buf="hello from rogue".getBytes();
-        byte[] encrypted_buf=encrypt.code(buf, 0, buf.length, false);
+        byte[] encrypted_buf=encrypt.code(buf, 0, buf.length, iv, false);
         msg.setBuffer(encrypted_buf);
 
         rogue.send(msg);
