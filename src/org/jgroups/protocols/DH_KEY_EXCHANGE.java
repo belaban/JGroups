@@ -40,7 +40,7 @@ public class DH_KEY_EXCHANGE extends KeyExchange {
     }
 
     @Property(description="The type of secret key to be sent up the stack (converted from DH). " +
-      "Should be the same as ASYM_ENCRYPT.sym_algorithm if ASYM_ENCRYPT is used")
+      "Should be the same as the algorithm part of ASYM_ENCRYPT.sym_algorithm if ASYM_ENCRYPT is used")
     protected String                        secret_key_algorithm="AES";
 
     @Property(description="The length of the secret key (in bits) to be sent up the stack. AES requires 128 bits. " +
@@ -83,9 +83,9 @@ public class DH_KEY_EXCHANGE extends KeyExchange {
 
         ASYM_ENCRYPT asym_encrypt=findProtocolAbove(ASYM_ENCRYPT.class);
         if(asym_encrypt != null) {
-            String sym_alg=asym_encrypt.symAlgorithm();
+            String sym_alg=asym_encrypt.symKeyAlgorithm();
             int sym_keylen=asym_encrypt.symKeylength();
-            if(Util.match(sym_alg, secret_key_algorithm)) {
+            if(!Util.match(sym_alg, secret_key_algorithm)) {
                 log.warn("overriding %s=%s to %s from %s", "secret_key_algorithm", secret_key_algorithm,
                          sym_alg, ASYM_ENCRYPT.class.getSimpleName());
                 secret_key_algorithm=sym_alg;

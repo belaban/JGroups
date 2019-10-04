@@ -21,10 +21,16 @@ public class EncryptHeader extends Header {
     protected byte    type;
     protected byte[]  version;
     protected Address server; // used with FETCH_SHARED_KEY
-
+    protected byte[]  iv;
 
     public EncryptHeader() {}
 
+
+    public EncryptHeader(byte type, byte[] version, byte[] iv) {
+        this.type=type;
+        this.version=version;
+        this.iv = iv;
+    }
 
     public EncryptHeader(byte type, byte[] version) {
         this.type=type;
@@ -38,6 +44,7 @@ public class EncryptHeader extends Header {
     public byte                       type()            {return type;}
     public byte[]                     version()         {return version;}
     public Address                    server()          {return server;}
+    public byte[]                     iv()              {return iv;}
     public EncryptHeader              server(Address s) {this.server=s; return this;}
     public short                      getMagicId()      {return 88;}
     public Supplier<? extends Header> create()          {return EncryptHeader::new;}
@@ -47,6 +54,7 @@ public class EncryptHeader extends Header {
         out.writeByte(type);
         Util.writeByteBuffer(version, 0, version != null? version.length : 0, out);
         Util.writeAddress(server, out);
+        Util.writeByteBuffer(iv, 0, iv != null? iv.length : 0, out);
     }
 
     @Override
@@ -54,16 +62,18 @@ public class EncryptHeader extends Header {
         type=in.readByte();
         version=Util.readByteBuffer(in);
         server=Util.readAddress(in);
+        iv = Util.readByteBuffer(in);
     }
 
     @Override
     public String toString() {
         return String.format("%s [version=%s]",
                              typeToString(type), (version != null? Util.byteArrayToHexString(version) : "null"))
-          + (server == null? "" : " [server=" + server + "]");
+          + (server == null? "" : " [server=" + server + "]")
+          + (iv == null? "" : " [iv=" + Util.byteArrayToHexString(iv) + "]");
     }
 
-    public int serializedSize() {return Global.BYTE_SIZE + Util.size(version) + Util.size(server);}
+    public int serializedSize() {return Global.BYTE_SIZE + Util.size(version) + Util.size(server) + Util.size(iv);}
 
     protected static String typeToString(byte type) {
         switch(type) {

@@ -13,12 +13,12 @@ import org.jgroups.util.BoundedHashMap;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.spec.IvParameterSpec;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -43,6 +43,10 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
 
     @Property(description="Cipher engine transformation for symmetric algorithm. Default is AES")
     protected String                        sym_algorithm=DEFAULT_SYM_ALGO;
+
+    @Property(description="Initialization vector length for symmetric encryption. A value must be specified here " +
+      "if the configured sym_algorithm requires an initialization vector.")
+    protected int                           sym_iv_length;
 
     @Property(description="Initial public/private key length. Default is 2048")
     protected int                           asym_keylength=2048;
@@ -85,7 +89,10 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     protected volatile Key                  secret_key;
 
     // map to hold previous keys so we can decrypt some earlier messages if we need to
-    protected Map<AsciiString,Cipher>       key_map;
+    protected Map<AsciiString,Key>          key_map;
+
+    // SecureRandom instance for generating IV's
+    protected SecureRandom                  secure_random = new SecureRandom();
 
     /**
      * Sets the key store entry used to configure this protocol.
@@ -101,10 +108,16 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     public Key                      secretKey()                     {return secret_key;}
     public String                   symAlgorithm()                  {return sym_algorithm;}
     public <T extends Encrypt<E>> T symAlgorithm(String alg)        {this.sym_algorithm=alg; return (T)this;}
+    public String                   symKeyAlgorithm()               {return getAlgorithm(sym_algorithm);}
+    public int                      simIvLength()                   {return sym_iv_length;}
+    public <T extends Encrypt<E>> T symIvLength(int len)            {this.sym_iv_length=len; return (T)this;}
     public String                   asymAlgorithm()                 {return asym_algorithm;}
     public <T extends Encrypt<E>> T asymAlgorithm(String alg)       {this.asym_algorithm=alg; return (T)this;}
     public byte[]                   symVersion()                    {return sym_version;}
     public <T extends Encrypt<E>> T localAddress(Address addr)      {this.local_addr=addr; return (T)this;}
+    public SecureRandom             secureRandom()                  {return this.secure_random;}
+    /** Allows callers to replace secure_random with impl of their choice, e.g. for performance reasons. */
+    public <T extends Encrypt<E>> T secureRandom(SecureRandom sr)   {this.secure_random = sr; return (T)this;}
     @ManagedAttribute public String version()                       {return Util.byteArrayToHexString(sym_version);}
 
 
@@ -220,8 +233,8 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         BlockingQueue<Cipher> tmp_encoding_ciphers=new ArrayBlockingQueue<>(cipher_pool_size);
         BlockingQueue<Cipher> tmp_decoding_ciphers=new ArrayBlockingQueue<>(cipher_pool_size);
         for(int i=0; i < cipher_pool_size; i++ ) {
-            tmp_encoding_ciphers.offer(createCipher(Cipher.ENCRYPT_MODE, secret, algorithm));
-            tmp_decoding_ciphers.offer(createCipher(Cipher.DECRYPT_MODE, secret, algorithm));
+            tmp_encoding_ciphers.offer(createCipher(algorithm));
+            tmp_decoding_ciphers.offer(createCipher(algorithm));
         }
 
         // set the version
@@ -234,11 +247,27 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     }
 
 
-    protected Cipher createCipher(int mode, Key secret_key, String algorithm) throws Exception {
+    protected Cipher createCipher(String algorithm) throws Exception {
         Cipher cipher=provider != null && !provider.trim().isEmpty()?
           Cipher.getInstance(algorithm, provider) : Cipher.getInstance(algorithm);
-        cipher.init(mode, secret_key);
         return cipher;
+    }
+
+    protected void initCipher(Cipher cipher, int mode, Key secret_key, byte[] iv) throws Exception
+    {
+        if(iv != null)
+            cipher.init(mode, secret_key, new IvParameterSpec(iv));
+        else
+            cipher.init(mode, secret_key);
+    }
+
+    protected byte[] makeIv() {
+        if (sym_iv_length > 0) {
+            byte[] iv = new byte[sym_iv_length];
+            secure_random.nextBytes(iv);
+            return iv;
+        }
+        return null;
     }
 
     protected Object handleEncryptedMessage(Message msg) throws Exception {
@@ -271,48 +300,43 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
                        String.format("%s: rejected decryption of %s message from non-member %s",
                                      local_addr, msg.dest() == null? "multicast" : "unicast", msg.getSrc())))
                 return null;
-            cipher=key_map.get(new AsciiString(hdr.version()));
-            if(cipher == null) {
-                log.trace("%s: message from %s (version: %s) dropped, as a cipher matching that version wasn't found " +
+            Key key = key_map.get(new AsciiString(hdr.version()));
+            if(key == null) {
+                log.trace("%s: message from %s (version: %s) dropped, as a key matching that version wasn't found " +
                             "(current version: %s)",
                           local_addr, msg.src(), Util.byteArrayToHexString(hdr.version()), Util.byteArrayToHexString(sym_version));
                 return null;
             }
-            log.trace("%s: decrypting msg from %s using previous cipher version %s",
+            log.trace("%s: decrypting msg from %s using previous key version %s",
                       local_addr, msg.src(), Util.byteArrayToHexString(hdr.version()));
-            return _decrypt(cipher, msg);
+            return _decrypt(cipher, key, msg, hdr.iv());
         }
-        return _decrypt(cipher, msg);
+        return _decrypt(cipher, secret_key, msg, hdr.iv());
     }
 
-    protected Message _decrypt(final Cipher cipher, Message msg) throws Exception {
+    protected Message _decrypt(final Cipher cipher, Key key, Message msg, byte[] iv) throws Exception {
         if(msg.getLength() == 0)
             return msg;
 
         byte[] decrypted_msg;
         if(cipher == null)
-            decrypted_msg=code(msg.getRawBuffer(), msg.getOffset(), msg.getLength(), true);
-        else
-            try {
-                decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-            }
-            catch(BadPaddingException | IllegalBlockSizeException e) {
-                //  if any exception is thrown, this cipher object may need to be reset before it can be used again.
-                cipher.init(Cipher.DECRYPT_MODE, secret_key);
-                throw e;
-            }
+            decrypted_msg=code(msg.getRawBuffer(), msg.getOffset(), msg.getLength(), iv, true);
+        else {
+            initCipher(cipher, Cipher.DECRYPT_MODE, key, iv);
+            decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+        }
         return msg.setBuffer(decrypted_msg);
     }
 
     protected Message encrypt(Message msg) throws Exception {
-        EncryptHeader hdr=new EncryptHeader(symVersion());
+        EncryptHeader hdr=new EncryptHeader((byte)0, symVersion(), makeIv());
 
         // copy needed because same message (object) may be retransmitted -> prevent double encryption
         Message msgEncrypted=msg.copy(false).putHeader(this.id, hdr);
         byte[] payload=msg.getRawBuffer();
         if(payload != null) {
             if(msg.getLength() > 0)
-                msgEncrypted.setBuffer(code(payload, msg.getOffset(), msg.getLength(),false));
+                msgEncrypted.setBuffer(code(payload, msg.getOffset(), msg.getLength(), hdr.iv(), false));
             else // length is 0, but buffer may be "" (empty, but *not null* buffer)! [JGRP-2153]
                 msgEncrypted.setBuffer(payload, msg.getOffset(), msg.getLength());
         }
@@ -324,16 +348,12 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     }
 
 
-    protected byte[] code(byte[] buf, int offset, int length, boolean decode) throws Exception {
+    protected byte[] code(byte[] buf, int offset, int length, byte[] iv, boolean decode) throws Exception {
         BlockingQueue<Cipher> queue=decode? decoding_ciphers : encoding_ciphers;
         Cipher cipher=queue.take();
         try {
+            initCipher(cipher, decode ? Cipher.DECRYPT_MODE : Cipher.ENCRYPT_MODE, secret_key, iv);
             return cipher.doFinal(buf, offset, length);
-        }
-        catch(BadPaddingException | IllegalBlockSizeException e) {
-            //  if any exception is thrown, this cipher object may need to be reset before it can be used again.
-            cipher.init(decode ? Cipher.DECRYPT_MODE : Cipher.ENCRYPT_MODE, secret_key);
-            throw e;
         }
         finally {
             queue.offer(cipher);
@@ -347,7 +367,14 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         return index == -1? s : s.substring(0, index);
     }
 
-
+    /* Get the mode/padding part of the transformation, if present */
+    protected static String getModeAndPadding(String s) {
+        int index=s.indexOf('/');
+        String modeAndPadding = index == -1? null : s.substring(index + 1);
+        if (modeAndPadding == null || modeAndPadding.isEmpty())
+            return null;
+        return modeAndPadding;
+    }
 
     /** Decrypts all messages in a batch, replacing encrypted messages in-place with their decrypted versions */
     protected class Decrypter implements BiConsumer<Message,MessageBatch> {

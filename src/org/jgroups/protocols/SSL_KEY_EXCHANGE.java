@@ -81,7 +81,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected String          keystore_password="changeit";
 
     @Property(description="The type of secret key to be sent up the stack (converted from DH). " +
-      "Should be the same as ASYM_ENCRYPT.sym_algorithm if ASYM_ENCRYPT is used")
+      "Should be the same as the algorithm part of ASYM_ENCRYPT.sym_algorithm if ASYM_ENCRYPT is used")
     protected String          secret_key_algorithm="AES";
 
     @Property(description="If enabled, clients are authenticated as well (not just the server). Set to true to prevent " +
@@ -152,7 +152,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
             throw new IllegalStateException("port must not be 0 or else clients will not be able to connect");
         ASYM_ENCRYPT asym_encrypt=findProtocolAbove(ASYM_ENCRYPT.class);
         if(asym_encrypt != null) {
-            String sym_alg=asym_encrypt.symAlgorithm();
+            String sym_alg=asym_encrypt.symKeyAlgorithm();
             if(!Util.match(sym_alg, secret_key_algorithm)) {
                 log.warn("%s: overriding %s=%s to %s from %s", "secret_key_algorithm", local_addr, secret_key_algorithm,
                          sym_alg, ASYM_ENCRYPT.class.getSimpleName());

@@ -277,7 +277,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
           // omit MERGE3 from the stack -- nodes are leaving gracefully
           new SSL_KEY_EXCHANGE().setKeystoreName(KEYSTORE).setKeystorePassword(KEYSTORE_PWD).setPortRange(10),
           new ASYM_ENCRYPT().setUseExternalKeyExchange(useExternalKeyExchange())
-            .symKeylength(128).symAlgorithm("AES").asymKeylength(512).asymAlgorithm("RSA"),
+            .symKeylength(128).symAlgorithm(symAlgorithm()).symIvLength(symIvLength()).asymKeylength(512).asymAlgorithm("RSA"),
           new NAKACK2().setUseMcastXmit(false),
           new UNICAST3(),
           new STABLE(),

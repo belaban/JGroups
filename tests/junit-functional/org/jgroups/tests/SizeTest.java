@@ -630,9 +630,9 @@ public class SizeTest {
 
 
     public void testEncryptHeader() throws Exception {
-        EncryptHeader hdr=new EncryptHeader(new byte[]{'b','e', 'l', 'a'});
+        EncryptHeader hdr=new EncryptHeader((byte)0, new byte[]{'b','e', 'l', 'a'}, new byte[]{'b', 'a', 'n'});
         _testSize(hdr);
-        hdr=new EncryptHeader("Hello".getBytes());
+        hdr=new EncryptHeader((byte)0, "Hello".getBytes(), "World".getBytes());
         _testSize(hdr);
     }
 
