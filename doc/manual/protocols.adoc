@@ -1881,7 +1881,8 @@ SYM_ENCRYPT could then be configured as follows:
 
 [source,xml]
 ----
-<SYM_ENCRYPT sym_algorithm="AES"
+<SYM_ENCRYPT sym_algorithm="AES/CBC/PKCS5Padding"
+             sym_iv_length="16"
              key_store_name="defaultStore.keystore"
              store_password="changeit"
              alias="myKey"/>
@@ -1916,7 +1917,8 @@ A stack configured to use asymmetric encryption could look like this:
     <VERIFY_SUSPECT/>
     <ASYM_ENCRYPT
              sym_keylength="128"
-             sym_algorithm="AES/ECB/PKCS5Padding"
+             sym_algorithm="AES/CBC/PKCS5Padding"
+             sym_iv_length="16"
              asym_keylength="512"
              asym_algorithm="RSA"/>
 
@@ -1990,7 +1992,8 @@ Here's a typical configuration:
     <ASYM_ENCRYPT
             use_external_key_exchange="true" // <1>
             sym_keylength="128"
-            sym_algorithm="AES"
+            sym_algorithm="AES/CBC/PKCS5Padding"
+            sym_iv_length="16"
             asym_keylength="512"
             asym_algorithm="RSA"/>
 

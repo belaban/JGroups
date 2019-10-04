@@ -14,7 +14,8 @@
     <!-- Symmetric encryption with a keystore -->
     <SYM_ENCRYPT
         provider="SunJCE"
-        sym_algorithm="AES"
+        sym_algorithm="AES/CBC/PKCS5Padding"
+        sym_iv_length="16"
         keystore_name="/home/bela/JGroups/keystore/defaultStore.keystore"
         store_password="changeit" alias="myKey"/>
     <pbcast.NAKACK2/>
