@@ -20,7 +20,8 @@
     <!-- Asymmetric encryption using public/private encryption to fetch the shared secret key -->
     <ASYM_ENCRYPT
             sym_keylength="128"
-            sym_algorithm="AES/ECB/PKCS5Padding"
+            sym_algorithm="AES/CBC/PKCS5Padding"
+            sym_iv_length="16"
             asym_keylength="512"
             asym_algorithm="RSA"/>
     <pbcast.NAKACK2/>

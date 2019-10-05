@@ -18,7 +18,8 @@
             change_key_on_coord_leave="true"
             use_external_key_exchange="true"
             sym_keylength="128"
-            sym_algorithm="AES"
+            sym_algorithm="AES/CBC/PKCS5Padding"
+            sym_iv_length="16"
             asym_keylength="512"
             asym_algorithm="RSA"/>
     <pbcast.NAKACK2 use_mcast_xmit="false"/>
