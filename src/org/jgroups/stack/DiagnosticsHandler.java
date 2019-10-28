@@ -177,8 +177,16 @@ public class DiagnosticsHandler extends ReceiverAdapter {
             udp_ucast_sock=socket_factory.createDatagramSocket("jgroups.tp.diag.udp_ucast_sock");
 
         if(udp_mcast_sock == null || udp_mcast_sock.isClosed()) {
-            udp_mcast_sock=socket_factory.createMulticastSocket("jgroups.tp.diag.udp_mcast_sock",
-                                                                new InetSocketAddress(diagnostics_addr, diagnostics_port));
+            // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
+            // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
+
+            // If possible, the MulticastSocket(SocketAddress) ctor is used which binds to diagnostics_addr:diagnostics_port.
+            // This acts like a filter, dropping multicasts to different multicast addresses
+            if(Util.can_bind_to_mcast_addr)
+                udp_mcast_sock=Util.createMulticastSocket(socket_factory, "jgroups.tp.diag.udp_mcast_sock",
+                                                          diagnostics_addr, diagnostics_port, log);
+            else
+                udp_mcast_sock=socket_factory.createMulticastSocket("jgroups.tp.diag.udp_mcast_sock", diagnostics_port);
             try {
                 udp_mcast_sock.setTimeToLive(ttl);
             }

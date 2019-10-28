@@ -56,12 +56,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public static final    byte    MULTICAST=2; // message is a multicast (versus a unicast) message when set
     public static final    int     MSG_OVERHEAD=Global.SHORT_SIZE + Global.BYTE_SIZE; // version + flags
     protected static final long    MIN_WAIT_BETWEEN_DISCOVERIES=TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);  // ns
-    protected static final boolean can_bind_to_mcast_addr;
-
-    static {
-        can_bind_to_mcast_addr=(Util.checkForLinux() && !Util.checkForAndroid())
-          || Util.checkForSolaris() || Util.checkForHp() || Util.checkForMac();
-    }
 
 
     /* ------------------------------------------ JMX and Properties  ------------------------------------------ */

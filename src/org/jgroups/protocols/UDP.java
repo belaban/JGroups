@@ -370,7 +370,7 @@ public class UDP extends TP {
 
             // If possible, the MulticastSocket(SocketAddress) ctor is used which binds to mcast_addr:mcast_port.
             // This acts like a filter, dropping multicasts to different multicast addresses
-            if(can_bind_to_mcast_addr)
+            if(Util.can_bind_to_mcast_addr)
                 mcast_sock=Util.createMulticastSocket(getSocketFactory(), "jgroups.udp.mcast_sock", mcast_group_addr, mcast_port, log);
             else
                 mcast_sock=getSocketFactory().createMulticastSocket("jgroups.udp.mcast_sock", mcast_port);

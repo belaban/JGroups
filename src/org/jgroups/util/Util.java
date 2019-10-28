@@ -97,6 +97,7 @@ public class Util {
 
     private static boolean          ipv4_stack_available=false, ipv6_stack_available=false;
     private static final StackType  ip_stack_type=_getIpStackType();
+    public static final boolean     can_bind_to_mcast_addr;
     protected static ResourceBundle resource_bundle;
 
 
@@ -113,6 +114,9 @@ public class Util {
         PRIMITIVE_TYPES.put(Short.class,TYPE_SHORT);
         PRIMITIVE_TYPES.put(String.class,TYPE_STRING);
         PRIMITIVE_TYPES.put(byte[].class,TYPE_BYTEARRAY);
+
+        can_bind_to_mcast_addr=(Util.checkForLinux() && !Util.checkForAndroid())
+          || Util.checkForSolaris() || Util.checkForHp() || Util.checkForMac();
 
         try {
             String cchm_initial_capacity=System.getProperty(Global.CCHM_INITIAL_CAPACITY);
