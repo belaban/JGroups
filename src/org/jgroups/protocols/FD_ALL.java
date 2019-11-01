@@ -423,8 +423,13 @@ public class FD_ALL extends Protocol {
         }
     }
 
+    // for testing purpose
+    public int getTimestampsKeySize() {
+        return timestamps.keySet().size();
+    }
 
-    class TimeoutChecker implements Runnable {
+    // public for testing purpose
+    public class TimeoutChecker implements Runnable {
 
         public void run() {                        
             synchronized(this) {
