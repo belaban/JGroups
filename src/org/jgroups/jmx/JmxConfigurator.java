@@ -167,10 +167,9 @@ public final class JmxConfigurator {
         try {
             ObjectName objName = getObjectName(obj, name);
             if(server.isRegistered(objName)) {
-                String suffix=obj instanceof Protocol?
-                  "-" + ((Protocol)obj).getId() :
-                  "duplicate-" + Util.random((long)Short.MAX_VALUE * 2);
-                objName=getObjectName(obj, name+suffix);
+                long id=obj instanceof Protocol? ((Protocol)obj).getId() : Util.random((long)Short.MAX_VALUE * 2);
+                String suffix="duplicate=" + id;
+                objName=getObjectName(obj, name + "," + suffix);
             }
             ResourceDMBean res=new ResourceDMBean(obj);
             server.registerMBean(res, objName);

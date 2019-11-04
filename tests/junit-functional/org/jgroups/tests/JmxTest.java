@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
+import org.jgroups.JChannel;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
@@ -91,6 +92,14 @@ public class JmxTest {
         assert (int)val == 0;
     }
 
+    /** Tests https://issues.jboss.org/browse/JGRP-2393 */
+    public void testDuplicateName() throws Exception {
+        try(JChannel ch=new JChannel(Util.getTestStack()).name("A")) {
+            JmxConfigurator.registerChannel(ch, server, "domain", "cluster", false);
+            JmxConfigurator.registerChannel(ch, server, "domain", "cluster", false);
+        }
+    }
+
 
     protected void check(String attr_name, boolean writable) throws Exception {
         check(attr_name, writable, null, null);
@@ -103,8 +112,7 @@ public class JmxTest {
         System.out.println(attr_name + ": " + info);
         assert info.isWritable() == writable;
         Object val=getAttribute(attr_name);
-        if(expected_value != null)
-            assert val.equals(expected_value) : "value of \"" + attr_name + "\" is " + val + ", but expected " + expected_value;
+        assert expected_value == null || val.equals(expected_value) : "value of \"" + attr_name + "\" is " + val + ", but expected " + expected_value;
         if(new_value == null || !isWritable(attr_name))
             return;
         setAttribute(attr_name, new_value);
@@ -158,7 +166,7 @@ public class JmxTest {
 
     protected static class Parent {
         @SuppressWarnings("FieldMayBeFinal")
-        @ManagedAttribute(description="age",writable=false)
+        @ManagedAttribute(description="age")
         private short age=22;   // exposed as read-only 'age'
 
         @ManagedAttribute(description="age2",writable=true)
@@ -183,10 +191,10 @@ public class JmxTest {
         protected String  first_name="Jeannette";
         protected boolean flag=true;
 
-        @Property(name="Another",writable=true)
+        @Property(name="Another")
         protected boolean another_flag;
 
-        @Property(writable=true)
+        @Property()
         protected boolean javaStyleFlag=true;
 
         public String firstName()                   {return first_name;}
@@ -233,7 +241,7 @@ public class JmxTest {
 
         @ManagedOperation(description="say name")
         public static void sayName() {
-            System.out.printf("hello world\n");
+            System.out.println("hello world");
         }
 
         @ManagedOperation(description="foo")
