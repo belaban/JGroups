@@ -15,6 +15,7 @@ import org.testng.annotations.Test;
 
 import javax.management.*;
 import java.util.Date;
+import java.util.Set;
 
 /**
  * Tests exposing attributes and operations via JMX using annotations (@ManagedAttribute, @ManagedOperation)
@@ -102,8 +103,16 @@ public class JmxTest {
 
     public void testPrefix() throws Exception {
         try(JChannel ch=new JChannel(Util.getTestStack()).name("A")) {
-            JmxConfigurator.registerChannel(ch, server, new ObjectName("domain:type=server"), "cluster", true);
-            JmxConfigurator.registerChannel(ch, server, new ObjectName("domain:type=server"), "cluster", true);
+            JmxConfigurator.registerChannel(ch, server, new ObjectName("domain:userProvided=test42"), "cluster", true);
+            JmxConfigurator.registerChannel(ch, server, new ObjectName("domain:userProvided=test42"), "cluster", true);
+
+            Set<ObjectName> objectNames = server.queryNames(new ObjectName("domain:userProvided=test42,type=channel,*"), null);
+            assert objectNames.size() == 2;
+
+            JmxConfigurator.unregisterChannel(ch, server, new ObjectName("domain:userProvided=test42"), "cluster");
+
+            objectNames = server.queryNames(new ObjectName("domain:userProvided=test42,type=channel,*"), null);
+            assert objectNames.size() == 1;  // the duplicate is still registered
         }
     }
 

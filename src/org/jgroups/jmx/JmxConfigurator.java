@@ -132,6 +132,26 @@ public final class JmxConfigurator {
         unregister(c, server, getChannelRegistrationName(domain, clusterName));
     }
 
+    public static void unregisterChannel(JChannel c, MBeanServer server, ObjectName prefix, String clusterName)
+                    throws Exception {
+
+        if(clusterName != null)
+            clusterName=ObjectName.quote(clusterName);
+
+        ProtocolStack stack = c.getProtocolStack();
+        List<Protocol> protocols = stack.getProtocols();
+        for (Protocol p : protocols) {
+            if (p.getClass().isAnnotationPresent(MBean.class)) {
+                try {
+                    String obj_name = getProtocolRegistrationName(clusterName, prefix, p);
+                    unregister(p, server, obj_name);
+                } catch (MBeanRegistrationException e) {
+                    log.warn("MBean unregistration failed: " + e.getCause());
+                }
+            }
+        }
+        unregister(c, server, getChannelRegistrationName(prefix, clusterName));
+    }
 
     public static void register(Object obj, MBeanServer server, String name)
                     throws MBeanRegistrationException, MalformedObjectNameException {
@@ -244,7 +264,7 @@ public final class JmxConfigurator {
     }
 
     private static String getChannelRegistrationName(ObjectName prefix, String clusterName) {
-        return prefix + ",cluster=" + clusterName;
+        return prefix + ",type=channel,cluster=" + clusterName;
     }
 
     private static String getProtocolRegistrationName(String clusterName, String domain, Protocol p) {
@@ -252,10 +272,6 @@ public final class JmxConfigurator {
     }
 
     private static String getProtocolRegistrationName(String clusterName, ObjectName prefix, Protocol p) {
-        return prefix + ",cluster=" + clusterName + ",protocol=" + p.getName();
-    }
-
-    private static String getChannelRegistrationName(String clusterName) {
-        return "jgroups:type=channel,cluster=" + clusterName;
+        return prefix + ",type=protocol,cluster=" + clusterName + ",protocol=" + p.getName();
     }
 }
