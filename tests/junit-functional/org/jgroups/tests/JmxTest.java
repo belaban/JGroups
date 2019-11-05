@@ -100,6 +100,12 @@ public class JmxTest {
         }
     }
 
+    public void testPrefix() throws Exception {
+        try(JChannel ch=new JChannel(Util.getTestStack()).name("A")) {
+            JmxConfigurator.registerChannel(ch, server, new ObjectName("domain:type=server"), "cluster", true);
+            JmxConfigurator.registerChannel(ch, server, new ObjectName("domain:type=server"), "cluster", true);
+        }
+    }
 
     protected void check(String attr_name, boolean writable) throws Exception {
         check(attr_name, writable, null, null);

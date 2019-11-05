@@ -26,20 +26,16 @@ public final class JmxConfigurator {
 
     /**
      * Registers an already created channel with the given MBeanServer. Wraps instance of JChannel
-     * with DynamicMBean and delegates all calls to the actual JChannel wrapped.
-     * <p>
+     * with DynamicMBean and delegates all calls to the actual JChannel wrapped.<br/>
      * Optionally, this method will also wrap each protocol in the given channel with DynamicMBean
      * and register it as well.
-     * 
-     * @param channel
-     * @param server
-     * @param domain
-     *            Has to be a JMX ObjectName of the domain, e.g. DefaultDomain:name=JGroups
-     * @param register_protocols
+     * @param channel The channel
+     * @param server The MBeanServer
+     * @param domain Has to be a JMX ObjectName of the domain, e.g. DefaultDomain:name=JGroups
+     * @param register_protocols Whether or not to register the protocols, too
      */
     public static void registerChannel(JChannel channel, MBeanServer server, String domain,
                     String cluster_name, boolean register_protocols) throws Exception {
-
         if(channel == null)
             throw new NullPointerException("channel cannot be null");
         if (cluster_name == null)
@@ -64,19 +60,40 @@ public final class JmxConfigurator {
 
     /**
      * Registers an already created channel with the given MBeanServer. Wraps instance of JChannel
-     * with DynamicMBean and delegates all calls to the actual JChannel wrapped.
-     * <p>
+     * with DynamicMBean and delegates all calls to the actual JChannel wrapped.<br/>
      * This method will also wrap each protocol in the given channel with DynamicMBean and register
      * it as well.
-     * 
-     * @param channel
-     * @param server
-     * @param name
-     *            Has to be a JMX ObjectName of the domain, e.g. DefaultDomain:name=JGroups
+     * @param channel The channel
+     * @param server The MBeanServer
+     * @param name Has to be a JMX ObjectName of the domain, e.g. DefaultDomain:name=JGroups
      */
     public static void registerChannel(JChannel channel, MBeanServer server, String name)
                     throws Exception {
         registerChannel(channel, server, "jgroups", name, true);
+    }
+
+    public static void registerChannel(JChannel ch, MBeanServer server, ObjectName namePrefix,
+                                       String cluster_name, boolean register_protocols) throws Exception {
+        if(ch == null)
+            throw new NullPointerException("channel cannot be null");
+        if (cluster_name == null)
+            cluster_name=ch.getClusterName();
+        if (cluster_name == null)
+            cluster_name = "null";
+
+        cluster_name=ObjectName.quote(cluster_name);
+
+        if (register_protocols) {
+            ProtocolStack stack = ch.getProtocolStack();
+            List<Protocol> protocols = stack.getProtocols();
+            for (Protocol p : protocols) {
+                if (p.getClass().isAnnotationPresent(MBean.class)) {
+                    String jmx_name=getProtocolRegistrationName(cluster_name,namePrefix,p);
+                    register(p, server, jmx_name);
+                }
+            }
+        }
+        register(ch, server, getChannelRegistrationName(namePrefix, cluster_name));
     }
 
     public static void unregisterChannel(MBeanServer server, ObjectName name) throws Exception {
@@ -226,8 +243,16 @@ public final class JmxConfigurator {
         return domain + ":type=channel,cluster=" + clusterName;
     }
 
+    private static String getChannelRegistrationName(ObjectName prefix, String clusterName) {
+        return prefix + ",cluster=" + clusterName;
+    }
+
     private static String getProtocolRegistrationName(String clusterName, String domain, Protocol p) {
         return domain + ":type=protocol,cluster=" + clusterName + ",protocol=" + p.getName();
+    }
+
+    private static String getProtocolRegistrationName(String clusterName, ObjectName prefix, Protocol p) {
+        return prefix + ",cluster=" + clusterName + ",protocol=" + p.getName();
     }
 
     private static String getChannelRegistrationName(String clusterName) {
