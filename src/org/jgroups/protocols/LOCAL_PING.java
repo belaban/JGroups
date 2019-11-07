@@ -24,7 +24,7 @@ import java.util.function.Function;
 public class LOCAL_PING extends Discovery {
     /** Map of cluster names and address-protocol mappings. Used for routing messages to all or single members */
     protected static final Map<String,List<PingData>>      discovery=new ConcurrentHashMap<>();
-    protected static final Function<String,List<PingData>> func=k -> new ArrayList<>();
+    protected static final Function<String,List<PingData>> FUNC=k -> new ArrayList<>();
 
     public boolean isDynamic() {
         return true;
@@ -35,9 +35,9 @@ public class LOCAL_PING extends Discovery {
     }
 
     @ManagedOperation(description="Dumps the contents of the discovery cache")
-    public String print() {
+    public static String print() {
         StringBuilder sb=new StringBuilder();
-        synchronized(this) {
+        synchronized(discovery) {
             for(Map.Entry<String,List<PingData>> e : discovery.entrySet())
                 sb.append(e.getKey()).append(": ").append(e.getValue()).append("\n");
         }
@@ -46,7 +46,9 @@ public class LOCAL_PING extends Discovery {
 
     @ManagedAttribute(description="Number of keys in the discovery cache")
     public static int getDiscoveryCacheSize() {
-        return discovery.size();
+        synchronized(discovery) {
+            return discovery.size();
+        }
     }
 
     public Responses findMembers(List<Address> members, boolean initial_discovery, boolean async, long timeout) {
@@ -56,17 +58,16 @@ public class LOCAL_PING extends Discovery {
     @Override
     public void findMembers(List<Address> members, boolean initial_discovery, Responses responses) {
         num_discovery_requests++;
-        List<PingData> list=discovery.get(cluster_name);
         synchronized(discovery) {
-            if(list != null && !list.isEmpty()) {
-                list.stream().filter(el -> !el.sender.equals(local_addr))
-                  .forEach(d -> {
-                      addAddressToLocalCache(d.sender, d.physical_addr);
-                      responses.addResponse(d, false);
-                  });
+            List<PingData> list=discovery.get(cluster_name);
+            if(list != null) {
+                list.forEach(d -> {
+                    addAddressToLocalCache(d.sender, d.physical_addr);
+                    responses.addResponse(d, false);
+                });
             }
         }
-        responses.done(); // so waitFor() doesn't block at all
+        // responses.done(); // so waitFor() doesn't block at all
     }
 
     public Object down(Event evt) {
@@ -76,8 +77,8 @@ public class LOCAL_PING extends Discovery {
             Object retval=super.down(evt);
 
             // synchronize TP.logical_addr_cache with discovery cache
-            List<PingData> list=discovery.get(cluster_name);
             synchronized(discovery) {
+                List<PingData> list=discovery.get(cluster_name);
                 if(list != null && !list.isEmpty()) {
                     for(PingData d : list) {
                         Address mbr=d.getAddress();
@@ -110,8 +111,13 @@ public class LOCAL_PING extends Discovery {
         PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
         if(physical_addr != null) {
             PingData data=new PingData(local_addr, is_server, logical_name, physical_addr);
-            final List<PingData> list=discovery.computeIfAbsent(cluster_name, func);
             synchronized(discovery) {
+                final List<PingData> list=discovery.computeIfAbsent(cluster_name, FUNC);
+                if(list.isEmpty()) {
+                    // the first member will become coord (may be changed by view changes/merges later)
+                    // https://issues.jboss.org/browse/JGRP-2395
+                    data.coord(true);
+                }
                 list.add(data);
             }
         }
@@ -120,10 +126,10 @@ public class LOCAL_PING extends Discovery {
     public void handleDisconnect() {
         if(local_addr == null || cluster_name == null)
             return;
-        List<PingData> list=discovery.get(cluster_name);
-        if(list != null) {
-            synchronized(discovery) {
-                list.removeIf(p -> local_addr.equals(p.getAddress()));
+        synchronized(discovery) {
+            List<PingData> list=discovery.get(cluster_name);
+            if(list != null) {
+                list.removeIf(p -> Objects.equals(local_addr, p.getAddress()));
                 if(list.isEmpty())
                     discovery.remove(cluster_name);
             }

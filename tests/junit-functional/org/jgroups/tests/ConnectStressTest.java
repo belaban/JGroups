@@ -42,7 +42,7 @@ public class ConnectStressTest {
         }
     }
 
-    @AfterMethod protected void destroy() {Util.close(channels);}
+    @AfterMethod protected void destroy() {Util.closeFast(channels);}
 
 
     public void testConcurrentJoining() throws Exception {
@@ -102,7 +102,7 @@ public class ConnectStressTest {
         }
     }
 
-    protected JChannel createChannel(String name) throws Exception {
+    protected static JChannel createChannel(String name) throws Exception {
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
                             new MERGE3().setValue("min_interval", 2000).setValue("max_interval", 5000),

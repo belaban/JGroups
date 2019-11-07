@@ -9,6 +9,7 @@ import org.jgroups.protocols.PingData;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Responses;
+import org.jgroups.util.Util;
 
 import java.util.*;
 
@@ -77,8 +78,12 @@ public class ClientGmsImpl extends GmsImpl {
             responses.waitFor(gms.join_timeout);
             responses.done();
             long diff=System.currentTimeMillis() - start;
-            if(responses.isEmpty()) {
-                log.info("%s: no members discovered after %d ms: creating cluster as first member", gms.local_addr, diff);
+            boolean empty;
+            if((empty=responses.isEmpty()) || responses.isCoord(gms.local_addr)) {
+                String m=String.format("%s: %s: creating cluster as coordinator", gms.local_addr,
+                                       empty? String.format("no members discovered after %d ms", diff)
+                                         : "I'm the first member");
+                log.info(m);
                 becomeSingletonMember(mbr);
                 return;
             }
@@ -164,13 +169,13 @@ public class ClientGmsImpl extends GmsImpl {
         log.trace("%s: nodes to choose new coord from are: %s", gms.local_addr, clients);
         Address new_coord=clients.first();
         if(new_coord.equals(joiner)) {
-            log.trace("%s: I (%s) am the first of the nodes, will become coordinator", gms.local_addr, joiner);
+            log.trace("%s: I'm the FIRST of the nodes, will become coordinator", gms.local_addr);
             becomeSingletonMember(joiner);
             return true;
         }
-        log.trace("%s: I (%s) am not the first of the nodes, waiting for another client to become coordinator",
-                  gms.local_addr, joiner);
-        // Util.sleep(500);
+        log.trace("%s: I'm not the first of the nodes, waiting for %d ms for another client to become coordinator",
+                  gms.local_addr, gms.all_clients_retry_timeout);
+        Util.sleep(gms.all_clients_retry_timeout);
         return false;
     }
 
@@ -253,6 +258,6 @@ public class ClientGmsImpl extends GmsImpl {
         gms.getUpProtocol().up(new Event(Event.BECOME_SERVER));
         gms.getDownProtocol().down(new Event(Event.BECOME_SERVER));
         log.debug("%s: created cluster (first member). My view is %s, impl is %s",
-                  gms.getLocalAddress(), gms.getViewId(), gms.getImpl().getClass().getName());
+                  gms.getLocalAddress(), gms.getViewId(), gms.getImpl().getClass().getSimpleName());
     }
 }

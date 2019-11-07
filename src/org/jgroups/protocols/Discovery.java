@@ -448,7 +448,7 @@ public abstract class Discovery extends Protocol {
 
                     UUID uuid=null;
                     try {
-                        long tmp=Long.valueOf(uuid_str);
+                        long tmp=Long.parseLong(uuid_str);
                         uuid=new UUID(0, tmp);
                     }
                     catch(Throwable t) {

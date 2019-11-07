@@ -13,70 +13,71 @@ import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 /**
- * Loopback transport shared by all channels within the same VM. Property for testing is that no messages are lost. Allows
- * us to test various protocols (with ProtocolTester) at maximum speed.
+ * Loopback transport shared by all channels within the same VM. Property for testing is that no messages are lost.
+ * Allows us to test various protocols at maximum speed.
  * @author Bela Ban
  */
 public class SHARED_LOOPBACK extends TP {
-    protected short            port=1;
-    protected PhysicalAddress  physical_addr;
+    protected short port=1;
+    protected PhysicalAddress physical_addr;
 
     @ManagedAttribute(description="The current view")
-    protected volatile View    curr_view;
+    protected volatile View curr_view;
 
     protected volatile boolean is_server=false, is_coord=false;
 
-    /** Map of cluster names and address-protocol mappings. Used for routing messages to all or single members */
-    private static final ConcurrentMap<AsciiString,Map<Address,SHARED_LOOPBACK>> routing_table=new ConcurrentHashMap<>();
+    /**
+     * Map of cluster names and address-protocol mappings. Used for routing messages to all or single members
+     */
+    protected static final Map<AsciiString,Map<Address,SHARED_LOOPBACK>>      routing_table=new HashMap<>();
+    protected static final Function<AsciiString,Map<Address,SHARED_LOOPBACK>> FUNC=n -> new HashMap();
 
-
-    public boolean supportsMulticasting() {
-        return true; // kind of...
-    }
-
-    public View    getView()  {return curr_view;}
-    public boolean isServer() {return is_server;}
-    public boolean isCoord()  {return is_coord;}
-
-    public String toString() {
-        return "SHARED_LOOPBACK(local address: " + local_addr + ')';
-    }
+    public boolean supportsMulticasting()   {return true;} // kind of...
+    public View    getView()                {return curr_view;}
+    public boolean isServer()               {return is_server;}
+    public boolean isCoord()                {return is_coord;}
+    public SHARED_LOOPBACK coord(boolean b) {this.is_coord=is_server=b; return this;}
+    public String  toString()               {return "SHARED_LOOPBACK(local address: " + local_addr + ')';}
 
     @ManagedOperation(description="Dumps the contents of the routing table")
     public static String dumpRoutingTable() {
         StringBuilder sb=new StringBuilder();
-        for(Map.Entry<AsciiString,Map<Address,SHARED_LOOPBACK>> entry: routing_table.entrySet()) {
-            AsciiString cluster_name=entry.getKey();
-            Set<Address> mbrs=entry.getValue().keySet();
-            sb.append(cluster_name).append(": ").append(mbrs).append("\n");
+        synchronized(routing_table) {
+            for(Map.Entry<AsciiString,Map<Address,SHARED_LOOPBACK>> entry : routing_table.entrySet()) {
+                AsciiString cluster_name=entry.getKey();
+                Set<Address> mbrs=entry.getValue().keySet();
+                sb.append(cluster_name).append(": ").append(mbrs).append("\n");
+            }
         }
         return sb.toString();
     }
 
 
     public void sendMulticast(byte[] data, int offset, int length) throws Exception {
-        Map<Address,SHARED_LOOPBACK> dests=routing_table.get(this.cluster_name);
-        if(dests == null) {
-            log.trace("no destination found for " + this.cluster_name);
-            return;
+        List<SHARED_LOOPBACK> targets;
+        synchronized(routing_table) {
+            Map<Address,SHARED_LOOPBACK> dests=routing_table.get(this.cluster_name);
+            if(dests == null) {
+                log.trace("no destination found for " + this.cluster_name);
+                return;
+            }
+            targets=dests.entrySet().stream().filter(e -> !Objects.equals(local_addr, e.getKey()))
+              .map(Map.Entry::getValue).collect(Collectors.toList());
         }
-        for(Map.Entry<Address,SHARED_LOOPBACK> entry: dests.entrySet()) {
-            Address dest=entry.getKey();
-            SHARED_LOOPBACK target=entry.getValue();
-            if(Objects.equals(local_addr, dest))
-                continue; // message was already looped back
+
+        targets.forEach(target -> {
             try {
                 target.receive(local_addr, data, offset, length);
             }
             catch(Throwable t) {
-                log.error(Util.getMessage("FailedSendingMessageTo") + dest, t);
+                log.error(Util.getMessage("FailedSendingMessageTo") + target.localAddress(), t);
             }
-        }
+        });
     }
 
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
@@ -84,15 +85,18 @@ public class SHARED_LOOPBACK extends TP {
     }
 
     protected void sendToSingleMember(Address dest, byte[] buf, int offset, int length) throws Exception {
-        Map<Address,SHARED_LOOPBACK> dests=routing_table.get(cluster_name);
-        if(dests == null) {
-            log.trace("no destination found for " + cluster_name);
-            return;
-        }
-        SHARED_LOOPBACK target=dests.get(dest);
-        if(target == null) {
-            log.trace("%s: destination address %s not found, routing table:\n%s\n", local_addr, dest, dumpRoutingTable());
-            return;
+        SHARED_LOOPBACK target;
+        synchronized(routing_table) {
+            Map<Address,SHARED_LOOPBACK> dests=routing_table.get(cluster_name);
+            if(dests == null) {
+                log.trace("no destination found for " + cluster_name);
+                return;
+            }
+            target=dests.get(dest);
+            if(target == null) {
+                log.trace("%s: destination address %s not found, routing table:\n%s\n", local_addr, dest, dumpRoutingTable());
+                return;
+            }
         }
         target.receive(local_addr, buf, offset, length);
     }
@@ -101,14 +105,16 @@ public class SHARED_LOOPBACK extends TP {
     public static List<PingData> getDiscoveryResponsesFor(String cluster_name) {
         if(cluster_name == null)
             return null;
-        Map<Address,SHARED_LOOPBACK> mbrs=routing_table.get(new AsciiString(cluster_name));
-        List<PingData> rsps=new ArrayList<>(mbrs != null? mbrs.size() : 0);
-        if(mbrs != null) {
-            for(Map.Entry<Address,SHARED_LOOPBACK> entry: mbrs.entrySet()) {
-                Address addr=entry.getKey();
-                SHARED_LOOPBACK slp=entry.getValue();
-                PingData data=new PingData(addr, slp.isServer(), NameCache.get(addr), null).coord(slp.isCoord());
-                rsps.add(data);
+        List<PingData> rsps=new ArrayList<>();
+        synchronized(routing_table) {
+            Map<Address,SHARED_LOOPBACK> mbrs=routing_table.get(new AsciiString(cluster_name));
+            if(mbrs != null) {
+                for(Map.Entry<Address,SHARED_LOOPBACK> entry: mbrs.entrySet()) {
+                    Address addr=entry.getKey();
+                    SHARED_LOOPBACK l=entry.getValue();
+                    PingData data=new PingData(addr, l.isServer(), NameCache.get(addr), null).coord(l.isCoord());
+                    rsps.add(data);
+                }
             }
         }
         return rsps;
@@ -147,9 +153,7 @@ public class SHARED_LOOPBACK extends TP {
                 break;
             case Event.VIEW_CHANGE:
             case Event.TMP_VIEW:
-                curr_view=evt.getArg();
-                Address[] mbrs=((View)evt.getArg()).getMembersRaw();
-                is_coord=local_addr != null && mbrs != null && mbrs.length > 0 && local_addr.equals(mbrs[0]);
+                handleViewChange(evt.getArg());
                 break;
             case Event.GET_PING_DATA:
                 return getDiscoveryResponsesFor(evt.getArg()); // don't pass further down
@@ -157,9 +161,11 @@ public class SHARED_LOOPBACK extends TP {
                 if(cluster_name == null)
                     return retval;
                 Address mbr=evt.getArg();
-                Map<Address,SHARED_LOOPBACK> map=routing_table.get(cluster_name);
-                SHARED_LOOPBACK lp=map != null? map.get(mbr) : null;
-                return lp != null? lp.getPhysicalAddress() : null;
+                synchronized(routing_table) {
+                    Map<Address,SHARED_LOOPBACK> map=routing_table.get(cluster_name);
+                    SHARED_LOOPBACK lp=map != null? map.get(mbr) : null;
+                    return lp != null? lp.getPhysicalAddress() : null;
+                }
         }
 
         return retval;
@@ -183,17 +189,28 @@ public class SHARED_LOOPBACK extends TP {
         unregister(cluster_name, local_addr);
     }
 
-    protected static void register(AsciiString channel_name, Address local_addr, SHARED_LOOPBACK shared_loopback) {
-        Map<Address,SHARED_LOOPBACK> map=routing_table.computeIfAbsent(channel_name, n -> new ConcurrentHashMap<>());
-        map.putIfAbsent(local_addr, shared_loopback);
+    protected void handleViewChange(View v) {
+        curr_view=v;
+        is_coord=Objects.equals(local_addr, v.getCoord());
     }
 
-    protected static void unregister(AsciiString channel_name, Address local_addr) {
-        Map<Address,SHARED_LOOPBACK> map=channel_name != null? routing_table.get(channel_name) : null;
-        if(map != null) {
-            map.remove(local_addr);
-            if(map.isEmpty())
-                routing_table.remove(channel_name);
+    protected static void register(AsciiString cluster, Address local_addr, SHARED_LOOPBACK shared_loopback) {
+        synchronized(routing_table) {
+            Map<Address,SHARED_LOOPBACK> map=routing_table.computeIfAbsent(cluster, FUNC);
+            if(map.isEmpty()) {
+                // the first member will become coord (may be changed by view changes/merges later)
+                // https://issues.jboss.org/browse/JGRP-2395
+                shared_loopback.coord(true);
+            }
+            map.putIfAbsent(local_addr, shared_loopback);
+        }
+    }
+
+    protected static void unregister(AsciiString cluster, Address local_addr) {
+        synchronized(routing_table) {
+            Map<Address,SHARED_LOOPBACK> map=cluster != null? routing_table.get(cluster) : null;
+            if(map != null && map.remove(local_addr) != null && map.isEmpty())
+                routing_table.remove(cluster);
         }
     }
 

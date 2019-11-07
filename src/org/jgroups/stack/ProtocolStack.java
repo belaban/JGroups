@@ -63,7 +63,7 @@ public class ProtocolStack extends Protocol {
                 if(key.startsWith(max_list_print_size)) {
                     int index=key.indexOf('=');
                     if(index >= 0) {
-                        Util.MAX_LIST_PRINT_SIZE=Integer.valueOf(key.substring(index+1));
+                        Util.MAX_LIST_PRINT_SIZE=Integer.parseInt(key.substring(index+1));
                     }
                     HashMap<String, String> map=new HashMap<>(1);
                     map.put(max_list_print_size, String.valueOf(Util.MAX_LIST_PRINT_SIZE));

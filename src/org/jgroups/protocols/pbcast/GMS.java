@@ -48,27 +48,31 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     /* ------------------------------------------ Properties  ------------------------------------------ */
 
     @Property(description="Join timeout")
-    protected long join_timeout=3000;
+    protected long                      join_timeout=3000;
 
     @Property(description="Number of join attempts before we give up and become a singleton. 0 means 'never give up'.")
-    protected int  max_join_attempts=10;
+    protected int                       max_join_attempts=10;
+
+    @Property(description="Time (in ms) to wait for another discovery round when all discovery responses were " +
+      "clients. A timeout of 0 means don't wait at all.")
+    protected int                       all_clients_retry_timeout=100;
 
     @Property(description="Max time (in ms) to wait for a LEAVE response after a LEAVE req has been sent to the coord")
-    protected long leave_timeout=2000;
+    protected long                      leave_timeout=2000;
 
     @Property(description="Number of times a LEAVE request is sent to the coordinator (without receiving a LEAVE " +
       "response, before giving up and leaving anyway (failure detection will eventually exclude the left member). " +
       "A value of 0 means wait forever")
-    protected int max_leave_attempts=10;
+    protected int                       max_leave_attempts=10;
 
     @Property(description="Timeout (in ms) to complete merge")
-    protected long merge_timeout=5000; // time to wait for all MERGE_RSPS
+    protected long                      merge_timeout=5000; // time to wait for all MERGE_RSPS
 
     @Property(description="Print local address of this member after connect. Default is true")
-    protected boolean print_local_addr=true;
+    protected boolean                   print_local_addr=true;
 
     @Property(description="Print physical address(es) on startup")
-    protected boolean print_physical_addrs=true;
+    protected boolean                   print_physical_addrs=true;
 
     /**
      * Whether view bundling (http://jira.jboss.com/jira/browse/JGRP-144) should be enabled or not. Setting this to
@@ -77,49 +81,49 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
      */
     @Deprecated
     @Property(description="View bundling toggle",deprecatedMessage="view bundling is enabled by default")
-    protected boolean view_bundling=true;
+    protected boolean                   view_bundling=true;
 
     @Property(description="If true, then GMS is allowed to send VIEW messages with delta views, otherwise " +
       "it always sends full views. See https://issues.jboss.org/browse/JGRP-1354 for details.")
-    protected boolean use_delta_views=true;
+    protected boolean                   use_delta_views=true;
 
     @Deprecated
     @Property(description="Max view bundling timeout if view bundling is turned on",
       deprecatedMessage="ignored as view bundling is always on")
-    protected long max_bundling_time=50; // 50 ms max to wait for other JOIN, LEAVE or SUSPECT requests
+    protected long                      max_bundling_time=50; // 50 ms max to wait for other JOIN, LEAVE or SUSPECT requests
 
     @Property(description="Max number of old members to keep in history. Default is 50")
-    protected int num_prev_mbrs=50;
+    protected int                       num_prev_mbrs=50;
 
     @Property(description="Number of views to store in history")
-    protected int num_prev_views=10;
+    protected int                       num_prev_views=10;
 
     @Property(description="Time in ms to wait for all VIEW acks (0 == wait forever. Default is 2000 msec" )
-    protected long view_ack_collection_timeout=2000;
+    protected long                      view_ack_collection_timeout=2000;
 
     @Property(description="Use flush for view changes. Default is true")
-    protected boolean use_flush_if_present=true;
+    protected boolean                   use_flush_if_present=true;
 
     @Property(description="Logs failures for collecting all view acks if true")
-    protected boolean log_collect_msgs;
+    protected boolean                   log_collect_msgs;
 
     @Property(description="Logs warnings for reception of views less than the current, and for views which don't include self")
-    protected boolean log_view_warnings=true;
+    protected boolean                   log_view_warnings=true;
 
     /** @deprecated true by default */
     @Property(description="Whether or not to install a new view locally first before broadcasting it " +
       "(only done at the coord ). Set to true automatically if a state transfer protocol is detected",
               deprecatedMessage = "ignored and enabled by default")
     @Deprecated
-    protected boolean             install_view_locally_first=true; // https://issues.jboss.org/browse/JGRP-1751
+    protected boolean                   install_view_locally_first=true; // https://issues.jboss.org/browse/JGRP-1751
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
-    protected int                 num_views;
+    protected int                       num_views;
 
     /** Stores the last 20 views */
-    protected BoundedList<String> prev_views;
+    protected BoundedList<String>       prev_views;
 
 
     /* --------------------------------------------- Fields ------------------------------------------------ */

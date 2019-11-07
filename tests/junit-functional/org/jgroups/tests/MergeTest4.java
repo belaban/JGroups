@@ -340,7 +340,7 @@ public class MergeTest4 {
 
         Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
         Util.waitUntilAllChannelsHaveSameView(10000, 500, c);
-        System.out.printf("\nPartitions:\n");
+        System.out.print("\nPartitions:\n");
         for(JChannel ch: Arrays.asList(a,b,c))
             System.out.println(ch.getName() + ": " + ch.getView());
 
@@ -399,7 +399,7 @@ public class MergeTest4 {
         assert f.getView().size() == v2.size() : "F's view: " + f.getView();
         Util.waitUntilAllChannelsHaveSameView(10000, 500, g, h);
 
-        System.out.printf("\nPartitions:\n");
+        System.out.print("\nPartitions:\n");
         for(JChannel ch: Arrays.asList(a,b,c,d,e,f,g,h))
             System.out.println(ch.getName() + ": " + ch.getView());
 
@@ -450,7 +450,7 @@ public class MergeTest4 {
         Util.waitUntilAllChannelsHaveSameView(10000, 500, t);
         Util.waitUntilAllChannelsHaveSameView(10000, 500, u, v);
 
-        System.out.printf("\nPartitions:\n");
+        System.out.print("\nPartitions:\n");
         for(JChannel ch: Arrays.asList(s,t,u,v))
             System.out.println(ch.getName() + ": " + ch.getView());
 
@@ -505,7 +505,7 @@ public class MergeTest4 {
         Util.waitUntilAllChannelsHaveSameView(10000, 500, t);
         Util.waitUntilAllChannelsHaveSameView(10000, 500, u, v);
 
-        System.out.printf("\nPartitions:\n");
+        System.out.print("\nPartitions:\n");
         for(JChannel ch: Arrays.asList(s,t,u,v))
             System.out.println(ch.getName() + ": " + ch.getView());
 
@@ -544,7 +544,7 @@ public class MergeTest4 {
 
 
     /** Creates a list of randomly generated partitions, each having a max size of max_partition_size */
-    protected List<View> createPartitions(int max_partition_size, JChannel ... channels) {
+    protected static List<View> createPartitions(int max_partition_size, JChannel... channels) {
         long view_id=1;
         for(JChannel ch: channels)
             view_id=Math.max(view_id, ch.getView().getViewId().getId());
@@ -583,7 +583,7 @@ public class MergeTest4 {
         }
     }
     
-    protected JChannel createChannel(String name, boolean connect) throws Exception {
+    protected static JChannel createChannel(String name, boolean connect) throws Exception {
         JChannel retval=new JChannel(new SHARED_LOOPBACK(),
                                      new SHARED_LOOPBACK_PING(),
                                      new MERGE3().setValue("min_interval", 3000).setValue("max_interval", 4000).setValue("check_interval", 7000),
@@ -613,14 +613,14 @@ public class MergeTest4 {
     }
 
 
-    protected void injectMergeEvents(List<Message> msgs, JChannel ... channels) {
+    protected static void injectMergeEvents(List<Message> msgs, JChannel... channels) {
         for(JChannel ch: channels) {
             MERGE3 merge=ch.getProtocolStack().findProtocol(MERGE3.class);
             msgs.forEach(merge::up);
         }
     }
 
-    protected void discard(boolean flag, JChannel ... channels) throws Exception {
+    protected static void discard(boolean flag, JChannel... channels) throws Exception {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
             DISCARD discard=stack.findProtocol(DISCARD.class);
@@ -630,33 +630,33 @@ public class MergeTest4 {
         }
     }
 
-    protected void injectView(View view, JChannel ... channels) {
+    protected static void injectView(View view, JChannel... channels) {
         for(JChannel ch: channels) {
             GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.installView(view);
         }
     }
 
-    protected void checkInconsistencies(JChannel ... channels) {
+    protected static void checkInconsistencies(JChannel... channels) {
         for(JChannel ch: channels) {
             MERGE3 merge=ch.getProtocolStack().findProtocol(MERGE3.class);
             merge.checkInconsistencies();
         }
     }
 
-    protected View getViewFromGMS(JChannel ch) {
+    protected static View getViewFromGMS(JChannel ch) {
         GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
         return gms.view();
     }
 
-    protected List<Address> getMembers(JChannel ... channels) {
+    protected static List<Address> getMembers(JChannel... channels) {
         List<Address> members=new ArrayList<>(channels.length);
         for(JChannel ch: channels)
             members.add(ch.getAddress());
         return members;
     }
 
-    protected void enableInfoSender(boolean enable, JChannel... channels) throws Exception {
+    protected static void enableInfoSender(boolean enable, JChannel... channels) throws Exception {
         for(JChannel ch: channels) {
             MERGE3 merge=ch.getProtocolStack().findProtocol(MERGE3.class);
             Method meth=enable? startInfoSender : stopInfoSender;

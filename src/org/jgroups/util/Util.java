@@ -277,7 +277,7 @@ public class Util {
             View first=channels[0].getView();
             for(JChannel ch : channels) {
                 View view=ch.getView();
-                if(!Objects.equals(view, first) || view.size() != channels.length) {
+                if(first == null || !Objects.equals(view, first) || view.size() != channels.length) {
                     all_channels_have_correct_view=false;
                     break;
                 }
@@ -294,7 +294,7 @@ public class Util {
         }
         View first=channels[0].getView();
         for(View view : views)
-            if(!Objects.equals(view, first) || view.size() != channels.length)
+            if(view == null || !Objects.equals(view, first) || view.size() != channels.length)
                 throw new TimeoutException("Timeout " + timeout + " kicked in, views are:\n" + sb);
     }
 
@@ -449,6 +449,22 @@ public class Util {
         if(closeables != null) {
             for(int i=closeables.length-1; i >= 0; i--)
                 Util.close(closeables[i]);
+        }
+    }
+
+    /** Closes all non-coordinators first, in parallel, then closes the coord. This should produce just 2 views */
+    public static void closeFast(JChannel ... channels) {
+        if(channels != null) {
+            // close all non-coordinator channels first (in parallel)
+            Stream.of(channels).parallel().filter(ch -> !isCoordinator(ch)).forEach(JChannel::close);
+            try {
+                Util.waitUntil(5000, 100,
+                               () -> Stream.of(channels).filter(ch -> !isCoordinator(ch)).allMatch(JChannel::isClosed));
+            }
+            catch(TimeoutException e) {
+            }
+            // then close the cordinator's channel
+            Stream.of(channels).filter(Util::isCoordinator).forEach(JChannel::close);
         }
     }
 

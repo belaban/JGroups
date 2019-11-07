@@ -266,8 +266,8 @@ public class UDP extends TP {
     /*------------------------------ Protocol interface ------------------------------ */
 
     @Override
-    protected Object handleDownEvent(Event evt) {
-        Object retval=super.handleDownEvent(evt);
+    public Object down(Event evt) {
+        Object retval=super.down(evt);
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
                 if(suppress_log_out_of_buffer_space != null)

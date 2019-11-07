@@ -16,7 +16,7 @@ public class Runner implements Runnable, Closeable {
     protected volatile boolean    running;
     protected Thread              thread;
     protected boolean             daemon;
-    protected long                join_timeout=500;
+    protected long                join_timeout=100;
 
 
     public Runner(ThreadFactory factory, String thread_name, Runnable function, Runnable stop_function) {

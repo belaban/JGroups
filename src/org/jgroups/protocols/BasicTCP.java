@@ -125,8 +125,9 @@ public abstract class BasicTCP extends TP implements Receiver {
         Util.bufferToArray(sender, buf, this);
     }
 
-    protected Object handleDownEvent(Event evt) {
-        Object ret=super.handleDownEvent(evt);
+    @Override
+    public Object down(Event evt) {
+        Object ret=super.down(evt);
         if(evt.getType() == Event.VIEW_CHANGE) {
             Set<Address> physical_mbrs=new HashSet<>();
             for(Address addr: members) {

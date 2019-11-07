@@ -146,8 +146,9 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         stubManager.disconnectStubs();
     }
 
-    public Object handleDownEvent(Event evt) {
-        Object retEvent = super.handleDownEvent(evt);
+    @Override
+    public Object down(Event evt) {
+        Object retEvent = super.down(evt);
         switch (evt.getType()) {
             case Event.CONNECT:
             case Event.CONNECT_WITH_STATE_TRANSFER:

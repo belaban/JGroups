@@ -98,6 +98,11 @@ public class Responses implements Iterable<PingData> {
         return false;
     }
 
+    public boolean isCoord(Address addr) {
+        PingData rsp=findResponseFrom(addr);
+        return rsp != null && rsp.isCoord() && Objects.equals(rsp.getAddress(), addr);
+    }
+
     public PingData findResponseFrom(Address mbr) {
         if(mbr == null) return null;
         for(int i=0; i < index; i++) {

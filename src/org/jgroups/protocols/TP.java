@@ -1095,7 +1095,105 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     public Object down(Event evt) {
-        return handleDownEvent(evt);
+        switch(evt.getType()) {
+
+            case Event.TMP_VIEW:
+            case Event.VIEW_CHANGE:
+                Collection<Address> old_members;
+                synchronized(members) {
+                    View v=evt.getArg();
+                    this.view=v;
+                    old_members=new ArrayList<>(members);
+                    members.clear();
+                    members.addAll(v.getMembers());
+
+                    // fix for https://jira.jboss.org/jira/browse/JGRP-918
+                    logical_addr_cache.retainAll(members);
+                    fetchLocalAddresses();
+
+                    List<Address> left_mbrs=Util.leftMembers(old_members,members);
+                    if(left_mbrs != null && !left_mbrs.isEmpty())
+                        NameCache.removeAll(left_mbrs);
+
+                    if(suppress_log_different_version != null)
+                        suppress_log_different_version.removeExpired(suppress_time_different_version_warnings);
+                    if(suppress_log_different_cluster != null)
+                        suppress_log_different_cluster.removeExpired(suppress_time_different_cluster_warnings);
+                }
+                who_has_cache.removeExpiredElements();
+                if(bundler != null)
+                    bundler.viewChange(evt.getArg());
+                if(msg_processing_policy instanceof MaxOneThreadPerSender)
+                    ((MaxOneThreadPerSender)msg_processing_policy).viewChange(view.getMembers());
+                break;
+
+            case Event.CONNECT:
+            case Event.CONNECT_WITH_STATE_TRANSFER:
+            case Event.CONNECT_USE_FLUSH:
+            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
+                cluster_name=new AsciiString((String)evt.getArg());
+                header=new TpHeader(cluster_name);
+
+                // local_addr is null when shared transport
+                setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
+                setThreadNames();
+                connectLock.lock();
+                try {
+                    handleConnect();
+                }
+                catch(Exception e) {
+                    throw new RuntimeException(e);
+                }
+                finally {
+                    connectLock.unlock();
+                }
+                return null;
+
+            case Event.DISCONNECT:
+                unsetThreadNames();
+                connectLock.lock();
+                try {
+                    handleDisconnect();
+                }
+                finally {
+                    connectLock.unlock();
+                }
+                break;
+
+            case Event.GET_PHYSICAL_ADDRESS:
+                Address addr=evt.getArg();
+                PhysicalAddress physical_addr=getPhysicalAddressFromCache(addr);
+                if(physical_addr != null)
+                    return physical_addr;
+                if(Objects.equals(addr, local_addr)) {
+                    physical_addr=getPhysicalAddress();
+                    if(physical_addr != null)
+                        addPhysicalAddressToCache(addr, physical_addr);
+                }
+                return physical_addr;
+
+            case Event.GET_PHYSICAL_ADDRESSES:
+                return getAllPhysicalAddressesFromCache();
+
+            case Event.GET_LOGICAL_PHYSICAL_MAPPINGS:
+                Object arg=evt.getArg();
+                boolean skip_removed_values=arg instanceof Boolean && (Boolean)arg;
+                return logical_addr_cache.contents(skip_removed_values);
+
+            case Event.ADD_PHYSICAL_ADDRESS:
+                Tuple<Address,PhysicalAddress> tuple=evt.getArg();
+                return addPhysicalAddressToCache(tuple.getVal1(), tuple.getVal2());
+
+            case Event.REMOVE_ADDRESS:
+                removeLogicalAddressFromCache(evt.getArg());
+                break;
+
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=evt.getArg();
+                registerLocalAddress(evt.getArg());
+                break;
+        }
+        return null;
     }
 
     /** A message needs to be sent to a single member or all members */
@@ -1563,108 +1661,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return (Responses)up_prot.up(new Event(Event.FIND_MBRS, missing));
     }
 
-
-    protected Object handleDownEvent(Event evt) {
-        switch(evt.getType()) {
-
-            case Event.TMP_VIEW:
-            case Event.VIEW_CHANGE:
-                Collection<Address> old_members;
-                synchronized(members) {
-                    View v=evt.getArg();
-                    this.view=v;
-                    old_members=new ArrayList<>(members);
-                    members.clear();
-                    members.addAll(v.getMembers());
-
-                    // fix for https://jira.jboss.org/jira/browse/JGRP-918
-                    logical_addr_cache.retainAll(members);
-                    fetchLocalAddresses();
-
-                    List<Address> left_mbrs=Util.leftMembers(old_members,members);
-                    if(left_mbrs != null && !left_mbrs.isEmpty())
-                        NameCache.removeAll(left_mbrs);
-
-                    if(suppress_log_different_version != null)
-                        suppress_log_different_version.removeExpired(suppress_time_different_version_warnings);
-                    if(suppress_log_different_cluster != null)
-                        suppress_log_different_cluster.removeExpired(suppress_time_different_cluster_warnings);
-                }
-                who_has_cache.removeExpiredElements();
-                if(bundler != null)
-                    bundler.viewChange(evt.getArg());
-                if(msg_processing_policy instanceof MaxOneThreadPerSender)
-                    ((MaxOneThreadPerSender)msg_processing_policy).viewChange(view.getMembers());
-                break;
-
-            case Event.CONNECT:
-            case Event.CONNECT_WITH_STATE_TRANSFER:
-            case Event.CONNECT_USE_FLUSH:
-            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
-                cluster_name=new AsciiString((String)evt.getArg());
-                header=new TpHeader(cluster_name);
-
-                // local_addr is null when shared transport
-                setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
-                setThreadNames();
-                connectLock.lock();
-                try {
-                    handleConnect();
-                }
-                catch(Exception e) {
-                    throw new RuntimeException(e);
-                }
-                finally {
-                    connectLock.unlock();
-                }
-                return null;
-
-            case Event.DISCONNECT:
-                unsetThreadNames();
-                connectLock.lock();
-                try {
-                    handleDisconnect();
-                }
-                finally {
-                    connectLock.unlock();
-                }
-                break;
-
-            case Event.GET_PHYSICAL_ADDRESS:
-                Address addr=evt.getArg();
-                PhysicalAddress physical_addr=getPhysicalAddressFromCache(addr);
-                if(physical_addr != null)
-                    return physical_addr;
-                if(Objects.equals(addr, local_addr)) {
-                    physical_addr=getPhysicalAddress();
-                    if(physical_addr != null)
-                        addPhysicalAddressToCache(addr, physical_addr);
-                }
-                return physical_addr;
-
-            case Event.GET_PHYSICAL_ADDRESSES:
-                return getAllPhysicalAddressesFromCache();
-
-            case Event.GET_LOGICAL_PHYSICAL_MAPPINGS:
-                Object arg=evt.getArg();
-                boolean skip_removed_values=arg instanceof Boolean && (Boolean)arg;
-                return logical_addr_cache.contents(skip_removed_values);
-
-            case Event.ADD_PHYSICAL_ADDRESS:
-                Tuple<Address,PhysicalAddress> tuple=evt.getArg();
-                return addPhysicalAddressToCache(tuple.getVal1(), tuple.getVal2());
-
-            case Event.REMOVE_ADDRESS:
-                removeLogicalAddressFromCache(evt.getArg());
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                registerLocalAddress(evt.getArg());
-                break;
-        }
-        return null;
-    }
 
     protected long timestamp() {return time_service != null? time_service.timestamp() : System.nanoTime();}
 

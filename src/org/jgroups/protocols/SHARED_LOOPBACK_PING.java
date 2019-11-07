@@ -32,8 +32,7 @@ public class SHARED_LOOPBACK_PING extends Discovery {
         num_discovery_requests++;
         List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.GET_PING_DATA, cluster_name));
         if(retval != null)
-            retval.stream().filter(data -> !data.getAddress().equals(local_addr)).forEach(data -> responses.addResponse(data, false));
-        responses.done(); // so waitFor() doesn't block at all
+            retval.forEach(data -> responses.addResponse(data, false));
     }
 
 }

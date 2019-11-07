@@ -46,7 +46,7 @@ public abstract class BaseLeaveTest {
     }
 
     protected void destroy() {
-        Util.closeReverse(channels);
+        Util.closeFast(channels);
         assert channels == null || Stream.of(channels).filter(Objects::nonNull).allMatch(JChannel::isClosed);
         System.out.println("\n\n================================================================\n\n");
     }
