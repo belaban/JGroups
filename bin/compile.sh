@@ -3,8 +3,7 @@
 ## Creates a native image using the GraalVM compiler (needs to be on the path)
 
 
-OPTIONS="-H:+ReportUnsupportedElementsAtRuntime -H:+JNI \
-         --no-server -H:+ReportExceptionStackTraces"
+OPTIONS="-H:+ReportUnsupportedElementsAtRuntime -H:+JNI --no-server -H:+ReportExceptionStackTraces"
 
 OPTIONS="$OPTIONS -H:+AllowVMInspection"
 
