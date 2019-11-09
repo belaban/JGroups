@@ -69,7 +69,7 @@ public class UDP extends TP {
     @Property(name="mcast_addr", description="The multicast address used for sending and receiving packets",
               defaultValueIPv4="228.8.8.8", defaultValueIPv6="ff0e::8:8:8",
               systemProperty=Global.UDP_MCAST_ADDR,writable=false)
-    protected InetAddress mcast_group_addr=null;
+    protected InetAddress mcast_group_addr;
 
     @Property(description="The multicast port used for sending and receiving packets. Default is 7600",
               systemProperty=Global.UDP_MCAST_PORT, writable=false)
