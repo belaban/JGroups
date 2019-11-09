@@ -22,14 +22,6 @@ import java.util.*;
  */
 public class MPING extends PING implements Runnable {
     
-    protected static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
-
-
-    static {
-        can_bind_to_mcast_addr=(Util.checkForLinux() && !Util.checkForAndroid())
-          || Util.checkForSolaris() || Util.checkForHp();
-    }
-
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
@@ -170,7 +162,7 @@ public class MPING extends PING implements Runnable {
     }
 
     public void start() throws Exception {
-        if(can_bind_to_mcast_addr) // https://jira.jboss.org/jira/browse/JGRP-836 - prevent cross talking on Linux
+        if(Util.can_bind_to_mcast_addr) // https://jira.jboss.org/jira/browse/JGRP-836 - prevent cross talking on Linux
             mcast_sock=Util.createMulticastSocket(getSocketFactory(), "jgroups.mping.mcast_sock", mcast_addr, mcast_port, log);
         else
             mcast_sock=getSocketFactory().createMulticastSocket("jgroups.mping.mcast_sock", mcast_port);
