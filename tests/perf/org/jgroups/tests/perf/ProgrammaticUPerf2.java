@@ -16,6 +16,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,7 +26,6 @@ import java.util.stream.Stream;
 
 /**
  * Tests the UNICAST by invoking unicast RPCs between a sender and a receiver. Mimicks the DIST mode in Infinispan
- *
  * @author Bela Ban
  */
 public class ProgrammaticUPerf2 extends ReceiverAdapter {
@@ -33,6 +33,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
     private static final JChannel         channel;
     private static final RpcDispatcher    disp;
     private static final String           BIND_ADDR="site_local";
+    private static final String           MCAST_ADDR="232.5.5.5";
     private static Address                local_addr=null;
     protected static final List<Address>  members=new ArrayList<>();
     protected static volatile View        view=null;
@@ -97,22 +98,24 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
             };
 
             InetAddress bind_address=Util.getAddress(BIND_ADDR, Util.getIpStackType());
+            InetAddress mcast_addr=Util.getAddress(MCAST_ADDR, Util.getIpStackType());
             Protocol[] prot_stack={
 
 
               // uncomment if UDP should be used, compile, then native-image
-              new UDP().setBindAddress(bind_address).setBindPort(7800)
+              /*new UDP().setMulticastAddress(mcast_addr).setMulticastPort(7888)
+                .setBindAddress(bind_address).setBindPort(7800)
                 .setDiagnosticsEnabled(true).diagEnableUdp(true).diagEnableTcp(false),
-              new PING(),
+              new PING(),*/
 
-              /*
+
               // uncomment if TCP should be used, compile, then native-image
               new TCP().setBindAddress(bind_address).setBindPort(7800)
                 .setDiagnosticsEnabled(true)
                 .diagEnableUdp(false)
                 .diagEnableTcp(true),
               new TCPPING().initialHosts(Collections.singletonList(new InetSocketAddress(bind_address, 7800))),
-              */
+              // new MPING().mcastAddress(mcast_addr).mcastPort(7550),
 
               new MERGE3(),
               new FD_SOCK(),
@@ -813,7 +816,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
                 continue;
             }
             if("-port".equals(args[i])) {
-                port=Integer.valueOf(args[++i]);
+                port=Integer.parseInt(args[++i]);
                 continue;
             }
             if("-bind_addr".equals(args[i])) {

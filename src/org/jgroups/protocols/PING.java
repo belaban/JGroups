@@ -6,7 +6,6 @@ import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
-import org.jgroups.util.Util;
 
 import java.io.InterruptedIOException;
 import java.util.List;
@@ -35,7 +34,7 @@ public class PING extends Discovery {
             ;
         }
         catch(Throwable ex) {
-            log.error(Util.getMessage("FailedSendingDiscoveryRequest"), ex);
+            log.error(String.format("%s: failed sending discovery request", local_addr), ex);
         }
     }
 

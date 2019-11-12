@@ -112,7 +112,7 @@ public class BPING extends PING implements Runnable {
             }
         }
         catch(Exception ex) {
-            log.error(Util.getMessage("FailedSendingDiscoveryRequest"), ex);
+            log.error(String.format("%s: failed sending discovery request", local_addr), ex);
         }
     }
 
