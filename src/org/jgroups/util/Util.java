@@ -48,6 +48,8 @@ import static org.jgroups.protocols.TP.MULTICAST;
  */
 public class Util {
 
+    private static final String RESOURCES_ROOT = "resources/";
+
     private static final NumberFormat f;
 
     private static final Map<Class<? extends Object>,Byte> PRIMITIVE_TYPES=new HashMap<>(15);
@@ -105,7 +107,7 @@ public class Util {
 
 
     static {
-        resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Util.class.getClassLoader());
+        resource_bundle=ResourceBundle.getBundle(RESOURCES_ROOT + "jg-messages",Locale.getDefault(),Util.class.getClassLoader());
 
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
         * running in an untrusted environment with JNLP */
@@ -2544,7 +2546,7 @@ public class Util {
     }
 
     /**
-     * Tries to load the class from the preferred loader.  If not successful, tries to 
+     * Tries to load the class from the preferred loader.  If not successful, tries to
      * load the class from the current thread's context class loader or system class loader.
      * @param classname Desired class name.
      * @param preferredLoader The preferred class loader
@@ -2767,7 +2769,7 @@ public class Util {
             try {
                 loader=clazz.getClassLoader();
                 if(loader != null) {
-                    retval=loader.getResourceAsStream(name);
+                    retval=loader.getResourceAsStream(RESOURCES_ROOT + name);
                     if(retval != null)
                         return retval;
                 }
@@ -2779,7 +2781,7 @@ public class Util {
         try {
             loader=Thread.currentThread().getContextClassLoader();
             if(loader != null) {
-                retval=loader.getResourceAsStream(name);
+                retval=loader.getResourceAsStream(RESOURCES_ROOT + name);
                 if(retval != null)
                     return retval;
             }
@@ -2790,7 +2792,7 @@ public class Util {
         try {
             loader=ClassLoader.getSystemClassLoader();
             if(loader != null) {
-                return loader.getResourceAsStream(name);
+                return loader.getResourceAsStream(RESOURCES_ROOT + name);
             }
         }
         catch(Throwable t) {

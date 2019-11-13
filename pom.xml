@@ -5,7 +5,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>bundle</packaging>
     <name>JGroups</name>
-    <version>3.6.20-SNAPSHOT</version>
+    <version>3.6.20.Final</version>
     <url>http://www.jgroups.org</url>
 
     <properties>
@@ -149,10 +149,10 @@
         <resources>
             <resource>
                 <directory>conf</directory>
+                <targetPath>resources</targetPath>
                 <includes>
                     <include>*.xml</include>
-                    <include>jg-messages*.properties</include>
-                    <include>JGROUPS_VERSION.properties</include>
+                    <include>*.properties</include>
                 </includes>
                 <excludes>
                     <exclude>*-service.xml</exclude>
