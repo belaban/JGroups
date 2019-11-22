@@ -13,7 +13,7 @@ import java.util.function.Supplier;
  * Tests the functionality of the Headers class
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=false)
+@Test(groups=Global.FUNCTIONAL)
 public class HeadersTest {
     private static final short NAKACK_ID=1, FRAG_ID=2, UDP_ID=3;
 
