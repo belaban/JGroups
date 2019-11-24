@@ -12,7 +12,7 @@ import java.util.*;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=false)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=false)
 public class MergerTest {
     private final static Address a=Util.createRandomAddress("A"),
       b=Util.createRandomAddress("B"),

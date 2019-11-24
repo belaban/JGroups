@@ -19,10 +19,10 @@ import java.util.*;
 
 /**
  * Tests a merge between asymmetric partitions where an isolated coord is still seen by others.
- * Example : {A,B,C,D} and {A}.  
- * 
+ * Example : {A,B,C,D} and {A}.
+ *
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class MergeTest4 {
     protected JChannel a,b,c,d,e,f,g,h,i,j,s,t,u,v;
 
@@ -140,37 +140,37 @@ public class MergeTest4 {
         System.out.println("coord_view: " + coord_view);
         JChannel coord_channel = findChannel(coord);
         System.out.println("coord_channel: " + coord_channel.getAddress());
-        
+
         MutableDigest digest=new MutableDigest(coord_view.getMembersRaw());
         NAKACK2 nakack=coord_channel.getProtocolStack().findProtocol(NAKACK2.class);
         digest.merge(nakack.getDigest(coord));
-        
+
         GMS gms=coord_channel.getProtocolStack().findProtocol(GMS.class);
         gms.installView(coord_view, digest);
         System.out.println("gms.getView() " + gms.getView());
-        
+
         System.out.println("Views are:");
         for(JChannel ch: Arrays.asList(a,b,c,d))
             System.out.println(ch.getAddress() + ": " + ch.getView());
-        
+
         JChannel merge_leader=findChannel(coord);
         MyReceiver receiver=new MyReceiver();
         merge_leader.setReceiver(receiver);
 
         System.out.println("merge_leader: " + merge_leader.getAddressAsString());
-        
+
         System.out.println("Injecting MERGE event into merge leader " + merge_leader.getAddress());
         Map<Address,View> merge_views=new HashMap<>(4);
         merge_views.put(a.getAddress(), a.getView());
         merge_views.put(b.getAddress(), b.getView());
         merge_views.put(c.getAddress(), c.getView());
         merge_views.put(d.getAddress(), d.getView());
-        
+
         gms=merge_leader.getProtocolStack().findProtocol(GMS.class);
         gms.up(new Event(Event.MERGE, merge_views));
-        
+
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b, c, d);
-        
+
         System.out.println("Views are:");
         for(JChannel ch: Arrays.asList(a,b,c,d)) {
             View view=ch.getView();
@@ -582,7 +582,7 @@ public class MergeTest4 {
                 this.view=(MergeView)view;
         }
     }
-    
+
     protected static JChannel createChannel(String name, boolean connect) throws Exception {
         JChannel retval=new JChannel(new SHARED_LOOPBACK(),
                                      new SHARED_LOOPBACK_PING(),

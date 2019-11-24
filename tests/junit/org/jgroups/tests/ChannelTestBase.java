@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  * @author Vladimir Blagojevic
  * @author <a href="mailto://brian.stansberry@jboss.com">Brian Stansberry</a>
  */
-@Test(groups = "base", sequential = true)
+@Test(groups = "base", singleThreaded = true)
 public class ChannelTestBase {
     protected String      channel_conf = "udp.xml";
     protected InetAddress bind_addr;

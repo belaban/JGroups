@@ -26,7 +26,7 @@ import java.util.List;
  * @author Vladimir Blagojevic
  * 
  **/
-@Test(groups = { Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER, Global.EAP_EXCLUDED }, sequential = true)
+@Test(groups = { Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER, Global.EAP_EXCLUDED }, singleThreaded = true)
 public class TCPGOSSIP_Test {
     private JChannel            channel, coordinator;
     private final static String GROUP = "TCPGOSSIP_Test";

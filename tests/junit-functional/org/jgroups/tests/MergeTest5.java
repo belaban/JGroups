@@ -24,7 +24,7 @@ import static org.jgroups.util.Util.printViews;
 /**
  * Tests https://issues.jboss.org/browse/JGRP-2092:
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class MergeTest5 {
     protected JChannel a,b,c;
 
