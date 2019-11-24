@@ -13,7 +13,7 @@ import java.util.concurrent.CountDownLatch;
  * Tests {@link org.jgroups.util.BlockingInputStream}
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=false)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=false)
 public class BlockingInputStreamTest {
 
     

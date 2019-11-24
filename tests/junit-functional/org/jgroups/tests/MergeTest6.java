@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 /**
  * Tests merging with a dead merge leader https://issues.jboss.org/browse/JGRP-2276:
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class MergeTest6 {
     protected JChannel           two, three, four, five, six, seven;
     protected static final short GMS_ID=ClassConfigurator.getProtocolId(GMS.class);

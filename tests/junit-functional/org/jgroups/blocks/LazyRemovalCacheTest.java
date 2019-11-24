@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=false)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=false)
 public class LazyRemovalCacheTest {
 
     public static void testAdd() {

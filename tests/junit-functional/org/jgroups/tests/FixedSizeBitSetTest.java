@@ -11,7 +11,7 @@ import java.util.TreeSet;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=false)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=false)
 public class FixedSizeBitSetTest {
 
     public static void testConstructor() {
