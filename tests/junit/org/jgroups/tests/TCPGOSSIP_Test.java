@@ -95,8 +95,10 @@ public class TCPGOSSIP_Test {
             channel.connect(GROUP);
             third=createTcpgossipChannel("C");
             third.connect(GROUP);
+            Util.waitUntilAllChannelsHaveSameView(10000, 500, coordinator,channel,third);
             View view = channel.getView();
-            assert channel.getView().size() == 3;
+            assert channel.getView().size() == 3
+              : String.format("expected view size of 3 but got %d: %s", channel.getView().size(), channel.getView());
             assert third.getView().size() == 3;
             assert view.containsMember(channel.getAddress());
             assert view.containsMember(coordinator.getAddress());
