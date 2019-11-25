@@ -21,9 +21,9 @@ import java.util.concurrent.*;
  * @author Bela Ban
  */
 public class MemcachedConnector implements Runnable {
-    @ManagedAttribute(writable=false)
+    @ManagedAttribute()
     private int port=11211;
-    @ManagedAttribute(writable=false)
+    @ManagedAttribute()
     private InetAddress bind_addr=null;
     private PartitionedHashMap<String, byte[]> cache=null;
     private Thread thread=null;

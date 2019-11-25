@@ -18,7 +18,7 @@ import java.util.List;
  * @author Bela Ban
  * @since  3.5
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=false)
+@Test(groups=Global.FUNCTIONAL)
 public class NakackUnitTest {
     protected JChannel   a, b;
     protected MyReceiver ra, rb;

@@ -12,7 +12,7 @@ import java.util.Arrays;
  * @author Bela Ban
  * @since 3.2
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=false)
+@Test(groups=Global.FUNCTIONAL)
 public class SuppressCacheTest {
 
 

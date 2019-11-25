@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, singleThreaded=false)
+@Test(groups=Global.FUNCTIONAL)
 public class SeqnoTest {
 
     public static void testConstructor() {

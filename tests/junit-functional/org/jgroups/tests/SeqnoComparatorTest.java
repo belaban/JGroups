@@ -9,7 +9,7 @@ import org.jgroups.util.SeqnoRange;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, singleThreaded=false)
+@Test(groups=Global.FUNCTIONAL)
 public class SeqnoComparatorTest {
 
     static final SeqnoComparator comp=new SeqnoComparator();

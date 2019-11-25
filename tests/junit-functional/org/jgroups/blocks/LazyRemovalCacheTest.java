@@ -8,11 +8,12 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=false)
+@Test(groups=Global.FUNCTIONAL)
 public class LazyRemovalCacheTest {
 
     public static void testAdd() {
@@ -22,7 +23,7 @@ public class LazyRemovalCacheTest {
         System.out.println("cache = " + cache);
         assert 1 == cache.size();
         String val=cache.get(uuid);
-        assert val != null && val.equals("node-1");
+        assert Objects.equals(val, "node-1");
 
         cache.remove(uuid);
         System.out.println("cache = " + cache);

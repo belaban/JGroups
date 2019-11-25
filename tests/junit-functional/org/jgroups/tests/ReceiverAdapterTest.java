@@ -13,7 +13,7 @@ import java.util.Arrays;
  * @author Bela Ban
  * @since  3.6.4
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=false)
+@Test(groups=Global.FUNCTIONAL)
 public class ReceiverAdapterTest {
 
     public static void testSimpleReceive() {
