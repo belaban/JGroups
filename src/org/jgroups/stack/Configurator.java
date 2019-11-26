@@ -179,26 +179,9 @@ public class Configurator {
         String protocol_name=config.getProtocolName();
         if(protocol_name == null)
             return null;
-
-        String defaultProtocolName=ProtocolConfiguration.protocol_prefix + '.' + protocol_name;
-        Class<?> clazz=null;
-
+        Class<? extends Protocol> clazz=Util.loadProtocolClass(protocol_name, stack != null? stack.getClass() : null);
         try {
-            clazz=Util.loadClass(defaultProtocolName, stack != null? stack.getClass() : null);
-        }
-        catch(ClassNotFoundException e) {
-        }
-        if(clazz == null) {
-            try {
-                clazz=Util.loadClass(protocol_name, config.getClassLoader());
-            }
-            catch(ClassNotFoundException e) {
-            }
-            if(clazz == null)
-                throw new Exception(String.format(Util.getMessage("ProtocolLoadError"), protocol_name, defaultProtocolName));
-        }
-        try {
-            Protocol retval=(Protocol)clazz.getDeclaredConstructor().newInstance();
+            Protocol retval=clazz.getDeclaredConstructor().newInstance();
             if(stack != null)
                 retval.setProtocolStack(stack);
             return retval;

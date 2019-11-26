@@ -2846,6 +2846,25 @@ public class Util {
         throw exception;
     }
 
+    public static Class<? extends Protocol> loadProtocolClass(String protocol_name, Class<?> cl) throws Exception {
+        String defaultProtocolName=Global.PREFIX + protocol_name;
+        Class<? extends Protocol> clazz=null;
+        try {
+            clazz=Util.loadClass(defaultProtocolName, cl);
+        }
+        catch(ClassNotFoundException e) {
+        }
+        if(clazz == null) {
+            try {
+                clazz=Util.loadClass(protocol_name, cl);
+            }
+            catch(ClassNotFoundException e) {
+            }
+            if(clazz == null)
+                throw new Exception(String.format(Util.getMessage("ProtocolLoadError"), protocol_name, defaultProtocolName));
+        }
+        return clazz;
+    }
 
     @SafeVarargs
     public static Field[] getAllDeclaredFieldsWithAnnotations(final Class clazz, Class<? extends Annotation>... annotations) {

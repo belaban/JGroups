@@ -802,28 +802,8 @@ public class ProtocolStack extends Protocol {
 
 
     protected Protocol createProtocol(String classname) throws Exception {
-        String defaultProtocolName=ProtocolConfiguration.protocol_prefix + '.' + classname;
-        Class<?> clazz=null;
-
-        try {
-            clazz=Util.loadClass(defaultProtocolName, getClass());
-        }
-        catch(ClassNotFoundException e) {
-        }
-
-        if(clazz == null) {
-            try {
-                clazz=Util.loadClass(classname, getClass());
-            }
-            catch(ClassNotFoundException e) {
-            }
-            if(clazz == null) {
-                throw new Exception("unable to load class for protocol " + classname + " (either as an absolute - "
-                                      + classname + " - or relative - " + defaultProtocolName + " - package name)");
-            }
-        }
-
-        Protocol retval=(Protocol)clazz.getDeclaredConstructor().newInstance();
+        Class<? extends Protocol> clazz=Util.loadProtocolClass(classname, getClass());
+        Protocol retval=clazz.getDeclaredConstructor().newInstance();
         if(retval == null)
             throw new Exception("creation of instance for protocol " + classname + "failed");
         retval.setProtocolStack(this);

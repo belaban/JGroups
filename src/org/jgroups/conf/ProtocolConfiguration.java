@@ -16,7 +16,6 @@ public class ProtocolConfiguration {
     private String                    properties_str;
     private final Map<String,String>  properties=new HashMap<>();
     private List<Node>                subtrees; // roots to DOM elements, passed to protocol on creation
-    public static final String        protocol_prefix="org.jgroups.protocols";
 
 
     /**

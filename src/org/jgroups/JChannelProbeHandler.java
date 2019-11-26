@@ -1,5 +1,6 @@
 package org.jgroups;
 
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.jmx.ResourceDMBean;
@@ -39,6 +40,10 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
             }
             if(key.startsWith("reset-stats")) {
                 resetAllStats();
+                continue;
+            }
+            if(key.startsWith("ops")) {
+                listOperations(map, key);
                 continue;
             }
             if(key.startsWith("invoke") || key.startsWith("op")) {
@@ -109,9 +114,8 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                 int limit=0;
                 if(index >= 0) {
                     String val=key.substring(index+1);
-                    limit=Integer.valueOf(val);
+                    limit=Integer.parseInt(val);
                 }
-
 
                 max_name=Math.min(max_name, 50)+1;
                 String title="\n[%s]   \t%-" + max_name+"s: %10s %10s %6s %9s %10s %10s\n";
@@ -147,7 +151,7 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
     }
 
     public String[] supportedKeys() {
-        return new String[]{"reset-stats", "jmx", "op=<operation>[<args>]",
+        return new String[]{"reset-stats", "jmx", "op=<operation>[<args>]", "ops",
           "threads[=<filter>[=<limit>]]", "enable-cpu", "enable-contention", "disable-cpu", "disable-contention"};
     }
 
@@ -232,6 +236,52 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
         }
     }
 
+
+    protected void listOperations(Map<String, String> map, String key) {
+        if(!key.contains("=")) {
+            map.put("ops", listAllOperations());
+            return;
+        }
+        String p=key.substring(key.indexOf("=")+1).trim();
+        try {
+            Class<? extends Protocol> cl=Util.loadProtocolClass(p, getClass());
+            StringBuilder sb=new StringBuilder();
+            listAllOperations(sb, cl);
+            map.put("ops", sb.toString());
+        }
+        catch(Exception e) {
+            log.warn("%s: protocol %s not found", ch.getAddress(), p);
+        }
+    }
+
+    protected String listAllOperations() {
+        StringBuilder sb=new StringBuilder();
+        for(Protocol p: ch.getProtocolStack().getProtocols()) {
+            listAllOperations(sb, p.getClass());
+        }
+
+        return sb.toString();
+    }
+
+    protected static void listAllOperations(StringBuilder sb, Class<? extends Protocol> cl) {
+        sb.append(cl.getSimpleName()).append(":\n");
+        Method[] methods=Util.getAllDeclaredMethodsWithAnnotations(cl, ManagedOperation.class);
+        for(Method m: methods)
+            sb.append("  ").append(methodToString(m)).append("\n");
+    }
+
+
+    protected static String methodToString(Method m) {
+        StringBuilder sb=new StringBuilder(m.getName());
+        sb.append('(');
+        StringJoiner sj = new StringJoiner(",");
+        for (Class<?> parameterType : m.getParameterTypes()) {
+            sj.add(parameterType.getTypeName());
+        }
+        sb.append(sj);
+        sb.append(')');
+        return sb.toString();
+    }
 
     /**
      * Invokes an operation and puts the return value into map
