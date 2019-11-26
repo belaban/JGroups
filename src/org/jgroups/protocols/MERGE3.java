@@ -240,15 +240,11 @@ public class MERGE3 extends Protocol {
                 break;
 
             case Event.DISCONNECT:
-                stopViewConsistencyChecker();
-                stopInfoSender();
-                break;
-
             case Event.TMP_VIEW:
                 stopViewConsistencyChecker();
                 stopInfoSender();
                 break;
-        
+
             case Event.VIEW_CHANGE:
                 stopViewConsistencyChecker(); // should already be stopped
                 stopInfoSender();             // should already be stopped
@@ -289,12 +285,15 @@ public class MERGE3 extends Protocol {
                 addInfo(sender, hdr.view_id, hdr.logical_name, hdr.physical_addr);
                 break;
             case VIEW_REQ:
+                View viewToSend=view;
                 Message view_rsp=new Message(sender).setFlag(Message.Flag.INTERNAL)
-                  .putHeader(getId(), MergeHeader.createViewResponse()).setBuffer(marshal(view));
+                  .putHeader(getId(), MergeHeader.createViewResponse()).setBuffer(marshal(viewToSend));
+                log.trace("%s: sending view rsp: %s", local_addr, viewToSend);
                 down_prot.down(view_rsp);
                 break;
             case VIEW_RSP:
                 View tmp_view=readView(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                log.trace("%s: received view rsp from %s: %s", local_addr, msg.getSrc(), tmp_view);
                 if(tmp_view != null)
                     view_rsps.add(sender, tmp_view);
                 break;
@@ -476,6 +475,7 @@ public class MERGE3 extends Protocol {
             }
             view_rsps.waitForAllResponses(check_interval / 10);
             Map<Address,View> results=view_rsps.getResults();
+            log.trace("%s: got all results: %s", local_addr, results);
             Map<Address,View> merge_views=new HashMap<>();
             results.entrySet().stream().filter(entry -> entry.getValue() != null).forEach(entry -> merge_views.put(entry.getKey(), entry.getValue()));
             view_rsps.reset();
@@ -490,6 +490,8 @@ public class MERGE3 extends Protocol {
                 up_prot.up(new Event(Event.MERGE, merge_views));
                 num_merge_events++;
             }
+            else
+                log.trace("%s: %d merged views. Nothing to do", local_addr, merge_views.size());
         }
 
         public long nextInterval() {
