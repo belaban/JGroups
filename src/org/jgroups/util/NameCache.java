@@ -28,7 +28,7 @@ public class NameCache {
         try {
             String tmp=Util.getProperty(new String[]{Global.NAME_CACHE_MAX_ELEMENTS}, null, null, "500");
             if(tmp != null)
-                max_elements=Integer.valueOf(tmp);
+                max_elements=Integer.parseInt(tmp);
         }
         catch(Throwable t) {
         }
@@ -36,7 +36,7 @@ public class NameCache {
         try {
             String tmp=Util.getProperty(new String[]{Global.NAME_CACHE_MAX_AGE}, null, null, "120000");
             if(tmp != null)
-                max_age=Long.valueOf(tmp);
+                max_age=Long.parseLong(tmp);
         }
         catch(Throwable t) {
         }
