@@ -113,7 +113,7 @@ public class TcpServer extends TcpBaseServer {
                 catch(Exception ex) {
                     if(ex instanceof SocketException && srv_sock.isClosed() || Thread.currentThread().isInterrupted())
                         break;
-                    log.warn(Util.getMessage("AcceptError"), ex);
+                    log.warn(Util.getMessage("AcceptError"), client_sock, ex);
                     Util.close(client_sock);
                 }
             }
