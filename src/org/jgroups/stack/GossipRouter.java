@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 /**
  * Router for TCP based group comunication (using layer TCP instead of UDP). Instead of the TCP
@@ -48,8 +49,6 @@ import java.util.function.BiConsumer;
  * @since 2.1.1
  */
 public class GossipRouter extends ReceiverAdapter implements ConnectionListener {
-    //@ManagedAttribute(description="address to which the GossipRouter should bind", writable=true, name="bind_address")
-    //protected String               bind_addr;
     @LocalAddress
     @Property(name="bind_addr",
       description="The bind address which should be used by the GossipRouter. The following special values " +
@@ -97,9 +96,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     // mapping between groups and <member address> - <physical addr / logical name> pairs
     protected final ConcurrentMap<String,ConcurrentMap<Address,Entry>> address_mappings=new ConcurrentHashMap<>();
 
-    protected static final BiConsumer<Short,Message> MSG_CONSUMER=(version,msg) -> {
-        System.out.printf("dst=%s src=%s (%d bytes): hdrs= %s\n", msg.dest(), msg.src(), msg.getLength(), msg.printHeaders());
-    };
+    protected static final BiConsumer<Short,Message> MSG_CONSUMER=(version,msg)
+      -> System.out.printf("dst=%s src=%s (%d bytes): hdrs= %s\n", msg.dest(), msg.src(), msg.getLength(), msg.printHeaders());
 
 
     public GossipRouter(String bind_addr, int local_port) {
@@ -310,6 +308,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
             PhysicalAddress phys_addr=req.getPhysicalAddress();
             String          logical_name=req.getLogicalName();
             addAddressMapping(sender, group, addr, phys_addr, logical_name);
+            if(log.isDebugEnabled())
+                log.debug("added %s (%s) to group %s", logical_name, phys_addr, group);
+            if(dump_msgs)
+                System.out.printf("added %s (%s) to group %s\n", logical_name, phys_addr, group);
         }
     }
 
@@ -334,6 +336,19 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                 rsp.addPingData(data);
             }
         }
+
+        if(dump_msgs || log.isDebugEnabled()) {
+            String rsps=rsp.ping_data == null? null
+              : rsp.ping_data.stream().map(r -> String.format("%s (%s)", r.getLogicalName(), r.getPhysicalAddr()))
+              .collect(Collectors.joining(", "));
+            if(rsps != null) {
+                if(log.isDebugEnabled())
+                    log.debug("get(%s) -> %s", req.getGroup(), rsps);
+                if(dump_msgs)
+                    System.out.printf("get(%s) -> %s\n", req.getGroup(), rsps);
+            }
+        }
+
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(rsp.serializedSize());
         try {
             rsp.writeTo(out);
@@ -397,6 +412,13 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         Map<Address,Entry> m=address_mappings.get(group);
         if(m == null)
             return;
+        Entry e=m.get(addr);
+        if(e != null) {
+            if(log.isDebugEnabled())
+                log.debug("removed %s (%s) from group %s", e.logical_name, e.phys_addr, group);
+            if(dump_msgs)
+                System.out.printf("removed %s (%s) from group %s\n", e.logical_name, e.phys_addr, group);
+        }
         if(m.remove(addr) != null && m.isEmpty())
             address_mappings.remove(group);
     }
@@ -412,6 +434,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                 if(client_addr.equals(e.client_addr)) {
                     map.remove(entry2.getKey());
                     log.debug("connection to %s closed", client_addr);
+                    if(log.isDebugEnabled())
+                        log.debug("removed %s (%s) from group %s", e.logical_name, e.phys_addr, entry.getKey());
+                    if(dump_msgs)
+                        System.out.printf("removed %s (%s) from group %s\n", e.logical_name, e.phys_addr, entry.getKey());
                     if(map.isEmpty())
                         address_mappings.remove(entry.getKey());
                     if(suspects == null) suspects=new HashSet<>();
@@ -578,7 +604,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                 continue;
             }
             if("-jmx".equals(arg)) {
-                jmx=Boolean.valueOf(args[++i]);
+                jmx=Boolean.parseBoolean(args[++i]);
                 continue;
             }
             if("-solinger".equals(arg)) {
@@ -644,11 +670,11 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         System.out.println("    -expiry <msecs>         - Time for closing idle connections. 0");
         System.out.println("                              means don't expire.");
         System.out.println();
-        System.out.printf("    -nio <true|false>       - Whether or not to use non-blocking connections (NIO)\n");
+        System.out.println("    -nio <true|false>       - Whether or not to use non-blocking connections (NIO)");
         System.out.println();
-        System.out.printf("    -suspect <true|false>   - Whether or not to use send SUSPECT events when a conn is closed\n");
+        System.out.println("    -suspect <true|false>   - Whether or not to use send SUSPECT events when a conn is closed");
         System.out.println();
-        System.out.printf("    -dump_msgs <true|false> - Dumps all messages to stdout after routing them\n");
+        System.out.println("    -dump_msgs <true|false> - Dumps all messages to stdout after routing them");
         System.out.println();
     }
 }
