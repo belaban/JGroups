@@ -617,6 +617,8 @@
         <antcall target="all-tests"/>
     </target>
 
+    <target name="test" depends="all-tests" description="Calls all-tests"/>
+
     <target name="all-tests" depends="delete-reports" description="Runs all tests">
         <sequential>
         	<antcall target="functional"/>

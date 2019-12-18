@@ -1,2 +1,5 @@
 os: linux
 language: java
+install: ant deps
+jdk:
+  - openjdk11
