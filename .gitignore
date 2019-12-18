@@ -26,5 +26,3 @@ lib/
 hs_err_pid*.log
 .ant-targets-build.xml
 *.pem
-.travis.yaml
-.travis.yml
