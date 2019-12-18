@@ -9,7 +9,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 public class Chat extends ReceiverAdapter {
-    JChannel channel;
+    protected JChannel channel;
+    protected static final String CLUSTER="chat";
 
     public void viewAccepted(View new_view) {
         System.out.println("** view: " + new_view);
@@ -24,7 +25,7 @@ public class Chat extends ReceiverAdapter {
     public void start(JChannel ch) throws Exception {
         channel=ch;
         channel.setReceiver(this);
-        channel.connect("ChatCluster");
+        channel.connect(CLUSTER);
         eventLoop();
         channel.close();
     }
@@ -34,7 +35,7 @@ public class Chat extends ReceiverAdapter {
         if(name != null)
             channel.name(name);
         channel.setReceiver(this);
-        channel.connect("ChatCluster");
+        channel.connect(CLUSTER);
         if(!nohup) {
             eventLoop();
             channel.close();
