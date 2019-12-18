@@ -1,6 +1,2 @@
-{
-  "os": [
-    "linux"
-  ],
-  "language": "java"
-}
+os: linux
+language: java
