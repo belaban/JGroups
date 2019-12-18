@@ -294,20 +294,6 @@
                             </target>
                         </configuration>
                     </execution>
-                    <!-- Run the tests via ant -->
-                    <!--<execution>
-                        <phase>test</phase>
-                        <configuration>
-                            <tasks unless="maven.test.skip">
-                                <ant antfile="${basedir}/build.xml" target="all-tests">
-                                    <property name="build.compiler" value="extJavac"/>
-                                </ant>
-                            </tasks>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>-->
                 </executions>
             </plugin>
             <!-- Make sure we generate src jars too -->
@@ -355,10 +341,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
+                <!--configuration>
                     <skip>true</skip>
                     <skipTests>true</skipTests>
-                </configuration>
+                </configuration-->
                 <executions>
                     <execution>
                         <phase>test</phase>
