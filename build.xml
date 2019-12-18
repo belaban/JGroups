@@ -106,6 +106,8 @@
              dest="${lib.dir}" usetimestamp="true"/>
     </target>
 
+    <target name="deps" depends="retrieve" description="Fetches all dependent libraries"/>
+
 
     <target name="retrieve" depends="check-jars-exist,get-ivy,define-ivy-task" unless="jars.exist"
             description="Retrieves all dependent libs defined in ivy.xml unless already present">
