@@ -265,7 +265,6 @@ public class DiagnosticsHandler extends ReceiverAdapter {
                 info.append(String.format("%s=%s\r\n", entry.getKey(), entry.getValue()));
 
             String diag_rsp=info.toString();
-            log.debug("sending diag response to %s", sender);
             rsp_sender.accept(sender, diag_rsp);
         }
     }
@@ -313,8 +312,6 @@ public class DiagnosticsHandler extends ReceiverAdapter {
         byte[] local = Util.createDigest(passcode, t1, q1);
         if(!MessageDigest.isEqual(digest, local))
             throw new Exception("Authorization failed! Make sure correct passcode is used");
-        else
-            log.debug("Request authorized");
         return offset;
     }
 

@@ -56,10 +56,13 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
       "this needs to be false; if GossipRouterNio is used, it needs to be true")
     protected boolean use_nio;
 
+    @Property(description="A comma-separated list of GossipRouter hosts, e.g. HostA[12001],HostB[12001]")
+    protected String  gossip_router_hosts;
+
     /* ------------------------------------------ Fields ----------------------------------------------------- */
 
-    protected final List<InetSocketAddress> gossip_router_hosts = new ArrayList<>();
-    protected TUNNELPolicy                  tunnel_policy = new DefaultTUNNELPolicy();
+    protected final List<InetSocketAddress> gossip_routers=new ArrayList<>();
+    protected TUNNELPolicy                  tunnel_policy=new DefaultTUNNELPolicy();
     protected DatagramSocket                sock; // used to get a unique client address
     protected volatile RouterStubManager    stubManager;
 
@@ -74,14 +77,13 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         return true;
     }
 
-    @Property(description="A comma-separated list of GossipRouter hosts, e.g. HostA[12001],HostB[12001]")
+
     public void setGossipRouterHosts(String hosts) throws UnknownHostException {
-        gossip_router_hosts.clear();
+        gossip_routers.clear();
         // if we get passed value of List<SocketAddress>#toString() we have to strip []
-        if (hosts.startsWith("[") && hosts.endsWith("]")) {
-            hosts = hosts.substring(1, hosts.length() - 1);
-        }
-        gossip_router_hosts.addAll(Util.parseCommaDelimitedHosts2(hosts, 1));
+        if(hosts.startsWith("[") && hosts.endsWith("]"))
+            hosts=hosts.substring(1, hosts.length() - 1);
+        gossip_router_hosts=hosts; //.addAll(Util.parseCommaDelimitedHosts2(hosts, port_range));
     }
 
     @ManagedOperation(description="Prints all stubs and the reconnect list")
@@ -126,14 +128,15 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
 
     public void init() throws Exception {
         super.init();
-        if (timer == null)
+        if(timer == null)
             throw new Exception("timer cannot be retrieved from protocol stack");
-        if(gossip_router_hosts.isEmpty())
+        gossip_routers.clear();
+        gossip_routers.addAll(Util.parseCommaDelimitedHosts2(gossip_router_hosts, port_range));
+        if(gossip_routers.isEmpty())
             throw new IllegalStateException("gossip_router_hosts needs to contain at least one address of a GossipRouter");
-        log.debug("%s: gossip routers are %s", local_addr, gossip_router_hosts.toString());
-        
-        stubManager = RouterStubManager.emptyGossipClientStubManager(this).useNio(this.use_nio);
-        sock = getSocketFactory().createDatagramSocket("jgroups.tunnel.ucast_sock", bind_port, bind_addr);
+        log.debug("gossip routers are %s", gossip_routers);
+        stubManager=RouterStubManager.emptyGossipClientStubManager(this).useNio(this.use_nio);
+        sock=getSocketFactory().createDatagramSocket("jgroups.tunnel.ucast_sock", bind_port, bind_addr);
     }
     
     public void destroy() {        
@@ -156,13 +159,12 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
             case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                 String group=evt.getArg();
                 Address local=local_addr;
-
                 if(stubManager != null)
                     stubManager.destroyStubs();
                 PhysicalAddress physical_addr=getPhysicalAddressFromCache(local);
                 String logical_name=org.jgroups.util.NameCache.get(local);
                 stubManager = new RouterStubManager(this,group,local, logical_name, physical_addr, getReconnectInterval()).useNio(this.use_nio);
-                for (InetSocketAddress gr : gossip_router_hosts) {
+                for(InetSocketAddress gr : gossip_routers) {
                     stubManager.createAndRegisterStub(new IpAddress(bind_addr, bind_port), new IpAddress(gr.getAddress(), gr.getPort()))
                       .receiver(this).set("tcp_nodelay", tcp_nodelay);
                 }
@@ -237,7 +239,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                         log.trace("%s: sending a message to all members, GR used %s", local_addr, stub.gossipRouterAddress());
                     stub.sendToAllMembers(group, sender, data, offset, length);
                 }
-                catch (Exception ex) {
+                catch(Exception ex) {
                     log.warn("%s: failed sending a message to all members, router used %s: %s",
                              local_addr, stub.gossipRouterAddress(), ex);
                 }
@@ -252,7 +254,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                         log.trace("%s: sending a message to %s (router used %s)", local_addr, dest, stub.gossipRouterAddress());
                     stub.sendToMember(group, dest, sender, data, offset, length);
                 }
-                catch (Exception ex) {
+                catch(Exception ex) {
                     log.warn("%s: failed sending a message to %s (router used %s): %s", local_addr, dest,
                              stub.gossipRouterAddress(), ex);
                 }
