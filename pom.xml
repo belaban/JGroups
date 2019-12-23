@@ -97,7 +97,7 @@
             </releases>
             <snapshots>
                 <enabled>true</enabled>
-                <updatePolicy>interval:120</updatePolicy>
+                <updatePolicy>awlays</updatePolicy>
             </snapshots>
         </repository>
 
