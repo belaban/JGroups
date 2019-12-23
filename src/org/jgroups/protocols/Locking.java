@@ -1159,6 +1159,10 @@ abstract public class Locking extends Protocol {
             return retval;
         }
 
+        public boolean equals(Object obj) {
+            return this == obj || Objects.equals(owner, ((ClientLock)obj).owner);
+        }
+
         public int compareTo(ClientLock o) {
             int rc=owner.compareTo(o.owner);
             return rc != 0? rc : name.compareTo(o.name);

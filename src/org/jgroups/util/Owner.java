@@ -6,6 +6,7 @@ import org.jgroups.Address;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Objects;
 
 
 /**
@@ -45,10 +46,12 @@ public class Owner implements Streamable, Comparable<Owner> {
     }
 
     public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
         if(obj == null)
             return false;
         Owner other=(Owner)obj;
-        return address.equals(other.address) && thread_id == other.thread_id;
+        return Objects.equals(address, other.address) && thread_id == other.thread_id;
     }
 
     public int hashCode() {
@@ -56,7 +59,12 @@ public class Owner implements Streamable, Comparable<Owner> {
     }
 
     public int compareTo(Owner o) {
-        return thread_id < o.thread_id? -1 : thread_id > o.thread_id? 1 : address.compareTo(o.address);
+        if(this == o)
+            return 0;
+        if(o == null)
+            return 1; // I'm greater than a null object (hmm.. ?)
+        return thread_id < o.thread_id? -1 : thread_id > o.thread_id? 1
+          : (o.address == null? 1 : address.compareTo(o.address));
     }
 
     public String toString() {
