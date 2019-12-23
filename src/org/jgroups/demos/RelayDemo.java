@@ -26,7 +26,7 @@ public class RelayDemo {
                 continue;
             }
             if(args[i].equals("-print_route_status")) {
-                print_route_status=Boolean.valueOf(args[++i]);
+                print_route_status=Boolean.parseBoolean(args[++i]);
                 continue;
             }
             System.out.println("RelayDemo [-props props] [-name name] [-print_route_status false|true]");
@@ -42,7 +42,7 @@ public class RelayDemo {
                 System.out.println("<< " + msg.getObject() + " from " + sender);
                 Address dst=msg.getDest();
                 if(dst == null) {
-                    Message rsp=new Message(msg.getSrc(), "this is a response");
+                    Message rsp=new Message(msg.getSrc(), "response");
                     try {
                         ch.send(rsp);
                     }
