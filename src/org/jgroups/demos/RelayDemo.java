@@ -14,7 +14,7 @@ public class RelayDemo {
     public static void main(String[] args) throws Exception {
         String props="udp.xml";
         String name=null;
-        boolean print_route_status=false;
+        boolean print_route_status=false, nohup=false;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-props")) {
@@ -29,7 +29,11 @@ public class RelayDemo {
                 print_route_status=Boolean.parseBoolean(args[++i]);
                 continue;
             }
-            System.out.println("RelayDemo [-props props] [-name name] [-print_route_status false|true]");
+            if(args[i].equals("-nohup")) {
+                nohup=true;
+                continue;
+            }
+            System.out.println("RelayDemo [-props props] [-name name] [-print_route_status false|true] [-nohup]");
             return;
         }
 
@@ -73,13 +77,23 @@ public class RelayDemo {
         }
 
         ch.connect("RelayDemo");
-
-        for(;;) {
-            String line=Util.readStringFromStdin(": ");
-            ch.send(null, line);
+        if(!nohup) {
+            eventLoop(ch);
+            Util.close(ch);
         }
     }
 
+    protected static void eventLoop(JChannel ch) {
+        for(;;) {
+            try {
+                String line=Util.readStringFromStdin(": ");
+                ch.send(null, line);
+            }
+            catch(Throwable t) {
+                t.printStackTrace();
+            }
+        }
+    }
 
     static String print(View view) {
         StringBuilder sb=new StringBuilder();
