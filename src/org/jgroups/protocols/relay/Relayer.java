@@ -197,6 +197,24 @@ public class Relayer {
                 log.warn("received a message without a relay header; discarding it");
                 return;
             }
+            switch(hdr.type) {
+                case RELAY2.Relay2Header.TOPO_REQ:
+                    RELAY2.Relay2Header rsp_hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.TOPO_RSP)
+                      .setSites(relay.printLocalTopology());
+                    Message topo_rsp=new Message(msg.src()).putHeader(relay.getId(), rsp_hdr);
+                    try {
+                        channel.send(topo_rsp);
+                    }
+                    catch(Exception e) {
+                        log.warn("%s: failed sending TOPO-RSP message to %s: %s", channel.getAddress(), msg.src(), e);
+                    }
+                    return; // not relayed
+                case RELAY2.Relay2Header.TOPO_RSP:
+                    String[] sites=hdr.getSites();
+                    if(sites != null && sites.length > 0 && sites[0] != null)
+                        relay.topo_collector.add(msg.src(), sites[0]);
+                    return;
+            }
             relay.handleRelayMessage(hdr, msg);
         }
 

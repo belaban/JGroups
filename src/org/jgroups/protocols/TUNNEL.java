@@ -50,7 +50,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     protected long    reconnect_interval=5000;
 
     @Property(description="Should TCP no delay flag be turned on")
-    protected boolean tcp_nodelay=false;
+    protected boolean tcp_nodelay;
 
     @Property(description="Whether to use blocking (false) or non-blocking (true) connections. If GossipRouter is used, " +
       "this needs to be false; if GossipRouterNio is used, it needs to be true")
