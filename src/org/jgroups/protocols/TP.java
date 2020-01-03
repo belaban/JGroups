@@ -1207,6 +1207,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(is_trace)
             log.trace("%s: sending msg to %s, src=%s, headers are %s", local_addr, dest, sender, msg.printHeaders());
 
+        if(stats) {
+            msg_stats.incrNumMsgsSent(1);
+            msg_stats.incrNumBytesSent(msg.size());
+        }
+
         // Don't send if dest is local address. Instead, send it up the stack. If multicast message, loop back directly
         // to us (but still multicast). Once we receive this, we discard our own multicast message
         boolean multicast=dest == null, do_send=multicast || !dest.equals(sender),
@@ -1560,10 +1565,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     public void doSend(byte[] buf, int offset, int length, Address dest) throws Exception {
-        if(stats) {
-            msg_stats.incrNumMsgsSent(1);
-            msg_stats.incrNumBytesSent(length);
-        }
         if(dest == null)
             sendMulticast(buf, offset, length);
         else

@@ -57,7 +57,7 @@ public class MsgStats {
 
     @ManagedAttribute(description="Number of bytes sent")
     public long     getNumBytesSent()                  {return num_bytes_sent.sum();}
-    public MsgStats incrNumBytesSent(int d)            {num_bytes_sent.add(d); return this;}
+    public MsgStats incrNumBytesSent(long d)            {num_bytes_sent.add(d); return this;}
 
     @ManagedAttribute(description="Number of bytes received")
     public long     getNumBytesReceived()              {return num_bytes_received.sum();}
