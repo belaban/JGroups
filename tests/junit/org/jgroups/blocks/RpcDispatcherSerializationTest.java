@@ -66,7 +66,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         disp2.setMarshaller(m);
 
         RspList rsps;
-        rsps=disp.callRemoteMethods(null, "methodA", new Object[]{Boolean.TRUE, new Long(322649)},
+        rsps=disp.callRemoteMethods(null, "methodA", new Object[]{Boolean.TRUE, 322649L},
                                     new Class[]{boolean.class, long.class},
                                     new RequestOptions(ResponseMode.GET_ALL, 0));
         assert rsps.size() == 2;
