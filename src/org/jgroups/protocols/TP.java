@@ -1205,7 +1205,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         Address dest=msg.getDest(), sender=msg.getSrc();
         if(is_trace)
-            log.trace("%s: sending msg to %s, src=%s, headers are %s", local_addr, dest, sender, msg.printHeaders());
+            log.trace("%s: sending msg to %s, src=%s, size=%d, headers are %s", local_addr, dest, sender, msg.size(), msg.printHeaders());
 
         // Don't send if dest is local address. Instead, send it up the stack. If multicast message, loop back directly
         // to us (but still multicast). Once we receive this, we discard our own multicast message
