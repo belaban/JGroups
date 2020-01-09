@@ -14,9 +14,12 @@ cd $JGROUPS_HOME
 
 for i in $(git tag)
   do
-    # echo "checking $i"
     git show $i:$VER >>$TMPFILE 2>&1
-    # git show $i:$VER | grep codename | sort | uniq
+  done
+
+for i in $(git branch --format='%(refname:short)')
+  do
+    git show $i:$VER >>$TMPFILE 2>&1
   done
 
 cat $TMPFILE | grep $CODENAME | grep -v fatal | sort | uniq
