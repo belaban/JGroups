@@ -176,7 +176,7 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
     protected JChannel resetAllStats() {
         List<Protocol> prots=ch.getProtocolStack().getProtocols();
         prots.forEach(Protocol::resetStatistics);
-        return ch.resetStats();
+        return ch;
     }
 
     /**

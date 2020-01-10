@@ -66,7 +66,6 @@ public class JChannel implements Closeable {
     protected boolean                               state_transfer_supported; // true if state transfer prot is in the stack
     protected volatile boolean                      flush_supported; // true if FLUSH is present in the stack
     protected final DiagnosticsHandler.ProbeHandler probe_handler=new JChannelProbeHandler(this);
-    protected long                                  sent_msgs, received_msgs, sent_bytes, received_bytes;
 
     @ManagedAttribute(description="Collect channel statistics",writable=true)
     protected boolean                               stats=true;
@@ -237,10 +236,6 @@ public class JChannel implements Closeable {
     @ManagedAttribute public boolean isConnected()         {return state == State.CONNECTED;}
     @ManagedAttribute public boolean isConnecting()        {return state == State.CONNECTING;}
     @ManagedAttribute public boolean isClosed()            {return state == State.CLOSED;}
-    @ManagedAttribute public long    getSentMessages()     {return sent_msgs;}
-    @ManagedAttribute public long    getSentBytes()        {return sent_bytes;}
-    @ManagedAttribute public long    getReceivedMessages() {return received_msgs;}
-    @ManagedAttribute public long    getReceivedBytes()    {return received_bytes;}
     @ManagedAttribute public static  String getVersion()   {return Version.printDescription();}
 
 
@@ -292,9 +287,6 @@ public class JChannel implements Closeable {
      */
     public String getProperties() {return prot_stack != null? prot_stack.printProtocolSpec(true) : null;}
 
-    @ManagedOperation
-    public JChannel resetStats() {sent_msgs=received_msgs=sent_bytes=received_bytes=0; return this;}
-
     /** Dumps all protocols in string format. If include_props is set, the attrs of each protocol are also printed */
     @ManagedOperation
     public String printProtocolSpec(boolean include_props) {
@@ -305,9 +297,7 @@ public class JChannel implements Closeable {
     /** Returns a map of statistics of the various protocols and of the channel itself */
     @ManagedOperation
     public Map<String,Map<String,Object>> dumpStats() {
-        Map<String,Map<String,Object>> retval=prot_stack.dumpStats();
-        retval.put("channel", dumpChannelStats());
-        return retval;
+        return prot_stack.dumpStats();
     }
 
     public Map<String,Map<String,Object>> dumpStats(String protocol_name, List<String> attrs) {
@@ -319,14 +309,6 @@ public class JChannel implements Closeable {
         return prot_stack.dumpStats(protocol_name, null);
     }
 
-    protected Map<String,Object> dumpChannelStats() {
-        Map<String,Object> retval=new HashMap<>();
-        retval.put("sent_msgs",      sent_msgs);
-        retval.put("sent_bytes",     sent_bytes);
-        retval.put("received_msgs",  received_msgs);
-        retval.put("received_bytes", received_bytes);
-        return retval;
-    }
 
 
     /**
@@ -623,17 +605,11 @@ public class JChannel implements Closeable {
      * @param evt the message to send down, encapsulated in an event
      */
     public Object down(Event evt) {
-        if(evt == null) return null;
-        return prot_stack.down(evt);
+        return evt != null? prot_stack.down(evt) : null;
     }
 
     public Object down(Message msg) {
-        if(msg == null) return null;
-        if(stats) {
-            sent_msgs++;
-            sent_bytes+=msg.getLength();
-        }
-        return prot_stack.down(msg);
+        return msg != null? prot_stack.down(msg) : null;
     }
 
 
@@ -761,11 +737,6 @@ public class JChannel implements Closeable {
     }
 
     public Object up(Message msg) {
-        if(stats) {
-            received_msgs++;
-            received_bytes+=msg.getLength();
-        }
-
         // discard local messages (sent by myself to me)
         if(discard_own_messages && local_addr != null && msg.getSrc() != null && local_addr.equals(msg.getSrc()))
             return null;
@@ -782,11 +753,6 @@ public class JChannel implements Closeable {
 
     /** Callback invoked by the protocol stack to deliver a message batch */
     public JChannel up(MessageBatch batch) {
-        if(stats) {
-            received_msgs+=batch.size();
-            received_bytes+=batch.length();
-        }
-
         // discard local messages (sent by myself to me)
         if(discard_own_messages && local_addr != null && batch.sender() != null && local_addr.equals(batch.sender()))
             return this;

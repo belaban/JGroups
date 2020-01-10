@@ -3,64 +3,45 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.stack.Protocol;
-import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.util.MessageBatch;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Provides various stats
  * @author Bela Ban
  */
-@MBean(description="Protocol which exposes various statistics")
-public class STATS extends Protocol {
-    long sent_msgs, sent_bytes, sent_ucasts, sent_mcasts, received_ucasts, received_mcasts;
-    long received_msgs, received_bytes, sent_ucast_bytes, sent_mcast_bytes, received_ucast_bytes, received_mcast_bytes;
+@MBean(description="Protocol which exposes various statistics such as sent messages, number of bytes received etc")
+public class STATS extends Protocol implements AdditionalJmxObjects {
+    protected static final short   UP=1;
+    protected static final short   DOWN=2;
+    protected static final Address NULL_DEST=Global.NULL_ADDRESS;
 
-    /** HashMap<Address,Entry>, maintains stats per target destination */
-    HashMap sent=new HashMap();
+    /** Global stats */
+    protected final MsgStats mstats=new MsgStats();
 
-    /** HashMap<Address,Entry>, maintains stats per receiver */
-    HashMap received=new HashMap();
+    /** Maintains stats per target destination */
+    protected final ConcurrentMap<Address,MsgStats> sent=new ConcurrentHashMap<>();
 
-    static final short UP=1;
-    static final short DOWN=2;
+    /** Maintains stats per receiver */
+    protected final ConcurrentMap<Address,MsgStats> received=new ConcurrentHashMap<>();
+
 
 
     public void resetStats() {
-        sent_msgs=sent_bytes=sent_ucasts=sent_mcasts=received_ucasts=received_mcasts=0;
-        received_msgs=received_bytes=sent_ucast_bytes=sent_mcast_bytes=received_ucast_bytes=received_mcast_bytes=0;
+        mstats.reset();
         sent.clear();
         received.clear();
     }
 
-    @ManagedAttribute
-    public long getSentMessages() {return sent_msgs;}
-    @ManagedAttribute
-    public long getSentBytes() {return sent_bytes;}
-    @ManagedAttribute
-    public long getSentUnicastMessages() {return sent_ucasts;}
-    @ManagedAttribute
-    public long getSentUnicastBytes() {return sent_ucast_bytes;}
-    @ManagedAttribute
-    public long getSentMcastMessages() {return sent_mcasts;}
-    @ManagedAttribute
-    public long getSentMcastBytes() {return sent_mcast_bytes;}
 
-    @ManagedAttribute
-    public long getReceivedMessages() {return received_msgs;}
-    @ManagedAttribute
-    public long getReceivedBytes() {return received_bytes;}
-    @ManagedAttribute
-    public long getReceivedUnicastMessages() {return received_ucasts;}
-    @ManagedAttribute
-    public long getReceivedUnicastBytes() {return received_ucast_bytes;}
-    @ManagedAttribute
-    public long getReceivedMcastMessages() {return received_mcasts;}
-    @ManagedAttribute
-    public long getReceivedMcastBytes() {return received_mcast_bytes;}
-
+    public Object[] getJmxObjects() {
+        return new Object[]{mstats};
+    }
 
     public Object up(Event evt) {
         if(evt.getType() == Event.VIEW_CHANGE)
@@ -69,13 +50,12 @@ public class STATS extends Protocol {
     }
 
     public Object up(Message msg) {
-        updateStats(msg, UP);
+        updateStats(msg.dest(), msg.src(), 1, msg.getLength(), UP);
         return up_prot.up(msg);
     }
 
     public void up(MessageBatch batch) {
-        for(Message msg: batch)
-            updateStats(msg, UP);
+        updateStats(batch.dest(), batch.sender(), batch.size(), batch.length(), UP);
         up_prot.up(batch);
     }
 
@@ -86,7 +66,7 @@ public class STATS extends Protocol {
     }
 
     public Object down(Message msg) {
-        updateStats(msg, DOWN);
+        updateStats(msg.dest(), msg.src(), 1, msg.getLength(), DOWN);
         return down_prot.down(msg);
     }
 
@@ -99,7 +79,7 @@ public class STATS extends Protocol {
         for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             key=entry.getKey();
-            if(key == null) key="<mcast dest>";
+            if(key == NULL_DEST) key="<mcast dest>";
             val=entry.getValue();
             sb.append(key).append(": ").append(val).append("\n");
         }
@@ -116,83 +96,69 @@ public class STATS extends Protocol {
 
     private void handleViewChange(View view) {
         List<Address> members=view.getMembers();
-        Set tmp=new LinkedHashSet(members);
+        Set<Address> tmp=new LinkedHashSet(members);
         tmp.add(null); // for null destination (= mcast)
         sent.keySet().retainAll(tmp);
         received.keySet().retainAll(tmp);
     }
 
-    private void updateStats(Message msg, short direction) {
-        int     length;
-        HashMap map;
-        boolean mcast;
-        Address dest, src;
-
-        if(msg == null) return;
-        length=msg.getLength();
-        dest=msg.getDest();
-        src=msg.getSrc();
-        mcast=dest == null;
+    protected void updateStats(Address dest, Address src, int num_msgs, int num_bytes, short direction) {
+        boolean mcast=dest == null;
 
         if(direction == UP) { // received
-            received_msgs++;
-            received_bytes+=length;
+            mstats.incrNumMsgsReceived(num_msgs);
+            mstats.incrNumBytesReceived(num_bytes);
             if(mcast) {
-                received_mcasts++;
-                received_mcast_bytes+=length;
+                mstats.incrNumMcastMsgsReceived(num_msgs);
+                mstats.incrNumMcastBytesReceived(num_bytes);
             }
             else {
-                received_ucasts++;
-                received_ucast_bytes+=length;
+                mstats.incrNumUcastMsgsReceived(num_msgs);
+                mstats.incrNumUcastBytesReceived(num_bytes);
             }
         }
         else {                // sent
-            sent_msgs++;
-            sent_bytes+=length;
+            mstats.incrNumMsgsSent(num_msgs);
+            mstats.incrNumBytesSent(num_bytes);
             if(mcast) {
-                sent_mcasts++;
-                sent_mcast_bytes+=length;
+                mstats.incrNumMcastMsgsSent(num_msgs);
+                mstats.incrNumMcastBytesSent(num_bytes);
             }
             else {
-                sent_ucasts++;
-                sent_ucast_bytes+=length;
+                mstats.incrNumUcastMsgsSent(num_msgs);
+                mstats.incrNumUcastBytesSent(num_bytes);
             }
         }
 
         Address key=direction == UP? src : dest;
-        map=direction == UP? received : sent;
-        Entry entry=(Entry)map.get(key);
-        if(entry == null) {
-            entry=new Entry();
-            map.put(key, entry);
-        }
-        entry.msgs++;
-        entry.bytes+=length;
-        if(mcast) {
-            entry.mcasts++;
-            entry.mcast_bytes+=length;
+        if(key == null) key=NULL_DEST;
+        Map<Address,MsgStats> map=direction == UP? received : sent;
+        MsgStats entry=map.computeIfAbsent(key, k -> new MsgStats());
+        if(direction == UP) {
+            entry.incrNumMsgsSent(num_msgs);
+            entry.incrNumBytesSent(num_bytes);
+            if(mcast) {
+                entry.incrNumMcastMsgsSent(num_msgs);
+                entry.incrNumMcastBytesSent(num_bytes);
+            }
+            else {
+                entry.incrNumUcastMsgsSent(num_msgs);
+                entry.incrNumUcastBytesSent(num_bytes);
+            }
         }
         else {
-            entry.ucasts++;
-            entry.ucast_bytes+=length;
+            entry.incrNumMsgsReceived(num_msgs);
+            entry.incrNumBytesReceived(num_bytes);
+            if(mcast) {
+                entry.incrNumMcastMsgsReceived(num_msgs);
+                entry.incrNumMcastBytesReceived(num_bytes);
+            }
+            else {
+                entry.incrNumUcastMsgsReceived(num_msgs);
+                entry.incrNumUcastBytesReceived(num_bytes);
+            }
         }
     }
-
-
-
-
-    static class Entry {
-        long msgs, bytes, ucasts, mcasts, ucast_bytes, mcast_bytes;
-
-        public String toString() {
-            StringBuilder sb=new StringBuilder();
-            sb.append(msgs).append(" (").append(bytes).append(" bytes)")
-                    .append(": ").append(ucasts).append(" ucasts (").append(ucast_bytes)
-                    .append(" bytes), ").append(mcasts).append(" mcasts (").append(mcast_bytes).append(" bytes)");
-            return sb.toString();
-        }
-    }
-
 
 
 }
