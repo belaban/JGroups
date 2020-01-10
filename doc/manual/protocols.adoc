@@ -1834,7 +1834,7 @@ ${FLUSH}
 Security is used to prevent (1) non-authorized nodes being able to join a cluster and (2) non-members being
 able to communicate with cluster members.
 
-(1) is handled by AUTH or SASL which allows only authenticated nodes to join a cluster.
+(1) is handled by AUTH which allows only authenticated nodes to join a cluster.
 
 (2) is handled by the encryption protocol (SYM_ENCRYPT or ASYM_ENCRYPT) which encrypts messages between cluster
 members such that a non-member cannot understand them.
@@ -2091,69 +2091,6 @@ to all members (and optionally changed on a member leaving or joining the group)
 
 The former uses certificates to obtain the shared group key from a coordinator. Members whose certificates cannot be
 validated can therefore not join or merge.
-
-
-[[SASL]]
-
-
-==== SASL
-
-SASL is an alternative to the AUTH protocol which provides a layer of authentication to JGroups by allowing the
-                    use of one of the SASL mechanisms made available by the JDK. SASL sits below the GMS
-                    protocol and listens for JOIN / MERGE REQUEST messages.  When a JOIN / MERGE REQUEST is received it tries to find
-                    a SaslHeader object which contains the initial response required by the chosen SASL mech. This initiates a sequence
-                    of challenge/response messages which, if successful, culminates in allowing the new node to join the cluster. The actual
-                    validation logic required by the SASL mech must be provided by the user in the form of a standard javax.security.auth.CallbackHandler
-                    implementation.
-
-
-When authentication is successful, the message is simply passed up the stack to the GMS protocol.
-                    When it fails, the SASL protocol creates a JOIN / MERGE RESPONSE message with a failure string and passes
-                    it back down the stack.  This failure string informs the client of the reason for failure.
-                    Clients will then fail to join the group and will throw a SecurityException.
-                    If this error string is null then authentication is considered to have passed.
-
-
-SASL can be (minimally) configured as follows:
-
-
-
-[source,xml]
-----
-
-<config ... >
-    <UDP />
-    <PING />
-    <pbcast.NAKACK />
-    <UNICAST3 />
-    <pbcast.STABLE />
-    <SASL mech="DIGEST-MD5"
-        client_callback_handler="org.example.ClientCallbackHandler"
-        server_callback_handler="org.example.ServerCallbackHandler"/>
-    <pbcast.GMS />
-
-</config>
-
-----
-
-The +mech+ property specifies the SASL mech you want to use, as defined by RFC-4422. You will also need to provide two
-                    callback handlers, one used when the node is running as coordinator (++$$server_callback_handler$$++) and one used in all other
-                    cases (++$$client_callback_handler$$++). Refer to the JDK's SASL reference guide for more details: link:$$http://docs.oracle.com/javase/7/docs/technotes/guides/security/sasl/sasl-refguide.html$$[]
-
-The JGroups package comes with a simple properties-based CallbackHandler which can be used when a more complex Kerberos/LDAP approach is not needed. To use this set both the (++$$server_callback_handler$$++) and
-                    the (++$$client_callback_handler$$++) to org.jgroups.auth.sasl.SimpleAuthorizingCallbackHandler. This CallbackHandler can be configured either programmatically by passing to the constructor an
-                    instance of java.util.Properties containing the appropriate properties, or via standard Java system properties (i.e. set on the command-line using the -DpropertyName=propertyValue notation.
-                    The following properties are available:
-
-* sasl.credentials.properties - the path to a property file which contains principal/credential mappings represented as principal=password
-* sasl.local.principal - the name of the principal that is used to identify the local node. It must exist in the sasl.credentials.properties file
-* sasl.roles.properties - (optional) the path to a property file which contains principal/roles mappings represented as principal=role1,role2,role3
-* sasl.role - (optional) if present, authorizes joining nodes only if their principal is
-* sasl.realm - (optional) the name of the realm to use for the SASL mechanisms that require it
-
-${SASL}
-
-
 
 
 

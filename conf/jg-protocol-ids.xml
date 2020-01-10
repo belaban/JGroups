@@ -52,7 +52,6 @@
     <class id="48" name="org.jgroups.protocols.UNICAST3"/>
     <class id="49" name="org.jgroups.protocols.PERF"/>
     <class id="50" name="org.jgroups.protocols.SHARED_LOOPBACK_PING"/>
-    <class id="51" name="org.jgroups.protocols.SASL"/>
     <class id="52" name="org.jgroups.protocols.GOOGLE_PING"/>
     <class id="53" name="org.jgroups.protocols.SEQUENCER2"/>
     <class id="54" name="org.jgroups.protocols.FD_HOST"/>

@@ -64,7 +64,6 @@
     <class id="82"  name="org.jgroups.protocols.UnicastHeader3"/>
     <class id="83"  name="org.jgroups.protocols.FORK$ForkHeader"/>
     <class id="84"  name="org.jgroups.protocols.PERF$PerfHeader"/>
-    <class id="85"  name="org.jgroups.protocols.SaslHeader"/>
     <class id="86"  name="org.jgroups.protocols.SEQUENCER2$SequencerHeader"/>
     <class id="87"  name="org.jgroups.protocols.ABP$ABPHeader"/>
     <class id="88"  name="org.jgroups.protocols.EncryptHeader"/>
