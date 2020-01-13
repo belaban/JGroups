@@ -211,9 +211,8 @@ public class MessageTest extends MessageTestBase {
 
 
     public void testCopy() {
-        Message m1=new BytesMessage(null, "Bela Ban");
-        m1.setFlag(Message.Flag.OOB);
-        m1.setFlag(Message.TransientFlag.OOB_DELIVERED);
+        Message m1=new BytesMessage(null, "Bela Ban")
+          .setFlag(Message.Flag.OOB).setFlag(Message.TransientFlag.OOB_DELIVERED);
         Message m2=m1.copy(true, true);
         Assert.assertEquals(m1.getOffset(), m2.getOffset());
         Assert.assertEquals(m1.getLength(), m2.getLength());

@@ -220,6 +220,26 @@ public abstract class BaseMessage implements Message {
         return true;
     }
 
+    /**
+     * Copies the source- and destination addresses, flags and headers (if copy_headers is true).<br/>
+     * If copy_payload is set, then method {@link #copyPayload(Message)} of the subclass will be called, which is
+     * responsible for copying the payload specific to that message type.<br/>
+     * Note that for headers, only the arrays holding references to the headers are copied, not the headers themselves !
+     * The consequence is that the headers array of the copy hold the *same* references as the original, so do *not*
+     * modify the headers ! If you want to change a header, copy it and call {@link Message#putHeader(short,Header)} again.
+     */
+    public <T extends Message> T copy(boolean copy_payload, boolean copy_headers) {
+        BaseMessage retval=(BaseMessage)create().get();
+        retval.dest=dest;
+        retval.sender=sender;
+        retval.flags=this.flags;
+        retval.transient_flags=this.transient_flags;
+        retval.headers=copy_headers && headers != null? Headers.copy(this.headers) : createHeaders(Util.DEFAULT_HEADERS);
+        if(copy_payload)
+            copyPayload(retval);
+        return (T)retval;
+    }
+
 
     /*---------------------- Used by protocol layers ----------------------*/
 
@@ -248,17 +268,11 @@ public abstract class BaseMessage implements Message {
 
     /*---------------------------------------------------------------------*/
 
-
     public String toString() {
-        return String.format("[%s to %s, %d bytes%s%s]",
-                             sender,
-                             dest == null? "<all>" : dest,
-                             getLength(),
-                             flags > 0? ", flags=" + Util.flagsToString(flags) : "",
+        return String.format("[%s to %s, %d bytes%s%s]", sender, dest == null? "<all>" : dest,
+                             getLength(), flags > 0? ", flags=" + Util.flagsToString(flags) : "",
                              transient_flags > 0? ", transient_flags=" + Util.transientFlagsToString(transient_flags) : "");
     }
-
-
 
     public int serializedSize() {
         return size();
@@ -277,7 +291,6 @@ public abstract class BaseMessage implements Message {
         return retval;
     }
 
-
     public void writeTo(DataOutput out) throws IOException {
         byte leading=0;
 
@@ -287,32 +300,25 @@ public abstract class BaseMessage implements Message {
         if(sender != null)
             leading=Util.setFlag(leading, SRC_SET);
 
-        // 1. write the leading byte first
+        // write the leading byte first
         out.write(leading);
 
-        // 2. the flags (e.g. OOB, LOW_PRIO), skip the transient flags
+        // write the flags (e.g. OOB, LOW_PRIO), skip the transient flags
         out.writeShort(flags);
 
-        // 3. dest_addr
+        // write the dest_addr
         if(dest != null)
             Util.writeAddress(dest, out);
 
-        // 4. src_addr
+        // write the src_addr
         if(sender != null)
             Util.writeAddress(sender, out);
 
-        // 5. headers
-        Header[] hdrs=this.headers;
-        int size=Headers.size(hdrs);
-        out.writeShort(size);
-        if(size > 0) {
-            for(Header hdr : hdrs) {
-                if(hdr == null)
-                    break;
-                out.writeShort(hdr.getProtId());
-                writeHeader(hdr, out);
-            }
-        }
+        // write the headers
+        writeHeaders(this.headers, out, (short[])null);
+
+        // finally write the payload
+        writePayload(out);
     }
 
     public void writeToNoAddrs(Address src, DataOutput out, short... excluded_headers) throws IOException {
@@ -323,31 +329,21 @@ public abstract class BaseMessage implements Message {
         if(write_src_addr)
             leading=Util.setFlag(leading, SRC_SET);
 
-        // 1. write the leading byte first
+        // write the leading byte first
         out.write(leading);
 
-        // 2. the flags (e.g. OOB, LOW_PRIO)
+        // write the flags (e.g. OOB, LOW_PRIO)
         out.writeShort(flags);
 
-        // 4. src_addr
+        // write the src_addr
         if(write_src_addr)
             Util.writeAddress(sender, out);
 
-        // 5. headers
-        Header[] hdrs=this.headers;
-        int size=Headers.size(hdrs, excluded_headers);
-        out.writeShort(size);
-        if(size > 0) {
-            for(Header hdr : hdrs) {
-                if(hdr == null)
-                    break;
-                short id=hdr.getProtId();
-                if(Util.containsId(id, excluded_headers))
-                    continue;
-                out.writeShort(id);
-                writeHeader(hdr, out);
-            }
-        }
+        // write the headers
+        writeHeaders(this.headers, out, excluded_headers);
+
+        // finally write the payload
+        writePayload(out);
     }
 
 
@@ -374,17 +370,39 @@ public abstract class BaseMessage implements Message {
             Header hdr=readHeader(in).setProtId(id);
             this.headers[i]=hdr;
         }
+        readPayload(in);
     }
 
+    protected abstract void writePayload(DataOutput out) throws IOException;
 
+    protected abstract void readPayload(DataInput in) throws IOException, ClassNotFoundException;
+
+    /** Copies the payload */
+    protected <T extends Message> T copyPayload(T copy) {
+        return copy;
+    }
+
+    protected static void writeHeaders(Header[] hdrs, DataOutput out, short ... excluded_headers) throws IOException {
+        int size=Headers.size(hdrs, excluded_headers);
+        out.writeShort(size);
+        if(size > 0) {
+            for(Header hdr : hdrs) {
+                if(hdr == null)
+                    break;
+                short id=hdr.getProtId();
+                if(Util.containsId(id, excluded_headers))
+                    continue;
+                out.writeShort(id);
+                writeHeader(hdr, out);
+            }
+        }
+    }
 
     protected static void writeHeader(Header hdr, DataOutput out) throws IOException {
         short magic_number=hdr.getMagicId();
         out.writeShort(magic_number);
         hdr.writeTo(out);
     }
-
-
 
     protected static Header readHeader(DataInput in) throws IOException, ClassNotFoundException {
         short magic_number=in.readShort();

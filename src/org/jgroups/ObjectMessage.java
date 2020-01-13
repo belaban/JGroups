@@ -56,7 +56,7 @@ public class ObjectMessage extends BaseMessage {
     }
 
     public Supplier<Message> create()                             {return ObjectMessage::new;}
-    public byte              getType()                            {return Message.OBJ_MSG;}
+    public short             getType()                            {return Message.OBJ_MSG;}
     public boolean           hasPayload()                         {return obj != null;}
     public boolean           hasArray()                           {return false;}
     public int               getOffset()                          {return 0;}
@@ -79,23 +79,6 @@ public class ObjectMessage extends BaseMessage {
     }
 
 
-    public ObjectMessage copy(boolean copy_payload, boolean copy_headers) {
-        ObjectMessage retval=new ObjectMessage(false);
-        retval.dest=dest;
-        retval.sender=sender;
-        short tmp_flags=this.flags;
-        byte tmp_tflags=this.transient_flags;
-        retval.flags=tmp_flags;
-        retval.transient_flags=tmp_tflags;
-
-        if(copy_payload && obj != null)
-            retval.setObject(obj);
-        retval.headers=copy_headers && headers != null? Headers.copy(this.headers) : createHeaders(Util.DEFAULT_HEADERS);
-        return retval;
-    }
-
-
-
     protected Object check(Object obj) {
         if(obj != null && !(obj instanceof SizeStreamable))
             throw new IllegalArgumentException(String.format("obj (%s) does not implement %s",
@@ -114,41 +97,19 @@ public class ObjectMessage extends BaseMessage {
     }
 
 
-
-    /** Streams all members (dest and src addresses, buffer and headers) to the output stream */
-    public void writeTo(DataOutput out) throws IOException {
-        super.writeTo(out);
-        write(out);
-    }
-
-   /**
-    * Writes the message to the output stream, but excludes the dest and src addresses unless the
-    * src address given as argument is different from the message's src address
-    * @param excluded_headers Don't marshal headers that are part of excluded_headers
-    */
-    public void writeToNoAddrs(Address src, DataOutput out, short... excluded_headers) throws IOException {
-        super.writeToNoAddrs(src, out, excluded_headers);
-        write(out);
-    }
-
-
-    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-        super.readFrom(in);
-        read(in);
-    }
-
-
-    protected void write(DataOutput out) throws IOException {
+    @Override protected void writePayload(DataOutput out) throws IOException {
         Util.writeGenericStreamable((Streamable)obj, out);
     }
 
-    protected void read(DataInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readPayload(DataInput in) throws IOException, ClassNotFoundException {
         obj=Util.readGenericStreamable(in);
     }
 
-
-    /* --------------------------------- End of Interface Streamable ----------------------------- */
-
+    @Override protected <T extends Message> T copyPayload(T copy) {
+        if(obj != null)
+            copy.setObject(obj);
+        return copy;
+    }
 
     public String toString() {
         return super.toString() + String.format(", obj: %s", obj);

@@ -19,7 +19,7 @@ import java.util.function.Supplier;
 public interface Message extends SizeStreamable, Constructable<Message> {
 
     // The type of the message. Cannot be an enum, as users can register additional types
-    byte BYTES_MSG         = 0,
+    short BYTES_MSG        = 0,
       NIO_MSG              = 1,
       EMPTY_MSG            = 2,
       OBJ_MSG              = 3,
@@ -29,7 +29,7 @@ public interface Message extends SizeStreamable, Constructable<Message> {
 
 
     /** Returns the type of the message, e.g. BYTES_MSG, OBJ_MSG etc */
-    byte                          getType();
+    short                         getType();
 
     /** Creates a supplier that can create an instance of a message */
     Supplier<Message>             create();

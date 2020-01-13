@@ -26,9 +26,13 @@ public class SERIALIZE extends Protocol {
     protected static final short GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
     //@Property(description="If true, messages with no payload will not be serialized")
     //protected boolean exclude_empty_msgs=true;
-    protected Address              local_addr;
-    protected final MessageFactory mf=new DefaultMessageFactory();
+    protected Address        local_addr;
+    protected MessageFactory mf;
 
+    public void init() throws Exception {
+        super.init();
+        mf=getTransport().getMessageFactory();
+    }
 
     public Object down(Event evt) {
         switch(evt.getType()) {

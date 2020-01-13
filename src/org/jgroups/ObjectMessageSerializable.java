@@ -2,7 +2,6 @@
 package org.jgroups;
 
 
-import org.jgroups.util.Headers;
 import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -58,7 +57,7 @@ public class ObjectMessageSerializable extends ObjectMessage {
     }
 
     public Supplier<Message> create()  {return ObjectMessageSerializable::new;}
-    public byte              getType() {return Message.OBJ_MSG_SERIALIZABLE;}
+    public short             getType() {return Message.OBJ_MSG_SERIALIZABLE;}
 
     public synchronized <T> T getObject() {
         return super.getObject();
@@ -80,36 +79,6 @@ public class ObjectMessageSerializable extends ObjectMessage {
             return serialized_obj.length;
         swizzle();
         return serialized_obj != null? serialized_obj.length : 0;
-    }
-
-
-
-   /**
-    * Create a copy of the message. If offset and length are used (to refer to another buffer), the
-    * copy will contain only the subset offset and length point to, copying the subset into the new
-    * copy.<p/>
-    * Note that for headers, only the arrays holding references to the headers are copied, not the headers themselves !
-    * The consequence is that the headers array of the copy hold the *same* references as the original, so do *not*
-    * modify the headers ! If you want to change a header, copy it and call {@link ObjectMessageSerializable#putHeader(short,Header)} again.
-    *
-    * @param copy_payload
-    * @param copy_headers
-    *           Copy the headers
-    * @return Message with specified data
-    */
-    public ObjectMessageSerializable copy(boolean copy_payload, boolean copy_headers) {
-        ObjectMessageSerializable retval=new ObjectMessageSerializable(false);
-        retval.dest=dest;
-        retval.sender=sender;
-        short tmp_flags=this.flags;
-        byte tmp_tflags=this.transient_flags;
-        retval.flags=tmp_flags;
-        retval.transient_flags=tmp_tflags;
-
-        if(copy_payload && obj != null)
-            retval.setObject(obj);
-        retval.headers=copy_headers && headers != null? Headers.copy(this.headers) : createHeaders(Util.DEFAULT_HEADERS);
-        return retval;
     }
 
 
@@ -145,7 +114,7 @@ public class ObjectMessageSerializable extends ObjectMessage {
 
 
 
-    protected synchronized void write(DataOutput out) throws IOException {
+    @Override protected synchronized void writePayload(DataOutput out) throws IOException {
         out.writeBoolean(obj instanceof SizeStreamable);
         if(obj instanceof SizeStreamable) {
             Util.writeGenericStreamable((Streamable)obj, out);
@@ -161,7 +130,7 @@ public class ObjectMessageSerializable extends ObjectMessage {
             out.writeInt(-1);
     }
 
-    protected synchronized void read(DataInput in) throws IOException, ClassNotFoundException {
+    @Override protected synchronized void readPayload(DataInput in) throws IOException, ClassNotFoundException {
         boolean streamable=in.readBoolean();
         if(streamable)
             obj=Util.readGenericStreamable(in);

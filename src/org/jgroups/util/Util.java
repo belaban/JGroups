@@ -1131,9 +1131,9 @@ public class Util {
     }
 
     public static ByteArray messageToBuffer(Message msg) throws Exception {
-        int expected_size=msg.size() +1;
+        int expected_size=msg.size() + Global.SHORT_SIZE; // type
         final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(expected_size);
-        out.write(msg.getType());
+        out.writeShort(msg.getType());
         msg.writeTo(out);
         return out.getBuffer();
     }
@@ -1145,7 +1145,7 @@ public class Util {
 
     public static Message messageFromBuffer(byte[] buf, int offset, int length, MessageFactory mf) throws Exception {
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
-        byte type=in.readByte();
+        short type=in.readShort();
         Message msg=mf.create(type);
         msg.readFrom(in);
         return msg;
@@ -1155,7 +1155,7 @@ public class Util {
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(msg.size() +2);
         out.writeBoolean(msg != null);
         if(msg != null) {
-            out.write(msg.getType());
+            out.writeShort(msg.getType());
             msg.writeTo(out);
         }
         return out.getBuffer();
@@ -1166,7 +1166,7 @@ public class Util {
         DataInput in=new ByteArrayDataInputStream(buffer,offset,length);
         if(!in.readBoolean())
             return null;
-        byte type=in.readByte();
+        short type=in.readShort();
         Message msg=mf.create(type);
         msg.readFrom(in);
         return msg;
@@ -1278,12 +1278,12 @@ public class Util {
         if(multicast)
             flags+=MULTICAST;
         dos.writeByte(flags);
-        dos.write(msg.getType());
+        dos.writeShort(msg.getType());
         msg.writeTo(dos);
     }
 
     public static Message readMessage(DataInput in, MessageFactory mf) throws IOException, ClassNotFoundException {
-        byte type=in.readByte();
+        short type=in.readShort();
         Message msg=mf.create(type);
         msg.readFrom(in);
         return msg;
@@ -1312,7 +1312,7 @@ public class Util {
 
         if(msgs != null)
             for(Message msg: msgs) {
-                dos.write(msg.getType());
+                dos.writeShort(msg.getType());
                 msg.writeToNoAddrs(src, dos, transport_id); // exclude the transport header
             }
     }
@@ -1352,7 +1352,7 @@ public class Util {
         int len=in.readInt();
 
         for(int i=0; i < len; i++) {
-            byte type=in.readByte(); // skip the
+            short type=in.readShort(); // skip the
             Message msg=mf.create(type);
             msg.readFrom(in);
             msg.setDest(dest);
@@ -1391,7 +1391,7 @@ public class Util {
 
         int len=in.readInt();
         for(int i=0; i < len; i++) {
-            byte type=in.readByte();
+            short type=in.readShort();
             Message msg=factory.create(type);  // new BytesMessage(false);
             msg.readFrom(in);
             msg.setDest(dest);

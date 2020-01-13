@@ -224,7 +224,9 @@ public abstract class EncryptTest {
         // add SERIALIZE over the encryption protocol, so headers are encrypted, too, and therefore a replay attack as
         // this one won't succeed
         for(JChannel ch: Arrays.asList(a,b,c)) {
-            ch.getProtocolStack().insertProtocol(new SERIALIZE(), ProtocolStack.Position.ABOVE, Encrypt.class);
+            SERIALIZE s=new SERIALIZE();
+            ch.getProtocolStack().insertProtocol(s, ProtocolStack.Position.ABOVE, Encrypt.class);
+            s.init();
         }
 
 

@@ -15,7 +15,7 @@ public interface MessageFactory {
      * @param <T> The type of the message
      * @return A message
      */
-    <T extends Message> T create(byte id);
+    <T extends Message> T create(short id);
 
     /**
      * Registers a new creator of messages
@@ -23,5 +23,5 @@ public interface MessageFactory {
      *             needs to be available (ie., not taken by JGroups or other applications).
      * @param generator The creator of the payload associated with the given type
      */
-    void register(byte type, Supplier<? extends Message> generator);
+    void register(short type, Supplier<? extends Message> generator);
 }

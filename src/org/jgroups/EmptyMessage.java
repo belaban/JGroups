@@ -1,9 +1,10 @@
 package org.jgroups;
 
 import org.jgroups.util.ByteArray;
-import org.jgroups.util.Headers;
-import org.jgroups.util.Util;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 /**
@@ -24,21 +25,8 @@ public class EmptyMessage extends BaseMessage {
         super(create_headers);
     }
 
-    public byte              getType() {return Message.EMPTY_MSG;}
-    public Supplier<Message> create()  {return EmptyMessage::new;}
-
-    public EmptyMessage copy(boolean copy_payload, boolean copy_headers) {
-        EmptyMessage retval=new EmptyMessage();
-        retval.dest=dest;
-        retval.sender=sender;
-        short tmp_flags=this.flags;
-        byte tmp_tflags=this.transient_flags;
-        retval.flags=tmp_flags;
-        retval.transient_flags=tmp_tflags;
-        retval.headers=copy_headers && headers != null? Headers.copy(this.headers) : createHeaders(Util.DEFAULT_HEADERS);
-        return retval;
-    }
-
+    public short                 getType()                            {return Message.EMPTY_MSG;}
+    public Supplier<Message>     create()                             {return EmptyMessage::new;}
     public boolean               hasPayload()                         {return false;}
     public boolean               hasArray()                           {return false;}
     public byte[]                getArray()                           {return null;}
@@ -48,4 +36,12 @@ public class EmptyMessage extends BaseMessage {
     public EmptyMessage          setArray(ByteArray buf)              {throw new UnsupportedOperationException();}
     public <T extends Object> T  getObject()                          {throw new UnsupportedOperationException();}
     public EmptyMessage          setObject(Object obj)                {throw new UnsupportedOperationException();}
+
+    protected void               writePayload(DataOutput out) throws IOException {
+        // no payload to write
+    }
+
+    protected void               readPayload(DataInput in) throws IOException, ClassNotFoundException {
+        // no payload to read
+    }
 }

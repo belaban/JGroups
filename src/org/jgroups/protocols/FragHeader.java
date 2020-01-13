@@ -18,7 +18,7 @@ public class FragHeader extends Header {
     public int     frag_id;
     public int     num_frags;
     public boolean needs_deserialization; // true if byte[] array of a fragment needs to be de-serialized into a payload
-    public byte    original_type;
+    public short   original_type;
 
 
     public FragHeader() {
@@ -37,8 +37,8 @@ public class FragHeader extends Header {
     }
     public boolean    needsDeserialization()             {return needs_deserialization;}
     public FragHeader needsDeserialization(boolean flag) {needs_deserialization=flag; return this;}
-    public byte       getOriginalType()                  {return original_type;}
-    public FragHeader setOriginalType(byte type)         {this.original_type=type; return this;}
+    public short      getOriginalType()                  {return original_type;}
+    public FragHeader setOriginalType(short type)        {this.original_type=type; return this;}
 
 
     public String toString() {
@@ -51,12 +51,12 @@ public class FragHeader extends Header {
         Bits.writeInt(frag_id, out);
         Bits.writeInt(num_frags, out);
         out.writeBoolean(needs_deserialization);
-        out.writeByte(original_type);
+        out.writeShort(original_type);
     }
 
     @Override
     public int serializedSize() {
-        return Bits.size(id) + Bits.size(frag_id) + Bits.size(num_frags) + Global.BYTE_SIZE*2;
+        return Bits.size(id) + Bits.size(frag_id) + Bits.size(num_frags) + Global.BYTE_SIZE + Global.SHORT_SIZE;
     }
 
     @Override
@@ -65,7 +65,7 @@ public class FragHeader extends Header {
         frag_id=Bits.readInt(in);
         num_frags=Bits.readInt(in);
         needs_deserialization=in.readBoolean();
-        original_type=in.readByte();
+        original_type=in.readShort();
     }
 
 }

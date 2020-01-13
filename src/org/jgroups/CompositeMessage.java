@@ -3,8 +3,6 @@ package org.jgroups;
 
 
 import org.jgroups.util.ByteArray;
-import org.jgroups.util.Headers;
-import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -47,7 +45,7 @@ public class CompositeMessage extends BaseMessage {
 
 
     public Supplier<Message>      create()                              {return CompositeMessage::new;}
-    public byte                   getType()                             {return Message.COMPOSITE_MSG;}
+    public short                  getType()                             {return Message.COMPOSITE_MSG;}
     public boolean                hasPayload()                          {return msgs != null && index > 0;}
     public boolean                hasArray()                            {return false;}
     public int                    getNumberOfMessages()                 {return index;}
@@ -116,22 +114,9 @@ public class CompositeMessage extends BaseMessage {
     }
 
 
-    /**
-     * Create a copy of this {@link CompositeMessage}.<br/>
-     * Note that for headers, only the arrays holding references to the headers are copied, not the headers themselves !
-     * The consequence is that the headers array of the copy hold the *same* references as the original, so do *not*
-     * modify the headers ! If you want to change a header, copy it and call
-     * {@link CompositeMessage#putHeader(short,Header)} again.
-    */
+    /** Create a copy of this {@link CompositeMessage}. */
     public CompositeMessage copy(boolean copy_payload, boolean copy_headers) {
-        CompositeMessage retval=new CompositeMessage(false);
-        retval.dest=dest;
-        retval.sender=sender;
-        short tmp_flags=this.flags;
-        byte tmp_tflags=this.transient_flags;
-        retval.flags=tmp_flags;
-        retval.transient_flags=tmp_tflags;
-        retval.headers=copy_headers && headers != null? Headers.copy(this.headers) : createHeaders(Util.DEFAULT_HEADERS);
+        CompositeMessage retval=super.copy(copy_payload, copy_headers);
         if(copy_payload && msgs != null) {
             Message[] copy=new Message[msgs.length];
             for(int i=0; i < msgs.length; i++) {
@@ -153,51 +138,29 @@ public class CompositeMessage extends BaseMessage {
         int retval=super.size() + Global.INT_SIZE; // length
         if(msgs != null) {
             for(int i=0; i < index; i++)
-                retval+=msgs[i].size() + Global.BYTE_SIZE; // type
+                retval+=msgs[i].size() + Global.SHORT_SIZE; // type
         }
         return retval;
     }
 
 
-    @Override public void writeTo(DataOutput out) throws IOException {
-        super.writeTo(out);
-        writePayload(out);
-    }
-
-
-   /**
-    * Writes the message to the output stream, but excludes the dest and src addresses unless the
-    * src address given as argument is different from the message's src address
-    * @param excluded_headers Don't marshal headers that are part of excluded_headers
-    */
-    @Override public void writeToNoAddrs(Address src, DataOutput out, short... excluded_headers) throws IOException {
-        super.writeToNoAddrs(src, out, excluded_headers);
-        writePayload(out);
-    }
-
-
-    @Override public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-        super.readFrom(in);
-        readPayload(in);
-    }
-
-    protected void writePayload(DataOutput out) throws IOException {
+    @Override protected void writePayload(DataOutput out) throws IOException {
         out.writeInt(index);
         if(msgs != null) {
             for(int i=0; i < index; i++) {
                 Message msg=msgs[i];
-                out.writeByte(msg.getType());
+                out.writeShort(msg.getType());
                 msg.writeTo(out);
             }
         }
     }
 
-    protected void readPayload(DataInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readPayload(DataInput in) throws IOException, ClassNotFoundException {
         index=in.readInt();
         if(index > 0) {
             msgs=new Message[index]; // a bit of additional space should we add byte arrays
             for(int i=0; i < index; i++) {
-                byte type=in.readByte();
+                short type=in.readShort();
                 msgs[i]=mf.create(type);
                 msgs[i].readFrom(in);
             }

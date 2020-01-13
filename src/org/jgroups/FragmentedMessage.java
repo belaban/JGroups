@@ -37,18 +37,11 @@ public class FragmentedMessage extends BytesMessage { // we need the superclass'
         return original_msg;
     }
 
-    public byte getType() {
-        return Message.FRAG_MSG;
-    }
+    public short getType() {return Message.FRAG_MSG;}
 
     public Supplier<Message> create() {
         return FragmentedMessage::new;
     }
-
-    public FragmentedMessage copy(boolean copy_payload, boolean copy_headers) {
-        return (FragmentedMessage)super.copy(copy_payload, copy_headers);
-    }
-
 
     protected int sizeOfPayload() {
         return Global.INT_SIZE + length;

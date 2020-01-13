@@ -3,7 +3,6 @@ package org.jgroups;
 
 
 import org.jgroups.util.ByteArray;
-import org.jgroups.util.Headers;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -113,7 +112,7 @@ public class BytesMessage extends BaseMessage {
     }
 
     public Supplier<Message> create()      {return BytesMessage::new;}
-    public byte              getType()     {return Message.BYTES_MSG;}
+    public short             getType()     {return Message.BYTES_MSG;}
     public boolean           hasPayload()  {return array != null;}
     public boolean           hasArray()    {return true;}
     public int               getOffset()   {return offset;}
@@ -219,37 +218,6 @@ public class BytesMessage extends BaseMessage {
     }
 
 
-
-   /**
-    * Create a copy of the message. If offset and length are used (to refer to another array), the
-    * copy will contain only the subset offset and length point to, copying the subset into the new
-    * copy.<p/>
-    * Note that for headers, only the arrays holding references to the headers are copied, not the headers themselves !
-    * The consequence is that the headers array of the copy hold the *same* references as the original, so do *not*
-    * modify the headers ! If you want to change a header, copy it and call {@link BytesMessage#putHeader(short,Header)} again.
-    *
-    * @param copy_payload Copy the payload
-    * @param copy_headers Copy the headers
-    * @return Message with specified data
-    */
-    public BytesMessage copy(boolean copy_payload, boolean copy_headers) {
-        BytesMessage retval=createMessage();
-        retval.dest=dest;
-        retval.sender=sender;
-        short tmp_flags=this.flags;
-        byte tmp_tflags=this.transient_flags;
-        retval.flags=tmp_flags;
-        retval.transient_flags=tmp_tflags;
-
-        if(copy_payload && array != null)
-            retval.setArray(array, offset, length);
-        retval.headers=copy_headers && headers != null? Headers.copy(this.headers) : createHeaders(Util.DEFAULT_HEADERS);
-        return retval;
-    }
-
-
-
-
     /* ----------------------------------- Interface Streamable  ------------------------------- */
 
     public int size() {
@@ -257,26 +225,17 @@ public class BytesMessage extends BaseMessage {
     }
 
 
-    @Override public void writeTo(DataOutput out) throws IOException {
-        super.writeTo(out);
-        writePayload(out);
-    }
-
-
-   /**
-    * Writes the message to the output stream, but excludes the dest and src addresses unless the
-    * src address given as argument is different from the message's src address
-    * @param excluded_headers Don't marshal headers that are part of excluded_headers
-    */
-    @Override public void writeToNoAddrs(Address src, DataOutput out, short... excluded_headers) throws IOException {
-        super.writeToNoAddrs(src, out, excluded_headers);
-        writePayload(out);
-    }
-
-
-    @Override public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-        super.readFrom(in);
-        readPayload(in);
+    /**
+     * Copies the byte array. If offset and length are used (to refer to another array), the copy will contain only
+     * the subset that offset and length point to, copying the subset into the new copy.<p/>
+     * Note that for headers, only the arrays holding references to the headers are copied, not the headers themselves !
+     * The consequence is that the headers array of the copy hold the *same* references as the original, so do *not*
+     * modify the headers ! If you want to change a header, copy it and call {@link BytesMessage#putHeader(short,Header)} again.
+     */
+    @Override protected <T extends Message> T copyPayload(T copy) {
+        if(array != null)
+            copy.setArray(array, offset, length);
+        return copy;
     }
 
     protected int sizeOfPayload() {
@@ -286,13 +245,13 @@ public class BytesMessage extends BaseMessage {
         return retval;
     }
 
-    protected void writePayload(DataOutput out) throws IOException {
+    @Override protected void writePayload(DataOutput out) throws IOException {
         out.writeInt(array != null? length : -1);
         if(array != null)
             out.write(array, offset, length);
     }
 
-    protected void readPayload(DataInput in) throws IOException {
+    @Override protected void readPayload(DataInput in) throws IOException {
         int len=in.readInt();
         if(len >= 0) {
             array=new byte[len];

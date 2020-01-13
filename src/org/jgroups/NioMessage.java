@@ -3,7 +3,6 @@ package org.jgroups;
 
 
 import org.jgroups.util.ByteArray;
-import org.jgroups.util.Headers;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -73,7 +72,7 @@ public class NioMessage extends BaseMessage {
     public ByteBuffer        getBuf()                   {return buf;}
     public NioMessage        setBuf(ByteBuffer b)       {this.buf=b; return this;}
     public Supplier<Message> create()                   {return NioMessage::new;}
-    public byte              getType()                  {return Message.NIO_MSG;}
+    public short             getType()                  {return Message.NIO_MSG;}
     public boolean           useDirectMemory()          {return use_direct_memory_for_allocations;}
     public NioMessage        useDirectMemory(boolean b) {use_direct_memory_for_allocations=b; return this;}
     public boolean           hasPayload()               {return buf != null;}
@@ -163,16 +162,8 @@ public class NioMessage extends BaseMessage {
      * @return Message with specified data
      */
     public NioMessage copy(boolean copy_payload, boolean copy_headers) {
-        NioMessage retval=new NioMessage(dest);
-        retval.sender=sender;
-        short tmp_flags=this.flags;
-        byte tmp_tflags=this.transient_flags;
-        retval.flags=tmp_flags;
-        retval.transient_flags=tmp_tflags;
-        retval.use_direct_memory_for_allocations=use_direct_memory_for_allocations;
-        if(copy_payload && buf != null)
-            retval.buf=buf.duplicate();
-        retval.headers=copy_headers && headers != null? Headers.copy(this.headers) : createHeaders(Util.DEFAULT_HEADERS);
+        NioMessage retval=super.copy(copy_payload, copy_headers);
+        retval.useDirectMemory(use_direct_memory_for_allocations);
         return retval;
     }
 
@@ -183,39 +174,21 @@ public class NioMessage extends BaseMessage {
 
     public int size() {return super.size() +sizeOfPayload();}
 
-
-    @Override public void writeTo(DataOutput out) throws IOException {
-        super.writeTo(out);
-        writePayload(out);
-    }
-
-
-   /**
-    * Writes the message to the output stream, but excludes the dest and src addresses unless the
-    * src address given as argument is different from the message's src address
-    * @param excluded_headers Don't marshal headers that are part of excluded_headers
-    */
-    @Override public void writeToNoAddrs(Address src, DataOutput out, short... excluded_headers) throws IOException {
-        super.writeToNoAddrs(src, out, excluded_headers);
-        writePayload(out);
-    }
-
-
-    @Override public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-        super.readFrom(in);
-        readPayload(in);
-    }
-
-
     public String toString() {
         return String.format("%s %s", super.toString(), use_direct_memory_for_allocations? "(direct)" : "");
+    }
+
+    @Override protected <T extends Message> T copyPayload(T copy) {
+        if(buf != null)
+            ((NioMessage)copy).buf=buf.duplicate();
+        return copy;
     }
 
     protected int sizeOfPayload() {
         return Global.INT_SIZE + getLength() + Global.BYTE_SIZE; // for use_direct_memory_for_allocations
     }
 
-    protected void writePayload(DataOutput out) throws IOException {
+    @Override protected void writePayload(DataOutput out) throws IOException {
         out.writeBoolean(use_direct_memory_for_allocations);
         out.writeInt(buf != null? getLength() : -1);
         if(buf != null) {
@@ -240,7 +213,7 @@ public class NioMessage extends BaseMessage {
         }
     }
 
-    protected void readPayload(DataInput in) throws IOException {
+    @Override protected void readPayload(DataInput in) throws IOException {
         use_direct_memory_for_allocations=in.readBoolean();
         int len=in.readInt();
         if(len < 0)

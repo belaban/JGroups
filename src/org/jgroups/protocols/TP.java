@@ -220,6 +220,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       "disables this.")
     protected long suppress_time_different_cluster_warnings=60000;
 
+    @Property(description="The fully qualified name of a MessageFactory implementation",exposeAsManagedAttribute=false)
+    protected String msg_factory_class;
+
     protected MessageFactory msg_factory=new DefaultMessageFactory();
 
 
@@ -258,7 +261,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public int getBundlerCapacity()                {return bundler_capacity;}
     public int getMessageProcessingMaxBufferSize() {return msg_processing_max_buffer_size;}
     public MessageFactory getMessageFactory()      {return msg_factory;}
-    public TP setMessageFactory(MessageFactory f)  {this.msg_factory=f; return this;}
+
+    @ManagedAttribute
+    public String getMessageFactoryClass() {
+        return msg_factory != null? msg_factory.getClass().getName() : "n/a";
+    }
 
     @ManagedAttribute public int getBundlerBufferSize() {
         if(bundler instanceof TransferQueueBundler)
@@ -916,6 +923,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             setMessageProcessingPolicy(message_processing_policy);
         else
             msg_processing_policy.init(this);
+
+        if(msg_factory_class != null) {
+            Class<MessageFactory> clazz=Util.loadClass(msg_factory_class, getClass());
+            msg_factory=clazz.getDeclaredConstructor().newInstance();
+        }
     }
 
 
@@ -1465,7 +1477,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected void handleSingleMessage(DataInput in, boolean multicast) {
         try {
-            byte type=in.readByte();
+            short type=in.readShort();
             Message msg=msg_factory.create(type); //new BytesMessage(false); // don't create headers, readFrom() will do this
             msg.readFrom(in);
 
