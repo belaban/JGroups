@@ -9,11 +9,6 @@
         xmlns="urn:org:jgroups"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
     <TCP bind_port="7800"
-         recv_buf_size="${tcp.recv_buf_size:130k}"
-         send_buf_size="${tcp.send_buf_size:130k}"
-         max_bundle_size="64K"
-         sock_conn_timeout="300"
-
          thread_pool.min_threads="0"
          thread_pool.max_threads="20"
          thread_pool.keep_alive_time="30000"/>
@@ -27,8 +22,7 @@
     <FD_ALL timeout="9000" interval="3000" />
     <VERIFY_SUSPECT timeout="1500"  />
     <BARRIER />
-    <pbcast.NAKACK2 use_mcast_xmit="false"
-                   discard_delivered_msgs="true"/>
+    <pbcast.NAKACK2 use_mcast_xmit="false" />
     <UNICAST3 />
     <pbcast.STABLE desired_avg_gossip="50000"
                    max_bytes="4M"/>
