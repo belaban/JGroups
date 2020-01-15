@@ -8,7 +8,6 @@
     <class id="4"  name="org.jgroups.protocols.FRAG2"/>
     <class id="5"  name="org.jgroups.protocols.PING"/>
     <class id="6"  name="org.jgroups.protocols.MPING"/>
-    <class id="7"  name="org.jgroups.protocols.S3_PING"/>
     <class id="8"  name="org.jgroups.protocols.FILE_PING"/>
     <class id="9"  name="org.jgroups.protocols.TCPPING"/>
     <class id="10" name="org.jgroups.protocols.TCPGOSSIP"/>
@@ -52,10 +51,8 @@
     <class id="48" name="org.jgroups.protocols.UNICAST3"/>
     <class id="49" name="org.jgroups.protocols.PERF"/>
     <class id="50" name="org.jgroups.protocols.SHARED_LOOPBACK_PING"/>
-    <class id="52" name="org.jgroups.protocols.GOOGLE_PING"/>
     <class id="53" name="org.jgroups.protocols.SEQUENCER2"/>
     <class id="54" name="org.jgroups.protocols.FD_HOST"/>
-    <class id="55" name="org.jgroups.protocols.ABP"/>
     <class id="56" name="org.jgroups.protocols.TCP_NIO2"/>
     <class id="57" name="org.jgroups.protocols.TP"/>
     <class id="58" name="org.jgroups.protocols.SYM_ENCRYPT"/>

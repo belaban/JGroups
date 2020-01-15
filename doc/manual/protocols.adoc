@@ -368,7 +368,7 @@ FILE_PING can be used instead of GossipRouter in cases where no external process
             
 
 Since 3.5, the way FILE_PING performs discovery has changed. The following paragraphs describe the new
-mechanism to discover members via FILE_PING or subclasses (e.g. S3_PING GOOGLE_PING or GOOGLE_PING2),
+mechanism to discover members via FILE_PING or subclasses (e.g. GOOGLE_PING2),
 so this applies to all cloud-based stores as well.
             
 Instead of storing 1 file per member in the file system or cloud store, we only store 1 file for
@@ -640,72 +640,6 @@ ${RACKSPACE_PING}
 
 
 
-==== S3_PING
-
-S3_PING uses Amazon S3 to discover initial members. New joiners read all addresses
-from this bucket and ping each of the elements of the resulting set of members. When a member leaves, it
-deletes its corresponding file.
-            
-
-It's designed specifically for members running on Amazon EC2, where multicast traffic is not allowed and
-thus MPING or PING will not work. When Amazon RDS is preferred over S3, or if a shared database is used,
-an alternative is to use JDBC_PING.
-            
-
-Each instance uploads a small file to an S3 bucket and each instance reads the files out of this bucket
-to determine the other members.
-            
-
-There are three different ways to use S3_PING, each having its own tradeoffs between security and
-ease-of-use. These are described in more detail below:
-
-* Private buckets, Amazon AWS credentials given to each instance
-* Public readable and writable buckets, no credentials given to each instance
-* Public readable but private writable buckets, pre-signed URLs given to each instance
-  Pre-signed URLs are the most secure method since writing to buckets still requires authorization and
-  you don't have to pass Amazon AWS credentials to every instance. However, they are also the most complex
-  to setup.
-            
-
-Here's a configuration example for private buckets with credentials given to each instance:
-            
-
-
-[source,xml]
-----
-
-<S3_PING location="my_bucket" access_key="access_key"
-         secret_access_key="secret_access_key" timeout="2000"
-         num_initial_members="3"/>
-            
-----
-
-Here's an example for public buckets with no credentials:
-            
-
-
-[source,xml]
-----
-
-<S3_PING location="my_bucket"/>
-----
-
-And finally, here's an example for public readable buckets with pre-signed URLs:
-            
-
-
-[source,xml]
-----
-
-<S3_PING pre_signed_put_url="http://s3.amazonaws.com/my_bucket/DemoCluster/node1?AWSAccessKeyId=access_key&Expires=1316276200&Signature=it1cUUtgCT9ZJyCJDj2xTAcRTFg%3D"
-         pre_signed_delete_url="http://s3.amazonaws.com/my_bucket/DemoCluster/node1?AWSAccessKeyId=access_key&Expires=1316276200&Signature=u4IFPRq%2FL6%2FAohykIW4QrKjR23g%3D"
-         />
-            
-----
-
-${S3_PING}
-
-
 
 ==== AWS_PING
 
@@ -722,38 +656,12 @@ https://github.com/jgroups-extras/native-s3-ping.
 
 
 
-==== GOOGLE_PING
-
-GOOGLE_PING is a subclass of S3_PING and inherits most of the functionality. It uses Google Cloud
-Storage to store information about individual members.
-
-The snippet below shows a sample config:
-
-[source,xml]
-----
-
-<GOOGLE_PING
-           location="jgroups-bucket"
-           access_key="GXXXXXX"
-           secret_access_key="YYYYYY"
-           timeout="2000" num_initial_members="3"/>
-            
-----
-
-This will use a bucket "jgroups-bucket" or create one if it doesn't exist, then create another folder
-under it with the cluster name, and finally use 1 object per member in that location for member info.
-            
-
-${GOOGLE_PING}
-
-NOTE: `GOOGLE_PING` has been deprecated and <<GOOGLE_PING2>> should be used instead.
-
 
 [[GOOGLE_PING2]]
 ==== GOOGLE_PING2
 
-https://github.com/jgroups-extras/jgroups-google[GOOGLE_PING2] is the successor to `GOOGLE_PING` and uses Google's
-client library to access Google Compute Storage. It is the recommended way to access GCS and the project is hosted at
+https://github.com/jgroups-extras/jgroups-google[GOOGLE_PING2] uses Google's client library to
+access Google Compute Storage. It is the recommended way to access GCS and the project is hosted at
 https://github.com/jgroups-extras/jgroups-google.
 
 
