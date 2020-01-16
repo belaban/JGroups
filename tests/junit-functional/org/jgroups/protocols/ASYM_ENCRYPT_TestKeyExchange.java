@@ -1,5 +1,7 @@
 package org.jgroups.protocols;
 
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 
 /**
@@ -30,5 +32,22 @@ public class ASYM_ENCRYPT_TestKeyExchange extends ASYM_ENCRYPT_Test {
         System.out.println("Skipping this test as the use of an external key exchange will allow left members to " +
                              "send messages which will be delivered by existing members, as the left member " +
                              "will be able to fetch the secret group key");
+    }
+
+    /** A rogue member should not be able to join a cluster */
+    public void testRogueMemberJoin() throws Exception {
+        Util.close(rogue);
+        rogue=create("rogue", CHANGE_KEYSTORE);
+        GMS gms=rogue.getProtocolStack().findProtocol(GMS.class);
+        gms.setMaxJoinAttempts(2);
+        try {
+            rogue.connect(cluster_name);
+            assert rogue.getView().size() == 1
+              : String.format("rogue member should not have been able to connect: view is %s", rogue.getView());
+            Util.removeFromViews(rogue.getAddress(),a,b,c,d);
+        }
+        catch(SecurityException ex) {
+            System.out.printf("rogue member's connect() got (expected) exception: %s\n", ex);
+        }
     }
 }

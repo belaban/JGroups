@@ -74,23 +74,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @Property(description="Print physical address(es) on startup")
     protected boolean                   print_physical_addrs=true;
 
-    /**
-     * Whether view bundling (http://jira.jboss.com/jira/browse/JGRP-144) should be enabled or not. Setting this to
-     * false forces each JOIN/LEAVE/SUPSECT request to be handled separately. By default these requests are processed
-     * together if they are queued at approximately the same time
-     */
-    @Deprecated
-    @Property(description="View bundling toggle",deprecatedMessage="view bundling is enabled by default")
-    protected boolean                   view_bundling=true;
-
     @Property(description="If true, then GMS is allowed to send VIEW messages with delta views, otherwise " +
       "it always sends full views. See https://issues.jboss.org/browse/JGRP-1354 for details.")
     protected boolean                   use_delta_views=true;
-
-    @Deprecated
-    @Property(description="Max view bundling timeout if view bundling is turned on",
-      deprecatedMessage="ignored as view bundling is always on")
-    protected long                      max_bundling_time=50; // 50 ms max to wait for other JOIN, LEAVE or SUSPECT requests
 
     @Property(description="Max number of old members to keep in history. Default is 50")
     protected int                       num_prev_mbrs=50;
@@ -109,14 +95,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     @Property(description="Logs warnings for reception of views less than the current, and for views which don't include self")
     protected boolean                   log_view_warnings=true;
-
-    /** @deprecated true by default */
-    @Property(description="Whether or not to install a new view locally first before broadcasting it " +
-      "(only done at the coord ). Set to true automatically if a state transfer protocol is detected",
-              deprecatedMessage = "ignored and enabled by default")
-    @Deprecated
-    protected boolean                   install_view_locally_first=true; // https://issues.jboss.org/browse/JGRP-1751
-
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
@@ -299,7 +277,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @ManagedOperation public void resumeViewHandler() {view_handler.resume();}
 
 
-    public ViewHandler getViewHandler() {return view_handler;}
+    public ViewHandler<Request> getViewHandler() {return view_handler;}
 
     @ManagedOperation
     public String printPreviousViews() {

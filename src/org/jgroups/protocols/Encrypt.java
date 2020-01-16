@@ -51,21 +51,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     @Property(description="Number of ciphers in the pool to parallelize encrypt and decrypt requests",writable=false)
     protected int                           cipher_pool_size=8;
 
-    @Property(description="If true, the entire message (including payload and headers) is encrypted, else only the payload",
-      deprecatedMessage="ignored (always false)")
-    @Deprecated
-    protected boolean                       encrypt_entire_message;
-
-    @Property(description="If true, all messages are digitally signed by adding an encrypted checksum of the encrypted " +
-      "message to the header. Ignored if encrypt_entire_message is false",deprecatedMessage="ignored (always false)")
-    @Deprecated
-    protected boolean                       sign_msgs;
-
-    @Property(description="When sign_msgs is true, by default CRC32 is used to create the checksum. If use_adler is " +
-      "true, Adler32 will be used",deprecatedMessage="ignored as sign_msgs has been deprecated")
-    @Deprecated
-    protected boolean                       use_adler;
-
     @Property(description="Max number of keys in key_map")
     protected int                           key_map_max_size=20;
 

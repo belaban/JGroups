@@ -1,8 +1,8 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.auth.MD5Token;
 import org.jgroups.protocols.pbcast.*;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ByteArray;
 import org.jgroups.util.ByteArrayDataOutputStream;
@@ -12,10 +12,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -28,9 +25,19 @@ import static org.jgroups.util.Util.shutdown;
  */
 @Test(groups={Global.FUNCTIONAL,Global.ENCRYPT},singleThreaded=true)
 public class ASYM_ENCRYPT_Test extends EncryptTest {
-    protected static final String KEYSTORE="my-keystore.jks";
+    protected static final String KEYSTORE="keystore.jks";
     protected static final String KEYSTORE_PWD="password";
+    protected static final String ROGUE_KEYSTORE="rogue.jks";
 
+    protected static final Consumer<List<Protocol>> CHANGE_KEYSTORE=
+      prots -> {
+          prots.stream().filter(p -> p instanceof SSL_KEY_EXCHANGE)
+            .forEach(ssl -> {
+                SSL_KEY_EXCHANGE ke=(SSL_KEY_EXCHANGE)ssl;
+                ke.setKeystoreName(ROGUE_KEYSTORE).setKeystorePassword(KEYSTORE_PWD)
+                  .setPortRange(2).setSocketTimeout(300);
+            });
+      };
 
 
     @BeforeMethod protected void init() throws Exception {
@@ -52,10 +59,8 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
     /** Verifies that a non-member (non-coord) cannot send a JOIN-RSP to a member */
     public void nonMemberInjectingJoinResponse() throws Exception {
         Util.close(rogue);
-        rogue=create("rogue");
+        rogue=create("rogue", CHANGE_KEYSTORE);
         ProtocolStack stack=rogue.getProtocolStack();
-        AUTH auth=stack.findProtocol(AUTH.class);
-        auth.setAuthToken(new MD5Token("unknown_pwd"));
         GMS gms=stack.findProtocol(GMS.class);
         gms.setMaxJoinAttempts(1);
         DISCARD discard=new DISCARD().setDiscardAll(true);
@@ -82,29 +87,10 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
 
 
 
-    /** The rogue node has an incorrect {@link AUTH} config (secret) and can thus not join */
-    public void rogueMemberCannotJoinDueToAuthRejection() throws Exception {
-        Util.close(rogue);
-        rogue=create("rogue");
-        AUTH auth=rogue.getProtocolStack().findProtocol(AUTH.class);
-        auth.setAuthToken(new MD5Token("unknown_pwd"));
-        GMS gms=rogue.getProtocolStack().findProtocol(GMS.class);
-        gms.setMaxJoinAttempts(2);
-        try {
-            rogue.connect(cluster_name);
-            assert false : "rogue member should not have been able to connect";
-        }
-        catch(SecurityException ex) {
-            System.out.printf("rogue member's connect() got (expected) exception: %s\n", ex);
-        }
-    }
-
 
     public void mergeViewInjectionByNonMember() throws Exception {
         Util.close(rogue);
-        rogue=create("rogue");
-        AUTH auth=rogue.getProtocolStack().findProtocol(AUTH.class);
-        auth.setAuthToken(new MD5Token("unknown_pwd"));
+        rogue=create("rogue", null);
         GMS gms=rogue.getProtocolStack().findProtocol(GMS.class);
         gms.setMaxJoinAttempts(1).setJoinTimeout(1000).setLeaveTimeout(1000);
 
@@ -230,7 +216,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
 
     public void testMerge() throws Exception {
         Util.close(rogue);
-        d=create("D");
+        d=create("D", null);
         d.connect(getClass().getSimpleName());
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b,c,d);
 
@@ -283,8 +269,8 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
     }
 
 
-    protected JChannel create(String name) throws Exception {
-        return new JChannel(
+    @Override protected JChannel create(String name, Consumer<List<Protocol>> c) throws Exception {
+        List<Protocol> protocols=new ArrayList<>(Arrays.asList(
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
           // omit MERGE3 from the stack -- nodes are leaving gracefully
@@ -294,9 +280,10 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
           new NAKACK2().setUseMcastXmit(false),
           new UNICAST3(),
           new STABLE(),
-          new AUTH().setAuthCoord(true).setAuthToken(new MD5Token("mysecret")),
-          new GMS().joinTimeout(2000))
-          .name(name);
+          new GMS().joinTimeout(2000)));
+        if(c != null)
+            c.accept(protocols);
+        return new JChannel(protocols).name(name);
     }
 
     protected static void printSymVersion(JChannel... channels) {

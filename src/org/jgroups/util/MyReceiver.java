@@ -27,7 +27,7 @@ public class MyReceiver<T> extends ReceiverAdapter implements Closeable {
         }
     }
 
-    public MyReceiver    rawMsgs(boolean flag)      {this.raw_msgs=flag; return this;}
+    public MyReceiver<T> rawMsgs(boolean flag)      {this.raw_msgs=flag; return this;}
     public List<T>       list()                     {return list;}
     public MyReceiver<T> verbose(boolean flag)      {verbose=flag; return this;}
     public String        name()                     {return name;}

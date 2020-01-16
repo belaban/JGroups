@@ -4,7 +4,6 @@ import org.jboss.byteman.contrib.bmunit.BMNGRunner;
 import org.jboss.byteman.contrib.bmunit.BMScript;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
-import org.jgroups.auth.MD5Token;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
@@ -24,13 +23,13 @@ import org.testng.annotations.Test;
 @Test(groups=Global.BYTEMAN,singleThreaded=true)
 public class ASYM_ENCRYPT_BlockTest extends BMNGRunner {
     protected JChannel a, b;
-    protected MyReceiver ra, rb;
+    protected MyReceiver<String> ra, rb;
 
     @BeforeMethod protected void setup() throws Exception {
         a=create("A");
         b=create("B");
-        a.setReceiver(ra=new MyReceiver());
-        b.setReceiver(rb=new MyReceiver());
+        a.setReceiver(ra=new MyReceiver<>());
+        b.setReceiver(rb=new MyReceiver<>());
         a.connect(ASYM_ENCRYPT_BlockTest.class.getSimpleName());
         b.connect(ASYM_ENCRYPT_BlockTest.class.getSimpleName());
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b);
@@ -67,7 +66,6 @@ public class ASYM_ENCRYPT_BlockTest extends BMNGRunner {
           new NAKACK2(),
           new UNICAST3(),
           new STABLE(),
-          new AUTH().setAuthToken(new MD5Token("jdgservercluster", "MD5")),
           new GMS().joinTimeout(5000),
           new FRAG2().fragSize(8000)
         };
@@ -75,7 +73,7 @@ public class ASYM_ENCRYPT_BlockTest extends BMNGRunner {
         return new JChannel(protocols).name(name);
     }
 
-    protected static String print(MyReceiver r) {
+    protected static String print(MyReceiver<String> r) {
         StringBuilder sb=new StringBuilder();
         for(Object str: r.list())
             sb.append(str + "\n");

@@ -47,7 +47,6 @@
     <class id="44" name="org.jgroups.protocols.relay.RELAY2"/>
     <class id="45" name="org.jgroups.protocols.FORWARD_TO_COORD"/>
     <class id="46" name="org.jgroups.protocols.PDC"/>
-    <class id="47" name="org.jgroups.protocols.rules.SUPERVISOR"/>
     <class id="48" name="org.jgroups.protocols.UNICAST3"/>
     <class id="49" name="org.jgroups.protocols.PERF"/>
     <class id="50" name="org.jgroups.protocols.SHARED_LOOPBACK_PING"/>

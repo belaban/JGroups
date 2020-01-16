@@ -11,6 +11,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.security.SecureRandom;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Tests use cases for {@link SYM_ENCRYPT} described in https://issues.jboss.org/browse/JGRP-2021.
@@ -35,7 +37,7 @@ public class SYM_ENCRYPT_Test extends EncryptTest {
     public void dummy() {}
 
 
-    protected JChannel create(String name) throws Exception {
+    @Override protected JChannel create(String name, Consumer<List<Protocol>> c) throws Exception {
         // Verify that the SecureRandom instance can be customized
         SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
         SYM_ENCRYPT encr;

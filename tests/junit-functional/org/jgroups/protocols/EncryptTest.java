@@ -6,6 +6,7 @@ import org.jgroups.demos.KeyStoreGenerator;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ByteArray;
 import org.jgroups.util.ByteArrayDataOutputStream;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,10 +32,10 @@ import java.util.stream.Stream;
  */
 @Test(groups={Global.FUNCTIONAL,Global.ENCRYPT},singleThreaded=true)
 public abstract class EncryptTest {
-    protected JChannel                 a,b,c,d,rogue;
-    protected MyReceiver<Message>      ra, rb, rc, r_rogue;
-    protected final String             cluster_name=getClass().getSimpleName();
-    protected static final short       GMS_ID;
+    protected JChannel                a,b,c,d,rogue;
+    protected MyReceiver<Message>     ra, rb, rc, r_rogue;
+    protected final String            cluster_name=getClass().getSimpleName();
+    protected static final short      GMS_ID;
 
     static {
         GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
@@ -43,9 +45,9 @@ public abstract class EncryptTest {
     protected int symIvLength() { return 0; }
 
     protected void init() throws Exception {
-        a=create("A").connect(cluster_name).setReceiver(ra=new MyReceiver<>().rawMsgs(true));
-        b=create("B").connect(cluster_name).setReceiver(rb=new MyReceiver<>().rawMsgs(true));
-        c=create("C").connect(cluster_name).setReceiver(rc=new MyReceiver<>().rawMsgs(true));
+        a=create("A", null).connect(cluster_name).setReceiver(ra=new MyReceiver<Message>().rawMsgs(true));
+        b=create("B", null).connect(cluster_name).setReceiver(rb=new MyReceiver<Message>().rawMsgs(true));
+        c=create("C", null).connect(cluster_name).setReceiver(rc=new MyReceiver<Message>().rawMsgs(true));
         Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b, c);
         rogue=createRogue("rogue").connect(cluster_name);
         Stream.of(a,b,c,rogue).forEach(ch -> System.out.printf("%s: %s\n", ch.getAddress(), ch.getView()));
@@ -54,7 +56,7 @@ public abstract class EncryptTest {
 
     protected void destroy() {Util.close(rogue,d,c,b,a);}
 
-    protected abstract JChannel create(String name) throws Exception;
+    protected abstract JChannel create(String name, Consumer<List<Protocol>> c) throws Exception;
 
 
     /** Tests A,B or C sending messages and their reception by everyone in cluster {A,B,C} */
@@ -91,31 +93,6 @@ public abstract class EncryptTest {
         assertForEachReceiver(r -> r.size() == 3);
         assertForEachMessage(msg -> msg.getLength() == 0);
         assertForEachMessage(msg -> Arrays.equals(msg.getArray(), new byte[0]));
-    }
-
-
-    /** A rogue member should not be able to join a cluster */
-    //@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
-    public void testRogueMemberJoin() throws Exception {
-        Util.close(rogue);
-        rogue=new JChannel(Util.getTestStack()).name("rogue");
-        rogue.getProtocolStack().removeProtocol(Encrypt.class);
-        GMS gms=rogue.getProtocolStack().findProtocol(GMS.class);
-        gms.setMaxJoinAttempts(1);
-        try {
-            rogue.connect(cluster_name);
-        }
-        catch(Exception ex) {}
-        for(int i=0; i < 10; i++) {
-            if(a.getView().size() > 3)
-                break;
-            Util.sleep(500);
-        }
-        Arrays.asList(a,b,c).forEach(ch -> System.out.printf("%s: view is %s\n", ch.getAddress(), ch.getView()));
-        Arrays.asList(a,b,c).forEach(ch -> {
-            View view=ch.getView();
-            assert view.size() == 3 : "view should be {A,B,C}: " + view;
-        });
     }
 
 
@@ -183,7 +160,7 @@ public abstract class EncryptTest {
      */
     //@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
     public void testMessageReceptionByRogue() throws Exception {
-        rogue.setReceiver(r_rogue=new MyReceiver().rawMsgs(true));
+        rogue.setReceiver(r_rogue=new MyReceiver<Message>().rawMsgs(true));
         a.setReceiver(null); b.setReceiver(null); c.setReceiver(null);
         a.send(null, "Hello from A");
         b.send(null, "Hello from B");

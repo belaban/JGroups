@@ -52,12 +52,6 @@ public class MERGE3 extends Protocol {
     @Property(description="The max number of merge participants to be involved in a merge. 0 sets this to unlimited.")
     protected int                           max_participants_in_merge=100;
 
-    @Property(description="If true, only coordinators periodically check view consistency, otherwise everybody runs " +
-      "this task (https://issues.jboss.org/browse/JGRP-2092). Might get removed without notice.",
-      deprecatedMessage="false by default; everybody runs periodic consistency checks")
-    @Deprecated
-    protected boolean                       only_coords_run_consistency_checker;
-
     /* ---------------------------------------------- JMX -------------------------------------------------------- */
     @Property(description="Interval (in ms) after which we check for view inconsistencies")
     protected long                          check_interval;

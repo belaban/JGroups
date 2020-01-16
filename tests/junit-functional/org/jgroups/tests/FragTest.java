@@ -39,8 +39,8 @@ public class FragTest {
     public static final int  FRAG_SIZE =  24000;
 
     protected JChannel            a, b;
-    protected MyReceiver<Message> r1=new org.jgroups.util.MyReceiver<>().rawMsgs(true),
-                                  r2=new org.jgroups.util.MyReceiver<>().rawMsgs(true);
+    protected MyReceiver<Message> r1=new org.jgroups.util.MyReceiver<Message>().rawMsgs(true),
+                                  r2=new org.jgroups.util.MyReceiver<Message>().rawMsgs(true);
     protected static final byte[] array=Util.generateArray(FRAG_SIZE*2);
 
     @DataProvider

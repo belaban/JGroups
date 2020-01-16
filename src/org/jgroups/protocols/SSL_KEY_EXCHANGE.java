@@ -134,8 +134,6 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     public SSL_KEY_EXCHANGE setKeystore(KeyStore ks)                       {this.key_store=ks; return this;}
     public SessionVerifier  getSessionVerifier()                           {return session_verifier;}
     public SSL_KEY_EXCHANGE setSessionVerifier(SessionVerifier s)          {this.session_verifier=s; return this;}
-    @Deprecated public SSLContext getSSLContext()                          {return client_ssl_ctx;}
-    @Deprecated public SSL_KEY_EXCHANGE setSSLContext(SSLContext ssl_ctx)  {this.client_ssl_ctx=ssl_ctx; return this;}
     public SSLContext getClientSSLContext()                                {return client_ssl_ctx;}
     public SSL_KEY_EXCHANGE setClientSSLContext(SSLContext client_ssl_ctx) {this.client_ssl_ctx = client_ssl_ctx; return this;}
     public SSLContext getServerSSLContext()                                {return server_ssl_ctx;}

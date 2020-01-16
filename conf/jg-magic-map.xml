@@ -21,9 +21,7 @@
     <class id="16" name="org.jgroups.blocks.executor.Executions$StreamableCallable"/>
     <class id="17" name="org.jgroups.util.SeqnoList"/>
     <class id="18" name="org.jgroups.AnycastAddress"/>
-    <class id="19" name="org.jgroups.auth.SimpleToken"/>
     <class id="20" name="org.jgroups.auth.FixedMembershipToken"/>
-    <class id="21" name="org.jgroups.auth.MD5Token"/>
     <class id="22" name="org.jgroups.auth.X509Token"/>
     <class id="23" name="org.jgroups.blocks.MethodCall"/>
     <class id="24" name="org.jgroups.util.FlagsUUID"/>

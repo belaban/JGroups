@@ -369,6 +369,24 @@ public class Util {
         assert list.size() == expected_size : "list doesn't have the expected (" + expected_size + ") elements: " + list;
     }
 
+    public static void removeFromViews(Address mbr, JChannel ... channels) {
+        if(mbr == null || channels == null)
+            return;
+        for(JChannel ch: channels) {
+            if(ch == null)
+                continue;
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
+            if(gms == null) continue;
+            View v=gms.view();
+            if(v != null && v.containsMember(mbr)) {
+                List<Address> mbrs=new ArrayList<>(v.getMembers());
+                mbrs.remove(mbr);
+                long id=v.getViewId().getId() + 1;
+                View next=View.create(mbrs.get(0), id, mbrs);
+                gms.installView(next);
+            }
+        }
+    }
 
     public static byte[] createAuthenticationDigest(String passcode,long t1,double q1) throws IOException,
                                                                                               NoSuchAlgorithmException {
@@ -2247,7 +2265,7 @@ public class Util {
 
 
     public static <T> Enumeration<T> enumerate(final T[] array, int offset, final int length) {
-        return new Enumeration() {
+        return new Enumeration<T>() {
             protected final int end_pos=offset+length;
             protected int pos=offset;
             public boolean hasMoreElements() {
@@ -2264,7 +2282,7 @@ public class Util {
 
 
     public static <T,R> Enumeration<R> enumerate(final T[] array, int offset, final int length, Function<T,R> converter) {
-        return new Enumeration() {
+        return new Enumeration<R>() {
             protected final int end_pos=offset+length;
             protected int pos=offset;
             public boolean hasMoreElements() {
@@ -3133,9 +3151,9 @@ public class Util {
 
 
     @SafeVarargs
-    public static Method[] getAllDeclaredMethodsWithAnnotations(final Class clazz, Class<? extends Annotation>... annotations) {
+    public static Method[] getAllDeclaredMethodsWithAnnotations(final Class<?> clazz, Class<? extends Annotation>... annotations) {
         List<Method> list=new ArrayList<>(30);
-        for(Class curr=clazz; curr != null; curr=curr.getSuperclass()) {
+        for(Class<?> curr=clazz; curr != null; curr=curr.getSuperclass()) {
             Method[] methods=curr.getDeclaredMethods();
             if(methods != null) {
                 for(Method method : methods) {
@@ -3167,7 +3185,7 @@ public class Util {
         return null;
     }
 
-    public static Field getField(final Class clazz, String field_name) {
+    public static Field getField(final Class<?> clazz, String field_name) {
         try {
             return getField(clazz, field_name, false);
         }
@@ -3176,12 +3194,12 @@ public class Util {
         }
     }
 
-    public static Field getField(final Class clazz, String field_name, boolean throw_exception) throws NoSuchFieldException {
+    public static Field getField(final Class<?> clazz, String field_name, boolean throw_exception) throws NoSuchFieldException {
         if(clazz == null || field_name == null)
             return null;
 
         Field field=null;
-        for(Class curr=clazz; curr != null; curr=curr.getSuperclass()) {
+        for(Class<?> curr=clazz; curr != null; curr=curr.getSuperclass()) {
             try {
                 return curr.getDeclaredField(field_name);
             }
@@ -3306,7 +3324,7 @@ public class Util {
     }
 
 
-    public static InputStream getResourceAsStream(String name,Class clazz) {
+    public static InputStream getResourceAsStream(String name,Class<?> clazz) {
         ClassLoader loader;
         InputStream retval=null;
 
@@ -3395,13 +3413,12 @@ public class Util {
     public static int[] parseCommaDelimitedInts(String s) {
         StringTokenizer tok;
         List<Integer> v=new ArrayList<>();
-        Integer l;
         int[] retval=null;
 
         if(s == null) return null;
         tok=new StringTokenizer(s,",");
         while(tok.hasMoreTokens()) {
-            l= Integer.valueOf(tok.nextToken());
+            Integer l=Integer.valueOf(tok.nextToken());
             v.add(l);
         }
         if(v.isEmpty()) return null;
@@ -3418,13 +3435,12 @@ public class Util {
     public static long[] parseCommaDelimitedLongs(String s) {
         StringTokenizer tok;
         List<Long> v=new ArrayList<>();
-        Long l;
         long[] retval=null;
 
         if(s == null) return null;
         tok=new StringTokenizer(s,",");
         while(tok.hasMoreTokens()) {
-            l=Long.valueOf(tok.nextToken());
+            Long l=Long.valueOf(tok.nextToken());
             v.add(l);
         }
         if(v.isEmpty()) return null;
@@ -4001,11 +4017,11 @@ public class Util {
         // 3. intf and bind_addr are both are specified, bind_addr needs to be on intf
         if(bind_addr != null) {
             boolean hasAddress=false;
-            Enumeration addresses=bind_intf.getInetAddresses();
+            Enumeration<InetAddress> addresses=bind_intf.getInetAddresses();
 
             while(addresses != null && addresses.hasMoreElements()) {
                 // get the next InetAddress for the current interface
-                InetAddress address=(InetAddress)addresses.nextElement();
+                InetAddress address=addresses.nextElement();
                 // check if address is on interface
                 if(bind_addr.equals(address)) {
                     hasAddress=true;
@@ -4180,8 +4196,8 @@ public class Util {
      */
     public static InetAddress getAddress(NetworkInterface intf, AddressScope scope, StackType ip_version) {
         InetAddress first=null;
-        for(Enumeration addresses=intf.getInetAddresses(); addresses.hasMoreElements(); ) {
-            InetAddress addr=(InetAddress)addresses.nextElement();
+        for(Enumeration<InetAddress> addresses=intf.getInetAddresses(); addresses.hasMoreElements(); ) {
+            InetAddress addr=addresses.nextElement();
             if(scope == null || match(addr,scope)) {
                 if((addr instanceof Inet4Address && (ip_version == StackType.IPv4 || ip_version == StackType.Dual)) ||
                   (addr instanceof Inet6Address && ip_version == StackType.IPv6))
@@ -4242,9 +4258,9 @@ public class Util {
                                                  Global.MATCH_HOST + ":<pattern> or " + Global.MATCH_INTF + ":<pattern>");
 
         Pattern pat=Pattern.compile(real_pattern);
-        Enumeration intfs=NetworkInterface.getNetworkInterfaces();
+        Enumeration<NetworkInterface> intfs=NetworkInterface.getNetworkInterfaces();
         while(intfs.hasMoreElements()) {
-            NetworkInterface intf=(NetworkInterface)intfs.nextElement();
+            NetworkInterface intf=intfs.nextElement();
             try {
                 if(!isUp(intf))
                     continue;
@@ -4312,10 +4328,10 @@ public class Util {
         boolean supportsVersion=false;
         if(intf != null) {
             // get all the InetAddresses defined on the interface
-            Enumeration addresses=intf.getInetAddresses();
+            Enumeration<InetAddress> addresses=intf.getInetAddresses();
             while(addresses != null && addresses.hasMoreElements()) {
                 // get the next InetAddress for the current interface
-                InetAddress address=(InetAddress)addresses.nextElement();
+                InetAddress address=addresses.nextElement();
 
                 // check if we find an address of correct version
                 if((address instanceof Inet4Address && (ip_version == StackType.IPv4)) ||
@@ -4399,8 +4415,8 @@ public class Util {
 
     public static List<NetworkInterface> getAllAvailableInterfaces() throws SocketException {
         List<NetworkInterface> retval=new ArrayList<>(10);
-        for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
-            retval.add((NetworkInterface)en.nextElement());
+        for(Enumeration<NetworkInterface> en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
+            retval.add(en.nextElement());
         }
         return retval;
     }
@@ -4544,33 +4560,6 @@ public class Util {
         }
     }
 
-
-    /**
-     * Go through the input string and replace any occurance of ${p} with the props.getProperty(p) value.
-     * If there is no such property p defined, then the ${p} reference will remain unchanged.
-     * <p/>
-     * If the property reference is of the form ${p:v} and there is no such
-     * property p, then the default value v will be returned.
-     * <p/>
-     * If the property reference is of the form ${p1,p2} or ${p1,p2:v} then the primary and the secondary properties
-     * will be tried in turn, before returning either the unchanged input, or the default value.
-     * <p/>
-     * The property ${/} is replaced with System.getProperty("file.separator") value and the property ${:} is replaced
-     * with System.getProperty("path.separator").
-     * @param string the string with possible ${} references
-     * @param props  the source for ${x} property ref values, null means use
-     *               System.getProperty()
-     * @return the input string with all property references replaced if any. If
-     *         there are no valid references the input string will be returned.
-     * @throws {@link java.security.AccessControlException} when not authorised to retrieved system properties
-     *
-     * @deprecated use {@link Util#substituteVariable(String)}
-     *
-     */
-    @Deprecated
-    public static String replaceProperties(final String string,final Properties props) {
-        return substituteVariable(string, props);
-    }
 
     protected static void append(StringBuilder sb, String str) {
         if(sb == null || str == null)

@@ -16,7 +16,7 @@ import org.testng.annotations.Test;
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class COMPRESS_Test {
     protected JChannel a, b;
-    protected MyReceiver<Message> r1=new MyReceiver<>().rawMsgs(true), r2=new MyReceiver<>().rawMsgs(true);
+    protected MyReceiver<Message> r1=new MyReceiver<Message>().rawMsgs(true), r2=new MyReceiver<Message>().rawMsgs(true);
 
     @AfterMethod
     protected void destroy() {Util.close(r2, r1, b, a);}

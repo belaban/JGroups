@@ -14,7 +14,6 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -32,28 +31,21 @@ import java.util.List;
   "auth_value",                                                         // SimpleToken, MD5Token, X509Token
   "fixed_members_value", "fixed_members_seperator",                     // FixedMembershipToken
   "client_principal_name", "client_password", "service_principal_name", // Krb5Token
-  "token_hash",                                                         // MD5Token
   "match_string", "match_ip_address", "match_logical_name",             // RegexMembership
   "keystore_type", "cert_alias", "keystore_path", "cipher_type",
   "cert_password", "keystore_password"                                  // X509Token
 })
 @MBean(description="Provides authentication of joiners, to prevent un-authorized joining of a cluster")
 public class AUTH extends Protocol {
+    protected static final short    GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
 
     /** Used on the coordinator to authentication joining member requests against */
     protected AuthToken             auth_token;
-
-    protected static final short    GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
-
-    /** List of UpHandler which are called when an up event has been received. Usually used by AuthToken impls */
-    protected final List<UpHandler> up_handlers=new ArrayList<>();
-
     protected Address               local_addr;
-
+    protected volatile boolean      authenticate_coord=true;
 
     public AUTH() {}
 
-    protected volatile boolean      authenticate_coord=true;
     
     @Property(description="Do join or merge responses from the coordinator also need to be authenticated")
     public AUTH setAuthCoord( boolean authenticateCoord) {
@@ -70,10 +62,6 @@ public class AUTH extends Protocol {
     public String    getAuthClass()                {return auth_token != null? auth_token.getClass().getName() : null;}
     public AuthToken getAuthToken()                {return auth_token;}
     public AUTH      setAuthToken(AuthToken token) {this.auth_token=token; return this;}
-    @Deprecated
-    public AUTH      register(UpHandler handler)   {up_handlers.add(handler); return this;}
-    @Deprecated
-    public AUTH      unregister(UpHandler handler) {up_handlers.remove(handler);return this;}
     public Address   getAddress()                  {return local_addr;}
     public PhysicalAddress getPhysicalAddress()    {return getTransport().getPhysicalAddress();}
 

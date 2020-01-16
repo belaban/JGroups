@@ -48,9 +48,7 @@ import java.util.Map;
  * @see java.net.DatagramPacket
  * @see java.net.MulticastSocket
  * @see JChannel
- * @deprecated Use {@link JChannel} instead
  */
-@Deprecated
 @MBean(description="Channel")
 public class Channel implements Closeable {
     protected final JChannel ch;

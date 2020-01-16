@@ -20,11 +20,6 @@ public abstract class Header implements SizeStreamable, Constructable<Header> {
     /** Returns the magic-ID. If defined in jg-magic-map.xml, the IDs need to be the same */
     public abstract short getMagicId();
 
-    /** @deprecated Headers should implement {@link SizeStreamable#serializedSize()} instead */
-    @Deprecated public int size() {
-        return serializedSize();
-    }
-
     public String toString() {
         return '[' + getClass().getSimpleName() + "]";
     }

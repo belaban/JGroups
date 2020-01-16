@@ -66,11 +66,8 @@ public class SizeTest {
     }
 
     public static void testAuthHeader() throws Exception {
-        _testSize(new AuthHeader(new SimpleToken("secret")));
         _testSize(new AuthHeader(new FixedMembershipToken("192.168.1.5[7800],192.168.1.3[7800]")));
-        _testSize(new AuthHeader(new MD5Token("myauthvalue")));
         _testSize(new AuthHeader(new RegexMembership()));
-
         X509Token tok=new X509Token().encryptedToken(new byte[]{'b', 'e', 'l', 'a'});
         _testSize(new AuthHeader(tok));
     }
