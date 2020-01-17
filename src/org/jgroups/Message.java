@@ -6,7 +6,6 @@ import org.jgroups.util.SizeStreamable;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * A Message is used to send data to members of a group. It contains the address of the sender, the destination address,
@@ -30,9 +29,6 @@ public interface Message extends SizeStreamable, Constructable<Message> {
 
     /** Returns the type of the message, e.g. BYTES_MSG, OBJ_MSG etc */
     short                         getType();
-
-    /** Creates a supplier that can create an instance of a message */
-    Supplier<Message>             create();
 
     /** Returns the destination address to send the message to. A null value sends the message to all cluster members */
     Address                       getDest();

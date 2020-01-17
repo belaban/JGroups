@@ -7,28 +7,563 @@ communication applications. The focus is on creating and using channels.
 
 All of the classes discussed here are in the org.jgroups package unless otherwise mentioned.
     
+[[Message]]
+=== Message
+Data is sent between members in the form of messages. A message can be sent by a member to
+a _single member_, or to _all members_ of the group.
 
-[[UtilityClasses]]
-=== Utility classes
+The structure of a message is shown in <<MessageFig>>.
 
-The `org.jgroups.util.Util` class contains useful common functionality which cannot be assigned to any other package.
+[[MessageFig]]
+.Structure of a message
+image::./images/Message.png[Message]
+
+A message has the following fields:
+
+Destination address:: The address of the receiver. If `null`, the message will be sent to all
+                    current group members. `Message.getDest()` returns the destination address of a message.
+
+Source address:: The address of the sender. Can be `null`, and will be filled in by the
+                 transport protocol (e.g. UDP) before the message is put on the network.
+                 `Message.getSrc()` returns the source address, ie. the address of the sender of a message.
+
+Flags:: Flags are used to override default behavior. For example, when setting the out-of-band flag `OOB` in a message,
+        the delivery order of it will get changed. For details, refer to section on <<MessageFlags,message flags>>.
+
+Headers:: A list of headers that can be attached to a message. Anything that should not be in the
+          payload can be attached to a message as a header. Methods `putHeader()`, `getHeader()` and `removeHeader()`
+          of `Message` can be used to manipulate headers. +
+          Note that headers are mainly used by protocols.
+
+Payload:: The actual data (e.g. a byte array). The `Message` interface contains convenience method definitions to
+          set and get the different types of payloads, e.g. a byte array, an object, an NIO `ByteBuffer` and so on. +
+          Payloads are defined by the <<MessageTypes,different implementations>> of `Message`.
 
 
-[[objectToByteBuffer]]
-==== objectToByteBuffer(), objectFromByteBuffer()
 
-The first method takes an object as argument and serializes it into a byte buffer (the object has to
-be serializable or externalizable). The byte array is then returned. This method is often used to
-serialize objects into the byte buffer of a message. The second method returns a reconstructed object
-from a buffer. Both methods throw an exception if the object cannot be serialized or unserialized.
+The `Message` interface is defined below (edited for legibility):
+
+[source,java]
+----
+public interface Message extends SizeStreamable, Constructable<Message> {
+
+    /** The type of the message */
+    short BYTES_MSG=0, NIO_MSG=1, EMPTY_MSG=2, OBJ_MSG=3, OBJ_MSG_SERIALIZABLE=4,
+          COMPOSITE_MSG=5, FRAG_MSG=6;
+
+    /** Returns the type of the message, e.g. BYTES_MSG, OBJ_MSG etc */
+    short                 getType();
+
+    /** Returns the destination address */
+    Address               getDest();
+
+    /** Sets the destination address */
+    <T extends Message> T setDest(Address new_dest);
+
+    /** Returns the address of the sender */
+    Address               getSrc();
+
+    /** Sets the address of the sender of this message */
+    <T extends Message> T setSrc(Address new_src);
+
+    /** Adds a header to the message */
+    <T extends Message> T putHeader(short id, Header hdr);
+
+    /** Gets a header from the message */
+    <T extends Header> T  getHeader(short id);
+
+    /** Sets one or more flags */
+    <T extends Message> T setFlag(Flag... flags);
+
+    /** Sets one or more transient flags */
+    <T extends Message> T setFlag(TransientFlag... flags);
+
+    /** Clears a number of flags */
+    <T extends Message> T clearFlag(Flag... flags);
+
+    /** Clears a number of transient flags */
+    <T extends Message> T clearFlag(TransientFlag... flags);
+
+    /** Returns true if a flag is set */
+    boolean               isFlagSet(Flag flag);
+
+    /** Returns true if a transient flag is set */
+    boolean               isFlagSet(TransientFlag flag);
+
+    /** Returns true if the message has a payload */
+    boolean               hasPayload();
+
+    /** Returns true if this message has a byte array as payload */
+    boolean               hasArray();
+
+    /**
+     * Returns a reference to the payload (byte array). Throws an exception if
+     * the message does not have a byte array payload (hasArray() is false).
+     */
+    byte[]                getArray();
+
+    /** Returns the offset of the byte array at which user data starts.
+     * Throws an exception if the message does not have a byte array payload.
+     */
+    int                   getOffset();
+
+    /** Returns the length of the byte array payload. If the message does not
+     * have a byte array payload, then the serialized size may be returned,
+     * or an implementation may throw an exception */
+    int                   getLength();
+
+    /**
+     * Sets the byte array in a message. Throws an exception if the
+     * message does not have a byte array payload.
+     */
+    <T extends Message> T setArray(byte[] b, int offset, int length);
+
+    /**
+     * Sets the byte array in a message. Throws an exception if the message
+     * does not have a byte array payload.
+     */
+    <T extends Message> T setArray(ByteArray buf);
+
+    /**
+     * Gets an object from the payload. If the payload is a byte array,
+     * an attempt to de-serialize the array into an object is made, and
+     * the object returned. If the payload is an object (e.g. as in
+     * an ObjectMessage), the object will be returned directly.
+     */
+    <T extends Object> T  getObject();
+
+    /**
+     * Sets an object in a message. In a ObjectMessage, the object is
+     * set directly.
+     * In a BytesMessage, the object is serialized into a byte array
+     * and set as the payload of the message.
+     */
+    <T extends Message> T setObject(Object obj);
 
 
-[[objectToStream]]
-==== objectToStream(), objectFromStream()
+    /** Returns the exact size of the marshalled message */
+    int                   size();
 
-The first method takes an object and writes it to an output stream. The second method takes an
-input stream and reads an object from it.
-Both methods throw an exception if the object cannot be serialized or unserialized.
+    enum Flag {
+        OOB,            // message is out-of-band
+        DONT_BUNDLE,    // don't bundle message at the transport
+        NO_FC,          // bypass flow control
+        NO_RELIABILITY, // bypass UNICAST3 and NAKACK2
+        NO_TOTAL_ORDER, // bypass total order (e.g. SEQUENCER)
+        NO_RELAY,       // bypass relaying (RELAY2)
+        RSVP,           // ack of a multicast
+        RSVP_NB,        // non blocking RSVP
+        INTERNAL,       // for internal use by JGroups only, don't use!
+        SKIP_BARRIER;   // passing messages through a closed BARRIER
+    }
+
+    enum TransientFlag {
+        OOB_DELIVERED,
+        DONT_LOOPBACK;   // don't loopback if set and a multicast message
+    }
+}
+----
+
+`Message` defines methods to get and set the destination and sender's address, set/clear flags and add and remove
+headers. These methods are implemented in `BaseMessage`, which is extended by all message implementations.
+
+The rest of the methods are defined to get and set the payload. They're all generic, and implementations may or may
+not choose to implement them.
+
+The table below describes the payload-related methods of `Message`:
+
+.Payload related methods
+[width="80%",cols="2,10",frame="topbot",options="header"]
+|==========================
+|Name    |Description
+|hasPayload | Returns true if the message has a payload, e.g. a byte array or an object.
+              This is more generic than `hasArray()`, as it is not just applicable to a byte array.
+|hasArray | Returns true if the payload is a byte array (even if it's null).
+|getArray | Returns a reference to the byte array (if the payload is a byte array). May throw an exception
+            if the payload is not a byte array (`hasArray()` is false).
+|getOffset | Returns the offset of the payload in the byte array.
+|getLength | Returns the length of the payload.
+|setArray  | Sets the byte array in a message. Throws an exception if the
+             message does not have a byte array payload (hasArray() is false).
+|getObject | Gets an object from the payload. If the payload is a byte array, an attempt to de-serialize
+             the array into an object is made, and the object returned. +
+             If the payload is an object (e.g. as in an `ObjectMessage`), the object will be returned directly.
+|setObject | Sets an object in a message. In a `ObjectMessage` (see below), the object is set directly. In a
+             `BytesMessage`, the object is serialized into a byte array and set as the payload of the message.
+|==========================
+
+
+[[MessageTypes]]
+=== Message types
+
+The `Message` interface has a number of subclasses, each having a different payload. <<BytesMessage,`BytesMessage`>>
+for example can be used with byte arrays, <<NioMessage,`NioMessage`>> handles `ByteBuffer` types and
+<<ObjectMessage,`ObjectMessage`>> accepts (serializable) `Objects` as payload.
+
+A second set of message types operates on other messages and does not provide a payload of their own:
+
+<<FragmentedMessage,`FragmentedMessage`>> wraps any other message that's too big to be sent by the transport (e.g.
+UDP has a datagram size limit of ~65K) with a fragmentation size, and creates fragments of the underlying message
+when sent. On the receiver side, the fragments are cached and the original message is re-created when all fragments
+have been received and then sent up.
+
+<<CompositeMessage,`CompositeMessage`>> wraps multiple messages and marshals them at send time. For example, if the
+application has an NIO `ByteBuffer` and a 4-byte command (byte array), then rather than creating a byte array, copying
+the command and the `ByteBuffer` into it, and passing the resulting byte array to the message in 4.x, in 5.0 the
+application can simply create a `CompositeMessage` and pass the command and `ByteBuffer` to it, and the
+`CompositeMessage` will marshal both at send time.
+
+The available message types are discussed below.
+
+
+==== Late marshalling
+Contrary to JGroups 4.x, the `Message` subclasses perform *late marshalling*: rather than having to marshal an object
+into a byte array (to be passed to a 4.x `Message`), the object in the payload of an `ObjectMessage` is serialized
+at send time only, possibly directly into a network socket's buffer (or output stream).
+
+The following example shows 4.x code:
+
+[source,java]
+----
+MyObject obj=...;
+byte[] buffer=Util.objectToByteBuffer(obj); // memory allocation
+Message msg=new BytesMessage(null, buffer);
+channel.send(msg);
+----
+
+The object is serialized into a byte array, which is passed to the `Message` constructor. At the network level, that
+byte array will get written to the output stream of the socket. The `buffer` byte array is a temporary copy, and
+introduces additional memory allocation.
+
+In 5.0, we can eliminate the allocation:
+
+[source,java]
+----
+MyObject obj=...;
+Message msg=new ObjectMessage(null, obj);
+channel.send(msg);
+----
+
+The `ObjectMessage` type does not serialize the object until the message itself is serialized (at send time). The
+entire message including the object payload is written directly to the socket's output stream.
+The elimination of memory allocation for those temporary byte arrays reduces overall memory pressure, possibly leading
+to better performance.
+
+
+[[MessageFactory]]
+==== MessageFactory
+
+JGroups 5.0 comes with a number of message types (see the next sections). If none of them are a fit for the application's
+requirements, new message types can be defined and registered. To do this, the new message type needs to implement
+`Message` (typically by subclassing `BaseMessage`) and registering it with the `MessageFactory` in the transport:
+
+[source,java]
+----
+CustomMessage msg=new CustomMessage(...);
+JChannel ch;
+TP transport=ch.getProtocolStack().getTransport();
+MessageFactory mf=transport.getMessageFactory();
+mf.register((short)12345, CustomMessage::new)
+----
+
+A (unique) ID has to be assigned with the message type, and then it has to be registered with the message factory
+in the transport. This has to be done before sending an instance of the new message type.
+If the ID has already been registered before, or is taken, an exception will be thrown.
+Note that the default implementation of `MessageFactory` requires all IDs to be greater than 32, so that there's room
+for adding built-in message types.
+
+NOTE: It is recommended to register all custom message types _before_ connecting the channel, so that potential errors
+are detected early.
+
+[[CustomMessageFactory]]
+==== Custom `MessageFactory`
+`MessageFactory` is a simple interface:
+
+[source,java]
+----
+public interface MessageFactory {
+    <T extends Message> T create(short id);
+    void register(short type, Supplier<? extends Message> generator);
+}
+----
+We saw the that the `register()` method is used to associate new message types with IDs <<MessageFactory,above>>.
+
+There is a `DefaultMessageFactory` which is set in the transport (`TP`). If more control over the creation of custom
+messages is desired, a custom implementation of `MessageFactory` can be written and registered in the transport, using
+`TP.setMessageFactory(MessageFactory mf)`.
+
+An example for why we might want to provide our own `MessageFactory` is that we have control over the creation of
+messages; e.g. to create an `NioMessage` with a *direct* `ByteBuffer`, we may want to use a _pool_ of off-heap memory
+rather than calling `ByteBuffer.allocateDirect()` for each message, which is slow.
+
+
+[[BytesMessage]]
+==== BytesMessage
+This is the equivalent to the 4.x `Message`, and contains a byte array, offset and length. There are methods to get and
+set the byte array from a byte array, NIO `ByteBuffer`, Object etc. The latter case marshals the object into a byte
+array and sets it in the message. Conversely, `getObject()` tries to unmarshal the byte array into an object.
+
+NOTE: It is recommended to only use the methods which get and set a *byte array*, as the other methods may get
+deprecated in the future. See the section on <<PayloadMismatch,payload mismatch>> below for details.
+
+The simplest way to convert 4.x applications to 5.0 is:
+
+[source,java]
+----
+Message msg=new Message(null, "hello world".getBytes()); // 4.x
+----
+
+[source,java]
+----
+Message msg=new BytesMessage(null, "hello world".getBytes()); // 5.0
+----
+
+
+
+[[NioMessage]]
+==== NioMessage
+An `NioMessage` has a `ByteBuffer` as payload. The `ByteBuffer` can be heap-based or direct (off-heap). A heap-based
+buffer will be created with heap memory again when received. For an off-heap (direct) buffer, we can choose whether
+heap memory should be used for the buffer when receiving an `NioMessage`, or whether off-heap (direct) memory should
+be used. See the `useDirectMemory()` method below.
+
+Alternatively, a custom message factory could manage a pool of off-heap memory and create the buffer in the
+`NioMessage` with memory from that pool.
+
+The methods of `NioMessage` are:
+
+[width="80%",cols="2,3",frame="topbot",options="header"]
+|==========================
+|Name    |Description
+|boolean isDirect() | Returns true if the buffer is off-heap, false otherwise
+|ByteBuffer getBuf() | Returns the `ByteBuffer` payload
+|NioMessage setBuf(ByteBuffer) | Sets the `ByteBuffer` payload
+|boolean useDirectMemory() | When true, the `ByteBuffer` will be created on-heap when unmarshalled, otherwise
+                             it will be created off-heap (direct `ByteBuffer`). See the setter below for more details. +
+                             Default: `false`
+|NioMessage useDirectMemory(boolean b) | If true, use direct memory when creating `ByteBuffer` payloads,
+                         e.g. on `setArray(byte a)`, `setArray(ByteArray)`, `setObject(Object)` or when getting read
+                         from the network (`readPayload(DataInput)`). +
+      Unless this flag is set to true, a direct `ByteBuffer` payload will become a heap-based payload by a
+      receiver when received from the network. This may be useful if we want to use off-heap (direct) memory only for
+      sending, but not receiving of messages. +
+      If we want the receiver to create a direct-memory based message, set this flag to true before sending the message.
+|==========================
+
+NOTE: The envisioned use case for `useDirectMemory()` is when we send an `NioMessage` with a direct `ByteBuffer`, but
+      don't need the `ByteBuffer` to be created in off-heap memory at the receiver, when on-heap will do. +
+      The alternative is to provide a custom <<MessageFactory,`MessageFactory`>>.
+
+
+
+[[EmptyMessage]]
+==== EmptyMessage
+As its name implies, an `EmptyMessage` carries no payload. This means that it uses less memory, e.g. compared to
+`BytesMessage`, it has 3 fields (array, offset, length) less, and so has ~12 bytes less.
+
+JGroups itself uses quite some messages that send around no payload, only headers, and `EmptyMessage` instances are
+ideal for this.
+
+Here's an example that sends a heartbeat in `FD_ALL`:
+
+[source,java]
+----
+Message heartbeat=new EmptyMessage()
+                   .setFlag(Message.Flag.INTERNAL)
+                   .putHeader(id, new HeartbeatHeader());
+----
+
+While this message type is mainly used internally, it _is_ a public class and can as such be used by applications, too.
+
+
+
+
+[[ObjectMessage]]
+==== ObjectMessage
+An `ObjectMessage` has a Plain Old Java Object (POJO) as payload. The only requirement on the object is that it
+implements `SizeStreamable`:
+
+[source,java]
+----
+public interface SizeStreamable extends Streamable {
+    int serializedSize();
+}
+----
+
+Method `serializedSize()` needs to return the number of bytes the object will use when serialized to an output stream
+(see below). This is used by a fragmentation protocol (for example) to see if a message needs to be fragmented or not.
+
+`SizeStreamable` extends `Streamable`, which is used to marshal the object to an output stream, or unmarshal it from
+an input stream:
+
+[source,java]
+----
+public interface Streamable {
+    void writeTo(DataOutput out) throws IOException;
+    void readFrom(DataInput in) throws IOException, ClassNotFoundException;
+}
+----
+
+Method `writeTo()` needs to write the contents of the object (and superclasses, if needed) to the output stream, and
+`readFrom()` needs to set the state of the object (= the fields) from an input stream.
+
+The `ObjectMessage` constructor and the `setObject(Object)` method check if the object passed to them implements
+`SizeStreamable` and throw an exception if not.
+
+The object payload is marshalled directly into the socket's output stream _at send time_, using `writeTo()`.
+
+To get and set the payload, methods `Object getObject()` and `setObject(Object)` should be used. Methods `getArray()` /
+`setArray()` will throw an exception.
+
+Sample code:
+
+[source,java]
+----
+Message msg=new ObjectMessage(null, obj);           // constructor
+Message msg=new ObjectMessage(null).setObject(obj); // setter
+MyObject obj=msg.getObject();
+----
+
+
+
+[[ObjectMessageSerializable]]
+===== ObjectMessageSerializable
+If an object cannot implement `SizeStreamable`, as in <<ObjectMessage,ObjectMessage>>, then `ObjectMessageSerializable`
+can be used instead. The latter class extends the former.
+
+`ObjectMessageSerializable` maintains a byte array (serialized format) and the object (via the superclass),
+and marshals the object into the byte array _just-in-time_. This means that the byte array is only set when the size
+of the message needs to be computed, e.g. on `getLength()`, or when marshalled.
+
+WARNING: When the byte array is set, the contents of the object should not be changed anymore, or else the old state
+         of the object will be sent on serialization. In case the object needs to be changed nevertheless, then
+         method `setObject(Object)` can be used: it will set the object and null the serialized format byte array, so
+         at marshalling time, it will be set again.
+
+
+
+[[CompositeMessage]]
+==== CompositeMessage
+This message type has multiple messages as payload. The messages have to have the same destination.
+
+It solves the following problem (4.x code):
+
+[source,java]
+----
+final String hello="hello world";
+byte[] metadata=createMetadata();                 // metadata
+ByteBuffer cmd=ByteBuffer.wrap(hello.getBytes()); // the command
+
+byte[] arr=new byte[metadata.length + cmd.remaining()];  // temp memory allocation!
+System.arraycopy(metadata, 0, arr, 0, metadata.length);
+System.arraycopy(cmd.array(), cmd.arrayOffset(), arr, metadata.length, cmd.remaining());
+Message msg=new Message(null, arr);
+// send the message consisting of metadata and command
+
+public void receive(Message msg) {
+    byte[] array=msg.getRawBuffer(), metadata=new byte[4];
+    int offset=msg.getOffset(), len=msg.getLength();
+
+    System.arraycopy(array, offset, metadata, 0, metadata.length);
+    ByteBuffer cmd=ByteBuffer.allocate(hello.length);
+    cmd.put(array, metadata.length, len-metadata.length);
+    // process metadata and command
+}
+----
+
+In the above code, we have to create a new byte array and copy the metadata and command into it. Then a message with the
+combined data is sent. At the receiver, we have to divide the combined byte array into the metadata and command
+portions again.
+
+This code can be rewritten using `CompositeMessage` as follows (5.0 code):
+
+[source,java]
+----
+final String hello="hello world";
+
+byte[] metadata=createMetadata();
+ByteBuffer cmd=ByteBuffer.wrap(hello.getBytes());
+
+Message msg=new CompositeMessage(null, new BytesMessage(null, metadata),
+                                       new NioMessage(null, cmd));
+// send the message with metadata and command
+
+public void receive(Message msg) {
+    CompositeMessage cm=(CompositeMessage)msg;
+    BytesMessage m1=cm.get(0);
+    NioMessage m2=cm.get(1);
+    // process metadata (m1) and command (m2)
+}
+----
+
+Here, we don't have to combine the two pieces of data into one, but simply pass them to a `CompositeMessage`, which
+is then sent. At the receiver, the received `Message` is narrowed to a `CompositeMessage` and the individual messages
+can simply be accessed by index.
+
+This eliminates 1 memory allocation, and it also simplifies programming a bit.
+
+The methods of `CompositeMessage` are:
+
+[width="80%",cols="2,4",frame="topbot",options="header"]
+|==========================
+|Name    |Description
+|getNumberOfMessages() | Returns the number of messages
+|add(Message) | Adds a message, increasing the capacity if needed
+|add(Message ... msgs) | Adds a number of messages
+|get(int index) | Returns the message at the given index
+|remove() | Removes the message at the end
+|==========================
+
+For a detailed listing of all methods consult the javadoc.
+
+
+
+[[FragmentedMessage]]
+==== FragmentedMessage
+A `FragmentedMessage` wraps another message (also a `CompositeMessage`!), with an offset and length. The offset/length
+combo defines a subrange of the underlying message that is to be marshalled.
+
+For example, if we have an `ObjectMessage` whose length is 500, and the fragmentation size is 200, then 3
+`FragmentedMessage` instances will be created, with ranges `0..199`, `200..399` and `400..499`.
+
+The second `FragmentedMessage` will only marshall the part of the underlying message between indices `200` and `399`.
+
+`FragmentedMessage` is only used internally by the fragmentation protocols, and not by users. It is discussed here
+mainly for completeness.
+
+
+
+[[PayloadMismatch]]
+=== Mismatch between message type and getters/setters
+
+The `Message` interface has a number of generic methods to get/set payloads of various types.
+
+It makes sense to call `getArray()` / `setArray()` on a `BytesMessage` and `getObject()` / `setObject()` on an
+`ObjectMessage`.
+
+However, there are mismatches between message type and getters / setters:
+
+* `BytesMessage` and `getObject()`: the byte array payload will need to be de-serialized into an object. This is slower
+than using an `ObjectMessage` instead and calling `getObject()` on it to get the object. +
+If an object needs to be serialized into a byte array and we want to use a `BytesMessage`, then it is better if the
+_application_ serializes the object and passes the byte array to the `BytesMessage`, rather than JGroups doing
+the serialization: the application has more knowledge of its types and can therefore do a much better job at
+serialization than the generic algorithm used by JGroups.
+* `CompositeMessage` and `getArray()` / `getObject()`: this will throw an exception
+* `NioMessage` and `getArray()`: this works, but will create a new byte array (unneeded memory allocation)
+
+In these cases, it makes sense to narrow the `Message` to its actual type and use the subclass:
+
+[source,java]
+----
+public void receive(Message msg) {
+    NioMessage m=(NioMessage)msg;
+    ByteBuffer buf=m.getBuf();
+    // do something directly with the ByteBuffer
+}
+----
+
+After all, the application knows what message types it sends, and can therefore safely downcast.
 
 
 [[Interfaces]]
@@ -212,62 +747,6 @@ The downside is that IpAddressUUIDs need more memory. See https://issues.jboss.o
 
         
 
-[[Message]]
-=== Message
-
-Data is sent between members in the form of messages (`org.jgroups.BaseMessage`). A message can be sent by a member to
-a _single member_, or to _all members_ of the group of which the channel is an endpoint.
-
-The structure of a message is shown in <<MessageFig>>.
-
-[[MessageFig]]
-.Structure of a message
-image::./images/Message.png[Message]
-
-A message has 5 fields:
-
-Destination address:: The address of the receiver. If `null`, the message will be sent to all
-                    current group members. `Message.getDest()` returns the destination address of a message.
-
-Source address:: The address of the sender. Can be `null`, and will be filled in by the
-                 transport protocol (e.g. UDP) before the message is put on the network.
-                 `Message.getSrc()` returns the source address, ie. the address of the sender of a message.
-
-Flags:: This is one byte used for flags. The currently recognized flags are `OOB`, `DONT_BUNDLE`, `NO_FC`,
-        `NO_RELIABILITY`, `NO_TOTAL_ORDER`, `NO_RELAY` and `RSVP`. For `OOB`, see the discussion on the
-        <<TransportDetails,transport details>>. For the use of flags see <<MessageFlags,the message flags>>.
-                    
-Payload:: The actual data (as a byte buffer). The `Message` class contains convenience methods to set a
-          serializable object and to retrieve it again, using serialization to convert the object to/from
-          a byte buffer. A message also has an offset and a length, if the buffer is only a subrange
-          of a larger buffer.
-                    
-Headers:: A list of headers that can be attached to a message. Anything that should not be in the
-          payload can be attached to a message as a header. Methods `putHeader()`, `getHeader()` and `removeHeader()`
-          of Message can be used to manipulate headers. +
-          Note that headers are only used by protocol implementers; headers should not be added or
-          removed by application code!
-
-
-A message is similar to an IP packet and consists of the payload (a byte buffer) and the addresses of the
-sender and receiver (as Addresses). Any message put on the network can be routed to its destination
-(receiver address), and replies can be returned to the sender's address.
-
-A message usually does not need to fill in the sender's address when sending a message; this is done
-automatically by the protocol stack before a message is put on the network. However, there may be cases,
-when the sender of a message wants to give an address different from its own, so that for example, a
-response should be returned to some other member.
-
-The destination address (receiver) can be an Address, denoting the address of a member, determined e.g.
-from a message received previously, or it can be +null+, which means that the message
-will be sent to all members of the group. A typical multicast message, sending string
-+"Hello"+ to all members would look like this:
-
-[source,java]
-----
-Message msg=new Message(null, "Hello");
-channel.send(msg);
-----
 
 
 [[MessageBatch]]
@@ -307,7 +786,7 @@ delivered in the order in which they were sent.
 Events are means by which JGroups protcols can talk to each other. Contrary to Messages, which travel over
 the network between group members, events only travel up and down the stack.
         
-NOTE: Headers and events are only used by protocol implementers; they are not needed by application code!
+NOTE: Headers and events are only used by protocol _implementers_; they are not needed by application code!
             
 
 [[View]]
@@ -329,7 +808,7 @@ omitted):
 ----
 View view=channel.getView();
 Address first=view.getMembers().get(0);
-Message msg=new Message(first, "Hello world");
+Message msg=new ObjectMessageSerializable(first, "Hello world");
 channel.send(msg);
 ----
 
@@ -458,36 +937,19 @@ A sample XML configuration looks like this (edited from `udp.xml`):
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
          ip_ttl="4"
-         ucast_recv_buf_size="5M"
-         ucast_send_buf_size="5M"
-         mcast_recv_buf_size="5M"
-         mcast_send_buf_size="5M"
          max_bundle_size="64K"
          enable_diagnostics="true"
-
          thread_pool.min_threads="2"
          thread_pool.max_threads="8"
          thread_pool.keep_alive_time="5000" />
 
     <PING />
-    <MERGE3 max_interval="30000"
-            min_interval="10000"/>
+    <MERGE3 max_interval="30000" min_interval="10000"/>
     <FD_SOCK/>
     <FD_ALL/>
     <VERIFY_SUSPECT timeout="1500"  />
-    <pbcast.NAKACK2 xmit_interval="500"
-                    xmit_table_num_rows="100"
-                    xmit_table_msgs_per_row="2000"
-                    xmit_table_max_compaction_time="30000"
-                    max_msg_batch_size="500"
-                    use_mcast_xmit="false"
-                    discard_delivered_msgs="true"/>
-    <UNICAST3 xmit_interval="500"
-              xmit_table_num_rows="100"
-              xmit_table_msgs_per_row="2000"
-              xmit_table_max_compaction_time="60000"
-              conn_expiry_timeout="0"
-              max_msg_batch_size="500"/>
+    <pbcast.NAKACK2 xmit_interval="500" />
+    <UNICAST3 xmit_interval="500" />
     <pbcast.STABLE desired_avg_gossip="50000"
                    max_bytes="4M"/>
     <pbcast.GMS print_local_addr="true" join_timeout="2000"/>
@@ -571,7 +1033,7 @@ public class ProgrammaticChat {
         ch.connect("ChatCluster");
         for(;;) {
             String line=Util.readStringFromStdin(": ");
-            ch.send(null, line);
+            ch.send(null, line); // causes an ObjectMessageSerializable to be created
         }
     }
 
@@ -786,7 +1248,7 @@ channel.send(null, data);
 The `null` value as destination address means that the message will be sent to all members in the cluster.
 The payload is a hashmap, which will be serialized into the message's buffer and unserialized at the
 receiver. Alternatively, any other means of generating a byte buffer and setting the message's buffer
-to it (e.g. using `Message.setBuffer()`) also works.
+to it (e.g. using `Message.setArray()` or `Message.setObject()`) also works.
             
 Here's an example of sending a unicast message to the first member (coordinator) of a group:
             
@@ -811,7 +1273,7 @@ protected void sendFile() throws Exception {
         int bytes=in.read(buf);
         if(bytes == -1)
             break;
-        channel.send(new Message(null, buf, 0, bytes));
+        channel.send(new BytesMessage(null, buf, 0, bytes));
     }
 }
 ----
@@ -879,7 +1341,7 @@ Secondly, the message we want to get ack'ed must be marked as `RSVP`:
                 
 [source,java]
 ----
-Message msg=new Message(null, "hello world").setFlag(Message.RSVP);
+Message msg=new ObjectMessageSerializable(null, "hello world").setFlag(Message.RSVP);
 ch.send(msg);
 ----
 
