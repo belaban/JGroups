@@ -793,6 +793,7 @@ public class MPerf extends ReceiverAdapter {
 
     public static void main(String[] args) {
         String props=null, name=null;
+        boolean run_event_loop=true;
 
         for(int i=0; i < args.length; i++) {
             if("-props".equals(args[i])) {
@@ -803,7 +804,11 @@ public class MPerf extends ReceiverAdapter {
                 name=args[++i];
                 continue;
             }
-            System.out.println("MPerf [-props <stack config>] [-name <logical name>]");
+            if("-nohup".equals(args[i])) {
+                run_event_loop=false;
+                continue;
+            }
+            System.out.println("MPerf [-props <stack config>] [-name <logical name>] [-nohup] ");
             return;
         }
 
@@ -811,11 +816,14 @@ public class MPerf extends ReceiverAdapter {
         try {
             test.start(props, name);
 
+            final boolean run=run_event_loop;
+
             // this kludge is needed in order to terminate the program gracefully when 'X' is pressed
             // (otherwise System.in.read() would not terminate)
             Thread thread=new Thread("MPerf runner") {
                 public void run() {
-                    test.loop();
+                    if(run)
+                        test.loop();
                 }
             };
             thread.setDaemon(true);
