@@ -27,7 +27,7 @@ public class TCP_NIO2 extends BasicTCP {
     protected NioServer server;
 
     @Property(description="The max number of outgoing messages that can get queued for a given peer connection " +
-      "(before dropping them). Most messages will ge retransmitted; this is mainly used at startup, e.g. to prevent " +
+      "(before dropping them). Most messages will get retransmitted; this is mainly used at startup, e.g. to prevent " +
       "dropped discovery requests or responses (sent unreliably, without retransmission).")
     protected int     max_send_buffers=10;
 
