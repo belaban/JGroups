@@ -1975,16 +1975,14 @@ The AuthToken implementations are listed below. Check the javadoc for details.
 [align="left",width="90%",cols="2,10",options="header"]
 |=================
 |Name|Description
-|SimpleToken | Uses a simple string (password) which is shared, and sent along with the authentication request (*deprecated*)
 | FixedMembershipToken | A fixed list of IP address:port pairs. If the requester is not in this list, authentication fails
 | RegexpMembership| Uses a regular expression to match against IP address or hostname
 | Krb5Token | Uses Kerberos for authentication
-| MD5Token | Uses an MD5 hash of a simple string (similar to SimpleString above, but hashed instead of plaintext) (*deprecated*)
 | X509Token | Uses a shared X.509 certificate
 |=================
 
 ===== Problems with AUTH
-The problem with (deprecated) `MD5Token` and `SimpleToken` implementations is that an attacker can find out the
+`MD5Token` and `SimpleToken` implementations were removed in 5.0. The problem was that an attacker can find out the
 value of the hashed password (MD5Token) or the plain password (SimpleToken). Once they have it, they can bypass AUTH
 and join (or merge into) a cluster. See https://issues.jboss.org/browse/JGRP-2367 for details.
 
@@ -2153,21 +2151,7 @@ COUNTER is the implementation of cluster wide counters, used by the CounterServi
 
 ${COUNTER}
 
-[[SUPERVISOR]]
 
-
-==== SUPERVISOR
-
-SUPERVISOR is a protocol which runs rules which periodically (or event triggered) check conditions and
-                take corrective action if a condition is not met. Example: org.jgroups.protocols.rules.CheckFDMonitor is
-                a rule which periodically checks if FD's monitor task is running when the cluster size is &gt; 1. If not,
-                the monitor task is started.
-            
-
-The SUPERVISOR is explained in more detail in <<Supervisor>>
-            
-
-${SUPERVISOR}
 
 [[FORK]]
 

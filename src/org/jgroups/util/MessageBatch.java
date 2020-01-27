@@ -109,17 +109,17 @@ public class MessageBatch implements Iterable<Message> {
         return messages;
     }
 
-    public Message first() {
+    public <T extends Message> T first() {
         for(int i=0; i < index; i++)
             if(messages[i] != null)
-                return messages[i];
+                return (T)messages[i];
         return null;
     }
 
-    public Message last() {
+    public <T extends Message> T last() {
         for(int i=index -1; i >= 0; i--)
             if(messages[i] != null)
-                return messages[i];
+                return (T)messages[i];
         return null;
     }
 

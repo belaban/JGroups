@@ -48,10 +48,11 @@ public class Chat extends ReceiverAdapter {
                 if(line.startsWith("quit") || line.startsWith("exit")) {
                     break;
                 }
-                Message msg=new BytesMessage(null, line);
+                Message msg=new ObjectMessageSerializable(null, line);
                 channel.send(msg);
             }
-            catch(Exception ignored) {
+            catch(Exception ex) {
+                ex.printStackTrace();
             }
         }
     }

@@ -47,10 +47,6 @@ A typical protocol stack configuration using UDP is:
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
-         ucast_recv_buf_size="5M"
-         ucast_send_buf_size="640K"
-         mcast_recv_buf_size="5M"
-         mcast_send_buf_size="640K"
          max_bundle_size="64K"
          ip_ttl="${jgroups.udp.ip_ttl:2}"
          enable_diagnostics="true"
@@ -66,10 +62,9 @@ A typical protocol stack configuration using UDP is:
     <FD_ALL/>
     <VERIFY_SUSPECT timeout="1500"  />
     <BARRIER />
-    <pbcast.NAKACK2 use_mcast_xmit="true"
-                   discard_delivered_msgs="true"/>
+    <pbcast.NAKACK2 />
     <UNICAST3 />
-    <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
+    <pbcast.STABLE desired_avg_gossip="50000"
                    max_bytes="4M"/>
     <pbcast.GMS print_local_addr="true" join_timeout="2000"/>
     <UFC max_credits="2M"
@@ -84,70 +79,49 @@ A typical protocol stack configuration using UDP is:
 In a nutshell the properties of the protocols are:
     
 
-UDP:: 
-                    This is the transport protocol. It uses IP multicasting to send messages to the entire cluster,
-                        or individual nodes. Other transports include TCP, TCP_NIO2 and TUNNEL.
+UDP:: This is the transport protocol. It uses IP multicasting to send messages to the entire cluster,
+      or individual nodes. Other transports include TCP, TCP_NIO2 and TUNNEL.
                     
 
-PING::
-                    This is the discovery protocol. It uses IP multicast (by default) to find initial members.
-                        Once found, the current coordinator can be determined and a unicast JOIN request will be sent
-                        to it in order to join the cluster.
+PING:: This is the discovery protocol. It uses IP multicast (by default) to find initial members.
+       Once found, the current coordinator can be determined and a unicast JOIN request will be sent
+       to it in order to join the cluster.
                     
 
-MERGE3::
-                    Will merge sub-clusters back into one cluster, kicks in after a network partition healed.
+MERGE3:: Will merge sub-clusters back into one cluster, kicks in after a network partition healed.
 
-FD_SOCK::
-                    Failure detection based on sockets (in a ring form between members). Generates notification
-                        if a member fails
+FD_SOCK:: Failure detection based on sockets (in a ring form between members). Generates notification if a member fails
                     
 
-FD / FD_ALL::
-                    Failure detection based on heartbeat are-you-alive messages. Generates notification
-                        if a member fails
+FD / FD_ALL:: Failure detection based on heartbeat are-you-alive messages. Generates notification if a member fails
 
-VERIFY_SUSPECT::
-                    Double-checks whether a suspected member is really dead,
-                        otherwise the suspicion generated from protocol below is discarded
+VERIFY_SUSPECT:: Double-checks whether a suspected member is really dead, otherwise the suspicion generated
+                 from the protocol below is discarded
 
-BARRIER::
-                    Needed to transfer state; this will block messages that modify the shared state until a
-                        digest has been taken, then unblocks all threads. _Not needed if no state transfer protocol is present._
+BARRIER:: Needed to transfer state; this will block messages that modify the shared state until a
+          digest has been taken, then unblocks all threads. _Not needed if no state transfer protocol is present._
                     
 
-pbcast.NAKACK2::
-                    Ensures (a) message reliability and (b) FIFO. Message
-                        reliability guarantees that a message will be received. If not,
-                        the receiver(s) will request retransmission. FIFO guarantees that all
-                        messages from sender P will be received in the order P sent them
+pbcast.NAKACK2:: Ensures (a) message reliability and (b) FIFO. Message reliability guarantees that a message will
+                 be received. If not, the receiver(s) will request retransmission. FIFO guarantees that all
+                 messages from sender P will be received in the order P sent them
 
-UNICAST3::
-                    Same as NAKACK for unicast messages: messages from sender P
-                        will not be lost (retransmission if necessary) and will be in FIFO
-                        order (conceptually the same as TCP in TCP/IP)
+UNICAST3:: Same as NAKACK for unicast messages: messages from sender P will not be lost (retransmission if necessary)
+           and will be in FIFO order (conceptually the same as TCP in TCP/IP)
 
-pbcast.STABLE::
-                    Deletes messages that have been seen by all members (distributed message garbage collection)
+pbcast.STABLE:: Deletes messages that have been seen by all members (distributed message garbage collection)
 
-pbcast.GMS::
-                    Membership protocol. Responsible for joining/leaving members and installing new views.
+pbcast.GMS:: Membership protocol. Responsible for joining/leaving members and installing new views.
 
-UFC::
-                    Unicast Flow Control. Provides flow control between 2 members.
-                    
+UFC:: Unicast Flow Control. Provides flow control between 2 members.
 
-MFC::
-                    Multicast Flow Control. Provides flow control between a sender and all cluster members.
-                    
+MFC:: Multicast Flow Control. Provides flow control between a sender and all cluster members.
 
-FRAG2::
-                    Fragments large messages into smaller ones and reassembles
-                        them back at the receiver side. For both multicast and unicast messages
+FRAG2:: Fragments large messages into smaller ones and reassembles them back at the receiver side.
+        For both multicast and unicast messages
 
-STATE_TRANSFER::
-                    Ensures that state is correctly transferred from an existing member (usually the coordinator) to a
-                        new member.
+STATE_TRANSFER:: Ensures that state is correctly transferred from an existing member (usually the coordinator) to a
+                 new member.
                     
 
 
@@ -283,10 +257,9 @@ The properties for a typical stack based on TCP might look like this (edited for
 <TCPPING initial_hosts="${jgroups.tcpping.initial_hosts:HostA[7800],HostB[7801]}"
          port_range="1"/>
 <VERIFY_SUSPECT timeout="1500"  />
-<pbcast.NAKACK2 use_mcast_xmit="false"
-                discard_delivered_msgs="true"/>
+<pbcast.NAKACK2 />
 <UNICAST3/>
-<pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
+<pbcast.STABLE desired_avg_gossip="50000"
                max_bytes="400000"/>
 <pbcast.GMS print_local_addr="true" join_timeout="2000"/>
 ----
@@ -499,29 +472,28 @@ The general setup is shown in <<TunnelingFig>>:
 image::./images/Tunneling.png[]
 
 First, the GossipRouter process is created on host B. Note that host B should be outside the firewall,
-                and all channels in the same group should use the same GossipRouter process. When a channel on host A is
-                created, its TCPGOSSIP
-                protocol will register its address with the GossipRouter and retrieve the initial membership (assume this
-                is C). Now, a TCP connection with the GossipRouter is established by A; this will persist until A crashes
-                or voluntarily leaves the group. When A multicasts a message to the cluster, GossipRouter looks up all cluster
-                members (in this case, A and C) and forwards the message to all members, using their TCP connections. In
-                the example, A would receive its own copy of the multicast message it sent, and another copy would be sent
-                to C.
+and all channels in the same group should use the same GossipRouter process. When a channel on host A is
+created, its `TCPGOSSIP`
+protocol will register its address with the GossipRouter and retrieve the initial membership (assume this
+is C). Now, a TCP connection with the GossipRouter is established by A; this will persist until A crashes
+or voluntarily leaves the group. When A multicasts a message to the cluster, GossipRouter looks up all cluster
+members (in this case, A and C) and forwards the message to all members, using their TCP connections. In
+the example, A would receive its own copy of the multicast message it sent, and another copy would be sent to C.
             
 
 This scheme allows for example
-                _Java applets_
-                , which are only allowed to connect back to the host from which they were downloaded, to use JGroups: the
-                HTTP server would be located on host B and the gossip and GossipRouter daemon would also run on that host.
-                An applet downloaded to either A or C would be allowed to make a TCP connection to B. Also, applications
-                behind a firewall would be able to talk to each other, joining a group.
+_Java applets_
+, which are only allowed to connect back to the host from which they were downloaded, to use JGroups: the
+HTTP server would be located on host B and the gossip and GossipRouter daemon would also run on that host.
+An applet downloaded to either A or C would be allowed to make a TCP connection to B. Also, applications
+behind a firewall would be able to talk to each other, joining a group.
             
 
 However, there are several drawbacks: first, having to maintain a TCP connection for the duration of the
-                connection might use up resources in the host system (e.g. in the GossipRouter), leading to scalability
-                problems, second, this scheme is inappropriate when only a few channels are located behind firewalls, and
-                the vast majority can indeed use IP multicast to communicate, and finally, it is not always possible to
-                enable outgoing traffic on 2 ports in a firewall, e.g. when a user does not 'own' the firewall.
+connection might use up resources in the host system (e.g. in the GossipRouter), leading to scalability
+problems, second, this scheme is inappropriate when only a few channels are located behind firewalls, and
+the vast majority can indeed use IP multicast to communicate, and finally, it is not always possible to
+enable outgoing traffic on 2 ports in a firewall, e.g. when a user does not 'own' the firewall.
             
 
 
@@ -595,7 +567,7 @@ The attributes are listed below. They roughly correspond to the options of `java
 |enabled|Whether or not to use a thread pool. If set to false, the caller's thread is used.
 |min_threads|The minimum number of threads to use.
 |max_threads|The maximum number of threads to use.
-|keep_alive_time|Number of milliseconds until an idle thread is removed from the pool
+|keep_alive_time|Number of milliseconds until an idle thread is terminated and put back into the pool.
 |===============
 
 
@@ -647,7 +619,7 @@ for both unicast and multicast messages.
 
 The following thread pools and factories are in TP:
 
-[options="header",cols="3,10"]
+[options="header",cols="2,10"]
 |===============
 |Name|Description
 |Thread pool|This is the pool for handling incoming messages. It can be fetched using
@@ -1426,7 +1398,7 @@ Example: if we have {A,B,C,D,E,F}, and A broadcasts M, then it sends it to B, th
 
 Let's introduce the concept of a round. A round is the time it takes to send or receive a message.
             In the above example, a round takes 1 second if we send 1 GB messages.
-            In the existing N-1 approach, it takes X * (N-1) rounds to send X messages to a cluster of N nodes.
+            In the existing N-1 approach, it takes `X * (N-1)` rounds to send X messages to a cluster of N nodes.
             So to broadcast 10 messages a the cluster of 10, it takes 90 rounds.
         
 
@@ -1474,7 +1446,7 @@ In round 1, A send m1 to B.
 In round 2, A sends m2 to B, but B also forwards m1 (received in round 1) to C.
 
 
-In round 3, A is done. B forwards m2 to C and C forwards m1 to D (in parallel, denoted by ``||`).
+In round 3, A is done. B forwards m2 to C and C forwards m1 to D (in parallel, denoted by `||`).
 
 
 In round 4, C forwards m2 to D.
@@ -1548,7 +1520,7 @@ protocols treat the message. This is done as follows:
 [source,java]
 ----
 
-Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.NO_FC);
+Message msg=new BytesMessage().setFlag(Message.Flag.OOB, Message.Flag.NO_FC);
 ----
 
 Here we tag the message to be OOB (out of band) and to bypass flow control.
@@ -1840,123 +1812,6 @@ Here we leave ergonomics enabled for UDP (the default is true), but disable it f
 Ergonomics is work-in-progress, and will be implemented over multiple releases.
         
 
-[[Supervisor]]
-
-
-=== Supervising a running stack
-
-SUPERVISOR (<<SUPERVISOR>>) provides a rule based fault detection and correction protocol. It
-            allows for rules to be installed, which are periodically invoked. When invoked, a condition can be checked
-            and corrective action can be taken to fix the problem. Essentially, SUPERVISOR acts like a human
-            administrator, except that condition checking and action triggering is done automatically.
-        
-
-An example of a rule is org.jgroups.protocols.rules.CheckFDMonitor: invoked periodically, it checks if
-            the monitor task in FD is running when the membership is 2 or more and - if not - restarts it. The sections
-            below show how to write the rule and how to invoke it.
-        
-
-All rules to be installed in SUPERVISOR are listed in an XML file, e.g. rules.xml:
-        
-
-
-[source,xml]
-----
-
-<rules xmlns="urn:jgroups:rules:1.0">
-     <rule name="rule1" class="org.jgroups.protocols.rules.CheckFDMonitorRule"
-           interval="1000"/>
-</rules>
-        
-----
-
-There is only one rule "rule1" present, which is run every second. The name of the class implementing the
-            rule is "org.jgroups.protocols.rules.CheckFDMonitorRule", and its implementation is:
-        
-
-
-[source,java]
-----
-
-public class CheckFDMonitor extends Rule {
-    protected FD fd;
-
-    public String name() {return "sample";}
-
-    public String description() {
-        return "Starts FD.Monitor if membership > 1 and monitor isn't running";
-    }
-
-    public void init() {
-        super.init();
-        fd=(FD)sv.getProtocolStack().findProtocol(FD.class);
-        if(fd == null) {
-            log.info("FD was not found, uninstalling myself (sample)");
-            sv.uninstallRule("sample");
-        }
-    }
-
-    public boolean eval() {
-        return sv.getView() != null && sv.getView().size() > 1
-            && !fd.isMonitorRunning();
-    }
-
-    public String condition() {
-        View view=sv.getView();
-        return "Membership is " + (view != null? view.size() : "n/a") +
-            ", FD.Monitor running=" + fd.isMonitorRunning();
-    }
-
-    public void trigger() throws Throwable {
-        System.out.println(sv.getLocalAddress() + ": starting failure detection");
-        fd.startFailureDetection();
-    }
-}
-        
-----
-
-CheckFDMonitor extends abstract class Rule which sets a reference to SUPERVISOR and the log when the rule
-            has been installed.
-        
-
-Method name() needs to return a unique name by which the rule can be uninstalled later if necessary.
-        
-
-Description() should provide a meaningful description (used by JMX).
-        
-
-In init(), a reference to FD is set by getting the protocol stack from the SUPERVISOR (sv). If not found,
-            e.g. because there is no FD protocol present in a given stack, the rule uninstalls itself.
-        
-
-Method eval() is called every second. It checks that the monitor task in FD is running (when the membership
-            is 2 or more) and, if not, returns true. In that case, method trigger() will get called by the code in
-            the Rule superclass and it simply restarts the stopped monitor task.
-        
-
-Note that rules can be installed and uninstalled dynamically at runtime, e.g. via probe.sh:
-        
-
-
-----
-
-probe.sh op=SUPERVISOR.installRule["myrule", 1000,"org.jgroups.protocols.rules.CheckFDMonitor"]
-        
-----
-
-
-----
-
-probe.sh op=SUPERVISOR.uninstallRule["myrule"]
-        
-----
-
-
-----
-
-probe.sh op=SUPERVISOR.dumpRules
-        
-----
 
 [[Probe]]
 
@@ -2003,7 +1858,7 @@ The way probe works is that every stack has an additional multicast socket that 
                             disabled, we'll have neither the thread nor the socket created.
 |diag_enable_udp|Use a multicast socket to listen for probe requests
 
-|diag_enable_tcp|Use a TCP socket to listen for probe requests (ignored if enable_diagnostics is false)
+|diag_enable_tcp|Use a TCP socket to listen for probe requests (ignored if `enable_diagnostics` is false)
 
 |diagnostics_addr| The multicast address which the MulticastSocket should join. The default is
                    `224.0.75.75` for IPv4 and `ff0e::0:75:75` for IPv6.
@@ -2478,7 +2333,7 @@ The second method accepts a list of membership lists; each list represents a sub
 .Ordering and duplicate elements
 NOTE: In both regular and merge views, it is important that there are no duplicate members. It is entirely
       possible to get overlapping subviews in the case of a merge, for instance:
-      +{A,B,C}+, +{C,D}+ and +{C,D}+. This _cannot_
+      +{A,B,C}+, +{C,D}+ and +{C,D}+. This _must not_
       result in C or D being present in the resulting merge view multiple times.
 
 A +MembershipChangePolicy+ can be set in GMS via property +$$membership_change_policy$$+,
