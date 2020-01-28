@@ -31,8 +31,7 @@ public class ObjectMessage extends BaseMessage {
     *             sent to a single member.
     */
     public ObjectMessage(Address dest) {
-        setDest(dest);
-        headers=createHeaders(Util.DEFAULT_HEADERS);
+        super(dest);
     }
 
 
@@ -44,7 +43,7 @@ public class ObjectMessage extends BaseMessage {
     * @param obj To be used as payload. If obj doesn't implement {@link SizeStreamable}, an exception will be thrown
     */
     public ObjectMessage(Address dest, Object obj) {
-        this(dest);
+        super(dest);
         setObject(obj);
     }
 

@@ -40,8 +40,7 @@ public class BytesMessage extends BaseMessage {
      *            Otherwise, it is sent to a single member.
     */
     public BytesMessage(Address dest) {
-        setDest(dest);
-        headers=createHeaders(Util.DEFAULT_HEADERS);
+        super(dest);
     }
 
    /**
@@ -74,13 +73,13 @@ public class BytesMessage extends BaseMessage {
     *               for array index violations and an ArrayIndexOutOfBoundsException will be thrown if invalid
     */
     public BytesMessage(Address dest, byte[] array, int offset, int length) {
-        this(dest);
+        super(dest);
         setArray(array, offset, length);
     }
 
 
     public BytesMessage(Address dest, ByteArray array) {
-        this(dest);
+        super(dest);
         setArray(array);
     }
 
@@ -93,7 +92,7 @@ public class BytesMessage extends BaseMessage {
     *            Serializable, Externalizable or Streamable, or be a basic type (e.g. Integer, Short etc)).
     */
     public BytesMessage(Address dest, Object obj) {
-        this(dest);
+        super(dest);
         setObject(obj);
     }
 
@@ -104,10 +103,6 @@ public class BytesMessage extends BaseMessage {
         return this;
     }
 
-    public BytesMessage(boolean create_headers) {
-        if(create_headers)
-            headers=createHeaders(Util.DEFAULT_HEADERS);
-    }
 
     public Supplier<Message> create()      {return BytesMessage::new;}
     public short             getType()     {return Message.BYTES_MSG;}
@@ -259,7 +254,7 @@ public class BytesMessage extends BaseMessage {
     }
 
     protected <T extends BytesMessage> T createMessage() {
-        return (T)new BytesMessage(false);
+        return (T)new BytesMessage();
     }
 
 

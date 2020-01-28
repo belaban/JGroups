@@ -23,10 +23,6 @@ public class FragmentedMessage extends BytesMessage { // we need the superclass'
     public FragmentedMessage() { // for de-serialization
     }
 
-    public FragmentedMessage(boolean create_headers) {
-        super(create_headers);
-    }
-
     public FragmentedMessage(Message original_msg, int off, int len) {
         this.original_msg=original_msg;
         this.offset=off;
@@ -69,6 +65,6 @@ public class FragmentedMessage extends BytesMessage { // we need the superclass'
 
 
     protected <T extends BytesMessage> T createMessage() {
-        return (T)new FragmentedMessage(false);
+        return (T)new FragmentedMessage();
     }
 }
