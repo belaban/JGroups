@@ -31,6 +31,8 @@ public class BytesMessage extends BaseMessage {
     protected int               length;
 
 
+    public BytesMessage() {
+    }
 
     /**
     * Constructs a message given a destination address
@@ -95,10 +97,6 @@ public class BytesMessage extends BaseMessage {
         setObject(obj);
     }
 
-
-    public BytesMessage() {
-        this(true);
-    }
 
 
     public BytesMessage setFlag(Flag... flags) {

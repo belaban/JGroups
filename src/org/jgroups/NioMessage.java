@@ -38,7 +38,6 @@ public class NioMessage extends BaseMessage {
 
 
     public NioMessage() {
-        super();
     }
 
     /**
@@ -58,12 +57,8 @@ public class NioMessage extends BaseMessage {
     *            allowed) since we don't copy the contents.
     */
     public NioMessage(Address dest, ByteBuffer buf) {
-        this(dest);
+        super(dest);
         this.buf=buf;
-    }
-
-    public NioMessage(boolean create_headers) {
-        super(create_headers);
     }
 
 

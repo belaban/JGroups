@@ -29,6 +29,9 @@ public class ObjectMessageSerializable extends ObjectMessage {
     protected byte[] serialized_obj; // contains the size of the serialized object (done just-in-time, if needed)
 
 
+    public ObjectMessageSerializable() {
+    }
+
     public ObjectMessageSerializable(Address dest) {
         super(dest);
     }
@@ -47,14 +50,6 @@ public class ObjectMessageSerializable extends ObjectMessage {
     }
 
 
-    public ObjectMessageSerializable() {
-        super();
-    }
-
-
-    public ObjectMessageSerializable(boolean create_headers) {
-        super(create_headers);
-    }
 
     public Supplier<Message> create()  {return ObjectMessageSerializable::new;}
     public short             getType() {return Message.OBJ_MSG_SERIALIZABLE;}

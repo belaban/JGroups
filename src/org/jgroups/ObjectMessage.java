@@ -21,6 +21,10 @@ import java.util.function.Supplier;
 public class ObjectMessage extends BaseMessage {
     protected Object obj; // must implement SizeStreamable (though the type is Object because of the subclass)
 
+
+    public ObjectMessage() {
+    }
+
     /**
     * Constructs a message given a destination address
     * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
@@ -45,15 +49,6 @@ public class ObjectMessage extends BaseMessage {
     }
 
 
-    public ObjectMessage() {
-        this(true);
-    }
-
-
-    public ObjectMessage(boolean create_headers) {
-        if(create_headers)
-            headers=createHeaders(Util.DEFAULT_HEADERS);
-    }
 
     public Supplier<Message> create()                             {return ObjectMessage::new;}
     public short             getType()                            {return Message.OBJ_MSG;}

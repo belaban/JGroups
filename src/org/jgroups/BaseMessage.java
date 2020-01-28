@@ -3,7 +3,6 @@ package org.jgroups;
 
 
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.util.ByteArray;
 import org.jgroups.util.Headers;
 import org.jgroups.util.Util;
 
@@ -38,59 +37,6 @@ public abstract class BaseMessage implements Message {
     public BaseMessage(Address dest) {
         setDest(dest);
         headers=createHeaders(Util.DEFAULT_HEADERS);
-    }
-
-   /**
-    * Constructs a message given a destination and source address and the payload byte buffer
-    * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
-    *             sent to a single member.
-    * @param buf The payload. Note that this buffer must not be modified (e.g. buf[0]='x' is not
-    *           allowed) since we don't copy the contents.
-    */
-    public BaseMessage(Address dest, byte[] buf) {
-        this(dest, buf, 0, buf != null? buf.length : 0);
-    }
-
-
-   /**
-    * Constructs a message. The index and length parameters provide a reference to a byte buffer, rather than a copy,
-    * and refer to a subset of the buffer. This is important when we want to avoid copying. When the message is
-    * serialized, only the subset is serialized.</p>
-    * <em>
-    * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
-    * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
-    * retransmit a changed byte[] buffer !
-    * </em>
-    *
-    * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
-    *             sent to a single member.
-    * @param buf A reference to a byte buffer
-    * @param offset The index into the byte buffer
-    * @param length The number of bytes to be used from <tt>buf</tt>. Both index and length are checked
-    *           for array index violations and an ArrayIndexOutOfBoundsException will be thrown if invalid
-    */
-    public BaseMessage(Address dest, byte[] buf, int offset, int length) {
-        this(dest);
-        setArray(buf, offset, length);
-    }
-
-
-    public BaseMessage(Address dest, ByteArray buf) {
-        this(dest);
-        setArray(buf);
-    }
-
-
-   /**
-    * Constructs a message given a destination and source address and the payload object
-    * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
-    *             sent to a single member.
-    * @param obj The object that will be marshalled into the byte buffer. Has to be serializable (e.g. implementing
-    *            Serializable, Externalizable or Streamable, or be a basic type (e.g. Integer, Short etc)).
-    */
-    public BaseMessage(Address dest, Object obj) {
-        this(dest);
-        setObject(obj);
     }
 
 

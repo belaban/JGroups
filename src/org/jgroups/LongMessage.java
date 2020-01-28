@@ -18,7 +18,6 @@ public class LongMessage extends BaseMessage {
     protected long value;
 
     public LongMessage() {
-        super();
     }
 
     public LongMessage(Address dest, long v) {super(dest); this.value=v;}

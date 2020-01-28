@@ -27,12 +27,8 @@ public class CompositeMessage extends BaseMessage {
     protected static final MessageFactory mf=new DefaultMessageFactory();
 
     public CompositeMessage() {
-        super(true);
     }
 
-    public CompositeMessage(boolean create_headers) {
-        super(create_headers);
-    }
 
     public CompositeMessage(Address dest) {
         super(dest);

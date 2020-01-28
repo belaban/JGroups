@@ -14,15 +14,11 @@ import java.util.function.Supplier;
  */
 public class EmptyMessage extends BaseMessage {
 
-    public EmptyMessage(Address dest) {
-        super(dest);
-    }
-
     public EmptyMessage() {
     }
 
-    public EmptyMessage(boolean create_headers) {
-        super(create_headers);
+    public EmptyMessage(Address dest) {
+        super(dest);
     }
 
     public short                 getType()                            {return Message.EMPTY_MSG;}
