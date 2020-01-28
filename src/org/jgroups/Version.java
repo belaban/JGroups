@@ -83,7 +83,7 @@ public class Version {
      * @param args
      */
     public static void main(String[] args) {
-        System.out.println("\nVersion:      " + description);
+        System.out.println("Version: " + description );
     }
 
 
