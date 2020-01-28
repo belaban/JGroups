@@ -6,7 +6,6 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Bits;
 import org.jgroups.util.Credit;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
@@ -149,8 +148,8 @@ public abstract class FlowControl extends Protocol {
             int index=tmp.indexOf(':');
             if(index == -1)
                 throw new IllegalArgumentException("element '" + tmp + "'  is missing a ':' separator");
-            Long key=Long.parseLong(tmp.substring(0, index).trim());
-            Long val=Long.parseLong(tmp.substring(index +1).trim());
+            long key=Long.parseLong(tmp.substring(0, index).trim());
+            long val=Long.parseLong(tmp.substring(index +1).trim());
 
             // sanity checks:
             if(key < 0 || val < 0)
@@ -368,14 +367,14 @@ public abstract class FlowControl extends Protocol {
         switch(hdr.type) {
             case FcHeader.REPLENISH:
                 num_credit_responses_received++;
-                handleCredit(msg.getSrc(), bufferToLong(msg.getArray(), msg.getOffset()));
+                handleCredit(msg.getSrc(), ((LongMessage)msg).getValue());
                 break;
             case FcHeader.CREDIT_REQUEST:
                 num_credit_requests_received++;
                 Address sender=msg.getSrc();
-                Long requested_credits=bufferToLong(msg.getArray(), msg.getOffset());
-                if(requested_credits != null)
-                    handleCreditRequest(received, sender,requested_credits);
+                long requested_credits=((LongMessage)msg).getValue();
+                if(requested_credits > 0)
+                    handleCreditRequest(received, sender, requested_credits);
                 break;
             default:
                 log.error(Util.getMessage("HeaderTypeNotKnown"), local_addr, hdr.type);
@@ -473,9 +472,8 @@ public abstract class FlowControl extends Protocol {
     protected void sendCredit(Address dest, long credits) {
         if(log.isTraceEnabled())
             log.trace("sending %d credits to %s", credits, dest);
-        Message msg=new BytesMessage(dest, longToBuffer(credits))
-          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
-          .putHeader(this.id,getReplenishHeader());
+        Message msg=new LongMessage(dest, credits).putHeader(this.id,getReplenishHeader())
+          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE);
         down_prot.down(msg);
         num_credit_responses_sent++;
     }
@@ -489,9 +487,8 @@ public abstract class FlowControl extends Protocol {
     protected void sendCreditRequest(final Address dest, long credits_needed) {
         if(log.isTraceEnabled())
             log.trace("sending request for %d credits to %s", credits_needed, dest);
-        Message msg=new BytesMessage(dest, longToBuffer(credits_needed))
-          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
-          .putHeader(this.id, getCreditRequestHeader());
+        Message msg=new LongMessage(dest, credits_needed).putHeader(this.id, getCreditRequestHeader())
+          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE);
         down_prot.down(msg);
         num_credit_requests_sent++;
     }
@@ -516,7 +513,7 @@ public abstract class FlowControl extends Protocol {
                                              (l,r) -> {}).toString();
     }
 
-    protected static byte[] longToBuffer(long num) {
+   /* protected static byte[] longToBuffer(long num) {
         byte[] buf=new byte[Global.LONG_SIZE];
         Bits.writeLong(num, buf, 0);
         return buf;
@@ -525,7 +522,7 @@ public abstract class FlowControl extends Protocol {
     protected static long bufferToLong(byte[] buf, int offset) {
         return Bits.readLong(buf, offset);
     }
-
+*/
 
 
 

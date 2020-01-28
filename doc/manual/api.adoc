@@ -49,7 +49,7 @@ public interface Message extends SizeStreamable, Constructable<Message> {
 
     /** The type of the message */
     short BYTES_MSG=0, NIO_MSG=1, EMPTY_MSG=2, OBJ_MSG=3, OBJ_MSG_SERIALIZABLE=4,
-          COMPOSITE_MSG=5, FRAG_MSG=6;
+          COMPOSITE_MSG=5, FRAG_MSG=6, LONG_MSG=7;
 
     /** Returns the type of the message, e.g. BYTES_MSG, OBJ_MSG etc */
     short                 getType();
@@ -439,6 +439,14 @@ WARNING: When the byte array is set, the contents of the object should not be ch
          of the object will be sent on serialization. In case the object needs to be changed nevertheless, then
          method `setObject(Object)` can be used: it will set the object and null the serialized format byte array, so
          at marshalling time, it will be set again.
+
+
+[[LongMessage]]
+==== LongMessage
+A `LongMessage` has a `long` as payload. This allows for simple sending of `longs` and `integers`, without having
+to marshal them into byte arrays.
+
+These types are used for example in the flow control protocols to send credit-requests and responses.
 
 
 

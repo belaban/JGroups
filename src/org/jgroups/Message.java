@@ -24,7 +24,8 @@ public interface Message extends SizeStreamable, Constructable<Message> {
       OBJ_MSG              = 3,
       OBJ_MSG_SERIALIZABLE = 4,
       COMPOSITE_MSG        = 5,
-      FRAG_MSG             = 6;
+      FRAG_MSG             = 6,
+      LONG_MSG             = 7;
 
 
     /** Returns the type of the message, e.g. BYTES_MSG, OBJ_MSG etc */

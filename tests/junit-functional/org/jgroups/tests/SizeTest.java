@@ -736,7 +736,7 @@ public class SizeTest {
 
 
 
-    public static void testUUID() throws Exception {
+    public void testUUID() throws Exception {
         org.jgroups.util.UUID uuid=org.jgroups.util.UUID.randomUUID();
         System.out.println("uuid = " + uuid);
         _testSize(uuid);

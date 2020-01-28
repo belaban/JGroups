@@ -8,6 +8,7 @@ import org.jgroups.util.Util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Objects;
 
 
 /**
@@ -66,8 +67,7 @@ public class MessageID implements Comparable<MessageID>, Cloneable, SizeStreamab
 
         MessageID messageID = (MessageID) o;
 
-        return id == messageID.id &&
-                !(address != null ? !address.equals(messageID.address) : messageID.address != null);
+        return id == messageID.id && Objects.equals(address, messageID.address);
 
     }
 
