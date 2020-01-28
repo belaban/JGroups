@@ -34,6 +34,7 @@ public class Probe {
     protected final List<Requester> requesters=new ArrayList<>();
     protected final AtomicInteger   matched=new AtomicInteger(), not_matched=new AtomicInteger(), count=new AtomicInteger();
     protected boolean               verbose;
+    protected static final String   PREFIX="**";
 
 
     public boolean verbose()          {return verbose;}
@@ -48,7 +49,7 @@ public class Probe {
         thread_pool=Executors.newCachedThreadPool(new DefaultThreadFactory("probe", true, true));
 
         if(verbose)
-            System.out.printf("addrs: %s\nudp: %b, tcp: %b\n\n", addrs, udp, tcp);
+            System.out.printf("%s addrs: %s\n%s udp: %b, tcp: %b\n\n", PREFIX, addrs, PREFIX, udp, tcp);
 
         for(InetAddress addr: addrs) {
             boolean unicast_dest=addr != null && !addr.isMulticastAddress();
@@ -80,10 +81,14 @@ public class Probe {
                 for(SocketAddress target: targets) {
                     Requester req;
                     if(udp) {
+                        if(verbose)
+                            System.out.printf("%s sending UDP request to %s\n", PREFIX, target);
                         req=new UdpRequester(target, request, passcode, null).start(bind_addr, timeout, ttl);
                         req.run();
                     }
                     if(tcp) {
+                        if(verbose)
+                            System.out.printf("%s sending TCP request to %s\n", PREFIX, target);
                         req=new TcpRequester(target, request, passcode, null).start(bind_addr, timeout, ttl);
                         req.run();
                     }
