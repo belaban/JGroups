@@ -27,7 +27,7 @@ public class DiagnosticsHandler extends ReceiverAdapter {
     public static final String        UDP_THREAD_NAME="UdpDiagHandler";
     public static final String        TCP_THREAD_NAME="TcpDiagHandler";
     protected TP                      transport;
-    protected volatile boolean        udp_enabled=true, tcp_enabled;
+    protected volatile boolean        udp_enabled=true, tcp_enabled=true;
     protected ServerSocket            srv_sock;  // when TCP is used
     protected Runner                  udp_runner, tcp_runner;
     protected MulticastSocket         udp_mcast_sock;        // receiving of mcast packets when UDP is used

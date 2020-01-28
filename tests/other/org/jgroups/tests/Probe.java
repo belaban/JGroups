@@ -33,7 +33,11 @@ public class Probe {
     protected ExecutorService       thread_pool;
     protected final List<Requester> requesters=new ArrayList<>();
     protected final AtomicInteger   matched=new AtomicInteger(), not_matched=new AtomicInteger(), count=new AtomicInteger();
+    protected boolean               verbose;
 
+
+    public boolean verbose()          {return verbose;}
+    public Probe   verbose(boolean b) {verbose=b; return this;}
 
 
     public void start(List<InetAddress> addrs, InetAddress bind_addr, int port, int ttl,
@@ -42,6 +46,10 @@ public class Probe {
         this.weed_out_duplicates=weed_out_duplicates;
         this.match=match;
         thread_pool=Executors.newCachedThreadPool(new DefaultThreadFactory("probe", true, true));
+
+        if(verbose)
+            System.out.printf("addrs: %s\nudp: %b, tcp: %b\n\n", addrs, udp, tcp);
+
         for(InetAddress addr: addrs) {
             boolean unicast_dest=addr != null && !addr.isMulticastAddress();
             if(unicast_dest)
@@ -169,7 +177,7 @@ public class Probe {
         long              timeout=500;
         StringBuilder     request=new StringBuilder();
         String            match=null;
-        boolean           weed_out_duplicates=false, udp=true, tcp=false;
+        boolean           weed_out_duplicates=false, udp=true, tcp=false, verbose=false;
         String            passcode=null;
 
 
@@ -196,6 +204,11 @@ public class Probe {
             }
             if("-6".equals(args[i])) {
                 ip_version=StackType.IPv6;
+                args[i]=null;
+                continue;
+            }
+            if("-v".equals(args[i])) {
+                verbose=true;
                 args[i]=null;
             }
         }
@@ -250,13 +263,23 @@ public class Probe {
 
             if(!udp && !tcp)
                 throw new IllegalArgumentException("either UDP or TCP mode has to be enabled");
+            if(tcp) udp=false;
             if(ip_version == StackType.IPv6 && bind_addr == null)
                 bind_addr=Util.getLoopback(ip_version);
 
-            Probe p=new Probe();
+            Probe p=new Probe().verbose(verbose);
             if(addrs.isEmpty()) {
-                InetAddress addr=InetAddress.getByName(ip_version == StackType.IPv6? DEFAULT_DIAG_ADDR_IPv6 : DEFAULT_DIAG_ADDR);
-                addrs.add(addr);
+                if(udp) {
+                    InetAddress mcast_addr=InetAddress.getByName(ip_version == StackType.IPv6?
+                                                                   DEFAULT_DIAG_ADDR_IPv6 : DEFAULT_DIAG_ADDR);
+                    if(!addrs.contains(mcast_addr))
+                        addrs.add(mcast_addr);
+                }
+                if(tcp) {
+                    InetAddress local=Util.getNonLoopbackAddress();
+                    if(local != null && !addrs.contains(local))
+                        addrs.add(local);
+                }
             }
             if(port == 0)
                 port=DEFAULT_DIAG_PORT;
@@ -270,7 +293,8 @@ public class Probe {
     protected static void help() {
         System.out.println("Probe [-help] [-addr <addr>] [-4] [-6] [-bind_addr <addr>] " +
                              "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-passcode <code>] [-weed_out_duplicates] " +
-                             "[-cluster regexp-pattern] [-match pattern] [-udp true|false] [-tcp true|false] [key[=value]]*\n\n" +
+                             "[-cluster regexp-pattern] [-match pattern] [-udp true|false] [-tcp true|false] " +
+                             "[-v] [key[=value]]*\n\n" +
                              "Examples:\n" +
                              "probe.sh keys // dumps all valid commands\n" +
                              "probe.sh jmx=NAKACK // dumps JMX info about all NAKACK protocols\n" +
