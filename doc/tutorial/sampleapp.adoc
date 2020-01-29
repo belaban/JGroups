@@ -97,7 +97,7 @@ private void eventLoop() {
             if(line.startsWith("quit") || line.startsWith("exit"))
                 break;
             line="[" + user_name + "] " + line;
-            Message msg=new ObjectMessageSerializable(null, line);
+            Message msg=new ObjectMessage(null, line);
             channel.send(msg);
         }
         catch(Exception e) {
@@ -110,10 +110,10 @@ We added the call to eventLoop() and the closing of the channel to the start() m
 implementation of eventLoop.
 
 The event loop blocks until a new line is ready (from standard input), then sends a message to the cluster.
-This is done by creating a new `ObjectMessageSerializable` (a message containing the destination and sender's addresses,
+This is done by creating a new `ObjectMessage` (a message containing the destination and sender's addresses,
 plus an object as payload) and calling `Channel.send()` with it as argument.
 
-The first argument of the ObjectMessageSerializable constructor is the destination address. A null destination address
+The first argument of the ObjectMessage constructor is the destination address. A null destination address
 sends the message to everyone in the cluster (a non-null address of an instance would send the message
 to only one instance).
 

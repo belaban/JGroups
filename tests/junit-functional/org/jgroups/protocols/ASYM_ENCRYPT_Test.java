@@ -258,7 +258,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
 
     public void testObjectMessage() throws Exception {
         Person p=new Person("Bela Ban", 54, Util.generateArray(1200));
-        Message msg=new ObjectMessageSerializable(b.getAddress(), p);
+        Message msg=new ObjectMessage(b.getAddress(), p);
         a.send(msg);
         Util.waitUntil(5000, 500, () -> rb.size() == 1);
         Message m=rb.list().get(0);

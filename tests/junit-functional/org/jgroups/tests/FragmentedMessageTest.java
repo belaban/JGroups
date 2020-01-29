@@ -40,9 +40,9 @@ public class FragmentedMessageTest {
         _testFragmentation(original_msg, verifier);
     }
 
-    public void testFragmentationWithObjectMessageSerializable() throws Exception {
+    public void testFragmentationWithObjectMessage2() throws Exception {
         MessageSendTest.MyData data=new MessageSendTest.MyData(322649, array);
-        Message original_msg=new ObjectMessageSerializable(dest, data).setSrc(src);
+        Message original_msg=new ObjectMessage(dest, data).setSrc(src);
         Consumer<Message> verifier=m -> {
             MessageSendTest.MyData d=m.getObject();
             System.out.printf("obj: %s\n", d);
@@ -54,9 +54,9 @@ public class FragmentedMessageTest {
     }
 
 
-    public void testFragmentationWithObjectMessageSerializable2() throws Exception {
+    public void testFragmentationWithObjectMessage3() throws Exception {
         Person data=new Person("Bela Ban", 322649, array);
-        Message original_msg=new ObjectMessageSerializable(dest, data).setSrc(src);
+        Message original_msg=new ObjectMessage(dest, data).setSrc(src);
         Consumer<Message> verifier=m -> {
             Person d=m.getObject();
             System.out.printf("obj: %s\n", d);

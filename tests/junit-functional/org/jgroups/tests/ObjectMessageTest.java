@@ -3,7 +3,6 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.ObjectMessage;
-import org.jgroups.ObjectMessageSerializable;
 import org.jgroups.util.Bits;
 import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Streamable;
@@ -15,7 +14,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- * Test {@link ObjectMessage} and {@link ObjectMessageSerializable}
+ * Test {@link ObjectMessage}
  * @author Bela Ban
  * @since  5.0.0
  */
@@ -30,21 +29,12 @@ public class ObjectMessageTest extends MessageTestBase {
     }
 
     public void testConstructor2() {
-        Message msg=new ObjectMessageSerializable();
-        assert msg.getType() == Message.OBJ_MSG_SERIALIZABLE;
+        Message msg=new ObjectMessage();
+        assert msg.getType() == Message.OBJ_MSG;
         assert !msg.hasArray();
         assert msg.getLength() == 0;
     }
 
-    public void testNotSizeStreamable() {
-        try {
-            //noinspection ResultOfObjectAllocationIgnored
-            new ObjectMessage(null, "Hello world");
-            assert false : "we should not be able to create a message with a non size-streamable object";
-        } catch(Throwable t) {
-            assert t instanceof IllegalArgumentException;
-        }
-    }
 
     public void testObject() throws Exception {
         Message msg=new ObjectMessage(null, new Person(53, "Bela"));
@@ -56,43 +46,33 @@ public class ObjectMessageTest extends MessageTestBase {
     }
 
     public void testObject2() throws Exception {
-        Message msg=new ObjectMessageSerializable(null, new Person(53, "Bela"));
+        Message msg=new ObjectMessage(null, new Person(53, "Bela"));
         _testSize(msg);
         byte[] buf=marshal(msg);
-        Message msg2=unmarshal(ObjectMessageSerializable.class, buf);
+        Message msg2=unmarshal(ObjectMessage.class, buf);
         Person p=msg2.getObject();
         assert p != null && p.name.equals("Bela") && p.age == 53;
     }
 
 
     public void testObject3() throws Exception {
-        Message msg=new ObjectMessageSerializable(null, new BasePerson(53, "Bela"));
+        Message msg=new ObjectMessage(null, new BasePerson(53, "Bela"));
         _testSize(msg);
         byte[] buf=marshal(msg);
-        Message msg2=unmarshal(ObjectMessageSerializable.class, buf);
+        Message msg2=unmarshal(ObjectMessage.class, buf);
         BasePerson p=msg2.getObject();
         assert p != null && p.name.equals("Bela") && p.age == 53;
     }
 
     public void testObject4() throws Exception {
-        Message msg=new ObjectMessageSerializable(null, "hello world");
+        Message msg=new ObjectMessage(null, "hello world");
         _testSize(msg);
         byte[] buf=marshal(msg);
-        Message msg2=unmarshal(ObjectMessageSerializable.class, buf);
+        Message msg2=unmarshal(ObjectMessage.class, buf);
         String s=msg2.getObject();
         assert Objects.equals(s, "hello world");
     }
 
-
-    public void testObject5() throws Exception {
-        try {
-            Message msg=new ObjectMessage(null, "hello world");
-            assert false : String.format("%s cannot accept non size-streamable object", msg.getClass().getSimpleName());
-        }
-        catch(Throwable t) {
-            assert t instanceof IllegalArgumentException;
-        }
-    }
 
     public void testSetNullObject() throws Exception {
         Message msg=new ObjectMessage(null, null);
@@ -104,10 +84,10 @@ public class ObjectMessageTest extends MessageTestBase {
     }
 
     public void testSetNullObject2() throws Exception {
-        Message msg=new ObjectMessageSerializable(null, null);
+        Message msg=new ObjectMessage(null, null);
         _testSize(msg);
         byte[] buf=marshal(msg);
-        Message msg2=unmarshal(ObjectMessageSerializable.class, buf);
+        Message msg2=unmarshal(ObjectMessage.class, buf);
         Person p=msg2.getObject();
         assert p == null;
     }
@@ -122,6 +102,11 @@ public class ObjectMessageTest extends MessageTestBase {
         assert msg.getObject() == null;
     }
 
+    public void testSize() {
+        Message msg=new ObjectMessage();
+        int size=msg.size();
+        assert size > 1;
+    }
 
 
     protected static class BasePerson implements Streamable {

@@ -54,18 +54,18 @@ public class MessageSendTest extends ReceiverAdapter {
             msg=new BytesMessage(null, obj);
             send(msg);
 
-            msg=new ObjectMessageSerializable(null, obj);
+            msg=new ObjectMessage(null, obj);
             send(msg);
 
             obj=new MySizeData(i++, len);
-            msg=new ObjectMessageSerializable(null, obj);
+            msg=new ObjectMessage(null, obj);
             send(msg);
 
             msg=new ObjectMessage(null, obj);
             send(msg);
 
             Person p=new Person("Bela Ban", 53, new byte[len]);
-            msg=new ObjectMessageSerializable(null, p);
+            msg=new ObjectMessage(null, p);
             send(msg);
 
             ByteBuffer b=ByteBuffer.wrap(new byte[len]);

@@ -48,7 +48,7 @@ public class Chat extends ReceiverAdapter {
                 if(line.startsWith("quit") || line.startsWith("exit")) {
                     break;
                 }
-                Message msg=new ObjectMessageSerializable(null, line);
+                Message msg=new ObjectMessage(null, line);
                 channel.send(msg);
             }
             catch(Exception ex) {

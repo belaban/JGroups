@@ -57,7 +57,7 @@ public class SimpleChat extends ReceiverAdapter {
                     break;
                 }
                 line="[" + user_name + "] " + line;
-                Message msg=new ObjectMessageSerializable(null, line);
+                Message msg=new ObjectMessage(null, line);
                 channel.send(msg);
             }
             catch(Exception e) {

@@ -168,10 +168,10 @@ public class FragTest {
     }
 
 
-    public void testObjectMessageSerializable(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testObjectMessage2(Class<? extends Protocol> frag_clazz) throws Exception {
         setup(frag_clazz);
         MySizeData obj=new MySizeData(322649, array);
-        Message m1=new ObjectMessageSerializable(null, obj), m2=new ObjectMessageSerializable(b.getAddress(), obj);
+        Message m1=new ObjectMessage(null, obj), m2=new ObjectMessage(b.getAddress(), obj);
         send(m1, m2);
         assertForAllMessages(m -> {
             MySizeData data=m.getObject();
@@ -179,10 +179,10 @@ public class FragTest {
         });
     }
 
-    public void testObjectMessageSerializable2(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testObjectMessage3(Class<? extends Protocol> frag_clazz) throws Exception {
         setup(frag_clazz);
         MyData obj=new MyData(322649, array);
-        Message m1=new ObjectMessageSerializable(null, obj), m2=new ObjectMessageSerializable(b.getAddress(), obj);
+        Message m1=new ObjectMessage(null, obj), m2=new ObjectMessage(b.getAddress(), obj);
         send(m1, m2);
         assertForAllMessages(m -> {
             MyData data=m.getObject();
@@ -190,10 +190,10 @@ public class FragTest {
         });
     }
 
-    public void testObjectMessageSerializable3(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testObjectMessage4(Class<? extends Protocol> frag_clazz) throws Exception {
         setup(frag_clazz);
         Person p=new Person("Bela Ban", 53, array);
-        Message m1=new ObjectMessageSerializable(null, p), m2=new ObjectMessageSerializable(b.getAddress(), p);
+        Message m1=new ObjectMessage(null, p), m2=new ObjectMessage(b.getAddress(), p);
         send(m1, m2);
         assertForAllMessages(m -> {
             Person p2=m.getObject();
@@ -222,7 +222,7 @@ public class FragTest {
         CompositeMessage m1=new CompositeMessage(null, new EmptyMessage(null));
         IntStream.of(10000, 15000, 5000).forEach(n -> m1.add(new BytesMessage(null, new byte[n])));
         Person p=new Person("Bela Ban", 53, array);
-        m1.add(new ObjectMessageSerializable(null, p));
+        m1.add(new ObjectMessage(null, p));
         m1.add(new NioMessage(null, ByteBuffer.wrap(array)));
         m1.add(new NioMessage(null, Util.wrapDirect(array)).useDirectMemory(false));
 

@@ -380,39 +380,19 @@ While this message type is mainly used internally, it _is_ a public class and ca
 
 [[ObjectMessage]]
 ==== ObjectMessage
-An `ObjectMessage` has a Plain Old Java Object (POJO) as payload. The only requirement on the object is that it
-implements `SizeStreamable`:
+An `ObjectMessage` has a Plain Old Java Object (POJO) as payload. The object payload is marshalled directly into the
+output stream _at send time_, using `writeTo()`.
 
-[source,java]
-----
-public interface SizeStreamable extends Streamable {
-    int serializedSize();
-}
-----
+If the object implements `SizeStreamable`, then it will be set directly as payload, otherwise the object is
+wrapped into an `ObjectWrapper` which uses just-in-time serialization to generate a byte array, which is
+later written to the output stream.
 
-Method `serializedSize()` needs to return the number of bytes the object will use when serialized to an output stream
-(see below). This is used by a fragmentation protocol (for example) to see if a message needs to be fragmented or not.
+WARNING: When the byte array is set, the contents of the object should not be changed anymore, or else the old state
+         of the object will be sent on serialization. In case the object needs to be changed nevertheless, then
+         method `setObject(Object)` can be used: it will set the object and null the serialized format byte array, so
+         at marshalling time, it will be set again.
 
-`SizeStreamable` extends `Streamable`, which is used to marshal the object to an output stream, or unmarshal it from
-an input stream:
-
-[source,java]
-----
-public interface Streamable {
-    void writeTo(DataOutput out) throws IOException;
-    void readFrom(DataInput in) throws IOException, ClassNotFoundException;
-}
-----
-
-Method `writeTo()` needs to write the contents of the object (and superclasses, if needed) to the output stream, and
-`readFrom()` needs to set the state of the object (= the fields) from an input stream.
-
-The `ObjectMessage` constructor and the `setObject(Object)` method check if the object passed to them implements
-`SizeStreamable` and throw an exception if not.
-
-The object payload is marshalled directly into the socket's output stream _at send time_, using `writeTo()`.
-
-To get and set the payload, methods `Object getObject()` and `setObject(Object)` should be used. Methods `getArray()` /
+To get and set the payload, methods `getObject()` and `setObject()` should be used. Methods `getArray()` /
 `setArray()` will throw an exception.
 
 Sample code:
@@ -425,20 +405,6 @@ MyObject obj=msg.getObject();
 ----
 
 
-
-[[ObjectMessageSerializable]]
-===== ObjectMessageSerializable
-If an object cannot implement `SizeStreamable`, as in <<ObjectMessage,ObjectMessage>>, then `ObjectMessageSerializable`
-can be used instead. The latter class extends the former.
-
-`ObjectMessageSerializable` maintains a byte array (serialized format) and the object (via the superclass),
-and marshals the object into the byte array _just-in-time_. This means that the byte array is only set when the size
-of the message needs to be computed, e.g. on `getLength()`, or when marshalled.
-
-WARNING: When the byte array is set, the contents of the object should not be changed anymore, or else the old state
-         of the object will be sent on serialization. In case the object needs to be changed nevertheless, then
-         method `setObject(Object)` can be used: it will set the object and null the serialized format byte array, so
-         at marshalling time, it will be set again.
 
 
 [[LongMessage]]
@@ -815,7 +781,7 @@ omitted):
 ----
 View view=channel.getView();
 Address first=view.getMembers().get(0);
-Message msg=new ObjectMessageSerializable(first, "Hello world");
+Message msg=new ObjectMessage(first, "Hello world");
 channel.send(msg);
 ----
 
@@ -1040,7 +1006,7 @@ public class ProgrammaticChat {
         ch.connect("ChatCluster");
         for(;;) {
             String line=Util.readStringFromStdin(": ");
-            ch.send(null, line); // causes an ObjectMessageSerializable to be created
+            ch.send(null, line); // causes an ObjectMessage to be created
         }
     }
 
@@ -1348,7 +1314,7 @@ Secondly, the message we want to get ack'ed must be marked as `RSVP`:
                 
 [source,java]
 ----
-Message msg=new ObjectMessageSerializable(null, "hello world").setFlag(Message.RSVP);
+Message msg=new ObjectMessage(null, "hello world").setFlag(Message.RSVP);
 ch.send(msg);
 ----
 

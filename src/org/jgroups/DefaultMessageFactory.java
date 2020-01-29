@@ -17,14 +17,13 @@ public class DefaultMessageFactory implements MessageFactory {
     protected Map<Short,Supplier<? extends Message>> map;
 
     public DefaultMessageFactory() {
-        creators[Message.EMPTY_MSG]=EmptyMessage::new;
         creators[Message.BYTES_MSG]=BytesMessage::new;
+        creators[Message.NIO_MSG]=NioMessage::new;
+        creators[Message.EMPTY_MSG]=EmptyMessage::new;
         creators[Message.OBJ_MSG]=ObjectMessage::new;
-        creators[Message.OBJ_MSG_SERIALIZABLE]=ObjectMessageSerializable::new;
+        creators[Message.LONG_MSG]=LongMessage::new;
         creators[Message.COMPOSITE_MSG]=CompositeMessage::new;
         creators[Message.FRAG_MSG]=FragmentedMessage::new;
-        creators[Message.NIO_MSG]=NioMessage::new;
-        creators[Message.LONG_MSG]=LongMessage::new;
     }
 
     public <T extends Message> T create(short type) {

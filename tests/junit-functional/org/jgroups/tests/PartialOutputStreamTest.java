@@ -3,7 +3,6 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.ObjectMessage;
-import org.jgroups.ObjectMessageSerializable;
 import org.jgroups.util.*;
 import org.testng.annotations.Test;
 
@@ -136,7 +135,7 @@ public class PartialOutputStreamTest {
 
     public void testFragmentationWithSerializableObject() throws Exception {
         MessageSendTest.MyData data=new MessageSendTest.MyData(1, 1200);
-        Message msg=new ObjectMessageSerializable(null, data);
+        Message msg=new ObjectMessage(null, data);
 
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(1300);
         Range[] fragments={new Range(0, 500), new Range(500,500), new Range(1000, 300)};
@@ -150,7 +149,7 @@ public class PartialOutputStreamTest {
           : String.format("we should not expand the initial capacity (1300): capacity is %d\n", out.position());
 
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(out.buffer(), 0, out.position());
-        ObjectMessage msg2=new ObjectMessageSerializable();
+        ObjectMessage msg2=new ObjectMessage();
         msg2.readFrom(in);
         MessageSendTest.MyData obj=msg2.getObject();
         System.out.printf("re-read obj: %s\n", obj);

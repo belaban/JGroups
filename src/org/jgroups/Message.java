@@ -22,10 +22,10 @@ public interface Message extends SizeStreamable, Constructable<Message> {
       NIO_MSG              = 1,
       EMPTY_MSG            = 2,
       OBJ_MSG              = 3,
-      OBJ_MSG_SERIALIZABLE = 4,
+      LONG_MSG             = 4,
       COMPOSITE_MSG        = 5,
-      FRAG_MSG             = 6,
-      LONG_MSG             = 7;
+      FRAG_MSG             = 6;
+
 
 
     /** Returns the type of the message, e.g. BYTES_MSG, OBJ_MSG etc */

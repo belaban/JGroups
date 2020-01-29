@@ -467,7 +467,7 @@ public class JChannel implements Closeable {
      * @throws Exception exception thrown if message sending was not successful
      */
     public JChannel send(Address dst, Object obj) throws Exception {
-        Message msg=obj instanceof SizeStreamable? new ObjectMessage(dst, obj) : new ObjectMessageSerializable(dst, obj);
+        Message msg=new ObjectMessage(dst, obj);
         return send(msg);
     }
 

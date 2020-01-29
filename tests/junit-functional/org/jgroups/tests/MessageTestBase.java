@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
-import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.TpHeader;
@@ -16,7 +15,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.function.Supplier;
 
 /**
  * Base class for common methods
@@ -61,21 +59,6 @@ public class MessageTestBase {
 
     protected static Message unmarshal(Class<? extends Message> cl, ByteBuffer buf) throws Exception {
         return Util.streamableFromByteBuffer(cl, buf);
-    }
-
-    protected static class DummyHeader extends Header {
-        protected short num;
-
-        public DummyHeader() {}
-        public DummyHeader(short num) {this.num=num;}
-
-        public short                      getMagicId() {return 1600;}
-        public Supplier<? extends Header> create() {return DummyHeader::new;}
-        public short  getNum()                                 {return num;}
-        public int    serializedSize()                         {return 0;}
-        public void   writeTo(DataOutput out) throws IOException {}
-        public void   readFrom(DataInput in)  throws IOException {}
-        public String toString()                               {return "DummyHeader(" + num + ")";}
     }
 
     protected static class BasePerson implements Streamable {

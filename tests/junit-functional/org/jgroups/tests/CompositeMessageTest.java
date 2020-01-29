@@ -27,7 +27,7 @@ public class CompositeMessageTest extends MessageTestBase {
     public void testAdd() {
         CompositeMessage msg=new CompositeMessage(null)
           .add(new EmptyMessage(null), new BytesMessage(null, "hello".getBytes()))
-          .add(new ObjectMessageSerializable(null, "hello world"));
+          .add(new ObjectMessage(null, "hello world"));
         assert msg.getNumberOfMessages() == 3;
     }
 

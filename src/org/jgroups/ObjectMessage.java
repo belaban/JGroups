@@ -10,8 +10,7 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 /**
- * A {@link Message} with an object (implementing {@link SizeStreamable}) as payload. The object won't get
- * serialized until it is sent by the transport.
+ * A {@link Message} with an object as payload. The object won't get serialized until sent by the transport.
  * <br/>
  * Note that the object passed to the constructor (or set with {@link #setObject(Object)}) must not be changed after
  * the creation of an {@link ObjectMessage}.
@@ -19,7 +18,7 @@ import java.util.function.Supplier;
  * @author Bela Ban
  */
 public class ObjectMessage extends BaseMessage {
-    protected Object obj; // must implement SizeStreamable (though the type is Object because of the subclass)
+    protected Object obj; // either a SizeStreamable or wrapped into a (SizeStreamable) ObjectWrapper
 
 
     public ObjectMessage() {
@@ -59,26 +58,23 @@ public class ObjectMessage extends BaseMessage {
     public ObjectMessage     setArray(byte[] b, int off, int len) {throw new UnsupportedOperationException();}
     public ObjectMessage     setArray(ByteArray buf)              {throw new UnsupportedOperationException();}
 
-    /** Sets the object. Note that the object should not be changed after sending the message.
-     * @param obj The object to be set; has to implement {@link SizeStreamable}
+    /** Sets the object. If the object doesn't implement {@link SizeStreamable}, it will be wrapped into an
+     * {@link ObjectWrapper} (which does implement SizeStreamable)
      */
     public ObjectMessage setObject(Object obj) {
-        this.obj=check(obj);
+        this.obj=obj == null || obj instanceof SizeStreamable? obj : new ObjectWrapper(obj);
         return this;
     }
 
 
     public <T extends Object> T getObject() {
+        if(obj == null)
+            return null;
+        if(obj instanceof ObjectWrapper)
+            return ((ObjectWrapper)obj).getObject();
         return (T)obj;
     }
 
-
-    protected Object check(Object obj) {
-        if(obj != null && !(obj instanceof SizeStreamable))
-            throw new IllegalArgumentException(String.format("obj (%s) does not implement %s",
-                                                             obj.getClass().getSimpleName(), SizeStreamable.class.getSimpleName()));
-        return obj;
-    }
 
     protected int objSize() {
         return Util.size((SizeStreamable)obj);
