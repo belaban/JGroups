@@ -519,7 +519,6 @@ The methods of `CompositeMessage` are:
 |add(Message) | Adds a message, increasing the capacity if needed
 |add(Message ... msgs) | Adds a number of messages
 |get(int index) | Returns the message at the given index
-|remove() | Removes the message at the end
 |==========================
 
 For a detailed listing of all methods consult the javadoc.

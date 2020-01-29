@@ -8,6 +8,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -18,10 +20,12 @@ import java.util.function.Supplier;
  * In versions prior to 5.0, the byte arrays had to be copied into a single, larger (1001 bytes), byte array in
  * order to be passed to the message.
  * <br/>
+ * This class is unsynchronized; the envisaged use case is that a CompositeMessage is created with a number of messages,
+ * or messages are added, but then the instance is not modified anymore and sent.
  * @author Bela Ban
  * @since  5.0
  */
-public class CompositeMessage extends BaseMessage {
+public class CompositeMessage extends BaseMessage implements Iterable<Message> {
     protected Message[]                   msgs;
     protected int                         index; // index of the next message to be added
     protected static final MessageFactory mf=new DefaultMessageFactory();
@@ -76,37 +80,8 @@ public class CompositeMessage extends BaseMessage {
     }
 
 
-    /** Adds the message at the head of the array. Increases the array if needed and shifts
-     *  messages behind the new message to the right by one */
-    public <T extends CompositeMessage> T addAtHead(Message msg) {
-        Objects.requireNonNull(msg);
-        ensureCapacity(index);
-        System.arraycopy(msgs, 0, msgs, 1, index++);
-        msgs[0]=msg;
-        return (T)this;
-    }
-
     public <T extends Message> T get(int index) {
         return (T)msgs[index];
-    }
-
-    /** Removes a message at the end */
-    public <T extends Message> T remove() {
-        if(index == 0 || msgs == null)
-            return null;
-        T retval=(T)msgs[--index];
-        msgs[index]=null;
-        return retval;
-    }
-
-    /** Removes a message at the head */
-    public <T extends Message> T removeAtHead() {
-        if(index == 0 || msgs == null)
-            return null;
-        T retval=(T)msgs[0];
-        System.arraycopy(msgs, 1, msgs, 0, index-1);
-        msgs[--index]=null;
-        return retval;
     }
 
 
@@ -137,6 +112,10 @@ public class CompositeMessage extends BaseMessage {
                 retval+=msgs[i].size() + Global.SHORT_SIZE; // type
         }
         return retval;
+    }
+
+    public Iterator<Message> iterator() {
+        return new CompositeMessageIterator();
     }
 
 
@@ -177,6 +156,21 @@ public class CompositeMessage extends BaseMessage {
             throw new IllegalStateException(String.format("message's destination (%s) does not match destination of CompositeMessage (%s)",
                                                           msg.dest(), dest));
         return msg;
+    }
+
+
+    protected class CompositeMessageIterator implements Iterator<Message> {
+        protected int current_index;
+
+        public boolean hasNext() {
+            return current_index < index;
+        }
+
+        public Message next() {
+            if(current_index >= msgs.length)
+                throw new NoSuchElementException();
+            return msgs[current_index++];
+        }
     }
 
 

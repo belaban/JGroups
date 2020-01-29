@@ -31,22 +31,16 @@ public class CompositeMessageTest extends MessageTestBase {
         assert msg.getNumberOfMessages() == 3;
     }
 
-    public void testAtHead() {
-        CompositeMessage msg=new CompositeMessage(DEST, M2, M3);
-        assert msg.get(0) == M2 && msg.get(1) == M3;
-        msg.addAtHead(M1);
-        assert msg.get(0) == M1 && msg.get(1) == M2 && msg.get(2) == M3;
-    }
-
-    public void testRemove() {
-        CompositeMessage msg=new CompositeMessage(DEST, M1, M2, M3);
-        Message m=msg.remove();
-        assert m == M3;
-        assert msg.getNumberOfMessages() == 2;
-        m=msg.removeAtHead();
-        assert m == M1;
-        assert msg.getNumberOfMessages() == 1;
-        assert msg.get(0) == M2;
+    public void testIteration() {
+        CompositeMessage msg=new CompositeMessage(DEST)
+          .add(M1, M2, M3, new LongMessage(DEST, 322649));
+        int cnt=0;
+        Message[] tmp=new Message[msg.getNumberOfMessages()];
+        for(Message m: msg)
+            tmp[cnt++]=m;
+        assert cnt == msg.getNumberOfMessages();
+        for(int i=0; i < cnt; i++)
+            assert msg.get(i) == tmp[i];
     }
 
     public void testCopy() {
