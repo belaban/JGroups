@@ -246,7 +246,7 @@ public class UnicastTestTcp {
         short ver=in.readShort();
         byte flags=in.readByte();
         // final boolean multicast=(flags & (byte)2) == (byte)2;
-        Message msg=new BytesMessage(false); // don't create headers, readFrom() will do this
+        Message msg=new BytesMessage(); // don't create headers, readFrom() will do this
         msg.readFrom(in);
         return msg;
     }

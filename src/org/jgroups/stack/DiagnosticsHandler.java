@@ -167,6 +167,9 @@ public class DiagnosticsHandler extends ReceiverAdapter {
                 }
             });
         }
+        catch(SocketException sock_ex) {
+
+        }
         catch(Throwable t) {
             log.error("%s: failed processing TCP client request from %s: %s", transport.getLocalAddress(), sender, t);
         }

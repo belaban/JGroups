@@ -29,6 +29,9 @@ public abstract class BaseMessage implements Message {
     static final byte           SRC_SET          =  1 << 1;
 
 
+    public BaseMessage() {
+    }
+
     /**
     * Constructs a message given a destination address
     * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
@@ -37,17 +40,6 @@ public abstract class BaseMessage implements Message {
     public BaseMessage(Address dest) {
         setDest(dest);
         headers=createHeaders(Util.DEFAULT_HEADERS);
-    }
-
-
-    public BaseMessage() {
-        this(true);
-    }
-
-
-    public BaseMessage(boolean create_headers) {
-        if(create_headers)
-            headers=createHeaders(Util.DEFAULT_HEADERS);
     }
 
 
@@ -196,6 +188,8 @@ public abstract class BaseMessage implements Message {
         if(hdr != null)
             hdr.setProtId(id);
         synchronized(this) {
+            if(this.headers == null)
+                this.headers=createHeaders(Util.DEFAULT_HEADERS);
             Header[] resized_array=Headers.putHeader(this.headers, id, hdr, true);
             if(resized_array != null)
                 this.headers=resized_array;
@@ -310,7 +304,8 @@ public abstract class BaseMessage implements Message {
 
         // 5. headers
         int len=in.readShort();
-        this.headers=createHeaders(len);
+        if(this.headers == null || len > this.headers.length)
+            this.headers=createHeaders(len);
         for(int i=0; i < len; i++) {
             short id=in.readShort();
             Header hdr=readHeader(in).setProtId(id);

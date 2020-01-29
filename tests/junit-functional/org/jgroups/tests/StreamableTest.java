@@ -44,7 +44,7 @@ public class StreamableTest {
         DataInputStream in=new DataInputStream(input);
         Message m3, m4;
 
-        m3=new BytesMessage(false);
+        m3=new BytesMessage();
         m3.readFrom(in);
 
         Assert.assertEquals(4, m3.getLength());

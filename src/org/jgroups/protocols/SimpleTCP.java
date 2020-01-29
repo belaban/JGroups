@@ -279,7 +279,7 @@ public class SimpleTCP extends TP {
                     buffer=new byte[len];
                 in.readFully(buffer, 0, len);
                 ByteArrayDataInputStream input=new ByteArrayDataInputStream(buffer, 0, len);
-                Message msg=new BytesMessage(false);
+                Message msg=new BytesMessage();
                 msg.readFrom(input);
                 thread_pool.execute(() -> up_prot.up(msg));
             }

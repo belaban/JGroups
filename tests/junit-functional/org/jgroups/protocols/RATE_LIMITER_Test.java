@@ -104,7 +104,7 @@ public class RATE_LIMITER_Test {
 
         public void run() {
             do {
-                Message msg=new BytesMessage(false).setArray(buffer, 0, buffer.length);
+                Message msg=new BytesMessage().setArray(buffer, 0, buffer.length);
                 limiter.down(msg);
             }
             while(System.nanoTime() <= target_time);

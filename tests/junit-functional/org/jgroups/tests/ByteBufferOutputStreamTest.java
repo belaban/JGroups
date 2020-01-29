@@ -33,7 +33,7 @@ public class ByteBufferOutputStreamTest {
         byte[] array=new byte[buf.limit()];
         System.arraycopy(buf.array(), buf.arrayOffset(), array, 0, buf.limit());
         ByteBufferInputStream in=new ByteBufferInputStream(ByteBuffer.wrap(array));
-        Message copy=new BytesMessage(false);
+        Message copy=new BytesMessage();
         copy.readFrom(in);
         System.out.println("copy = " + copy);
         assert msg.getDest() != null && msg.getDest().equals(dest);
