@@ -57,19 +57,11 @@ public class ConcurrentCloseTest extends ChannelTestBase {
         }
     }
 
-    private static class MyReceiver extends ReceiverAdapter {
+    private static class MyReceiver implements Receiver {
         private final String name;
 
         public MyReceiver(String name) {
             this.name=name;
-        }
-
-        public void block() {
-            System.out.println("[" + name + "] block()");
-        }
-
-        public void unblock() {
-            System.out.println("[" + name + "] unblock()");
         }
 
         public void viewAccepted(View new_view) {

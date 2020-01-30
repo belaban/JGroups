@@ -730,7 +730,7 @@ public class GMS_MergeTest {
         }
     }
 
-    private static class MyReceiver extends ReceiverAdapter {
+    private static class MyReceiver implements Receiver {
         private final String        name;
         private final AtomicInteger num_msgs=new AtomicInteger(0);
 

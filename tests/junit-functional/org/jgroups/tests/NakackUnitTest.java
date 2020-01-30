@@ -113,7 +113,7 @@ public class NakackUnitTest {
     }
 
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         protected final List<Integer> list=new ArrayList<>();
 
         public List<Integer> list()       {return list;}

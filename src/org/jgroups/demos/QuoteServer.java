@@ -3,8 +3,7 @@ package org.jgroups.demos;
 
 
 import org.jgroups.JChannel;
-import org.jgroups.JChannel;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.Receiver;
 import org.jgroups.View;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.logging.Log;
@@ -15,7 +14,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -27,18 +28,18 @@ import java.util.*;
  * @author Bela Ban
  */
 
-public class QuoteServer extends ReceiverAdapter {
+public class QuoteServer implements Receiver {
     final Map<String,Float> stocks=new HashMap<>();
-    JChannel channel;
-    RpcDispatcher          disp;
-    static final String    channel_name="Quotes";
+    JChannel                channel;
+    RpcDispatcher           disp;
+    static final String     channel_name="Quotes";
     protected Log           log=LogFactory.getLog(getClass());
 
     static final String props=null; // default stack from JChannel
 
     private void integrate(HashMap<String,Float> state) {
         if(state != null)
-            state.keySet().forEach(key -> stocks.put(key, state.get(key)));
+            state.forEach(stocks::put);
     }
 
     public void viewAccepted(View new_view) {
@@ -50,8 +51,7 @@ public class QuoteServer extends ReceiverAdapter {
     public void start() {
         try {
             channel=new JChannel(props);
-            disp=(RpcDispatcher)new RpcDispatcher(channel, this)
-              .setMembershipListener(this).setStateListener(this);
+            disp=new RpcDispatcher(channel, this).setReceiver(this);
             channel.connect(channel_name);
             System.out.println("\nQuote Server started at " + new Date());
             System.out.println("Joined channel '" + channel_name + "' (" + channel.getView().size() + " members)");
@@ -97,11 +97,11 @@ public class QuoteServer extends ReceiverAdapter {
     }
 
     public void setState(InputStream istream) throws Exception {
-        integrate((HashMap<String, Float>)Util.objectFromStream(new DataInputStream(istream)));
+        integrate(Util.objectFromStream(new DataInputStream(istream)));
     }
 
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         try {
             QuoteServer server=new QuoteServer();
             server.start();

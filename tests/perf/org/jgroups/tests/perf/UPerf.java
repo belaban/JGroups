@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.LongAdder;
  *
  * @author Bela Ban
  */
-public class UPerf extends ReceiverAdapter {
+public class UPerf implements Receiver {
     private JChannel               channel;
     private Address                local_addr;
     private RpcDispatcher          disp;
@@ -109,7 +109,7 @@ public class UPerf extends ReceiverAdapter {
             transport.setBindPort(bind_port);
         }
 
-        disp=new RpcDispatcher(channel, this).setMembershipListener(this).setMethodLookup(id -> METHODS[id])
+        disp=new RpcDispatcher(channel, this).setReceiver(this).setMethodLookup(id -> METHODS[id])
           .setMarshaller(new UPerfMarshaller());
         channel.connect(groupname);
         local_addr=channel.getAddress();

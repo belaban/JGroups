@@ -166,7 +166,7 @@ public class UNICAST_ContentionTest {
 
 
 
-    private static class MyReceiver extends ReceiverAdapter {
+    private static class MyReceiver implements Receiver {
         final String name;
         final AtomicInteger num=new AtomicInteger(0);
         static final long MOD=NUM_MSGS * NUM_THREADS / 10;

@@ -263,7 +263,7 @@ public class UnicastUnitTest {
     }
 
 
-    protected static class MyReceiver<T> extends ReceiverAdapter {
+    protected static class MyReceiver<T> implements Receiver {
         protected JChannel      channel;
         protected Throwable     ex;
         protected final List<T> list=new ArrayList<>();

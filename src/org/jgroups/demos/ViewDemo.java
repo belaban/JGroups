@@ -2,7 +2,9 @@
 package org.jgroups.demos;
 
 
-import org.jgroups.*;
+import org.jgroups.JChannel;
+import org.jgroups.Receiver;
+import org.jgroups.View;
 import org.jgroups.util.Util;
 
 
@@ -10,20 +12,12 @@ import org.jgroups.util.Util;
  * Demos the reception of views using a PullPushAdapter. Just start a number of members, and kill them
  * randomly. The view should always be correct.
  */
-public class ViewDemo extends ReceiverAdapter {
+public class ViewDemo implements Receiver {
     private JChannel channel;
 
 
     public void viewAccepted(View new_view) {
         System.out.println("** New view: " + new_view);
-    }
-
-
-    /**
-     * Called when a member is suspected
-     */
-    public void suspect(Address suspected_mbr) {
-        System.out.println("Suspected(" + suspected_mbr + ')');
     }
 
 

@@ -28,7 +28,7 @@ public class FlushTest {
 
     public void testSingleChannel() throws Exception {
         Semaphore s = new Semaphore(1);
-        FlushTestReceiver receivers[] ={ new FlushTestReceiver("c1", s, 0, FlushTestReceiver.CONNECT_ONLY) };
+        FlushTestReceiver[] receivers={ new FlushTestReceiver("c1", s, 0, FlushTestReceiver.CONNECT_ONLY) };
         receivers[0].start();
         s.release(1);
 
@@ -411,7 +411,7 @@ public class FlushTest {
         }
     }
 
-    private class FlushTestReceiver extends ReceiverAdapter implements Runnable, EventSequence {
+    private class FlushTestReceiver implements Receiver, Runnable, EventSequence {
         private final int             connectMethod;
         public static final int       CONNECT_ONLY = 1;
         public static final int       CONNECT_AND_SEPARATE_GET_STATE = 2;
@@ -486,7 +486,7 @@ public class FlushTest {
         }
     }
 
-    private static class SimpleReplier extends ReceiverAdapter {
+    private static class SimpleReplier implements Receiver {
         protected final JChannel channel;
         protected boolean       handle_requests=false;
 
@@ -513,12 +513,12 @@ public class FlushTest {
             System.out.println("-- MySimpleReplier[" + channel.getAddress() + "]: viewAccepted(" + new_view + ")");
         }
 
-        public void block() {
-            System.out.println("-- MySimpleReplier[" + channel.getAddress() + "]: block()");
+        public void getState(OutputStream output) throws Exception {
+
         }
 
-        public void unblock() {
-            System.out.println("-- MySimpleReplier[" + channel.getAddress() + "]: unblock()");
+        public void setState(InputStream input) throws Exception {
+
         }
     }
 

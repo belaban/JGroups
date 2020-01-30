@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  * Tests the UNICAST by invoking unicast RPCs between a sender and a receiver. Mimicks the DIST mode in Infinispan
  * @author Bela Ban
  */
-public class ProgrammaticUPerf2 extends ReceiverAdapter {
+public class ProgrammaticUPerf2 implements Receiver {
     private static final String           groupname="uperf";
     private static final JChannel         channel;
     private static final RpcDispatcher    disp;
@@ -88,7 +88,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
 
     static {
         try {
-            MembershipListener ml=new MembershipListener() {
+            Receiver r=new Receiver() {
                 public void viewAccepted(View new_view) {
                     view=new_view;
                     System.out.println("** view: " + new_view);
@@ -130,7 +130,7 @@ public class ProgrammaticUPerf2 extends ReceiverAdapter {
               new MFC(),
               new FRAG2()};
             channel=new JChannel(prot_stack);
-            disp=new RpcDispatcher(channel, null).setMembershipListener(ml)
+            disp=new RpcDispatcher(channel, null).setReceiver(r)
               .setMethodInvoker(ProgrammaticUPerf2::invoke).setMarshaller(new UPerfMarshaller());
             h=new NonReflectiveProbeHandler(channel).initialize(channel.getProtocolStack().getProtocols());
         }

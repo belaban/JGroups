@@ -50,7 +50,7 @@ public class ProgrammaticChat {
           new FRAG2()};
         JChannel ch=new JChannel(prot_stack).name(name);
 
-        ch.setReceiver(new ReceiverAdapter() {
+        ch.setReceiver(new Receiver() {
             public void viewAccepted(View new_view) {
                 System.out.println("view: " + new_view);
             }

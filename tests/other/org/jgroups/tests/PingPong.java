@@ -12,7 +12,7 @@ import java.util.List;
  * See {@link org.jgroups.tests.PingPongDatagram} for the same program using MulticastSockets
  * @author Bela Ban
  */
-public class PingPong extends ReceiverAdapter {
+public class PingPong implements Receiver {
     JChannel ch;
 
     static final byte PING = 1;

@@ -15,7 +15,7 @@ import java.util.List;
  * @author Bela Ban
  * @since  4.0
  */
-public class JGroupsTransport extends ReceiverAdapter implements RtTransport {
+public class JGroupsTransport implements Receiver, RtTransport {
     protected JChannel     ch;
     protected RtReceiver   receiver;
     protected View         view;

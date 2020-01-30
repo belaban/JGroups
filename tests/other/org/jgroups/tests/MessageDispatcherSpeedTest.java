@@ -15,7 +15,7 @@ import org.jgroups.util.Util;
 /**
  * @author Bela Ban
  */
-public class MessageDispatcherSpeedTest extends ReceiverAdapter implements RequestHandler {
+public class MessageDispatcherSpeedTest implements Receiver, RequestHandler {
     JChannel channel;
     MessageDispatcher   disp;
     String              props=null;
@@ -41,7 +41,7 @@ public class MessageDispatcherSpeedTest extends ReceiverAdapter implements Reque
 
     public void start() throws Exception {
         channel=new JChannel(props);
-        disp=new MessageDispatcher(channel, this).setMembershipListener(this);
+        disp=new MessageDispatcher(channel, this).setReceiver(this);
         channel.connect("MessageDispatcherSpeedTestGroup");
 
         try {

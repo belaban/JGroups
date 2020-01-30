@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * RPCs
  * @author Bela Ban
  */
-public class RoundTripRpc implements MembershipListener {
+public class RoundTripRpc implements Receiver {
     protected JChannel            channel;
     protected RpcDispatcher       disp;
     protected int                 num_msgs=20000;
@@ -39,11 +39,7 @@ public class RoundTripRpc implements MembershipListener {
 
     protected void start(String props, String name) throws Exception {
         channel=new JChannel(props).name(name);
-
-        // TP transport=channel.getProtocolStack().getTransport();
-        // transport.setThreadPool(new DirectExecutor());
-
-        disp=new RpcDispatcher(channel, this).setMembershipListener(this);
+        disp=new RpcDispatcher(channel, this).setReceiver(this);
         disp.setMethodLookup(ignored -> requestMethod);
         channel.connect("rt");
         View view=channel.getView();

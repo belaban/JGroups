@@ -88,7 +88,7 @@ public class HeadersResizeTest {
         }
     }
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         protected int num_msgs, num_transport_headers;
 
         public void receive(Message msg) {

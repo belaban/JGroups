@@ -19,9 +19,9 @@ import java.io.OutputStream;
  * be sent to specific or all members. Whiteboard is both an application and an applet.
  * @author Bela Ban
  */
-public class Whiteboard extends Applet implements MembershipListener, ActionListener, ComponentListener, FocusListener {
+public class Whiteboard extends Applet implements Receiver, ActionListener, ComponentListener, FocusListener {
     public RpcDispatcher           disp;
-    JChannel channel;
+    JChannel                       channel;
     GraphPanel                     panel;
     private Button                 leave_button;
     private Label                  mbr_label;
@@ -97,7 +97,7 @@ public class Whiteboard extends Applet implements MembershipListener, ActionList
 
         try {
             channel = new JChannel(props);
-            disp =(RpcDispatcher)new RpcDispatcher(channel, this).setMembershipListener(this);
+            disp =new RpcDispatcher(channel, this).setReceiver(this);
             channel.connect(groupname);
             channel.getState(null, 0);
         } catch (Exception e) {
@@ -167,15 +167,6 @@ public class Whiteboard extends Applet implements MembershipListener, ActionList
             mbr_label.setText(v.size() + " mbr(s)");
         if(panel != null)
             panel.adjustNodes(v.getMembers());
-    }
-
-    public void suspect(Address obj) {
-    }
-
-    public void block() {
-    }
-
-    public void unblock() {
     }
 
     public void moveNode(Node n) {

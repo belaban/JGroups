@@ -63,7 +63,7 @@ public class ProgrammaticApiTest {
 
 
 
-    static class MyReceiver extends ReceiverAdapter {
+    static class MyReceiver implements Receiver {
         int num_msgs_received;
 
         public void receive(Message msg) {

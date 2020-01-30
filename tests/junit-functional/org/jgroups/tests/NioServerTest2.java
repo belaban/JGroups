@@ -90,7 +90,7 @@ public class NioServerTest2 {
     }
 
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         protected int good, bad;
         protected List<byte[]> bad_msgs=new ArrayList<>(1000);
 

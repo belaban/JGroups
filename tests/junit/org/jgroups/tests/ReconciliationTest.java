@@ -258,7 +258,7 @@ public class ReconciliationTest {
         void triggerFlush();
     }
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         protected final Map<Address,List<Integer>> msgs=new HashMap<>(10);
         protected final JChannel channel;
         protected final String  name;
@@ -329,7 +329,7 @@ public class ReconciliationTest {
         }
     }
 
-    protected static class Cache extends ReceiverAdapter {
+    protected static class Cache implements Receiver {
         protected final Map<Object,Object> data;
         protected JChannel ch;
         protected String                   name;

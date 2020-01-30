@@ -228,7 +228,7 @@ public class RSVPTest {
 
 
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         short value=0;
         public short getValue()           {return value;}
         public void  receive(Message msg) {value=msg.getObject();}

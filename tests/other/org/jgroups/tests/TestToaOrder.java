@@ -194,7 +194,7 @@ public class TestToaOrder {
 
     // ====================== receiver ======================
 
-    private static class MyReceiver extends ReceiverAdapter {
+    private static class MyReceiver implements Receiver {
         private int expectedMembers;
         private int members = 0;
         private final List<String> messageList;
@@ -237,7 +237,6 @@ public class TestToaOrder {
         @Override
         public void viewAccepted(View view) {
             System.out.println("New View: " + view);
-            super.viewAccepted(view);
             synchronized (this) {
                 members = view.getMembers().size();
                 this.notify();

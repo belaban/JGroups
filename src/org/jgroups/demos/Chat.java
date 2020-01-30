@@ -5,7 +5,7 @@ import org.jgroups.*;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-public class Chat extends ReceiverAdapter {
+public class Chat implements Receiver {
     protected JChannel channel;
     protected static final String CLUSTER="chat";
 

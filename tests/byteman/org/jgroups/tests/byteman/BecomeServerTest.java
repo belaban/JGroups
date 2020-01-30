@@ -32,7 +32,7 @@ public class BecomeServerTest extends BMNGRunner {
     @BMScript(dir="scripts/BecomeServerTest", value="testSendingOfMsgsOnUnconnectedChannel")
     public void testSendingOfMsgsOnUnconnectedChannel() throws Exception {
         a=createChannel("A");
-        a.setReceiver(new ReceiverAdapter() {
+        a.setReceiver(new Receiver() {
             public void receive(Message msg)  {
                 System.out.println("A: received message from " + msg.getSrc() + ": " + msg.getObject());
             }
@@ -46,7 +46,7 @@ public class BecomeServerTest extends BMNGRunner {
         }.start();
 
         b=createChannel("B");
-        b.setReceiver(new ReceiverAdapter() {
+        b.setReceiver(new Receiver() {
             public void receive(Message msg) {
                 System.out.println("B: received message from " + msg.getSrc() + ": " + msg.getObject());
                 if(msg.getSrc().equals(a.getAddress())) {

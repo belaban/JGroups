@@ -5,7 +5,7 @@ import java.io.*;
 import java.util.List;
 import java.util.LinkedList;
 
-public class SimpleChat extends ReceiverAdapter {
+public class SimpleChat implements Receiver {
     JChannel channel;
     String user_name=System.getProperty("user.name", "n/a");
     final List<String> state=new LinkedList<>();

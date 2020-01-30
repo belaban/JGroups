@@ -49,15 +49,15 @@ public class Relay2RpcDispatcherTest {
     	b = createNode(LON, "B");
     	al=new MyReceiver("A");
     	bl=new MyReceiver("B");
-    	rpca = new RpcDispatcher(a, new ServerObject(1)).setMembershipListener(al);
-    	rpcb = new RpcDispatcher(b, new ServerObject(1)).setMembershipListener(bl);
+    	rpca = new RpcDispatcher(a, new ServerObject(1)).setReceiver(al);
+    	rpcb = new RpcDispatcher(b, new ServerObject(1)).setReceiver(bl);
     	
     	x = createNode(SFO, "X");
     	y = createNode(SFO, "Y");
     	xl=new MyReceiver("X");
     	yl=new MyReceiver("Y");
-    	rpcx = new RpcDispatcher(x, new ServerObject(1)).setMembershipListener(xl);
-    	rpcy = new RpcDispatcher(y, new ServerObject(1)).setMembershipListener(yl);
+    	rpcx = new RpcDispatcher(x, new ServerObject(1)).setReceiver(xl);
+    	rpcy = new RpcDispatcher(y, new ServerObject(1)).setReceiver(yl);
     }
     @AfterMethod protected void destroy() {Util.close(y,x,b,a);}
 
@@ -262,7 +262,7 @@ public class Relay2RpcDispatcherTest {
     }
 
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         protected final List<Integer> list=new ArrayList<>(5);
         String chName;
         MyReceiver(String chName) {

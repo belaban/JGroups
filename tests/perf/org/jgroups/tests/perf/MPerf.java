@@ -30,7 +30,7 @@ import java.util.function.Supplier;
  * @author Bela Ban (belaban@yahoo.com)
  * @since 3.1
  */
-public class MPerf extends ReceiverAdapter {
+public class MPerf implements Receiver {
     protected String                props;
     protected JChannel              channel;
     final protected AckCollector    ack_collector=new AckCollector(); // for synchronous sends

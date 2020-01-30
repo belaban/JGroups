@@ -97,7 +97,7 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             System.out.println(ch.getAddress() + ":\n" + ch.getProtocolStack().getTransport().printLogicalAddressCache());
     }
 
-    private static class MyReceiver extends ReceiverAdapter {
+    private static class MyReceiver implements Receiver {
         private final List<Message> msgs=new ArrayList<>(4);
         private boolean             print_msgs=false;
 

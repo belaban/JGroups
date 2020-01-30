@@ -5,7 +5,7 @@ package org.jgroups.demos;
 
 import org.jgroups.Address;
 import org.jgroups.JChannel;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.Receiver;
 import org.jgroups.View;
 
 import java.awt.*;
@@ -164,7 +164,7 @@ public class Topology extends Frame implements WindowListener {
     public void start() throws Exception {
         channel=new JChannel(props).name(name);
 
-        channel.setReceiver(new ReceiverAdapter() {
+        channel.setReceiver(new Receiver() {
             public void viewAccepted(View view) {
                 setInternalState(view.getMembers());
             }

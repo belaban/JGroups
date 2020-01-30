@@ -178,7 +178,7 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
 
 
 
-    private static class MyReceiver extends ReceiverAdapter {
+    private static class MyReceiver implements Receiver {
         final String name;
         final List<Message> ucasts=new ArrayList<>(20);
 

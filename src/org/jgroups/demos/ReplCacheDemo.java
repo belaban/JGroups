@@ -2,8 +2,7 @@
 package org.jgroups.demos;
 
 
-import org.jgroups.Address;
-import org.jgroups.MembershipListener;
+import org.jgroups.Receiver;
 import org.jgroups.View;
 import org.jgroups.blocks.Cache;
 import org.jgroups.blocks.ReplCache;
@@ -14,7 +13,10 @@ import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -269,18 +271,9 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         frame.setVisible(true);
         setTitle("ReplCacheDemo");
 
-        cache.addMembershipListener(new MembershipListener() {
+        cache.addReceiver(new Receiver() {
             public void viewAccepted(View new_view) {
                 setTitle("ReplCacheDemo");
-            }
-
-            public void suspect(Address suspected_mbr) {
-            }
-
-            public void block() {
-            }
-
-            public void unblock() {
             }
         });
     }

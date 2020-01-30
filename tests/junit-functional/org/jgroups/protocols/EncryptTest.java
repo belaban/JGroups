@@ -206,27 +206,29 @@ public abstract class EncryptTest {
             s.init();
         }
 
+        rogue.setReceiver(new Receiver() {
+            public void receive(Message msg) {
+                System.out.printf("rogue: modifying and resending msg %s, hdrs: %s\n", msg, msg.printHeaders());
+                rogue.setReceiver(null); // to prevent recursive cycle
+                try {
+                    short prot_id=ClassConfigurator.getProtocolId(NAKACK2.class);
+                    NakAckHeader2 hdr=msg.getHeader(prot_id);
+                    if(hdr != null) {
+                        long seqno=hdr.getSeqno();
+                        Util.setField(Util.getField(NakAckHeader2.class, "seqno"), hdr, seqno+1);
+                    }
+                    else {
+                        System.out.printf("Rogue was not able to get the %s header, fabricating one with seqno=50\n",
+                                          NAKACK2.class.getSimpleName());
+                        NakAckHeader2 hdr2=NakAckHeader2.createMessageHeader(50);
+                        msg.putHeader(prot_id, hdr2);
+                    }
 
-        rogue.setReceiver(msg -> {
-            System.out.printf("rogue: modifying and resending msg %s, hdrs: %s\n", msg, msg.printHeaders());
-            rogue.setReceiver(null); // to prevent recursive cycle
-            try {
-                short prot_id=ClassConfigurator.getProtocolId(NAKACK2.class);
-                NakAckHeader2 hdr=msg.getHeader(prot_id);
-                if(hdr != null) {
-                    long seqno=hdr.getSeqno();
-                    Util.setField(Util.getField(NakAckHeader2.class, "seqno"), hdr, seqno+1);
+                    rogue.send(msg);
                 }
-                else {
-                    System.out.printf("Rogue was not able to get the %s header, fabricating one with seqno=50\n", NAKACK2.class.getSimpleName());
-                    NakAckHeader2 hdr2=NakAckHeader2.createMessageHeader(50);
-                    msg.putHeader(prot_id, hdr2);
+                catch(Exception e) {
+                    e.printStackTrace();
                 }
-
-                rogue.send(msg);
-            }
-            catch(Exception e) {
-                e.printStackTrace();
             }
         });
 

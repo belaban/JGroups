@@ -208,7 +208,7 @@ public class TotalOrder extends Frame {
 
         try {
             channel=new JChannel(props);
-            channel.setReceiver(new ReceiverAdapter() {
+            channel.setReceiver(new Receiver() {
                 public void receive(Message msg) {
                     try {
                         TotOrderRequest req=new TotOrderRequest();

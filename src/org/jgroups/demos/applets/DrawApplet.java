@@ -55,7 +55,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
 
         try {
             channel=new JChannel(props);
-            channel.setReceiver(new ReceiverAdapter() {
+            channel.setReceiver(new Receiver() {
                 public void viewAccepted(View v) {
                     List<Address> mbrs=v.getMembers();
                     System.out.println("View accepted: " + v);

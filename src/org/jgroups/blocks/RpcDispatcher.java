@@ -38,16 +38,16 @@ public class RpcDispatcher extends MessageDispatcher {
     }
 
 
-    public Marshaller    getMarshaller()                             {return marshaller;}
-    public RpcDispatcher setMarshaller(Marshaller m)                 {marshaller=m; if(corr != null)
-                                                                                    corr.setMarshaller(m); return this;}
-    public Object        getServerObject()                           {return server_obj;}
-    public RpcDispatcher setServerObject(Object server_obj)          {this.server_obj=server_obj; return this;}
-    public RpcDispatcher setMembershipListener(MembershipListener l) {return (RpcDispatcher)super.setMembershipListener(l);}
-    public MethodLookup  getMethodLookup()                           {return method_lookup;}
-    public RpcDispatcher setMethodLookup(MethodLookup method_lookup) {this.method_lookup=method_lookup; return this;}
-    public MethodInvoker getMethodInvoker()                          {return method_invoker;}
-    public RpcDispatcher setMethodInvoker(MethodInvoker mi)          {this.method_invoker=mi; return this;}
+    public Marshaller    getMarshaller()                      {return marshaller;}
+    public RpcDispatcher setMarshaller(Marshaller m)          {marshaller=m; if(corr != null)
+                                                                                corr.setMarshaller(m); return this;}
+    public Object        getServerObject()                    {return server_obj;}
+    public RpcDispatcher setServerObject(Object obj)          {this.server_obj=obj; return this;}
+    public RpcDispatcher setReceiver(Receiver r)              {return (RpcDispatcher)super.setReceiver(r);}
+    public MethodLookup  getMethodLookup()                    {return method_lookup;}
+    public RpcDispatcher setMethodLookup(MethodLookup ml)     {this.method_lookup=ml; return this;}
+    public MethodInvoker getMethodInvoker()                   {return method_invoker;}
+    public RpcDispatcher setMethodInvoker(MethodInvoker mi)   {this.method_invoker=mi; return this;}
 
 
     /**

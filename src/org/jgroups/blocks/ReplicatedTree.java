@@ -23,7 +23,7 @@ import java.util.*;
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
  */
 @Unsupported
-public class ReplicatedTree extends ReceiverAdapter {
+public class ReplicatedTree implements Receiver {
     public static final String SEPARATOR="/";
     final static int INDENT=4;
     Node root=new Node(SEPARATOR, SEPARATOR, null, null);
@@ -500,7 +500,6 @@ public class ReplicatedTree extends ReceiverAdapter {
 
 
 
-    /*-------------------- MessageListener ----------------------*/
 
     /** Callback. Process the contents of the message; typically an _add() or _set() request */
     public void receive(Message msg) {
@@ -547,13 +546,11 @@ public class ReplicatedTree extends ReceiverAdapter {
         notifyAllNodesCreated(root);
     }
 
-    /*-------------------- End of MessageListener ----------------------*/
 
 
 
 
 
-    /*----------------------- MembershipListener ------------------------*/
 
     public void viewAccepted(View new_view) {
         List<Address> new_mbrs=new_view.getMembers();
@@ -566,8 +563,6 @@ public class ReplicatedTree extends ReceiverAdapter {
 		//otherwise there is only one server.
         send_message=members.size() > 1;
     }
-
-    /*------------------- End of MembershipListener ----------------------*/
 
 
 

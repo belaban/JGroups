@@ -121,7 +121,7 @@ public abstract class BasicTCP extends TP implements Receiver {
 
     public abstract void retainAll(Collection<Address> members);
 
-    public void receive(Address sender, ByteBuffer buf) {
+    @Override public void receive(Address sender, ByteBuffer buf) {
         Util.bufferToArray(sender, buf, this);
     }
 

@@ -370,7 +370,7 @@ public class OOBTest extends ChannelTestBase {
         }
     }
 
-    private static class BlockingReceiver extends ReceiverAdapter {
+    private static class BlockingReceiver implements Receiver {
         final CountDownLatch latch;
         final List<Integer>  msgs=Collections.synchronizedList(new LinkedList<>());
 
@@ -394,7 +394,7 @@ public class OOBTest extends ChannelTestBase {
         }
     }
 
-    private static class MyReceiver extends ReceiverAdapter {
+    private static class MyReceiver implements Receiver {
         private final Collection<Integer> msgs=new ConcurrentLinkedQueue<>();
         final String name;
 

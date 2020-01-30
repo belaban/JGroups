@@ -53,7 +53,7 @@ public class FCTest {
     @Test(dataProvider="configProvider")
     public void testReceptionOfAllMessages(Class<? extends Protocol> flow_control_class) throws Exception {
         int num_received=0;
-        Receiver r=new Receiver();
+        MyReceiver r=new MyReceiver();
         setUp(flow_control_class);
         ch.setReceiver(r);
         for(int i=1; i <= NUM_MSGS; i++) {
@@ -86,7 +86,7 @@ public class FCTest {
     }
 
 
-    protected static class Receiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         int num_mgs_received=0;
 
         public void receive(Message msg) {

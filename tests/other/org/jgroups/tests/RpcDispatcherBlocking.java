@@ -29,7 +29,7 @@ import org.jgroups.util.Util;
  * 
  * @author bela Dec 19, 2002
  */
-public class RpcDispatcherBlocking implements MembershipListener {
+public class RpcDispatcherBlocking implements Receiver {
     RpcDispatcher disp;
     JChannel channel;
     long          timeout=30000;
@@ -53,25 +53,12 @@ public class RpcDispatcherBlocking implements MembershipListener {
     }
 
 
-    /** Called when a member is suspected */
-    public void suspect(Address suspected_mbr) {
-        System.out.println(suspected_mbr + " is suspected");
-    }
-
-
-    /** Block sending and receiving of messages until viewAccepted() is called */
-    public void block() {
-    }
-
-    public void unblock() {
-    }
-
     public void start() throws Exception {
         int     c;
         RspList rsps;
 
         channel=new JChannel(); // default props
-        disp=new RpcDispatcher(channel, this).setMembershipListener(this);
+        disp=new RpcDispatcher(channel, this).setReceiver(this);
         channel.connect("rpc-test");
         
         while(true) {
@@ -95,7 +82,7 @@ public class RpcDispatcherBlocking implements MembershipListener {
 
 
     RspList sendGroupRpc() throws Exception {
-        return disp.callRemoteMethods(null, "print", new Object[]{new Integer(i++)}, new Class[] {int.class},
+        return disp.callRemoteMethods(null, "print", new Object[]{i++}, new Class[] {int.class},
                                       new RequestOptions(ResponseMode.GET_ALL, 0));
     }
 

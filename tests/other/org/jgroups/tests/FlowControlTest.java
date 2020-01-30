@@ -13,7 +13,7 @@ import java.util.List;
  * Interactive test for MFC and UFC
  * @author Bela Ban
  */
-public class FlowControlTest extends ReceiverAdapter {
+public class FlowControlTest implements Receiver {
     protected JChannel ch;
     protected byte[] buf=new byte[50000];
 

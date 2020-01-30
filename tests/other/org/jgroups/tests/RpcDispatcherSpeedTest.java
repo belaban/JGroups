@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
  * Test for measuring performance of RPCs. See {@link RoundTrip} for simple messages
  * @author Bela Ban
  */
-public class RpcDispatcherSpeedTest implements MembershipListener {
+public class RpcDispatcherSpeedTest implements Receiver {
     protected JChannel              channel;
     protected RpcDispatcher         disp;
     protected String                props;
@@ -48,7 +48,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
     public void start(String props, boolean jmx, String name) throws Exception {
         channel=new JChannel(props).name(name);
         disp=new RpcDispatcher(channel, this) // no concurrent processing on incoming method calls
-          .setMembershipListener(this).setMethodLookup(id -> METHODS[0]);
+          .setReceiver(this).setMethodLookup(id -> METHODS[0]);
 
         if(jmx) {
             MBeanServer srv=Util.getMBeanServer();

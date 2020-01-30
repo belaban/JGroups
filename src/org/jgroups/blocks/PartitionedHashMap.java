@@ -1,9 +1,6 @@
 package org.jgroups.blocks;
 
-import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.MembershipListener;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
@@ -35,7 +32,7 @@ import java.util.*;
  * @author Bela Ban
  */
 @Experimental @Unsupported
-public class PartitionedHashMap<K,V> implements MembershipListener {
+public class PartitionedHashMap<K,V> implements Receiver {
 
     /** The cache in which all partitioned entries are located */
     private Cache<K,V> l2_cache=new Cache<>();
@@ -57,7 +54,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     @ManagedAttribute(writable=true)
     private long caching_time=30000L; // in milliseconds. -1 means don't cache, 0 means cache forever (or until changed)
     private HashFunction<K> hash_function=null;
-    private final Set<MembershipListener> membership_listeners=new HashSet<>();
+    private final Set<Receiver> membership_listeners=new HashSet<>();
 
     /** On a view change, if a member P1 detects that for any given key K, P1 is not the owner of K, then
      * it will compute the new owner P2 and transfer ownership for all Ks for which P2 is the new owner. P1
@@ -96,7 +93,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
          * @param key The object to be hashed
          * @param membership The membership. This value can be ignored for example if the hash function keeps
          * track of the membership itself, e.g. by registering as a membership
-         * listener ({@link PartitionedHashMap#addMembershipListener(org.jgroups.MembershipListener)} ) 
+         * listener ({@link PartitionedHashMap#addMembershipListener(Receiver)} )
          * @return
          */
         Address hash(K key, List<Address> membership);
@@ -175,12 +172,12 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         this.hash_function=hash_function;
     }
 
-    public void addMembershipListener(MembershipListener l) {
-        membership_listeners.add(l);
+    public void addMembershipListener(Receiver r) {
+        membership_listeners.add(r);
     }
 
-    public void removeMembershipListener(MembershipListener l) {
-        membership_listeners.remove(l);
+    public void removeMembershipListener(Receiver r) {
+        membership_listeners.remove(r);
     }
 
     public Cache<K,V> getL1Cache() {
@@ -207,10 +204,10 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     @ManagedOperation
     public void start() throws Exception {
         hash_function=new ConsistentHashFunction<>();
-        addMembershipListener((MembershipListener)hash_function);
+        addMembershipListener((Receiver)hash_function);
         ch=new JChannel(props);
         Marshaller m=new CustomMarshaller();
-        disp=new RpcDispatcher(ch, this).setMarshaller(m).setMethodLookup(methods::get).setMembershipListener(this);
+        disp=new RpcDispatcher(ch, this).setMarshaller(m).setMethodLookup(methods::get).setReceiver(this);
         ch.connect(cluster_name);
         local_addr=ch.getAddress();
         view=ch.getView();
@@ -348,22 +345,10 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     public void viewAccepted(View new_view) {
         System.out.println("view = " + new_view);
         this.view=new_view;
-        for(MembershipListener l: membership_listeners) {
-            l.viewAccepted(new_view);
-        }
-
-        if(migrate_data) {
+        for(Receiver r: membership_listeners)
+            r.viewAccepted(new_view);
+        if(migrate_data)
             migrateData();
-        }
-    }
-
-    public void suspect(Address suspected_mbr) {
-    }
-
-    public void block() {
-    }
-
-    public void unblock() {
     }
 
     public String toString() {
@@ -418,7 +403,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     }
 
 
-    public static class ConsistentHashFunction<K> implements MembershipListener, HashFunction<K> {
+    public static class ConsistentHashFunction<K> implements Receiver, HashFunction<K> {
         private final SortedMap<Short,Address> nodes=new TreeMap<>();
         private final static int HASH_SPACE=2048; // must be > max number of nodes in a cluster, and a power of 2
 
@@ -426,12 +411,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
             int index=Math.abs(key.hashCode() & (HASH_SPACE - 1));
             if(members != null && !members.isEmpty()) {
                 SortedMap<Short,Address> tmp=new TreeMap<>(nodes);
-                for(Iterator<Map.Entry<Short,Address>> it=tmp.entrySet().iterator(); it.hasNext();) {
-                    Map.Entry<Short, Address> entry=it.next();
-                    if(!members.contains(entry.getValue())) {
-                        it.remove();
-                    }
-                }
+                tmp.entrySet().removeIf(entry -> !members.contains(entry.getValue()));
                 return findFirst(tmp, index);
             }
             return findFirst(nodes, index);
@@ -457,15 +437,6 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
                 }
                 log.trace(sb);
             }
-        }
-
-        public void suspect(Address suspected_mbr) {
-        }
-
-        public void block() {
-        }
-
-        public void unblock() {
         }
 
         private static Address findFirst(Map<Short,Address> map, int index) {

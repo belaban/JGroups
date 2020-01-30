@@ -168,7 +168,7 @@ public class Relayer {
 
 
 
-    protected class Bridge extends ReceiverAdapter {
+    protected class Bridge implements Receiver {
         protected JChannel     channel;
         protected final String cluster_name;
         protected View         view;

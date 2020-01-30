@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Bela Ban
  */
-public class UnicastTestRpc extends ReceiverAdapter {
+public class UnicastTestRpc implements Receiver {
     private JChannel                  channel;
     private Address                   local_addr;
     private RpcDispatcher             disp;
@@ -65,7 +65,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
         if(name != null)
             channel.setName(name);
         disp=new RpcDispatcher(channel, this).setMethodLookup(id -> METHODS[id]).setMarshaller(new CustomMarshaller())
-          .setMembershipListener(this);
+          .setReceiver(this);
         channel.connect(groupname);
         local_addr=channel.getAddress();
 

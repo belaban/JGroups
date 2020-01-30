@@ -2,7 +2,7 @@ package org.jgroups.blocks;
 
 import org.jgroups.Address;
 import org.jgroups.JChannel;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.Receiver;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 
@@ -11,14 +11,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class RpcDispatcherAnycastServerObject extends ReceiverAdapter {
+public class RpcDispatcherAnycastServerObject implements Receiver {
     int i=0;
     private final JChannel c;
     private final RpcDispatcher d;
 
     public RpcDispatcherAnycastServerObject(JChannel channel) throws Exception {
         c=channel;
-        d=new RpcDispatcher(c, this).setMembershipListener(this);
+        d=new RpcDispatcher(c, this).setReceiver(this);
     }
 
     public void doSomething() {

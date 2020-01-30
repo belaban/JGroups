@@ -46,7 +46,7 @@ public class DynamicDiscardTest {
             channels[i].setName(Character.toString((char) ('A' + i)));
             channels[i].setDiscardOwnMessages(true);
             dispatchers[i]=new MessageDispatcher(channels[i], new MyRequestHandler());
-            dispatchers[i].setMembershipListener(new MyMembershipListener(channels[i]));
+            dispatchers[i].setReceiver(new MyMembershipListener(channels[i]));
             channels[i].connect("DynamicDiscardTest");
             System.out.print(i + 1 + " ");
         }
@@ -74,7 +74,7 @@ public class DynamicDiscardTest {
         }
     }
 
-    protected static class MyMembershipListener extends ReceiverAdapter {
+    protected static class MyMembershipListener implements Receiver {
         protected final JChannel ch;
 
         public MyMembershipListener(JChannel ch) {

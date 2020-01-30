@@ -259,7 +259,7 @@ public class SequencerMergeTest {
 
 
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         protected final String name;
         protected final List<String> list=new ArrayList<>();
 

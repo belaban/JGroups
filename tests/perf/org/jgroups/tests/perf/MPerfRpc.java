@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Bela Ban (belaban@yahoo.com)
  * @since 3.3
  */
-public class MPerfRpc extends ReceiverAdapter {
+public class MPerfRpc implements Receiver {
     protected String                              props;
     protected JChannel                            channel;
     protected RpcDispatcher                       disp;
@@ -108,7 +108,7 @@ public class MPerfRpc extends ReceiverAdapter {
 
         channel=new JChannel(props);
         channel.setName(name);
-        disp=new RpcDispatcher(channel, this).setMembershipListener(this).setMethodLookup(id -> METHODS[id])
+        disp=new RpcDispatcher(channel, this).setReceiver(this).setMethodLookup(id -> METHODS[id])
           .setMarshaller(new MperfMarshaller());
 
         send_options.mode(sync? ResponseMode.GET_ALL : ResponseMode.GET_NONE);

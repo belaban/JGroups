@@ -424,7 +424,7 @@ public class RELAY extends Protocol {
                 log.trace("I'm the coordinator, creating a channel (props=" + bridge_props + ", cluster_name=" + bridge_name + ")");
             bridge=new JChannel(bridge_props);
             bridge.setDiscardOwnMessages(true); // don't receive my own messages
-            bridge.setReceiver(new Receiver());
+            bridge.setReceiver(new RelayReceiver());
             bridge.connect(bridge_name);
         }
         catch(Exception e) {
@@ -521,7 +521,7 @@ public class RELAY extends Protocol {
 
 
 
-    protected class Receiver extends ReceiverAdapter {
+    protected class RelayReceiver implements Receiver {
 
         public void receive(Message msg) {
             Address sender=msg.getSrc();

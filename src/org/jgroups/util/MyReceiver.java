@@ -1,7 +1,7 @@
 package org.jgroups.util;
 
 import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.Receiver;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -13,7 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Bela Ban
  * @since  3.3
  */
-public class MyReceiver<T> extends ReceiverAdapter implements Closeable {
+public class MyReceiver<T> implements Receiver, Closeable {
     protected final List<T> list=new CopyOnWriteArrayList<>();
     protected String        name;
     protected boolean       verbose;

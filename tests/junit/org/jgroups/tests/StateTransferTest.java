@@ -225,7 +225,7 @@ public class StateTransferTest extends ChannelTestBase {
     }
 
 
-    protected class StateTransferApplication extends ReceiverAdapter implements Runnable {
+    protected class StateTransferApplication implements Receiver, Runnable {
         protected final Map<String,List<Long>>         map=new HashMap<>(MSG_SEND_COUNT * APP_COUNT);
         protected final int                            from, to;
         protected ConcurrentMap<Address,AtomicInteger> count=new ConcurrentHashMap<>();

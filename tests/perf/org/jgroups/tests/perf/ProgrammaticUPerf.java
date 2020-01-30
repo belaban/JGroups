@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.LongAdder;
  *
  * @author Bela Ban
  */
-public class ProgrammaticUPerf extends ReceiverAdapter implements MethodInvoker {
+public class ProgrammaticUPerf implements Receiver, MethodInvoker {
     private JChannel               channel;
     private Address                local_addr;
     private RpcDispatcher          disp;
@@ -141,7 +141,7 @@ public class ProgrammaticUPerf extends ReceiverAdapter implements MethodInvoker 
         transport.registerProbeHandler(h);
         h.initialize(channel.getProtocolStack().getProtocols());
         // System.out.printf("contents:\n%s\n", h.dump());
-        disp=new RpcDispatcher(channel, this).setMembershipListener(this)
+        disp=new RpcDispatcher(channel, this).setReceiver(this)
           .setMethodInvoker(this).setMarshaller(new UPerfMarshaller());
         channel.connect(groupname);
         local_addr=channel.getAddress();

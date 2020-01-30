@@ -261,7 +261,7 @@ public class ChannelTest extends ChannelTestBase {
     }
 
 
-    private static class MyReceiver extends ReceiverAdapter {
+    private static class MyReceiver implements Receiver {
         final List<Integer> nums=new LinkedList<>();
         final int expected;
 
@@ -293,7 +293,7 @@ public class ChannelTest extends ChannelTestBase {
     }
 
 
-    private static class ConnectedChecker extends ReceiverAdapter {
+    private static class ConnectedChecker implements Receiver {
         boolean connected=false;
 
         public ConnectedChecker(JChannel channel) {
@@ -311,7 +311,7 @@ public class ChannelTest extends ChannelTestBase {
         }
     }
 
-    private static class ViewChecker extends ReceiverAdapter {
+    private static class ViewChecker implements Receiver {
         final JChannel channel;
         boolean success=true;
         String reason="";
@@ -340,7 +340,7 @@ public class ChannelTest extends ChannelTestBase {
     }
 
 
-    private static class MyViewChecker extends ReceiverAdapter {
+    private static class MyViewChecker implements Receiver {
         private boolean receivedViewWhenDisconnected;
         private final JChannel ch;
 

@@ -67,7 +67,7 @@ public class NakackTest {
 
         // set up the sender and the receiver callbacks, according to whether the peer is a sender or a receiver
         for(int i=0; i < NUM_PEERS; i++) {
-            receivers[i]=new Receiver(channels[i]);
+            receivers[i]=new MyReceiver(channels[i]);
             channels[i].setReceiver(receivers[i]);
         }
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, channels);
@@ -137,11 +137,11 @@ public class NakackTest {
      * - check that sequence numbers for each sender are in order (with no gaps)
      * - terminate when correct number of messages have been received
      */
-    protected class Receiver extends ReceiverAdapter {
+    protected class MyReceiver implements Receiver {
         final JChannel               channel;
         ConcurrentMap<Address, Long> senders=new ConcurrentHashMap<>();
 
-        public Receiver(JChannel channel) {
+        public MyReceiver(JChannel channel) {
             this.channel=channel;
         }
 

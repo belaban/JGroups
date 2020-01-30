@@ -2,7 +2,7 @@ package org.jgroups.protocols.dns;
 
 import org.jgroups.Address;
 import org.jgroups.JChannel;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.Receiver;
 import org.jgroups.View;
 import org.jgroups.protocols.TCP;
 import org.jgroups.protocols.UNICAST3;
@@ -61,7 +61,7 @@ public class DNSDiscoveryTester {
          JChannel c = new JChannel(protocols).name(String.valueOf(i+1));
          channels.add(c);
 
-         c.setReceiver(new ReceiverAdapter() {
+         c.setReceiver(new Receiver() {
             @Override
             public void viewAccepted(View view) {
                if(view.getMembers().size() == numberOfTestedInstances) {

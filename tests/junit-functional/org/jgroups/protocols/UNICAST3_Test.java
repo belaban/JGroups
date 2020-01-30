@@ -138,7 +138,7 @@ public class UNICAST3_Test {
     }
 
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         protected int count=0;
 
         public void receive(Message msg) {

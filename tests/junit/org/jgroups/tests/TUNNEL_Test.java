@@ -270,7 +270,7 @@ public class TUNNEL_Test extends ChannelTestBase {
 
 
 
-    private static class PromisedMessageListener extends ReceiverAdapter {
+    private static class PromisedMessageListener implements Receiver {
         private final Promise<Message> promise;
 
         public PromisedMessageListener(Promise<Message> promise) {

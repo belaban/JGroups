@@ -125,7 +125,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         }
     }
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         private final Collection<Integer> msgs=new ConcurrentLinkedQueue<>();
 
         public Collection<Integer> getMsgs() {

@@ -173,7 +173,7 @@ public class UNICAST_OOB_Test {
 
 
 
-    public static class MyReceiver extends ReceiverAdapter {
+    public static class MyReceiver implements Receiver {
         /** List<Long> of unicast sequence numbers */
         List<Long> seqnos=Collections.synchronizedList(new LinkedList<>());
 

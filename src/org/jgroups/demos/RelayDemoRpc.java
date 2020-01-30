@@ -1,9 +1,6 @@
 package org.jgroups.demos;
 
-import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
@@ -21,7 +18,7 @@ import java.util.*;
  * find each other, and typing in a window should send the text to everyone, plus we should get 4 responses.
  * @author Bela Ban
  */
-public class RelayDemoRpc extends ReceiverAdapter {
+public class RelayDemoRpc implements Receiver {
     protected JChannel          ch;
     protected RpcDispatcher     disp;
     protected String            local_addr;
@@ -52,11 +49,15 @@ public class RelayDemoRpc extends ReceiverAdapter {
         demo.start(props, name);
     }
 
+    public void receive(Message msg) {
+
+    }
+
     public void start(String props, String name) throws Exception {
         ch=new JChannel(props);
         if(name != null)
             ch.setName(name);
-        disp=new RpcDispatcher(ch, this).setMembershipListener(this);
+        disp=new RpcDispatcher(ch, this).setReceiver(this);
         ch.connect("RelayDemo");
         local_addr=ch.getAddress().toString();
 
@@ -133,10 +134,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
                 // mcasting the call to all local cluster members
                 RspList<Object> rsps=disp.callRemoteMethods(null, call,
                                                             new RequestOptions(ResponseMode.GET_ALL, RPC_TIMEOUT).anycasting(false));
-                rsps.entrySet().stream().forEach( entry  -> {
-                    Rsp<Object> val=entry.getValue();
-                    System.out.println("<< " + val.getValue() + " from " + entry.getKey());
-                });
+                rsps.forEach((key, val) -> System.out.println("<< " + val.getValue() + " from " + key));
             }
         }
     }

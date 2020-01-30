@@ -272,7 +272,7 @@ public class SequencerFailoverTest extends BMNGRunner {
     }
 
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         protected final List<Integer> list=new LinkedList<>();
         protected final String name;
 

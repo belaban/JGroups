@@ -84,7 +84,7 @@ public class TUNNELDeadLockTest {
         receivedCnt=0;
         channel=createTunnelChannel("A");
         channel.connect(TUNNELDeadLockTest.class.getSimpleName());
-        channel.setReceiver(new ReceiverAdapter() {
+        channel.setReceiver(new Receiver() {
 
             @Override
             public void receive(Message msg) {

@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * @author Bela Ban
  * @since  5.0
  */
-public class MessageSendTest extends ReceiverAdapter {
+public class MessageSendTest implements Receiver {
     protected JChannel           ch;
     protected final AckCollector acks=new AckCollector();
     protected View               view;

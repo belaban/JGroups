@@ -543,7 +543,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
 
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         final String name;
         final JChannel ch;
         final List<Message> mcasts=new ArrayList<>(20);

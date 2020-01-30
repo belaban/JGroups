@@ -203,7 +203,7 @@ public class ConcurrentFlushTest {
         }
     }
 
-    protected static class Listener extends ReceiverAdapter implements EventSequence {
+    protected static class Listener implements Receiver, EventSequence {
         final String name;
         boolean  blockReceived, unblockReceived;
         JChannel channel;

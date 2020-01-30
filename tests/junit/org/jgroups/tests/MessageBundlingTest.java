@@ -130,7 +130,7 @@ public class MessageBundlingTest extends ChannelTestBase {
 
 
 
-    protected static class SimpleReceiver extends ReceiverAdapter {
+    protected static class SimpleReceiver implements Receiver {
         protected final Promise<Boolean> promise;
 
         public SimpleReceiver(Promise<Boolean> promise) {

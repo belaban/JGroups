@@ -1,7 +1,7 @@
 package org.jgroups.demos;
 
 import org.jgroups.JChannel;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.Receiver;
 import org.jgroups.View;
 import org.jgroups.blocks.atomic.Counter;
 import org.jgroups.blocks.atomic.CounterService;
@@ -18,7 +18,7 @@ public class CounterServiceDemo {
     void start(String props, String channel_name) throws Exception {
         ch=new JChannel(props);
         ch.setName(channel_name);
-        ch.setReceiver(new ReceiverAdapter() {
+        ch.setReceiver(new Receiver() {
             public void viewAccepted(View view) {
                 System.out.println("-- view: " + view);
             }
@@ -28,7 +28,7 @@ public class CounterServiceDemo {
 
     public void start(JChannel ch) throws Exception {
         this.ch=ch;
-        ch.setReceiver(new ReceiverAdapter() {
+        ch.setReceiver(new Receiver() {
             public void viewAccepted(View view) {
                 System.out.println("-- view: " + view);
             }

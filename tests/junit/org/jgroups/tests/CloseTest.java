@@ -242,7 +242,7 @@ public class CloseTest extends ChannelTestBase {
     }
 
 
-    private static class MyReceiver extends ReceiverAdapter {
+    private static class MyReceiver implements Receiver {
         final List<View> views=new ArrayList<>();
         public void viewAccepted(View new_view) {
             views.add(new_view);

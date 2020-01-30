@@ -181,7 +181,7 @@ public class SequencerOrderTest {
         }
     }
 
-    private static class MyReceiver extends ReceiverAdapter {
+    private static class MyReceiver implements Receiver {
         final String name;
         final List<String> msgs=new LinkedList<>();
 

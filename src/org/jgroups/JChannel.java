@@ -499,14 +499,14 @@ public class JChannel implements Closeable {
      * Retrieves the full state from the target member.
      * <p>
      * The state transfer is initiated by invoking getState() on this channel. The state provider in turn invokes the
-     * {@link MessageListener#getState(java.io.OutputStream)} callback and sends the state to this node, the state receiver.
-     * After the state arrives at the state receiver, the {@link MessageListener#setState(java.io.InputStream)} callback
+     * {@link Receiver#getState(java.io.OutputStream)} callback and sends the state to this node, the state receiver.
+     * After the state arrives at the state receiver, the {@link Receiver#setState(java.io.InputStream)} callback
      * is invoked to install the state.
      * @param target the state provider. If null the coordinator is used by default
      * @param timeout the number of milliseconds to wait for the operation to complete successfully. 0
      *           waits forever until the state has been received
-     * @see MessageListener#getState(java.io.OutputStream)
-     * @see MessageListener#setState(java.io.InputStream)
+     * @see Receiver#getState(java.io.OutputStream)
+     * @see Receiver#setState(java.io.InputStream)
      * @exception IllegalStateException the channel was closed or disconnected, or the flush (if present) failed
      * @exception StateTransferException raised if there was a problem during the state transfer
      */
@@ -882,12 +882,6 @@ public class JChannel implements Closeable {
         switch(type) {
             case Event.VIEW_CHANGE:
                 receiver.viewAccepted((View)arg);
-                break;
-            case Event.SUSPECT:
-                // todo: change this in 4.1 to only accept collections
-                Collection<Address> suspects=arg instanceof Address? Collections.singletonList((Address)arg)
-                  : (Collection<Address>)arg;
-                suspects.forEach(receiver::suspect);
                 break;
             case Event.GET_APPLSTATE:
                 byte[] tmp_state=null;

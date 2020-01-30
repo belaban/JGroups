@@ -1,9 +1,6 @@
 package org.jgroups.blocks;
 
-import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.MembershipListener;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.logging.Log;
@@ -22,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
  */
-public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener {
+public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
 
     /** The cache in which all entries are located. The value is a tuple, consisting of the replication count and the
      * actual value */
@@ -52,7 +49,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
 
     private HashFunctionFactory<K> hash_function_factory=ConsistentHashFunction::new;
 
-    private final Set<MembershipListener> membership_listeners=new HashSet<>();
+    private final Set<Receiver> receivers=new HashSet<>();
 
     private final Set<ChangeListener> change_listeners=new HashSet<>();
 
@@ -214,12 +211,12 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
         this.hash_function_factory=hash_function_factory;
     }
 
-    public void addMembershipListener(MembershipListener l) {
-        membership_listeners.add(l);
+    public void addReceiver(Receiver r) {
+        receivers.add(r);
     }
 
-    public void removeMembershipListener(MembershipListener l) {
-        membership_listeners.remove(l);
+    public void removeMembershipListener(Receiver r) {
+        receivers.remove(r);
     }
 
     public void addChangeListener(ChangeListener l) {
@@ -261,7 +258,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
             hash_function=new ConsistentHashFunction<>();
 
         ch=new JChannel(props);
-        disp=new RpcDispatcher(ch, this).setMethodLookup(methods::get).setMembershipListener(this);
+        disp=new RpcDispatcher(ch, this).setMethodLookup(methods::get).setReceiver(this);
         Marshaller marshaller=new CustomMarshaller();
         disp.setMarshaller(marshaller);
 
@@ -568,24 +565,14 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
         if(hash_function != null)
             hash_function.installNodes(new_view.getMembers());
 
-        for(MembershipListener l: membership_listeners)
-            l.viewAccepted(new_view);
+        for(Receiver r: receivers)
+            r.viewAccepted(new_view);
 
         if(old_nodes != null) {
             timer.schedule(() -> rebalance(old_nodes, new ArrayList<>(new_view.getMembers())), 100, TimeUnit.MILLISECONDS);
         }
     }
 
-
-
-    public void suspect(Address suspected_mbr) {
-    }
-
-    public void block() {
-    }
-
-    public void unblock() {
-    }
 
     public void changed() {
         notifyChangeListeners();

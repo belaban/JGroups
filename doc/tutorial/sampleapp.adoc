@@ -125,15 +125,14 @@ This is done in the next section below.
 
 === Receiving messages and view change notifications
 
-Let's now register as a `Receiver` to receive message and view changes. To this end, we could implement
-`org.jgroups.Receiver`, however, I chose to extend `ReceiverAdapter` which has default
-implementations, and only override callbacks (`receive()` and `viewChange()`) we're interested in. We
-now need to extend ReceiverAdapter:
+Let's now register as a `Receiver` to receive message and view changes. To this end, we implement
+`org.jgroups.Receiver`, which has default implementations, and override callbacks `receive()`
+and `viewChange()`:
 
 
 [source,java]
 ----
-public class SimpleChat extends ReceiverAdapter {
+public class SimpleChat implements Receiver {
 ----
 , set the receiver in `start()`:
         

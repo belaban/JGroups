@@ -86,7 +86,7 @@ public class UNICAST_RetransmitTest {
     }
 
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         protected final List<Integer> list=new ArrayList<>();
 
         public void receive(Message msg) {

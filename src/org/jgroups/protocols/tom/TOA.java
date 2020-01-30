@@ -19,7 +19,9 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Pedro Ruivo
  * @since 3.1
+ * @deprecated Will get removed from JGroups when Infinispan does not use it anymore
  */
+@Deprecated
 @MBean(description = "Implementation of Total Order Anycast based on Skeen's Algorithm")
 public class TOA extends Protocol implements DeliveryProtocol {
     //managers

@@ -3,7 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.Receiver;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
@@ -123,7 +123,7 @@ public class NAKACK_RetransmitTest {
     }
 
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         protected final Queue<Integer> list=new ConcurrentLinkedQueue<>();
 
         public void receive(Message msg) {

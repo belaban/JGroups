@@ -313,7 +313,7 @@ public class UNICAST_ConnectionTests {
         return new JChannel(new SHARED_LOOPBACK(), unicast).name(name);
     }
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         final String        name;
         final List<Integer> msgs=new ArrayList<>(20);
 

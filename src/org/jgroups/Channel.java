@@ -495,9 +495,9 @@ public class Channel implements Closeable {
     * Retrieves the full state from the target member.
     * <p>
     * State transfer is initiated by invoking getState on this channel. The state provider in turn
-    * invokes {@link MessageListener#getState(java.io.OutputStream)} callback and sends a state to
+    * invokes {@link Receiver#getState(java.io.OutputStream)} callback and sends a state to
     * this node, the state receiver. After the state arrives to the state receiver
-    * {@link MessageListener#setState(java.io.InputStream)} callback is invoked to install the
+    * {@link Receiver#setState(java.io.InputStream)} callback is invoked to install the
     * state.
     * 
     * @param target
@@ -506,8 +506,8 @@ public class Channel implements Closeable {
     *           The number of milliseconds to wait for the operation to complete successfully. 0
     *           waits until the state has been received
     * 
-    * @see MessageListener#getState(java.io.OutputStream)
-    * @see MessageListener#setState(java.io.InputStream)
+    * @see Receiver#getState(java.io.OutputStream)
+    * @see Receiver#setState(java.io.InputStream)
     * 
     * @exception IllegalStateException
     *               The channel was closed or disconnected, or the flush (if present) failed

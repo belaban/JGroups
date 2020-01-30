@@ -572,7 +572,7 @@ public class MergeTest4 {
         return true;
     }
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         protected MergeView view;
 
         public MergeView getView() {return view;}

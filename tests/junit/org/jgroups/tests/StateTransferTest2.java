@@ -2,7 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.JChannel;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.Receiver;
 import org.jgroups.StateTransferException;
 import org.jgroups.protocols.pbcast.*;
 import org.jgroups.stack.Protocol;
@@ -120,7 +120,7 @@ public class StateTransferTest2 extends ChannelTestBase {
 
 
 
-    protected static class StateHandler extends ReceiverAdapter {
+    protected static class StateHandler implements Receiver {
         protected final boolean get_error;
         protected final boolean set_error;
         protected final Object  state_to_send;

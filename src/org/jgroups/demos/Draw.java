@@ -14,8 +14,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 
 /**
@@ -23,7 +23,7 @@ import java.util.List;
  * mouse moves are broadcast to all group members, which then apply them to their canvas<p>
  * @author Bela Ban, Oct 17 2001
  */
-public class Draw extends ReceiverAdapter implements ActionListener, ChannelListener {
+public class Draw implements Receiver, ActionListener, ChannelListener {
     protected String               cluster_name="draw";
     private JChannel               channel=null;
     private int                    member_size=1;
@@ -140,7 +140,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
                 continue;
             }
             if("-uuid".equals(args[i])) {
-                generator=new OneTimeAddressGenerator(Long.valueOf(args[++i]));
+                generator=new OneTimeAddressGenerator(Long.parseLong(args[++i]));
                 continue;
             }
 
@@ -574,18 +574,13 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
 
         /** Draw the entire panel from the state */
         public void drawState() {
-            // clear();
-            Map.Entry entry;
-            Point pt;
-            Color col;
             synchronized(state) {
-                for(Iterator it=state.entrySet().iterator(); it.hasNext();) {
-                    entry=(Map.Entry)it.next();
-                    pt=(Point)entry.getKey();
-                    col=(Color)entry.getValue();
+                for(Iterator<?> it=state.entrySet().iterator(); it.hasNext();) {
+                    Map.Entry<Point,Color> entry=(Map.Entry<Point,Color>)it.next();
+                    Point pt=entry.getKey();
+                    Color col=entry.getValue();
                     gr.setColor(col);
                     gr.fillOval(pt.x, pt.y, 10, 10);
-
                 }
             }
             repaint();

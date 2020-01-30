@@ -56,7 +56,7 @@ public class MessageBeforeConnectedTest extends BMNGRunner {
     @BMScript(dir="scripts/MessageBeforeConnectedTest", value="testSendingOfMsgsOnUnconnectedChannel")
     public void testSendingOfMsgsOnUnconnectedChannel() throws Throwable {
         a=createChannel("A");
-        a.setReceiver(new ReceiverAdapter() {
+        a.setReceiver(new Receiver() {
             public void receive(Message msg)  {
                 MessageBeforeConnectedTest.this.receive(msg);
             }

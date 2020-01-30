@@ -85,7 +85,7 @@ public class UNICAST_MessagesToSelfTest {
 
 
     private void _testReceptionOfAllMessages() throws Throwable {
-        final Receiver r=new Receiver();
+        final MyReceiver r=new MyReceiver();
         ch.setReceiver(r);
         for(int i=1; i <= NUM_MSGS; i++) {
             Message msg=new BytesMessage(a1, createPayload(SIZE, i)); // unicast message
@@ -127,7 +127,7 @@ public class UNICAST_MessagesToSelfTest {
     }
 
     /** Checks that messages 1 - NUM_MSGS are received in order */
-    protected static class Receiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         int num_mgs_received=0, next=1;
         Throwable exception=null;
         protected final List<Integer> list=new ArrayList<>(NUM_MSGS);

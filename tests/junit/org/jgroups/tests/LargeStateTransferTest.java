@@ -3,7 +3,7 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.JChannel;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.Receiver;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
@@ -105,7 +105,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
     }
 
 
-    private static class Provider extends ReceiverAdapter {
+    private static class Provider implements Receiver {
         private final byte[] state;
 
         public Provider(int size) {
@@ -118,7 +118,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
     }
 
 
-    private static class Requester extends ReceiverAdapter {
+    private static class Requester implements Receiver {
         private final Promise<Integer> promise;
 
         public Requester(Promise<Integer> p) {

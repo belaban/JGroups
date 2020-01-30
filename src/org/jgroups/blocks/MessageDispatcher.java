@@ -39,8 +39,7 @@ import java.util.stream.Stream;
 public class MessageDispatcher implements RequestHandler, Closeable, ChannelListener {
     protected JChannel                              channel;
     protected RequestCorrelator                     corr;
-    protected MembershipListener                    membership_listener;
-    protected StateListener                         state_listener;
+    protected Receiver                              receiver;
     protected RequestHandler                        req_handler;
     protected boolean                               async_dispatching;
     protected boolean                               wrap_exceptions;
@@ -120,13 +119,8 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
         return (X)this;
     }
 
-    public <X extends MessageDispatcher> X setMembershipListener(MembershipListener l) {
-        membership_listener=l;
-        return (X)this;
-    }
-
-    public <X extends MessageDispatcher> X setStateListener(StateListener sl) {
-        this.state_listener=sl;
+    public <X extends MessageDispatcher> X setReceiver(Receiver r) {
+        this.receiver=r;
         return (X)this;
     }
 
@@ -474,41 +468,39 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
         switch(evt.getType()) {
             case Event.GET_APPLSTATE: // reply with GET_APPLSTATE_OK
                 byte[] tmp_state=null;
-                if(state_listener != null) {
+                if(receiver != null) {
                     ByteArrayOutputStream output=new ByteArrayOutputStream(1024);
-                    state_listener.getState(output);
-                    tmp_state=output.toByteArray();
+                    if(getState(output))
+                        tmp_state=output.toByteArray();
                 }
                 return new StateTransferInfo(null, 0L, tmp_state);
 
             case Event.GET_STATE_OK:
-                if(state_listener != null) {
+                if(receiver != null) {
                     StateTransferResult result=evt.getArg();
                     if(result.hasBuffer()) {
                         ByteArrayInputStream input=new ByteArrayInputStream(result.getBuffer());
-                        state_listener.setState(input);
+                        setState(input);
                     }
                 }
                 break;
 
             case Event.STATE_TRANSFER_OUTPUTSTREAM:
                 OutputStream os=evt.getArg();
-                if(state_listener != null && os != null)
-                    state_listener.getState(os);
+                getState(os);
                 break;
 
             case Event.STATE_TRANSFER_INPUTSTREAM:
                 InputStream is=evt.getArg();
-                if(state_listener != null && is!=null)
-                    state_listener.setState(is);
+                setState(is);
                 break;
 
             case Event.VIEW_CHANGE:
                 View v=evt.getArg();
                 List<Address> new_mbrs=v.getMembers();
                 setMembers(new_mbrs);
-                if(membership_listener != null)
-                    membership_listener.viewAccepted(v);
+                if(receiver != null)
+                    receiver.viewAccepted(v);
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -516,25 +508,40 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
                 local_addr=evt.getArg();
                 break;
 
-            case Event.SUSPECT:
-                if(membership_listener != null) {
-                    // todo: remove in 4.1 once we've completely switched to collections
-                    Collection<Address> c=evt.arg() instanceof Address? Collections.singletonList(evt.arg()): evt.arg();
-                    c.forEach(membership_listener::suspect);
-                }
-                break;
-
             case Event.BLOCK:
-                if(membership_listener != null)
-                    membership_listener.block();
+                if(receiver != null)
+                    receiver.block();
                 break;
             case Event.UNBLOCK:
-                if(membership_listener != null)
-                    membership_listener.unblock();
+                if(receiver != null)
+                    receiver.unblock();
                 break;
         }
-
         return null;
+    }
+
+    protected boolean getState(OutputStream out) throws Exception {
+        if(receiver == null || out == null)
+            return false;
+        try {
+            receiver.getState(out);
+            return true;
+        }
+        catch(UnsupportedOperationException un) {
+            return false;
+        }
+    }
+
+    protected boolean setState(InputStream in) throws Exception {
+        if(receiver == null || in == null)
+            return false;
+        try {
+            receiver.setState(in);
+            return true;
+        }
+        catch(UnsupportedOperationException un) {
+            return false;
+        }
     }
 
     public void channelConnected(JChannel channel) {

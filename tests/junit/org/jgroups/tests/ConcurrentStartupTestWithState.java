@@ -91,7 +91,7 @@ public class ConcurrentStartupTestWithState {
         return new JChannel(Util.getTestStack(new STATE_TRANSFER(), new FLUSH())).name(name);
     }
 
-    protected static class Joiner extends ReceiverAdapter {
+    protected static class Joiner implements Receiver {
         protected final List<Integer> state=new ArrayList<>(10);
         protected final JChannel      ch;
 

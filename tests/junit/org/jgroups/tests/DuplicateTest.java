@@ -246,7 +246,7 @@ public class DuplicateTest extends ChannelTestBase {
 
 
 
-    private static class MyReceiver extends ReceiverAdapter {
+    private static class MyReceiver implements Receiver {
         final String name;
         private final ConcurrentMap<Address, Collection<Long>> msgs=new ConcurrentHashMap<>();
 

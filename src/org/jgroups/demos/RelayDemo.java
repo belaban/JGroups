@@ -10,7 +10,7 @@ import org.jgroups.util.Util;
  * find each other, and typing in a window should send the text to everyone, plus we should get 4 responses.
  * @author Bela Ban
  */
-public class RelayDemo extends ReceiverAdapter {
+public class RelayDemo implements Receiver {
     protected static final String SITE_MASTERS="site-masters";
 
     protected JChannel ch;

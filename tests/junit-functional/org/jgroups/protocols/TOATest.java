@@ -335,7 +335,7 @@ public class TOATest {
         }
     }
 
-    private static class TOANode extends ReceiverAdapter {
+    private static class TOANode implements Receiver {
 
         private final Object viewLock = new Object();
         private final JChannel channel;

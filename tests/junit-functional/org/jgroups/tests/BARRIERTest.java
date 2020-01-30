@@ -129,7 +129,7 @@ public class BARRIERTest {
     }
 
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         protected final AtomicInteger num_mgs_received=new AtomicInteger(0);
 
         public void receive(Message msg) {
@@ -143,7 +143,7 @@ public class BARRIERTest {
     }
 
 
-    protected static class BlockingReceiver extends ReceiverAdapter {
+    protected static class BlockingReceiver implements Receiver {
         protected final CyclicBarrier barrier;
 
         BlockingReceiver(CyclicBarrier barrier) {

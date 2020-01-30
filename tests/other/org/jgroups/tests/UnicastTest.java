@@ -281,7 +281,7 @@ public class UnicastTest {
     }
 
 
-    protected class MyReceiver extends ReceiverAdapter {
+    protected class MyReceiver implements Receiver {
         protected long        start=0;
         protected long        print;
         protected AtomicLong  current_value=new AtomicLong(0), total_bytes=new AtomicLong(0);

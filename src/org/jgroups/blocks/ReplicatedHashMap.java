@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * @author Bela Ban
  */
 public class ReplicatedHashMap<K, V> extends
-        AbstractMap<K, V> implements ConcurrentMap<K, V>, MembershipListener, StateListener, ReplicatedMap<K, V>, Closeable {
+        AbstractMap<K, V> implements ConcurrentMap<K, V>, Receiver, ReplicatedMap<K, V>, Closeable {
 
     public interface Notification<K, V> {
         void entrySet(K key, V value);
@@ -121,8 +121,8 @@ public class ReplicatedHashMap<K, V> extends
     }
 
     protected final void init() {
-        disp = new RpcDispatcher(channel, this).setMethodLookup(id -> methods.get(id));
-        disp.setMembershipListener(this).setStateListener(this);
+        disp=new RpcDispatcher(channel, this).setMethodLookup(id -> methods.get(id));
+        disp.setReceiver(this);
     }
 
     public boolean isBlockingUpdates() {
@@ -451,19 +451,6 @@ public class ReplicatedHashMap<K, V> extends
         }
     }
 
-    /**
-     * Called when a member is suspected
-     */
-    public void suspect(Address suspected_mbr) {
-        ;
-    }
-
-    /**
-     * Block sending and receiving of messages until ViewAccepted is called
-     */
-    public void block() {
-    }
-
     void sendViewChangeNotifications(View view, List<Address> new_mbrs, List<Address> old_mbrs) {
         if ((notifs.isEmpty()) || (old_mbrs == null) || (new_mbrs == null)) {
             return;
@@ -475,8 +462,6 @@ public class ReplicatedHashMap<K, V> extends
         notifs.forEach(notif -> notif.viewChange(view, joined, left));
     }
 
-    public void unblock() {
-    }
 
     /**
      * Creates a synchronized facade for a ReplicatedMap. All methods which

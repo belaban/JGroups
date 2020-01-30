@@ -20,7 +20,7 @@ import java.nio.ByteBuffer;
  * @author Bela Ban
  * @since  3.6.5
  */
-public class PubServer extends ReceiverAdapter {
+public class PubServer implements Receiver {
     protected BaseServer server;
     protected final Log  log=LogFactory.getLog(PubServer.class);
 

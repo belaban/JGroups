@@ -24,8 +24,7 @@ import java.util.Map;
  * can get and set quotes as long as a minimum of 1 server (in the group) is running.
  * @author Bela Ban
  */
-public class QuoteClient extends Frame implements WindowListener, ActionListener,
-        MembershipListener {
+public class QuoteClient extends Frame implements WindowListener, ActionListener, Receiver {
     static final String channel_name="Quotes";
     RpcDispatcher disp;
     JChannel channel;
@@ -49,7 +48,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
         try {
             channel=new JChannel(props);
             channel.setDiscardOwnMessages(true);
-            disp=(RpcDispatcher)new RpcDispatcher(channel, this).setMembershipListener(this);
+            disp=new RpcDispatcher(channel, this).setReceiver(this);
             channel.connect(channel_name);
         }
         catch(Exception e) {
@@ -238,16 +237,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
         setTitle("Members in " + channel_name + ": " + (new_view.size() - 1));
     }
 
-    public void suspect(Address suspected_mbr) {
-    }
-
-    public void block() {
-    }
-
-    public void unblock() {
-    }
-
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         QuoteClient client=new QuoteClient();
         client.start();
     }

@@ -597,7 +597,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
 
     /**
-     * Thread which invokes {@link MessageListener#getState(java.io.OutputStream)} in the application
+     * Thread which invokes {@link Receiver#getState(java.io.OutputStream)} in the application
      */
     protected class StateGetter implements Runnable {
         protected final Address      requester;

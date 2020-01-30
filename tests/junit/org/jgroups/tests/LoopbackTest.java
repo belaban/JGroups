@@ -108,7 +108,7 @@ public class LoopbackTest extends ChannelTestBase {
      * A receiver which waits for all messages to be received and 
      * then sets a promise.
      */
-    private static class MyReceiver extends ReceiverAdapter {
+    private static class MyReceiver implements Receiver {
         private final int numExpected ;
         private int       numReceived;
         private final Promise<Boolean> p ;

@@ -103,7 +103,7 @@ public class DiscardTest extends ChannelTestBase {
         System.out.printf("== Sent and received %d in %d ms, %.2f msgs/sec\n", NUM_MSGS, diff, msgs_sec);
     }
 
-    static class MyReceiver extends ReceiverAdapter {
+    static class MyReceiver implements Receiver {
         final Promise<Long> p;
         final long num_msgs_expected;
         long num_msgs=0;

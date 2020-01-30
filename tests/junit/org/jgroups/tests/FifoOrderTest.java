@@ -142,7 +142,7 @@ public class FifoOrderTest extends ChannelTestBase {
     }
 
 
-    protected static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver implements Receiver {
         final String name;
         final ConcurrentMap<Address,List<Integer>> msgs=new ConcurrentHashMap<>();
         AtomicInteger count=new AtomicInteger(0);

@@ -31,7 +31,7 @@ public class TransportThreadPoolTest extends ChannelTestBase {
 
     @Test
     public void testThreadPoolReplacement() throws Exception {
-        Receiver r1=new Receiver(), r2=new Receiver();
+        MyReceiver r1=new MyReceiver(), r2=new MyReceiver();
         c1.setReceiver(r1);
         c2.setReceiver(r2);
         
@@ -76,7 +76,7 @@ public class TransportThreadPoolTest extends ChannelTestBase {
     }
 
 
-    private static class Receiver extends ReceiverAdapter {
+    private static class MyReceiver implements Receiver {
         Collection<Message> msgs=new ConcurrentLinkedQueue<>();
         
         final CountDownLatch latch = new CountDownLatch(4);
