@@ -149,6 +149,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       description="If true, the common fork-join pool will be used; otherwise a custom ForkJoinPool will be created")
     protected boolean use_common_fork_join_pool;
 
+    @Property(description="Create fibers (if true) or regular threads (if false). This requires Java 15/Loom. " +
+      "If not present, use_fibers will be set to false and regular threads will be created. Note that the ThreadFactory" +
+      "needs to support this (DefaultThreadFactory does)")
+    protected boolean use_fibers;
+
     @Property(name="thread_pool.enabled",description="Enable or disable the thread pool")
     protected boolean thread_pool_enabled=true;
 
@@ -845,10 +850,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         if(thread_factory == null)
             //thread_factory=new DefaultThreadFactory("jgroups", false, true);
-          thread_factory=new LazyThreadFactory("jgroups", false, true);
+          thread_factory=new LazyThreadFactory("jgroups", false, true)
+            .useFibers(use_fibers).log(this.log);
 
         if(internal_thread_factory == null)
-            internal_thread_factory=new LazyThreadFactory("jgroups-int", false, true);
+            internal_thread_factory=new LazyThreadFactory("jgroups-int", false, true)
+              .useFibers(use_fibers).log(this.log);
         
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
