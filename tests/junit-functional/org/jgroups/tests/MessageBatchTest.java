@@ -6,6 +6,7 @@ import org.jgroups.Message;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -552,7 +553,6 @@ public class MessageBatchTest {
                 batch.replace(msg, MSG);
             index++;
         }
-
         index=0;
         for(Message msg: batch) {
             assert index % 2 != 0 || msg == MSG; // every even index has MSG
@@ -561,6 +561,25 @@ public class MessageBatchTest {
     }
 
     public void testIterator8() {
+        List<Message> msgs=createMessages();
+        MessageBatch batch=new MessageBatch(msgs);
+        int index=0;
+        final Message MSG=new Message();
+        MessageIterator it=batch.iterator();
+         while(it.hasNext()) {
+             it.next();
+             if(index % 2 == 0)
+                 it.replace(MSG);
+             index++;
+         }
+         index=0;
+         for(Message msg: batch) {
+             assert index % 2 != 0 || msg == MSG; // every even index has MSG
+             index++;
+         }
+     }
+
+    public void testIterator9() {
         List<Message> msgs=createMessages();
         MessageBatch batch=new MessageBatch(msgs);
         int index=0;

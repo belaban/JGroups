@@ -9,10 +9,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.AverageMinMax;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.Range;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -178,7 +175,9 @@ public class FRAG2 extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        for(Message msg: batch) {
+        MessageIterator it=batch.iterator();
+        while(it.hasNext()) {
+            Message msg=it.next();
             FragHeader hdr=msg.getHeader(this.id);
             if(hdr != null) { // needs to be defragmented
                 Message assembled_msg=unfragment(msg,hdr);
@@ -186,11 +185,11 @@ public class FRAG2 extends Protocol {
                     // the reassembled msg has to be add in the right place (https://issues.jboss.org/browse/JGRP-1648),
                     // and canot be added to the tail of the batch !
                     assembled_msg.setSrc(batch.sender());
-                    batch.replace(msg, assembled_msg);
-                    avg_size_up.add(assembled_msg.length());
+                    it.replace(assembled_msg);
+                    avg_size_up.add(assembled_msg.getLength());
                 }
                 else
-                    batch.remove(msg);
+                    it.remove();
             }
         }
         if(!batch.isEmpty())

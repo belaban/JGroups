@@ -379,7 +379,7 @@ public class MessageBatch implements Iterable<Message> {
 
 
     /** Iterator which iterates only over non-null messages, skipping null messages */
-    public Iterator<Message> iterator() {
+    public MessageIterator iterator() {
         return new BatchIterator(index);
     }
 
@@ -432,7 +432,7 @@ public class MessageBatch implements Iterable<Message> {
 
 
     /** Iterates over <em>non-null</em> elements of a batch, skipping null elements */
-    protected class BatchIterator implements Iterator<Message> {
+    protected class BatchIterator implements MessageIterator {
         protected int       current_index=-1;
         protected final int saved_index; // index at creation time of the iterator
 
@@ -454,8 +454,12 @@ public class MessageBatch implements Iterable<Message> {
         }
 
         public void remove() {
+            replace(null);
+        }
+
+        @Override public void replace(Message msg) {
             if(current_index >= 0)
-                messages[current_index]=null;
+                messages[current_index]=msg;
         }
     }
 

@@ -263,10 +263,11 @@ public class STABLE extends Protocol {
 
     public void up(MessageBatch batch) {
         StableHeader hdr;
-
-        for(Message msg: batch) { // remove and handle messages with flow control headers (STABLE_GOSSIP, STABILITY)
+        MessageIterator it=batch.iterator();
+        while(it.hasNext()) { // remove and handle messages with flow control headers (STABLE_GOSSIP, STABILITY)
+            Message msg=it.next();
             if((hdr=msg.getHeader(id)) != null) {
-                batch.remove(msg);
+                it.remove();
                 handleUpEvent(hdr, batch.sender(), readDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
             }
         }

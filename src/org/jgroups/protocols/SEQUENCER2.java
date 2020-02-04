@@ -7,10 +7,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Bits;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.Table;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -264,10 +261,12 @@ public class SEQUENCER2 extends Protocol {
     }*/
 
     public void up(MessageBatch batch) {
-        for(Message msg: batch) {
+        MessageIterator it=batch.iterator();
+        while(it.hasNext()) {
+            Message msg=it.next();
             if(msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB) || msg.getHeader(id) == null)
                 continue;
-            batch.remove(msg);
+            it.remove();
 
             // simplistic implementation
             try {

@@ -145,10 +145,12 @@ public class FORK extends Protocol {
     public void up(MessageBatch batch) {
         // Sort fork messages by fork-stack-id
         Map<String,List<Message>> map=new HashMap<>();
-        for(Message msg: batch) {
+        MessageIterator it=batch.iterator();
+        while(it.hasNext()) {
+            Message msg=it.next();
             ForkHeader hdr=msg.getHeader(id);
             if(hdr != null) {
-                batch.remove(msg);
+                it.remove();
                 List<Message> list=map.computeIfAbsent(hdr.fork_stack_id, k -> new ArrayList<>());
                 list.add(msg);
             }

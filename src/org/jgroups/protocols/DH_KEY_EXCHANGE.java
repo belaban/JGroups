@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
@@ -140,11 +141,13 @@ public class DH_KEY_EXCHANGE extends KeyExchange {
 
 
     public void up(MessageBatch batch) {
-        for(Message msg: batch) {
+        MessageIterator it=batch.iterator();
+        while(it.hasNext()) {
+            Message msg=it.next();
             DhHeader hdr=msg.getHeader(id);
             if(hdr != null) {
-                batch.remove(msg);
-                handle(hdr, msg.src());
+                it.remove();
+                handle(hdr, msg.getSrc());
             }
         }
         if(!batch.isEmpty())

@@ -9,6 +9,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Bits;
 import org.jgroups.util.Credit;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Util;
 
 import java.util.List;
@@ -386,7 +387,9 @@ public abstract class FlowControl extends Protocol {
 
     public void up(MessageBatch batch) {
         int length=0;
-        for(Message msg: batch) {
+        MessageIterator it=batch.iterator();
+        while(it.hasNext()) {
+            Message msg=it.next();
             if(msg.isFlagSet(Message.Flag.NO_FC))
                 continue;
 
@@ -399,7 +402,7 @@ public abstract class FlowControl extends Protocol {
                 continue;
 
             if(hdr != null) {
-                batch.remove(msg); // remove the message with a flow control header so it won't get passed up
+                it.remove(); // remove the message with a flow control header so it won't get passed up
                 handleUpEvent(msg,hdr);
                 continue;
             }

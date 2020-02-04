@@ -172,7 +172,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected boolean diag_enable_udp=true;
 
     @Property(description="Use a TCP socket to listen for probe requests (ignored if enable_diagnostics is false)")
-    protected boolean diag_enable_tcp=true;
+    protected boolean diag_enable_tcp;
 
     @Property(description="Multicast address for diagnostic probing. Used when diag_enable_udp is true",
               defaultValueIPv4="224.0.75.75",defaultValueIPv6="ff0e::0:75:75")

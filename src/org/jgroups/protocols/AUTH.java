@@ -12,6 +12,7 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Util;
 
 import java.util.ArrayList;
@@ -137,7 +138,9 @@ public class AUTH extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        for(Message msg: batch) {
+        MessageIterator it=batch.iterator();
+        while(it.hasNext()) {
+            Message msg=it.next();
             // If we have a join or merge request --> authenticate, else pass up
             GMS.GmsHeader gms_hdr=getGMSHeader(msg);
             if(gms_hdr != null && needsAuthentication(msg, gms_hdr)) {
@@ -145,10 +148,10 @@ public class AUTH extends Protocol {
                 if(auth_hdr == null) {
                     log.warn("%s: found GMS join or merge request from %s but no AUTH header", local_addr, batch.sender());
                     sendRejectionMessage(gms_hdr.getType(), batch.sender(), "join or merge without an AUTH header");
-                    batch.remove(msg);
+                    it.remove();
                 }
                 else if(!handleAuthHeader(gms_hdr, auth_hdr, msg)) // authentication failed
-                    batch.remove(msg);    // don't pass up
+                    it.remove();    // don't pass up
             }
         }
 

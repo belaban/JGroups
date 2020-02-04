@@ -7,6 +7,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -131,14 +132,16 @@ public class COMPRESS extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        for(Message msg: batch) {
+        MessageIterator it=batch.iterator();
+        while(it.hasNext()) {
+            Message msg=it.next();
             CompressHeader hdr=msg.getHeader(this.id);
             if(hdr != null) {
                 Message uncompressed_msg=uncompress(msg, hdr.original_size);
                 if(uncompressed_msg != null) {
                     if(log.isTraceEnabled())
                         log.trace("uncompressed %d bytes to %d bytes", msg.getLength(), uncompressed_msg.getLength());
-                    batch.replace(msg, uncompressed_msg); // replace msg in batch with uncompressed_msg
+                    it.replace(uncompressed_msg); // replace msg in batch with uncompressed_msg
                 }
             }
         }
