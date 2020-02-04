@@ -157,15 +157,17 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
     }
 
     public void up(MessageBatch batch) {
-        for(Message msg: batch) {
+        MessageIterator it=batch.iterator();
+        while(it.hasNext()) {
+            Message msg=it.next();
             if(dropMulticastMessageFromNonMember(msg)) {
-                batch.remove(msg);
+                it.remove();
                 continue;
             }
             if(skipUpMessage(msg)) {
                 try {
                     up_prot.up(msg);
-                    batch.remove(msg);
+                    it.remove();
                 }
                 catch(Throwable t) {
                     log.error("failed passing up message from %s: %s, ex=%s", msg.src(), msg.printHeaders(), t);

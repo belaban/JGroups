@@ -8,6 +8,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.ByteArray;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Util;
 
 import java.util.*;
@@ -145,16 +146,18 @@ public class FRAG extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        for(Message msg: batch) {
+        MessageIterator it=batch.iterator();
+        while(it.hasNext()) {
+            Message msg=it.next();
             FragHeader hdr=msg.getHeader(this.id);
             if(hdr != null) { // needs to be defragmented
                 Message assembled_msg=unfragment(msg, hdr);
                 if(assembled_msg != null)
                     // the reassembled msg has to be add in the right place (https://issues.jboss.org/browse/JGRP-1648),
-                    // and canot be added to the tail of the batch !
-                    batch.replace(msg, assembled_msg);
+                    // and cannot be added to the tail of the batch !
+                    it.replace(assembled_msg);
                 else
-                    batch.remove(msg);
+                    it.remove();
             }
         }
         if(!batch.isEmpty())

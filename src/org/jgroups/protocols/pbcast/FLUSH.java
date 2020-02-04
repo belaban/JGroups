@@ -493,15 +493,16 @@ public class FLUSH extends Protocol {
             up_prot.up(batch);
             return;
         }
-
-        for(Message msg: batch) {
+        MessageIterator it=batch.iterator();
+        while(it.hasNext()) {
+            Message msg=it.next();
             if(msg.getHeader(id) != null) {
-                batch.remove(msg);
+                it.remove();
                 up(msg); // let the existing code handle this
             }
             else {
                 if(msg.getDest() != null) { // skip unicast messages, process them right away
-                    batch.remove(msg);
+                    it.remove();
                     up_prot.up(msg);
                 }
             }

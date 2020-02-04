@@ -7,6 +7,7 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.ByteArray;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Util;
 
 /**
@@ -74,14 +75,16 @@ public class SERIALIZE extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        for(Message msg: batch) {
+        MessageIterator it=batch.iterator();
+        while(it.hasNext()) {
+            Message msg=it.next();
             try {
                 Message deserialized_msg=deserialize(msg);
-                batch.replace(msg, deserialized_msg);
+                it.replace(deserialized_msg);
             }
             catch(Exception e) {
                 log.error("failed deserializing message", e);
-                batch.remove(msg);
+                it.remove();
             }
         }
         if(!batch.isEmpty())
