@@ -36,7 +36,6 @@
     <class id="33" name="org.jgroups.protocols.STOMP"/>
     <class id="34" name="org.jgroups.protocols.BPING"/>
     <class id="35" name="org.jgroups.protocols.CENTRAL_LOCK"/>
-    <class id="36" name="org.jgroups.protocols.CENTRAL_EXECUTOR"/>
     <class id="37" name="org.jgroups.protocols.COUNTER"/>
     <class id="38" name="org.jgroups.protocols.MERGE3"/>
     <class id="39" name="org.jgroups.protocols.RSVP"/>

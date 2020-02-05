@@ -16,9 +16,6 @@
     <class id="11" name="org.jgroups.util.ExtendedUUID"/>
     <class id="12" name="org.jgroups.protocols.relay.SiteUUID"/>
     <class id="13" name="org.jgroups.protocols.relay.SiteMaster"/>
-    <class id="14" name="org.jgroups.protocols.Executing$Request"/>
-    <class id="15" name="org.jgroups.blocks.executor.ExecutionService$RunnableAdapter"/>
-    <class id="16" name="org.jgroups.blocks.executor.Executions$StreamableCallable"/>
     <class id="17" name="org.jgroups.util.SeqnoList"/>
     <class id="18" name="org.jgroups.AnycastAddress"/>
     <class id="20" name="org.jgroups.auth.FixedMembershipToken"/>
@@ -51,7 +48,6 @@
     <class id="70"  name="org.jgroups.protocols.RELAY$RelayHeader"/>
     <class id="71"  name="org.jgroups.protocols.STOMP$StompHeader"/>
     <class id="72"  name="org.jgroups.protocols.Locking$LockingHeader"/>
-    <class id="73"  name="org.jgroups.protocols.Executing$ExecutorHeader"/>
     <class id="74"  name="org.jgroups.protocols.COUNTER$CounterHeader"/>
     <class id="75"  name="org.jgroups.protocols.MERGE3$MergeHeader"/>
     <class id="76"  name="org.jgroups.protocols.RSVP$RsvpHeader"/>

@@ -2129,18 +2129,6 @@ ${CENTRAL_LOCK2}
 
 
 
-[[CENTRAL_EXECUTOR]]
-
-
-==== CENTRAL_EXECUTOR
-
-CENTRAL_EXECUTOR is an implementation of Executing which is needed by the ExecutionService.
-            
-
-${Executing}
-
-${CENTRAL_EXECUTOR}
-
 [[COUNTER]]
 
 
