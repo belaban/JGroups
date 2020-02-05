@@ -106,7 +106,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     protected final Set<Address>     suspected_mbrs=new ConcurrentSkipListSet<>();
 
-    protected final List<Address>    pingable_mbrs=Collections.synchronizedList(new ArrayList<>());
+    protected final List<Address>    pingable_mbrs=new ArrayList<>();
 
     protected volatile boolean srv_sock_sent; // has own socket been broadcast yet ?
     /** Used to rendezvous on GET_CACHE and GET_CACHE_RSP */
@@ -145,7 +145,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     @ManagedAttribute(description="List of cluster members")
     public String getMembers() {return Util.printListWithDelimiter(members, ",");}
     @ManagedAttribute(description="List of pingable members of a cluster")
-    public String getPingableMembers() {return pingable_mbrs.toString();}
+    public String getPingableMembers() {return printPingableMembers();}
     @ManagedAttribute(description="List of currently suspected members")
     public String getSuspectedMembers() {return suspected_mbrs.toString();}
     @ManagedAttribute(description="The number of currently suspected members")
@@ -215,7 +215,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     public void stop() {
         shuttin_down=true;
-        pingable_mbrs.clear();
+        resetPingableMembers(null);
         stopPingerThread();
         stopServerSocket(true); // graceful close
         bcast_task.removeAll();
@@ -352,13 +352,11 @@ public class FD_SOCK extends Protocol implements Runnable {
             case Event.VIEW_CHANGE:
                 View v=evt.getArg();
                 final List<Address> new_mbrs=v.getMembers();
-
                 members=new_mbrs;  // volatile write will ensure all reads after this see the new membership
                 suspected_mbrs.retainAll(new_mbrs);
                 cache.keySet().retainAll(new_mbrs); // remove all entries in 'cache' which are not in the new membership
                 bcast_task.adjustSuspectedMembers(new_mbrs);
-                pingable_mbrs.clear();
-                pingable_mbrs.addAll(new_mbrs);
+                resetPingableMembers(new_mbrs);
                 if(new_mbrs.size() > 1) {
                     Address tmp_ping_dest=determinePingDest();
                     boolean hasNewPingDest = tmp_ping_dest != null && !tmp_ping_dest.equals(ping_dest);
@@ -403,12 +401,12 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
 
         log.trace("%s: pinger_thread started", local_addr);
-        while(pingable_mbrs != null && !pingable_mbrs.isEmpty()) {
+        while(hasPingableMembers()) {
             regular_sock_close=false;
             ping_dest=determinePingDest(); // gets the neighbor to our right
             if(ping_dest == null || !isPingerThreadRunning())
                 break;
-            log.debug("%s: pingable_mbrs=%s, ping_dest=%s", local_addr, pingable_mbrs, ping_dest);
+            log.debug("%s: pingable_mbrs=%s, ping_dest=%s", local_addr, printPingableMembers(), ping_dest);
 
             IpAddress ping_addr=fetchPingAddress(ping_dest);
             if(ping_addr == null) {
@@ -420,7 +418,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             if(!setupPingSocket(ping_addr) && isPingerThreadRunning()) {
                 // log.debug("%s: failed connecting to to %s", local_addr, ping_dest);
                 broadcastSuspectMessage(ping_dest);
-                pingable_mbrs.remove(ping_dest);
+                removeFromPingableMembers(ping_dest);
                 continue;
             }
 
@@ -433,7 +431,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     switch(c) {
                         case NORMAL_TERMINATION:
                             log.debug("%s: %s closed socket gracefully", local_addr, ping_dest);
-                            pingable_mbrs.remove(ping_dest);
+                            removeFromPingableMembers(ping_dest);
                             break;
                         case ABNORMAL_TERMINATION: // -1 means EOF
                             handleSocketClose(null);
@@ -457,10 +455,33 @@ public class FD_SOCK extends Protocol implements Runnable {
         return pinger_thread != null;
     }
 
+    protected void resetPingableMembers(Collection<Address> new_mbrs) {
+        synchronized(pingable_mbrs) {
+            pingable_mbrs.clear();
+            if(new_mbrs != null)
+                pingable_mbrs.addAll(new_mbrs);
+        }
+    }
 
+    protected boolean hasPingableMembers() {
+        synchronized(pingable_mbrs) {
+            return !pingable_mbrs.isEmpty();
+        }
+    }
 
+    protected boolean removeFromPingableMembers(Address mbr) {
+        if(mbr == null)
+            return false;
+        synchronized(pingable_mbrs) {
+            return pingable_mbrs.remove(mbr);
+        }
+    }
 
-    /* ----------------------------------- Private Methods -------------------------------------- */
+    protected String printPingableMembers() {
+        synchronized(pingable_mbrs) {
+            return pingable_mbrs.toString();
+        }
+    }
 
 
     protected void suspect(Set<Address> suspects) {
@@ -494,7 +515,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         if(!regular_sock_close) { // only suspect if socket was not closed regularly (by interruptPingerThread())
             log.debug("%s: %s closed socket (%s)", local_addr, ping_dest, (ex != null ? ex.toString() : "eof"));
             broadcastSuspectMessage(ping_dest);
-            pingable_mbrs.remove(ping_dest);
+            removeFromPingableMembers(ping_dest);
         }
         else {
             log.debug("%s: socket to %s was closed gracefully", local_addr, ping_dest);
@@ -757,9 +778,12 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     protected Address determinePingDest() {
-        if(pingable_mbrs == null || local_addr == null)
+        if(local_addr == null)
             return null;
-        Address next=Util.pickNext(pingable_mbrs, local_addr);
+        Address next;
+        synchronized(pingable_mbrs) {
+            next=Util.pickNext(pingable_mbrs, local_addr);
+        }
         return Objects.equals(local_addr, next) ? null : next;
     }
 
@@ -822,9 +846,6 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
 
-
-
-    /* ------------------------------- End of Private Methods ------------------------------------ */
 
 
     public static class FdHeader extends Header {
