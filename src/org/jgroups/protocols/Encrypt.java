@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -186,17 +185,33 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
                       local_addr, batch.dest() == null? "mcast" : "unicast", batch.sender());
             return;
         }
-        BlockingQueue<Cipher> cipherQueue = decoding_ciphers;
+        BlockingQueue<Cipher> cipherQueue=decoding_ciphers;
         if(cipherQueue == null)
             return;
+        Cipher cipher=null;
         try {
-            Cipher cipher=cipherQueue.take();
-            try {
-                BiConsumer<Message,MessageBatch> decrypter=new Decrypter(cipher);
-                batch.forEach(decrypter);
-            }
-            finally {
-                cipherQueue.offer(cipher);
+            cipher=cipherQueue.take();
+            MessageIterator it=batch.iterator();
+            while(it.hasNext()) {
+                Message msg=it.next();
+                if(msg.getHeader(id) == null) {
+                    log.error("%s: received message without encrypt header from %s; dropping it",
+                              local_addr, batch.sender());
+                    it.remove(); // remove from batch to prevent passing the message further up as part of the batch
+                    continue;
+                }
+                try {
+                    Message tmpMsg=decrypt(cipher, msg.copy(true, true)); // need to copy for possible xmits
+                    if(tmpMsg != null)
+                        it.replace(tmpMsg);
+                    else
+                        it.remove();
+                }
+                catch(Exception e) {
+                    log.error("%s: failed decrypting message from %s (offset=%d, length=%d, buf.length=%d): %s, headers are %s",
+                              local_addr, msg.getSrc(), msg.getOffset(), msg.getLength(), msg.getArray().length, e, msg.printHeaders());
+                    it.remove();
+                }
             }
         }
         catch(InterruptedException e) {
@@ -205,6 +220,10 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             // in the batch might make it up the stack, bypassing decryption! This is not an issue because encryption
             // is below NAKACK2 or UNICAST3, so messages will get retransmitted
             return;
+        }
+        finally {
+            if(cipher != null)
+                cipherQueue.offer(cipher);
         }
         if(!batch.isEmpty())
             up_prot.up(batch);
@@ -361,35 +380,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         if (modeAndPadding == null || modeAndPadding.isEmpty())
             return null;
         return modeAndPadding;
-    }
-
-    /** Decrypts all messages in a batch, replacing encrypted messages in-place with their decrypted versions */
-    protected class Decrypter implements BiConsumer<Message,MessageBatch> {
-        protected final Cipher cipher;
-
-        public Decrypter(Cipher cipher) {
-            this.cipher=cipher;
-        }
-
-        public void accept(Message msg, MessageBatch batch) {
-            if(msg.getHeader(id) == null) {
-                log.error("%s: received message without encrypt header from %s; dropping it", local_addr, batch.sender());
-                batch.remove(msg); // remove from batch to prevent passing the message further up as part of the batch
-                return;
-            }
-            try {
-                Message tmpMsg=decrypt(cipher, msg.copy(true, true)); // need to copy for possible xmits
-                if(tmpMsg != null)
-                    batch.replace(msg, tmpMsg);
-                else
-                    batch.remove(msg);
-            }
-            catch(Exception e) {
-                log.error("%s: failed decrypting message from %s (offset=%d, length=%d, buf.length=%d): %s, headers are %s",
-                          local_addr, msg.getSrc(), msg.getOffset(), msg.getLength(), msg.getArray().length, e, msg.printHeaders());
-                batch.remove(msg);
-            }
-        }
     }
 
 }
