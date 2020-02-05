@@ -380,7 +380,12 @@ public class MessageBatch implements Iterable<Message> {
 
     /** Iterator which iterates only over non-null messages, skipping null messages */
     public MessageIterator iterator() {
-        return new BatchIterator(index);
+        return new BatchIterator(index, null);
+    }
+
+    /** Iterates over all non-null message which match filter */
+    public MessageIterator iteratorWithFilter(Predicate<Message> filter) {
+        return new BatchIterator(index, filter);
     }
 
     public Stream<Message> stream() {
@@ -433,16 +438,18 @@ public class MessageBatch implements Iterable<Message> {
 
     /** Iterates over <em>non-null</em> elements of a batch, skipping null elements */
     protected class BatchIterator implements MessageIterator {
-        protected int       current_index=-1;
-        protected final int saved_index; // index at creation time of the iterator
+        protected int                      current_index=-1;
+        protected final int                saved_index; // index at creation time of the iterator
+        protected final Predicate<Message> filter;
 
-        public BatchIterator(int saved_index) {
+        public BatchIterator(int saved_index, Predicate<Message> filter) {
             this.saved_index=saved_index;
+            this.filter=filter;
         }
 
         public boolean hasNext() {
-            // skip null elements
-            while(current_index +1 < saved_index && messages[current_index+1] == null)
+            // skip null msgs or msgs that don't match the filter (if set)
+            while(current_index +1 < saved_index && nullOrNoFilterMatch(current_index+1))
                 current_index++;
             return current_index +1 < saved_index;
         }
@@ -460,6 +467,11 @@ public class MessageBatch implements Iterable<Message> {
         @Override public void replace(Message msg) {
             if(current_index >= 0)
                 messages[current_index]=msg;
+        }
+
+        protected boolean nullOrNoFilterMatch(int index) {
+            return messages[index] == null ||
+              (filter != null && filter.test(messages[index]) == false);
         }
     }
 

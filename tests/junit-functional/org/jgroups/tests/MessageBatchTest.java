@@ -452,7 +452,7 @@ public class MessageBatchTest {
         List<Message> list=batch.stream().collect(Collectors.toList());
         assert list.size() == batch.size();
 
-        int total_size=batch.stream().map(Message::getLength).reduce(0, (l, r) -> l+r);
+        int total_size=batch.stream().map(Message::getLength).reduce(0, Integer::sum);
         assert total_size == 0;
 
         List<Integer> msg_sizes=batch.stream().map(Message::size).collect(Collectors.toList());
@@ -628,6 +628,27 @@ public class MessageBatchTest {
         System.out.println("batch = " + batch);
         assert count == msgs.size() : "the added messages should *not* have been included";
 
+    }
+
+    public void testIteratorWithFilter() {
+        List<Message> msgs=createMessages();
+        MessageBatch batch=new MessageBatch(msgs);
+        int count=0;
+
+        MessageIterator it=batch.iteratorWithFilter(m -> m.getHeader(PING_ID) != null);
+        while(it.hasNext()) {
+            it.next();
+            count++;
+        }
+        assert count == 1;
+
+        count=0;
+        it=batch.iteratorWithFilter(m -> m.getHeader(UNICAST3_ID) != null);
+        while(it.hasNext()) {
+            it.next();
+            count++;
+        }
+        assert count == 10;
     }
 
     public void testForEach() {

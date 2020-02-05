@@ -14,7 +14,7 @@ import org.jgroups.util.Util;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import java.util.function.Predicate;
 
 
 /**
@@ -55,8 +55,7 @@ public class FRAG extends Protocol {
     protected final AtomicInteger      curr_id=new AtomicInteger(1);
     protected final List<Address>      members=new ArrayList<>(11);
     protected MessageFactory           msg_factory;
-    
-    
+    protected final Predicate<Message> HAS_FRAG_HEADER=msg -> msg.getHeader(id) != null;
  
 
     @ManagedAttribute(description="Number of sent messages")
@@ -146,19 +145,17 @@ public class FRAG extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        MessageIterator it=batch.iterator();
+        MessageIterator it=batch.iteratorWithFilter(HAS_FRAG_HEADER);
         while(it.hasNext()) {
             Message msg=it.next();
             FragHeader hdr=msg.getHeader(this.id);
-            if(hdr != null) { // needs to be defragmented
-                Message assembled_msg=unfragment(msg, hdr);
-                if(assembled_msg != null)
-                    // the reassembled msg has to be add in the right place (https://issues.jboss.org/browse/JGRP-1648),
-                    // and cannot be added to the tail of the batch !
-                    it.replace(assembled_msg);
-                else
-                    it.remove();
-            }
+            Message assembled_msg=unfragment(msg, hdr);
+            if(assembled_msg != null)
+                // the reassembled msg has to be add in the right place (https://issues.jboss.org/browse/JGRP-1648),
+                // and cannot be added at the tail of the batch!
+                it.replace(assembled_msg);
+            else
+                it.remove();
         }
         if(!batch.isEmpty())
             up_prot.up(batch);

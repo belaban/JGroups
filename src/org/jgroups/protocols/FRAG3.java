@@ -8,12 +8,16 @@ import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 
 
 /**
@@ -48,6 +52,8 @@ public class FRAG3 extends Protocol {
      *this way it becomes easier to clean up if a sender (member) leaves or crashes
      */
     protected final ConcurrentMap<Address,ConcurrentMap<Integer,FragEntry>> fragment_list=Util.createConcurrentMap(11);
+
+    protected final Predicate<Message> HAS_FRAG_HEADER=msg -> msg.getHeader(id) != null;
 
     // Used to assign fragmentation-specific sequence IDs (monotonically increasing)
     protected final AtomicInteger curr_id=new AtomicInteger(1);
@@ -162,22 +168,20 @@ public class FRAG3 extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        MessageIterator it=batch.iterator();
+        MessageIterator it=batch.iteratorWithFilter(HAS_FRAG_HEADER);
         while(it.hasNext()) {
             Message msg=it.next();
             Frag3Header hdr=msg.getHeader(this.id);
-            if(hdr != null) { // needs to be defragmented
-                Message assembled_msg=unfragment(msg, hdr);
-                if(assembled_msg != null) {
-                    // the reassembled msg has to be add in the right place (https://issues.jboss.org/browse/JGRP-1648),
-                    // and canot be added to the tail of the batch !
-                    assembled_msg.setSrc(batch.sender());
-                    it.replace(assembled_msg);
-                    avg_size_up.add(assembled_msg.getLength());
-                }
-                else
-                    it.remove();
+            Message assembled_msg=unfragment(msg, hdr);
+            if(assembled_msg != null) {
+                // the reassembled msg has to be add in the right place (https://issues.jboss.org/browse/JGRP-1648),
+                // and canot be added to the tail of the batch !
+                assembled_msg.setSrc(batch.sender());
+                it.replace(assembled_msg);
+                avg_size_up.add(assembled_msg.getLength());
             }
+            else
+                it.remove();
         }
         if(!batch.isEmpty())
             up_prot.up(batch);

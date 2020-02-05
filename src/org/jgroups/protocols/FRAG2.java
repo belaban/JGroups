@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 
 
 /**
@@ -56,6 +57,8 @@ public class FRAG2 extends Protocol {
      *this way it becomes easier to clean up if a sender (member) leaves or crashes
      */
     protected final ConcurrentMap<Address,ConcurrentMap<Long,FragEntry>> fragment_list=Util.createConcurrentMap(11);
+
+    protected final Predicate<Message> HAS_FRAG_HEADER=msg -> msg.getHeader(id) != null;
 
     /** Used to assign fragmentation-specific sequence IDs (monotonically increasing) */
     protected int                 curr_id=1;
@@ -176,22 +179,20 @@ public class FRAG2 extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        MessageIterator it=batch.iterator();
+        MessageIterator it=batch.iteratorWithFilter(HAS_FRAG_HEADER);
         while(it.hasNext()) {
             Message msg=it.next();
             FragHeader hdr=msg.getHeader(this.id);
-            if(hdr != null) { // needs to be defragmented
-                Message assembled_msg=unfragment(msg, hdr);
-                if(assembled_msg != null) {
-                    // the reassembled msg has to be add in the right place (https://issues.jboss.org/browse/JGRP-1648),
-                    // and cannot be added to the tail of the batch !
-                    assembled_msg.setSrc(batch.sender());
-                    it.replace(assembled_msg);
-                    avg_size_up.add(assembled_msg.getLength());
-                }
-                else
-                    it.remove();
+            Message assembled_msg=unfragment(msg, hdr);
+            if(assembled_msg != null) {
+                // the reassembled msg has to be add in the right place (https://issues.jboss.org/browse/JGRP-1648),
+                // and cannot be added to the tail of the batch!
+                assembled_msg.setSrc(batch.sender());
+                it.replace(assembled_msg);
+                avg_size_up.add(assembled_msg.getLength());
             }
+            else
+                it.remove();
         }
         if(!batch.isEmpty())
             up_prot.up(batch);
