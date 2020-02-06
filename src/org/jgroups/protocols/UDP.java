@@ -82,16 +82,16 @@ public class UDP extends TP {
     @Property(description="The time-to-live (TTL) for multicast datagram packets. Default is 8",systemProperty=Global.UDP_IP_TTL)
     protected int ip_ttl=8;
 
-    @Property(description="Send buffer size of the multicast datagram socket. Default is 100'000 bytes")
+    @Property(description="Send buffer size of the multicast datagram socket")
     protected int mcast_send_buf_size;
 
-    @Property(description="Receive buffer size of the multicast datagram socket. Default is 500'000 bytes")
+    @Property(description="Receive buffer size of the multicast datagram socket")
     protected int mcast_recv_buf_size;
 
-    @Property(description="Send buffer size of the unicast datagram socket. Default is 100'000 bytes")
+    @Property(description="Send buffer size of the unicast datagram socket")
     protected int ucast_send_buf_size;
 
-    @Property(description="Receive buffer size of the unicast datagram socket. Default is 64'000 bytes")
+    @Property(description="Receive buffer size of the unicast datagram socket")
     protected int ucast_recv_buf_size;
 
     @Property(description="If true, disables IP_MULTICAST_LOOP on the MulticastSocket (for sending and receiving of " +
@@ -552,11 +552,21 @@ public class UDP extends TP {
 
 
     void setBufferSizes() {
-        if(sock != null)
+        if(sock != null) {
             setBufferSize(sock, ucast_send_buf_size, ucast_recv_buf_size);
+            if(ucast_send_buf_size <= 0)
+                ucast_send_buf_size=getBufferSize(sock, true);
+            if(ucast_recv_buf_size <= 0)
+                ucast_recv_buf_size=getBufferSize(sock, false);
+        }
 
-        if(mcast_sock != null)
+        if(mcast_sock != null) {
             setBufferSize(mcast_sock, mcast_send_buf_size, mcast_recv_buf_size);
+            if(mcast_send_buf_size <= 0)
+                mcast_send_buf_size=getBufferSize(mcast_sock, true);
+            if(mcast_recv_buf_size <= 0)
+                mcast_recv_buf_size=getBufferSize(mcast_sock, false);
+        }
     }
 
     protected void setBufferSize(DatagramSocket sock, int send_buf_size, int recv_buf_size) {
@@ -573,7 +583,6 @@ public class UDP extends TP {
                 log.warn(Util.getMessage("BufferSizeFailed"), "send", send_buf_size, sock, ex);
             }
         }
-
         if(recv_buf_size > 0) {
             try {
                 sock.setReceiveBufferSize(recv_buf_size);
@@ -583,13 +592,20 @@ public class UDP extends TP {
                              Util.printBytes(recv_buf_size), Util.printBytes(actual_size));
                 }
             }
-            catch(Throwable ex) {
+            catch(Throwable ex){
                 log.warn(Util.getMessage("BufferSizeFailed"), "receive", recv_buf_size, sock, ex);
             }
         }
     }
 
-
+    protected static int getBufferSize(DatagramSocket s, boolean send) {
+        try {
+            return send? s.getSendBufferSize() : s.getReceiveBufferSize();
+        }
+        catch(SocketException e) {
+            return 0;
+        }
+    }
 
     void closeMulticastSocket() {
         if(mcast_sock != null) {
