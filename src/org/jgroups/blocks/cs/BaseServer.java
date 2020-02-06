@@ -47,9 +47,9 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     @ManagedAttribute(description="Time (ms) after which an idle connection is closed. 0 disables connection reaping",writable=true)
     protected long                            conn_expire_time;  // ns
     @ManagedAttribute(description="Size (bytes) of the receive channel/socket",writable=true)
-    protected int                             recv_buf_size=120000;
+    protected int                             recv_buf_size;
     @ManagedAttribute(description="Size (bytes) of the send channel/socket",writable=true)
-    protected int                             send_buf_size=60000;
+    protected int                             send_buf_size;
 
     @ManagedAttribute(description="When A connects to B, B reuses the same TCP connection to send data to A")
     protected boolean                         use_peer_connections;
