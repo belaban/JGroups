@@ -31,11 +31,11 @@ public abstract class BasicTCP extends TP implements Receiver {
     protected long        conn_expire_time=0; // max time a conn can be idle before being reaped
 
     @Property(description="Receiver buffer size in bytes")
-    protected int         recv_buf_size=150000;
-    
+    protected int         recv_buf_size;
+
     @Property(description="Send buffer size in bytes")
-    protected int         send_buf_size=150000;
-    
+    protected int         send_buf_size;
+
     @Property(description="Max time allowed for a socket creation in connection table")
     protected int         sock_conn_timeout=2000; // max time in millis for a socket creation in connection table
     

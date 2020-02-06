@@ -181,13 +181,15 @@ public class TcpConnection extends Connection {
 
     protected void setSocketParameters(Socket client_sock) throws SocketException {
         try {
-            client_sock.setSendBufferSize(server.send_buf_size);
+            if(server.send_buf_size > 0)
+                client_sock.setSendBufferSize(server.send_buf_size);
         }
         catch(IllegalArgumentException ex) {
             server.log.error("%s: exception setting send buffer to %d bytes: %s", server.local_addr, server.send_buf_size, ex);
         }
         try {
-            client_sock.setReceiveBufferSize(server.recv_buf_size);
+            if(server.recv_buf_size > 0)
+                client_sock.setReceiveBufferSize(server.recv_buf_size);
         }
         catch(IllegalArgumentException ex) {
             server.log.error("%s: exception setting receive buffer to %d bytes: %s", server.local_addr, server.recv_buf_size, ex);

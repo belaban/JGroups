@@ -171,8 +171,10 @@ public class SimpleTCP extends TP {
         if(conn != null)
             return conn;
         Socket dest_sock=new Socket();
-        dest_sock.setSendBufferSize(send_buf_size);
-        dest_sock.setReceiveBufferSize(recv_buf_size);
+        if(send_buf_size > 0)
+            dest_sock.setSendBufferSize(send_buf_size);
+        if(recv_buf_size > 0)
+            dest_sock.setReceiveBufferSize(recv_buf_size);
         dest_sock.connect(dest);
 
         Connection c=connections.putIfAbsent(dest, conn=new Connection(dest_sock).start());
@@ -219,8 +221,10 @@ public class SimpleTCP extends TP {
         public void run() {
             try {
                 Socket client_sock=srv_sock.accept();
-                client_sock.setSendBufferSize(send_buf_size);
-                client_sock.setReceiveBufferSize(recv_buf_size);
+                if(send_buf_size > 0)
+                    client_sock.setSendBufferSize(send_buf_size);
+                if(recv_buf_size > 0)
+                    client_sock.setReceiveBufferSize(recv_buf_size);
                 Connection c;
                 Connection existing=connections.putIfAbsent(client_sock.getRemoteSocketAddress(),
                                                             c=new Connection(client_sock).start());

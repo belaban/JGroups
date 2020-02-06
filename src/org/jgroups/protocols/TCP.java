@@ -91,8 +91,6 @@ public class TCP extends BasicTCP {
         server=new TcpServer(getThreadFactory(), getSocketFactory(), bind_addr, bind_port, bind_port+port_range, external_addr, external_port);
         server.receiver(this)
           .timeService(time_service)
-          .receiveBufferSize(recv_buf_size)
-          .sendBufferSize(send_buf_size)
           .socketConnectionTimeout(sock_conn_timeout)
           .tcpNodelay(tcp_nodelay).linger(linger)
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
@@ -101,6 +99,11 @@ public class TCP extends BasicTCP {
           .peerAddressReadTimeout(peer_addr_read_timeout)
           .usePeerConnections(true)
           .socketFactory(getSocketFactory());
+
+        if(send_buf_size > 0)
+            server.sendBufferSize(send_buf_size);
+        if(recv_buf_size > 0)
+            server.receiveBufferSize(recv_buf_size);
 
         if(reaper_interval > 0 || conn_expire_time > 0) {
             if(reaper_interval == 0) {

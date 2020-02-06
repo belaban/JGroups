@@ -304,13 +304,15 @@ public class NioConnection extends Connection {
 
     protected void setSocketParameters(Socket client_sock) throws SocketException {
         try {
-            client_sock.setSendBufferSize(server.sendBufferSize());
+            if(server.sendBufferSize() > 0)
+                client_sock.setSendBufferSize(server.sendBufferSize());
         }
         catch(IllegalArgumentException ex) {
             server.log().error("%s: exception setting send buffer to %d bytes: %s", server.localAddress(), server.sendBufferSize(), ex);
         }
         try {
-            client_sock.setReceiveBufferSize(server.receiveBufferSize());
+            if(server.receiveBufferSize() > 0)
+                client_sock.setReceiveBufferSize(server.receiveBufferSize());
         }
         catch(IllegalArgumentException ex) {
             server.log().error("%s: exception setting receive buffer to %d bytes: %s", server.localAddress(), server.receiveBufferSize(), ex);
