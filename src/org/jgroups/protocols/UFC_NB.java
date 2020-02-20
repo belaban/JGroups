@@ -34,17 +34,17 @@ public class UFC_NB extends UFC {
 
     @ManagedAttribute(description="The number of messages currently queued due to insufficient credit")
     public int getNumberOfQueuedMessages() {
-        return sent.values().stream().map(c -> ((NonBlockingCredit)c).getQueuedMessages()).reduce(0, (l,r) -> l+r);
+        return sent.values().stream().map(c -> ((NonBlockingCredit)c).getQueuedMessages()).reduce(0, Integer::sum);
     }
 
     @ManagedAttribute(description="The total size of all currently queued messages for all destinations")
     public int getQueuedSize() {
-        return sent.values().stream().map(c -> ((NonBlockingCredit)c).getQueuedMessageSize()).reduce(0, (l,r) -> l+r);
+        return sent.values().stream().map(c -> ((NonBlockingCredit)c).getQueuedMessageSize()).reduce(0, Integer::sum);
     }
 
     @ManagedAttribute(description="The number of times messages have been queued due to insufficient credits")
     public int getNumberOfQueuings() {
-        return sent.values().stream().map(c -> ((NonBlockingCredit)c).getEnqueuedMessages()).reduce(0, (l,r) -> l+r);
+        return sent.values().stream().map(c -> ((NonBlockingCredit)c).getEnqueuedMessages()).reduce(0, Integer::sum);
     }
 
     public boolean isQueuingTo(Address dest) {
@@ -83,7 +83,7 @@ public class UFC_NB extends UFC {
             return down_prot.down(msg);
 
         int length=msg.length();
-        if(running) {
+        if(running && sent.containsKey(dest)) {
             if(cred.decrementIfEnoughCredits(msg, length, 0)) // timeout is ignored
                 return down_prot.down(msg);
             if(cred.needToSendCreditRequest(max_block_time))

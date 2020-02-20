@@ -5,7 +5,9 @@ import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Tests {@link org.jgroups.util.SizeBoundedQueue}
@@ -27,7 +29,7 @@ public class SizeBoundedQueueTest {
         System.out.println("queue = " + queue);
         assert queue.size() == 7000;
         assert queue.getElements() == 3;
-        queue.clear();
+        queue.clear(false);
         queue.add("four", 0); // empty element
         assert queue.getElements() == 1 && queue.isEmpty();
     }
@@ -92,14 +94,48 @@ public class SizeBoundedQueueTest {
         assert queue.isEmpty();
     }
 
+    public void testMultipleAddersAndClear() throws TimeoutException {
+        SizeBoundedQueue<String> queue=new SizeBoundedQueue<>(1000);
+        Thread[] adders=new Thread[4];
+        for(int i=0; i < adders.length; i++) {
+            adders[i]=new Thread(() -> {
+                try {
+                    queue.add(String.valueOf(Thread.currentThread().getId()), 1024);
+                }
+                catch(InterruptedException e) {
+                    System.out.printf("Thread %d was interrupted\n", Thread.currentThread().getId());
+                }
+            });
+        }
+
+        for(Thread adder: adders)
+            adder.start();
+        Util.waitUntil(10000, 500, () -> Arrays.stream(adders).allMatch(t -> t.getState() == Thread.State.WAITING));
+
+        queue.clear(true);
+        Util.waitUntil(10000, 500, () -> Arrays.stream(adders).allMatch(t -> t.getState() == Thread.State.TERMINATED));
+        assert queue.isEmpty() && queue.isDone();
+    }
+
+
     public void testClear() throws InterruptedException {
         SizeBoundedQueue<String> queue=new SizeBoundedQueue<>(7000);
         queue.add("one", 1000);
         queue.add("two", 3000);
         queue.add("three", 3000);
-        queue.clear();
+        queue.clear(false);
         assert queue.isEmpty() && queue.getElements() == 0;
     }
+
+    public void testClear2() throws InterruptedException {
+        SizeBoundedQueue<String> queue=new SizeBoundedQueue<>(7000);
+        queue.add("one", 1000);
+        queue.add("two", 3000);
+        queue.add("three", 3000);
+        queue.clear(true);
+        assert queue.isEmpty() && queue.getElements() == 0 && queue.isDone();
+    }
+
 
     public void testDrainAll() throws InterruptedException {
         SizeBoundedQueue<String> queue=new SizeBoundedQueue<>(7000);
@@ -192,8 +228,8 @@ public class SizeBoundedQueueTest {
     }
 
 
-    protected void waitersOnQueue(final SizeBoundedQueue<Integer> queue, int initial_adds, int num_adders, int element_size,
-                                  int max_drain_size, int expected_drained) throws InterruptedException {
+    protected static void waitersOnQueue(SizeBoundedQueue<Integer> queue, int initial_adds, int num_adders, int element_size,
+                                         int max_drain_size, int expected_drained) throws InterruptedException {
         int total_adds=initial_adds + num_adders;
         for(int i=1; i <= initial_adds; i++)
             queue.add(i, element_size);

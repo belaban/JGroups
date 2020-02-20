@@ -8,8 +8,11 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 /**
  * Tests CreditMap
@@ -123,6 +126,102 @@ public class CreditMapTest {
 
         assert map.getMinCredits() == 300;
     }
+
+    /** Multiple threads block on credits from B, then B is removed. All threads should be unblocked */
+    public void testDecrementAndRemoveOne() throws TimeoutException {
+        addAll();
+        boolean rc=map.decrement(null, 1000, 100);
+        assert rc;
+        System.out.println("map = " + map);
+
+        for(Address addr: Arrays.asList(a,c,d))
+            map.replenish(addr, 1000);
+        Thread[] threads=new Thread[10];
+        for(int i=0; i < threads.length; i++) {
+            threads[i]=new Thread(()-> map.decrement(null, 100, 20000));
+            threads[i].start();
+        }
+
+        Util.waitUntil(10000, 500,
+                       () -> Arrays.stream(threads).allMatch(t -> t.getState() == Thread.State.TIMED_WAITING),
+                       () -> "threads:\n" + Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+                         .collect(Collectors.joining("\n")));
+        System.out.printf("threads:\n%s\n", Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+          .collect(Collectors.joining("\n")));
+
+        map.remove(b);
+        Util.waitUntil(10000, 500,
+                       () -> Arrays.stream(threads).allMatch(t -> t.getState() == Thread.State.TERMINATED),
+                       () -> "threads:\n" + Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+                         .collect(Collectors.joining("\n")));
+        System.out.printf("threads:\n%s\n", Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+          .collect(Collectors.joining("\n")));
+    }
+
+    /** Multiple threads block on credits from B, then the CreditMap is cleared. All threads should be unblocked */
+    public void testDecrementAndClear() throws TimeoutException {
+        addAll();
+        boolean rc=map.decrement(null, 1000, 100);
+        assert rc;
+        System.out.println("map = " + map);
+
+        for(Address addr: Arrays.asList(a,c,d))
+            map.replenish(addr, 1000);
+        Thread[] threads=new Thread[10];
+        for(int i=0; i < threads.length; i++) {
+            threads[i]=new Thread(()-> map.decrement(null, 1500, 60000));
+            threads[i].start();
+        }
+
+        Util.waitUntil(10000, 500,
+                       () -> Arrays.stream(threads).allMatch(t -> t.getState() == Thread.State.TIMED_WAITING),
+                       () -> "threads:\n" + Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+                         .collect(Collectors.joining("\n")));
+        System.out.printf("threads:\n%s\n", Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+          .collect(Collectors.joining("\n")));
+
+        map.clear();
+        Util.waitUntil(10000, 500,
+                       () -> Arrays.stream(threads).allMatch(t -> t.getState() == Thread.State.TERMINATED),
+                       () -> "threads:\n" + Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+                         .collect(Collectors.joining("\n")));
+        System.out.printf("threads:\n%s\n", Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+          .collect(Collectors.joining("\n")));
+    }
+
+    /** Multiple threads block on credits from B, then the CreditMap is cleared. All threads should be unblocked */
+    public void testDecrementAndReset() throws TimeoutException {
+        addAll();
+        boolean rc=map.decrement(null, 1000, 100);
+        assert rc;
+        System.out.println("map = " + map);
+
+        for(Address addr: Arrays.asList(a,c,d))
+            map.replenish(addr, 1000);
+        Thread[] threads=new Thread[10];
+        for(int i=0; i < threads.length; i++) {
+            threads[i]=new Thread(()-> map.decrement(null, 1500, 60000));
+            threads[i].start();
+        }
+
+        Util.waitUntil(10000, 500,
+                       () -> Arrays.stream(threads).allMatch(t -> t.getState() == Thread.State.TIMED_WAITING),
+                       () -> "threads:\n" + Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+                         .collect(Collectors.joining("\n")));
+        System.out.printf("threads:\n%s\n", Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+          .collect(Collectors.joining("\n")));
+
+        map.reset();
+        Util.waitUntil(10000, 500,
+                       () -> Arrays.stream(threads).allMatch(t -> t.getState() == Thread.State.TERMINATED),
+                       () -> "threads:\n" + Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+                         .collect(Collectors.joining("\n")));
+        System.out.printf("threads:\n%s\n", Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+          .collect(Collectors.joining("\n")));
+        rc=map.decrement(null, 1000, 500);
+        assert !rc;
+    }
+
 
     public void testBlockingDecrementAndReplenishment() throws Exception {
         final CyclicBarrier barrier=new CyclicBarrier(2);
@@ -256,7 +355,7 @@ public class CreditMapTest {
     }
 
 
-    protected int countAliveThreads(Thread[] threads) {
+    protected static int countAliveThreads(Thread[] threads) {
         int alive=0;
         for(Thread thread: threads)
             if(thread.isAlive())

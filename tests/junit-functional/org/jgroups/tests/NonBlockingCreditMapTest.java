@@ -8,7 +8,9 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -67,7 +69,7 @@ public class NonBlockingCreditMapTest {
 
         new Thread(() -> {
             Util.sleep(2000);
-            System.out.printf("\n-- replenishing 5000 credits\n");
+            System.out.println("\n-- replenishing 5000 credits");
             Stream.of(a, b, c, d).forEach(c -> map.replenish(c, 5000));
         }).start();
 
@@ -83,9 +85,76 @@ public class NonBlockingCreditMapTest {
     }
 
 
+    /** Multiple threads block on credits from B, then the CreditMap is cleared. All threads should be unblocked */
+    public void testDecrementAndClear() throws TimeoutException {
+        addAll();
+        boolean rc=map.decrement(null, 10000, 100);
+        assert rc;
+        System.out.println("map = " + map);
+
+        for(Address addr: Arrays.asList(a,c,d))
+            map.replenish(addr, 1000);
+        Thread[] threads=new Thread[10];
+        for(int i=0; i < threads.length; i++) {
+            threads[i]=new Thread(()-> map.decrement(msg(65000), 65000, 60000));
+            threads[i].start();
+        }
+
+        Util.waitUntil(10000, 500,
+                       () -> Arrays.stream(threads).allMatch(t -> t.getState() == Thread.State.WAITING),
+                       () -> "threads:\n" + Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+                         .collect(Collectors.joining("\n")));
+        System.out.printf("threads:\n%s\n", Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+          .collect(Collectors.joining("\n")));
+
+        map.clear();
+        Util.waitUntil(10000, 500,
+                       () -> Arrays.stream(threads).allMatch(t -> t.getState() == Thread.State.TERMINATED),
+                       () -> "threads:\n" + Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+                         .collect(Collectors.joining("\n")));
+        System.out.printf("threads:\n%s\n", Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+          .collect(Collectors.joining("\n")));
+    }
+
+    /** Multiple threads block on credits from B, then the CreditMap is cleared. All threads should be unblocked */
+    public void testDecrementAndReset() throws TimeoutException {
+        addAll();
+        boolean rc=map.decrement(null, 10000, 100);
+        assert rc;
+        System.out.println("map = " + map);
+
+        for(Address addr: Arrays.asList(a,c,d))
+            map.replenish(addr, 1000);
+        Thread[] threads=new Thread[10];
+        for(int i=0; i < threads.length; i++) {
+            threads[i]=new Thread(()-> map.decrement(msg(65000), 65000, 60000));
+            threads[i].start();
+        }
+
+        Util.waitUntil(10000, 500,
+                       () -> Arrays.stream(threads).allMatch(t -> t.getState() == Thread.State.WAITING),
+                       () -> "threads:\n" + Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+                         .collect(Collectors.joining("\n")));
+        System.out.printf("threads:\n%s\n", Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+          .collect(Collectors.joining("\n")));
+
+        map.reset();
+        Util.waitUntil(10000, 500,
+                       () -> Arrays.stream(threads).allMatch(t -> t.getState() == Thread.State.TERMINATED),
+                       () -> "threads:\n" + Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+                         .collect(Collectors.joining("\n")));
+        System.out.printf("threads:\n%s\n", Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+          .collect(Collectors.joining("\n")));
+        rc=map.decrement(null, 1000, 500);
+        assert !rc;
+    }
+
     protected void addAll() {
         map.putIfAbsent(a); map.putIfAbsent(b); map.putIfAbsent(c); map.putIfAbsent(d);
     }
 
+    protected static Message msg(int len) {
+        return new Message(null, new byte[len]);
+    }
 
 }

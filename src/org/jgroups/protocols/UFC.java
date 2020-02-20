@@ -9,6 +9,7 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.Credit;
 import org.jgroups.util.Util;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -85,11 +86,12 @@ public class UFC extends FlowControl {
     public void stop() {
         super.stop();
         unblock();
+        sent.values().forEach(Credit::reset);
     }
 
     public void resetStats() {
         super.resetStats();
-        sent.values().forEach(Credit::reset);
+        sent.values().forEach(Credit::resetStats);
     }
 
     @Override
@@ -129,7 +131,17 @@ public class UFC extends FlowControl {
         mbrs.stream().filter(addr -> !sent.containsKey(addr)).forEach(addr -> sent.put(addr, createCredit((int)max_credits)));
 
         // remove members that left
-        sent.keySet().retainAll(mbrs);
+        Iterator<? extends Map.Entry<Address,? extends Credit>> it=sent.entrySet().iterator();
+        while(it.hasNext()) {
+            Map.Entry<Address,? extends Credit> entry=it.next();
+            Address addr=entry.getKey();
+            if(!mbrs.contains(addr)) {
+                Credit cred=entry.getValue();
+                cred.reset();
+                it.remove();
+            }
+        }
+        // sent.keySet().retainAll(mbrs);
     }
 
 

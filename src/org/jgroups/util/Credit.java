@@ -17,6 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Credit {
     protected final Lock      lock;
     protected final Condition credits_available;
+    protected boolean         done; // set to true when not using this anymore; nobody will block
     protected long            credits_left;
     protected int             num_blockings;
     protected long            last_credit_request; // ns
@@ -46,11 +47,13 @@ public class Credit {
     }
 
     public double getAverageBlockTime() {return avg_blockings.getAverage();} // in ns
-    public void   reset()               {num_blockings=0; avg_blockings.clear();}
+    public void   resetStats()          {num_blockings=0; avg_blockings.clear();}
 
     public boolean decrementIfEnoughCredits(final Message msg, int credits, long timeout) {
         lock.lock();
         try {
+            if(done)
+                return false;
             if(decrement(credits))
                 return true;
 
@@ -63,6 +66,8 @@ public class Credit {
             }
             catch(InterruptedException e) {
             }
+            if(done)
+                return false;
             num_blockings++;
             avg_blockings.add(System.nanoTime() - start);
             return decrement(credits);
@@ -89,12 +94,27 @@ public class Credit {
         }
     }
 
-
     public void increment(long credits, final long max_credits) {
         lock.lock();
         try {
             credits_left=Math.min(max_credits, credits_left + credits);
             credits_available.signalAll();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    /** Sets this credit to be done and releases all blocked threads. This is not revertable; a new credit
+     * has to be created */
+    public Credit reset() {
+        lock.lock();
+        try {
+            if(!done) {
+                done=true;
+                credits_available.signalAll();
+            }
+            return this;
         }
         finally {
             lock.unlock();

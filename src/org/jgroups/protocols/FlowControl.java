@@ -115,6 +115,8 @@ public abstract class FlowControl extends Protocol {
         this.max_credits=max_credits;
     }
 
+    public <T extends FlowControl> T maxCredits(long c) {max_credits=c; return (T)this;}
+
     public double getMinThreshold() {
         return min_threshold;
     }
@@ -139,6 +141,8 @@ public abstract class FlowControl extends Protocol {
         max_block_time=t;
     }
 
+    public <T extends FlowControl> T maxBlockTime(long t) {max_block_time=t; return (T)this;}
+
     @Property(description="Max times to block for the listed messages sizes (Message.getLength()). Example: \"1000:10,5000:30,10000:500\"")
     public void setMaxBlockTimes(String str) {
         if(str == null) return;
@@ -150,8 +154,8 @@ public abstract class FlowControl extends Protocol {
             int index=tmp.indexOf(':');
             if(index == -1)
                 throw new IllegalArgumentException("element '" + tmp + "'  is missing a ':' separator");
-            Long key=Long.parseLong(tmp.substring(0, index).trim());
-            Long val=Long.parseLong(tmp.substring(index +1).trim());
+            long key=Long.parseLong(tmp.substring(0, index).trim());
+            long val=Long.parseLong(tmp.substring(index +1).trim());
 
             // sanity checks:
             if(key < 0 || val < 0)
