@@ -60,8 +60,8 @@ public class UDP extends TP {
      * <li>{@code IPTOS_LOWDELAY (0x10)}, <b>decimal</b> 16</li>
      * </ul>
      */
-    @Property(description="Traffic class for sending unicast and multicast datagrams. Default is 8")
-    protected int tos=8; // valid values: 2, 4, 8 (default), 16
+    @Property(description="Traffic class for sending unicast and multicast datagrams. Default is 0")
+    protected int tos; // valid values: 0, 2, 4, 8 (default), 16
 
     protected static final String UCAST_NAME="ucast-receiver";
     protected static final String MCAST_NAME="mcast-receiver";
