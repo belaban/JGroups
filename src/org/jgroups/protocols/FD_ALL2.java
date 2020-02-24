@@ -22,12 +22,11 @@ import java.util.function.Supplier;
  * Failure detection based on simple heartbeat protocol. Every member periodically (interval ms) multicasts a heartbeat.
  * Every member also maintains a table of all members (minus itself). When data or a heartbeat from P is received,
  * we set the flag associated with P to true. Periodically, we check for expired members, and suspect those whose flag
- * is false (no heartbeat or message received within timeout ms).</p>
+ * is false (no heartbeat or message received within timeout ms).
  *
  * @author  Bela Ban
  * @version 3.5
  */
-@Experimental
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD_ALL2 extends Protocol {
     
