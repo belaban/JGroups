@@ -21,6 +21,7 @@ public class SizeBoundedQueue<T> {
     protected final Queue<El<T>>           queue=new ConcurrentLinkedQueue<>();
     protected int                          count;    // accumulated bytes
     protected int                          waiters;  // threads blocked on add() because the queue is full
+    protected boolean                      done;     // when true, the queue cannot be used anymore
 
 
     public SizeBoundedQueue(int max_size) {
@@ -43,14 +44,16 @@ public class SizeBoundedQueue<T> {
         boolean incremented=false;
         lock.lockInterruptibly();
         try {
-            while(max_size - this.count - size < 0) {
+            while(!done && max_size - this.count - size < 0) {
                 if(!incremented) {
                     incremented=true;
                     waiters++;
                 }
                 not_full.await(); // queue is full; we need to block
             }
-            queue.add(new El(element, size));
+            if(done)
+                return;
+            queue.add(new El<>(element, size));
             boolean signal=count == 0;
             this.count+=size;
             if(signal)
@@ -66,9 +69,8 @@ public class SizeBoundedQueue<T> {
     /** Removes and returns the first element or null if the queue is empty */
     public T remove() {
         lock.lock();
-
         try {
-            if(queue.isEmpty())
+            if(done || queue.isEmpty())
                 return null;
             El<T> el=queue.poll();
             count-=el.size;
@@ -99,7 +101,7 @@ public class SizeBoundedQueue<T> {
         lock.lock();
         try {
             // go as long as there are elements in the queue or pending waiters
-            while((el=queue.peek()) != null || waiters > 0) {
+            while(!done && ((el=queue.peek()) != null || waiters > 0)) {
                 if(el != null) {
                     if(bytes + el.size > max_bytes)
                         break;
@@ -128,9 +130,10 @@ public class SizeBoundedQueue<T> {
         }
     }
 
-    public void clear() {
+    public void clear(boolean done) {
         lock.lock();
         try {
+            this.done=done;
             queue.clear();
             count=0;
             not_full.signalAll();
@@ -150,9 +153,19 @@ public class SizeBoundedQueue<T> {
     public int     getWaiters()  {return waiters;}
     public boolean hasWaiters()  {return waiters > 0;}
 
+    public boolean isDone() {
+        lock.lock();
+        try {
+            return done;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
     /** For testing only - should always be the same as size() */
     public int queueSize() {
-        return queue.stream().map(el -> el.size).reduce(0, (l,r) -> l+r);
+        return queue.stream().map(el -> el.size).reduce(0, Integer::sum);
     }
 
     public String toString() {

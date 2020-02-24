@@ -114,6 +114,8 @@ public abstract class FlowControl extends Protocol {
         this.max_credits=max_credits;
     }
 
+    public <T extends FlowControl> T maxCredits(long c) {max_credits=c; return (T)this;}
+
     public double getMinThreshold() {
         return min_threshold;
     }
@@ -137,6 +139,8 @@ public abstract class FlowControl extends Protocol {
     public void setMaxBlockTime(long t) {
         max_block_time=t;
     }
+
+    public <T extends FlowControl> T maxBlockTime(long t) {max_block_time=t; return (T)this;}
 
     @Property(description="Max times to block for the listed messages sizes (Message.getLength()). Example: \"1000:10,5000:30,10000:500\"")
     public void setMaxBlockTimes(String str) {

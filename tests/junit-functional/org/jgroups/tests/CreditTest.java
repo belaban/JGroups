@@ -4,6 +4,10 @@ import org.jgroups.util.Credit;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
 /**
  * Tests {@link org.jgroups.util.Credit}
  * @author Bela Ban
@@ -74,6 +78,35 @@ public class CreditTest {
         Util.sleep(1000);
         assert cred.get() == 0;
         for(Thread decr: decrementers)
+            assert !decr.isAlive();
+    }
+
+    public void testIncrementOnMultipleDecrementersAndReset() throws TimeoutException {
+        Credit cred=new Credit(0);
+        Thread[] threads=new Thread[10];
+        for(int i=0; i < threads.length; i++) {
+            threads[i]=new Thread(() -> cred.decrementIfEnoughCredits(null, 1000, 20000));
+            threads[i].start(); // every thread blocks until credits are available
+        }
+
+        Util.waitUntil(10000, 500,
+                       () -> Arrays.stream(threads).allMatch(t -> t.getState() == Thread.State.TIMED_WAITING),
+                       () -> "threads:\n" + Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+                         .collect(Collectors.joining("\n")));
+        System.out.printf("threads:\n%s\n", Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+          .collect(Collectors.joining("\n")));
+        assert cred.get() == 0;
+
+        cred.reset();
+        Util.waitUntil(10000, 500,
+                       () -> Arrays.stream(threads).allMatch(t -> t.getState() == Thread.State.TERMINATED),
+                       () -> "threads:\n" + Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+                         .collect(Collectors.joining("\n")));
+        System.out.printf("threads:\n%s\n", Arrays.stream(threads).map(t -> t.getId() + ": " + t.getState())
+          .collect(Collectors.joining("\n")));
+
+        assert cred.get() == 0;
+        for(Thread decr: threads)
             assert !decr.isAlive();
     }
 

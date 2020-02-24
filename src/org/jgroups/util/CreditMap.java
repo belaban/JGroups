@@ -25,6 +25,7 @@ public class CreditMap {
     protected final Condition         credits_available;
     protected int                     num_blockings;
     protected final Average           avg_block_time=new Average(); // in ns
+    protected boolean                 done;
 
 
     public CreditMap(long max_credits) {
@@ -141,6 +142,8 @@ public class CreditMap {
     public boolean decrement(final Message msg, int credits, long timeout) {
         lock.lock();
         try {
+            if(done)
+                return false;
             if(decrement(credits))
                 return true;
 
@@ -153,6 +156,8 @@ public class CreditMap {
             }
             catch(InterruptedException e) {
             }
+            if(done)
+                return false;
             num_blockings++;
             avg_block_time.add(System.nanoTime() - start);
             return decrement(credits);
@@ -207,8 +212,7 @@ public class CreditMap {
     public void clear() {
         lock.lock();
         try {
-            num_blockings=0;
-            avg_block_time.clear();
+            resetStats();
             credits.clear();
             credits_available.signalAll();
         }
@@ -217,7 +221,23 @@ public class CreditMap {
         }
     }
 
-    public void reset() {
+    /** Sets this credit to be done and releases all blocked threads. This is not revertable; a new credit
+     * has to be created */
+    public CreditMap reset() {
+        lock.lock();
+        try {
+            if(!done) {
+                done=true;
+                credits_available.signalAll();
+            }
+            return this;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    public void resetStats() {
         lock.lock();
         try {
             num_blockings=0;

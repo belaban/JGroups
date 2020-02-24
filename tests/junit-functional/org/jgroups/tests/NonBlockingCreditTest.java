@@ -7,9 +7,12 @@ import org.jgroups.util.NonBlockingCredit;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Tests {@link org.jgroups.util.NonBlockingCredit}
@@ -87,6 +90,47 @@ public class NonBlockingCreditTest {
         }
         System.out.printf("received %d msgs", count.get());
         assert count.get() == 10;
+    }
+
+    /** Tests sender threads being blocked and then unblocked by calling clear() */
+    public void testQueueing() throws TimeoutException {
+        final NonBlockingCredit cred=new NonBlockingCredit(10000, 5000, new ReentrantLock(), null);
+        Thread[] senders=new Thread[10];
+        for(int i=0; i < senders.length; i++) {
+            Message msg=msg(1000);
+            senders[i]=new Thread(() -> cred.decrementIfEnoughCredits(msg, msg.getLength(), 0));
+        }
+
+        Message msg=msg(10000);
+        boolean rc=cred.decrementIfEnoughCredits(msg, msg.getLength(), 500);
+        assert rc;
+        assert !cred.isQueuing();
+
+        // Now fill the queue
+        for(int i=0; i < 5; i++)
+            assert !cred.decrementIfEnoughCredits(msg(1000), 1000, 500);
+        assert cred.isQueuing();
+        assert cred.getQueuedMessages() == 5;
+        assert cred.getQueuedMessageSize() == 5000;
+
+        for(Thread t: senders)
+            t.start();
+
+        Util.waitUntil(10000, 500,
+                       () -> Arrays.stream(senders).allMatch(t -> t.getState() == Thread.State.WAITING),
+                       () -> "threads:\n" + Arrays.stream(senders).map(t -> t.getId() + ": " + t.getState())
+                         .collect(Collectors.joining("\n")));
+        System.out.printf("threads:\n%s\n", Arrays.stream(senders).map(t -> t.getId() + ": " + t.getState())
+          .collect(Collectors.joining("\n")));
+        assert cred.isQueuing() && cred.getQueuedMessages() == 5;
+
+        cred.reset();
+        Util.waitUntil(10000, 500,
+                       () -> Arrays.stream(senders).allMatch(t -> t.getState() == Thread.State.TERMINATED),
+                       () -> "threads:\n" + Arrays.stream(senders).map(t -> t.getId() + ": " + t.getState())
+                         .collect(Collectors.joining("\n")));
+        System.out.printf("threads:\n%s\n", Arrays.stream(senders).map(t -> t.getId() + ": " + t.getState())
+          .collect(Collectors.joining("\n")));
     }
 
 

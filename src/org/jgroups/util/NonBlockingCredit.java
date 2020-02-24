@@ -40,8 +40,8 @@ public class NonBlockingCredit extends Credit {
     public int     getQueuedMessageSize() {return msg_queue.size();}
     public int     getEnqueuedMessages()  {return num_queued.intValue();}
 
-    public void reset() {
-        super.reset();
+    public void resetStats() {
+        super.resetStats();
         num_queued.reset();
     }
 
@@ -55,6 +55,8 @@ public class NonBlockingCredit extends Credit {
     public boolean decrementIfEnoughCredits(final Message msg, int credits, long timeout) {
         lock.lock();
         try {
+            if(done)
+                return false;
             if(queuing)
                 return addToQueue(msg, credits);
             if(decrement(credits))
@@ -87,6 +89,19 @@ public class NonBlockingCredit extends Credit {
         // finally send drained messages:
         if(!drain_list.isEmpty())
             drain_list.forEach(send_function);
+    }
+
+    public Credit reset() {
+        lock.lock();
+        try {
+            super.reset();
+            queuing=false;
+            msg_queue.clear(true);
+            return this;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     public String toString() {

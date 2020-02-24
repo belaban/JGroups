@@ -261,7 +261,7 @@ public class FlowControlUnitTest {
 
 
 
-    protected JChannel create(String name) throws Exception {
+    protected static JChannel create(String name) throws Exception {
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
                             new NAKACK2(),
@@ -273,10 +273,10 @@ public class FlowControlUnitTest {
                             new FRAG2().fragSize(1500)).name(name);
     }
 
-    protected void replaceUFC(int max_queue_size, JChannel ... channels) throws Exception {
+    protected static void replaceUFC(int max_queue_size, JChannel... channels) throws Exception {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
-            UFC_NB ufc_nb=(UFC_NB)new UFC_NB().setValue("max_credits", MAX_CREDITS).setValue("min_threshold", 0.2);
+            UFC_NB ufc_nb=new UFC_NB().setValue("max_credits", MAX_CREDITS).setValue("min_threshold", 0.2);
             ufc_nb.setMaxQueueSize(max_queue_size);
             ufc_nb.frag_size=1500;
             View view=ch.getView();
@@ -288,10 +288,10 @@ public class FlowControlUnitTest {
     }
 
 
-    protected void replaceMFC(int max_queue_size, JChannel ... channels) throws Exception {
+    protected static void replaceMFC(int max_queue_size, JChannel... channels) throws Exception {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
-            MFC_NB mfc_nb=(MFC_NB)new MFC_NB().setValue("max_credits", MAX_CREDITS).setValue("min_threshold", 0.2);
+            MFC_NB mfc_nb=new MFC_NB().setValue("max_credits", MAX_CREDITS).setValue("min_threshold", 0.2);
             mfc_nb.setMaxQueueSize(max_queue_size);
             mfc_nb.frag_size=1500;
             mfc_nb.init();
@@ -325,15 +325,15 @@ public class FlowControlUnitTest {
                 up_prot.up(batch);
         }
 
-        protected static FcHeader getHeader(Message msg, short... ids) {
-            for(short id: ids) {
-                FcHeader hdr=msg.getHeader(id);
-                if(hdr != null)
-                    return hdr;
-            }
-            return null;
-        }
     }
 
+    protected static <T extends Header> T getHeader(Message msg, short ... ids) {
+        for(short id: ids) {
+            Header hdr=msg.getHeader(id);
+            if(hdr != null)
+                return (T)hdr;
+        }
+        return null;
+    }
 
 }

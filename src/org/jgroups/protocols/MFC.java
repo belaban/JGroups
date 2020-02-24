@@ -58,6 +58,11 @@ public class MFC extends FlowControl {
         credits.replenishAll();
     }
 
+    @ManagedOperation(description="Replenishes credits for a given member")
+    public void replenish(Address mbr, long credits) {
+        handleCredit(mbr, credits);
+    }
+
     @ManagedOperation(description="Print credits")
     public String printCredits() {
         return super.printCredits() + "\nsenders min credits: " + credits.computeLowestCreditWithAccumulated();
@@ -95,7 +100,7 @@ public class MFC extends FlowControl {
 
     public void resetStats() {
         super.resetStats();
-        credits.reset();
+        credits.resetStats();
     }
 
     protected CreditMap createCreditMap(long max_creds) {

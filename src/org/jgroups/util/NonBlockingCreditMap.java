@@ -37,8 +37,8 @@ public class NonBlockingCreditMap extends CreditMap {
     public int     getQueuedMessageSize() {return msg_queue.size();}
     public int     getEnqueuedMessages()  {return num_queued.intValue();}
 
-    public void reset() {
-        super.reset();
+    public void resetStats() {
+        super.resetStats();
         num_queued.reset();
     }
 
@@ -48,6 +48,8 @@ public class NonBlockingCreditMap extends CreditMap {
     public boolean decrement(Message msg, int credits, long timeout) {
         lock.lock();
         try {
+            if(done)
+                return false;
             if(queuing)
                 return addToQueue(msg, credits);
             if(decrement(credits))
@@ -87,7 +89,43 @@ public class NonBlockingCreditMap extends CreditMap {
             drain_list.forEach(send_function);
     }
 
+    @Override public Long remove(Address key) {
+        lock.lock();
+        try {
+            Long retval=super.remove(key);
+            msg_queue.clear(false);
+            return retval;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
 
+    @Override public void clear() {
+        lock.lock();
+        try {
+            super.clear();
+            queuing=false;
+            msg_queue.clear(true);
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+
+    @Override public CreditMap reset() {
+        lock.lock();
+        try {
+            super.reset();
+            queuing=false;
+            msg_queue.clear(true);
+            return this;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
 
 
     public String toString() {
