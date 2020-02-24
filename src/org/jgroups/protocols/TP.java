@@ -262,10 +262,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         max_bundle_size=size;
         return (T)this;
     }
-    public final int getMaxBundleSize()            {return max_bundle_size;}
-    public int getBundlerCapacity()                {return bundler_capacity;}
-    public int getMessageProcessingMaxBufferSize() {return msg_processing_max_buffer_size;}
-    public MessageFactory getMessageFactory()      {return msg_factory;}
+    public final int      getMaxBundleSize()                  {return max_bundle_size;}
+    public int            getBundlerCapacity()                {return bundler_capacity;}
+    public int            getMessageProcessingMaxBufferSize() {return msg_processing_max_buffer_size;}
+    public MessageFactory getMessageFactory()                 {return msg_factory;}
+    public boolean        useFibers()                         {return use_fibers;}
 
     @ManagedAttribute
     public String getMessageFactoryClass() {

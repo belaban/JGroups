@@ -140,7 +140,7 @@ public class UPerf implements Receiver {
 
     protected void startEventThread() {
         event_loop_thread=new Thread(UPerf.this::eventLoop,"EventLoop");
-        // event_loop_thread.setDaemon(true);
+        event_loop_thread.setDaemon(true);
         event_loop_thread.start();
     }
 
