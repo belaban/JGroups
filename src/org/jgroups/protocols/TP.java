@@ -849,6 +849,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void init() throws Exception {
         this.id=ClassConfigurator.getProtocolId(TP.class);
 
+        if(use_fibers) {
+            if(!Util.fibersAvailable()) {
+                log.warn("use_fibers was set to false, as fibers are not available in this Java version");
+                use_fibers=false;
+            }
+        }
+
         if(thread_factory == null)
             //thread_factory=new DefaultThreadFactory("jgroups", false, true);
           thread_factory=new LazyThreadFactory("jgroups", false, true)

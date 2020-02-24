@@ -2,8 +2,6 @@ package org.jgroups.util;
 
 import org.jgroups.logging.Log;
 
-import java.lang.reflect.Method;
-
 /**
  * Thread factory mainly responsible for naming of threads. Can be replaced by
  * user. If use_numbering is set, a thread THREAD will be called THREAD-1,
@@ -28,23 +26,6 @@ public class DefaultThreadFactory implements ThreadFactory {
     protected boolean         use_fibers; // use fibers instead of threads (requires Java 15)
     protected Log             log;
 
-    protected static Method   BUILDER=null, VIRTUAL=null, TASK=null, NAME=null, BUILD=null;
-    protected static Class<?> BUILDER_CLASS=null;
-
-
-    static { // kludge to support creation of fibers in Java version prior to 15/Loom
-        try {
-            BUILDER_CLASS=Util.loadClass("java.lang.Thread$Builder", DefaultThreadFactory.class);
-            BUILDER=Thread.class.getMethod("builder");
-            VIRTUAL=BUILDER_CLASS.getMethod("virtual");
-            TASK=BUILDER_CLASS.getMethod("task", Runnable.class);
-            NAME=BUILDER_CLASS.getMethod("name", String.class);
-            BUILD=BUILDER_CLASS.getMethod("build");
-        }
-        catch(Exception ex) {
-            // ex.printStackTrace(System.err);
-        }
-    }
 
     public DefaultThreadFactory(String baseName, boolean createDaemons) {
         this(baseName, createDaemons, false);
@@ -90,7 +71,7 @@ public class DefaultThreadFactory implements ThreadFactory {
 
     protected Thread newThread(Runnable r, String name, String addr, String cluster_name) {
         String thread_name=getNewThreadName(name, addr, cluster_name);
-        Thread retval=use_fibers? createFiber(r, name) : new Thread(r, thread_name);
+        Thread retval=use_fibers? Util.createFiber(r, name) : new Thread(r, thread_name);
         retval.setDaemon(createDaemons);
         return retval;
     }
@@ -118,28 +99,6 @@ public class DefaultThreadFactory implements ThreadFactory {
         renameThread(null, thread);
     }
 
-    /**
-     * Use of reflection to create fibers. If a JDK < 15/Loom is found, we'll create regular threads.
-     */
-    protected Thread createFiber(Runnable r, String name) {
-        // return Thread.builder().virtual().task(r).name(name).build();
-        if(BUILD == null) {
-            return new Thread(r, name);
-        }
-        try {
-            Object builder=BUILDER.invoke(null);
-            VIRTUAL.invoke(builder);
-            TASK.invoke(builder, r);
-            NAME.invoke(builder, name);
-            return (Thread)BUILD.invoke(builder);
-        }
-        catch(Exception ex) {
-            if(log != null)
-                log.error("failed creating fiber; setting use_fibers to false", ex);
-            use_fibers=false;
-            return new Thread(r, name);
-        }
-    }
 
     protected String getThreadName(String base_name, final Thread thread, String addr, String cluster_name) {
         if(thread == null)
