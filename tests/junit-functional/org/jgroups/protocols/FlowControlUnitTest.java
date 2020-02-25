@@ -327,5 +327,13 @@ public class FlowControlUnitTest {
 
     }
 
+    protected static <T extends Header> T getHeader(Message msg, short ... ids) {
+        for(short id: ids) {
+            Header hdr=msg.getHeader(id);
+            if(hdr != null)
+                return (T)hdr;
+        }
+        return null;
+    }
 
 }
