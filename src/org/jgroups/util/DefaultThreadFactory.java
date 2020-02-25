@@ -1,5 +1,7 @@
 package org.jgroups.util;
 
+import org.jgroups.logging.Log;
+
 /**
  * Thread factory mainly responsible for naming of threads. Can be replaced by
  * user. If use_numbering is set, a thread THREAD will be called THREAD-1,
@@ -21,6 +23,8 @@ public class DefaultThreadFactory implements ThreadFactory {
     protected String        clusterName;
     protected boolean       includeLocalAddress;
     protected String        address;
+    protected boolean       use_fibers; // use fibers instead of threads (requires Java 15)
+    protected Log           log;
 
 
 
@@ -53,6 +57,10 @@ public class DefaultThreadFactory implements ThreadFactory {
         this.address=address;
     }
 
+    public boolean                            useFibers()          {return use_fibers;}
+    public <T extends DefaultThreadFactory> T useFibers(boolean f) {this.use_fibers=f; return (T)this;}
+
+    public <T extends DefaultThreadFactory> T log(Log l)           {this.log=l; return (T)this;}
 
     public Thread newThread(Runnable r, String name) {
         return newThread(r, name, null, null);
@@ -62,12 +70,9 @@ public class DefaultThreadFactory implements ThreadFactory {
         return newThread(r, baseName, null, null);
     }
 
-    protected Thread newThread(Runnable r,
-                               String name,
-                               String addr,
-                               String cluster_name) {
+    protected Thread newThread(Runnable r, String name, String addr, String cluster_name) {
         String thread_name=getNewThreadName(name, addr, cluster_name);
-        Thread retval=new Thread(r, thread_name);
+        Thread retval=use_fibers? Util.createFiber(r, name) : new Thread(r, thread_name);
         retval.setDaemon(createDaemons);
         return retval;
     }

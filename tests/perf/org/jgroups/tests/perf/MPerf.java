@@ -5,9 +5,8 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.*;
 import org.jgroups.util.Bits;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -268,9 +267,8 @@ public class MPerf extends ReceiverAdapter {
         MPerfHeader hdr=msg.getHeader(ID);
         switch(hdr.type) {
             case MPerfHeader.DATA:
-                // we're checking the *application's* seqno, and multiple sender threads
-                // can screw this up, that's why we check for correct order only when we
-                // only have 1 sender thread
+                // we're checking the *application's* seqno, and multiple sender threads can screw this up,
+                // that's why we check for correct order only when we only have 1 sender thread.
                 // This is *different* from NAKACK{2} order, which is correct
                 handleData(msg.getSrc(), hdr.seqno, num_threads == 1 && !oob);
                 break;
@@ -369,15 +367,13 @@ public class MPerf extends ReceiverAdapter {
                 break;
 
             case MPerfHeader.EXIT:
-                ProtocolStack stack=channel.getProtocolStack();
-                String cluster_name=channel.getClusterName();
                 try {
                     JmxConfigurator.unregisterChannel(channel, Util.getMBeanServer(), "jgroups", "mperf");
                 }
                 catch(Exception e) {
                 }
-                stack.stopStack(cluster_name);
-                stack.destroy();
+                Util.close(channel);
+                System.exit(0);
                 break;
 
             case MPerfHeader.NEW_CONFIG:
@@ -815,19 +811,13 @@ public class MPerf extends ReceiverAdapter {
         final MPerf test=new MPerf();
         try {
             test.start(props, name);
-
-            final boolean run=run_event_loop;
-
-            // this kludge is needed in order to terminate the program gracefully when 'X' is pressed
-            // (otherwise System.in.read() would not terminate)
-            Thread thread=new Thread("MPerf runner") {
-                public void run() {
-                    if(run)
-                        test.loop();
-                }
-            };
-            thread.setDaemon(true);
-            thread.start();
+            if(run_event_loop) {
+                // this kludge is needed in order to terminate the program gracefully when 'X' is pressed
+                // (otherwise System.in.read() would not terminate)
+                Thread thread=new Thread(test::loop, "MPerf runner");
+                // thread.setDaemon(true);
+                thread.start();
+            }
         }
         catch(Exception e) {
             e.printStackTrace();

@@ -140,7 +140,7 @@ public class UPerf extends ReceiverAdapter {
 
     protected void startEventThread() {
         event_loop_thread=new Thread(UPerf.this::eventLoop,"EventLoop");
-        event_loop_thread.setDaemon(true);
+        // event_loop_thread.setDaemon(true);
         event_loop_thread.start();
     }
 
@@ -189,7 +189,7 @@ public class UPerf extends ReceiverAdapter {
             invoker.join();
         long total_time=System.currentTimeMillis() - start;
 
-        System.out.println("");
+        System.out.println();
         AverageMinMax avg_gets=null, avg_puts=null;
         for(Invoker invoker: invokers) {
             if(print_invokers)
@@ -215,6 +215,7 @@ public class UPerf extends ReceiverAdapter {
     public void quitAll() {
         System.out.println("-- received quitAll(): shutting down");
         stopEventThread();
+        System.exit(0);
     }
 
     protected String printAverage(long start_time) {
