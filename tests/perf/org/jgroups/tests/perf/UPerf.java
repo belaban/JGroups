@@ -140,7 +140,7 @@ public class UPerf implements Receiver {
 
     protected void startEventThread() {
         event_loop_thread=new Thread(UPerf.this::eventLoop,"EventLoop");
-        event_loop_thread.setDaemon(true);
+        // event_loop_thread.setDaemon(true);
         event_loop_thread.start();
     }
 
@@ -189,7 +189,7 @@ public class UPerf implements Receiver {
             invoker.join();
         long total_time=System.currentTimeMillis() - start;
 
-        System.out.println("");
+        System.out.println();
         AverageMinMax avg_gets=null, avg_puts=null;
         for(Invoker invoker: invokers) {
             if(print_invokers)
@@ -215,6 +215,7 @@ public class UPerf implements Receiver {
     public void quitAll() {
         System.out.println("-- received quitAll(): shutting down");
         stopEventThread();
+        System.exit(0);
     }
 
     protected String printAverage(long start_time) {
@@ -329,9 +330,6 @@ public class UPerf implements Receiver {
                         catch(Throwable t) {
                             System.err.println("Calling quitAll() failed: " + t);
                         }
-                        break;
-                    case '\n':
-                    case '\r':
                         break;
                     default:
                         break;
@@ -669,11 +667,11 @@ public class UPerf implements Receiver {
                 continue;
             }
             if("-uuid".equals(args[i])) {
-                addr_generator=new OneTimeAddressGenerator(Long.valueOf(args[++i]));
+                addr_generator=new OneTimeAddressGenerator(Long.parseLong(args[++i]));
                 continue;
             }
             if("-port".equals(args[i])) {
-                port=Integer.valueOf(args[++i]);
+                port=Integer.parseInt(args[++i]);
                 continue;
             }
             help();
