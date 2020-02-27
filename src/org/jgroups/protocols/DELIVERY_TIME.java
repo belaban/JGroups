@@ -20,7 +20,7 @@ public class DELIVERY_TIME extends Protocol {
 
     @ManagedAttribute(description="Average delivery time (in microseconds). This is computed as the average " +
       "delivery time for single messages, plus the delivery time for batches")
-    public double getAvgDeliveryTime() {
+    public double getAvgDeliveryTimeUs() {
         return delivery_times.average();
     }
 
