@@ -144,10 +144,11 @@ public class UPerf implements Receiver {
         Util.close(disp, channel);
     }
 
-    protected void startEventThread(boolean use_fibers) {
+    protected void startEventThread(boolean use_fibers) throws InterruptedException {
         event_loop_thread=use_fibers? Util.createFiber(UPerf.this::eventLoop,"EventLoop")
           : new Thread(UPerf.this::eventLoop,"EventLoop");
         event_loop_thread.start();
+        event_loop_thread.join();
     }
 
     protected void stopEventThread() {
