@@ -144,8 +144,9 @@ public class UPerf implements Receiver {
         Util.close(disp, channel);
     }
 
-    protected void startEventThread() {
-        event_loop_thread=new Thread(UPerf.this::eventLoop,"EventLoop");
+    protected void startEventThread(boolean use_fibers) {
+        event_loop_thread=use_fibers? Util.createFiber(UPerf.this::eventLoop,"EventLoop")
+          : new Thread(UPerf.this::eventLoop,"EventLoop");
         event_loop_thread.start();
     }
 
@@ -694,7 +695,7 @@ public class UPerf implements Receiver {
             test=new UPerf();
             test.init(props, name, addr_generator, port, use_fibers);
             if(run_event_loop)
-                test.startEventThread();
+                test.startEventThread(use_fibers);
         }
         catch(Throwable ex) {
             ex.printStackTrace();
