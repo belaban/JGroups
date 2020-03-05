@@ -71,7 +71,7 @@ public class TimeServiceTest {
 
 
     public void testConcurrentReads() throws InterruptedException {
-        final int NUM_READERS=500;
+        final int NUM_READERS=100;
         final Map<Long,AtomicInteger> counts=new ConcurrentHashMap<>();
         final CountDownLatch latch=new CountDownLatch(1);
         final Thread[] readers=new Thread[NUM_READERS];
