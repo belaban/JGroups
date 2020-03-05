@@ -2,6 +2,8 @@ package org.jgroups.util;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Provides a coarse grained time service. Registers a timer task which calls and caches {@link System#nanoTime()}
@@ -12,10 +14,11 @@ import java.util.concurrent.TimeUnit;
  * @since  3.5
  */
 public class TimeService  implements Runnable {
-    protected TimeScheduler          timer;
-    protected volatile Future<?>     task;
-    protected long                   interval=500; // ms
-    protected volatile long          timestamp;    // ns
+    protected TimeScheduler  timer;
+    protected Future<?>      task;
+    protected long           interval=500;                // ms
+    protected volatile long  timestamp=System.nanoTime(); // ns
+    protected final Lock     lock=new ReentrantLock();
 
 
     public TimeService(final TimeScheduler timer) {
@@ -30,12 +33,10 @@ public class TimeService  implements Runnable {
     }
 
     /**
-     * Returns the timestamp (ns)
+     * Returns the timestamp (ns). Because timestamp is volatile, the read will return the result of the most recent write
      * @return the result of the last call to {@link System#nanoTime()} (ns)
      */
-    public long timestamp() {
-        return timestamp > 0? timestamp : (timestamp=System.nanoTime());
-    }
+    public long timestamp() {return timestamp;}
 
     public long interval() {
         return interval;
@@ -47,25 +48,46 @@ public class TimeService  implements Runnable {
         return this;
     }
 
-    public boolean running() {return task != null && !task.isDone();}
-
-    public synchronized TimeService start() {
-        if(task == null || task.isDone())
-            task=timer.scheduleWithFixedDelay(this, interval, interval, TimeUnit.MILLISECONDS, false);
-        return this;
+    public boolean running() {
+        lock.lock();
+        try {
+            return task != null && !task.isDone();
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
-    public synchronized TimeService stop() {
-        if(task != null) {
-            task.cancel(false);
-            task=null;
+    public TimeService start() {
+        lock.lock();
+        try {
+            if(task == null || task.isDone())
+                task=timer.scheduleWithFixedDelay(this, interval, interval, TimeUnit.MILLISECONDS, false);
+            return this;
         }
-        return this;
+        finally {
+            lock.unlock();
+        }
+    }
+
+    public TimeService stop() {
+        lock.lock();
+        try {
+            if(task != null) {
+                task.cancel(false);
+                task=null;
+            }
+            return this;
+        }
+        finally {
+            lock.unlock();
+        }
+
     }
 
 
     public void run() {
-        timestamp=System.nanoTime();
+        timestamp=System.nanoTime(); // JLS 17.7: the write to the volatile var makes the change visible to the next read
     }
 
     public String toString() {

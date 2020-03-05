@@ -7,10 +7,13 @@ import org.jgroups.util.TimeService;
 import org.jgroups.util.Util;
 import org.testng.annotations.*;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * Tests {@TimeService}
@@ -64,6 +67,48 @@ public class TimeServiceTest {
         time_service.stop();
         Util.sleep(2000);
         assert !time_service.running();
+    }
+
+
+    public void testConcurrentReads() throws InterruptedException {
+        final int NUM_READERS=500;
+        final Map<Long,AtomicInteger> counts=new ConcurrentHashMap<>();
+        final CountDownLatch latch=new CountDownLatch(1);
+        final Thread[] readers=new Thread[NUM_READERS];
+        for(int i=0; i < readers.length; i++) {
+            readers[i]=new Thread(() -> {
+                try {
+                    latch.await();
+                    for(int j=0; j < 100_000; j++) {
+                        long time=time_service.timestamp();
+                        AtomicInteger val=counts.computeIfAbsent(time, k -> new AtomicInteger());
+                        val.incrementAndGet();
+                    }
+                }
+                catch(InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+            readers[i].start();
+        }
+
+        long start=System.nanoTime();
+        latch.countDown();
+        for(int i=0; i < readers.length; i++)
+            readers[i].join(30000);
+        long time=System.nanoTime()-start;
+        System.out.printf("time=%d ms\n", TimeUnit.MILLISECONDS.convert(time, TimeUnit.NANOSECONDS));
+
+        SortedSet<Long> sorted_timestamps=new ConcurrentSkipListSet<>(counts.keySet()); // in ns
+        long base=sorted_timestamps.first();
+
+        System.out.printf("Timestamps:\n%s\n",
+                          sorted_timestamps.stream().map(k -> nanosToMillis(k-base) + ": " + counts.get(k))
+                            .collect(Collectors.joining("\n")));
+    }
+
+    protected static long nanosToMillis(long ns) {
+        return TimeUnit.MILLISECONDS.convert(ns, TimeUnit.NANOSECONDS);
     }
 
 }
