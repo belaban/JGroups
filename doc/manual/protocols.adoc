@@ -1509,7 +1509,7 @@ Contrary to FRAG, FRAG2 does not need to serialize a message in order to break i
             
 ${FRAG3}
 
-FRAG2 needs only half the memory than FRAG2 to handle fragments and the final full message. See
+FRAG3 needs only half the memory than FRAG2 to handle fragments and the final full message. See
 https://issues.jboss.org/browse/JGRP-2154 for details.
 
 === Ordering
