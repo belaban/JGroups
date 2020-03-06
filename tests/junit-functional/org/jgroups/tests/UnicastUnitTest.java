@@ -245,7 +245,7 @@ public class UnicastUnitTest {
           new LOCAL_PING(),
           // new TEST_PING(),
           new MERGE3().setMinInterval(500).setMaxInterval(3000).setCheckInterval(4000),
-          new FD_ALL().timeout(2000).interval(500).timeoutCheckInterval(700),
+          ((FD_ALL)new FD_ALL().setTimeout(2000).setInterval(500)).setTimeoutCheckInterval(700),
           new NAKACK2(),
           new MAKE_BATCH().sleepTime(100).unicasts(use_batching),
           new UNICAST3(),

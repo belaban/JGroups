@@ -1093,6 +1093,19 @@ The times it takes to suspect a member are the same as for `FD_ALL`
 ${FD_ALL2}
 
 
+[[FD_ALL3]]
+==== FD_ALL3
+
+Failure detection protocol which maintains a bitmap of `timeout` / `interval` bits (e.g. `timeout=60000`,
+`interval=10000` -> `6` bits), initialized to `1`,  for each member. The timeout check task also maintains
+an index which is incremented every time it is invoked and the bit at the index is set to `0`.
+
+When a heartbeat or a message is received, the bit at the current index is set to `1`.
+
+When the timeout check task detects that all bits are `0`, the member will be suspected.
+
+${FD_ALL3}
+
 
 [[FD_SOCK]]
 ==== FD_SOCK

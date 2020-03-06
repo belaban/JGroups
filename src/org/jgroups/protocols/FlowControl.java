@@ -33,7 +33,7 @@ public abstract class FlowControl extends Protocol {
      * Max number of bytes to send per receiver until an ack must be received before continuing sending
      */
     @Property(description="Max number of bytes to send per receiver until an ack must be received to proceed")
-    protected long           max_credits=500000;
+    protected long           max_credits=5_000_000;
 
     /**
      * Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
