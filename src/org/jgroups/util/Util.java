@@ -183,7 +183,7 @@ public class Util {
     /**
      * Use of reflection to create fibers. If a JDK < 15/Loom is found, we'll create regular threads.
      */
-    protected static Thread createFiber(Runnable r, String name) {
+    public static Thread createFiber(Runnable r, String name) {
         // the code below is the equivalent of: Thread.builder().virtual().task(r).name(name).build();
         if(BUILD == null) {
             return new Thread(r, name);

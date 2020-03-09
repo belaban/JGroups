@@ -38,6 +38,7 @@ public class UPerf extends ReceiverAdapter {
     protected Thread               event_loop_thread;
     protected final LongAdder      num_reads=new LongAdder();
     protected final LongAdder      num_writes=new LongAdder();
+    protected ThreadFactory        thread_factory;
 
 
 
@@ -102,7 +103,12 @@ public class UPerf extends ReceiverAdapter {
     }
 
 
-    public void init(String props, String name, AddressGenerator generator, int bind_port) throws Throwable {
+    public void init(String props, String name, AddressGenerator generator, int bind_port, boolean use_fibers) throws Throwable {
+        thread_factory=new DefaultThreadFactory("invoker", false, true)
+          .useFibers(use_fibers);
+        if(use_fibers && Util.fibersAvailable())
+            System.out.println("-- using fibers instead of threads");
+
         channel=new JChannel(props).addAddressGenerator(generator).setName(name);
         if(bind_port > 0) {
             TP transport=channel.getProtocolStack().getTransport();
@@ -138,9 +144,9 @@ public class UPerf extends ReceiverAdapter {
         Util.close(disp, channel);
     }
 
-    protected void startEventThread() {
-        event_loop_thread=new Thread(UPerf.this::eventLoop,"EventLoop");
-        // event_loop_thread.setDaemon(true);
+    protected void startEventThread(boolean use_fibers) {
+        event_loop_thread=use_fibers? Util.createFiber(UPerf.this::eventLoop,"EventLoop")
+          : new Thread(UPerf.this::eventLoop,"EventLoop");
         event_loop_thread.start();
     }
 
@@ -170,9 +176,11 @@ public class UPerf extends ReceiverAdapter {
         num_reads.reset(); num_writes.reset();
 
         Invoker[] invokers=new Invoker[num_threads];
-        for(int i=0; i < invokers.length; i++) {
+        Thread[]  threads=new Thread[num_threads];
+        for(int i=0; i < threads.length; i++) {
             invokers[i]=new Invoker(members, latch);
-            invokers[i].start(); // waits on latch
+            threads[i]=thread_factory.newThread(invokers[i]);
+            threads[i].start(); // waits on latch
         }
 
         long start=System.currentTimeMillis();
@@ -185,15 +193,16 @@ public class UPerf extends ReceiverAdapter {
 
         for(Invoker invoker: invokers)
             invoker.cancel();
-        for(Invoker invoker: invokers)
-            invoker.join();
+        for(Thread t: threads)
+            t.join();
         long total_time=System.currentTimeMillis() - start;
 
         System.out.println();
         AverageMinMax avg_gets=null, avg_puts=null;
-        for(Invoker invoker: invokers) {
+        for(int i=0; i < invokers.length; i++) {
+            Invoker invoker=invokers[i];
             if(print_invokers)
-                System.out.printf("invoker %s: gets %s puts %s\n", invoker.getId(),
+                System.out.printf("invoker %s: gets %s puts %s\n", threads[i].getId(),
                                   print(invoker.avgGets(), print_details), print(invoker.avgPuts(), print_details));
             if(avg_gets == null)
                 avg_gets=invoker.avgGets();
@@ -476,7 +485,7 @@ public class UPerf extends ReceiverAdapter {
     }
 
 
-    private class Invoker extends Thread {
+    private class Invoker implements Runnable {
         private final List<Address>  dests=new ArrayList<>();
         private final CountDownLatch latch;
         private final AverageMinMax  avg_gets=new AverageMinMax(), avg_puts=new AverageMinMax(); // in ns
@@ -487,7 +496,6 @@ public class UPerf extends ReceiverAdapter {
         public Invoker(Collection<Address> dests, CountDownLatch latch) {
             this.latch=latch;
             this.dests.addAll(dests);
-            setName("Invoker-" + COUNTER.getAndIncrement());
         }
 
         
@@ -650,9 +658,8 @@ public class UPerf extends ReceiverAdapter {
 
 
     public static void main(String[] args) {
-        String  props=null;
-        String  name=null;
-        boolean run_event_loop=true;
+        String  props=null, name=null;
+        boolean run_event_loop=true, use_fibers=true;
         AddressGenerator addr_generator=null;
         int port=0;
 
@@ -670,11 +677,15 @@ public class UPerf extends ReceiverAdapter {
                 continue;
             }
             if("-uuid".equals(args[i])) {
-                addr_generator=new OneTimeAddressGenerator(Long.valueOf(args[++i]));
+                addr_generator=new OneTimeAddressGenerator(Long.parseLong(args[++i]));
                 continue;
             }
             if("-port".equals(args[i])) {
-                port=Integer.valueOf(args[++i]);
+                port=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if("-use_fibers".equals(args[i])) {
+                use_fibers=Boolean.parseBoolean(args[++i]);
                 continue;
             }
             help();
@@ -684,9 +695,9 @@ public class UPerf extends ReceiverAdapter {
         UPerf test=null;
         try {
             test=new UPerf();
-            test.init(props, name, addr_generator, port);
+            test.init(props, name, addr_generator, port, use_fibers);
             if(run_event_loop)
-                test.startEventThread();
+                test.startEventThread(use_fibers);
         }
         catch(Throwable ex) {
             ex.printStackTrace();
@@ -696,7 +707,8 @@ public class UPerf extends ReceiverAdapter {
     }
 
     static void help() {
-        System.out.println("UPerf [-props <props>] [-name name] [-nohup] [-uuid <UUID>] [-port <bind port>]");
+        System.out.println("UPerf [-props <props>] [-name name] [-nohup] [-uuid <UUID>] [-port <bind port>] " +
+                             "[-use_fibers <true|false>]");
     }
 
 
