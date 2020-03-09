@@ -2559,18 +2559,15 @@ FORK refers to an external file to configure its fork stacks:
 ----
 
 The file fork-stacks.xml defines 2 fork stacks: "counter" and "lock". Each fork-stack element has an
-                'id' attribute which defines the fork stack's ID. Note that all fork stacks have to have unique IDs.
+'id' attribute which defines the fork stack's ID. Note that all fork stacks have to have unique IDs.
             
 
 After the fork-stack element, the child element starting with 'config' is a regular JGroups XML config
-                file schema, where protocols are defined from bottom to top. For example, fork stack "lock" defines
-                that CENTRAL_LOCK is the first protocol on top of FORK for the given fork stack, and
-                STATS is on top of CENTRAL_LOCK.
+file schema, where protocols are defined from bottom to top. For example, fork stack "lock" defines that CENTRAL_LOCK
+is the first protocol on top of FORK for the given fork stack, and STATS is on top of CENTRAL_LOCK.
             
-
 When FORK is initialized, it will create the 2 fork stacks. When fork channels are created (see the next section),
-                they can pick one of the 2 existing fork stacks to be created over, or they can dynamically create new fork
-                stacks.
+they can pick one of the 2 existing fork stacks to be created over, or they can dynamically create new fork stacks.
             
 
 [[ForkChannelCreation]]
@@ -2582,39 +2579,36 @@ A fork channel is created by instantiating a new ForkChannel object:
 
 [source,java]
 ----
-
 JChannel main_ch=new JChannel("/home/bela/udp.xml").name("A");
 ForkChannel fork_ch=new ForkChannel(main_ch, "lock", "fork-ch4",
                                     new CENTRAL_LOCK(), new STATS());
-fork_ch.connect("bla");
+
 main_ch.connect("cluster");
-            
+fork_ch.connect("bla");
 ----
 
 First the main channel is created. Note that udp.xml may or may not contain FORK, but for this example, we
-                assume it is present.
+assume it is present.
             
-
 Then the ForkChannel is created. It is passed the main channel, the fork stack ID ("lock") and the
-                fork channel ID ("fork-ch4"), plus a list of already instantiated protocols (CENTRAL_LOCK and STATS). If
-                FORK already contains a fork stack with ID="lock", the existing fork stack will be used, or else a new
-                one will be created with protocols CENTRAL_LOCK and STATS. Then a new fork channel with ID="fork-ch4" will
-                be added to the top of fork stack "lock". An exception will be thrown if a fork channel with the same ID
-                already exists.
+fork channel ID ("fork-ch4"), plus a list of already instantiated protocols (CENTRAL_LOCK and STATS). If
+FORK already contains a fork stack with ID="lock", the existing fork stack will be used, or else a new
+one will be created with protocols CENTRAL_LOCK and STATS. Then a new fork channel with ID="fork-ch4" will
+be added to the top of fork stack "lock". An exception will be thrown if a fork channel with the same ID
+already exists.
             
+The main channel then calls `connect()`, and - after this - the ForkChannel also calls `connect()`. (Note that the
+latter's connect argument (the cluster name)) is ignored as fork channels have the same cluster name as the
+main channel they reference. The local address, name, view and state are also the same.
 
-The ForkChannel now calls connect(), but the cluster name is ignored as fork channels have the same
-                cluster name as they main channel the reference. The local address, name, view and state are also the same.
-                This means, that even though connect() was called, the fork channel is not yet connected. As soon as the
-                main channel is connected, the fork channel will be connected, too.
-            
+NOTE: A fork channel's `connect()` must be called after the main channel has been connected. If this is not the case,
+`ForkChannel.connect()` will throw an exception.
 
 The lifetime of a fork channel is always dominated by the main channel: if the main channel is closed, all
-                fork channels atttached to it are in closed state, too, and trying to send a message will throw an exception.
+fork channels atttached to it are in closed state, too, and trying to send a message will throw an exception.
             
-
 The example above showed the simplified constructor, which requires the FORK protocol to be present in the
-                stack. There's another constructor which allows for FORK to be created dynamically if not present:
+stack. There's another constructor which allows for FORK to be created dynamically if not present:
             
 
 
