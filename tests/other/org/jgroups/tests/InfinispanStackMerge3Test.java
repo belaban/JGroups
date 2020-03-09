@@ -87,10 +87,10 @@ public class InfinispanStackMerge3Test {
                               .setMinInterval(5_000)
                               .setMaxInterval(10_000),
                             new FD_SOCK(),
-                            new FD_ALL()
-                              .interval(2_000)
-                              .timeout(8_000)
-                              .timeoutCheckInterval(2_000),
+                            ((FD_ALL)new FD_ALL()
+                              .setInterval(2_000)
+                              .setTimeout(8_000))
+                              .setTimeoutCheckInterval(2_000),
                             new VERIFY_SUSPECT()
                               .setTimeout(5_000),
                             new NAKACK2()
