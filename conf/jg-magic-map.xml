@@ -37,8 +37,7 @@
     <class id="59"  name="org.jgroups.protocols.FcHeader"/>
     <class id="60"  name="org.jgroups.protocols.TpHeader"/>
     <class id="61"  name="org.jgroups.protocols.SEQUENCER$SequencerHeader"/>
-    <class id="62"  name="org.jgroups.protocols.FD_ALL$HeartbeatHeader"/>
-    <class id="63"  name="org.jgroups.protocols.FD_ALL2$HeartbeatHeader"/>
+    <class id="62"  name="org.jgroups.protocols.FailureDetection$HeartbeatHeader"/>
     <class id="64"  name="org.jgroups.protocols.pbcast.FLUSH$FlushHeader"/>
     <class id="65"  name="org.jgroups.protocols.pbcast.StreamingStateTransfer$StateHeader"/>
     <class id="66"  name="org.jgroups.protocols.AuthHeader"/>
