@@ -7,7 +7,6 @@ import org.jgroups.blocks.LazyRemovalCache;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.jmx.AdditionalJmxObjects;
-import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.*;
 import org.jgroups.util.ThreadFactory;
@@ -141,13 +140,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       "\"c\": includes the cluster name, e.g. \"MyCluster\", " +
       "\"l\": includes the local address of the current member, e.g. \"192.168.5.1:5678\"")
     protected String thread_naming_pattern="cl";
-
-    @Property(name="thread_pool.use_fork_join_pool",description="If enabled, a ForkJoinPool will be used rather than a ThreadPoolExecutor")
-    protected boolean use_fork_join_pool;
-
-    @Property(name="thread_pool.use_common_fork_join_pool",
-      description="If true, the common fork-join pool will be used; otherwise a custom ForkJoinPool will be created")
-    protected boolean use_common_fork_join_pool;
 
     @Property(description="Create fibers (if true) or regular threads (if false). This requires Java 15/Loom. " +
       "If not present, use_fibers will be set to false and regular threads will be created. Note that the ThreadFactory" +
@@ -287,12 +279,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedAttribute(description="Sets the wait strategy in the RingBufferBundler. Allowed values are \"spin\", " +
       "\"yield\", \"park\", \"spin-park\" and \"spin-yield\" or a fully qualified classname")
     public <T extends TP> T bundlerWaitStrategy(String strategy) {
-        if(bundler instanceof RingBufferBundler) {
+        if(bundler instanceof RingBufferBundler)
             ((RingBufferBundler)bundler).waitStrategy(strategy);
-            this.bundler_wait_strategy=strategy;
-        }
-        else
-            this.bundler_wait_strategy=strategy;
+        this.bundler_wait_strategy=strategy;
         return (T)this;
     }
 
@@ -880,21 +869,17 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
         // ====================================== Thread pool ===========================
-        if(use_common_fork_join_pool)
-            use_fork_join_pool=true;
-        if(use_fork_join_pool)
-            thread_pool_max_threads=Runtime.getRuntime().availableProcessors();
         if(thread_pool == null || (thread_pool instanceof ExecutorService && ((ExecutorService)thread_pool).isShutdown())) {
             if(thread_pool_enabled) {
                 int num_cores=Runtime.getRuntime().availableProcessors();
                 int max_internal_size=Math.max(4, num_cores);
-                log.debug("thread pool min/max/keep-alive: %d/%d/%d use_fork_join=%b, internal pool: %d/%d/%d (%d cores available)",
-                          thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time, use_fork_join_pool,
+                log.debug("thread pool min/max/keep-alive: %d/%d/%d, internal pool: %d/%d/%d (%d cores available)",
+                          thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
                           0, max_internal_size, 30000, num_cores);
                 thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
-                                             "abort", new SynchronousQueue<>(), thread_factory, log, use_fork_join_pool, use_common_fork_join_pool);
+                                             "abort", new SynchronousQueue<>(), thread_factory);
                 internal_pool=createThreadPool(0, max_internal_size, 30000, "abort",
-                                               new SynchronousQueue<>(), internal_thread_factory, log, false, false);
+                                               new SynchronousQueue<>(), internal_thread_factory);
             }
             else // otherwise use the caller's thread to unmarshal the byte buffer into a message
                 thread_pool=new DirectExecutor();
@@ -1766,21 +1751,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
 
-    protected static ExecutorService createThreadPool(int min_threads, int max_threads, long keep_alive_time, String rejection_policy,
-                                                      BlockingQueue<Runnable> queue, final ThreadFactory factory, Log log,
-                                                      boolean use_fork_join_pool, boolean use_common_fork_join_pool) {
-        if(use_fork_join_pool) {
-            if(use_common_fork_join_pool)
-                return ForkJoinPool.commonPool();
-
-            int num_cores=Runtime.getRuntime().availableProcessors();
-            if(max_threads > num_cores)
-                log.warn("max_threads (%d) is higher than available cores (%d)", max_threads, num_cores);
-            return new ForkJoinPool(max_threads, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
-        }
-
-
-        ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue, factory);
+    protected static ExecutorService createThreadPool(int min_threads, int max_threads, long keep_alive_time,
+                                                      String rejection_policy,
+                                                      BlockingQueue<Runnable> queue, final ThreadFactory factory) {
+        ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS,
+                                                       queue, factory);
         RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
         pool.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
         return pool;
