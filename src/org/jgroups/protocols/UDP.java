@@ -83,16 +83,16 @@ public class UDP extends TP {
     protected int ip_ttl=8;
 
     @Property(description="Send buffer size of the multicast datagram socket")
-    protected int mcast_send_buf_size;
+    protected int mcast_send_buf_size=Global.MAX_DATAGRAM_PACKET_SIZE + MSG_OVERHEAD;
 
     @Property(description="Receive buffer size of the multicast datagram socket")
-    protected int mcast_recv_buf_size;
+    protected int mcast_recv_buf_size=5_000_000;
 
     @Property(description="Send buffer size of the unicast datagram socket")
-    protected int ucast_send_buf_size;
+    protected int ucast_send_buf_size=200_000;
 
     @Property(description="Receive buffer size of the unicast datagram socket")
-    protected int ucast_recv_buf_size;
+    protected int ucast_recv_buf_size=5_000_000;
 
     @Property(description="If true, disables IP_MULTICAST_LOOP on the MulticastSocket (for sending and receiving of " +
       "multicast packets). IP multicast packets send on a host P will therefore not be received by anyone on P. Use with caution.")
@@ -286,9 +286,7 @@ public class UDP extends TP {
             suppress_log_out_of_buffer_space=new SuppressLog<>(log, "FailureSendingToPhysAddr", "SuppressMsg");
     }
 
-    /**
-     * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
-     */
+    /** Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads */
     public void start() throws Exception {
         try {
             createSockets();
@@ -313,6 +311,17 @@ public class UDP extends TP {
 
     protected void handleConnect() throws Exception {
         startThreads();
+    }
+
+    protected void setCorrectSocketBufferSize(MulticastSocket s, int buf_size, int new_size, boolean send, boolean mcast)
+      throws SocketException {
+        String so=String.format("%s%s", mcast? "mcast ": "", send? "send":"receive");
+        log.warn("%s: setting %s socket buffer size (%s) to %s (size of the max datagram packet)",
+                 local_addr, so, Util.printBytes(buf_size), Util.printBytes(new_size));
+        if(send)
+            s.setSendBufferSize(new_size);
+        else
+            s.setReceiveBufferSize(new_size);
     }
 
     /*--------------------------- End of Protocol interface -------------------------- */
@@ -551,7 +560,7 @@ public class UDP extends TP {
     }
 
 
-    void setBufferSizes() {
+    void setBufferSizes() throws SocketException {
         if(sock != null) {
             setBufferSize(sock, ucast_send_buf_size, ucast_recv_buf_size);
             if(ucast_send_buf_size <= 0)
@@ -566,6 +575,20 @@ public class UDP extends TP {
                 mcast_send_buf_size=getBufferSize(mcast_sock, true);
             if(mcast_recv_buf_size <= 0)
                 mcast_recv_buf_size=getBufferSize(mcast_sock, false);
+        }
+
+        int max_size=Global.MAX_DATAGRAM_PACKET_SIZE + MSG_OVERHEAD;
+        if(sock != null) {
+            if(sock.getSendBufferSize() < max_size)
+                setCorrectSocketBufferSize(sock, sock.getSendBufferSize(), max_size, true, false);
+            if(sock.getReceiveBufferSize() < max_size)
+                setCorrectSocketBufferSize(sock, sock.getReceiveBufferSize(), max_size, false, false);
+        }
+        if(mcast_sock != null) {
+            if(mcast_sock.getSendBufferSize() < max_size)
+                setCorrectSocketBufferSize(mcast_sock, mcast_sock.getSendBufferSize(), max_size, true, true);
+            if(mcast_sock.getReceiveBufferSize() < max_size)
+                setCorrectSocketBufferSize(mcast_sock, mcast_sock.getReceiveBufferSize(), max_size, false, true);
         }
     }
 
@@ -654,7 +677,7 @@ public class UDP extends TP {
     protected void stopUcastReceiverThreads() {Util.close(ucast_receivers);}
     protected void stopMcastReceiverThreads() {Util.close(mcast_receivers);}
 
-    protected void handleConfigEvent(Map<String,Object> map) {
+    protected void handleConfigEvent(Map<String,Object> map) throws SocketException {
         boolean set_buffers=false;
         if(map == null) return;
 
