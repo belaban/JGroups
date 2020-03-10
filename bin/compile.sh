@@ -5,7 +5,7 @@
 
 OPTIONS="-H:+ReportUnsupportedElementsAtRuntime -H:+JNI --no-server -H:+ReportExceptionStackTraces"
 
-OPTIONS="$OPTIONS -H:+AllowVMInspection"
+OPTIONS="$OPTIONS -H:+AllowVMInspection -H:+TraceClassInitialization --no-fallback --allow-incomplete-classpath"
 
 # OPTIONS="$OPTIONS -H:ReflectionConfigurationFiles=JGroups/conf/reflection.json"
 
@@ -21,7 +21,6 @@ OPTIONS="$OPTIONS -Dgraal.CompilationFailureAction=Diagnose"
 OPTIONS="$OPTIONS -J-server -J-XX:+UseG1GC -J-XX:+UseAdaptiveSizePolicy -J-XX:MinHeapFreeRatio=20 -J-XX:MaxHeapFreeRatio=20"
 
 OPTIONS="$OPTIONS --initialize-at-build-time" ## needed by GraalVM 19
-
-OPTIONS="$OPTIONS -J-Djava.net.preferIPv4Stack=true"
+# OPTIONS="$OPTIONS --initialize-at-run-time=org.jgroups.protocols.VERIFY_SUSPECT"
 
 native-image -cp $CLASSPATH $OPTIONS $*
