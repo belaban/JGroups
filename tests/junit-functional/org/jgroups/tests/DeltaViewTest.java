@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.FRAG2;
 import org.jgroups.protocols.FRAG3;
@@ -22,6 +19,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -31,7 +30,7 @@ import java.util.List;
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class DeltaViewTest {
-    protected JChannel                        j, k, l;
+    protected JChannel                        j, k, l, m, n;
     protected static final String             CLUSTER=DeltaViewTest.class.getSimpleName();
     protected static final short              GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
 
@@ -43,7 +42,7 @@ public class DeltaViewTest {
         l=create("L");
     }
 
-    @AfterMethod protected void destroy() {Util.close(l, k, j);}
+    @AfterMethod protected void destroy() {Util.closeReverse(j,k,l,m,n);}
 
 
     public void testDeltaViews() throws Exception {
@@ -61,9 +60,43 @@ public class DeltaViewTest {
         System.out.printf("\nJ: %s\nK: %s\nL: %s\n", j.getView(), k.getView(), l.getView());
     }
 
+    /**
+     * Tests https://issues.redhat.com/browse/JGRP-2421:
+     * <pre>
+     * - View is V0={J,K,L,M,N}
+     * - N is excluded and gets view V1={J,K,L,M}
+     * - N drops V1 as it is not a member
+     * - Delta-view V2={J,K,L} is installed
+     * - N cannot construct V2, as it refers to V1 which N discarded -> error message
+     * </pre>
+     */
+    public void testViewCannotBeCreatedFromDeltaView() throws Exception {
+        m=create("M");
+        n=create("N");
+        connect(CLUSTER, j,k,l,m,n);
+
+        // Remove N by injecting SUSPECT event in the coordinator:
+        GMS gms=j.getProtocolStack().findProtocol(GMS.class);
+        gms.up(new Event(Event.SUSPECT, Collections.singletonList(n.getAddress())));
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, j,k,l,m);
+        for(JChannel ch: Arrays.asList(j,k,l,m,n)) {
+            System.out.printf("%s: %s\n", ch.getAddress(), ch.getView());
+        }
+        View vn=n.getView();
+        assert vn.size() == 5;
+
+        // Now make M leave. The new delta view {J,K,L} will cause the warning message (failed creating delta view) in N
+        Util.close(m);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, j,k,l);
+        for(JChannel ch: Arrays.asList(j,k,l,n)) {
+            System.out.printf("%s: %s\n", ch.getAddress(), ch.getView());
+        }
+
+        Util.shutdown(n);
+    }
 
 
-    protected JChannel create(String name) throws Exception {
+    protected static JChannel create(String name) throws Exception {
         JChannel ch=new JChannel(Util.getTestStack()).name(name);
         ch.getProtocolStack().removeProtocol(STABLE.class, FRAG2.class, FRAG3.class);
         GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
@@ -73,6 +106,18 @@ public class DeltaViewTest {
         return ch;
     }
 
+    protected static void connect(String cluster_name, JChannel ... channels) throws Exception {
+        for(JChannel ch: channels)
+            ch.connect(cluster_name);
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, channels);
+    }
+
+    protected static void injectView(View v, JChannel ... channels) {
+        for(JChannel ch: channels) {
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
+            gms.installView(v);
+        }
+    }
 
 
     // up first view: queue

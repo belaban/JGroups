@@ -896,9 +896,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                     }
                     catch(Throwable t) {
                         if(view != null)
-                            log.warn("%s: failed to create view from delta-view; dropping view: %s", local_addr, t.toString());
-                        log.trace("%s: sending request for full view to %s", local_addr, msg.src());
-                        Message full_view_req=new Message(msg.src())
+                            log.trace("%s: failed to create view from delta-view; dropping view: %s", local_addr, t.toString());
+                        log.trace("%s: sending request for full view to %s", local_addr, msg.getSrc());
+                        Message full_view_req=new Message(msg.getSrc())
                           .putHeader(id, new GmsHeader(GmsHeader.GET_CURRENT_VIEW)).setFlag(OOB, INTERNAL);
                         down_prot.down(full_view_req);
                         return null;
