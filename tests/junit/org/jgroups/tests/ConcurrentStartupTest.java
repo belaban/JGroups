@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
+import org.jgroups.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
@@ -53,9 +52,29 @@ public class ConcurrentStartupTest {
         startThreads(CLUSTER_SHARED);
     }
 
-    // @Test(invocationCount=5)
+    @Test(invocationCount=10)
     public void testConcurrentJoinWithLOCAL_PING() throws Exception {
         setup(UDP.class, LOCAL_PING.class);
+        for(int i=0; i < channels.length; i++) {
+            final int index=i;
+            channels[i].setUpHandler(new UpHandler() {
+                boolean first_view_received;
+
+                public Object up(Message msg) {return null;}
+
+                public Object up(Event evt) {
+                    if(evt.getType() == Event.VIEW_CHANGE) {
+                        if(!first_view_received) {
+                            first_view_received=true;
+                            long sleep_time=Util.random(100);
+                            System.out.printf("%s: sleeping for %d ms\n", channels[index].getAddress(), sleep_time);
+                            Util.sleep(sleep_time);
+                        }
+                    }
+                    return null;
+                }
+            });
+        }
         startThreads(CLUSTER_LOCAL);
     }
 
