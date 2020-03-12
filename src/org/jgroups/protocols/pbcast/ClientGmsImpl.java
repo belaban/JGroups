@@ -211,9 +211,7 @@ public class ClientGmsImpl extends GmsImpl {
             log.error("%s: I'm not member of %s, will not install view", gms.local_addr, new_view);
             return false;
         }
-        gms.installView(new_view, digest);
-        if(gms.impl == null || gms.impl instanceof ClientGmsImpl) // installView() should have set the role (impl)
-            gms.becomeParticipant();
+        gms.installView(new_view, digest); // impl will be particant (or coord if singleton)
         gms.getUpProtocol().up(new Event(Event.BECOME_SERVER));
         gms.getDownProtocol().down(new Event(Event.BECOME_SERVER));
         return true;
@@ -252,9 +250,7 @@ public class ClientGmsImpl extends GmsImpl {
 
         // set the initial digest (since I'm the first member)
         Digest initial_digest=new Digest(mbr, 0, 0);
-        gms.installView(new_view, initial_digest);
-        gms.becomeCoordinator(); // not really necessary - installView() should do it
-
+        gms.installView(new_view, initial_digest); // impl will be coordinator
         gms.getUpProtocol().up(new Event(Event.BECOME_SERVER));
         gms.getDownProtocol().down(new Event(Event.BECOME_SERVER));
         log.debug("%s: created cluster (first member). My view is %s, impl is %s",
