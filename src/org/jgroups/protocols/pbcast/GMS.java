@@ -18,6 +18,8 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -107,7 +109,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
     protected GmsImpl                   impl;
-    protected final Object              impl_mutex=new Object(); // synchronizes event entry into impl
+    protected final Lock                impl_lock=new ReentrantLock(); // synchronizes event entry into impl
     protected final Map<String,GmsImpl> impls=new HashMap<>(3);
 
     protected Merger                    merger; // handles merges
@@ -167,13 +169,13 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     @ManagedAttribute
-    public String getView() {return view != null? view.toString() : "null";}
+    public String getView()                  {return view != null? view.toString() : "null";}
     @ManagedAttribute
-    public int getNumberOfViews() {return num_views;}
+    public int getNumberOfViews()            {return num_views;}
     @ManagedAttribute
-    public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
+    public String getLocalAddress()          {return local_addr != null? local_addr.toString() : "null";}
     @ManagedAttribute
-    public String getMembers() {return members.toString();}
+    public String getMembers()               {return members.toString();}
     @ManagedAttribute
     public int getNumMembers()               {return members.size();}
     public long getJoinTimeout()             {return join_timeout;}
@@ -299,10 +301,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         }
     }
 
-    public boolean isCoordinator() {
-        Address coord=determineCoordinator();
-        return Objects.equals(local_addr, coord);
-    }
 
     public MergeId _getMergeId() {
         return impl instanceof CoordGmsImpl? ((CoordGmsImpl)impl).getMergeId() : null;
@@ -330,10 +328,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     public void setImpl(GmsImpl new_impl) {
-        synchronized(impl_mutex) {
-            if(impl == new_impl) // unnecessary ?
+        impl_lock.lock();
+        try {
+            if(impl == new_impl)
                 return;
             impl=new_impl;
+        }
+        finally {
+            impl_lock.unlock();
         }
     }
 
@@ -642,8 +644,11 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         log.debug("%s: installing view %s", local_addr, new_view);
 
         Event view_event;
+        boolean was_coord, is_coord;
         synchronized(members) {
+            was_coord=view != null && Objects.equals(local_addr, view.getCoord());
             view=new_view; // new View(new_view.getVid(), new_view.getMembers());
+            is_coord=Objects.equals(local_addr, view.getCoord());
             view_event=new Event(Event.VIEW_CHANGE, new_view);
 
             // Set the membership. Take into account joining members
@@ -661,12 +666,12 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 mbrs.stream().filter(addr -> !prev_members.contains(addr)).forEach(addr -> prev_members.add(addr));
             }
 
-            Address coord=determineCoordinator();
-            if(coord != null && coord.equals(local_addr) && !haveCoordinatorRole()) {
-                becomeCoordinator();
+            if(is_coord) {
+                if(!was_coord) // client (view = null) or participant
+                    becomeCoordinator();
             }
             else {
-                if(haveCoordinatorRole() && !local_addr.equals(coord)) {
+                if(was_coord || impl instanceof ClientGmsImpl) {
                     becomeParticipant();
                     merge_ack_collector.reset(null); // we don't need this one anymore
                 }
@@ -693,8 +698,12 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     protected Address getCoord() {
-        synchronized(impl_mutex) {
+        impl_lock.lock();
+        try {
             return isCoord()? determineNextCoordinator() : determineCoordinator();
+        }
+        finally {
+            impl_lock.unlock();
         }
     }
 
