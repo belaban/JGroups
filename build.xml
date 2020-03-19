@@ -357,6 +357,7 @@
     <target name="create-manifest" description="Builds MANIFEST>MF">
         <mkdir dir="${dist.dir}"/>
         <manifest file="${manifest}">
+            <attribute name="Main-Class" value="org.jgroups.Version"/>
             <attribute name="Built-By" value="${user.name}"/>
             <attribute name="Implementation-Title" value="${ant.project.name}"/>
             <attribute name="Implementation-Version" value="${version}, built ${TODAY}"/>
