@@ -258,8 +258,8 @@
 
     <target name="compile" depends="prepare" description="Compiles all Java files">
         <javac destdir="${compile.dir}"
-               source="1.8"
-               target="1.8"
+               source="11"
+               target="11"
                classpathref="jg.classpath"
                includeantruntime="false"
                debug="on"
