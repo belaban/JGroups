@@ -16,7 +16,7 @@ import java.util.function.BiConsumer;
  * used, but the array of the RingBuffer is used directly to bundle and send messages, minimizing memory allocation.
  */
 public class RingBufferBundler extends BaseBundler {
-    protected RingBuffer<Message>             rb;
+    protected RingBuffer<Message>         rb;
     protected Runner                      bundler_thread;
     protected int                         num_spins=40; // number of times we call Thread.yield before acquiring the lock (0 disables)
     protected static final String         THREAD_NAME="RingBufferBundler";
@@ -51,7 +51,7 @@ public class RingBufferBundler extends BaseBundler {
         this(new RingBuffer<>(Message.class, assertPositive(capacity, "bundler capacity cannot be " + capacity)));
     }
 
-    public RingBuffer<Message>     buf()                     {return rb;}
+    public RingBuffer<Message> buf()                     {return rb;}
     public Thread              getThread()               {return bundler_thread.getThread();}
     public int                 size()                    {return rb.size();}
     public int                 numSpins()                {return num_spins;}
