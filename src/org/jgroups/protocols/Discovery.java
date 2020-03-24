@@ -638,7 +638,7 @@ public abstract class Discovery extends Protocol {
      * @param left_mbrs The members which left. These are excluded from dissemination. Can be null if no members left
      * @param new_mbrs The new members that we need to disseminate the information to. Will be all members if null.
      */
-    protected void disseminateDiscoveryInformation(List current_mbrs, List<Address> left_mbrs, List<Address> new_mbrs) {
+    protected void disseminateDiscoveryInformation(List<Address> current_mbrs, List<Address> left_mbrs, List<Address> new_mbrs) {
         if(new_mbrs == null || new_mbrs.isEmpty())
             return;
 

@@ -60,6 +60,23 @@ public class ResponsesTest {
         assert rsps.waitFor(60000);
     }
 
+    public void testAdd() {
+        Responses rsps=new Responses(0, true, 16);
+        System.out.println("rsps = " + rsps);
+        assert !rsps.isDone();
+        for(int i=0; i < 5; i++)
+            rsps.addResponse(new PingData(addrs[i], true, names[i], phys_addrs[i]), false);
+        assert !rsps.isDone();
+        System.out.println("rsps = " + rsps);
+
+        Responses rsps2=new Responses(0, true)
+          .addResponse(new PingData(addrs[2], true, names[2], phys_addrs[2]).coord(true), false);
+        assert rsps2.isDone();
+        rsps.add(rsps2, addrs[2]);
+        System.out.println("rsps = " + rsps);
+        assert rsps.isDone();
+    }
+
     public void testContainsResponse() {
         Responses rsps=new Responses(10, true);
         assert !rsps.isDone();
@@ -79,14 +96,14 @@ public class ResponsesTest {
     }
 
     public void testSizeOfOne() {
-        Responses rsps=new Responses(1, true, 1);
-        rsps.addResponse(new PingData(addrs[0],true,names[0],phys_addrs[0]),false);
+        Responses rsps=new Responses(1, true, 1)
+          .addResponse(new PingData(addrs[0],true,names[0],phys_addrs[0]),false);
         assert rsps.isDone();
     }
 
     public void testBreakOnCoordRsp() {
-        Responses rsps=new Responses(true);
-        rsps.addResponse(new PingData(addrs[0],true,names[0],phys_addrs[0]), false);
+        Responses rsps=new Responses(true)
+          .addResponse(new PingData(addrs[0],true,names[0],phys_addrs[0]), false);
         assert !rsps.isDone();
 
         rsps.addResponse(new PingData(addrs[1],true,names[1],phys_addrs[1]).coord(true), false);
@@ -133,14 +150,12 @@ public class ResponsesTest {
         boolean done=rsps.waitFor(500);
         assert !done;
         long start=System.currentTimeMillis();
-        new Thread() {
-            public void run() {
-                Util.sleep(500);
-                for(int i=0; i < 2; i++)
-                    rsps.addResponse(new PingData(addrs[i],true,names[i],phys_addrs[i]), false);
-                rsps.addResponse(new PingData(addrs[3], true, names[3], phys_addrs[3]).coord(true), false);
-            }
-        }.start();
+        new Thread(() -> {
+            Util.sleep(500);
+            for(int i=0; i < 2; i++)
+                rsps.addResponse(new PingData(addrs[i],true,names[i],phys_addrs[i]), false);
+            rsps.addResponse(new PingData(addrs[3], true, names[3], phys_addrs[3]).coord(true), false);
+        }).start();
 
         done=rsps.waitFor(20000);
         long time=System.currentTimeMillis() - start;

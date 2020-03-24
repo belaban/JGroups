@@ -61,9 +61,9 @@ public class Responses implements Iterable<PingData> {
         }
     }
 
-    public void addResponse(PingData rsp, boolean overwrite) {
+    public Responses addResponse(PingData rsp, boolean overwrite) {
         if(rsp == null)
-            return;
+            return this;
 
         boolean is_coord_rsp=rsp.isCoord(), changed=false;
         lock.lock();
@@ -83,10 +83,19 @@ public class Responses implements Iterable<PingData> {
             }
             if(changed && ((num_expected_rsps > 0 && index >= num_expected_rsps) || break_on_coord_rsp && is_coord_rsp))
                 _done();
+            return this;
         }
         finally {
             lock.unlock();
         }
+    }
+
+    public Responses add(Responses rsps, Address local_addr) {
+        if(rsps != null) {
+            for(PingData rsp: rsps)
+                addResponse(rsp, Objects.equals(local_addr, rsp.getAddress()));
+        }
+        return this;
     }
 
     public boolean containsResponseFrom(Address mbr) {
