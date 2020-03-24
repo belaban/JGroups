@@ -79,10 +79,10 @@ public class ConcurrentStartupTest {
     }
 
     // @Test(invocationCount=10)
-    /*public void testConcurrentJoinWithPING() throws Exception {
+    public void testConcurrentJoinWithPING() throws Exception {
         setup(UDP.class, PING.class);
         startThreads("withUDPandPING");
-    }*/
+    }
 
     protected static JChannel create(Class<? extends TP> tp_cl, Class<? extends Discovery> discovery_cl,
                                      String name) throws Exception {
