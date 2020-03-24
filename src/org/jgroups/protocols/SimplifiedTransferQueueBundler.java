@@ -28,7 +28,7 @@ public class SimplifiedTransferQueueBundler extends TransferQueueBundler {
         return curr + removeQueueSize();
     }
 
-    protected void addMessage(Message msg, long size) {
+    @Override protected void addMessage(Message msg, int size) {
         try {
             while(curr < MSG_BUF_SIZE && msg_queue[curr] != null) ++curr;
             if(curr < MSG_BUF_SIZE) {
