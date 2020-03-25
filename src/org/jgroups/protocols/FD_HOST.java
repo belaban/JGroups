@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
  * <p/>
  * FD_HOST does <em>not</em> detect the crash or hanging of single members on the local host, but only checks liveness
  * of all other hosts in a cluster. Therefore it is meant to be used together with other failure detection protocols,
- * e.g. {@link org.jgroups.protocols.FD_ALL} and {@link org.jgroups.protocols.FD_SOCK}.
+ * e.g. {@link org.jgroups.protocols.FD_ALL3} and {@link org.jgroups.protocols.FD_SOCK}.
  * <p/>
  * This protocol would typically be used when multiple cluster members are running on the same physical box.
  * <p/>

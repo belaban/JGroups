@@ -28,7 +28,7 @@ public class FlushTest {
 
     public void testSingleChannel() throws Exception {
         Semaphore s = new Semaphore(1);
-        FlushTestReceiver[] receivers={ new FlushTestReceiver("c1", s, 0, FlushTestReceiver.CONNECT_ONLY) };
+        FlushTestReceiver[] receivers={new FlushTestReceiver("c1", s, 0, FlushTestReceiver.CONNECT_ONLY)};
         receivers[0].start();
         s.release(1);
 
@@ -129,9 +129,7 @@ public class FlushTest {
             changeProps(a,b,c);
             b.connect("testFlushWithCrashedFlushCoordinator");
             a.connect("testFlushWithCrashedFlushCoordinator");
-
             c.connect("testFlushWithCrashedFlushCoordinator");
-
             Util.waitUntilAllChannelsHaveSameView(10000, 500, a,b,c);
 
             System.out.println("shutting down flush coordinator B");
@@ -143,11 +141,7 @@ public class FlushTest {
             Util.shutdown(b);
             Stream.of(a,c).forEach(ch -> ch.getProtocolStack().findProtocol(FLUSH.class).setLevel("debug"));
 
-            for(int i=0; i < 20; i++) {
-                if(Stream.of(a,c).allMatch(ch -> ch.view().size() == 2))
-                    break;
-                Util.sleep(500);
-            }
+            Util.waitUntilAllChannelsHaveSameView(100000, 500, a,c);
 
             // cluster should not hang and two remaining members should have a correct view
             assert a.getView().size() == 2 : String.format("A's view: %s", a.getView());
@@ -283,7 +277,7 @@ public class FlushTest {
             boolean first = true;
             for (String channelName : names) {
                 FlushTestReceiver channel = null;
-                channel = new FlushTestReceiver(channelName, semaphore, 0, connectType);
+                channel =new FlushTestReceiver(channelName, semaphore, 0, connectType);
                 channels.add(channel);
 
                 // Release one ticket at a time to allow the thread to start working
@@ -378,11 +372,11 @@ public class FlushTest {
         return s;
     }
 
-    protected JChannel createChannel(String name) throws Exception {
+    protected static JChannel createChannel(String name) throws Exception {
           Protocol[] protocols={
             new SHARED_LOOPBACK(),
             new SHARED_LOOPBACK_PING(),
-            new FD_ALL().setValue("timeout", 3000).setValue("interval", 1000),
+            new FD_ALL3().setInterval(3000).setInterval(1000),
             new NAKACK2(),
             new UNICAST3(),
             new STABLE(),
@@ -402,16 +396,17 @@ public class FlushTest {
                 fd.setTimeout(1000);
                 fd.setMaxTries(2);
             }
-            FD_ALL fd_all=ch.getProtocolStack().findProtocol(FD_ALL.class);
+            FailureDetection fd_all=ch.getProtocolStack().findProtocol(FailureDetection.class);
             if(fd_all != null) {
                 fd_all.setTimeout(2000);
                 fd_all.setInterval(800);
-                fd_all.setTimeoutCheckInterval(3000);
+                if(fd_all instanceof FD_ALL)
+                    ((FD_ALL)fd_all).setTimeoutCheckInterval(3000);
             }
         }
     }
 
-    private class FlushTestReceiver implements Receiver, Runnable, EventSequence {
+    private static class FlushTestReceiver implements Receiver, Runnable, EventSequence {
         private final int             connectMethod;
         public static final int       CONNECT_ONLY = 1;
         public static final int       CONNECT_AND_SEPARATE_GET_STATE = 2;

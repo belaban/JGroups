@@ -65,7 +65,7 @@ public class SequencerOrderTest {
         Util.close(c,b,a);
     }
 
-    @Test @SuppressWarnings("unchecked")
+    @Test
     public void testBroadcastSequence() throws Exception {
         insertShuffle(a,b,c);
         
@@ -102,6 +102,7 @@ public class SequencerOrderTest {
             shuffle.setMaxTime(1000);
             ch.getProtocolStack().insertProtocol(shuffle, ProtocolStack.Position.BELOW, NAKACK2.class);
             shuffle.init(); // starts the timer
+            shuffle.start();
         }
     }
 
@@ -196,7 +197,7 @@ public class SequencerOrderTest {
         public int size() {return msgs.size();}
 
         public void receive(Message msg) {
-            String val=(String)msg.getObject();
+            String val=msg.getObject();
             if(val != null) {
                 synchronized(msgs) {
                     msgs.add(val);

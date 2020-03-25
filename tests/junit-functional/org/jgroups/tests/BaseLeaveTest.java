@@ -3,9 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
-import org.jgroups.protocols.FD_ALL;
-import org.jgroups.protocols.FD_ALL2;
-import org.jgroups.protocols.FD_SOCK;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.GmsImpl;
 import org.jgroups.protocols.pbcast.ViewHandler;
@@ -153,7 +151,8 @@ public abstract class BaseLeaveTest {
      */
     public void testLeaveOfSecondHalfWithCoordLeaving() throws Exception {
         setup(NUM);
-        Stream.of(channels).forEach(ch -> ch.getProtocolStack().removeProtocols(FD_ALL.class, FD_ALL2.class, FD_SOCK.class));
+        Stream.of(channels).forEach(ch -> ch.getProtocolStack()
+          .removeProtocols(FailureDetection.class, FD_SOCK.class));
         Comparator<GmsImpl.Request> comp=Comparator.comparingInt(GmsImpl.Request::getType).reversed();
         GMS gms=channels[0].getProtocolStack().findProtocol(GMS.class);
         ViewHandler vh=gms.getViewHandler();
@@ -178,7 +177,7 @@ public abstract class BaseLeaveTest {
     /** The first channels.length_LEAVERS leave concurrently */
     public void testConcurrentLeaves8() throws Exception {
         setup(NUM);
-        Stream.of(channels).forEach(ch -> ch.getProtocolStack().removeProtocols(FD_ALL.class, FD_ALL2.class, FD_SOCK.class));
+        Stream.of(channels).forEach(ch -> ch.getProtocolStack().removeProtocols(FailureDetection.class, FD_SOCK.class));
         testConcurrentLeaves(8);
     }
 

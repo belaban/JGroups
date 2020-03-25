@@ -44,7 +44,25 @@ public class FD_ALL3 extends FailureDetection {
         super.init();
         if(interval >= timeout)
             throw new IllegalStateException("interval needs to be smaller than timeout");
-        num_bits=timeout % interval == 0? (int)(timeout / interval) : (int)((timeout / interval)+1);
+        num_bits=computeBits();
+    }
+
+    @Override public void start() throws Exception {
+        super.start();
+        if(interval >= timeout)
+            throw new IllegalStateException("interval needs to be smaller than timeout");
+    }
+
+    @Override public FD_ALL3 setTimeout(long t) {
+        super.setTimeout(t);
+        num_bits=computeBits();
+        return this;
+    }
+
+    @Override public FD_ALL3 setInterval(long i) {
+        super.setInterval(i);
+        num_bits=computeBits();
+        return this;
     }
 
     @Override protected void update(Address sender, boolean log_msg, boolean skip_if_exists) {
@@ -61,7 +79,9 @@ public class FD_ALL3 extends FailureDetection {
             log.trace("%s: received heartbeat from %s", local_addr, sender);
     }
 
-
+    protected int computeBits() {
+        return timeout % interval == 0? (int)(timeout / interval) : (int)((timeout / interval)+1);
+    }
 
     protected <T> boolean needsToBeSuspected(Address mbr, T value) {
         Bitmap bm=(Bitmap)value;
@@ -130,7 +150,7 @@ public class FD_ALL3 extends FailureDetection {
                 if(bits.get(i) == 1)
                     set++;
             }
-            return String.format("[%d 1s %d 0s] (index: %d)", set, bits.length() - set, index);
+            return String.format("[%d set %d not-set] (index: %d)", set, bits.length() - set, index);
         }
 
         public String toStringDetailed() {

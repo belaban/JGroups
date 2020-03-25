@@ -119,7 +119,7 @@ public class ProgrammaticUPerf2 implements Receiver {
 
               new MERGE3(),
               new FD_SOCK(),
-              new FD_ALL(),
+              new FD_ALL3(),
               new VERIFY_SUSPECT(),
               new NAKACK2(),
               new UNICAST3().setXmitTableNumRows(10).setXmitTableMsgsPerRow(50000)

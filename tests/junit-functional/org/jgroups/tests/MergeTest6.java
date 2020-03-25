@@ -109,9 +109,7 @@ public class MergeTest6 {
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
           new MERGE3().setMinInterval(3000).setMaxInterval(4000).setValue("check_interval", 7000),
-          new FD_ALL().setValue("timeout", 8000).setValue("interval", 3000)
-            .setValue("timeout_check_interval", 10000),
-
+          new FD_ALL3().setTimeout(8000).setInterval(3000),
           new NAKACK2().setValue("use_mcast_xmit", false)
             .setValue("log_discard_msgs", false).setValue("log_not_found_msgs", false),
           new UNICAST3(),

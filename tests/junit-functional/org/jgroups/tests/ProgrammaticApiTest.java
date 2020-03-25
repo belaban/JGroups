@@ -48,7 +48,7 @@ public class ProgrammaticApiTest {
                 new PING(),
                 new MERGE3(),
                 new FD_SOCK(),
-                new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000),
+                new FD_ALL3().setTimeout(12000).setInterval(3000),
                 new VERIFY_SUSPECT(),
                 new BARRIER(),
                 new NAKACK2(),

@@ -79,7 +79,7 @@ public class ReconciliationTest {
             System.out.println("manual flush success=" + rc);
             channel.stopFlush();
         };
-        String apps[]={"A", "B", "C"};
+        String[] apps={"A", "B", "C"};
         reconciliationHelper(apps, t);
     }
 
@@ -106,7 +106,7 @@ public class ReconciliationTest {
                 e.printStackTrace();
             }
         };
-        String apps[]={"A", "B", "C"};
+        String[] apps={"A", "B", "C"};
         reconciliationHelper(apps, t);
     }
 
@@ -211,11 +211,11 @@ public class ReconciliationTest {
         Assert.assertEquals(5, list.size());
     }
 
-    protected JChannel createChannel(String name) throws Exception {
+    protected static JChannel createChannel(String name) throws Exception {
         Protocol[] protocols={
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
-          new FD_ALL().setValue("timeout", 3000).setValue("interval", 1000),
+          new FD_ALL3().setTimeout(3000).setInterval(1000),
           new NAKACK2(),
           new UNICAST3(),
           new STABLE(),
@@ -228,9 +228,9 @@ public class ReconciliationTest {
     }
 
     /** Sets discard_delivered_msgs to false */
-    protected void modifyNAKACK(JChannel ch) {
+    protected static void modifyNAKACK(JChannel ch) {
         if(ch == null) return;
-        NAKACK2 nakack=(NAKACK2)ch.getProtocolStack().findProtocol(NAKACK2.class);
+        NAKACK2 nakack=ch.getProtocolStack().findProtocol(NAKACK2.class);
         if(nakack != null)
             nakack.setDiscardDeliveredMsgs(false);
     }
@@ -272,12 +272,8 @@ public class ReconciliationTest {
         public void                       reset()   {msgs.clear();}
 
         public void receive(Message msg) {
-            List<Integer> list=msgs.get(msg.getSrc());
-            if(list == null) {
-                list=new ArrayList<>();
-                msgs.put(msg.getSrc(), list);
-            }
-            list.add((Integer)msg.getObject());
+            List<Integer> list=msgs.computeIfAbsent(msg.getSrc(), k -> new ArrayList<>());
+            list.add(msg.getObject());
             System.out.println(name + ": <-- " + msg.getObject() + " from " + msg.getSrc());
         }
     }
@@ -358,7 +354,7 @@ public class ReconciliationTest {
         }
 
         public void receive(Message msg) {
-            Object[] modification=(Object[])msg.getObject();
+            Object[] modification=msg.getObject();
             synchronized(data) {
                 data.put(modification[0], modification[1]);
             }
@@ -371,9 +367,8 @@ public class ReconciliationTest {
             }
         }
 
-        @SuppressWarnings("unchecked")
         public void setState(InputStream istream) throws Exception {
-            Map<Object,Object> m=(Map<Object,Object>)Util.objectFromStream(new DataInputStream(istream));
+            Map<Object,Object> m=Util.objectFromStream(new DataInputStream(istream));
             synchronized(data) {
                 data.clear();
                 data.putAll(m);

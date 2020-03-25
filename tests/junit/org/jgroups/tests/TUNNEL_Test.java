@@ -247,9 +247,7 @@ public class TUNNEL_Test extends ChannelTestBase {
 
     protected JChannel createTunnelChannel(String name, boolean include_failure_detection) throws Exception {
         TUNNEL tunnel=new TUNNEL().setValue("bind_addr", gossip_router_bind_addr);
-        FD_ALL fd_all=new FD_ALL();
-        fd_all.setTimeout(2000);
-        fd_all.setInterval(500);
+        FD_ALL3 fd_all=new FD_ALL3().setTimeout(2000).setInterval(500);
         tunnel.setGossipRouterHosts(gossip_router_hosts);
         List<Protocol> protocols=new ArrayList<>(Arrays.asList(tunnel, new PING(),
                                                                new MERGE3().setValue("min_interval", 1000)

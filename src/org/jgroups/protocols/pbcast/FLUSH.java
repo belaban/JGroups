@@ -514,11 +514,13 @@ public class FLUSH extends Protocol {
 
     private void waitForUnblock() {
         try {
-            flush_unblock_promise.reset();
             flush_unblock_promise.getResultWithTimeout(end_flush_timeout);
         } catch (TimeoutException t) {
             if (log.isWarnEnabled())
                 log.warn(localAddress + ": waiting for UNBLOCK timed out after " + end_flush_timeout + " ms");
+        }
+        finally {
+            flush_unblock_promise.reset();
         }
     }
 
@@ -687,33 +689,27 @@ public class FLUSH extends Protocol {
      * @param members List of participants in the flush protocol. Guaranteed to be non-null
      */
     private void onSuspend(final List<Address> members) {
-        Message msg = null;
         Collection<Address> participantsInFlush = null;
-      synchronized (sharedLock) {
-         flushCoordinator = localAddress;         
+        synchronized (sharedLock) {
+            flushCoordinator = localAddress;
 
-         // start FLUSH only on group members that we need to flush
-         participantsInFlush = members;
-         participantsInFlush.retainAll(currentView.getMembers());
-         flushMembers.clear();
-         flushMembers.addAll(participantsInFlush);
-         flushMembers.removeAll(suspected);
-         
-          msg = new BytesMessage(null).setSrc(localAddress).setArray(marshal(participantsInFlush, null))
-            .putHeader(this.id, new FlushHeader(FlushHeader.START_FLUSH, currentViewId()));
-
-      }
+            // start FLUSH only on group members that we need to flush
+            participantsInFlush = members;
+            participantsInFlush.retainAll(currentView.getMembers());
+            flushMembers.clear();
+            flushMembers.addAll(participantsInFlush);
+            flushMembers.removeAll(suspected);
+        }
         if (participantsInFlush.isEmpty()) {
             flush_promise.setResult(SUCCESS_START_FLUSH);
         } else {
+            Message msg=new BytesMessage(null).setSrc(localAddress).setArray(marshal(participantsInFlush, null))
+              .putHeader(this.id, new FlushHeader(FlushHeader.START_FLUSH, currentViewId()));
             down_prot.down(msg);
-            if (log.isDebugEnabled())
-                log.debug(localAddress + ": flush coordinator "
-                        + " is starting FLUSH with participants " + participantsInFlush);
+            log.debug("%s: flush coordinator is starting FLUSH with participants %s", localAddress, participantsInFlush);
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void onResume(Event evt) {
         List<Address> members =evt.getArg();
         long viewID = currentViewId();

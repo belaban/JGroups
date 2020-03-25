@@ -83,18 +83,11 @@ public class InfinispanStackMerge3Test {
     protected static JChannel createChannel(TP transport, String name) throws Exception {
         return new JChannel(transport.setBindAddress(Util.getLoopback()),
                             new MPING(),
-                            new MERGE3()
-                              .setMinInterval(5_000)
-                              .setMaxInterval(10_000),
+                            new MERGE3().setMinInterval(5000).setMaxInterval(10000),
                             new FD_SOCK(),
-                            ((FD_ALL)new FD_ALL()
-                              .setInterval(2_000)
-                              .setTimeout(8_000))
-                              .setTimeoutCheckInterval(2_000),
-                            new VERIFY_SUSPECT()
-                              .setTimeout(5_000),
-                            new NAKACK2()
-                              .setUseMcastXmit(false),
+                            new FD_ALL3().setTimeout(8000).setInterval(2000),
+                            new VERIFY_SUSPECT().setTimeout(5000),
+                            new NAKACK2().setUseMcastXmit(false),
                             new UNICAST3(),
                             new STABLE(),
                             new GMS().joinTimeout(1000).printLocalAddress(false),

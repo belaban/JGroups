@@ -20,7 +20,7 @@ public class CustomProtocolTest {
         JChannel channel=new JChannel(new UDP(),
                                       new org.jgroups.tests.CustomProtocolTest.MyProtocol(),
                                       new PING(),
-                                      new FD_ALL(), new VERIFY_SUSPECT(), new NAKACK2(), new UNICAST3(),
+                                      new FD_ALL3(), new VERIFY_SUSPECT(), new NAKACK2(), new UNICAST3(),
                                       new STABLE(), new FRAG2(), new GMS());
         System.out.println("channel = " + channel);
         assert true;

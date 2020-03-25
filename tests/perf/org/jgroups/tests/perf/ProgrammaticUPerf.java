@@ -121,7 +121,7 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
           new TCPPING().initialHosts(Collections.singletonList(new InetSocketAddress(bind_address, 7800))),
           new MERGE3(),
           new FD_SOCK(),
-          new FD_ALL(),
+          new FD_ALL3(),
           new VERIFY_SUSPECT(),
           new NAKACK2(),
           new UNICAST3(),

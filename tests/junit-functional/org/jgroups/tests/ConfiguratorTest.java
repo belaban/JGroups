@@ -24,16 +24,16 @@ import java.util.*;
 public class ConfiguratorTest {
     protected JChannel      ch;
     protected ProtocolStack stack;
-    static final String props="UDP:PING:FD_ALL:pbcast.NAKACK2(xmit_interval=500):UNICAST3:MFC";
-    final String[] names={"MFC", "UNICAST3", "NAKACK2", "FD_ALL", "PING", "UDP"};
-    final String[] below={"MFC", "UNICAST3", "TRACE", "NAKACK2", "FD_ALL", "PING", "UDP"};
-    final String[] above={"MFC", "TRACE", "UNICAST3", "NAKACK2", "FD_ALL", "PING", "UDP"};
+    static final String props="UDP:PING:FD_ALL3:pbcast.NAKACK2(xmit_interval=500):UNICAST3:MFC";
+    final String[] names={"MFC", "UNICAST3", "NAKACK2", "FD_ALL3", "PING", "UDP"};
+    final String[] below={"MFC", "UNICAST3", "TRACE", "NAKACK2", "FD_ALL3", "PING", "UDP"};
+    final String[] above={"MFC", "TRACE", "UNICAST3", "NAKACK2", "FD_ALL3", "PING", "UDP"};
 
 
 
     @BeforeMethod
     void setUp() throws Exception {
-        ch=new JChannel(new UDP(), new PING(), new FD_ALL(), new NAKACK2().setValue("xmit_interval", 500),
+        ch=new JChannel(new UDP(), new PING(), new FD_ALL3(), new NAKACK2().setValue("xmit_interval", 500),
                         new UNICAST3(), new MFC());
         stack=ch.getProtocolStack();
     }
@@ -139,7 +139,7 @@ public class ConfiguratorTest {
 
             Map<String,String> map=new HashMap<>();
             Map<Object,Object> table=System.getProperties();
-            for(Map.Entry entry: table.entrySet())
+            for(Map.Entry<Object,Object> entry: table.entrySet())
                 map.put((String)entry.getKey(), (String)entry.getValue());
 
             Person p=new Person();
