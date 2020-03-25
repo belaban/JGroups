@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
  * On reception of a message or heartbeat from P, P's bitmap at index is set to 1.<br/>
  * JIRA: https://issues.redhat.com/browse/JGRP-2451
  *
- * @Dan Berindei
+ * @author  Dan Berindei
  * @author  Bela Ban
  * @version 5.0.0
  */

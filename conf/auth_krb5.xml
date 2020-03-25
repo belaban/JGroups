@@ -5,7 +5,7 @@
     <PING />
     <MERGE3 />
     <FD_SOCK/>
-    <FD_ALL/>
+    <FD_ALL3 />
     <VERIFY_SUSPECT />
     <BARRIER />
     <pbcast.NAKACK2 />

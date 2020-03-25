@@ -5,7 +5,7 @@
     <TCPPING initial_hosts="localhost[7600]" port_range="10"/>
     <MERGE3/> 
     <FD_SOCK start_port="57600"/>
-    <FD_ALL/>
+    <FD_ALL3/>
     <!--INJECT_VIEW/-->
     <VERIFY_SUSPECT/>
     <SSL_KEY_EXCHANGE

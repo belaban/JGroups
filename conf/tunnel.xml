@@ -11,7 +11,7 @@
     <TUNNEL gossip_router_hosts="${jgroups.tunnel.gossip_router_hosts:localhost[12001]}"/>
     <PING/>
     <MERGE3/>
-    <FD_ALL/>
+    <FD_ALL3/>
     <VERIFY_SUSPECT/>
     <pbcast.NAKACK2 use_mcast_xmit="false"/>
     <UNICAST3/>
