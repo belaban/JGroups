@@ -92,6 +92,10 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
         return super.size() + removeQueueSize() + getBufferSize();
     }
 
+    public int getQueueSize() {
+        return queue.size();
+    }
+
     public void send(Message msg) throws Exception {
         if(running)
             queue.put(msg);

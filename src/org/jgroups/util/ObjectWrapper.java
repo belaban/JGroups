@@ -50,7 +50,7 @@ public class ObjectWrapper implements SizeStreamable {
     }
 
     public String toString() {
-        return String.format("obj: %s %s", obj, serialized != null? serialized.length + " bytes" : "");
+        return String.format("obj: %s %s", obj, serialized != null? "(" + serialized.length + " bytes)" : "");
     }
 
     public int serializedSize() {

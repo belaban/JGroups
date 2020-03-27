@@ -106,6 +106,10 @@ public class RemoveQueueBundler extends BaseBundler {
         }
     }
 
+    public int getQueueSize() {
+        return rb.size();
+    }
+
     public int size() {
         return rb.size();
     }
