@@ -42,11 +42,11 @@ public abstract class BaseBundler implements Bundler {
         // code removed (https://issues.jboss.org/browse/JGRP-2324)
     }
 
+    /** Returns the total number of messages in the hashmap */
     public int size() {
         lock.lock();
         try {
-            long num=msgs.values().stream().flatMap(Collection::stream).map(Message::size).reduce(0L, (a, b) -> a + b);
-            return (int)num;
+            return msgs.values().stream().map(List::size).reduce(0, Integer::sum);
         }
         finally {
             lock.unlock();
@@ -62,7 +62,6 @@ public abstract class BaseBundler implements Bundler {
             List<Message> list=entry.getValue();
             if(list.isEmpty())
                 continue;
-
             output.position(0);
             if(list.size() == 1)
                 sendSingleMessage(list.get(0));

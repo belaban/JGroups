@@ -121,9 +121,7 @@ public class DELAY extends Protocol {
         public int compareTo(Delayed o) {
             if (o == this)
                 return 0;
-            // return Long.compare(this.getDelay(TimeUnit.NANOSECONDS), o.getDelay(TimeUnit.NANOSECONDS)); // JDK 7 only
-            long my_delay=this.getDelay(TimeUnit.NANOSECONDS), other_delay=o.getDelay(TimeUnit.NANOSECONDS);
-            return (my_delay < other_delay) ? -1 : ((my_delay == other_delay) ? 0 : 1);
+            return Long.compare(this.getDelay(TimeUnit.NANOSECONDS), o.getDelay(TimeUnit.NANOSECONDS));
         }
     }
 

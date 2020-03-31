@@ -27,6 +27,13 @@ public interface Bundler {
     int size();
 
     /**
+     * If the bundler has a queue and it should be managed by a queuing discipline (like Random Early Detection), then
+     * return the number of elements in the queue, else -1. In the latter case, the queue won't be managed.<br/>
+     * This method needs to be fast as it might get called on every message to be sent.
+     */
+    default int getQueueSize() {return -1;}
+
+    /**
      * Returns stats about the bundler itself.
      * @return Stats, may be null
      */

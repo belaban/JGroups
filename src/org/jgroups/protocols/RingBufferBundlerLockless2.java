@@ -50,6 +50,7 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
     public int                        readIndex()     {return read_index.get();}
     public int                        writeIndex()    {return write_index.get();}
     public RingBufferBundlerLockless2 reset()         {ri=0; read_index.set(0); write_index.set(1); return this;}
+    public int                        getQueueSize()  {return size();}
     public int                        size()          {return _size(read_index.get(), write_index.get());}
 
     protected int _size(int ri, int wi) {

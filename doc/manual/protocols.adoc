@@ -2263,6 +2263,17 @@ RATE_LIMITER can be used to set a limit on the data sent per time unit. When sen
 
 ${RATE_LIMITER}
 
+==== Random Early Drop (RED)
+RED is an implementation of a Random Early Detect (or Drop) protocol. It measures the queue size of
+the bundler in the transport and drops a message if the bundler's queue is starting to get full. When
+the queue is full, all messages will be dropped (tail drop).
+
+The `RED` protocol should be placed above the transport.
+
+
+${RED}
+
+
 [[LockingProtocols]]
 ==== Locking protocols
 

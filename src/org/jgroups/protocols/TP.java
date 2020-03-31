@@ -257,10 +257,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         max_bundle_size=size;
         return (T)this;
     }
-    public final int getMaxBundleSize()                  {return max_bundle_size;}
-    public int       getBundlerCapacity()                {return bundler_capacity;}
-    public int       getMessageProcessingMaxBufferSize() {return msg_processing_max_buffer_size;}
-    public boolean   useFibers()                         {return use_fibers;}
+    public final int        getMaxBundleSize()                  {return max_bundle_size;}
+    public int              getBundlerCapacity()                {return bundler_capacity;}
+    public <T extends TP> T setBundlerCapacity(int c)           {this.bundler_capacity=c; return (T)this;}
+    public int              getMessageProcessingMaxBufferSize() {return msg_processing_max_buffer_size;}
+    public boolean          useFibers()                         {return use_fibers;}
 
     @ManagedAttribute public int getBundlerBufferSize() {
         if(bundler instanceof TransferQueueBundler)
@@ -945,11 +946,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
         fetchLocalAddresses();
         startDiagnostics();
-        if(bundler == null) {
+        if(bundler == null)
             bundler=createBundler(bundler_type);
-            bundler.init(this);
-            bundler.start();
-        }
+        bundler.init(this);
+        bundler.start();
         // local_addr is null when shared transport
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
     }
