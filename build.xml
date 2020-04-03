@@ -344,7 +344,7 @@
              basedir="${compile.dir}"
              manifest="${dist.dir}/MANIFEST.MF"
              includes="org/jgroups/**">
-            <fileset dir="${conf.dir}" includes="*.xml, jg-messages*.properties, JGROUPS_VERSION.properties *.jks">
+            <fileset dir="${conf.dir}" includes="*.xml, *.properties, *.cfg, *.jks">
                 <exclude name="log4j*.xml"/>
                 <exclude name="settings.xml"/>
             </fileset>
