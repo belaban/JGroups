@@ -22,6 +22,7 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -225,6 +226,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       "disables this.")
     protected long suppress_time_different_cluster_warnings=60000;
 
+    // When true, the threads will be dumped at FATAL level when the thread pool is full
+    protected final AtomicBoolean thread_dump=new AtomicBoolean(true);
 
     /**
      * Maximum number of bytes for messages to be queued until they are sent.
@@ -351,6 +354,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         is_trace=log.isTraceEnabled();
         return retval;
     }
+
+    @ManagedOperation(description="Resets the thread dump boolean; next time the thread is exhausted, " +
+      "the threads will be dumped at fatal level")
+    public void resetThreadDump() {thread_dump.compareAndSet(false, true);}
 
     @ManagedOperation(description="Changes the message processing policy. The fully qualified name of a class " +
       "implementing MessageProcessingPolicy needs to be given")
@@ -722,8 +729,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public int getThreadPoolSize() {
         if(thread_pool instanceof ThreadPoolExecutor)
             return ((ThreadPoolExecutor)thread_pool).getPoolSize();
-        if(thread_pool instanceof ForkJoinPool)
-            return ((ForkJoinPool)thread_pool).getPoolSize();
         return 0;
     }
 
@@ -732,8 +737,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public int getThreadPoolSizeActive() {
         if(thread_pool instanceof ThreadPoolExecutor)
             return ((ThreadPoolExecutor)thread_pool).getActiveCount();
-        if(thread_pool instanceof ForkJoinPool)
-            return ((ForkJoinPool)thread_pool).getRunningThreadCount();
         return 0;
     }
 
@@ -1516,6 +1519,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         catch(RejectedExecutionException ex) {
             if(!spawn_thread_on_rejection) {
                 msg_stats.incrNumRejectedMsgs(1);
+                // https://issues.redhat.com/browse/JGRP-2403
+                if(thread_dump.compareAndSet(true, false)) {
+                    log.fatal("%s: thread pool is full (max=%d, active=%d); " +
+                                "thread dump (dumped once, until thread_dump is reset):\n%s",
+                              local_addr, getThreadPoolMaxThreads(), getThreadPoolSize(), Util.dumpThreads());
+                }
                 return false;
             }
 
