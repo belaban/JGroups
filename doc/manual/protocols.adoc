@@ -2274,6 +2274,19 @@ The `RED` protocol should be placed above the transport.
 ${RED}
 
 
+==== SOS
+`SOS` is a protocol that periodically dumps a selected set of critical attributes into a file. These could for example
+be the size of the thread pool, the number of retransmissions, or the number of rejected messages.
+
+Looking at the values over time would help a support person in diagnosing the problem.
+
+`SOS` can be placed anywhere in the stack.
+
+JIRA: https://issues.redhat.com/browse/JGRP-2402
+
+${SOS}
+
+
 [[LockingProtocols]]
 ==== Locking protocols
 

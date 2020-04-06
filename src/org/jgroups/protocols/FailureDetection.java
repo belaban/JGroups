@@ -268,7 +268,7 @@ public abstract class FailureDetection extends Protocol {
         lock.lock();
         try {
             if(!isHeartbeatSenderRunning()) {
-                heartbeat_sender=timer.scheduleWithFixedDelay(new HeartbeatSender(), 0, interval, TimeUnit.MILLISECONDS,
+                heartbeat_sender=timer.scheduleWithFixedDelay(new HeartbeatSender(this), 0, interval, TimeUnit.MILLISECONDS,
                                                               getTransport() instanceof TCP);
             }
         }
@@ -332,6 +332,12 @@ public abstract class FailureDetection extends Protocol {
 
     /** Class which periodically multicasts a HEARTBEAT message to the cluster */
     class HeartbeatSender implements Runnable {
+        protected final FailureDetection enclosing;
+
+        HeartbeatSender(FailureDetection enclosing) {
+            this.enclosing=enclosing;
+        }
+
         public void run() {
             if(mcast_sent.compareAndSet(true, false))
                 ; // suppress sending of heartbeat
@@ -345,7 +351,7 @@ public abstract class FailureDetection extends Protocol {
         }
 
         public String toString() {
-            return FailureDetection.class.getSimpleName() + ": " + getClass().getSimpleName();
+            return String.format("%s: %s", enclosing.getClass().getSimpleName(), getClass().getSimpleName());
         }
     }
 

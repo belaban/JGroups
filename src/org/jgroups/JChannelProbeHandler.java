@@ -293,7 +293,17 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
         if(index == -1)
             throw new IllegalArgumentException("operation " + operation + " is missing the protocol name");
         String prot_name=operation.substring(0, index);
-        Protocol prot=ch.getProtocolStack().findProtocol(prot_name);
+
+        Protocol prot=null;
+        try {
+            Class<? extends Protocol> cl=Util.loadProtocolClass(prot_name, this.getClass());
+            prot=ch.getProtocolStack().findProtocol(cl);
+        }
+        catch(Exception e) {
+        }
+
+        if(prot == null)
+            prot=ch.getProtocolStack().findProtocol(prot_name);
         if(prot == null) {
             log.error("protocol %s not found", prot_name);
             return; // less drastic than throwing an exception...
@@ -319,6 +329,8 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
         }
 
         Method method=findMethod(prot, method_name, args);
+        if(method == null)
+            throw new IllegalArgumentException(String.format("method %s not found in %s", method_name, prot.getName()));
         MethodCall call=new MethodCall(method);
         Object[] converted_args=null;
         if(args != null) {
@@ -329,7 +341,7 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
         }
         Object retval=call.invoke(prot, converted_args);
         if(retval != null)
-            map.put(prot_name + "." + method_name, retval.toString());
+            map.put(prot.getName() + "." + method_name, retval.toString());
     }
 
     protected Method findMethod(Protocol prot, String method_name, String[] args) throws Exception {

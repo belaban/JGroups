@@ -791,7 +791,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @ManagedOperation(description="Dumps the contents of the logical address cache")
     public String printLogicalAddressCache() {
-        return logical_addr_cache.size() + " elements:\n" + logical_addr_cache.printCache(print_function);
+        return logical_addr_cache.printCache(print_function);
     }
 
     @ManagedOperation(description="Prints the contents of the who-has cache")

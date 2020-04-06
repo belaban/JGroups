@@ -274,7 +274,19 @@ public class ProtocolStack extends Protocol {
 
 
     public Map<String,Map<String,Object>> dumpStats(final String protocol_name, List<String> attrs) {
-        List<Protocol> prots=findProtocols(protocol_name);
+        List<Protocol> prots=null;
+
+        try {
+            Class<? extends Protocol> cl=Util.loadProtocolClass(protocol_name, this.getClass());
+            Protocol prot=findProtocol(cl);
+            if(prot != null)
+                prots=Collections.singletonList(prot);
+        }
+        catch(Exception e) {
+        }
+
+        if(prots ==null)
+            prots=findProtocols(protocol_name);
         if(prots == null || prots.isEmpty())
             return null;
         Map<String,Map<String,Object>> retval=new HashMap<>();
@@ -296,10 +308,11 @@ public class ProtocolStack extends Protocol {
                         it.remove();
                 }
             }
-            if(retval.containsKey(protocol_name))
-                retval.put(protocol_name + "-" + prot.getId(), tmp);
+            String pname=prot.getName();
+            if(retval.containsKey(pname))
+                retval.put(pname + "-" + prot.getId(), tmp);
             else
-                retval.put(protocol_name, tmp);
+                retval.put(pname, tmp);
         }
         return retval;
     }
