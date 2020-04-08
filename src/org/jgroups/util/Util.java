@@ -14,7 +14,6 @@ import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.IpAddressUUID;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 
@@ -1609,8 +1608,6 @@ public class Util {
         }
         else if(addr.getClass().equals(IpAddress.class))
             flags=Util.setFlag(flags,Address.IP_ADDR);
-        else if(addr.getClass().equals(IpAddressUUID.class))
-            flags=Util.setFlag(flags, Address.IP_ADDR_UUID);
         else
             streamable_addr=false;
         out.writeByte(flags);
@@ -1642,13 +1639,8 @@ public class Util {
             addr=new IpAddress();
             addr.readFrom(in);
         }
-        else if(Util.isFlagSet(flags, Address.IP_ADDR_UUID)) {
-            addr=new IpAddressUUID();
-            addr.readFrom(in);
-        }
-        else {
+        else
             addr=readOtherAddress(in);
-        }
         return addr;
     }
 

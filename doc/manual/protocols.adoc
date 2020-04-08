@@ -2040,17 +2040,6 @@ compression algorith should be (0: no compression, 9: highest compression).
 ${COMPRESS}
 
 
-==== NAMING
-If <<IpAddressUUID,IpAddressUUIDs>> are used, then the address/logical_name cache may not be populated for all members.
-Note that this doesn't affect correctness, but instead of logical names, the real IP addresses of some members will
-be printed (e.g. in debug logs).
-
-To prevent this, `NAMING` can be added to the stack. The typical location is somewhere towards the bottom of the stack,
-e.g. above the discovery protocol (e.g. `PING`).
-
-NOTE: `NAMING` is only needed when `TP.use_ip_addrs` is true.
-
-${NAMING}
 
 
 [[RELAY]]

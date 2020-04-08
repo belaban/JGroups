@@ -23,5 +23,4 @@ public interface Address extends SizeStreamable, Comparable<Address> {
     byte SITE_UUID    = 1 << 2;
     byte SITE_MASTER  = 1 << 3;
     byte IP_ADDR      = 1 << 4;
-    byte IP_ADDR_UUID = 1 << 5;
 }

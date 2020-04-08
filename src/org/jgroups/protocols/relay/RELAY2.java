@@ -4,7 +4,6 @@ import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.protocols.FORWARD_TO_COORD;
-import org.jgroups.protocols.TP;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.UUID;
@@ -264,17 +263,13 @@ public class RELAY2 extends Protocol {
         timer=getTransport().getTimer();
         if(site == null)
             throw new IllegalArgumentException("site cannot be null");
-        TP tp=getTransport();
-        if(tp.getUseIpAddresses())
-            throw new IllegalArgumentException(String.format("%s cannot be used if %s.use_ip_addrs is true",
-                                                             RELAY2.class.getSimpleName(), tp.getClass().getSimpleName()));
         if(max_site_masters < 1) {
             log.warn("max_size_masters was " + max_site_masters + ", changed to 1");
             max_site_masters=1;
         }
 
         if(site_master_picker_impl != null) {
-            Class<SiteMasterPicker> clazz=Util.loadClass(site_master_picker_impl, (Class)null);
+            Class<SiteMasterPicker> clazz=Util.loadClass(site_master_picker_impl, (Class<?>)null);
             this.site_master_picker=clazz.getDeclaredConstructor().newInstance();
         }
 

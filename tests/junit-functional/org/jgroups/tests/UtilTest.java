@@ -5,7 +5,6 @@ import org.jgroups.*;
 import org.jgroups.Message.Flag;
 import org.jgroups.Message.TransientFlag;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.IpAddressUUID;
 import org.jgroups.util.Bits;
 import org.jgroups.util.*;
 import org.testng.Assert;
@@ -802,7 +801,6 @@ public class UtilTest {
         Address a2=Util.createRandomAddress();
         Address a4=Util.createRandomAddress();
         Address a5=new IpAddress("127.0.0.1", 5555);
-        Address a6=new IpAddressUUID("127.0.0.1", 5555);
 
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
@@ -810,7 +808,6 @@ public class UtilTest {
         Util.writeAddress(a2, dos);
         Util.writeAddress(a4, dos);
         Util.writeAddress(a5, dos);
-        Util.writeAddress(a6, dos);
 
         dos.close();
         byte[] buf=outstream.toByteArray();
@@ -823,8 +820,6 @@ public class UtilTest {
 
         Address tmp=Util.readAddress(dis);
         assert a5.equals(tmp);
-        tmp=Util.readAddress(dis);
-        assert a6.equals(tmp);
     }
 
     public static void testWriteNullAddress() throws Exception {
@@ -842,8 +837,6 @@ public class UtilTest {
 
     public static void testWriteByteBuffer() throws Exception {
         byte[] buf=new byte[1024], tmp;
-        for(int i=0; i < buf.length; i++)
-            buf[i]=0;
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
         Util.writeByteBuffer(buf, dos);
@@ -1044,7 +1037,7 @@ public class UtilTest {
     public static void testParseCommaDelimitedString() {
         String input="1,2,3,4,5,6,7,8,9,10 , 11, 12 ,13";
 
-        List list=Util.parseCommaDelimitedStrings(input);
+        List<String> list=Util.parseCommaDelimitedStrings(input);
         System.out.println("list: " + list);
         Assert.assertEquals(13, list.size());
         Assert.assertEquals("1", list.get(0));
@@ -1054,7 +1047,7 @@ public class UtilTest {
 
     public static void testParseSemicolonDelimitedString() {
         String input="one;two ; three; four ; five;six";
-        List list=Util.parseStringList(input, ";");
+        List<String> list=Util.parseStringList(input, ";");
         System.out.println("list: " + list);
         Assert.assertEquals(6, list.size());
         Assert.assertEquals("one", list.get(0));
@@ -1064,7 +1057,7 @@ public class UtilTest {
 
     public static void testParseSemicolonDelimitedString2() {
         String input="  myID1::subID1 ; myID2::mySubID2; myID3 ;myID4::blaSubID4";
-        List list=Util.parseStringList(input, ";");
+        List<String> list=Util.parseStringList(input, ";");
         System.out.println("list: " + list);
         Assert.assertEquals(4, list.size());
         Assert.assertEquals("myID1::subID1", list.get(0));

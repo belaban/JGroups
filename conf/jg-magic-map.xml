@@ -4,7 +4,6 @@
 
     <!-- Generic classes -->
     <class id="1"  name="org.jgroups.stack.IpAddress"/>
-    <class id="2" name="org.jgroups.stack.IpAddressUUID"/>
     <class id="3"  name="org.jgroups.BytesMessage"/>
     <class id="4"  name="org.jgroups.View"/>
     <class id="5"  name="org.jgroups.ViewId"/>
@@ -60,7 +59,6 @@
     <class id="84"  name="org.jgroups.protocols.PERF$PerfHeader"/>
     <class id="86"  name="org.jgroups.protocols.SEQUENCER2$SequencerHeader"/>
     <class id="88"  name="org.jgroups.protocols.EncryptHeader"/>
-    <class id="89"  name="org.jgroups.protocols.NAMING$Header"/>
     <class id="91"  name="org.jgroups.protocols.Frag3Header"/>
     <class id="92"  name="org.jgroups.protocols.DH_KEY_EXCHANGE$DhHeader"/>
 </magic-number-class-mapping>

@@ -67,10 +67,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
               systemProperty={Global.BIND_ADDR},writable=false)
     protected InetAddress bind_addr;
 
-    @Property(description="Use IP addresses (IpAddressUUID) instead of UUIDs as addresses. This is currently not " +
-      "compatible with RELAY2: disable if RELAY2 is used.")
-    protected boolean use_ip_addrs;
-
     @Property(description="Use \"external_addr\" if you have hosts on different networks, behind " +
       "firewalls. On each firewall, set up a port forwarding rule (sometimes called \"virtual server\") to " +
       "the local IP (e.g. 192.168.1.100) of the host then on each host, set \"external_addr\" TCP transport " +
@@ -783,7 +779,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public boolean          getLogDiscardMessages()                 {return log_discard_msgs;}
     public <T extends TP> T setLogDiscardMessagesVersion(boolean f) {log_discard_msgs_version=f; return (T)this;}
     public boolean          getLogDiscardMessagesVersion()          {return log_discard_msgs_version;}
-    public boolean          getUseIpAddresses()                     {return use_ip_addrs;}
     public boolean          isDiagnosticsEnabled()                  {return enable_diagnostics;}
     public <T extends TP> T setDiagnosticsEnabled(boolean f)        {enable_diagnostics=f; return (T)this;}
     public boolean          isDiagUdEnabled()                       {return diag_handler != null && diag_handler.udpEnabled();}
@@ -941,14 +936,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         timer.start();
         if(time_service != null)
             time_service.start();
-        if(use_ip_addrs) {
-            PhysicalAddress tmp=getPhysicalAddress();
-            if(tmp instanceof IpAddress) {
-                local_addr=new IpAddressUUID(((IpAddress)tmp).getIpAddress(), ((IpAddress)tmp).getPort());
-                stack.getTopProtocol().down(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
-                stack.getTopProtocol().up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
-            }
-        }
         fetchLocalAddresses();
         startDiagnostics();
         if(bundler == null)
@@ -1700,12 +1687,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(physical_addr == null)
             return;
         local_physical_addr=physical_addr;
-        if(addr != null) {
-            if(use_ip_addrs && local_addr instanceof IpAddressUUID)
-                addPhysicalAddressToCache(addr, (PhysicalAddress)local_addr, true);
-            else
-                addPhysicalAddressToCache(addr, physical_addr, true);
-        }
+        if(addr != null)
+            addPhysicalAddressToCache(addr, physical_addr, true);
     }
 
     /**

@@ -667,18 +667,6 @@ output a bit more readable.
 UUIDs maps to IpAddresses, which are IP addresses and ports. These are eventually used by the transport
 protocol to send a message.
 
-[[IpAddressUUID]]
-==== IpAddressUUID
-If `TP.use_ip_addrs` is enabled, then instead of using UUIDs, `IpAddressUUIDs` are used. These are IpAddresses with
-some randomness added, to prevent reincarnation (restarting of a member under the same address and port, and
-therefore having the same identity as the previous member).
-
-The advantage of `IpAddressUUIDs` is that they always carry their physical address with them, therefore the discovery
-phase needs to exchange less information and no lookup is needed to translate between UUIDs and IpAddresses.
-
-The downside is that IpAddressUUIDs need more memory. See https://issues.jboss.org/browse/JGRP-2080 for details.
-
-        
 
 
 

@@ -55,7 +55,6 @@
     <class id="57" name="org.jgroups.protocols.TP"/>
     <class id="58" name="org.jgroups.protocols.SYM_ENCRYPT"/>
     <class id="59" name="org.jgroups.protocols.ASYM_ENCRYPT"/>
-    <class id="60" name="org.jgroups.protocols.NAMING"/>
     <class id="61" name="org.jgroups.protocols.dns.DNS_PING"/>
     <class id="62" name="org.jgroups.protocols.FRAG3"/>
     <class id="63" name="org.jgroups.protocols.UFC_NB"/>

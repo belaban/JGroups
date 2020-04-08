@@ -104,7 +104,6 @@ public abstract class Discovery extends Protocol {
     protected final List<Future<?>>      discovery_req_futures=new ArrayList<>();
     @ManagedAttribute(description="Whether the transport supports multicasting")
     protected boolean                    transport_supports_multicasting=true;
-    protected boolean                    use_ip_addrs; // caches TP.use_ip_addrs
     @ManagedAttribute(description="True if sending a message can block at the transport level")
     protected boolean                    sends_can_block=true;
     protected Consumer<PingData>         discovery_rsp_callback; // called when a discovery response is received
@@ -120,7 +119,6 @@ public abstract class Discovery extends Protocol {
             throw new IllegalArgumentException("num_discovery_runs must be >= 1");
         transport_supports_multicasting=transport.supportsMulticasting();
         sends_can_block=transport instanceof TCP; // UDP and TCP_NIO2 won't block
-        use_ip_addrs=transport.getUseIpAddresses();
     }
 
     public void start() throws Exception {
@@ -345,7 +343,7 @@ public abstract class Discovery extends Protocol {
 
                 // Only send a response if hdr.mbrs is not empty and contains myself. Otherwise always send my info
                 Collection<? extends Address> mbrs=data != null? data.mbrs() : null;
-                boolean drop_because_of_rank=use_ip_addrs && max_rank_to_reply > 0 && hdr.initialDiscovery() && Util.getRank(view, local_addr) > max_rank_to_reply;
+                boolean drop_because_of_rank=max_rank_to_reply > 0 && hdr.initialDiscovery() && Util.getRank(view, local_addr) > max_rank_to_reply;
                 if(drop_because_of_rank || (mbrs != null && !mbrs.contains(local_addr)))
                     return null;
                 PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
