@@ -277,19 +277,30 @@
 
     <target name="copy-conf-dir" description="Copies the relevant files from ./conf to ./classes">
         <copy todir="${compile.dir}/">
-            <fileset dir="${conf.dir}" includes="*.xml, *.properties, *.btm *.jks">
+            <fileset dir="${conf.dir}" includes="*.properties, *.btm *.jks">
                 <include name="scripts/**"/>
                 <exclude name="log4j*.xml"/>
                 <exclude name="settings.xml"/>
             </fileset>
+        </copy>
+        <copy todir="${compile.dir}/">
+            <fileset dir="${conf.dir}" includes="*.xml">
+                <include name="scripts/**"/>
+                <exclude name="log4j*.xml"/>
+                <exclude name="settings.xml"/>
+            </fileset>
+            <!-- Filter chain that replaces the template values with actual values fetched from properties file -->
+            <filterchain>
+                <expandproperties />
+            </filterchain>
         </copy>
     </target>
 
     <target name="compile-no-unittests" depends="prepare" description="Compiles all Java files except unit tests">
         <javac srcdir="${src.dir}"
                destdir="${compile.dir}"
-               source="1.8"
-               target="1.8"
+               source="11"
+               target="11"
                classpathref="jg.classpath"
                includeantruntime="false"
                debug="on"
@@ -306,8 +317,8 @@
             depends="prepare"
             description="Compiles only tests shipped with JGroups">
         <javac destdir="${compile.dir}"
-               source="1.8"
-               target="1.8"
+               source="11"
+               target="11"
                classpathref="jg.classpath"
                includeantruntime="false"
                debug="on"
@@ -323,17 +334,43 @@
     </target>
 
 
+    <target name="copy-configfiles-to-compile-dir"
+            description="Copies selected XML config files from the conf dir to the compile dir">
+
+        <!-- Location the processed files would be written to -->
+        <mkdir dir="${compile.dir}" />
+
+        <copy todir="${compile.dir}" verbose="false" overwrite="true" failonerror="true">
+            <fileset dir="${conf.dir}" includes="*.jks"/>
+        </copy>
+
+        <!-- Copy task that replaces values and copies the files -->
+        <copy todir="${compile.dir}" verbose="false" overwrite="true" failonerror="true">
+            <fileset dir="${conf.dir}" includes="*.xml, *.properties, *.cfg">
+                <exclude name="log4j*.xml"/>
+                <exclude name="settings.xml"/>
+            </fileset>
+            <fileset dir="${compile.dir}/schema">
+                <include name="*.xsd"/>
+            </fileset>
+            <!-- Filter chain that replaces the template values with actual values fetched from properties file -->
+            <filterchain>
+                <expandproperties />
+            </filterchain>
+        </copy>
+    </target>
+
     <target name="jar"
             description="Compiles and creates JARs in ./dist"
             depends="jgroups.jar,jgroups-sources.jar">
         <copy file="${doc.dir}/README" tofile="${dist.dir}/README" overwrite="true"/>
-
     </target>
 
 
     <target name="jgroups.jar"
             description="Creates the jgroups.jar (includes everything)"
-            depends="compile-no-unittests,compile-essential-unittests,make-schema,make-keystore-no-compile">
+            depends="compile-no-unittests,compile-essential-unittests,make-schema,
+            make-keystore-no-compile,copy-configfiles-to-compile-dir">
         <mkdir dir="${dist.dir}"/>
         <xmlproperty file="${ant.file}" collapseAttributes="true" prefix="bnd"/>
         <property name="bndclasspath" refid="jg.classpath"/>
@@ -350,7 +387,7 @@
              basedir="${compile.dir}"
              manifest="${conf.dir}/MANIFEST.MF"
              includes="org/jgroups/**">
-            <fileset dir="${conf.dir}" includes="*.xml, *.properties, *.cfg, *.jks">
+            <fileset dir="${compile.dir}" includes="*.xml, *.properties, *.cfg, *.jks">
                 <exclude name="log4j*.xml"/>
                 <exclude name="settings.xml"/>
             </fileset>
@@ -512,13 +549,13 @@
             <include name="*.xsd"/>
          </fileset>
       </copy>
-      <!-- Leave a schema named jgrous-4.x.xsd -->
-      <!-- <copy todir="${compile.dir}/schema">
+      <!-- Leave a schema named jgrous-5.x.xsd -->
+      <copy todir="${compile.dir}/schema">
          <fileset dir="${compile.dir}/schema">
             <include name="jgroups*.xsd"/>
          </fileset>
          <globmapper from="jgroups*.xsd" to="jgroups.xsd"/>
-      </copy>-->
+      </copy>
     </target>
 
     <target name="clean"

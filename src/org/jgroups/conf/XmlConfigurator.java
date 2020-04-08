@@ -2,6 +2,7 @@
 package org.jgroups.conf;
 
 
+import org.jgroups.Version;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Util;
@@ -165,6 +166,22 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         if(!"config".equals(root_name))
             throw new IOException("the configuration does not start with a <config> element: " + root_name);
 
+        // validate that version of config and JGroups match (https://issues.redhat.com/browse/JGRP-2401)
+        String version=root_element.getAttribute("version");
+        if(version != null && !version.isEmpty()) {
+            short ver=Version.parse(version);
+            if(!Version.isBinaryCompatible(ver)) {
+                String s=String.format("the version of the config file (%s) doesn't match the version of JGroups (%s); " +
+                                         "this might lead to problems. Please use a config from the same JGroups version",
+                                       Version.print(ver), Version.printVersion());
+
+                if(Version.getMajor() != Version.getMajor(ver))
+                    throw new IllegalArgumentException(s);
+                log.warn(s);
+            }
+        }
+        else
+            log.warn("version is missing in the configuration file");
         final List<ProtocolConfiguration> prot_data=new ArrayList<>();
         NodeList prots=root_element.getChildNodes();
         for(int i=0;i < prots.getLength();i++) {
