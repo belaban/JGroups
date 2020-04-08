@@ -77,6 +77,13 @@ public class Version {
         string_version=print(version);
     }
 
+    public static short getMajor() {return major;}
+    public static short getMinor() {return minor;}
+    public static short getMicro() {return micro;}
+
+    public static short getMajor(short v) {return (short)((v & MAJOR_MASK) >> MAJOR_SHIFT);}
+    public static short getMinor(short v) {return (short)((v & MINOR_MASK) >> MINOR_SHIFT);}
+    public static short getMicro(short v) {return (short)(v & MICRO_MASK);}
 
     /**
      * Prints the value of the description and cvs fields to System.out.
@@ -120,12 +127,25 @@ public class Version {
 
     /** Method copied from http://www.jboss.com/index.html?module=bb&op=viewtopic&t=77231 */
     public static String print(short version) {
-        int major=(version & MAJOR_MASK) >> MAJOR_SHIFT;
-        int minor=(version & MINOR_MASK) >> MINOR_SHIFT;
-        int micro=(version & MICRO_MASK);
+        int major=getMajor(version);
+        int minor=getMinor(version);
+        int micro=getMicro(version);
         return major + "." + minor + "." + micro;
     }
 
+    public static short parse(String ver) {
+        try {
+            Matcher versionMatcher=VERSION_REGEXP.matcher(ver);
+            versionMatcher.find();
+            short maj=Short.parseShort(versionMatcher.group(2));
+            short min=Short.parseShort(versionMatcher.group(3));
+            short mic=Short.parseShort(versionMatcher.group(4));
+            return encode(maj, min, mic);
+        }
+        catch(Throwable t) {
+            throw new IllegalArgumentException(String.format("failed parsing version '%s': %s", ver, t));
+        }
+    }
 
     public static short[] decode(short version) {
         short major=(short)((version & MAJOR_MASK) >> MAJOR_SHIFT);

@@ -17,7 +17,7 @@ public class SetPropertyTest {
 
     @BeforeClass
     void init() throws Exception {
-        ch=new JChannel();
+        ch=new JChannel(Util.getTestStack());
     }
 
     @AfterClass

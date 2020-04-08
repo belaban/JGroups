@@ -148,6 +148,7 @@
                     <include>jg-messages*.properties</include>
                     <include>JGROUPS_VERSION.properties</include>
                 </includes>
+                <filtering>true</filtering>
                 <excludes>
                     <exclude>*-service.xml</exclude>
                     <exclude>log4*.xml</exclude>

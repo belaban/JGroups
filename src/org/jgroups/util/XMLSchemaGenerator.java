@@ -6,10 +6,7 @@ import org.jgroups.annotations.XmlAttribute;
 import org.jgroups.annotations.XmlElement;
 import org.jgroups.annotations.XmlInclude;
 import org.jgroups.stack.Protocol;
-import org.w3c.dom.DOMImplementation;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
+import org.w3c.dom.*;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -80,7 +77,10 @@ public class XMLSchemaGenerator {
             Element allType = xmldoc.createElement("xs:choice");
             allType.setAttribute("maxOccurs", "unbounded");
             complexType.appendChild(allType);
-
+            Element attributeElement = xmldoc.createElement("xs:attribute");
+            attributeElement.setAttribute("version", "${version}");
+            attributeElement.setAttribute("type", "xs:string");
+            complexType.appendChild(attributeElement);
             generateProtocolSchema(xmldoc, allType, PACKAGES);
 
             Element xsElement = xmldoc.createElement("xs:element");

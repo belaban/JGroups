@@ -4,10 +4,10 @@
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
 -->
-
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd"
+        version="${version}">
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
          thread_pool.min_threads="0"
