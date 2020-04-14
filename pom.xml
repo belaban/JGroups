@@ -3,9 +3,9 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.jgroups</groupId>
     <artifactId>jgroups</artifactId>
-    <packaging>bundle</packaging>
+    <packaging>jar</packaging>
     <name>JGroups</name>
-    <version>4.2.3-SNAPSHOT</version>
+    <version>4.2.3.Final</version>
     <url>http://www.jgroups.org</url>
 
     <properties>
@@ -312,7 +312,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
+            <!--<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
@@ -320,21 +320,22 @@
                         <manifestFile>conf/manifest.mf</manifestFile>
                     </archive>
                 </configuration>
-            </plugin>
+            </plugin>-->
+
             <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
-                    <instructions>
-                        <Main-Class>org.jgroups.Version</Main-Class>
-                        <Implementation-Version>${project.version}</Implementation-Version>
-                        <DynamicImport-Package>*</DynamicImport-Package>
-                        <Export-Package>
-                            schema;version=${project.version},
-                            ${project.groupId}.*;version=${project.version}
-                        </Export-Package>
-                    </instructions>
+                    <archive>
+                        <manifest>
+                            <addDefaultEntries>true</addDefaultEntries>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            <addBuildEnvironmentEntries>true</addBuildEnvironmentEntries>
+                            <!--addClasspath>true</addClasspath-->
+                            <!--classpathPrefix>libs/</classpathPrefix-->
+                            <mainClass>org.jgroups.Version</mainClass>
+                        </manifest>
+                    </archive>
                 </configuration>
             </plugin>
 
@@ -364,11 +365,6 @@
                     <groupId>org.sonatype.plugins</groupId>
                     <artifactId>nexus-staging-maven-plugin</artifactId>
                     <version>1.6.8</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.felix</groupId>
-                    <artifactId>maven-bundle-plugin</artifactId>
-                    <version>4.2.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

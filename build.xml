@@ -42,6 +42,7 @@
     <property name="asciidoctor-style"     value="./asciidoctor.css"/>
     <property name="ivy.version"           value="2.5.0" />
     <property name="pom.template"          value="${conf.dir}/pom.template.xml"/>
+    <property name="manifest"              value="${dist.dir}/MANIFEST.MF"/>
 
 
 	<!-- 5 minutes per test suite timeout -->
@@ -50,6 +51,10 @@
 
     <!-- Parallelization controls (disable with "-Dparallel.classes=false") -->
     <property name="parallel.classes" value="classes"/>
+
+    <tstamp>
+        <format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss" />
+    </tstamp>
 
     <path id="jg.classpath">
         <pathelement location="${compile.dir}"/>
@@ -370,22 +375,11 @@
     <target name="jgroups.jar"
             description="Creates the jgroups.jar (includes everything)"
             depends="compile-no-unittests,compile-essential-unittests,make-schema,
-            make-keystore-no-compile,copy-configfiles-to-compile-dir">
+            make-keystore-no-compile,create-manifest,copy-configfiles-to-compile-dir">
         <mkdir dir="${dist.dir}"/>
-        <xmlproperty file="${ant.file}" collapseAttributes="true" prefix="bnd"/>
-        <property name="bndclasspath" refid="jg.classpath"/>
-        <property name="-savemanifest" value="${conf.dir}/MANIFEST.MF"/>
-        <property name="-output" value="${conf.dir}"/>
-        <taskdef resource="aQute/bnd/ant/taskdef.properties" classpathref="jg.classpath"/>
-        <bnd
-                classpath="${bndclasspath}"
-                eclipse="false"
-                failok="false"
-                exceptions="true"
-                files="${conf.dir}/jgroups.bnd" />
         <jar destfile="${dist.dir}/jgroups-${version}.jar"
              basedir="${compile.dir}"
-             manifest="${conf.dir}/MANIFEST.MF"
+             manifest="${dist.dir}/MANIFEST.MF"
              includes="org/jgroups/**">
             <fileset dir="${compile.dir}" includes="*.xml, *.properties, *.cfg, *.jks">
                 <exclude name="log4j*.xml"/>
@@ -397,23 +391,24 @@
         </jar>
     </target>
 
+    <target name="create-manifest" description="Builds MANIFEST>MF">
+        <mkdir dir="${dist.dir}"/>
+        <manifest file="${manifest}">
+            <attribute name="Main-Class" value="org.jgroups.Version"/>
+            <attribute name="Built-By" value="${user.name}"/>
+            <attribute name="Implementation-Title" value="${ant.project.name}"/>
+            <attribute name="Implementation-Version" value="${version}, built ${TODAY}"/>
+            <attribute name="Implementation-Vendor" value="JBoss, a division of Red Hat"/>
+        </manifest>
+    </target>
 
-    <target name="jgroups-sources.jar"
+
+    <target name="jgroups-sources.jar" depends="create-manifest"
             description="Creates the jgroups-sources.jar (no demos, tests)">
         <mkdir dir="${dist.dir}"/>
-        <property name="bndclasspath" refid="jg.classpath"/>
-        <property name="-savemanifest" value="${conf.dir}/MANIFEST.MF"/>
-        <property name="-output" value="${conf.dir}"/>
-        <taskdef resource="aQute/bnd/ant/taskdef.properties" classpathref="jg.classpath"/>
-        <bnd
-              classpath="${bndclasspath}"
-              eclipse="false"
-              failok="false"
-              exceptions="true"
-              files="${conf.dir}/jgroups.bnd" />
         <jar jarfile="${dist.dir}/jgroups-${version}-sources.jar"
              basedir="${src.dir}"
-             manifest="${conf.dir}/MANIFEST.MF"
+             manifest="${dist.dir}/MANIFEST.MF"
              includes="org/jgroups/**">
         </jar>
     </target>
