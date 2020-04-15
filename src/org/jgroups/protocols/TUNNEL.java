@@ -138,8 +138,9 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         sock=getSocketFactory().createDatagramSocket("jgroups.tunnel.ucast_sock", bind_port, bind_addr);
     }
     
-    public void destroy() {        
-        stubManager.destroyStubs();
+    public void destroy() {
+        if(stubManager != null)
+            stubManager.destroyStubs();
         Util.close(sock);
         super.destroy();
     }
@@ -164,8 +165,13 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                 String logical_name=org.jgroups.util.NameCache.get(local);
                 stubManager = new RouterStubManager(this,group,local, logical_name, physical_addr, getReconnectInterval()).useNio(this.use_nio);
                 for(InetSocketAddress gr : gossip_routers) {
-                    stubManager.createAndRegisterStub(new IpAddress(bind_addr, bind_port), new IpAddress(gr.getAddress(), gr.getPort()))
-                      .receiver(this).set("tcp_nodelay", tcp_nodelay);
+                    try {
+                        stubManager.createAndRegisterStub(new IpAddress(bind_addr, bind_port), new IpAddress(gr.getAddress(), gr.getPort()))
+                          .receiver(this).set("tcp_nodelay", tcp_nodelay);
+                    }
+                    catch(Throwable t) {
+                        log.error("%s: failed creating stub to %s: %s", local, bind_addr + ":" + bind_port, t);
+                    }
                 }
                 stubManager.connectStubs();
                 break;
