@@ -339,6 +339,15 @@
                 </configuration>
             </plugin>
 
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <configuration>
+
+                </configuration>
+
+            </plugin>
+
             <!-- Disable default tests: they won't run since they are lacking configuration -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
