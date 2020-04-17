@@ -22,6 +22,4 @@ OPTIONS="$OPTIONS -J-server -J-XX:+UseG1GC -J-XX:+UseAdaptiveSizePolicy -J-XX:Mi
 
 OPTIONS="$OPTIONS --initialize-at-build-time" ## needed by GraalVM 19
 
-OPTIONS="$OPTIONS -J-Djava.net.preferIPv4Stack=true"
-
 native-image -cp $CLASSPATH $OPTIONS $*

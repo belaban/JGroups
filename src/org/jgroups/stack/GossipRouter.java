@@ -154,9 +154,9 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
      */
     @ManagedOperation(description="Lifecycle operation. Called after create(). When this method is called, "
             + "the managed attributes have already been set. Brings the Router into a fully functional state.")
-    public void start() throws Exception {
+    public GossipRouter start() throws Exception {
         if(!running.compareAndSet(false, true))
-            return;
+            return this;
         if(jmx)
             JmxConfigurator.register(this, Util.getMBeanServer(), "jgroups:name=GossipRouter");
 
@@ -166,6 +166,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         server.start();
         server.addConnectionListener(this);
         Runtime.getRuntime().addShutdownHook(new Thread(GossipRouter.this::stop));
+        return this;
     }
 
 
@@ -581,9 +582,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         long soTimeout=-1;
         long expiry_time=60000;
 
+        long start=System.currentTimeMillis();
         GossipRouter router=null;
         String bind_addr=null;
-        boolean jmx=true, nio=true, suspects=true, dump_msgs=false;
+        boolean jmx=false, nio=true, suspects=true, dump_msgs=false;
 
         for(int i=0; i < args.length; i++) {
             String arg=args[i];
@@ -640,8 +642,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
           .emitSuspectEvents(suspects)
           .dumpMessages(dump_msgs);
         router.start();
+        long time=System.currentTimeMillis()-start;
         IpAddress local=(IpAddress)router.localAddress();
-        System.out.printf("\nGossipRouter listening on %s:%s\n", bind_addr != null? bind_addr : "0.0.0.0",  local.getPort());
+        System.out.printf("\nGossipRouter started in %d ms listening on %s:%s\n",
+                          time, bind_addr != null? bind_addr : "0.0.0.0",  local.getPort());
     }
 
 
