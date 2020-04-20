@@ -3,6 +3,7 @@ package org.jgroups.util;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 
 /**
  * A condition variable with methods for (timed) waiting and signalling
@@ -27,11 +28,11 @@ public class CondVar {
      * Blocks until condition is true.
      * @param condition The condition. Must be non-null
      */
-    public void waitFor(Condition condition) {
+    public void waitFor(BooleanSupplier condition) {
         boolean    intr=false;
         lock.lock();
         try {
-            while(!condition.isMet()) {
+            while(!condition.getAsBoolean()) {
                 try {
                     cond.await();
                 }
@@ -53,12 +54,12 @@ public class CondVar {
      * @param unit TimeUnit
      * @return The condition's status
      */
-    public boolean waitFor(Condition condition, long timeout, TimeUnit unit) {
+    public boolean waitFor(BooleanSupplier condition, long timeout, TimeUnit unit) {
         boolean    intr=false;
         final long timeout_ns=TimeUnit.NANOSECONDS.convert(timeout, unit);
         lock.lock();
         try {
-            for(long wait_time=timeout_ns, start=System.nanoTime(); wait_time > 0 && !condition.isMet();) {
+            for(long wait_time=timeout_ns, start=System.nanoTime(); wait_time > 0 && !condition.getAsBoolean();) {
                 try {
                     wait_time=cond.awaitNanos(wait_time);
                 }
@@ -67,7 +68,7 @@ public class CondVar {
                     intr=true;
                 }
             }
-            return condition.isMet();
+            return condition.getAsBoolean();
         }
         finally {
             lock.unlock();

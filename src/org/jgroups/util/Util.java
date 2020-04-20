@@ -34,11 +34,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -349,15 +345,15 @@ public class Util {
         waitUntilAllChannelsHaveSameView(timeout, interval, tmp);
     }
 
-    public static void waitUntil(long timeout, long interval, Condition condition) throws TimeoutException {
+    public static void waitUntil(long timeout, long interval, BooleanSupplier condition) throws TimeoutException {
         waitUntil(timeout, interval, condition, null);
     }
 
 
-    public static void waitUntil(long timeout, long interval, Condition condition, Supplier<String> msg) throws TimeoutException {
+    public static void waitUntil(long timeout, long interval, BooleanSupplier condition, Supplier<String> msg) throws TimeoutException {
         long target_time=System.currentTimeMillis() + timeout;
         while(System.currentTimeMillis() <= target_time) {
-            if(condition.isMet())
+            if(condition.getAsBoolean())
                 return;
             Util.sleep(interval);
         }
@@ -2314,9 +2310,10 @@ public class Util {
 
 
     public static <T,R> Enumeration<R> enumerate(final T[] array, int offset, final int length, Function<T,R> converter) {
-        return new Enumeration<R>() {
-            protected final int end_pos=offset+length;
+        return new Enumeration<>() {
+            protected final int end_pos=offset + length;
             protected int pos=offset;
+
             public boolean hasMoreElements() {
                 return pos < end_pos;
             }

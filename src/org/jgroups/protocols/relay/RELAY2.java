@@ -3,7 +3,6 @@ package org.jgroups.protocols.relay;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.ConfiguratorFactory;
-import org.jgroups.protocols.FORWARD_TO_COORD;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.UUID;
@@ -62,10 +61,6 @@ public class RELAY2 extends Protocol {
       "Async relay creation is recommended, so the view callback won't be blocked")
     protected boolean                                  async_relay_creation=true;
 
-    @Property(description="If true, logs a warning if the FORWARD_TO_COORD protocol is not found. This property might " +
-      "get deprecated soon")
-    protected boolean                                  warn_when_ftc_missing;
-
     @Property(description="Fully qualified name of a class implementing SiteMasterPicker")
     protected String                                   site_master_picker_impl;
 
@@ -99,10 +94,6 @@ public class RELAY2 extends Protocol {
     protected volatile Address                         local_addr;
 
     protected volatile List<Address>                   members=new ArrayList<>(11);
-
-    /** Whether or not FORWARD_TO_COORD is on the stack */
-    @ManagedAttribute(description="FORWARD_TO_COORD protocol is present below the current protocol")
-    protected boolean                                  forwarding_protocol_present;
 
     @Property(description="If true, a site master forwards messages received from other sites to randomly chosen " +
       "members of the local site for load balancing, reducing work for itself")
@@ -284,12 +275,6 @@ public class RELAY2 extends Protocol {
         if(!site_config.getForwards().isEmpty())
             log.warn(local_addr + ": forwarding routes are currently not supported and will be ignored. This will change " +
                        "with hierarchical routing (https://issues.jboss.org/browse/JGRP-1506)");
-
-        List<Integer> available_down_services=getDownServices();
-        forwarding_protocol_present=available_down_services != null && available_down_services.contains(Event.FORWARD_TO_COORD);
-        if(!forwarding_protocol_present && warn_when_ftc_missing && log.isWarnEnabled())
-            log.warn(local_addr + ": " + FORWARD_TO_COORD.class.getSimpleName() + " protocol not found below; " +
-                       "unable to re-submit messages to the new coordinator if the current coordinator crashes");
 
         if(enable_address_tagging) {
             JChannel ch=getProtocolStack().getChannel();
@@ -700,10 +685,7 @@ public class RELAY2 extends Protocol {
         Message copy=copy(msg).setDest(next_dest).setSrc(null);
         Relay2Header hdr=new Relay2Header(Relay2Header.DATA, final_dest, original_sender);
         copy.putHeader(id,hdr);
-        if(forward_to_current_coord && forwarding_protocol_present)
-            down_prot.down(new Event(Event.FORWARD_TO_COORD, copy));
-        else
-            down_prot.down(copy);
+        down_prot.down(copy);
     }
 
 

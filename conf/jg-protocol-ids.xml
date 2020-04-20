@@ -44,7 +44,6 @@
     <class id="42" name="org.jgroups.protocols.tom.TOA"/>
     <class id="43" name="org.jgroups.protocols.SWIFT_PING"/>
     <class id="44" name="org.jgroups.protocols.relay.RELAY2"/>
-    <class id="45" name="org.jgroups.protocols.FORWARD_TO_COORD"/>
     <class id="46" name="org.jgroups.protocols.PDC"/>
     <class id="48" name="org.jgroups.protocols.UNICAST3"/>
     <class id="49" name="org.jgroups.protocols.PERF"/>

@@ -2,12 +2,12 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.util.CondVar;
-import org.jgroups.util.Condition;
 import org.jgroups.util.Util;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 
 /**
  * @author Bela Ban
@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 public class CondVarTest {
     protected CondVar          cond;
     protected volatile boolean done=false; // our condition
-    protected Condition        condition=() -> done;
+    protected BooleanSupplier  condition=() -> done;
 
     @BeforeMethod protected void setup() {
         cond=new CondVar();

@@ -165,7 +165,6 @@ public class Relay2RpcDispatcherTest {
     			new NAKACK2(),
     			new UNICAST3(),
     			new GMS().setValue("print_local_addr", false),
-    			new FORWARD_TO_COORD(),
     			createRELAY2(site_name));
     	ch.setName(node_name);
     	return ch;

@@ -10,7 +10,6 @@ import org.jgroups.blocks.cs.ReceiverAdapter;
 import org.jgroups.blocks.cs.TcpServer;
 import org.jgroups.util.Bits;
 import org.jgroups.util.CondVar;
-import org.jgroups.util.Condition;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -21,6 +20,7 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -314,14 +314,14 @@ public class ServerUnitTest {
 
 
     protected static class MyReceiver extends ReceiverAdapter {
-        protected final long       num_expected;
-        protected final AtomicLong num_received=new AtomicLong(0), num_sent=new AtomicLong(0);
-        protected long             start_time=0, stop_time=0;
-        protected final  CondVar   done=new CondVar();
-        protected boolean          send_response=false;
-        protected final long       modulo;
-        protected final BaseServer server;
-        protected final Condition  cond;
+        protected final long            num_expected;
+        protected final AtomicLong      num_received=new AtomicLong(0), num_sent=new AtomicLong(0);
+        protected long                  start_time, stop_time;
+        protected final  CondVar        done=new CondVar();
+        protected boolean               send_response;
+        protected final long            modulo;
+        protected final BaseServer      server;
+        protected final BooleanSupplier cond;
 
         MyReceiver(BaseServer server, long num_expected, boolean send_response) {
             this.server=server;

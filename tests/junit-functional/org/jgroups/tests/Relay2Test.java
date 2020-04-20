@@ -330,7 +330,6 @@ public class Relay2Test {
                                  new NAKACK2(),
                                  new UNICAST3(),
                                  new GMS().setValue("print_local_addr", false),
-                                 new FORWARD_TO_COORD(),
                                  createRELAY2(site_name)
                                    .setValue("max_site_masters", num_site_masters)
                                    .setValue("site_master_picker_impl", sm_picker)).name(node_name);

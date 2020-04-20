@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 
 /**
  * An NIO based impl of {@link Connection}
@@ -468,7 +469,7 @@ public class NioConnection extends Connection {
         }
 
         protected void _run() {
-            final Condition is_data_available=() -> data_available || !running;
+            final BooleanSupplier is_data_available=() -> data_available || !running;
             while(running) {
                 for(;;) { // try to receive as many msgs as possible, until no more msgs are ready or the conn is closed
                     try {

@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Bounded linked hashmap; used by SEQUENCER (and probably soon) FORWARD_TO_COORD
+ * Bounded linked hashmap; used by SEQUENCER
  * @author Bela Ban
  * @since  3.3
  */
