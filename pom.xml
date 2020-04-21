@@ -344,6 +344,7 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <arguments>-DskipTests=true</arguments>
+                    <arguments>-Dmaven.javadoc.skip=true</arguments>
                     <preparationGoals>clean</preparationGoals>
                 </configuration>
 
