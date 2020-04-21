@@ -4,7 +4,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>jar</packaging>
     <name>JGroups</name>
-    <version>5.0.0.Alpha5</version>
+    <version>5.0.0.Alpha6-SNAPSHOT</version>
     <url>http://www.jgroups.org</url>
 
     <properties>
@@ -47,7 +47,7 @@
         <connection>scm:git:git://github.com/belaban/JGroups.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/belaban/JGroups.git</developerConnection>
         <url>https://github.com/belaban/JGroups</url>
-      <tag>JGroups-5.0.0.Alpha5</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <issueManagement>
