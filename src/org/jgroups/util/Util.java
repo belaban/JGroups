@@ -16,6 +16,9 @@ import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
@@ -3385,13 +3388,42 @@ public class Util {
         try {
             loader=ClassLoader.getSystemClassLoader();
             if(loader != null) {
-                return loader.getResourceAsStream(name);
+                retval=loader.getResourceAsStream(name);
+                if(retval != null)
+                    return retval;
             }
         }
         catch(Throwable ignored) {
         }
 
+        try {
+            retval=new FileInputStream(name);
+        }
+        catch(FileNotFoundException e) {
+        }
+
         return retval;
+    }
+
+    public static String getChild(final Element root, String path) {
+        String[] paths=path.split("\\.");
+        Element current=root;
+        boolean found=false;
+        for(String el: paths) {
+            NodeList subnodes=current.getChildNodes();
+            found=false;
+            for(int j=0; j < subnodes.getLength(); j++) {
+                Node subnode=subnodes.item(j);
+                if(subnode.getNodeType() != Node.ELEMENT_NODE)
+                    continue;
+                if(subnode.getNodeName().equals(el)) {
+                    current=(Element)subnode;
+                    found=true;
+                    break;
+                }
+            }
+        }
+        return found? current.getFirstChild().getNodeValue() : null;
     }
 
 

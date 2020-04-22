@@ -7,9 +7,9 @@
     </description>
 
     <property name="root.dir"              value="${basedir}"/>
+    <property name="compile.dir"           value="${root.dir}/classes"/>
     <property name="conf.dir"              value="${root.dir}/conf"/>
-    <property file="${conf.dir}/JGROUPS_VERSION.properties"/> <!-- Defines jgroups.version -->
-    <property name="version"               value="${jgroups.version}"/>
+    <property name="version.file"          value="JGROUPS_VERSION.properties"/>
     <property name="build.properties.file" value="build.properties"/>
     <property file="${build.properties.file}"/>
     <property name="src.dir"               value="${root.dir}/src"/>
@@ -22,7 +22,6 @@
     <property name="stress.dir"            value="${tests.dir}/stress"/>
     <property name="perf.dir"              value="${tests.dir}/perf"/>
     <property name="util.dir"              value="${tests.dir}/util"/>
-    <property name="compile.dir"           value="${root.dir}/classes"/>
     <property name="lib.dir"               value="${root.dir}/lib"/>
     <property name="dist.dir"              value="${root.dir}/dist"/>
     <property name="tmp.dir"               value="${root.dir}/tmp"/>
@@ -41,7 +40,7 @@
     <!-- Also available: colony.css, github.css etc -->
     <property name="asciidoctor-style"     value="./asciidoctor.css"/>
     <property name="ivy.version"           value="2.5.0" />
-    <property name="pom.template"          value="${conf.dir}/pom.template.xml"/>
+    <property name="project.pom"            value="${root.dir}/pom.xml"/>
     <property name="manifest"              value="${dist.dir}/MANIFEST.MF"/>
 
 
@@ -113,7 +112,6 @@
 
     <target name="deps" depends="retrieve" description="Fetches all dependent libraries"/>
 
-
     <target name="retrieve" depends="check-jars-exist,get-ivy,define-ivy-task" unless="jars.exist"
             description="Retrieves all dependent libs defined in ivy.xml unless already present">
         <ivy:retrieve type="jar,bundle" transitive="false"/>
@@ -130,109 +128,6 @@
         </move>
     </target>
 
-    <!-- =================================
-          target: publish-local
-         ================================= -->
-    <target name="publish-local" depends="define-ivy-task,jar"
-            description="Publishes this project to the local ivy repo (artifacts need to be in ./dist)">
-        <property name="revision" value="${version}"/>
-
-        <!--<ivy:deliver
-                deliverpattern="${dist.dir}/ivy.xml"
-                pubrevision="${version}"
-                status="release"
-                organisation="org.jgroups"
-                module="jgroups"
-                revision="${version}"
-                />-->
-
-        <!--<ivy:makepom ivyfile="${root.dir}/ivy.xml" pomfile="${dist.dir}/jgroups-${version}.pom"/>-->
-
-        <copy todir="${dist.dir}">
-            <fileset dir="${root.dir}">
-                <include name="pom.xml"/>
-            </fileset>
-            <globmapper from="pom.xml" to="jgroups-${version}.pom"/>
-        </copy>
-
-        <!-- artifactspattern="${dist.dir}/[artifact]-[revision](-[classifier]).[ext]" -->
-        <delete file="${dist.dir}/README"/>
-
-        <ivy:resolve file="ivy.xml"/>
-
-        <ivy:publish artifactspattern="${dist.dir}/[artifact]-[revision](-[classifier]).[ext]"
-                     publishivy="false"
-                     resolver="local-maven2"
-                     overwrite="true"
-                     forcedeliver="true"
-                     pubrevision="${revision}"
-                     status="release"
-                     organisation="org.jgroups"
-                     module="jgroups"
-                     revision="${version}"
-                     haltonmissing="true"/>
-
-        <copy file="${doc.dir}/README" tofile="${dist.dir}/README" overwrite="true"/>
-
-        <echo message="project ${ant.project.name} released with version ${revision}" />
-    </target>
-
-
-
-    <!--<target name="publish-remote" depends="define-ivy-task" description="&ndash;&gt; publish this project in the ivy repository">
-        <property name="revision" value="${version}"/>
-        <ivy:publish artifactspattern="${dist.dir}/[artifact]-[revision](-[classifier]).[ext]"
-                     publishivy="false"
-                     resolver="public"
-                     overwrite="true"
-                     pubrevision="${revision}"
-                     status="release"
-                     organisation="org.jgroups"
-                     module="jgroups"
-                     revision="${revision}"
-                     conf="default"
-                />
-        <echo message="project ${ant.project.name} released with version ${revision}" />
-    </target>
--->
-
-
-
-   <!-- <target name="publish" description="Publish to the staging Nexus repo" depends="define-staging-task">
-
-        <staging:nexusStagingInfo id="target-nexus"
-                                  stagingDirectory="${root.dir}/staging">
-            <staging:projectInfo groupId="org.jgroups"
-                                 artifactId="jgroups"
-                                 version="${jgroups.version}" />
-            <staging:connectionInfo
-                    baseUrl="${nexus.url}">
-                <staging:authentication
-                        username="${nexus.user}"
-                        password="${nexus.password}" />
-            </staging:connectionInfo>
-        </staging:nexusStagingInfo>
-
-
-        <echo message="use is ${nexus.user} and pwd is ${nexus.password}"/>
-
-        <staging:stageLocally>
-             <staging:nexusStagingInfo refid="target-nexus"/>
-            <fileset refid="artifacts"/>
-        </staging:stageLocally>
-        &lt;!&ndash;<staging:stageLocally>
-            <fileset dir="${dist.dir}/" includes="**/*.*"/>
-        </staging:stageLocally>&ndash;&gt;
-        <staging:stageRemotely>
-            <staging:nexusStagingInfo refid="target-nexus"/>
-        </staging:stageRemotely>
-        <staging:releaseStagingRepository autoDropAfterRelease="true">
-            <staging:nexusStagingInfo refid="target-nexus"/>
-        </staging:releaseStagingRepository>
-
-
-    </target>-->
-
 
     <target name="define-testng-task">
         <taskdef resource="testngtasks" classpathref="jg.classpath"/>
@@ -243,12 +138,7 @@
                  uri="antlib:org.apache.ivy.ant" classpathref="jg.classpath"/>
     </target>
 
-   <!-- <target name="define-staging-task">
-        <taskdef uri="antlib:org.sonatype.nexus.ant.staging"
-                 resource="org/sonatype/nexus/ant/staging/antlib.xml" classpathref="jg.classpath">
-        </taskdef>
-    </target>
--->
+
     <target name="prepare" depends="retrieve">
         <property environment="env"/>
         <mkdir dir="${compile.dir}"/>
@@ -257,17 +147,9 @@
 
 
     <target name="compile" depends="prepare" description="Compiles all Java files">
-        <javac destdir="${compile.dir}"
-               source="11"
-               target="11"
-               classpathref="jg.classpath"
-               includeantruntime="false"
-               debug="on"
-               deprecation="off"
-               optimize="off"
-               listfiles="false"
+        <javac destdir="${compile.dir}" source="11" target="11"
+               classpathref="jg.classpath" includeantruntime="false" debug="on"
                includes="org/jgroups/**">
-            <exclude name="**/obsolete/**"/>
             <src path="${src.dir}"/>
             <src path="${other.dir}"/>
             <src path="${junit.dir}"/>
@@ -277,89 +159,53 @@
             <src path="${perf.dir}"/>
             <src path="${util.dir}"/>
         </javac>
-        <antcall target="copy-conf-dir"/>
+        <set-version/>
     </target>
 
-    <target name="copy-conf-dir" description="Copies the relevant files from ./conf to ./classes">
-        <copy todir="${compile.dir}/">
-            <fileset dir="${conf.dir}" includes="*.properties, *.btm *.jks">
-                <include name="scripts/**"/>
-                <exclude name="log4j*.xml"/>
-                <exclude name="settings.xml"/>
-            </fileset>
-        </copy>
-        <copy todir="${compile.dir}/">
-            <fileset dir="${conf.dir}" includes="*.xml">
-                <include name="scripts/**"/>
-                <exclude name="log4j*.xml"/>
-                <exclude name="settings.xml"/>
-            </fileset>
-            <!-- Filter chain that replaces the template values with actual values fetched from properties file -->
-            <filterchain>
-                <expandproperties />
-            </filterchain>
-        </copy>
-    </target>
-
-    <target name="compile-no-unittests" depends="prepare" description="Compiles all Java files except unit tests">
-        <javac srcdir="${src.dir}"
-               destdir="${compile.dir}"
-               source="11"
-               target="11"
-               classpathref="jg.classpath"
-               includeantruntime="false"
-               debug="on"
-               deprecation="off"
-               optimize="off"
-               listfiles="false"
+    <target name="compile-plus-essential-unittests" depends="prepare"
+            description="Compiles sources plus selected tests (e.g. perftests) shipped with JGroups">
+        <javac srcdir="${src.dir}" destdir="${compile.dir}"
+               source="11" target="11" classpathref="jg.classpath"
+               includeantruntime="false" debug="on"
                includes="org/jgroups/**">
-            <exclude name="**/obsolete/**"/>
         </javac>
-        <antcall target="copy-conf-dir"/>
-    </target>
-
-    <target name="compile-essential-unittests"
-            depends="prepare"
-            description="Compiles only tests shipped with JGroups">
-        <javac destdir="${compile.dir}"
-               source="11"
-               target="11"
-               classpathref="jg.classpath"
-               includeantruntime="false"
-               debug="on"
-               deprecation="off"
-               optimize="off"
-               listfiles="false"
+        <javac destdir="${compile.dir}" source="11" target="11"
+               classpathref="jg.classpath" includeantruntime="false" debug="on"
                includes="org/jgroups/tests/**">
             <src path="${tests.dir}/perf"/>
             <src path="${tests.dir}/other"/>
-            <exclude name="**/obsolete/**"/>
         </javac>
-        <antcall target="copy-conf-dir"/>
+        <set-version/>
     </target>
 
 
-    <target name="copy-configfiles-to-compile-dir"
-            description="Copies selected XML config files from the conf dir to the compile dir">
+    <macrodef name="set-version" description="Extracts the version from the POM and sets it as a property">
+        <sequential>
+            <antcall target="write-version"/>
+            <property file="${compile.dir}/${version.file}"/>
+            <property name="version" value="${jgroups.version}"/>
+            <antcall target="copy-conf-dir"/>
+        </sequential>
+    </macrodef>
 
-        <!-- Location the processed files would be written to -->
+
+    <target name="copy-conf-dir" description="Copies the relevant files from ./conf to ./classes">
         <mkdir dir="${compile.dir}" />
-
-        <copy todir="${compile.dir}" verbose="false" overwrite="true" failonerror="true">
-            <fileset dir="${conf.dir}" includes="*.jks"/>
+        <copy todir="${compile.dir}/">
+            <fileset dir="${conf.dir}" includes="*.btm *.jks">
+                <include name="scripts/**"/>
+                <exclude name="log4j*.xml"/>
+                <exclude name="settings.xml"/>
+                <exclude name="${version.file}"/>
+            </fileset>
         </copy>
-
-        <!-- Copy task that replaces values and copies the files -->
-        <copy todir="${compile.dir}" verbose="false" overwrite="true" failonerror="true">
-            <fileset dir="${conf.dir}" includes="*.xml, *.properties, *.cfg">
+        <copy todir="${compile.dir}/">
+            <fileset dir="${conf.dir}" includes="*.properties, *.xml">
+                <include name="scripts/**"/>
                 <exclude name="log4j*.xml"/>
                 <exclude name="settings.xml"/>
             </fileset>
-            <fileset dir="${compile.dir}/schema">
-                <include name="*.xsd"/>
-            </fileset>
-            <!-- Filter chain that replaces the template values with actual values fetched from properties file -->
-            <filterchain>
+            <filterchain> <!-- Replaces the variables with actual values fetched from properties file -->
                 <expandproperties />
             </filterchain>
         </copy>
@@ -371,15 +217,10 @@
         <copy file="${doc.dir}/README" tofile="${dist.dir}/README" overwrite="true"/>
     </target>
 
-
-    <target name="jgroups.jar"
-            description="Creates the jgroups.jar (includes everything)"
-            depends="compile-no-unittests,compile-essential-unittests,make-schema,
-            make-keystore-no-compile,create-manifest,copy-configfiles-to-compile-dir">
+    <target name="jgroups.jar" description="Creates the jgroups.jar (includes everything)"
+            depends="compile-plus-essential-unittests,make-schema,make-keystore-no-compile,create-manifest,copy-conf-dir">
         <mkdir dir="${dist.dir}"/>
-        <jar destfile="${dist.dir}/jgroups-${version}.jar"
-             basedir="${compile.dir}"
-             manifest="${dist.dir}/MANIFEST.MF"
+        <jar destfile="${dist.dir}/jgroups-${version}.jar" basedir="${compile.dir}" manifest="${dist.dir}/MANIFEST.MF"
              includes="org/jgroups/**">
             <fileset dir="${compile.dir}" includes="*.xml, *.properties, *.cfg, *.jks">
                 <exclude name="log4j*.xml"/>
@@ -429,11 +270,10 @@
                  author="true"
                  version="true"
                  use="true"
-                 bottom="Copyright &#169; 1998-2020 Red Hat. All Rights Reserved."
+                 bottom="Copyright &#169; 1998-2030 Red Hat. All Rights Reserved."
                  useexternalfile="yes"
                  doctitle="JGroups"
                  overview="${src.dir}/org/jgroups/overview.html">
-            <!-- The tag option for Javadoc is available in Java 1.4 or later. -->
             <tag name="todo" description="To do:"/>
         </javadoc>
     </target>
@@ -444,7 +284,6 @@
 
     <target name="docs" description="Builds all html and pdf docs" depends="manual,tutorial">
     </target>
-
 
 
     <target name="manual" description="Generates the manual (AsciiDoc --> HTML)"
@@ -522,17 +361,7 @@
         <echo message="manual.up-to-date=${manual.up-to-date}"/>
     </target>
 
-    <!--target name="make-pom" description="Copies conf/pom-xml.template to pom.xml and replaces version">
-        <copy file="${pom.template}"
-              tofile="${root.dir}/pom.xml"
-              overwrite="false" verbose="false">
-            <filterset>
-                <filter token="VERSION" value="${version}"/>
-            </filterset>
-        </copy>
-    </target-->
-
-	<target name="make-schema" description="Creates XML schema for this version of JGroups">
+	<target name="make-schema" description="Creates a schema in ./classes for this version of JGroups">
 		<delete dir="${compile.dir}/schema" failonerror="false"/>
 		<mkdir dir="${compile.dir}/schema"/>
 		<java classname="org.jgroups.util.XMLSchemaGenerator" classpathref="jg.classpath" fork="true">
@@ -540,16 +369,7 @@
 			<jvmarg value="-Djava.awt.headless=true"/>
 		</java>
       <copy todir="${compile.dir}/schema">
-         <fileset dir="${conf.dir}">
-            <include name="*.xsd"/>
-         </fileset>
-      </copy>
-      <!-- Leave a schema named jgrous-5.x.xsd -->
-      <copy todir="${compile.dir}/schema">
-         <fileset dir="${compile.dir}/schema">
-            <include name="jgroups*.xsd"/>
-         </fileset>
-         <globmapper from="jgroups*.xsd" to="jgroups.xsd"/>
+          <fileset dir="${conf.dir}" includes="*.xsd"/>
       </copy>
     </target>
 
@@ -589,11 +409,22 @@
         <delete dir="${lib.dir}" failonerror="false"/>
     </target>
 
+    <target name="write-version">
+        <java classname="org.jgroups.util.WriteVersionTo" fork="false" classpathref="jg.classpath">
+            <arg value="-pom"/>
+            <arg value="${project.pom}"/>
+            <arg value="-input"/>
+            <arg value="${conf.dir}/${version.file}"/>
+            <arg value="-output"/>
+            <arg value="${compile.dir}/${version.file}"/>
+            <arg value="-version"/>
+            <arg value="jgroups.version"/>
+            <arg value="-codename"/>
+            <arg value="jgroups.codename"/>
+        </java>
+    </target>
 
-
-    <target name="version"
-            depends="compile"
-            description="Prints some info about the Ant version and the OS/JDK used">
+    <target name="version" depends="compile" description="Prints some info about the Ant version and the OS/JDK used">
         <echo message="${ant.version}"/>
         <echo message="JDK=${java.vm.version} on ${os.name} ${os.version}"/>
         <java classname="org.jgroups.Version" classpathref="jg.classpath"/>

@@ -27,8 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Vladimir Blagojevic
  */
 public class XmlConfigurator implements ProtocolStackConfigurator {
-    private static final String               JAXP_SCHEMA_LANGUAGE = "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
-    private static final String               W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
     private final List<ProtocolConfiguration> configuration=new ArrayList<>();
     protected static final Log                log=LogFactory.getLog(XmlConfigurator.class);
 
@@ -38,11 +36,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     }
 
     public static XmlConfigurator getInstance(InputStream stream) throws java.io.IOException {
-        return getInstance(stream, false);
-    }
-
-    public static XmlConfigurator getInstance(InputStream stream, boolean validate) throws java.io.IOException {
-        return parse(stream, validate);
+        return parse(stream);
     }
 
     /**
@@ -84,18 +78,13 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
 
 
-    protected static XmlConfigurator parse(InputStream stream, boolean validate) throws java.io.IOException {
+    protected static XmlConfigurator parse(InputStream stream) throws java.io.IOException {
 
         // CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty amateurish...
         // But it seems to work, and it is executed only on startup, so no perf loss on the critical path.
         // If somebody wants to improve this, please be my guest.
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setValidating(validate);
-            factory.setNamespaceAware(validate);
-            if(validate)
-                factory.setAttribute(JAXP_SCHEMA_LANGUAGE, W3C_XML_SCHEMA);
-
             DocumentBuilder builder = factory.newDocumentBuilder();
             builder.setEntityResolver((publicId, systemId) -> {
                 if (systemId != null && systemId.startsWith("http://www.jgroups.org/schema/JGroups-")) {

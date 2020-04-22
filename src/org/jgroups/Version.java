@@ -7,6 +7,7 @@ import org.jgroups.annotations.Immutable;
 import org.jgroups.util.Util;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -48,33 +49,40 @@ public class Version {
     
 
     static {
-        Properties properties=new Properties();
         String ver=null, codename="n/a";
-        InputStream manifestAsStream=null;
+        InputStream version_file=null;
         try {
-            manifestAsStream=Util.getResourceAsStream(VERSION_FILE, Version.class);
-            if(manifestAsStream == null)
+            version_file=Util.getResourceAsStream(VERSION_FILE, Version.class);
+            if(version_file == null)
                 throw new FileNotFoundException(VERSION_FILE);
-            properties.load(manifestAsStream);
+            Properties properties=new Properties();
+            properties.load(version_file);
             ver=properties.getProperty(VERSION_PROPERTY);
             if(ver == null)
-                throw new Exception("value for " + VERSION_PROPERTY + " not found in " + VERSION_FILE);
+                throw new RuntimeException("value for " + VERSION_PROPERTY + " not found in " + VERSION_FILE);
             codename=properties.getProperty(CODENAME, "n/a");
-        } catch(Exception e) {
-            throw new IllegalStateException("Could not initialize version", e);
-        } finally {
-            Util.close(manifestAsStream);
+        }
+        catch(IOException e) {
+            throw new RuntimeException(String.format("%s not found; make sure it is in the classpath", VERSION_FILE));
+        }
+        finally {
+            Util.close(version_file);
         }
 
-        Matcher versionMatcher = VERSION_REGEXP.matcher(ver);
-        versionMatcher.find();
+        try {
+            Matcher versionMatcher = VERSION_REGEXP.matcher(ver);
+            versionMatcher.find();
+            description = String.format("%s (%s)", ver, codename);
+            major = Short.parseShort(versionMatcher.group(2));
+            minor = Short.parseShort(versionMatcher.group(3));
+            micro = Short.parseShort(versionMatcher.group(4));
+            version=encode(major, minor, micro);
+            string_version=print(version);
+        }
+        catch(Exception e) {
+            throw new IllegalStateException(String.format("failed parsing %s (%s correct?)", ver, VERSION_FILE), e);
+        }
 
-        description = String.format("%s (%s)", ver, codename);
-        major = Short.parseShort(versionMatcher.group(2));
-        minor = Short.parseShort(versionMatcher.group(3));
-        micro = Short.parseShort(versionMatcher.group(4));
-        version=encode(major, minor, micro);
-        string_version=print(version);
     }
 
     public static short getMajor() {return major;}

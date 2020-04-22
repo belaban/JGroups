@@ -5,9 +5,11 @@
     <packaging>jar</packaging>
     <name>JGroups</name>
     <version>5.0.0.Alpha6-SNAPSHOT</version>
+    <description>Reliable cluster communication toolkit</description>
     <url>http://www.jgroups.org</url>
 
     <properties>
+        <codename>Stelvio</codename>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -19,10 +21,6 @@
         <nexus.snapshot.server.url>https://repository.jboss.org/nexus/content/repositories/snapshots/</nexus.snapshot.server.url>
         <insecure.repositories>ERROR</insecure.repositories>
     </properties>
-
-    <description>
-        Reliable cluster communication toolkit
-    </description>
 
     <organization>
         <name>JBoss, a division of Red Hat</name>
@@ -167,12 +165,6 @@
                   <include>LICENSE</include>
                   <include>README</include>
                </includes>
-            </resource>
-            <resource>
-              <directory>${project.basedir}/lib</directory>
-              <includes>
-                 <include>licenses/thirdparty*</include>
-              </includes>
             </resource>
         </resources>
         <plugins>
