@@ -63,7 +63,7 @@ public class NakackUnitTest {
     }
 
 
-    protected void send(JChannel ch, Message... msgs) throws Exception {
+    protected static void send(JChannel ch, Message... msgs) throws Exception {
         int cnt=1;
         for(Message msg: msgs) {
             msg.setObject(cnt++);
@@ -71,7 +71,7 @@ public class NakackUnitTest {
         }
     }
 
-    protected void checkReception(MyReceiver r, int ... num) {
+    protected static void checkReception(MyReceiver r, int... num) {
         List<Integer> received=r.list();
         for(int i=0; i < 10; i++) {
             if(received.size() == num.length)
@@ -119,7 +119,7 @@ public class NakackUnitTest {
         public List<Integer> list()       {return list;}
 
         public void receive(Message msg) {
-            Integer num=(Integer)msg.getObject();
+            Integer num=msg.getObject();
             synchronized(list) {
                 list.add(num);
             }

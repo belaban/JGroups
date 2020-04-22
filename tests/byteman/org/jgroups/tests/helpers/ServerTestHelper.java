@@ -14,14 +14,14 @@ public class ServerTestHelper extends Helper {
         super(rule);
     }
 
-    public boolean isAddress(Object obj) {
+    public static boolean isAddress(Object obj) {
         return obj instanceof Address;
     }
 
-    public boolean isA(Object obj) {
+    public static boolean isA(Object obj) {
         return obj.equals(ServerTest.A);
     }
-    public boolean isB(Object obj) {
+    public static boolean isB(Object obj) {
         return obj.equals(ServerTest.B);
     }
 

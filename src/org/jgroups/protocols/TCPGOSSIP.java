@@ -81,8 +81,8 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
         super.init();
         stubManager = RouterStubManager.emptyGossipClientStubManager(this).useNio(this.use_nio);
         // we cannot use TCPGOSSIP together with TUNNEL (https://jira.jboss.org/jira/browse/JGRP-1101)
-        TP transport=getTransport();
-        if(transport instanceof TUNNEL)
+        TP tp=getTransport();
+        if(tp instanceof TUNNEL)
             throw new IllegalStateException("TCPGOSSIP cannot be used with TUNNEL; use either TUNNEL:PING or " +
                     "TCP:TCPGOSSIP as valid configurations");
     }

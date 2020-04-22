@@ -256,20 +256,17 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         for(ProtocolConfiguration cfg: configs) {
             sb.append(indent).append("<").append(cfg.getProtocolName());
             Map<String,String> props=cfg.getProperties();
-            if(props.isEmpty()) {
-                sb.append(" />\n");
-            }
-            else {
+            if(!props.isEmpty()) {
                 sb.append("\n").append(indent).append(indent);
-                for(Map.Entry<String,String> entry: props.entrySet()) {
+                for(Map.Entry<String,String> entry : props.entrySet()) {
                     String key=entry.getKey();
                     String val=entry.getValue();
                     key=trim(key);
                     val=trim(val);
                     sb.append(key).append("=\"").append(val).append("\" ");
                 }
-                sb.append(" />\n");
             }
+            sb.append(" />\n");
         }
 
         sb.append("</config>\n");

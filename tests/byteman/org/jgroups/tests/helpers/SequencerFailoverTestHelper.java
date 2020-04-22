@@ -16,16 +16,15 @@ public class SequencerFailoverTestHelper extends Helper {
         super(rule);
     }
 
+    // Do *NOT* make this method static, or else Byteman won't be able to find it!
     public void sendMessages(final Protocol prot, final int start, final int end) {
-        final Thread sender=new Thread() {
-            public void run() {
-                for(int i=start; i <= end; i++) {
-                    Message msg=new BytesMessage(null, i);
-                    System.out.println("[" + prot.getValue("local_addr") + "] --> sending message " + i);
-                    prot.down(msg);
-                }
+        final Thread sender=new Thread(() -> {
+            for(int i=start; i <= end; i++) {
+                Message msg=new BytesMessage(null, i);
+                System.out.println("[" + prot.getValue("local_addr") + "] --> sending message " + i);
+                prot.down(msg);
             }
-        };
+        });
         sender.setName("BytemanSenderThread");
         sender.start();
         try {

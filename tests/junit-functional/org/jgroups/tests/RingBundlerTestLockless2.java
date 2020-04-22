@@ -111,7 +111,7 @@ public class RingBundlerTestLockless2 {
     }
 
 
-    protected List<Message> create(int msg_size, Address ... destinations) {
+    protected static List<Message> create(int msg_size, Address... destinations) {
         List<Message> list=new ArrayList<>(destinations.length);
         for(Address dest: destinations)
             list.add(new BytesMessage(dest, new byte[msg_size]));
@@ -184,11 +184,7 @@ public class RingBundlerTestLockless2 {
         }
 
         protected void incrCount(Address dest) {
-            Integer count=map.get(dest);
-            if(count == null)
-                map.put(dest, 1);
-            else
-                map.put(dest, count+1);
+            map.merge(dest, 1, Integer::sum);
         }
     }
 }

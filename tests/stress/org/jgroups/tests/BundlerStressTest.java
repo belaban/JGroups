@@ -197,7 +197,7 @@ public class BundlerStressTest {
                 bundler=args[++i];
                 continue;
             }
-            System.out.printf("BundlerStressTest [-bundler bundler-type]\n");
+            System.out.print("BundlerStressTest [-bundler bundler-type]\n");
             return;
         }
         new BundlerStressTest(bundler).start();

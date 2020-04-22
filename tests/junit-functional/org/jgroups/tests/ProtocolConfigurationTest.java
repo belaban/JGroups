@@ -153,7 +153,7 @@ public class ProtocolConfigurationTest {
 		protocols.add(protocol) ;
 				
 		// get the value which should have been assigned a default
-		List<Object> configObjs = ((CONFIGOBJPROTOCOL)protocol).getConfigurableObjects() ;
+		List<Object> configObjs = protocol.getConfigurableObjects() ;
 		assert configObjs.size() == 1 ;
 		Object configObj = configObjs.get(0) ;
 		assert configObj instanceof ConfigurableObject ;  

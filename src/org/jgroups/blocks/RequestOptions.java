@@ -20,10 +20,6 @@ public class RequestOptions {
     /** Turns on anycasting; this results in multiple unicasts rather than a multicast for group calls */
     protected boolean       use_anycasting;
 
-    /** If use_anycasting is true: do we want to use an AnycastAddress [B,C] or a unicast to B and another unicast
-     * to C to send an anycast to {B,C} ? Only used if use_anycasting is true */
-    protected boolean       use_anycast_addresses;
-
     /** Allows for filtering of responses */
     protected RspFilter     rsp_filter;
 
@@ -93,11 +89,6 @@ public class RequestOptions {
     public boolean        anycasting()                      {return use_anycasting;}
     public RequestOptions setAnycasting(boolean a)          {this.use_anycasting=a; return this;}
     public RequestOptions anycasting(boolean a)             {this.use_anycasting=a; return this;}
-
-    public boolean        isUseAnycastAddresses()           {return use_anycast_addresses;}
-    public boolean        useAnycastAddresses()             {return use_anycast_addresses;}
-    public RequestOptions setUseAnycastAddresses(boolean f) {use_anycast_addresses=f; return this;}
-    public RequestOptions useAnycastAddresses(boolean f)    {use_anycast_addresses=f; return this;}
 
     public RspFilter      getRspFilter()                    {return rsp_filter;}
     public RspFilter      rspFilter()                       {return rsp_filter;}
@@ -182,11 +173,8 @@ public class RequestOptions {
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append("mode=" + mode).append(", timeout=" + timeout);
-        if(use_anycasting) {
+        if(use_anycasting)
             sb.append(", anycasting=true");
-            if(use_anycast_addresses)
-                sb.append(" (using AnycastAddress)");
-        }
         if(flags > 0)
             sb.append(", flags=" + Util.flagsToString(flags));
         if(transient_flags > 0)

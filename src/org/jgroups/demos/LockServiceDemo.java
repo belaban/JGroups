@@ -112,7 +112,7 @@ public class LockServiceDemo implements LockNotification {
                 lock_names=parseLockNames(line.substring("trylock".length()).trim());
 
                 String tmp=lock_names.get(lock_names.size() -1);
-                long timeout=(long)-1;
+                long timeout=-1;
                 try {
                     timeout=Long.parseLong(tmp);
                     lock_names.remove(lock_names.size() -1);

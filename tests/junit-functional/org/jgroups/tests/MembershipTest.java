@@ -11,6 +11,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -139,7 +140,7 @@ public class MembershipTest {
 
 
     public void testMerge() {
-        v1=Arrays.asList(a5);
+        v1=Collections.singletonList(a5);
         v2=Arrays.asList(a2, a3);
         m1.add(a1, a2, a3, a4);
         m1.merge(v1, v2);

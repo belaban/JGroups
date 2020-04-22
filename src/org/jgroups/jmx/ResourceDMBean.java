@@ -206,7 +206,7 @@ public class ResourceDMBean implements DynamicMBean {
                 }
                 String attributeName=Util.methodNameToAttributeName(method_name);
                 if(value instanceof Double)
-                    value=String.format("%.2f", (double)value);
+                    value=String.format("%.2f", value);
                 map.put(attributeName, value != null? value.toString() : null);
             }
             catch(Exception e) {

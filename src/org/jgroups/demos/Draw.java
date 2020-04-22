@@ -400,9 +400,8 @@ public class Draw implements Receiver, ActionListener, ChannelListener {
     /* ------------------------------ ChannelListener interface -------------------------- */
 
     public void channelConnected(JChannel channel) {
-        if(jmx) {
+        if(jmx)
             Util.registerChannel(channel, "jgroups");
-        }
     }
 
     public void channelDisconnected(JChannel channel) {
@@ -417,10 +416,6 @@ public class Draw implements Receiver, ActionListener, ChannelListener {
                 }
             }
         }
-    }
-
-    public void channelClosed(JChannel channel) {
-
     }
 
 

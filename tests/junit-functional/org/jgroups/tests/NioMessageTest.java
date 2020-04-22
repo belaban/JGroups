@@ -17,7 +17,7 @@ import java.util.Objects;
 public class NioMessageTest extends MessageTestBase {
     protected static final byte[]     ARRAY="hello world".getBytes();
     protected static final ByteBuffer HEAP_BUF=ByteBuffer.wrap("hello world".getBytes());
-    protected static final ByteBuffer DIRECT_BUF=(ByteBuffer)ByteBuffer.allocateDirect(ARRAY.length).put(ARRAY).flip();
+    protected static final ByteBuffer DIRECT_BUF=ByteBuffer.allocateDirect(ARRAY.length).put(ARRAY).flip();
 
 
     public void testConstructor() {

@@ -25,19 +25,19 @@ public interface ChannelListener {
     * 
     * @param channel the channel that has been connected
     */
-   void channelConnected(JChannel channel);
+   default void channelConnected(JChannel channel) {}
 
    /**
     * Channel has been disconnected notification callback
     * 
     * @param channel the disconnected channel
     */
-   void channelDisconnected(JChannel channel);
+   default void channelDisconnected(JChannel channel) {}
 
    /**
     * Channel has been closed notification callback
     * 
     * @param channel the closed channel
     */
-   void channelClosed(JChannel channel);
+   default void channelClosed(JChannel channel) {}
 }

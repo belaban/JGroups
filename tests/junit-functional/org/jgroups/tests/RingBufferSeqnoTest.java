@@ -246,12 +246,10 @@ public class RingBufferSeqnoTest {
         for(int i=0; i <= 10; i++)
             buf.add(i, i, true);
         System.out.println("buf = " + buf);
-        new Thread() {
-            public void run() {
-                Util.sleep(1000);
-                buf.destroy();
-            }
-        }.start();
+        new Thread(() -> {
+            Util.sleep(1000);
+            buf.destroy();
+        }).start();
         int seqno=buf.capacity() +1;
         boolean success=buf.add(seqno, seqno, true);
         System.out.println("buf=" + buf);
@@ -265,14 +263,12 @@ public class RingBufferSeqnoTest {
         for(int i=0; i <= 10; i++)
             buf.add(i, i, true);
         System.out.println("buf = " + buf);
-        Thread thread=new Thread() {
-            public void run() {
-                Util.sleep(1000);
-                for(int i=0; i < 3; i++)
-                    buf.remove();
-                buf.stable(3);
-            }
-        };
+        Thread thread=new Thread(() -> {
+            Util.sleep(1000);
+            for(int i=0; i < 3; i++)
+                buf.remove();
+            buf.stable(3);
+        });
         thread.start();
         boolean success=buf.add(11, 11, true);
         System.out.println("buf=" + buf);

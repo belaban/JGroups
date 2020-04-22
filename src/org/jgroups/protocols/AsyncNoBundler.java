@@ -33,7 +33,7 @@ public class AsyncNoBundler extends NoBundler {
     @Override
     public void send(final Message msg) throws Exception {
         Runnable async_send=() -> {
-            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)(msg.size() + 10));
+            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(msg.size() + 10);
             try {
                 sendSingleMessage(msg, out);
             }

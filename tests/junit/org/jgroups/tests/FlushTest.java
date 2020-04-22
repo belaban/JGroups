@@ -263,7 +263,7 @@ public class FlushTest {
         _testChannels(names, FlushTestReceiver.CONNECT_AND_GET_STATE);
     }
 
-    private void _testChannels(String names[], int connectType) throws Exception {
+    private static void _testChannels(String[] names, int connectType) throws Exception {
         int count = names.length;
 
         List<FlushTestReceiver> channels = new ArrayList<>(count);

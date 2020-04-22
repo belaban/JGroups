@@ -71,7 +71,7 @@ public class NAKACK_REBROADCAST_Test {
         Assert.assertNotNull(range);
         Assert.assertEquals(1, range.size());
         for(long i: range)
-        	Assert.assertTrue(i == 1);
+            Assert.assertEquals(i, 1);
     }
 
     static class MessageInterceptor extends Protocol {

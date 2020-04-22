@@ -191,7 +191,7 @@ public class McastDiscovery {
                     mcast_packet = new DatagramPacket(buf, buf.length);
                     try {
                         mcast_sock.receive(mcast_packet);
-                        req = (DiscoveryRequest) Util.objectFromByteBuffer(mcast_packet.getData());
+                        req =Util.objectFromByteBuffer(mcast_packet.getData());
                         System.out.println("<-- " + req);
 
                         // send response back to req.sender_addr
@@ -230,7 +230,7 @@ public class McastDiscovery {
                         buf = new byte[16000];
                         packet = new DatagramPacket(buf, buf.length);
                         sock.receive(packet);
-                        rsp = (DiscoveryResponse) Util.objectFromByteBuffer(packet.getData());
+                        rsp =Util.objectFromByteBuffer(packet.getData());
                         System.out.println("<== " + rsp);
                         bind_interface = rsp.interface_used;
                         l = (List) map.get(bind_interface);
@@ -402,7 +402,7 @@ class Result implements Comparable {
 
     public int compareTo(Object other) {
         Result oth = (Result) other;
-        return num_responses == oth.num_responses ? 0 : (num_responses < oth.num_responses ? -1 : 1);
+        return Integer.compare(num_responses, oth.num_responses);
     }
 
     public String toString() {

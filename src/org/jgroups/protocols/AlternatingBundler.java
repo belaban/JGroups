@@ -110,7 +110,8 @@ public class AlternatingBundler extends TransferQueueBundler implements Diagnost
         }
     }
 
-    protected void _addMessage(Message msg, long size) {
+    @Override
+    protected void _addMessage(Message msg, int size) {
         target_dest=msg.getDest();
         target_list.add(msg);
         count+=size;

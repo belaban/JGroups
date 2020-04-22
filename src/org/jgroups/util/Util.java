@@ -2296,9 +2296,10 @@ public class Util {
 
 
     public static <T> Enumeration<T> enumerate(final T[] array, int offset, final int length) {
-        return new Enumeration<T>() {
-            protected final int end_pos=offset+length;
+        return new Enumeration<>() {
+            protected final int end_pos=offset + length;
             protected int pos=offset;
+
             public boolean hasMoreElements() {
                 return pos < end_pos;
             }

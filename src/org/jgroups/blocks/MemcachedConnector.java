@@ -148,7 +148,7 @@ public class MemcachedConnector implements Runnable {
 
     public void run() {
         System.out.println("MemcachedConnector listening on " + srv_sock.getLocalSocketAddress());
-        while(thread != null && Thread.currentThread().equals(thread)) {
+        while(Thread.currentThread().equals(thread)) {
             Socket client_sock=null;
             try {
                 client_sock=srv_sock.accept();

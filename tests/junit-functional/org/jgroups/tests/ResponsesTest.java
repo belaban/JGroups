@@ -130,13 +130,11 @@ public class ResponsesTest {
         boolean done=rsps.waitFor(500);
         assert !done;
         long start=System.currentTimeMillis();
-        new Thread() {
-            public void run() {
-                Util.sleep(500);
-                for(int i=5; i < 10; i++)
-                    rsps.addResponse(new PingData(addrs[i],true,names[i],phys_addrs[i]), false);
-            }
-        }.start();
+        new Thread(() -> {
+            Util.sleep(500);
+            for(int i=5; i < 10; i++)
+                rsps.addResponse(new PingData(addrs[i],true,names[i],phys_addrs[i]), false);
+        }).start();
 
         done=rsps.waitFor(20000);
         long time=System.currentTimeMillis() - start;

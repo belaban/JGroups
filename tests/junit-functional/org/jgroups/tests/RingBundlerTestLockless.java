@@ -84,7 +84,7 @@ public class RingBundlerTestLockless {
     }
 
 
-    protected List<Message> create(int msg_size, Address ... destinations) {
+    protected static List<Message> create(int msg_size, Address... destinations) {
         List<Message> list=new ArrayList<>(destinations.length);
         for(Address dest: destinations)
             list.add(new BytesMessage(dest, new byte[msg_size]));

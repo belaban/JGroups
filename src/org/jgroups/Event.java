@@ -71,7 +71,7 @@ public class Event {
 
 
 
-    public static final Event GET_DIGEST_EVT        = new Event(Event.GET_DIGEST);
+    public static final Event GET_DIGEST_EVT=new Event(Event.GET_DIGEST);
 
 
     private final int    type;       // type of event

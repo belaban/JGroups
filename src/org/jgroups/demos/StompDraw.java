@@ -105,7 +105,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
         stomp_client.subscribe(clients_dest);
 
         mainFrame=new JFrame();
-        mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        mainFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         panel=new DrawPanel(false);
         panel.setBackground(background_color);
         sub_panel=new JPanel();
@@ -131,11 +131,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
         String session_id=stomp_client.getSessionId();
         if(session_id != null)
             stomp_client.send(clients_dest, null, 0, 0, "client-joined", session_id);
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                StompDraw.this.stop();
-            }
-        });
+        Runtime.getRuntime().addShutdownHook(new Thread(StompDraw.this::stop));
     }
 
 

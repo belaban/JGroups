@@ -123,6 +123,7 @@ public class View implements Comparable<View>, SizeStreamable, Iterable<Address>
      * @return an immutable list of the members
      */
     public List<Address> getMembers() {
+        // do *NOT* replace with List.of(): we need to be able to do getMembers().contains(m) where m == null!
         return Collections.unmodifiableList(Arrays.asList(members));
     }
 

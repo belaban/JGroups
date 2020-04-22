@@ -108,7 +108,7 @@ public class RingBundlerTest {
         return true;
     }
 
-    protected List<Message> create(int msg_size, Address ... destinations) {
+    protected static List<Message> create(int msg_size, Address... destinations) {
         List<Message> list=new ArrayList<>(destinations.length);
         for(Address dest: destinations)
             list.add(new BytesMessage(dest, new byte[msg_size]));
@@ -150,7 +150,7 @@ public class RingBundlerTest {
         }
 
         protected void incrCount(Address dest) {
-            map.merge(dest, 1, (a1, b1) -> a1 + b1);
+            map.merge(dest, 1, Integer::sum);
         }
     }
 }

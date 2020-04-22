@@ -19,11 +19,11 @@ public class OutputStreamAdapter extends OutputStream {
         output.write(b);
     }
 
-    public void write(byte b[]) throws IOException {
+    public void write(byte[] b) throws IOException {
         output.write(b);
     }
 
-    public void write(byte b[], int off, int len) throws IOException {
+    public void write(byte[] b, int off, int len) throws IOException {
         output.write(b, off, len);
     }
 

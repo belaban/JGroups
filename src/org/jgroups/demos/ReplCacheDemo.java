@@ -64,7 +64,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
                 if(timeout == null)
                     timeout="0";
 
-                cache.put(key, value, Short.valueOf(repl_count), Long.valueOf(timeout));
+                cache.put(key, value, Short.parseShort(repl_count), Long.parseLong(timeout));
                 break;
             case "Remove":
                 int[] rows=table.getSelectedRows();
@@ -114,17 +114,17 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
             key_prefix=tmp;
         tmp=perf_num_keys.getText();
         if(tmp != null)
-            num_puts=Integer.valueOf(tmp);
+            num_puts=Integer.parseInt(tmp);
         tmp=perf_size.getText();
-        Integer size;
+        int size;
         if(tmp != null)
-            size=Integer.valueOf(tmp);
+            size=Integer.parseInt(tmp);
         tmp=perf_repl_count_field.getText();
         if(tmp != null)
-            repl_count=Short.valueOf(tmp);
+            repl_count=Short.parseShort(tmp);
         tmp=perf_timeout_field.getText();
         if(tmp != null)
-            timeout=Long.valueOf(tmp);
+            timeout=Long.parseLong(tmp);
 
         long start=System.currentTimeMillis();
         for(int i=0; i < num_puts; i++) {
@@ -169,11 +169,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         }
 
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                cache.stop();
-            }
-        });
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> cache.stop()));
 
         cache.start();
 
@@ -182,7 +178,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         cache.addChangeListener(model);
 
         frame=new JFrame("ReplCacheDemo");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 

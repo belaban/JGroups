@@ -98,14 +98,14 @@ public class UNICAST_RetransmitTest {
     }
 
 
-    protected void stopRetransmission(JChannel ... channels) {
+    protected static void stopRetransmission(JChannel... channels) {
         for(JChannel ch: channels) {
             UNICAST3 ucast=ch.getProtocolStack().findProtocol(UNICAST3.class);
             ucast.stopRetransmitTask();
         }
     }
 
-    protected void startRetransmission(JChannel ... channels) {
+    protected static void startRetransmission(JChannel... channels) {
         for(JChannel ch: channels) {
             UNICAST3 ucast=ch.getProtocolStack().findProtocol(UNICAST3.class);
             ucast.startRetransmitTask();

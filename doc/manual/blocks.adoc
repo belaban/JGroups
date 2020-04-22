@@ -151,17 +151,16 @@ crash before being able to send a response, the call will return with 8 valid re
 failed. The return value of castMessage() is a RspList
 which contains all responses (not all methods shown):
 
-
 [source,java]
 ----
 public class RspList<T> implements Map<Address,Rsp> {
-    public boolean       isReceived(Address sender);
-    public int           numSuspectedMembers();
+    public static boolean       isReceived(Address sender);
+    public static int           numSuspectedMembers();
     public List<T>       getResults();
-    public List<Address> getSuspectedMembers();
-    public boolean       isSuspected(Address sender);
-    public Object        get(Address sender);
-    public int           size();
+    public static List<Address> getSuspectedMembers();
+    public static boolean       isSuspected(Address sender);
+    public static Object        get(Address sender);
+    public static int           size();
 }
 ----
 
@@ -197,7 +196,7 @@ If we want to restrict the reception of a message to the destination members, th
 ==== Example
 
 This section shows an example of how to use a MessageDispatcher.
-      
+
 [source,java]
 ----
 public class MessageDispatcherTest implements RequestHandler {
@@ -223,7 +222,7 @@ public class MessageDispatcherTest implements RequestHandler {
         Util.close(disp,channel);
     }
 
-    public Object handle(Message msg) throws Exception {
+    public static Object handle(Message msg) throws Exception {
         System.out.println("handle(): " + msg);
         return "Success!";
     }

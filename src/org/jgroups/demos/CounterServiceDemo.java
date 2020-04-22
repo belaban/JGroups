@@ -85,7 +85,7 @@ public class CounterServiceDemo {
                         break;
                     case '8':
                         int NUM=Util.readIntFromStdin("num: ");
-                        System.out.println("");
+                        System.out.println();
                         int print=NUM / 10;
                         long retval=0;
                         long start=System.currentTimeMillis();

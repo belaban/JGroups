@@ -109,7 +109,7 @@ public class NakackTest {
         // the test fails if:
         // - a seqno is received out of order (not FIFO), or
         // - not all messages are received in time allotted (allMsgsReceived)
-        Assert.assertTrue(received_msgs.get() == TOT_MSGS_FOR_ALL_RECEIVERS, "Incorrect number of messages received by the receiver thread");
+        Assert.assertEquals(TOT_MSGS_FOR_ALL_RECEIVERS, received_msgs.get(), "Incorrect number of messages received by the receiver thread");
         Assert.assertFalse(notFIFO, "Sequenece numbers for a peer not in correct order");
     }
 
@@ -163,7 +163,7 @@ public class NakackTest {
             long last_seqno=num;
 
             try {
-                num=(Long)msg.getObject();
+                num=msg.getObject();
                 long received_seqno=num;
 
                 // 1. check if sequence numbers are in sequence

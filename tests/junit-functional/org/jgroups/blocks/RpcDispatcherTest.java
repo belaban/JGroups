@@ -274,7 +274,7 @@ public class RpcDispatcherTest {
     public void testUnicastExceptionAsReturnValue() throws Exception {
         Object rsp=da.callRemoteMethod(b.getAddress(), "returnException", null, null, new RequestOptions(ResponseMode.GET_ALL, 5000));
         System.out.println("rsp = " + rsp);
-        assert rsp != null && rsp instanceof Throwable;
+        assert rsp instanceof Throwable;
     }
 
     public void testUnicastExceptionAsReturnValueWithFuture() throws Exception {
@@ -302,7 +302,7 @@ public class RpcDispatcherTest {
         RspList<Long> rsps=da.callRemoteMethods(null, new MethodCall(meth, 5000), opts);
         long time=System.currentTimeMillis()-start;
         System.out.printf("responses:\n%s\ncall took ~%d ms\n", rsps, time);
-        rsps.values().stream().allMatch(rsp -> !rsp.wasReceived());
+        rsps.values().stream().noneMatch(rsp -> rsp.wasReceived());
     }
 
     public void testMulticastInvocationWithFutureAndTimeout() throws Exception {
@@ -312,7 +312,7 @@ public class RpcDispatcherTest {
         RspList<Long> rsps=future.get(100, TimeUnit.MILLISECONDS);
         System.out.printf("rsps:\n%s\n", rsps);
         assert rsps != null;
-        assert !rsps.values().stream().anyMatch(Rsp::wasReceived);
+        assert rsps.values().stream().noneMatch(Rsp::wasReceived);
     }
 
     /**
@@ -728,7 +728,7 @@ public class RpcDispatcherTest {
         }
     }
 
-    protected JChannel createChannel(String name) throws Exception {
+    protected static JChannel createChannel(String name) throws Exception {
         return new JChannel(Util.getTestStack()).name(name);
     }
 

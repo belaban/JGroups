@@ -174,7 +174,7 @@ public class JoinTest extends ChannelTestBase {
         public void clear() {msgs.clear();}
 
         public void receive(Message msg) {
-            String s=(String)msg.getObject();
+            String s=msg.getObject();
             msgs.add(s);
             System.out.println("[" + name + "] received " + s + " from " + msg.getSrc());
         }
@@ -199,13 +199,11 @@ public class JoinTest extends ChannelTestBase {
                     case GMS.GmsHeader.JOIN_REQ:
                     case GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
                         System.out.println(new Date() + ": delaying JOIN-REQ by " + delay + " ms");
-                        Thread thread=new Thread() {
-                            public void run() {
-                                Util.sleep(delay);
-                                System.out.println(new Date() + ": sending up delayed JOIN-REQ by " + hdr.getMember());
-                                up_prot.up(msg);
-                            }
-                        };
+                        Thread thread=new Thread(() -> {
+                            Util.sleep(delay);
+                            System.out.println(new Date() + ": sending up delayed JOIN-REQ by " + hdr.getMember());
+                            up_prot.up(msg);
+                        });
                         thread.start();
                         return null;
                 }

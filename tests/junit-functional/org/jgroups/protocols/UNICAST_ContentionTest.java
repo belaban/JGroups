@@ -119,7 +119,7 @@ public class UNICAST_ContentionTest {
         assert r2.getNum() == NUM_EXPECTED_MSGS : "expected " + NUM_EXPECTED_MSGS + ", but got " + r2.getNum();
     }
 
-    protected JChannel create(Class<? extends Protocol> unicast_class, String name) throws Exception {
+    protected static JChannel create(Class<? extends Protocol> unicast_class, String name) throws Exception {
         return new JChannel(new SHARED_LOOPBACK(), unicast_class.getDeclaredConstructor().newInstance().setValue("xmit_interval", 500)).name(name);
     }
 

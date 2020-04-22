@@ -62,33 +62,31 @@ public class UnicastTestTcpRpc {
         srv_sock=new ServerSocket(local_port);
         System.out.println("Listening on " + srv_sock.getLocalSocketAddress());
         
-        acceptor=new Thread() {
-            public void run() {
-                while(true) {
-                    Socket client_sock=null;
-                    DataInputStream in=null;
-                    DataOutputStream out=null;
-                    try {
-                        client_sock=srv_sock.accept();
-                        set(client_sock);
-                        in=new DataInputStream(client_sock.getInputStream());
-                        out=new DataOutputStream(client_sock.getOutputStream());
-                        if(!handleRequest(in, out)) {
-                            Util.close(client_sock);
-                        Util.close(out);
-                        Util.close(in);
-                        break;
-                        }
-                    }
-                    catch(IOException e) {
+        acceptor=new Thread(() -> {
+            while(true) {
+                Socket client_sock=null;
+                DataInputStream in=null;
+                DataOutputStream out=null;
+                try {
+                    client_sock=srv_sock.accept();
+                    set(client_sock);
+                    in=new DataInputStream(client_sock.getInputStream());
+                    out=new DataOutputStream(client_sock.getOutputStream());
+                    if(!handleRequest(in, out)) {
                         Util.close(client_sock);
-                        Util.close(out);
-                        Util.close(in);
-                        break;
+                    Util.close(out);
+                    Util.close(in);
+                    break;
                     }
                 }
+                catch(IOException e) {
+                    Util.close(client_sock);
+                    Util.close(out);
+                    Util.close(in);
+                    break;
+                }
             }
-        };
+        });
         acceptor.start();
     }
 
@@ -118,7 +116,7 @@ public class UnicastTestTcpRpc {
                    case RECEIVE_SYNC:
                        long val=in.readLong();
                        int len=in.readInt();
-                       byte data[]=new byte[len];
+                       byte[] data=new byte[len];
                        in.readFully(data, 0, data.length);
                        receiveData(val, data);
                        if(type == RECEIVE_SYNC) {

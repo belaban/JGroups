@@ -235,7 +235,7 @@ public class CloseTest extends ChannelTestBase {
         Assert.assertEquals(view.size(), num, msg);
     }
 
-    protected void printViews(JChannel ... channels) {
+    protected static void printViews(JChannel... channels) {
         System.out.printf("views:\n%s\n",
                           Stream.of(channels).map(ch -> ch.getAddress() + ": " + ch.getView().toString())
                             .collect(Collectors.joining("\n")));

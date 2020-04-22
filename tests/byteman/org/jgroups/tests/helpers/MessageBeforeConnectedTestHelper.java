@@ -19,7 +19,7 @@ public class MessageBeforeConnectedTestHelper extends Helper {
     }
 
     /**
-     * Sends a unicast message up UNICAST2
+     * Sends a unicast message up UNICAST2. Do *NOT* make this method static, or Byteman will not find it!
      */
     public void sendUnicast(JChannel ch) throws Exception {
         final Message msg=new BytesMessage(ch.getAddress(), "hello-1").setSrc(ch.getAddress());
@@ -29,11 +29,7 @@ public class MessageBeforeConnectedTestHelper extends Helper {
         UnicastHeader3 hdr=UnicastHeader3.createDataHeader(1, (short)1, true);
         msg.putHeader(unicast.getId(), hdr);
 
-        new Thread() {
-            public void run() {
-                unicast.down(msg);
-            }
-        }.start();
+        new Thread(() -> unicast.down(msg)).start();
     }
 
 }

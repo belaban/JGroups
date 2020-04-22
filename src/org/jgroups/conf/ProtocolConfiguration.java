@@ -105,10 +105,7 @@ public class ProtocolConfiguration {
 
     public String toString() {
         StringBuilder retval=new StringBuilder();
-        if(protocol_name == null)
-            retval.append("<unknown>");
-        else
-            retval.append(protocol_name);
+        retval.append(Objects.requireNonNullElse(protocol_name, "<unknown>"));
         if(properties != null)
             retval.append("(" + Util.print(properties) + ')');
         return retval.toString();

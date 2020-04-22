@@ -198,7 +198,7 @@ public class MergeTest3 {
         return null;
     }
 
-    protected void createPartition(JChannel ... channels) {
+    protected static void createPartition(JChannel... channels) {
         long view_id=1; // find the highest view-id +1
         for(JChannel ch: channels)
             view_id=Math.max(ch.getView().getViewId().getId(), view_id);

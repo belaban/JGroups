@@ -35,11 +35,7 @@ public class ConcurrentLinkedBlockingQueue2<T> extends ConcurrentLinkedQueue<T> 
 
     public ConcurrentLinkedBlockingQueue2(int capacity) {
         this.capacity=capacity;
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                System.out.println("** num_awaits=" + not_empty_awaits);
-            }
-        });
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> System.out.println("** num_awaits=" + not_empty_awaits)));
 
        /* Thread thread=new Thread() {
             public void run() {

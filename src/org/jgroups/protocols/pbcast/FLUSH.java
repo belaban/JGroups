@@ -210,7 +210,6 @@ public class FLUSH extends Protocol {
         startFlush(new Event(Event.SUSPEND));
     }
 
-    @SuppressWarnings("unchecked")
     private void startFlush(Event evt) {
         List<Address> flushParticipants =evt.getArg();
         startFlush(flushParticipants);

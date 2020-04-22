@@ -511,10 +511,7 @@ public class GridFilesystemTest {
     }
 
     private static String indent(int num) {
-        StringBuilder sb=new StringBuilder();
-        for(int i=0; i < num; i++)
-            sb.append(' ');
-        return sb.toString();
+        return " ".repeat(Math.max(0, num));
     }
 
 

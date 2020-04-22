@@ -353,8 +353,7 @@ public class SeqnoTest {
         assert val != null;
         assert val.contains(seqno);
         assert val.getLow() == from;
-        if(val instanceof SeqnoRange)
-            assert ((SeqnoRange)val).getHigh() == to;
+        assert !(val instanceof SeqnoRange) || ((SeqnoRange)val).getHigh() == to;
     }
 
     private static void checkNull(Map<Seqno,Seqno> map, long seqno) {

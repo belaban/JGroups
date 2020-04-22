@@ -89,9 +89,7 @@ public class FifoOrderTest extends ChannelTestBase {
             }
         }
         System.out.print("\n");
-
-        if(!fifo)
-            assert false : "the following receivers didn't receive all messages in FIFO order: " + incorrect_receivers;
+        assert fifo : "the following receivers didn't receive all messages in FIFO order: " + incorrect_receivers;
     }
 
 

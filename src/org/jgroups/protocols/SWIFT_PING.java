@@ -224,7 +224,7 @@ public class SWIFT_PING extends FILE_PING {
     /**
      * Contract for Swift authentication providers
      */
-    private static interface Authenticator {
+    private interface Authenticator {
 
         /**
          * Validate SWIFT_PING config parameters

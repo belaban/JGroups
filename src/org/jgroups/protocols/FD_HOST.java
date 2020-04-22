@@ -286,10 +286,10 @@ public class FD_HOST extends Protocol {
 
         num_suspect_events+=suspects.size();
 
-        final List<Address> eligible_mbrs=new ArrayList<>();
+        final List<Address> eligible_mbrs;
         synchronized(this) {
             suspected_mbrs.addAll(suspects);
-            eligible_mbrs.addAll(members);
+            eligible_mbrs=new ArrayList<>(members);
             eligible_mbrs.removeAll(suspected_mbrs);
             has_suspected_mbrs=!suspected_mbrs.isEmpty();
         }

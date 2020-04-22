@@ -109,7 +109,7 @@ public class XMLSchemaGenerator {
             String package_name=PROT_PACKAGE + (suffix == null || suffix.isEmpty()? "" : "." + suffix);
             Set<Class<?>> classes=getClasses(Protocol.class, package_name);
             List<Class<?>> sortedClasses = new LinkedList<>(classes);
-            Collections.sort(sortedClasses, Comparator.comparing(Class::getCanonicalName));
+            sortedClasses.sort(Comparator.comparing(Class::getCanonicalName));
             for (Class<?> clazz : sortedClasses)
                 classToXML(xmldoc, parent, clazz, package_name);
         }

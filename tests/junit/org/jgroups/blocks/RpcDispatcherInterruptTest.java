@@ -74,7 +74,7 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
 
     private static void modifyStack(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        GMS gms=(GMS)stack.findProtocol(GMS.class);
+        GMS gms=stack.findProtocol(GMS.class);
         if(gms != null)
             gms.setLogCollectMessages(false);
     }

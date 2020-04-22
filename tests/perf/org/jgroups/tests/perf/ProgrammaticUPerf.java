@@ -429,9 +429,6 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
                             System.err.println("Calling quitAll() failed: " + t);
                         }
                         break;
-                    case '\n':
-                    case '\r':
-                        break;
                     default:
                         break;
                 }

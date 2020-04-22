@@ -47,10 +47,10 @@ public class MessageBatchDrainTest2 {
 
         Util.sleep(5000);
 
-        System.out.printf("\nStopping threads\n");
+        System.out.print("\nStopping threads\n");
         for(MyThread thread: threads)
             thread.cancel();
-        System.out.printf("done, joining threads\n");
+        System.out.print("done, joining threads\n");
         for(MyThread thread: threads)
             thread.join();
 

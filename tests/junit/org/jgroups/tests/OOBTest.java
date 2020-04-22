@@ -5,7 +5,6 @@ import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -62,7 +61,7 @@ public class OOBTest extends ChannelTestBase {
     public void testRegularAndOOBUnicasts() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.Position.BELOW,(Class<? extends Protocol>[])Util.getUnicastProtocols());
+        stack.insertProtocol(discard, ProtocolStack.Position.BELOW, Util.getUnicastProtocols());
 
         Address dest=b.getAddress();
         Message m1=new BytesMessage(dest, 1);
@@ -90,7 +89,7 @@ public class OOBTest extends ChannelTestBase {
     public void testRegularAndOOBUnicasts2() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.Position.BELOW,(Class<? extends Protocol>[])Util.getUnicastProtocols());
+        stack.insertProtocol(discard, ProtocolStack.Position.BELOW, Util.getUnicastProtocols());
 
         Address dest=b.getAddress();
         Message m1=new BytesMessage(dest, 1);
@@ -151,7 +150,6 @@ public class OOBTest extends ChannelTestBase {
 
 
     @Test(invocationCount=5)
-    @SuppressWarnings("unchecked")
     public void testRandomRegularAndOOBMulticasts() throws Exception {
         DISCARD discard=new DISCARD().setLocalAddress(a.getAddress()).setUpDiscardRate(0.5);
         ProtocolStack stack=a.getProtocolStack();
@@ -329,7 +327,6 @@ public class OOBTest extends ChannelTestBase {
             assert list.contains(i);
     }
 
-    @SuppressWarnings("unchecked")
     private static void check(final int num_expected_msgs, Collection<Integer> list, String name) {
         System.out.println(name  + ": " + list);
 

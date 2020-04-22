@@ -258,15 +258,13 @@ public class StompChat implements StompConnection.Listener {
     }
 
     protected void showStatus(final String msg) {
-        new Thread() {
-            public void run() {
-                synchronized(status) {
-                    status.setText(msg);
-                    Util.sleep(2000);
-                    status.setText("");
-                }
+        new Thread(() -> {
+            synchronized(status) {
+                status.setText(msg);
+                Util.sleep(2000);
+                status.setText("");
             }
-        }.start();
+        }).start();
     }
 
 

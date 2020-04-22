@@ -34,7 +34,7 @@ public class RequestCorrelator {
     protected Protocol                               transport;
 
     /** The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>) */
-    protected final ConcurrentMap<Long,Request>      requests=Util.createConcurrentMap();
+    protected final ConcurrentMap<Long,Request<?>>   requests=Util.createConcurrentMap();
 
     /** To generate unique request IDs */
     protected static final AtomicLong                REQUEST_ID=new AtomicLong(1);
@@ -119,7 +119,7 @@ public class RequestCorrelator {
      * @param req A request (usually the object that invokes this method). Its methods {@code receiveResponse()} and
      *            {@code suspect()} will be invoked when a message has been received or a member is suspected.
      */
-    public void sendRequest(Collection<Address> dest_mbrs, ByteArray data, Request req, RequestOptions opts) throws Exception {
+    public <T> void sendRequest(Collection<Address> dest_mbrs, ByteArray data, Request<T> req, RequestOptions opts) throws Exception {
         if(transport == null) {
             log.warn("transport is not available !");
             return;
@@ -153,18 +153,13 @@ public class RequestCorrelator {
         }
 
         if(opts.anycasting()) {
-            if(opts.useAnycastAddresses()) {
-                transport.down((Message)msg.setDest(new AnycastAddress(dest_mbrs)));
-            }
-            else {
-                boolean first=true;
-                for(Address mbr: dest_mbrs) {
-                    Message copy=(first? msg : msg.copy(true, true)).setDest(mbr);
-                    first=false;
-                    if(!mbr.equals(local_addr) && copy.isFlagSet(Message.TransientFlag.DONT_LOOPBACK))
-                        copy.clearFlag(Message.TransientFlag.DONT_LOOPBACK);
-                    transport.down(copy);
-                }
+            boolean first=true;
+            for(Address mbr: dest_mbrs) {
+                Message copy=(first? msg : msg.copy(true, true)).setDest(mbr);
+                first=false;
+                if(!mbr.equals(local_addr) && copy.isFlagSet(Message.TransientFlag.DONT_LOOPBACK))
+                    copy.clearFlag(Message.TransientFlag.DONT_LOOPBACK);
+                transport.down(copy);
             }
         }
         else
@@ -172,7 +167,7 @@ public class RequestCorrelator {
     }
 
     /** Sends a request to a single destination */
-    public void sendUnicastRequest(Address dest, ByteArray data, Request req, RequestOptions opts) throws Exception {
+    public <T> void sendUnicastRequest(Address dest, ByteArray data, Request<T> req, RequestOptions opts) throws Exception {
         if(transport == null) {
             if(log.isWarnEnabled()) log.warn("transport is not available !");
             return;
@@ -332,14 +327,14 @@ public class RequestCorrelator {
 
     // .......................................................................
     protected RequestCorrelator removeEntry(long id) {
-        Request req=requests.remove(id);
+        Request<?> req=requests.remove(id);
         if(req != null) {
             long time_ns=req.start_time > 0? System.nanoTime() - req.start_time : 0;
             if(req instanceof UnicastRequest)
-                rpc_stats.add(RpcStats.Type.UNICAST, ((UnicastRequest)req).target, true, time_ns);
+                rpc_stats.add(RpcStats.Type.UNICAST, ((UnicastRequest<?>)req).target, true, time_ns);
             else if(req instanceof GroupRequest) {
                 if(req.options != null && req.options.anycasting())
-                    rpc_stats.addAnycast(true, time_ns, ((GroupRequest)req).rsps.keySet());
+                    rpc_stats.addAnycast(true, time_ns, ((GroupRequest<?>)req).rsps.keySet());
                 else
                     rpc_stats.add(RpcStats.Type.MULTICAST, null, true, time_ns);
             }
@@ -359,7 +354,7 @@ public class RequestCorrelator {
 
             case Header.RSP:
             case Header.EXC_RSP:
-                Request req=requests.get(hdr.req_id);
+                Request<?> req=requests.get(hdr.req_id);
                 if(req != null)
                     handleResponse(req, msg.getSrc(), msg.getArray(), msg.getOffset(), msg.getLength(), hdr.type == Header.EXC_RSP);
                 break;
@@ -403,7 +398,7 @@ public class RequestCorrelator {
             sendReply(req, hdr.req_id, retval, threw_exception);
     }
 
-    protected void handleResponse(Request req, Address sender, byte[] buf, int offset, int length, boolean is_exception) {
+    protected <T> void handleResponse(Request<T> req, Address sender, byte[] buf, int offset, int length, boolean is_exception) {
         Object retval;
         try {
             retval=replyFromBuffer(buf, offset, length, marshaller);
@@ -632,7 +627,7 @@ public class RequestCorrelator {
                 switch(key) {
                     case "requests":
                         StringBuilder sb=new StringBuilder();
-                        for(Map.Entry<Long,Request> entry: requests.entrySet())
+                        for(Map.Entry<Long,Request<?>> entry: requests.entrySet())
                             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
                         retval.put(key, sb.toString());
                         break;

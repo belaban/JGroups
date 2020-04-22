@@ -197,11 +197,15 @@ public class UUID implements Address, Constructable<UUID> {
         UUID val=(UUID)other;
         if(this == val)
             return 0;
-        return (this.mostSigBits < val.mostSigBits ? -1 :
+
+        int most=Long.compare(this.mostSigBits, val.mostSigBits);
+        return most != 0? most : Long.compare(this.leastSigBits, val.leastSigBits);
+
+       /* return (this.mostSigBits < val.mostSigBits ? -1 :
                 (this.mostSigBits > val.mostSigBits ? 1 :
                         (this.leastSigBits < val.leastSigBits ? -1 :
                                 (this.leastSigBits > val.leastSigBits ? 1 :
-                                        0))));
+                                        0))));*/
     }
 
 

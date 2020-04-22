@@ -118,7 +118,7 @@ public class NonReflectiveProbeHandler extends JChannelProbeHandler {
                 try {
                     Object v=en.getValue().invoke(null);
                     if(v instanceof Double)
-                        v=String.format("%.2f", (double)v);
+                        v=String.format("%.2f", v);
                     map.put(en.getKey(), v != null? v.toString() : "null");
                 }
                 catch(Exception ex) {

@@ -13,7 +13,7 @@ public class SeqnoComparator implements Comparator<Seqno>, Serializable {
 
         // o1 and o2 are either Seqnos or SeqnoRanges, so we just compare on 'low'
         if(!o1.isDummy() && !o2.isDummy())
-            return o1.low == o2.low? 0 : o1.low < o2.low ? -1 : 1;
+            return Long.compare(o1.low, o2.low);
 
         // o2 must be a seqno or SeqnoRange; o1 must be a Seqno
         if(o1.isDummy()) {
@@ -29,7 +29,7 @@ public class SeqnoComparator implements Comparator<Seqno>, Serializable {
     }
 
     private static int _compare(Seqno o1, Seqno o2) {
-        return o1.low == o2.low? 0 : o1.low < o2.low? -1 : 1;
+        return Long.compare(o1.low, o2.low);
     }
 
     private static int _compare2(Seqno o1, SeqnoRange o2) {

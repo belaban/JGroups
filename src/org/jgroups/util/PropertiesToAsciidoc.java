@@ -47,7 +47,6 @@ public class PropertiesToAsciidoc {
             classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.dns",Protocol.class));
             classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.relay",Protocol.class));
             classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.rules",Protocol.class));
-            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.tom",Protocol.class));
             Properties props = new Properties();
             for(Class<Protocol> clazz: classes)
                 convertProtocolToAsciidocTable(props,clazz);

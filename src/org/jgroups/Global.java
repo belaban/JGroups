@@ -47,8 +47,6 @@ public final class Global {
     public static final String NAME_CACHE_MAX_ELEMENTS="jgroups.name_cache.max_elements";
     public static final String NAME_CACHE_MAX_AGE="jgroups.name_cache.max_age";
 
-    public static final String IPV6_MCAST_PREFIX="jgroups.ipmcast.prefix";
-
     public static final String USE_JDK_LOGGER="jgroups.use.jdk_logger"; // forces use of the JDK logger
     public static final String LOG_CLASS="jgroups.log_class"; // class of preferred logger
 
@@ -98,39 +96,4 @@ public final class Global {
 		throw new InstantiationError( "Must not instantiate this class" );
 	}
 
-    public static boolean getPropertyAsBoolean(String property, boolean defaultValue) {
-        boolean result = defaultValue;
-        try{
-            String tmp = System.getProperty(property);
-            if(tmp != null)
-                result = Boolean.parseBoolean(tmp);
-        }
-        catch(Throwable t) {
-        }
-        return result;
-    }
-
-    public static long getPropertyAsLong(String property, long defaultValue) {
-        long result = defaultValue;
-        try{
-            String tmp = System.getProperty(property);
-            if(tmp != null)
-                result = Long.parseLong(tmp);
-        }
-        catch(Throwable t){
-        }
-        return result;
-    }
-
-    public static int getPropertyAsInteger(String property, int defaultValue) {
-        int result = defaultValue;
-        try{
-            String tmp = System.getProperty(property);
-            if(tmp != null)
-                result = Integer.parseInt(tmp);
-        }
-        catch(Throwable t){
-        }
-        return result;
-    }
 }

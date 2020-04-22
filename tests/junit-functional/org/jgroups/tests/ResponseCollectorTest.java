@@ -52,14 +52,12 @@ public class ResponseCollectorTest {
         boolean rc=coll.waitForAllResponses(500);
         assert !rc;
 
-        new Thread() {
-            public void run() {
-                coll.add(a, 1);
-                Util.sleep(500);
-                coll.add(b, 2);
-                coll.add(c, 3);
-            }
-        }.start();
+        new Thread(() -> {
+            coll.add(a, 1);
+            Util.sleep(500);
+            coll.add(b, 2);
+            coll.add(c, 3);
+        }).start();
 
         rc=coll.waitForAllResponses(5000);
         System.out.println("coll = " + coll);
@@ -70,15 +68,13 @@ public class ResponseCollectorTest {
     public static void testWaitForAllResponsesAndTimeout() {
         final ResponseCollector<Integer> coll=new ResponseCollector<>(a, b, c);
 
-        new Thread() {
-            public void run() {
-                coll.add(a, 1);
-                Util.sleep(1000);
-                coll.add(b, 2);
-                Util.sleep(1000);
-                coll.add(c, 3);
-            }
-        }.start();
+        new Thread(() -> {
+            coll.add(a, 1);
+            Util.sleep(1000);
+            coll.add(b, 2);
+            Util.sleep(1000);
+            coll.add(c, 3);
+        }).start();
 
         boolean rc=coll.waitForAllResponses(400);
         System.out.println("coll = " + coll);
@@ -89,13 +85,11 @@ public class ResponseCollectorTest {
     public static void testWaitForAllResponsesAndReset() {
         final ResponseCollector<Integer> coll=new ResponseCollector<>(a, b, c);
 
-        new Thread() {
-            public void run() {
-                Util.sleep(1000);
-                coll.add(a, 1);
-                coll.reset();
-            }
-        }.start();
+        new Thread(() -> {
+            Util.sleep(1000);
+            coll.add(a, 1);
+            coll.reset();
+        }).start();
 
         boolean rc=coll.waitForAllResponses(5000);
         System.out.println("coll = " + coll);
@@ -111,11 +105,7 @@ public class ResponseCollectorTest {
         Map<Address, Integer> results=coll.getResults();
         System.out.println("results = " + results);
 
-        Thread thread=new Thread() {
-            public void run() {
-                coll.reset();
-            }
-        }; thread.start();
+        Thread thread=new Thread(() -> coll.reset()); thread.start();
 
         thread.join();
         System.out.println("results = " + results);

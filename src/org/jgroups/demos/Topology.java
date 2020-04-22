@@ -38,7 +38,7 @@ public class Topology extends Frame implements WindowListener {
     private JChannel channel;
     private Object my_addr=null;
     private String props="udp.xml";
-    private String name;
+    private final String name;
     private static final String channel_name="FD-Heartbeat";
 
 

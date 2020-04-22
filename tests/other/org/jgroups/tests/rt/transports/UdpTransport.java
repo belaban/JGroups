@@ -70,16 +70,14 @@ public class UdpTransport implements RtTransport {
         if(server) { // simple single threaded server, can only handle a single connection at a time
             sock=new DatagramSocket(port, host);
             System.out.println("server started (ctrl-c to kill)");
-            receiver_thread=new Receiver();
-            receiver_thread.start();
         }
         else {
             sock=new DatagramSocket();
             members.add(sock.getLocalSocketAddress());
             members.add(new InetSocketAddress(host, port));
-            receiver_thread=new Receiver();
-            receiver_thread.start();
         }
+        receiver_thread=new Receiver();
+        receiver_thread.start();
     }
 
     public void stop() {

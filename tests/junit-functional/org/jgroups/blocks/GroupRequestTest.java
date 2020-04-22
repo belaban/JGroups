@@ -243,7 +243,7 @@ public class GroupRequestTest {
     }
 
 
-    protected static void checkComplete(GroupRequest req, boolean expect) {
+    protected static void checkComplete(GroupRequest<?> req, boolean expect) {
         System.out.println("req = " + req);
         assert req.getResponsesComplete() == expect;
     }
@@ -357,10 +357,10 @@ public class GroupRequestTest {
 
 
     protected static class MyCorrelator extends RequestCorrelator {
-        protected GroupRequest request;
-        protected boolean      async=true;
-        protected Object[]     responses=null;
-        protected long         delay=0;
+        protected GroupRequest<?> request;
+        protected boolean         async=true;
+        protected Object[]        responses=null;
+        protected long            delay;
 
         public MyCorrelator(boolean async, Object[] responses, long delay) {
             super(null, null, null);
@@ -374,27 +374,21 @@ public class GroupRequestTest {
             };
         }
 
-        public void setGroupRequest(GroupRequest r) {
+        public void setGroupRequest(GroupRequest<?> r) {
             request=r;
         }
 
         @Override
-        public void sendRequest(Collection<Address> dest_mbrs, ByteArray data, Request req, RequestOptions opts) throws Exception {
+        public <T> void sendRequest(Collection<Address> dest_mbrs, ByteArray data, Request<T> req, RequestOptions opts) throws Exception {
             send();
         }
 
 
         protected void send() {
-            if(async) {
-                new Thread() {
-                    public void run() {
-                        sendResponses();
-                    }
-                }.start();
-            }
-            else {
+            if(async)
+                new Thread(this::sendResponses).start();
+            else
                 sendResponses();
-            }
         }
 
         protected void sendResponses() {

@@ -393,14 +393,14 @@ public class RELAY extends Protocol {
         List<View> views=new ArrayList<>(2);
         if(local_view != null) views.add(local_view);
         if(remote_view != null) views.add(remote_view);
-        Collections.sort(views, (v1, v2) -> {
+        views.sort((v1, v2) -> {
             ViewId vid1=v1.getViewId(), vid2=v2.getViewId();
             Address creator1=vid1.getCreator(), creator2=vid2.getCreator();
             int rc=creator1.compareTo(creator2);
             if(rc != 0)
                 return rc;
             long id1=vid1.getId(), id2=vid2.getId();
-            return id1 > id2 ? 1 : id1 < id2? -1 : 0;
+            return Long.compare(id1, id2);
         });
 
         List<Address> combined_members=new ArrayList<>();

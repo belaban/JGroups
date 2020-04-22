@@ -665,7 +665,7 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
 
                 if(log.isTraceEnabled())
                     log.trace("old nodes: " + tmp_old + "\nnew nodes: " + tmp_new);
-                if(tmp_old != null && tmp_new != null && tmp_old.equals(tmp_new))
+                if(Objects.equals(tmp_old, tmp_new))
                     continue;
                 mcastPut(key, real_value, repl_count, val.getTimeout(), false);
                 if(tmp_new != null && !tmp_new.contains(local_addr)) {
@@ -753,7 +753,6 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
             int index=Math.abs(key.hashCode() & (HASH_SPACE - 1));
             
             Set<Address> results=new LinkedHashSet<>();
-            List<Address> retval=new ArrayList<>();
 
             SortedMap<Short, Address> tailmap=nodes.tailMap((short)index);
             int count=0;
@@ -773,9 +772,7 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
                         break;
                 }
             }
-
-            retval.addAll(results);
-            return retval;
+            return new ArrayList<>(results);
         }
 
         public void installNodes(List<Address> new_nodes) {

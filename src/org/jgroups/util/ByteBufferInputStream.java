@@ -115,7 +115,7 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
 
     public String readLine() throws IOException {
         char[] lineBuffer=new char[128];
-        char buffer[] = lineBuffer;
+        char[] buffer= lineBuffer;
 
         if (buffer == null) {
             buffer = lineBuffer = new char[128];
@@ -186,7 +186,7 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
                     if (count > utflen)
                         throw new UTFDataFormatException(
                           "malformed input: partial character at end");
-                    char2 = (int) bytearr[count-1];
+                    char2 =bytearr[count-1];
                     if ((char2 & 0xC0) != 0x80)
                         throw new UTFDataFormatException(
                           "malformed input around byte " + count);
@@ -199,8 +199,8 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
                     if (count > utflen)
                         throw new UTFDataFormatException(
                           "malformed input: partial character at end");
-                    char2 = (int) bytearr[count-2];
-                    char3 = (int) bytearr[count-1];
+                    char2 =bytearr[count-2];
+                    char3 =bytearr[count-1];
                     if (((char2 & 0xC0) != 0x80) || ((char3 & 0xC0) != 0x80))
                         throw new UTFDataFormatException(
                           "malformed input around byte " + (count-1));

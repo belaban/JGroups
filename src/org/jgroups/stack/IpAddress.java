@@ -109,13 +109,13 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
                     (o != null? o.getClass() : o));
         IpAddress other = (IpAddress) o;
         if(ip_addr == null)
-            if (other.ip_addr == null) return port < other.port ? -1 : (port > other.port ? 1 : 0);
+            if (other.ip_addr == null) return Integer.compare(port, other.port);
             else return -1;
 
         h1=ip_addr.hashCode();
         h2=other.ip_addr.hashCode();
-        rc=h1 < h2? -1 : h1 > h2? 1 : 0;
-        return rc != 0 ? rc : port < other.port ? -1 : (port > other.port ? 1 : 0);
+        rc=Integer.compare(h1, h2);
+        return rc != 0 ? rc : Integer.compare(port, other.port);
     }
 
 

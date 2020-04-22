@@ -75,7 +75,7 @@ public class LargeMergeTest {
     public void testClusterFormationAfterMerge() {
         System.out.println("\nEnabling message traffic between members to start the merge");
         for(JChannel ch: channels) {
-            DISCARD discard=(DISCARD)ch.getProtocolStack().findProtocol(DISCARD.class);
+            DISCARD discard=ch.getProtocolStack().findProtocol(DISCARD.class);
             discard.setDiscardAll(false);
         }
 
@@ -138,11 +138,11 @@ public class LargeMergeTest {
         int gms_merge_task_running=0;
 
         for(JChannel ch:  channels) {
-            MERGE3 merge3=(MERGE3)ch.getProtocolStack().findProtocol(MERGE3.class);
+            MERGE3 merge3=ch.getProtocolStack().findProtocol(MERGE3.class);
             if(merge3 != null && merge3.isMergeTaskRunning())
                 merge_task_running++;
 
-            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             if(gms.isMergeKillerRunning())
                 merge_canceller_running++;
             if(gms.isMergeInProgress())
@@ -160,7 +160,7 @@ public class LargeMergeTest {
 
 
     @Test(enabled=false)
-    public static void main(String args[]) throws Exception {
+    public static void main(String[] args) throws Exception {
         LargeMergeTest test=new LargeMergeTest();
         test.setUp();
         test.testClusterFormationAfterMerge();

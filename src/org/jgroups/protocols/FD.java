@@ -230,7 +230,7 @@ public class FD extends Protocol {
                 log.trace("%s: received suspect message: %s", local_addr, hdr);
 
                 for(Address mbr: hdr.mbrs) {
-                    if(local_addr != null && mbr.equals(local_addr)) {
+                    if(mbr.equals(local_addr)) {
                         log.warn("%s: I was suspected by %s; ignoring the SUSPECT message and sending back a HEARTBEAT_ACK",
                                  local_addr, msg.getSrc());
                         sendHeartbeatResponse(msg.getSrc());

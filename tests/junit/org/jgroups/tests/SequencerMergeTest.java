@@ -194,7 +194,7 @@ public class SequencerMergeTest {
     }
 
 
-    protected JChannel create(String name, boolean insert_discard) throws Exception {
+    protected static JChannel create(String name, boolean insert_discard) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
                                  new DISCARD().setValue("discard_all", insert_discard),
                                  new PING(),

@@ -89,11 +89,11 @@ public class JmxDemo extends NotificationBroadcasterSupport {
 
 
     @ManagedOperation
-    public String sayName() {
+    public static String sayName() {
         return "I'm " + first_name + " " + last_name;
     }
 
-    public int add(int a, int b) {return a+b;} // exposed because @MBean is on the class
+    public static int add(int a, int b) {return a+b;} // exposed because @MBean is on the class
 
 
 

@@ -462,10 +462,8 @@ public class RequestTableTest {
     }
 
     protected static <T> void assertBounds(RequestTable<T> table, int capacity, int size) {
-        if(capacity >= 0)
-            assert table.capacity() == capacity : String.format("table.cap=%d, expected cap=%d", table.capacity(), capacity);
-        if(size >= 0)
-            assert table.size() == size : String.format("table.size=%d, expected size=%d", table.size(), size);
+        assert capacity < 0 || table.capacity() == capacity : String.format("table.cap=%d, expected cap=%d", table.capacity(), capacity);
+        assert size < 0 || table.size() == size : String.format("table.size=%d, expected size=%d", table.size(), size);
     }
 
     protected static void checkIndices(RequestTable<Integer> table, long low, long high) {

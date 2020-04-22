@@ -93,7 +93,7 @@ public class ViewId implements Comparable<ViewId>, SizeStreamable, Constructable
      * @return 0 for equality, value less than 0 if smaller, greater than 0 if greater.
      */
     public int compareToIDs(ViewId other) {
-        return id > other.id ? 1 : id < other.id ? -1 : 0;
+        return Long.compare(id, other.id);
     }
 
 

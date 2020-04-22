@@ -220,7 +220,7 @@ public class RoundTrip implements RtReceiver {
                 if(num > num_msgs)
                     break;
                 if(num > 0 && num % print == 0)
-                    System.out.printf(".");
+                    System.out.print(".");
 
                 promise.reset(false);
                 byte[] req_buf=new byte[PAYLOAD];

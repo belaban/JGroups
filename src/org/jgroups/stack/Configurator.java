@@ -1053,20 +1053,17 @@ public class Configurator {
             if(getConvertedValue() == null)
                 return addresses;
             // if we take only an InetAddress argument
-            if(!isParameterized()) {
+            if(!isParameterized())
                 addresses.add(getInetAddress(getConvertedValue()));
-                return addresses;
-            }
             // if we take a List<InetAddress> or similar
             else {
                 List<?> values=(List<?>)getConvertedValue();
                 if(values.isEmpty())
                     return addresses;
-                for(int i=0; i < values.size(); i++) {
+                for(int i=0; i < values.size(); i++)
                     addresses.add(getInetAddress(values.get(i)));
-                }
-                return addresses;
             }
+            return addresses;
         }
 
         private static InetAddress getInetAddress(Object obj) throws IllegalArgumentException {

@@ -299,7 +299,7 @@ public class UnicastTestRpc implements Receiver {
 
     protected static List<String> getSites(JChannel channel) {
         RELAY2 relay=channel.getProtocolStack().findProtocol(RELAY2.class);
-        return relay != null? relay.siteNames() : Collections.<String>emptyList();
+        return relay != null? relay.siteNames() : Collections.emptyList();
     }
 
 

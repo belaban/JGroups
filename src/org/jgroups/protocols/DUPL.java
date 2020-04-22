@@ -1,7 +1,6 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
-import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
@@ -79,13 +78,6 @@ public class DUPL extends Protocol {
 
         copy(msg, outgoing_copies, Direction.DOWN);
         return down_prot.down(msg);
-    }
-
-    public Object up(Event evt) {
-        boolean copy=(copy_multicast_msgs || copy_unicast_msgs) && incoming_copies > 0;
-        if(!copy)
-            return up_prot.up(evt);
-        return up_prot.up(evt);
     }
 
 

@@ -53,13 +53,12 @@ public class SNIFF extends Protocol {
         System.out.println(sb.toString());
     }
 
-    protected static String printPayload(Message msg, final StringBuilder sb) {
+    protected static void printPayload(Message msg, final StringBuilder sb) {
         byte[] payload=msg.getArray();
         int print_max=Math.min(msg.getLength(), 50);
         for(int i=msg.getOffset(); i < print_max; i++) {
             byte ch=payload[i];
             sb.append((char)ch);
         }
-        return null;
     }
 }

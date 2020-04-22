@@ -53,7 +53,7 @@ public class LargeState implements Receiver {
         if(server == null)
             throw new Exception("No MBeanServers found;" +
                                   "\nLargeState needs to be run with an MBeanServer present, or inside JDK 5");
-        JmxConfigurator.registerChannel((JChannel)channel, server, "jgroups", channel.getClusterName(), true);
+        JmxConfigurator.registerChannel(channel, server, "jgroups", channel.getClusterName(), true);
         System.out.println("-- connected to channel");
 
         if(provider) {

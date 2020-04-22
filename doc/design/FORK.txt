@@ -130,12 +130,11 @@ Declarative configuration would look like this:
        </fork-stack>
     </FORK>
     <FRAG2/>
-    <TOA/>
 
-Here we create a main-stack with protocols MFC, UFC, FORK, FRAG2 and TOA. Then we create 2 fork-stacks: one with
-CENTRAL_LOCK and id=1 and another one with COUNTER under id=2. Note that these 2 fork-stacks do *not* include protocols
-FRAG2 and TOA. A message with fork-stack-id=2 *ends* in COUNTER (or the corresponding fork-channel if fork-channel-id
-is set) and does *not* pass through FRAG2 and TOA.
+Here we create a main-stack with protocols MFC, UFC, FORK, and FRAG2. Then we create 2 fork-stacks: one with
+CENTRAL_LOCK and id=1 and another one with COUNTER under id=2. Note that these 2 fork-stacks do *not* include protocol
+FRAG2. A message with fork-stack-id=2 *ends* in COUNTER (or the corresponding fork-channel if fork-channel-id
+is set) and does *not* pass through FRAG2.
 
 The application could now create fork-channels over an existing fork-stack, or create new fork-stacks and
 fork-channels over them as well.
@@ -146,7 +145,6 @@ something like this (TBD):
     <UFC/>
     <FORK config="fork-config.xml".../>
     <FRAG2/>
-    <TOA/>
 
 FORK would be configured through an external XML file, which can then define its own schema (similar to what we did in
 RELAY2).

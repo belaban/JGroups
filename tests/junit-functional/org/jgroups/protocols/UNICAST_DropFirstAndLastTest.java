@@ -26,7 +26,7 @@ public class UNICAST_DropFirstAndLastTest {
 
     protected void setup(Class<? extends Protocol> unicast_class) throws Exception {
         a=createChannel(unicast_class, "A");
-        discard=(DISCARD)a.getProtocolStack().findProtocol(DISCARD.class);
+        discard=a.getProtocolStack().findProtocol(DISCARD.class);
         assert discard != null;
         a.connect("UNICAST_DropFirstAndLastTest");
         rb=new MyReceiver<Integer>().name("B").verbose(true);
@@ -104,7 +104,7 @@ public class UNICAST_DropFirstAndLastTest {
     }
 
 
-    protected JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
+    protected static JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
         Protocol unicast=unicast_class.getDeclaredConstructor().newInstance();
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
@@ -123,7 +123,7 @@ public class UNICAST_DropFirstAndLastTest {
         }
     }
 
-    protected void setLevel(String level, JChannel ... channels) {
+    protected static void setLevel(String level, JChannel... channels) {
         for(JChannel ch: channels)
             ch.getProtocolStack().findProtocol(Util.getUnicastProtocols()).level(level);
     }
@@ -136,7 +136,7 @@ public class UNICAST_DropFirstAndLastTest {
         throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST3");
     }
 
-    protected void removeAllConnections(Protocol prot) {
+    protected static void removeAllConnections(Protocol prot) {
         if(prot instanceof UNICAST3) {
             UNICAST3 unicast=(UNICAST3)prot;
             unicast.removeAllConnections();

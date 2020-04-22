@@ -221,7 +221,7 @@ public class Relay2RpcDispatcherTest {
     }
 
 
-    protected void waitForBridgeView(int expected_size, long timeout, long interval, JChannel ... channels) {
+    protected static void waitForBridgeView(int expected_size, long timeout, long interval, JChannel... channels) {
         long deadline=System.currentTimeMillis() + timeout;
 
         while(System.currentTimeMillis() < deadline) {
@@ -255,7 +255,7 @@ public class Relay2RpcDispatcherTest {
     }
 
 
-    protected Route getRoute(JChannel ch, String site_name) {
+    protected static Route getRoute(JChannel ch, String site_name) {
         RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
         return relay.getRoute(site_name);
     }

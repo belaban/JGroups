@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -80,8 +81,7 @@ public class RingBuffer<T> {
         lock.lock();
         try {
             count=ri=wi=0;
-            for(int i=0; i < buf.length; i++)
-                buf[i]=null;
+            Arrays.fill(buf, null);
             return this;
         }
         finally {

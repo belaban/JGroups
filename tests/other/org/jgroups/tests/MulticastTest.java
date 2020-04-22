@@ -30,13 +30,13 @@ public class MulticastTest {
     public static void main(String[] args) throws Exception {
         MulticastTest test=new MulticastTest();
         if(args.length > 0 && args[0].equalsIgnoreCase("-nio"))
-            test.testDatagramChannel();
+            MulticastTest.testDatagramChannel();
         else
-            test.testMulticastSocket();
+            MulticastTest.testMulticastSocket();
     }
 
 
-    protected void testMulticastSocket() throws IOException {
+    protected static void testMulticastSocket() throws IOException {
         MulticastSocket sock=new MulticastSocket(new InetSocketAddress(PORT));
         sock.setInterface(bind_addr);
         sock.joinGroup(group);
@@ -44,7 +44,7 @@ public class MulticastTest {
                           sock.getLocalSocketAddress(), sock.getRemoteSocketAddress());
     }
 
-    protected void testDatagramChannel() throws IOException {
+    protected static void testDatagramChannel() throws IOException {
         NetworkInterface ni = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
 
         DatagramChannel dc = DatagramChannel.open(StandardProtocolFamily.INET)

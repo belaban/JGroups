@@ -157,9 +157,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
             return;
         // if(!isConnected()) throw new Exception ("not connected");
         synchronized(get_members_map) {
-            List<MembersNotification> set=get_members_map.get(group);
-            if(set == null)
-                get_members_map.put(group, set=new ArrayList<>());
+            List<MembersNotification> set=get_members_map.computeIfAbsent(group, k -> new ArrayList<>());
             set.add(callback);
         }
         try {

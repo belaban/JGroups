@@ -290,7 +290,7 @@ public class ReplicatedHashMap<K, V> extends
      */
     public boolean remove(Object key, Object value) {
         Object val = get(key);
-        boolean removed = val != null && value != null && val.equals(value);
+        boolean removed =Objects.equals(val, value);
         try {
             MethodCall call = new MethodCall(REMOVE_IF_EQUALS, key, value);
             disp.callRemoteMethods(null, call, call_options);
@@ -305,7 +305,7 @@ public class ReplicatedHashMap<K, V> extends
      */
     public boolean replace(K key, V oldValue, V newValue) {
         Object val = get(key);
-        boolean replaced = val != null && oldValue != null && val.equals(oldValue);
+        boolean replaced=Objects.equals(val, oldValue);
         try {
             MethodCall call = new MethodCall(REPLACE_IF_EQUALS, key, oldValue, newValue);
             disp.callRemoteMethods(null, call, call_options);
@@ -676,33 +676,33 @@ public class ReplicatedHashMap<K, V> extends
 
     @Override
     public Set<Entry<K, V>> entrySet() {
-        return new AbstractSet<Entry<K, V>>() {
+        return new AbstractSet<>() {
             @Override
             public void clear() {
                 ReplicatedHashMap.this.clear();
             }
 
             @Override
-            public Iterator<Entry<K, V>> iterator() {
-                final Iterator<Entry<K, V>> it = map.entrySet().iterator();
-                return new Iterator<Entry<K, V>>() {
-                    Entry<K, V> cur = null;
+            public Iterator<Entry<K,V>> iterator() {
+                final Iterator<Entry<K,V>> it=map.entrySet().iterator();
+                return new Iterator<>() {
+                    Entry<K,V> cur=null;
 
                     public boolean hasNext() {
                         return it.hasNext();
                     }
 
-                    public Entry<K, V> next() {
-                        cur = it.next();
+                    public Entry<K,V> next() {
+                        cur=it.next();
                         return cur;
                     }
 
                     public void remove() {
-                        if (cur == null) {
+                        if(cur == null) {
                             throw new IllegalStateException();
                         }
                         ReplicatedHashMap.this.remove(cur.getKey());
-                        cur = null;
+                        cur=null;
                     }
 
                 };

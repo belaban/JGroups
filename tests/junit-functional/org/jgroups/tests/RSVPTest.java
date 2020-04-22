@@ -156,13 +156,11 @@ public class RSVPTest {
         rsvp.setValue("throw_exception_on_timeout", true).setValue("timeout", 5000).setValue("resend_interval", 500);
 
         try {
-            Thread closer=new Thread() {
-                public void run() {
-                    Util.sleep(2000);
-                    System.out.println("closer closing channel");
-                    channels[0].close();
-                }
-            };
+            Thread closer=new Thread(() -> {
+                Util.sleep(2000);
+                System.out.println("closer closing channel");
+                channels[0].close();
+            });
             closer.start();
             channels[0].send(msg); // this will be unsuccessful as the other 4 members won't receive it
             // test fails if we get a TimeoutException

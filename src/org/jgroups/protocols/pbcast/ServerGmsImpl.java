@@ -1,8 +1,6 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.Address;
-import org.jgroups.EmptyMessage;
-import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MergeId;

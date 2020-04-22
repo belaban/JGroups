@@ -65,11 +65,11 @@ public class UnicastRequestTest {
         req.receiveResponse(new NullPointerException("booom"), b, false);
         Object result=req.execute(buf, true);
         System.out.println("result = " + result);
-        assert result != null && result instanceof NullPointerException;
+        assert result instanceof NullPointerException;
 
         result=req.get(); // use the future
         System.out.println("result = " + result);
-        assert result != null && result instanceof NullPointerException;
+        assert result instanceof NullPointerException;
 
         req=new UnicastRequest<>(corr, a, RequestOptions.SYNC().timeout(1000));
         corr.setRequest(req);
@@ -204,11 +204,7 @@ public class UnicastRequestTest {
 
         protected void send() {
             if(async) {
-                new Thread() {
-                    public void run() {
-                        sendResponses();
-                    }
-                }.start();
+                new Thread(() -> sendResponses()).start();
             }
             else {
                 sendResponses();

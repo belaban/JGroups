@@ -108,7 +108,7 @@ public class UNICAST_MessagesToSelfTest {
     }
 
 
-    protected String printList(List<Integer> list) {
+    protected static String printList(List<Integer> list) {
         StringBuilder sb=new StringBuilder();
         for(int i=0; i < 10; i++)
             sb.append(list.get(i) + " ");

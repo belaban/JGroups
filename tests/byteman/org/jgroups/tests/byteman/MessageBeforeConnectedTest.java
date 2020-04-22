@@ -35,7 +35,7 @@ public class MessageBeforeConnectedTest extends BMNGRunner {
     }
 
     protected void receive(Message msg) {
-        String greeting=(String)msg.getObject();
+        String greeting=msg.getObject();
         msgs.add(greeting);
         System.out.println("received " + greeting + " from " + msg.getSrc());
         if(HELLO1.equals(greeting)) {
@@ -78,7 +78,7 @@ public class MessageBeforeConnectedTest extends BMNGRunner {
 
 
 
-    protected JChannel createChannel(String name) throws Exception {
+    protected static JChannel createChannel(String name) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
                                  new SHARED_LOOPBACK_PING(),
                                  new NAKACK2().setValue("become_server_queue_size", 10),

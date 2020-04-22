@@ -41,7 +41,6 @@
     <class id="39" name="org.jgroups.protocols.RSVP"/>
     <class id="40" name="org.jgroups.protocols.RACKSPACE_PING"/>
     <class id="41" name="org.jgroups.protocols.pbcast.NAKACK2"/>
-    <class id="42" name="org.jgroups.protocols.tom.TOA"/>
     <class id="43" name="org.jgroups.protocols.SWIFT_PING"/>
     <class id="44" name="org.jgroups.protocols.relay.RELAY2"/>
     <class id="46" name="org.jgroups.protocols.PDC"/>

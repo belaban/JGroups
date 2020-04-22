@@ -30,14 +30,12 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
     protected static final String ROGUE_KEYSTORE="rogue.jks";
 
     protected static final Consumer<List<Protocol>> CHANGE_KEYSTORE=
-      prots -> {
-          prots.stream().filter(p -> p instanceof SSL_KEY_EXCHANGE)
-            .forEach(ssl -> {
-                SSL_KEY_EXCHANGE ke=(SSL_KEY_EXCHANGE)ssl;
-                ke.setKeystoreName(ROGUE_KEYSTORE).setKeystorePassword(KEYSTORE_PWD)
-                  .setPortRange(2).setSocketTimeout(300);
-            });
-      };
+      prots -> prots.stream().filter(p -> p instanceof SSL_KEY_EXCHANGE)
+        .forEach(ssl -> {
+            SSL_KEY_EXCHANGE ke=(SSL_KEY_EXCHANGE)ssl;
+            ke.setKeystoreName(ROGUE_KEYSTORE).setKeystorePassword(KEYSTORE_PWD)
+              .setPortRange(2).setSocketTimeout(300);
+        });
 
 
     @BeforeMethod protected void init() throws Exception {

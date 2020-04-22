@@ -69,7 +69,7 @@ public class MakeUnique {
         if(current_char <= 'Z' && count == 0)
             return String.valueOf((char)current_char);
         else
-            return String.valueOf((char)current_char) + String.valueOf(count);
+            return (char)current_char + String.valueOf(count);
     }
 
     private void increment() {

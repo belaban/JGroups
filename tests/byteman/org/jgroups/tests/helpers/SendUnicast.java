@@ -9,7 +9,7 @@ import org.jgroups.protocols.pbcast.GMS;
  * @since  4.0
  */
 public class SendUnicast {
-    public void sendUnicast(GMS gms,Address dest) {
+    public static void sendUnicast(GMS gms, Address dest) {
         gms.down(new BytesMessage(dest, "sorry for the interruption :-)"));
     }
 }

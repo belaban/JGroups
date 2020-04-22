@@ -263,7 +263,7 @@ public class SequencerFailoverTest extends BMNGRunner {
     }
 
     /** Removes FD, FD_ALL, MERGEX protocols, sets SEQUENCER.threshold=0 */
-    protected void adjustConfiguration(JChannel ... channels) {
+    protected static void adjustConfiguration(JChannel... channels) {
         for(JChannel ch: channels) {
             ch.getProtocolStack().removeProtocol(FailureDetection.class,FD.class,MERGE3.class, VERIFY_SUSPECT.class);
             SEQUENCER seq=ch.getProtocolStack().findProtocol(SEQUENCER.class);
@@ -316,7 +316,7 @@ public class SequencerFailoverTest extends BMNGRunner {
     }
 
 
-    protected JChannel createChannel(final String props, final String name, final String cluster_name) throws Exception {
+    protected static JChannel createChannel(final String props, final String name, final String cluster_name) throws Exception {
         JChannel retval=new JChannel(props);
         retval.setName(name);
         retval.connect(cluster_name);

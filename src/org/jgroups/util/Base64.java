@@ -6,9 +6,9 @@ package org.jgroups.util;
  * 
  * <p>Example:</p>
  * 
- * <code>String encoded = Base64.encode( myByteArray );</code>
+ * {@code String encoded = Base64.encode( myByteArray );}
  * <br />
- * <code>byte[] myByteArray = Base64.decode( encoded );</code>
+ * {@code byte[] myByteArray = Base64.decode( encoded );}
  *
  * <p>The <tt>options</tt> parameter, which appears in a few places, is used to pass 
  * several pieces of information to the encoder. In the "higher level" methods such as 
@@ -24,10 +24,10 @@ package org.jgroups.util;
  * <p>The constants defined in Base64 can be OR-ed together to combine options, so you 
  * might make a call like this:</p>
  *
- * <code>String encoded = Base64.encodeBytes( mybytes, Base64.GZIP | Base64.DO_BREAK_LINES );</code>
+ * {@code String encoded = Base64.encodeBytes( mybytes, Base64.GZIP | Base64.DO_BREAK_LINES );}
  * <p>to compress the data before encoding it and then making the output have newline characters.</p>
  * <p>Also...</p>
- * <code>String encoded = Base64.encodeBytes( crazyString.getBytes() );</code>
+ * {@code String encoded = Base64.encodeBytes( crazyString.getBytes() );}
  *
  *
  *
@@ -544,8 +544,8 @@ public final class Base64
 
 
     /**
-     * Performs Base64 encoding on the <code>raw</code> ByteBuffer,
-     * writing it to the <code>encoded</code> ByteBuffer.
+     * Performs Base64 encoding on the {@code raw} ByteBuffer,
+     * writing it to the {@code encoded} ByteBuffer.
      * This is an experimental feature. Currently it does not
      * pass along any options (such as {@link #DO_BREAK_LINES}
      * or {@link #GZIP}.
@@ -568,8 +568,8 @@ public final class Base64
 
 
     /**
-     * Performs Base64 encoding on the <code>raw</code> ByteBuffer,
-     * writing it to the <code>encoded</code> CharBuffer.
+     * Performs Base64 encoding on the {@code raw} ByteBuffer,
+     * writing it to the {@code encoded} CharBuffer.
      * This is an experimental feature. Currently it does not
      * pass along any options (such as {@link #DO_BREAK_LINES}
      * or {@link #GZIP}.
@@ -637,9 +637,9 @@ public final class Base64
      *   DO_BREAK_LINES: break lines at 76 characters
      * </pre>
      * <p>
-     * Example: <code>encodeObject( myObj, Base64.GZIP )</code> or
+     * Example: {@code encodeObject( myObj, Base64.GZIP )} or
      * <p>
-     * Example: <code>encodeObject( myObj, Base64.GZIP | Base64.DO_BREAK_LINES )</code>
+     * Example: {@code encodeObject( myObj, Base64.GZIP | Base64.DO_BREAK_LINES )}
      *
      * @param serializableObject The object to encode
      * @param options Specified options
@@ -736,9 +736,9 @@ public final class Base64
      *     <i>Note: Technically, this makes your encoding non-compliant.</i>
      * </pre>
      * <p>
-     * Example: <code>encodeBytes( myData, Base64.GZIP )</code> or
+     * Example: {@code encodeBytes( myData, Base64.GZIP )} or
      * <p>
-     * Example: <code>encodeBytes( myData, Base64.GZIP | Base64.DO_BREAK_LINES )</code>
+     * Example: {@code encodeBytes( myData, Base64.GZIP | Base64.DO_BREAK_LINES )}
      *
      *  
      * <p>As of v 2.3, if there is an error with the GZIP stream,
@@ -804,9 +804,9 @@ public final class Base64
      *     <i>Note: Technically, this makes your encoding non-compliant.</i>
      * </pre>
      * <p>
-     * Example: <code>encodeBytes( myData, Base64.GZIP )</code> or
+     * Example: {@code encodeBytes( myData, Base64.GZIP )} or
      * <p>
-     * Example: <code>encodeBytes( myData, Base64.GZIP | Base64.DO_BREAK_LINES )</code>
+     * Example: {@code encodeBytes( myData, Base64.GZIP | Base64.DO_BREAK_LINES )}
      *
      *  
      * <p>As of v 2.3, if there is an error with the GZIP stream,
@@ -1670,7 +1670,7 @@ public final class Base64
          *     (only meaningful when encoding)</i>
          * </pre>
          * <p>
-         * Example: <code>new Base64.InputStream( in, Base64.DECODE )</code>
+         * Example: {@code new Base64.InputStream( in, Base64.DECODE )}
          *
          *
          * @param in the <tt>java.io.InputStream</tt> from which to read data.
@@ -1883,7 +1883,7 @@ public final class Base64
          *     (only meaningful when encoding)</i>
          * </pre>
          * <p>
-         * Example: <code>new Base64.OutputStream( out, Base64.ENCODE )</code>
+         * Example: {@code new Base64.OutputStream( out, Base64.ENCODE )}
          *
          * @param out the <tt>java.io.OutputStream</tt> to which data will be written.
          * @param options Specified options.

@@ -544,10 +544,6 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
         }
     }
 
-    public void channelConnected(JChannel channel) {
-        ;
-    }
-
     public void channelDisconnected(JChannel channel) {
         stop();
     }

@@ -114,13 +114,12 @@ public class TUNNELDeadLockTest {
         }).start();
 
         Boolean result=promise.getResult(mainTimeout);
-        if(result == null)
-            assert false: String.format("failed to receive %d messages in %d ms (%d messages received so far)",
-                                        msgCount, mainTimeout, receivedCnt);
+        assert result != null : String.format("failed to receive %d messages in %d ms (%d messages received so far)",
+                                              msgCount, mainTimeout, receivedCnt);
     }
 
     protected JChannel createTunnelChannel(String name) throws Exception {
-        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("bind_addr", InetAddress.getByName(bind_addr));
+        TUNNEL tunnel=new TUNNEL().setValue("bind_addr", InetAddress.getByName(bind_addr));
         tunnel.setGossipRouterHosts(gossip_router_hosts);
 
         JChannel ch=new JChannel(tunnel,

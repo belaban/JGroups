@@ -47,7 +47,7 @@ public class RunnerTest {
     }
 
 
-    protected Runner createRunner(Runnable func, Runnable stop_func) {
+    protected static Runner createRunner(Runnable func, Runnable stop_func) {
         return new Runner(new DefaultThreadFactory("RunnerTest", false, true),
                           "runner", func, stop_func);
     }

@@ -21,7 +21,7 @@ import java.util.Enumeration;
  */
 public class McastReceiverTest {
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         InetAddress mcast_addr=null, bind_addr=null;
         String tmp;
         int port=5555;
@@ -90,7 +90,7 @@ public class McastReceiverTest {
     static class Receiver extends Thread {
         MulticastSocket sock=null;
         DatagramPacket packet;
-        byte buf[]=null;
+        byte[] buf=null;
         byte[] recv_buf;
         int recv_len=0;
 

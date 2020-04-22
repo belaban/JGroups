@@ -120,7 +120,7 @@ public class NAKACK_Test extends ChannelTestBase {
 
         public void receive(Message msg) {
             if(msg != null) {
-                Long num=(Long)msg.getObject();
+                Long num=msg.getObject();
                 seqnos.add(num);
             }
         }

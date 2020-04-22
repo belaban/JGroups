@@ -56,12 +56,10 @@ public class MemcachedServer {
 
         connector.setCache(cache);
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                cache.stop();
-                try {connector.stop();} catch(Exception e) {}
-            }
-        });
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            cache.stop();
+            try {connector.stop();} catch(Exception e) {}
+        }));
 
         cache.start();
         connector.start();

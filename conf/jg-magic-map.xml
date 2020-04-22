@@ -16,7 +16,6 @@
     <class id="12" name="org.jgroups.protocols.relay.SiteUUID"/>
     <class id="13" name="org.jgroups.protocols.relay.SiteMaster"/>
     <class id="17" name="org.jgroups.util.SeqnoList"/>
-    <class id="18" name="org.jgroups.AnycastAddress"/>
     <class id="20" name="org.jgroups.auth.FixedMembershipToken"/>
     <class id="22" name="org.jgroups.auth.X509Token"/>
     <class id="23" name="org.jgroups.blocks.MethodCall"/>
@@ -51,7 +50,6 @@
     <class id="76"  name="org.jgroups.protocols.RSVP$RsvpHeader"/>
     <class id="77"  name="org.jgroups.tests.perf.MPerf$MPerfHeader"/>
     <class id="78"  name="org.jgroups.protocols.pbcast.NakAckHeader2"/>
-    <class id="79"  name="org.jgroups.protocols.tom.ToaHeader"/>
     <class id="80"  name="org.jgroups.protocols.relay.RELAY2$Relay2Header"/>
     <class id="82"  name="org.jgroups.protocols.UnicastHeader3"/>
     <class id="83"  name="org.jgroups.protocols.FORK$ForkHeader"/>

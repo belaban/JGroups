@@ -34,7 +34,7 @@ public class ViewDemo implements Receiver {
     }
 
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         ViewDemo t=new ViewDemo();
         String props="udp.xml";
 

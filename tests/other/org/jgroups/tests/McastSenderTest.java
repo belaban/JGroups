@@ -17,7 +17,7 @@ import java.util.List;
  */
 public class McastSenderTest {
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         MulticastSocket[] sockets=null;
         MulticastSocket sock;
         InetAddress mcast_addr=null, bind_addr=null;

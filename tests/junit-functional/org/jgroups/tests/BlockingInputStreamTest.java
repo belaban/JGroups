@@ -212,25 +212,23 @@ public class BlockingInputStreamTest {
             writers[i].start();
         }
 
-        new Thread() {
-            public void run() {
-                while(true) {
-                    boolean all_done=true;
-                    for(Writer writer: writers) {
-                        if(writer.isAlive()) {
-                            all_done=false;
-                            break;
-                        }
+        new Thread(() -> {
+            while(true) {
+                boolean all_done=true;
+                for(Writer writer: writers) {
+                    if(writer.isAlive()) {
+                        all_done=false;
+                        break;
                     }
-                    if(all_done) {
-                        Util.close(in);
-                        return;
-                    }
-                    else
-                        Util.sleep(100);
                 }
+                if(all_done) {
+                    Util.close(in);
+                    return;
+                }
+                else
+                    Util.sleep(100);
             }
-        }.start();
+        }).start();
 
         byte[] tmp=new byte[400];
         int num=0;
@@ -250,24 +248,22 @@ public class BlockingInputStreamTest {
 
     public void testWriteExceedingCapacity() throws IOException {
         final BlockingInputStream in=new BlockingInputStream(10);
-        new Thread() {
-            public void run() {
-                byte[] tmp=new byte[20];
-                int num=0;
-                try {
-                    while(true) {
-                        int read=in.read(tmp);
-                        if(read == -1)
-                            break;
-                        num+=read;
-                    }
-                    System.out.println("read " + num + " bytes");
+        new Thread(() -> {
+            byte[] tmp=new byte[20];
+            int num=0;
+            try {
+                while(true) {
+                    int read=in.read(tmp);
+                    if(read == -1)
+                        break;
+                    num+=read;
                 }
-                catch(IOException e) {
-                    e.printStackTrace();
-                }
+                System.out.println("read " + num + " bytes");
             }
-        }.start();
+            catch(IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
 
         byte[] buffer=new byte[15];
         try {
@@ -282,17 +278,15 @@ public class BlockingInputStreamTest {
     public void testWritingBeyondLength() throws IOException {
         final BlockingInputStream in=new BlockingInputStream(800);
 
-        new Thread() {
-            public void run() {
-                byte[] buf=new byte[800+600];
-                try {
-                    in.write(buf);
-                }
-                catch(IOException e) {
-                    e.printStackTrace();
-                }
+        new Thread(() -> {
+            byte[] buf=new byte[800+600];
+            try {
+                in.write(buf);
             }
-        }.start();
+            catch(IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
 
         byte[] buf=new byte[1000];
         int read=in.read(buf);
@@ -332,19 +326,17 @@ public class BlockingInputStreamTest {
         out.flush();
         final byte[] buffer=output.toByteArray();
 
-        Thread writer=new Thread() {
-            public void run() {
-                try {
-                    input.write(buffer);
-                }
-                catch(IOException e) {
-                    e.printStackTrace();
-                }
+        Thread writer=new Thread(() -> {
+            try {
+                input.write(buffer);
             }
-        };
+            catch(IOException e) {
+                e.printStackTrace();
+            }
+        });
         writer.start();
 
-        Map<String,List<Long>> tmp=(Map<String,List<Long>>)Util.objectFromStream(new DataInputStream(input));
+        Map<String,List<Long>> tmp=Util.objectFromStream(new DataInputStream(input));
         assert tmp.size() == 4;
         for(String key: Arrays.asList("A", "B", "C", "D")) {
             List<Long> list=map.get(key);
@@ -354,7 +346,7 @@ public class BlockingInputStreamTest {
     }
 
 
-    protected byte[] generateBuffer(int size) {
+    protected static byte[] generateBuffer(int size) {
         byte[] buf=new byte[size];
         for(int i=0; i < buf.length; i++)
             buf[i]=(byte)(Util.random(size) % Byte.MAX_VALUE);

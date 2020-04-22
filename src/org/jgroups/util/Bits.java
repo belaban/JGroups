@@ -387,7 +387,7 @@ public final class Bits {
      * @param buf the buffer to read from
      * @param seqnos the array to read the seqnos into, needs to have a length of 2
      */
-    public static void readLongSequence(ByteBuffer buf, long seqnos[]) {
+    public static void readLongSequence(ByteBuffer buf, long[] seqnos) {
         byte len=buf.get();
         if(len == 0) {
             seqnos[0]=seqnos[1]=0;

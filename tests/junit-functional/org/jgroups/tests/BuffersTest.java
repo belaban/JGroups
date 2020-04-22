@@ -73,7 +73,7 @@ public class BuffersTest {
     public void testRead() throws Exception {
         byte[] data="hello world".getBytes();
         MockSocketChannel ch=new MockSocketChannel()
-          .bytesToRead((ByteBuffer)ByteBuffer.allocate(Global.INT_SIZE + data.length).putInt(data.length).put(data).flip());
+          .bytesToRead(ByteBuffer.allocate(Global.INT_SIZE + data.length).putInt(data.length).put(data).flip());
 
         Buffers bufs=new Buffers(ByteBuffer.allocate(Global.INT_SIZE), null);
         ByteBuffer b=bufs.readLengthAndData(ch);
@@ -89,7 +89,7 @@ public class BuffersTest {
         addr.writeTo(out);
 
         MockSocketChannel ch=new MockSocketChannel()
-          .bytesToRead((ByteBuffer)ByteBuffer.allocate(cookie.length + Global.SHORT_SIZE + out.position())
+          .bytesToRead(ByteBuffer.allocate(cookie.length + Global.SHORT_SIZE + out.position())
             .put(cookie).putShort(Version.version).put(out.buffer(), 0, out.position()).flip());
 
         Buffers bufs=new Buffers(ByteBuffer.allocate(cookie.length), ByteBuffer.allocate(Global.SHORT_SIZE), ByteBuffer.allocate(out.position()));
@@ -105,7 +105,7 @@ public class BuffersTest {
         addr.writeTo(out);
 
         MockSocketChannel ch=new MockSocketChannel()
-          .bytesToRead((ByteBuffer)ByteBuffer.allocate(cookie.length + Global.SHORT_SIZE + out.position())
+          .bytesToRead(ByteBuffer.allocate(cookie.length + Global.SHORT_SIZE + out.position())
             .put(cookie).putShort(Version.version).put(out.buffer(), 0, out.position()).flip());
 
         int remaining=ch.bytesToRead().remaining();
@@ -127,7 +127,7 @@ public class BuffersTest {
     }
 
 
-    protected void readCookieVersionAndAddress(final Buffers bufs, final byte[] cookie, final IpAddress addr) throws Exception {
+    protected static void readCookieVersionAndAddress(final Buffers bufs, final byte[] cookie, final IpAddress addr) throws Exception {
         // cookie
         ByteBuffer cookie_buf=bufs.get(0);
         byte[] cookie2=new byte[cookie_buf.position()];
@@ -177,7 +177,7 @@ public class BuffersTest {
     public void testEof() throws Exception {
         byte[] data={'B', 'e', 'l', 'a'}; // -1 == EOF
         MockSocketChannel ch=new MockSocketChannel()
-          .bytesToRead((ByteBuffer)ByteBuffer.allocate(Global.INT_SIZE + data.length).putInt(data.length).put(data).flip());
+          .bytesToRead(ByteBuffer.allocate(Global.INT_SIZE + data.length).putInt(data.length).put(data).flip());
         Buffers bufs=new Buffers(ByteBuffer.allocate(Global.INT_SIZE), null);
         ByteBuffer buf=bufs.readLengthAndData(ch);
         assert buf != null;
@@ -216,7 +216,7 @@ public class BuffersTest {
     public void testRead3Buffers() throws Exception {
         byte[] cookie={'b', 'e', 'l', 'a'};
         int num=322649;
-        ByteBuffer input=(ByteBuffer)ByteBuffer.allocate(Global.SHORT_SIZE + cookie.length + Global.INT_SIZE)
+        ByteBuffer input=ByteBuffer.allocate(Global.SHORT_SIZE + cookie.length + Global.INT_SIZE)
           .putShort(Version.version)
           .putInt(num).put(cookie, 0, cookie.length).flip();
         MockSocketChannel ch=new MockSocketChannel().bytesToRead(input);
@@ -535,7 +535,7 @@ public class BuffersTest {
             count++;
         }
         assert count == 4;
-        System.out.println("");
+        System.out.println();
 
         buf.remove(0).remove(2);
         i=1; count=0;
@@ -559,7 +559,7 @@ public class BuffersTest {
         assert count == 6;
     }
 
-    protected void testCopyBuffer(ByteBuffer buf) {
+    protected static void testCopyBuffer(ByteBuffer buf) {
         ByteBuffer copy=Buffers.copyBuffer(buf);
         assert copy.equals(buf);
     }
@@ -624,7 +624,7 @@ public class BuffersTest {
     }
 
 
-    protected void check(Buffers buf, int pos, int limit, int size, int remaining) {
+    protected static void check(Buffers buf, int pos, int limit, int size, int remaining) {
         System.out.println("buf = " + buf);
         assert buf.position() == pos : String.format("expected %d but got %d", pos, buf.position());
         assert buf.limit() == limit : String.format("expected %d but got %d", limit, buf.limit());
@@ -632,19 +632,19 @@ public class BuffersTest {
         assert buf.remaining() == remaining : String.format("expected %d but got %d", remaining, buf.remaining());
     }
 
-    protected boolean makeSpace(Buffers buf) throws Exception {
+    protected static boolean makeSpace(Buffers buf) throws Exception {
         return (boolean)makeSpace.invoke(buf);
     }
 
-    protected boolean spaceAvailable(Buffers buf, int num_bufs) throws Exception {
+    protected static boolean spaceAvailable(Buffers buf, int num_bufs) throws Exception {
         return (boolean)spaceAvailable.invoke(buf, num_bufs);
     }
 
-    protected boolean nullData(Buffers buf) throws Exception {
+    protected static boolean nullData(Buffers buf) throws Exception {
         return (boolean)nullData.invoke(buf);
     }
 
-    protected int remaining(ByteBuffer ... buffers) {
+    protected static int remaining(ByteBuffer... buffers) {
         int remaining=0;
         for(ByteBuffer buf: buffers) {
             remaining+=buf.remaining();
@@ -652,11 +652,11 @@ public class BuffersTest {
         return remaining;
     }
 
-    protected void position(Buffers buf, int pos) {
+    protected static void position(Buffers buf, int pos) {
         Util.setField(position, buf, pos);
     }
 
-    protected void limit(Buffers buf, int lim) {
+    protected static void limit(Buffers buf, int lim) {
         Util.setField(limit, buf, lim);
     }
 

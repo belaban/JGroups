@@ -60,7 +60,7 @@ public class FdMonitorTest {
         return (FD) ch.getProtocolStack().findProtocol(FD.class);
     }
     
-    protected JChannel createChannel(String name) throws Exception {
+    protected static JChannel createChannel(String name) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
                                  new SHARED_LOOPBACK_PING(),
                                  new FD().setValue("timeout", 1000).setValue("max_tries", 3),

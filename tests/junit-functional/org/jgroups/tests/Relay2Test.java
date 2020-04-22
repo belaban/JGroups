@@ -375,7 +375,7 @@ public class Relay2Test {
     }
 
 
-    protected void waitForBridgeView(int expected_size, long timeout, long interval, JChannel ... channels) {
+    protected static void waitForBridgeView(int expected_size, long timeout, long interval, JChannel... channels) {
         long deadline=System.currentTimeMillis() + timeout;
 
         while(System.currentTimeMillis() < deadline) {
@@ -409,8 +409,8 @@ public class Relay2Test {
     }
 
 
-    protected void waitUntilRoute(String site_name, boolean present,
-                                  long timeout, long interval, JChannel ch) throws Exception {
+    protected static void waitUntilRoute(String site_name, boolean present,
+                                         long timeout, long interval, JChannel ch) throws Exception {
         RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
         if(relay == null)
             throw new IllegalArgumentException("Protocol RELAY2 not found");
@@ -425,7 +425,7 @@ public class Relay2Test {
         assert (route != null && present) || (route == null && !present);
     }
 
-    protected Route getRoute(JChannel ch, String site_name) {
+    protected static Route getRoute(JChannel ch, String site_name) {
         RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
         return relay.getRoute(site_name);
     }

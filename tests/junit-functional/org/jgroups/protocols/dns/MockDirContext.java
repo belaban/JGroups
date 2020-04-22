@@ -1,24 +1,11 @@
 package org.jgroups.protocols.dns;
 
+import javax.naming.*;
+import javax.naming.directory.*;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
-
-import javax.naming.Binding;
-import javax.naming.Context;
-import javax.naming.Name;
-import javax.naming.NameClassPair;
-import javax.naming.NameParser;
-import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
-import javax.naming.directory.Attribute;
-import javax.naming.directory.Attributes;
-import javax.naming.directory.BasicAttribute;
-import javax.naming.directory.BasicAttributes;
-import javax.naming.directory.DirContext;
-import javax.naming.directory.ModificationItem;
-import javax.naming.directory.SearchControls;
-import javax.naming.directory.SearchResult;
+import java.util.Objects;
 
 public class MockDirContext implements DirContext {
 
@@ -38,7 +25,7 @@ public class MockDirContext implements DirContext {
 
          DNSKey dnsKey = (DNSKey) o;
 
-         if (query != null ? !query.equals(dnsKey.query) : dnsKey.query != null) return false;
+         if (!Objects.equals(query, dnsKey.query)) return false;
          return recordType == dnsKey.recordType;
       }
 

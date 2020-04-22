@@ -787,10 +787,8 @@ public class ReplicatedTree implements Receiver {
         }
 
         static void printIndent(StringBuilder sb, int indent) {
-            if(sb != null) {
-                for(int i=0; i < indent; i++)
-                    sb.append(' ');
-            }
+            if(sb != null)
+                sb.append(" ".repeat(Math.max(0, indent)));
         }
 
 

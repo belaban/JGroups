@@ -282,7 +282,7 @@ public class ChannelTest extends ChannelTestBase {
         }
 
         public void receive(Message msg) {
-            Integer num=(Integer)msg.getObject();
+            Integer num=msg.getObject();
             synchronized(nums) {
                 nums.add(num);
                 if(nums.size() >= expected) {

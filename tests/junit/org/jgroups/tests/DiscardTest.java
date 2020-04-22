@@ -13,6 +13,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.Properties;
 
 /**
@@ -138,8 +139,7 @@ public class DiscardTest extends ChannelTestBase {
 
     private static Message createMessage(int size) {
         byte[] buf=new byte[size];
-        for(int i=0;i < buf.length;i++)
-            buf[i]=(byte)'x';
+        Arrays.fill(buf, (byte)'x');
         return new BytesMessage(null, buf);
     }
 

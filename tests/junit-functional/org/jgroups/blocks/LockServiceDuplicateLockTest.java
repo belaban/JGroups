@@ -158,9 +158,7 @@ public class LockServiceDuplicateLockTest implements LockNotification {
     }
 
     protected static void trace(boolean on, JChannel... channels) {
-        Stream.of(channels).forEach(ch -> {
-            ch.getProtocolStack().findProtocol(Locking.class).level(on? "trace" : "warn");
-        });
+        Stream.of(channels).forEach(ch -> ch.getProtocolStack().findProtocol(Locking.class).level(on? "trace" : "warn"));
     }
 
     protected static void printLockTables(JChannel... channels) {

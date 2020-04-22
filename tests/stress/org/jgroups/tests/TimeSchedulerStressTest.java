@@ -115,7 +115,7 @@ public class TimeSchedulerStressTest {
         int num_threads=100;
         int num_tasks=100; // to process per thread
         long task_duration=50; // ms
-        TimeScheduler timer=timer=new TimeScheduler3();
+        TimeScheduler timer=new TimeScheduler3();
 
 
         for(int i=0; i < args.length; i++) {

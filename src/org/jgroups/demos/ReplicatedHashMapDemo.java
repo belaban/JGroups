@@ -222,7 +222,7 @@ public class ReplicatedHashMapDemo extends Frame implements WindowListener, Acti
         setTitle("ReplicatedHashMapDemo: " + num + " server(s)");
     }
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         ReplicatedHashMapDemo     client=new ReplicatedHashMapDemo();
         JChannel                  channel;
         String                    props="udp.xml";

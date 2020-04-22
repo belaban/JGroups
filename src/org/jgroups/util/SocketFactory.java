@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.*;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Map;
 
 /**
  * Factory to create various types of sockets. For socket creation, a <em>service name</em> can be passed as argument:
@@ -70,11 +69,4 @@ public interface SocketFactory {
     default void close(ServerSocketChannel channel) {
         Util.close(channel);
     }
-
-    /**
-     * Returns all open sockets. This method can be used to list or close all open sockets.
-     * @return A map of open sockets; keys are Sockets, ServerSockets, DatagramSockets or MulticastSockets, values are
-     * the service names.
-     */
-    Map<Object,String> getSockets();
 }

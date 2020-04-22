@@ -470,9 +470,6 @@ public class ProgrammaticUPerf2 implements Receiver {
                             System.err.println("Calling quitAll() failed: " + t);
                         }
                         break;
-                    case '\n':
-                    case '\r':
-                        break;
                     default:
                         break;
                 }

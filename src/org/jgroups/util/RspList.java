@@ -65,7 +65,7 @@ public class RspList<T> extends HashMap<Address,Rsp<T>> implements Iterable<Rsp<
     /** Returns the first value in the response set. This is random, but we try to return a non-null value first */
     public T getFirst() {
         Optional<Rsp<T>> retval=values().stream().filter(rsp -> rsp.getValue() != null).findFirst();
-        return retval.isPresent()? retval.get().getValue() : null;
+        return retval.map(Rsp::getValue).orElse(null);
     }
 
 
