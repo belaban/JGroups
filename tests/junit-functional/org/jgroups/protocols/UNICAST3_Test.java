@@ -74,7 +74,7 @@ public class UNICAST3_Test {
         uni_a.setLevel("trace");
         uni_b.setLevel("trace");
 
-        uni_b.setValue("conn_close_timeout", CONN_CLOSE_TIMEOUT);
+        uni_b.setConnCloseTimeout(CONN_CLOSE_TIMEOUT);
         // wait until B closes the receive window for A:
         for(int i=0; i < 10; i++) {
             if(uni_b.getNumReceiveConnections() == 0)

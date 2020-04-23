@@ -98,7 +98,7 @@ public class MergeTest extends ChannelTestBase {
 
             NAKACK2 nakack=stack.findProtocol(NAKACK2.class);
             if(nakack != null)
-                nakack.setLogDiscardMessages(false);
+                nakack.logDiscardMessages(false);
 
             stack.removeProtocol(MERGE3.class);
 
@@ -122,7 +122,7 @@ public class MergeTest extends ChannelTestBase {
 
         for(JChannel ch: channels) {
             DISCARD discard=new DISCARD();
-            discard.setDiscardAll(true);
+            discard.discardAll(true);
             ch.getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE,TP.class);
         }
 

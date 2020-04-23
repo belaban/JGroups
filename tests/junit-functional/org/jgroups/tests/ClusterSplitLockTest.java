@@ -48,7 +48,7 @@ public class ClusterSplitLockTest {
         for (int i = 0; i < MEMBERS; i++) {
             Locking lock_prot=locking_class.getDeclaredConstructor().newInstance().level("debug");
             if(lock_prot instanceof CENTRAL_LOCK)
-                lock_prot.setValue("num_backups", 2);
+                ((CENTRAL_LOCK)lock_prot).setNumberOfBackups(2);
 
             Protocol[] stack = Util.getTestStack(lock_prot);
             channels[i] = new JChannel(stack);

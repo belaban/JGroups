@@ -53,18 +53,18 @@ public class MergeTest2 {
         SHARED_LOOPBACK shared_loopback=new SHARED_LOOPBACK().setDiagnosticsHandler(handler);
 
         JChannel retval=new JChannel(shared_loopback,
-                                     new DISCARD().setValue("discard_all",true),
+                                     new DISCARD().discardAll(true),
                                      new SHARED_LOOPBACK_PING(),
-                                     new NAKACK2().setValue("use_mcast_xmit",false)
-                                       .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
+                                     new NAKACK2().useMcastXmit(false)
+                                       .logDiscardMessages(false).logNotFoundMessages(false),
                                      new UNICAST3(),
-                                     new STABLE().setValue("max_bytes",50000),
-                                     new GMS().setValue("print_local_addr",false)
-                                       .setValue("leave_timeout",100)
-                                       .setValue("merge_timeout",3000)
-                                       .setValue("log_view_warnings",false)
-                                       .setValue("view_ack_collection_timeout",50)
-                                       .setValue("log_collect_msgs",false));
+                                     new STABLE().setMaxBytes(50000),
+                                     new GMS().printLocalAddress(false)
+                                       .setLeaveTimeout(100)
+                                       .setMergeTimeout(3000)
+                                       .logViewWarnings(false)
+                                       .setViewAckCollectionTimeout(50)
+                                       .logCollectMessages(false));
         retval.setName(name);
         JmxConfigurator.registerChannel(retval, Util.getMBeanServer(), name, retval.getClusterName(), true);
         retval.connect("MergeTest2");
@@ -103,7 +103,7 @@ public class MergeTest2 {
             if(ch.getAddress().equals(faulty_member)) // skip the faulty member; it keeps discarding messages
                 continue;
             DISCARD discard=ch.getProtocolStack().findProtocol(DISCARD.class);
-            discard.setDiscardAll(false);
+            discard.discardAll(false);
         }
 
         Map<Address,View> merge_views=new HashMap<>(4);

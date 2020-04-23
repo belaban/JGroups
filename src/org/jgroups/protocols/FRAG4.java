@@ -4,7 +4,6 @@ import org.jgroups.Address;
 import org.jgroups.BytesMessage;
 import org.jgroups.FragmentedMessage;
 import org.jgroups.Message;
-import org.jgroups.annotations.MBean;
 import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
@@ -37,7 +36,6 @@ import java.util.Objects;
  * @author  Bela Ban
  * @version 5.0
  */
-@MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG4 extends FRAG2 {
 
 

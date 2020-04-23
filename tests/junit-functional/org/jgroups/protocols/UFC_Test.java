@@ -119,7 +119,7 @@ public class UFC_Test {
     protected static void inject(Class<UFC> clazz, JChannel ... channels) throws Exception {
         for(JChannel ch: channels) {
             UFC ufc=clazz.getConstructor().newInstance();
-            ufc.maxCredits(MAX_CREDITS).maxBlockTime(60000);
+            ufc.setMaxCredits(MAX_CREDITS).setMaxBlockTime(60000);
             if(ufc instanceof UFC_NB)
                 ((UFC_NB)ufc).setMaxQueueSize(MAX_CREDITS);
             ProtocolStack stack=ch.getProtocolStack();

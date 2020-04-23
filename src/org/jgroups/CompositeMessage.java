@@ -65,18 +65,18 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
 
 
     /** Adds the message at the end of the array. Increases the array if needed */
-    public <T extends CompositeMessage> T add(Message msg) {
+    public CompositeMessage add(Message msg) {
         ensureSameDest(msg);
         ensureCapacity(index);
         msgs[index++]=Objects.requireNonNull(msg);
-        return (T)this;
+        return this;
     }
 
-    public <T extends CompositeMessage> T add(Message ... messages) {
+    public CompositeMessage add(Message ... messages) {
         ensureCapacity(index + messages.length);
         for(Message msg: messages)
             msgs[index++]=Objects.requireNonNull(ensureSameDest(msg));
-        return (T)this;
+        return this;
     }
 
 
@@ -87,7 +87,7 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
 
     /** Create a copy of this {@link CompositeMessage}. */
     public CompositeMessage copy(boolean copy_payload, boolean copy_headers) {
-        CompositeMessage retval=super.copy(copy_payload, copy_headers);
+        CompositeMessage retval=(CompositeMessage)super.copy(copy_payload, copy_headers);
         if(copy_payload && msgs != null) {
             Message[] copy=new Message[msgs.length];
             for(int i=0; i < msgs.length; i++) {

@@ -175,13 +175,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return avg_delivery_batch_size != null? avg_delivery_batch_size.toString() : "n/a";
     }
 
-    public int getAckThreshold() {
-        return ack_threshold;
-    }
+    public int getAckThreshold() {return ack_threshold;}
 
-    public UNICAST3 setAckThreshold(int ack_threshold) {
-        this.ack_threshold=ack_threshold; return this;
-    }
+    public UNICAST3 setAckThreshold(int a) {ack_threshold=a; return this;}
 
     @Property(name="level", description="Sets the level")
     public <T extends Protocol> T setLevel(String level) {
@@ -189,29 +185,29 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         is_trace=log.isTraceEnabled();
         return retval;
     }
+    public long     getXmitInterval()                     {return xmit_interval;}
+    public UNICAST3 setXmitInterval(long i)               {xmit_interval=i; return this;}
+    public int      getXmitTableNumRows()                 {return xmit_table_num_rows;}
+    public UNICAST3 setXmitTableNumRows(int n)            {this.xmit_table_num_rows=n; return this;}
+    public int      getXmitTableMsgsPerRow()              {return xmit_table_msgs_per_row;}
+    public UNICAST3 setXmitTableMsgsPerRow(int n)         {this.xmit_table_msgs_per_row=n; return this;}
+    public long     getConnExpiryTimeout()                {return conn_expiry_timeout;}
+    public UNICAST3 setConnExpiryTimeout(long c)          {this.conn_expiry_timeout=c; return this;}
+    public long     getConnCloseTimeout()                 {return conn_close_timeout;}
+    public UNICAST3 setConnCloseTimeout(long c)           {this.conn_close_timeout=c; return this;}
+    public double   getXmitTableResizeFactor()            {return xmit_table_resize_factor;}
+    public UNICAST3 setXmitTableResizeFactor(double x)    {this.xmit_table_resize_factor=x; return this;}
+    public long     getXmitTableMaxCompactionTime()       {return xmit_table_max_compaction_time;}
+    public UNICAST3 setXmitTableMaxCompactionTime(long x) {this.xmit_table_max_compaction_time=x; return this;}
+    public boolean  logNotFoundMsgs()                     {return log_not_found_msgs;}
+    public UNICAST3 logNotFoundMsgs(boolean l)            {this.log_not_found_msgs=l; return this;}
+    public long     getSyncMinInterval()                  {return sync_min_interval;}
+    public UNICAST3 setSyncMinInterval(long s)            {this.sync_min_interval=s; return this;}
+    public int      getMaxXmitReqSize()                   {return max_xmit_req_size;}
+    public UNICAST3 setMaxXmitReqSize(int m)              {this.max_xmit_req_size=m; return this;}
+    public boolean  sendsCanBlock()                       {return sends_can_block;}
+    public UNICAST3 sendsCanBlock(boolean s)              {this.sends_can_block=s; return this;}
 
-    public <T extends UNICAST3> T setXmitInterval(long interval) {
-        xmit_interval=interval;
-        return (T)this;
-    }
-
-    public int getXmitTableNumRows() {
-        return xmit_table_num_rows;
-    }
-
-    public UNICAST3 setXmitTableNumRows(int xmit_table_num_rows) {
-        this.xmit_table_num_rows=xmit_table_num_rows;
-        return this;
-    }
-
-    public int getXmitTableMsgsPerRow() {
-        return xmit_table_msgs_per_row;
-    }
-
-    public UNICAST3 setXmitTableMsgsPerRow(int xmit_table_msgs_per_row) {
-        this.xmit_table_msgs_per_row=xmit_table_msgs_per_row;
-        return this;
-    }
 
     @ManagedOperation
     public String printConnections() {
@@ -241,10 +237,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     @Property(description="Max number of milliseconds we try to retransmit a message to any given member. After that, " +
       "the connection is removed. Any new connection to that member will start with seqno #1 again. 0 disables this")
-    public void setMaxRetransmitTime(long max_retransmit_time) {
+    public UNICAST3 setMaxRetransmitTime(long max_retransmit_time) {
         this.max_retransmit_time=max_retransmit_time;
         if(cache != null && max_retransmit_time > 0)
             cache.setTimeout(max_retransmit_time);
+        return this;
     }
 
     @ManagedAttribute(description="Is the retransmit task running")

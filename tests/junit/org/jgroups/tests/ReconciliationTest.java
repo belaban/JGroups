@@ -220,7 +220,7 @@ public class ReconciliationTest {
           new UNICAST3(),
           new STABLE(),
           new GMS(),
-          new FRAG2().fragSize(8000),
+          new FRAG2().setFragSize(8000),
           new FLUSH()
         };
 
@@ -244,7 +244,7 @@ public class ReconciliationTest {
 
     private static void insertDISCARD(JChannel ch, Address exclude) throws Exception {
         DISCARD discard=new DISCARD().localAddress(ch.getAddress());
-        discard.setExcludeItself(true);
+        discard.excludeItself(true);
         discard.addIgnoreMember(exclude); // ignore messages from this member
         ch.getProtocolStack().insertProtocol(discard, ProtocolStack.Position.BELOW, NAKACK2.class);
     }

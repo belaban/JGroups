@@ -53,7 +53,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         b.setReceiver(receiver);
         a.send(null, 1);
         a.send(null, 2);
-        discard.setDropDownMulticasts(1); // drop the next multicast
+        discard.dropDownMulticasts(1); // drop the next multicast
         a.send(null, 3);
 
         Collection<Integer> list=receiver.getMsgs();
@@ -78,7 +78,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         b.setReceiver(receiver);
         a.send(null, 1);
         a.send(null, 2);
-        discard.setDropDownMulticasts(1); // drop the next multicast
+        discard.dropDownMulticasts(1); // drop the next multicast
         stack.insertProtocol(new LastSeqnoDropper(1), ProtocolStack.Position.BELOW, NAKACK2.class);
         a.send(null, 3);
 

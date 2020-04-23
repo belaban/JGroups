@@ -79,7 +79,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
      * Sets the key store entry used to configure this protocol.
      * @param entry a key store entry
      */
-    public abstract void setKeyStoreEntry(E entry);
+    public abstract <T extends Encrypt<E>> T setKeyStoreEntry(E entry);
 
 
     public int                      asymKeylength()                 {return asym_keylength;}

@@ -97,22 +97,20 @@ public class MPING extends PING implements Runnable {
     }
 
     public InetAddress            getBindAddr()               {return bind_addr;}
-    public void                   setBindAddr(InetAddress b)  {this.bind_addr=b;}
+    public MPING                  setBindAddr(InetAddress b)  {this.bind_addr=b; return this;}
     public List<NetworkInterface> getReceiveInterfaces()      {return receive_interfaces;}
     public List<NetworkInterface> getSendInterfaces()         {return send_interfaces;}
     public boolean                isReceiveOnAllInterfaces()  {return receive_on_all_interfaces;}
     public boolean                isSendOnAllInterfaces()     {return send_on_all_interfaces;}
     public int                    getTTL()                    {return ip_ttl;}
-    public void                   setTTL(int ip_ttl)          {this.ip_ttl=ip_ttl;}
+    public MPING                  setTTL(int ip_ttl)          {this.ip_ttl=ip_ttl; return this;}
     public InetAddress            getMcastAddr()              {return mcast_addr;}
     public MPING                  mcastAddress(InetAddress a) {this.mcast_addr=a; return this;}
-    public void                   setMcastAddr(InetAddress a) {this.mcast_addr=a;}
-    public void                   setMulticastAddress(String a) throws UnknownHostException {
-        mcast_addr=InetAddress.getByName(a);
-    }
+    public MPING                  setMcastAddr(InetAddress a) {this.mcast_addr=a; return this;}
     public int                    getMcastPort()              {return mcast_port;}
-    public void                   setMcastPort(int p)         {this.mcast_port=p;}
-    public MPING                  mcastPort(int p)            {this.mcast_port=p; return this;}
+    public MPING                  setMcastPort(int p)         {this.mcast_port=p; return this;}
+    public MPING                  setMulticastAddress(String a) throws UnknownHostException
+    {mcast_addr=InetAddress.getByName(a); return this;}
 
 
 

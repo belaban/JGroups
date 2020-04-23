@@ -29,79 +29,79 @@ public interface Message extends SizeStreamable, Constructable<Message> {
 
 
     /** Returns the type of the message, e.g. BYTES_MSG, OBJ_MSG etc */
-    short                         getType();
+    short                getType();
 
     /** Returns the destination address to send the message to. A null value sends the message to all cluster members */
-    Address                       getDest();
-    default Address               dest() {return getDest();}
+    Address              getDest();
+    default Address      dest() {return getDest();}
 
     /** Sets the destination address to send the message to. A null value sends the message to all cluster members */
-    <T extends Message> T         setDest(Address new_dest);
-    default <T extends Message> T dest(Address new_dest) {return setDest(new_dest);}
+    Message              setDest(Address new_dest);
+    default              Message dest(Address new_dest) {return setDest(new_dest);}
 
     /** Returns the address of the sender */
-    Address                       getSrc();
-    default Address               src() {return getSrc();}
+    Address              getSrc();
+    default Address      src() {return getSrc();}
 
     /** Sets the address of the sender of this message */
-    <T extends Message> T         setSrc(Address new_src);
-    default <T extends Message> T src(Address new_src) {return setSrc(new_src);}
+    Message              setSrc(Address new_src);
+    default Message      src(Address new_src) {return setSrc(new_src);}
 
     /** Adds a header to the message */
-    <T extends Message> T         putHeader(short id, Header hdr);
+    Message              putHeader(short id, Header hdr);
 
     /** Gets a header from the message */
-    <T extends Header> T          getHeader(short id);
+    <T extends Header> T getHeader(short id);
 
     /** Returns a hashmap of all header IDs and their associated headers */
-    Map<Short,Header>             getHeaders();
+    Map<Short,Header>    getHeaders();
 
     /** Returns the number of headers */
-    int                           getNumHeaders();
+    int                  getNumHeaders();
 
     /** Returns a pretty-printed string of the headers */
-    String                        printHeaders();
+    String               printHeaders();
 
     /** Sets one or more flags */
-    <T extends Message> T         setFlag(Flag... flags);
+    Message              setFlag(Flag... flags);
 
 
     /** Sets the flags as a short; this way, multiple flags can be set in one operation
      * @param flag The flag to be set (as a short). Overrides existing flags (no xor-ing)
      * @param transient_flags True if the flag is transient, false otherwise
      */
-    <T extends Message> T         setFlag(short flag, boolean transient_flags);
+    Message              setFlag(short flag, boolean transient_flags);
 
     /** Sets one or more transient flags. Transient flags are not marshalled */
-    <T extends Message> T         setFlag(TransientFlag... flags);
+    Message              setFlag(TransientFlag... flags);
 
     /** Atomically sets a transient flag if not set. Returns true if the flags was set, else false (already set) */
-    boolean                       setFlagIfAbsent(TransientFlag flag);
+    boolean              setFlagIfAbsent(TransientFlag flag);
 
     /** Returns the flags as an or-ed short
      * @param transient_flags Returns transient flags if true, else regular flags
      */
-    short                         getFlags(boolean transient_flags);
-    default short                 getFlags() {return getFlags(false);}
+    short                getFlags(boolean transient_flags);
+    default short        getFlags() {return getFlags(false);}
 
     /** Removes a number of flags from the message. No-op for a flag if it is not set */
-    <T extends Message> T         clearFlag(Flag... flags);
+    Message              clearFlag(Flag... flags);
 
     /** Removes a number of transient flags from the message. No-op for a flag if it is not set */
-    <T extends Message> T         clearFlag(TransientFlag... flags);
+    Message              clearFlag(TransientFlag... flags);
 
     /** Returns true if a flag is set, false otherwise */
-    boolean                       isFlagSet(Flag flag);
+    boolean              isFlagSet(Flag flag);
 
     /** Returns true if a transient flag is set, false otherwise */
-    boolean                       isFlagSet(TransientFlag flag);
+    boolean              isFlagSet(TransientFlag flag);
 
     /**
      * Copies a message
      * @param copy_payload If true, the payload is copied, else it is null in the copied message
      * @param copy_headers If true, the headers are copied
      */
-    <T extends Message> T         copy(boolean copy_payload, boolean copy_headers);
+    Message              copy(boolean copy_payload, boolean copy_headers);
 
     /**
      * Returns true if the message has a payload, e.g. a byte[] array in a {@link BytesMessage} or an object in
@@ -109,11 +109,11 @@ public interface Message extends SizeStreamable, Constructable<Message> {
      * a byte array.
      * @return True if the message has a payload
      */
-    boolean                       hasPayload();
+    boolean              hasPayload();
 
 
     /** Returns true if this message has a byte[] array as payload (even if it's null!), false otherwise */
-    boolean                       hasArray();
+    boolean              hasArray();
 
     /**
      * Returns a <em>reference</em> to the payload (byte array). Note that this array should not be
@@ -124,17 +124,17 @@ public interface Message extends SizeStreamable, Constructable<Message> {
      * Note that this is a convenience method, as most messages are of type {@link BytesMessage}. It is recommended to
      * downcast a {@link Message} to the correct subtype and use the methods available there to get/set the payload.
      */
-    byte[]                        getArray();
+    byte[]               getArray();
 
     /** Returns the offset of the byte[] array at which user data starts. Throws an exception if the message
      * does not have a byte[] array payload (if {@link #hasArray()} is false).<br/>
      * Note that this is a convenience method, as most messages are of type {@link BytesMessage}. */
-    int                           getOffset();
+    int                  getOffset();
 
     /** Returns the length of the byte[] array payload. If the message does not have a byte[] array payload
      * ({@link #hasArray()} is false), then the serialized size may be returned, or an implementation may choose
      * to throw an exception */
-    int                           getLength();
+    int                  getLength();
 
     /**
      * Sets the byte array in a message.<br/>
@@ -142,8 +142,8 @@ public interface Message extends SizeStreamable, Constructable<Message> {
      * Note that this is a convenience method, as most messages are of type {@link BytesMessage}. It is recommended to
      * downcast a {@link Message} to the correct subtype and use the methods available there to get/set the payload.
      */
-    <T extends Message> T         setArray(byte[] b, int offset, int length);
-    default <T extends Message> T setArray(byte[] b) {return setArray(b, 0, b.length);}
+    Message              setArray(byte[] b, int offset, int length);
+    default Message      setArray(byte[] b) {return setArray(b, 0, b.length);}
 
 
     /**
@@ -152,30 +152,30 @@ public interface Message extends SizeStreamable, Constructable<Message> {
      * Note that this is a convenience method, as most messages are of type {@link BytesMessage}. It is recommended to
      * downcast a {@link Message} to the correct subtype and use the methods available there to get/set the payload.
      */
-    <T extends Message> T         setArray(ByteArray buf);
+    Message              setArray(ByteArray buf);
 
     /**
      * Gets an object from the payload. If the payload is a byte[] array (e.g. as in {@link BytesMessage}),
      * an attempt to de-serialize the array into an object is made, and the object returned.<br/>
      * If the payload is an object (e.g. as is the case in {@link ObjectMessage}), the object will be returned directly.
      */
-    <T extends Object> T          getObject();
+    <T extends Object> T getObject();
 
     /**
      * Sets an object in a message. In a {@link ObjectMessage}, the object is set directly. In a {@link BytesMessage},
      * the object is serialized into a byte[] array and then the array is set as the payload of the message
      */
-    <T extends Message> T         setObject(Object obj);
+    Message              setObject(Object obj);
 
 
     /**
      * Returns the exact size of the marshalled message
      * @return The number of bytes for the marshalled message
      */
-    int                           size();
+    int                  size();
 
     /** Writes the message to an output stream excluding the destination (and possibly source) address, plus a number of headers */
-    void                          writeToNoAddrs(Address src, DataOutput out, short... excluded_headers) throws IOException;
+    void                 writeToNoAddrs(Address src, DataOutput out, short... excluded_headers) throws IOException;
 
 
 

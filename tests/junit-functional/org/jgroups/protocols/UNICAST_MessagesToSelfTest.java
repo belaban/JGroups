@@ -71,10 +71,10 @@ public class UNICAST_MessagesToSelfTest {
     protected static JChannel createChannel(Protocol unicast, DISCARD discard) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
                                  new SHARED_LOOPBACK_PING(),
-                                 new NAKACK2().setValue("use_mcast_xmit", false),
+                                 new NAKACK2().useMcastXmit(false),
                                  unicast,
-                                 new STABLE().setValue("max_bytes", 50000),
-                                 new GMS().setValue("print_local_addr", false));
+                                 new STABLE().setMaxBytes(50000),
+                                 new GMS().printLocalAddress(false));
         if(discard != null)
             ch.getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE, SHARED_LOOPBACK.class);
         return ch;

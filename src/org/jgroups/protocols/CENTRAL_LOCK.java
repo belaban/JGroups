@@ -32,9 +32,6 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
     @Property(description="Number of backups to the coordinator. Server locks get replicated to these nodes as well")
     protected int                 num_backups=1;
 
-    @Property(description="By default, a lock owner is address:thread-id. If false, we only use the node's address. " +
-      "See https://issues.jboss.org/browse/JGRP-1886 for details")
-    protected boolean             use_thread_id_for_lock_owner=true;
 
     protected Address             coord;
 
@@ -70,8 +67,8 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
         return num_backups;
     }
 
-    public void setNumberOfBackups(int num_backups) {
-        this.num_backups=num_backups;
+    public CENTRAL_LOCK setNumberOfBackups(int num_backups) {
+        this.num_backups=num_backups; return this;
     }
 
     @ManagedAttribute

@@ -35,7 +35,7 @@ public class SHARED_LOOPBACK extends TP {
      * Map of cluster names and address-protocol mappings. Used for routing messages to all or single members
      */
     protected static final Map<AsciiString,Map<Address,SHARED_LOOPBACK>>      routing_table=new HashMap<>();
-    protected static final Function<AsciiString,Map<Address,SHARED_LOOPBACK>> FUNC=n -> new HashMap();
+    protected static final Function<AsciiString,Map<Address,SHARED_LOOPBACK>> FUNC=n -> new HashMap<>();
 
     public boolean supportsMulticasting()   {return true;} // kind of...
     public View    getView()                {return curr_view;}

@@ -150,7 +150,37 @@ public class UDP extends TP {
     public InetAddress       getMulticastAddress()              {return mcast_group_addr;}
     public int               getMulticastPort()                 {return mcast_port;}
     public <T extends UDP> T setMulticastPort(int mcast_port)   {this.mcast_port=mcast_port; return (T)this;}
-    public <T extends UDP> T setMcastPort(int mcast_port)       {this.mcast_port=mcast_port; return (T)this;}
+
+    public int getTos() {return tos;}
+    public UDP setTos(int t) {this.tos=t; return this;}
+
+    public InetAddress getMcastGroupAddr() {return mcast_group_addr;}
+    public UDP setMcastGroupAddr(InetAddress m) {this.mcast_group_addr=m; return this;}
+
+    public boolean ipMcast() {return ip_mcast;}
+    public UDP ipMcast(boolean i) {this.ip_mcast=i; return this;}
+
+    public int getIpTTL()      {return ip_ttl;}
+    public UDP setIpTTL(int i) {this.ip_ttl=i; return this;}
+
+    public int getMcastSendBufSize() {return mcast_send_buf_size;}
+    public UDP setMcastSendBufSize(int m) {this.mcast_send_buf_size=m; return this;}
+
+    public int getMcastRecvBufSize() {return mcast_recv_buf_size;}
+    public UDP setMcastRecvBufSize(int m) {this.mcast_recv_buf_size=m; return this;}
+
+    public int getUcastSendBufSize() {return ucast_send_buf_size;}
+    public UDP setUcastSendBufSize(int u) {this.ucast_send_buf_size=u; return this;}
+
+    public int getUcastRecvBufSize() {return ucast_recv_buf_size;}
+    public UDP setUcastRecvBufSize(int u) {this.ucast_recv_buf_size=u; return this;}
+
+    public boolean disableLoopback() {return disable_loopback;}
+    public UDP disableLoopback(boolean d) {this.disable_loopback=d; return this;}
+
+    public long getSuppressTimeOutOfBufferSpace() {return suppress_time_out_of_buffer_space;}
+    public UDP setSuppressTimeOutOfBufferSpace(long s) {this.suppress_time_out_of_buffer_space=s; return this;}
+
 
     /**
      * Set the ttl for multicast socket

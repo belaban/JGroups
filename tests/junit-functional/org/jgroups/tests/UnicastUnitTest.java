@@ -100,7 +100,7 @@ public class UnicastUnitTest {
         connect(a,b);
         System.out.println("-- Creating network partition");
         Stream.of(a,b).forEach(ch -> {
-            DISCARD discard=new DISCARD().setDiscardAll(true);
+            DISCARD discard=new DISCARD().discardAll(true);
             try {
                 ch.getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
             }
@@ -250,8 +250,8 @@ public class UnicastUnitTest {
           new MAKE_BATCH().sleepTime(100).unicasts(use_batching),
           new UNICAST3(),
           new STABLE(),
-          new GMS().joinTimeout(1000),
-          new FRAG2().fragSize(8000),
+          new GMS().setJoinTimeout(1000),
+          new FRAG2().setFragSize(8000),
         };
         return new JChannel(protocols).name(name);
     }

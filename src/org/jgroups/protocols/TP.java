@@ -147,7 +147,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected boolean thread_pool_enabled=true;
 
     @Property(name="thread_pool.min_threads",description="Minimum thread pool size for the thread pool")
-    protected int thread_pool_min_threads=0;
+    protected int thread_pool_min_threads;
 
     @Property(name="thread_pool.max_threads",description="Maximum thread pool size for the thread pool")
     protected int thread_pool_max_threads=100;
@@ -166,7 +166,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected boolean diag_enable_udp=true;
 
     @Property(description="Use a TCP socket to listen for probe requests (ignored if enable_diagnostics is false)")
-    protected boolean diag_enable_tcp=false;
+    protected boolean diag_enable_tcp;
 
     @Property(description="Multicast address for diagnostic probing. Used when diag_enable_udp is true",
               defaultValueIPv4="224.0.75.75",defaultValueIPv6="ff0e::0:75:75")
@@ -260,6 +260,91 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public int              getMessageProcessingMaxBufferSize() {return msg_processing_max_buffer_size;}
     public MessageFactory   getMessageFactory()                 {return msg_factory;}
     public boolean          useFibers()                         {return use_fibers;}
+
+    public InetAddress getBindAddr() {return bind_addr;}
+    public <T extends TP> T setBindAddr(InetAddress b) {this.bind_addr=b; return (T)this;}
+
+    public InetAddress getExternalAddr() {return external_addr;}
+    public <T extends TP> T setExternalAddr(InetAddress e) {this.external_addr=e; return (T)this;}
+
+    public int getExternalPort() {return external_port;}
+    public <T extends TP> T setExternalPort(int e) {this.external_port=e; return (T)this;}
+
+    public boolean isTrace() {return is_trace;}
+    public <T extends TP> T isTrace(boolean i) {this.is_trace=i; return (T)this;}
+
+    public boolean receiveOnAllInterfaces() {return receive_on_all_interfaces;}
+    public <T extends TP> T receiveOnAllInterfaces(boolean r) {this.receive_on_all_interfaces=r; return (T)this;}
+
+    public int getLogicalAddrCacheMaxSize() {return logical_addr_cache_max_size;}
+    public <T extends TP> T setLogicalAddrCacheMaxSize(int l) {this.logical_addr_cache_max_size=l; return (T)this;}
+
+    public long getLogicalAddrCacheExpiration() {return logical_addr_cache_expiration;}
+    public <T extends TP> T setLogicalAddrCacheExpiration(long l) {this.logical_addr_cache_expiration=l; return (T)this;}
+
+    public long getLogicalAddrCacheReaperInterval() {return logical_addr_cache_reaper_interval;}
+    public <T extends TP> T setLogicalAddrCacheReaperInterval(long l) {this.logical_addr_cache_reaper_interval=l; return (T)this;}
+
+    public boolean loopbackCopy() {return loopback_copy;}
+    public <T extends TP> T loopbackCopy(boolean l) {this.loopback_copy=l; return (T)this;}
+
+    public boolean loopbackSeparateThread() {return loopback_separate_thread;}
+    public <T extends TP> T loopbackSeparateThread(boolean l) {this.loopback_separate_thread=l; return (T)this;}
+
+    public int getMsgProcessingMaxBufferSize() {return msg_processing_max_buffer_size;}
+    public <T extends TP> T setMsgProcessingMaxBufferSize(int m) {this.msg_processing_max_buffer_size=m; return (T)this;}
+
+    public boolean threadPoolEnabled() {return thread_pool_enabled;}
+    public <T extends TP> T threadPoolEnabled(boolean t) {this.thread_pool_enabled=t; return (T)this;}
+
+    public long getTimeServiceInterval() {return time_service_interval;}
+    public <T extends TP> T setTimeServiceInterval(long t) {this.time_service_interval=t; return (T)this;}
+
+    public InetAddress getDiagnosticsAddr() {return diagnostics_addr;}
+    public <T extends TP> T setDiagnosticsAddr(InetAddress d) {this.diagnostics_addr=d; return (T)this;}
+
+    public InetAddress getDiagnosticsBindAddr() {return diagnostics_bind_addr;}
+    public <T extends TP> T setDiagnosticsBindAddr(InetAddress d) {this.diagnostics_bind_addr=d; return (T)this;}
+
+    public int getDiagnosticsPort() {return diagnostics_port;}
+    public <T extends TP> T setDiagnosticsPort(int d) {this.diagnostics_port=d; return (T)this;}
+
+    public int getDiagnosticsPortRange() {return diagnostics_port_range;}
+    public <T extends TP> T setDiagnosticsPortRange(int d) {this.diagnostics_port_range=d; return (T)this;}
+
+    public int getDiagnosticsTtl() {return diagnostics_ttl;}
+    public <T extends TP> T setDiagnosticsTtl(int d) {this.diagnostics_ttl=d; return (T)this;}
+
+    public String getDiagnosticsPasscode() {return diagnostics_passcode;}
+    public <T extends TP> T setDiagnosticsPasscode(String d) {this.diagnostics_passcode=d; return (T)this;}
+
+    public boolean logDiscardMsgs() {return log_discard_msgs;}
+    public <T extends TP> T logDiscardMsgs(boolean l) {this.log_discard_msgs=l; return (T)this;}
+
+    public boolean logDiscardMsgsVersion() {return log_discard_msgs_version;}
+    public <T extends TP> T logDiscardMsgsVersion(boolean l) {this.log_discard_msgs_version=l; return (T)this;}
+
+    public long getWhoHasCacheTimeout() {return who_has_cache_timeout;}
+    public <T extends TP> T setWhoHasCacheTimeout(long w) {this.who_has_cache_timeout=w; return (T)this;}
+
+    public long getSuppressTimeDifferentVersionWarnings() {return suppress_time_different_version_warnings;}
+    public <T extends TP> T setSuppressTimeDifferentVersionWarnings(long s) {this.suppress_time_different_version_warnings=s; return (T)this;}
+
+    public long getSuppressTimeDifferentClusterWarnings() {return suppress_time_different_cluster_warnings;}
+    public <T extends TP> T setSuppressTimeDifferentClusterWarnings(long s) {this.suppress_time_different_cluster_warnings=s; return (T)this;}
+
+    public String getMsgFactoryClass() {return msg_factory_class;}
+    public <T extends TP> T setMsgFactoryClass(String m) {this.msg_factory_class=m; return (T)this;}
+
+    public String getBundlerType() {return bundler_type;}
+    public <T extends TP> T setBundlerType(String b) {this.bundler_type=b; return (T)this;}
+
+    public int getBundlerNumSpins() {return bundler_num_spins;}
+    public <T extends TP> T setBundlerNumSpins(int b) {this.bundler_num_spins=b; return (T)this;}
+
+    public String getBundlerWaitStrategy() {return bundler_wait_strategy;}
+    public <T extends TP> T setBundlerWaitStrategy(String b) {this.bundler_wait_strategy=b; return (T)this;}
+
 
     @ManagedAttribute
     public String getMessageFactoryClass() {

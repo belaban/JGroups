@@ -31,10 +31,10 @@ public class LeaveTest extends BaseLeaveTest  {
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
           // omit MERGE3 from the stack -- nodes are leaving gracefully
-          new NAKACK2().setUseMcastXmit(false),
+          new NAKACK2().useMcastXmit(false),
           new UNICAST3(),
           new STABLE(),
-          new GMS().joinTimeout(1000).printLocalAddress(false))
+          new GMS().setJoinTimeout(1000).printLocalAddress(false))
           .name(name);
     }
 }

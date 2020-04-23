@@ -44,10 +44,10 @@ public class ASYM_ENCRYPT_LeaveTest extends BaseLeaveTest {
             .setPortRange(30).setPort(2257),
           new ASYM_ENCRYPT().setUseExternalKeyExchange(useExternalKeyExchange())
             .symKeylength(128).symAlgorithm(symAlgorithm()).symIvLength(symIvLength()).asymKeylength(512).asymAlgorithm("RSA"),
-          new NAKACK2().setUseMcastXmit(false),
+          new NAKACK2().useMcastXmit(false),
           new UNICAST3(),
           new STABLE(),
-          new GMS().joinTimeout(2000))
+          new GMS().setJoinTimeout(2000))
           .name(name);
     }
 

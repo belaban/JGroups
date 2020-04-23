@@ -7,8 +7,10 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
+import org.jgroups.util.MyReceiver;
+import org.jgroups.util.SizeStreamable;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -54,7 +56,7 @@ public class FragTest {
     }
 
     @Test(enabled=false)
-    protected void setup(Class<? extends Protocol> frag_clazz) throws Exception {
+    protected void setup(Class<? extends Fragmentation> frag_clazz) throws Exception {
         a=createChannel("A", frag_clazz, FRAG_SIZE).connect("FragTest");
         b=createChannel("B", frag_clazz, FRAG_SIZE).connect("FragTest");
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b);
@@ -66,7 +68,7 @@ public class FragTest {
 
 
 
-    public void testRegularMessages(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testRegularMessages(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
         for(int i=1; i <= NUM_MSGS; i++) {
             Message big_msg=createMessage(b.getAddress(), MSG_SIZE);
@@ -78,7 +80,7 @@ public class FragTest {
     }
 
 
-    public void testMessagesWithOffsets(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testMessagesWithOffsets(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
         byte[] big_buffer=new byte[(int)(MSG_SIZE * NUM_MSGS)];
         int offset=0;
@@ -98,10 +100,10 @@ public class FragTest {
      * which generates 3 fragments, followed by a final small message. Verifies that the message assembled from the
      * 3 fragments is in the right place and not at the end. JIRA=https://issues.jboss.org/browse/JGRP-1648
      */
-    public void testMessageOrdering(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testMessageOrdering(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
-        Protocol frag=a.getProtocolStack().findProtocol(FRAG4.class, FRAG3.class, FRAG2.class, FRAG.class);
-        frag.setValue("frag_size", 5000);
+        Fragmentation frag=a.getProtocolStack().findProtocol(Fragmentation.class);
+        frag.setFragSize(5000);
 
         Address dest=b.getAddress();
         Message first=new BytesMessage(dest, new Payload(1, 10));
@@ -124,7 +126,7 @@ public class FragTest {
     }
 
     /* Tests https://issues.jboss.org/browse/JGRP-1973 */
-    public void testFragCorruption(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testFragCorruption(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
         final String message="this message is supposed to get fragmented by A and defragmented by B";
         byte[] buf=message.getBytes();
@@ -139,7 +141,7 @@ public class FragTest {
     }
 
 
-    public void testEmptyMessage(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testEmptyMessage(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
         Message m1=new EmptyMessage(null), m2=new EmptyMessage(b.getAddress());
         send(m1, m2);
@@ -147,7 +149,7 @@ public class FragTest {
     }
 
 
-    public void testBytesMessage(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testBytesMessage(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
         Message m1=new BytesMessage(null, array), m2=new BytesMessage(b.getAddress(), array);
         send(m1, m2);
@@ -156,7 +158,7 @@ public class FragTest {
     }
 
 
-    public void testObjectMessage(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testObjectMessage(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
         MySizeData obj=new MySizeData(322649, array);
         Message m1=new ObjectMessage(null, obj), m2=new ObjectMessage(b.getAddress(), obj);
@@ -168,7 +170,7 @@ public class FragTest {
     }
 
 
-    public void testObjectMessage2(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testObjectMessage2(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
         MySizeData obj=new MySizeData(322649, array);
         Message m1=new ObjectMessage(null, obj), m2=new ObjectMessage(b.getAddress(), obj);
@@ -179,7 +181,7 @@ public class FragTest {
         });
     }
 
-    public void testObjectMessage3(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testObjectMessage3(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
         MyData obj=new MyData(322649, array);
         Message m1=new ObjectMessage(null, obj), m2=new ObjectMessage(b.getAddress(), obj);
@@ -190,7 +192,7 @@ public class FragTest {
         });
     }
 
-    public void testObjectMessage4(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testObjectMessage4(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
         Person p=new Person("Bela Ban", 53, array);
         Message m1=new ObjectMessage(null, p), m2=new ObjectMessage(b.getAddress(), p);
@@ -201,7 +203,7 @@ public class FragTest {
         });
     }
 
-    public void testNioHeapMessage(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testNioHeapMessage(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
         NioMessage m1=new NioMessage(null, ByteBuffer.wrap(array)),
           m2=new NioMessage(b.getAddress(), ByteBuffer.wrap(array));
@@ -209,7 +211,7 @@ public class FragTest {
         assertForAllMessages(m -> Util.verifyArray(m.getArray()));
     }
 
-    public void testNioDirectMessage(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testNioDirectMessage(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
         NioMessage m1=new NioMessage(null, Util.wrapDirect(array)),
           m2=new NioMessage(b.getAddress(), Util.wrapDirect(array));
@@ -217,7 +219,7 @@ public class FragTest {
         assertForAllMessages(m -> Util.verifyArray(m.getArray()));
     }
 
-    public void testCompositeMessage(Class<? extends Protocol> frag_clazz) throws Exception {
+    public void testCompositeMessage(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
         CompositeMessage m1=new CompositeMessage(null, new EmptyMessage(null));
         IntStream.of(10000, 15000, 5000).forEach(n -> m1.add(new BytesMessage(null, new byte[n])));
@@ -232,15 +234,15 @@ public class FragTest {
 
 
 
-    protected static JChannel createChannel(String name, Class<? extends Protocol> clazz, int frag_size) throws Exception {
-        Protocol frag_prot=clazz.getDeclaredConstructor().newInstance();
-        frag_prot.setValue("frag_size", frag_size);
+    protected static JChannel createChannel(String name, Class<? extends Fragmentation> clazz, int frag_size) throws Exception {
+        Fragmentation frag_prot=clazz.getDeclaredConstructor().newInstance();
+        frag_prot.setFragSize(frag_size);
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
-                            new NAKACK2().setValue("use_mcast_xmit", false),
+                            new NAKACK2().useMcastXmit(false),
                             new UNICAST3(),
-                            new STABLE().setValue("max_bytes", 50000),
-                            new GMS().joinTimeout(500).setValue("print_local_addr", false),
+                            new STABLE().setMaxBytes(50000),
+                            new GMS().setJoinTimeout(500).printLocalAddress(false),
                             new UFC(),
                             new MFC(),
                             frag_prot)

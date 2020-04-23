@@ -106,7 +106,7 @@ public class ForkChannelTest {
 
         // send to non-existing member:
         UNICAST3 ucast=a.getProtocolStack().findProtocol(UNICAST3.class);
-        ucast.setValue("conn_close_timeout", 10000);
+        ucast.setConnCloseTimeout(10000);
 
         Util.close(fc3,fc4,b);
         Util.sleep(1000);

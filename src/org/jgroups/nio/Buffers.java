@@ -269,15 +269,15 @@ public class Buffers implements Iterable<ByteBuffer> {
     }
 
     protected static short toPositiveUnsignedShort(int num) {
-        assertPositiveUnsignedShort(num);
-        return (short)num;
+        return (short)assertPositiveUnsignedShort(num);
     }
 
-    protected static void assertPositiveUnsignedShort(int num) {
+    protected static int assertPositiveUnsignedShort(int num) {
         if(num < 1 || num > Short.MAX_VALUE) {
             short tmp=(short)num;
             throw new IllegalArgumentException(String.format("number %d must be a positive unsigned short", tmp));
         }
+        return num;
     }
 
     /*protected void assertNextToCopy() {

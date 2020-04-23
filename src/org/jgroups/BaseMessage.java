@@ -44,9 +44,9 @@ public abstract class BaseMessage implements Message {
 
 
     public Address               getDest()                 {return dest;}
-    public <T extends Message> T setDest(Address new_dest) {dest=new_dest; return (T)this;}
+    public Message               setDest(Address new_dest) {dest=new_dest; return this;}
     public Address               getSrc()                  {return sender;}
-    public <T extends Message> T setSrc(Address new_src)   {sender=new_src; return (T)this;}
+    public Message               setSrc(Address new_src)   {sender=new_src; return this;}
     public int                   getNumHeaders()           {return Headers.size(this.headers);}
     public Map<Short,Header>     getHeaders()              {return Headers.getHeaders(this.headers);}
     public String                printHeaders()            {return Headers.printHeaders(this.headers);}
@@ -57,7 +57,7 @@ public abstract class BaseMessage implements Message {
      * @param flags The flag or flags
      * @return A reference to the message
      */
-    public <T extends Message> T setFlag(Flag... flags) {
+    public Message setFlag(Flag... flags) {
         if(flags != null) {
             short tmp=this.flags;
             for(Flag flag : flags) {
@@ -66,14 +66,14 @@ public abstract class BaseMessage implements Message {
             }
             this.flags=tmp;
         }
-        return (T)this;
+        return this;
     }
 
     /**
      * Same as {@link #setFlag(Flag...)} except that transient flags are not marshalled
      * @param flags The flag
      */
-    public <T extends Message> T setFlag(TransientFlag... flags) {
+    public Message setFlag(TransientFlag... flags) {
         if(flags != null) {
             short tmp=this.transient_flags;
             for(TransientFlag flag : flags)
@@ -81,18 +81,18 @@ public abstract class BaseMessage implements Message {
                     tmp|=flag.value();
             this.transient_flags=(byte)tmp;
         }
-        return (T)this;
+        return this;
     }
 
 
-    public <T extends Message> T setFlag(short flag, boolean transient_flags) {
+    public Message setFlag(short flag, boolean transient_flags) {
         short tmp=transient_flags? this.transient_flags : this.flags;
         tmp|=flag;
         if(transient_flags)
             this.transient_flags=(byte)tmp;
         else
             this.flags=tmp;
-        return (T)this;
+        return this;
     }
 
 
@@ -108,7 +108,7 @@ public abstract class BaseMessage implements Message {
      * @param flags The flags
      * @return A reference to the message
      */
-    public <T extends Message> T clearFlag(Flag... flags) {
+    public Message clearFlag(Flag... flags) {
         if(flags != null) {
             short tmp=this.flags;
             for(Flag flag : flags)
@@ -116,10 +116,10 @@ public abstract class BaseMessage implements Message {
                     tmp&=~flag.value();
             this.flags=tmp;
         }
-        return (T)this;
+        return this;
     }
 
-    public <T extends Message> T clearFlag(TransientFlag... flags) {
+    public Message clearFlag(TransientFlag... flags) {
         if(flags != null) {
             short tmp=this.transient_flags;
             for(TransientFlag flag : flags)
@@ -127,7 +127,7 @@ public abstract class BaseMessage implements Message {
                     tmp&=~flag.value();
             this.transient_flags=(byte)tmp;
         }
-        return (T)this;
+        return this;
     }
 
     /**
@@ -166,7 +166,7 @@ public abstract class BaseMessage implements Message {
      * The consequence is that the headers array of the copy hold the *same* references as the original, so do *not*
      * modify the headers ! If you want to change a header, copy it and call {@link Message#putHeader(short,Header)} again.
      */
-    public <T extends Message> T copy(boolean copy_payload, boolean copy_headers) {
+    public Message copy(boolean copy_payload, boolean copy_headers) {
         BaseMessage retval=(BaseMessage)create().get();
         retval.dest=dest;
         retval.sender=sender;
@@ -175,14 +175,14 @@ public abstract class BaseMessage implements Message {
         retval.headers=copy_headers && headers != null? Headers.copy(this.headers) : createHeaders(Util.DEFAULT_HEADERS);
         if(copy_payload)
             copyPayload(retval);
-        return (T)retval;
+        return retval;
     }
 
 
     /*---------------------- Used by protocol layers ----------------------*/
 
     /** Puts a header given an ID into the hashmap. Overwrites potential existing entry. */
-    public <T extends Message> T putHeader(short id, Header hdr) {
+    public Message putHeader(short id, Header hdr) {
         if(id < 0)
             throw new IllegalArgumentException("An ID of " + id + " is invalid");
         if(hdr != null)
@@ -194,7 +194,7 @@ public abstract class BaseMessage implements Message {
             if(resized_array != null)
                 this.headers=resized_array;
         }
-        return (T)this;
+        return this;
     }
 
 
@@ -319,7 +319,7 @@ public abstract class BaseMessage implements Message {
     protected abstract void readPayload(DataInput in) throws IOException, ClassNotFoundException;
 
     /** Copies the payload */
-    protected <T extends Message> T copyPayload(T copy) {
+    protected Message copyPayload(Message copy) {
         return copy;
     }
 

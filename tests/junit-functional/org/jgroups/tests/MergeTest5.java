@@ -89,18 +89,18 @@ public class MergeTest5 {
     protected static JChannel createChannel(String name) throws Exception {
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
-                            new MERGE3().setValue("min_interval", 3000).setValue("max_interval", 4000).setValue("check_interval", 7000),
-                            new NAKACK2().setValue("use_mcast_xmit",false)
-                                       .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
+                            new MERGE3().setMinInterval(3000).setMaxInterval(4000).setCheckInterval(7000),
+                            new NAKACK2().useMcastXmit(false)
+                                       .logDiscardMessages(false).logNotFoundMessages(false),
                             new UNICAST3(),
-                            new STABLE().setValue("max_bytes",50000),
-                            new GMS().setValue("print_local_addr",false)
-                                       .setValue("join_timeout", 100)
-                                       .setValue("leave_timeout", 100)
-                                       .setValue("merge_timeout",5000)
-                                       .setValue("log_view_warnings",false)
-                                       .setValue("view_ack_collection_timeout",50)
-                                       .setValue("log_collect_msgs",false))
+                            new STABLE().setMaxBytes(50000),
+                            new GMS().printLocalAddress(false)
+                                       .setJoinTimeout( 100)
+                                       .setLeaveTimeout(100)
+                                       .setMergeTimeout(5000)
+                                       .logViewWarnings(false)
+                                       .setViewAckCollectionTimeout(50)
+                                       .logCollectMessages(false))
           .name(name).connect("MergeTest5");
     }
 

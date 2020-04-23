@@ -92,8 +92,8 @@ public class JDBC_PING extends FILE_PING {
         ; // do *not* create root file system (don't remove !)
     }
 
-    public void setDataSource(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public JDBC_PING setDataSource(DataSource dataSource) {
+        this.dataSource = dataSource; return this;
     }
 
     @Override

@@ -48,6 +48,9 @@ abstract public class Locking extends Protocol {
     @Property(description="Number of locks to be used for lock striping (for synchronized access to the server_lock entries)")
     protected int                                    lock_striping_size=10;
 
+    @Property(description="By default, a lock owner is address:thread-id. If false, we only use the node's address. " +
+      "See https://issues.jboss.org/browse/JGRP-1886 for details")
+    protected boolean                                use_thread_id_for_lock_owner=true;
 
     protected Address                                local_addr;
 
@@ -96,13 +99,13 @@ abstract public class Locking extends Protocol {
     }
 
 
-    public boolean getBypassBundling() {
-        return bypass_bundling;
-    }
+    public boolean bypassBundling()                   {return bypass_bundling;}
+    public Locking bypassBundling(boolean b)          {this.bypass_bundling=b; return this;}
+    public int     getLockStripingSize()              {return lock_striping_size;}
+    public Locking setLockStripingSize(int l)         {this.lock_striping_size=l; return this;}
+    public boolean useThreadIdForLockOwner()          {return use_thread_id_for_lock_owner;}
+    public Locking useThreadIdForLockOwner(boolean u) {this.use_thread_id_for_lock_owner=u; return this;}
 
-    public void setBypassBundling(boolean bypass_bundling) {
-        this.bypass_bundling=bypass_bundling;
-    }
 
     public void addLockListener(LockNotification listener) {
         if(listener != null)

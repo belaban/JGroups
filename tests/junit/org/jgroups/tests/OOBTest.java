@@ -71,7 +71,7 @@ public class OOBTest extends ChannelTestBase {
         MyReceiver receiver=new MyReceiver("B");
         b.setReceiver(receiver);
         a.send(m1);
-        discard.setDropDownUnicasts(1);
+        discard.dropDownUnicasts(1);
         a.send(m2);
         a.send(m3);
 
@@ -101,7 +101,7 @@ public class OOBTest extends ChannelTestBase {
         b.setReceiver(receiver);
         a.send(m1);
 
-        discard.setDropDownUnicasts(2);
+        discard.dropDownUnicasts(2);
         a.send(m2); // dropped
         a.send(m3); // dropped
         a.send(m4);
@@ -131,7 +131,7 @@ public class OOBTest extends ChannelTestBase {
         MyReceiver receiver=new MyReceiver("B");
         b.setReceiver(receiver);
         a.send(m1);
-        discard.setDropDownMulticasts(1);
+        discard.dropDownMulticasts(1);
         a.send(m2);
         a.send(m3);
 

@@ -29,9 +29,7 @@ public abstract class FlowControl extends Protocol {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
-    /**
-     * Max number of bytes to send per receiver until an ack must be received before continuing sending
-     */
+    /** Max number of bytes to send per receiver until an ack must be received before continuing sending */
     @Property(description="Max number of bytes to send per receiver until an ack must be received to proceed")
     protected long           max_credits=5_000_000;
 
@@ -91,7 +89,6 @@ public abstract class FlowControl extends Protocol {
 
     protected Address                   local_addr;
 
-
     /** Whether FlowControl is still running, this is set to false when the protocol terminates (on stop()) */
     protected volatile boolean          running=true;
 
@@ -106,45 +103,19 @@ public abstract class FlowControl extends Protocol {
         num_credit_responses_sent=num_credit_responses_received=num_credit_requests_received=num_credit_requests_sent=0;
     }
 
-    public long getMaxCredits() {
-        return max_credits;
-    }
+    public long                      getMaxCredits()           {return max_credits;}
+    public <T extends FlowControl> T setMaxCredits(long m)     {max_credits=m; return (T)this;}
+    public double                    getMinThreshold()         {return min_threshold;}
+    public <T extends FlowControl> T setMinThreshold(double m) {min_threshold=m; return (T)this;}
+    public long                      getMinCredits()           {return min_credits;}
+    public <T extends FlowControl> T setMinCredits(long m)     {min_credits=m; return (T)this;}
+    public long                      getMaxBlockTime()         {return max_block_time;}
+    public <T extends FlowControl> T setMaxBlockTime(long t)   {max_block_time=t; return (T)this;}
 
-    public void setMaxCredits(long max_credits) {
-        this.max_credits=max_credits;
-    }
-
-    public <T extends FlowControl> T maxCredits(long c) {max_credits=c; return (T)this;}
-
-    public double getMinThreshold() {
-        return min_threshold;
-    }
-
-    public void setMinThreshold(double min_threshold) {
-        this.min_threshold=min_threshold;
-    }
-
-    public long getMinCredits() {
-        return min_credits;
-    }
-
-    public void setMinCredits(long min_credits) {
-        this.min_credits=min_credits;
-    }
-
-    public long getMaxBlockTime() {
-        return max_block_time;
-    }
-
-    public void setMaxBlockTime(long t) {
-        max_block_time=t;
-    }
-
-    public <T extends FlowControl> T maxBlockTime(long t) {max_block_time=t; return (T)this;}
 
     @Property(description="Max times to block for the listed messages sizes (Message.getLength()). Example: \"1000:10,5000:30,10000:500\"")
-    public void setMaxBlockTimes(String str) {
-        if(str == null) return;
+    public FlowControl setMaxBlockTimes(String str) {
+        if(str == null) return this;
         Long prev_key=null, prev_val=null;
         List<String> vals=Util.parseCommaDelimitedStrings(str);
         if(max_block_times == null)
@@ -170,6 +141,7 @@ public abstract class FlowControl extends Protocol {
             max_block_times.put(key, val);
         }
         log.debug("max_block_times: %s", max_block_times);
+        return this;
     }
 
     public String getMaxBlockTimes() {
@@ -519,19 +491,6 @@ public abstract class FlowControl extends Protocol {
                                              (sb,entry) -> sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n"),
                                              (l,r) -> {}).toString();
     }
-
-   /* protected static byte[] longToBuffer(long num) {
-        byte[] buf=new byte[Global.LONG_SIZE];
-        Bits.writeLong(num, buf, 0);
-        return buf;
-    }
-
-    protected static long bufferToLong(byte[] buf, int offset) {
-        return Bits.readLong(buf, offset);
-    }
-*/
-
-
 
 
 }

@@ -28,11 +28,11 @@ public class AuthHeader extends Header {
 
     public Supplier<? extends Header> create() {return AuthHeader::new;}
 
-    public void       setToken(AuthToken token) {this.token = token;}
+    public AuthHeader setToken(AuthToken token) {this.token = token; return this;}
     public AuthToken  getToken()                {return this.token;}
     public AuthHeader token(AuthToken token)    {this.token=token; return this;}
     public AuthToken  token()                   {return this.token;}
-    public short getMagicId() {return 66;}
+    public short      getMagicId() {return 66;}
 
     @Override
     public void writeTo(DataOutput out) throws IOException {

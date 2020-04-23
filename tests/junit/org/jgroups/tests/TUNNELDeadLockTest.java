@@ -119,7 +119,7 @@ public class TUNNELDeadLockTest {
     }
 
     protected JChannel createTunnelChannel(String name) throws Exception {
-        TUNNEL tunnel=new TUNNEL().setValue("bind_addr", InetAddress.getByName(bind_addr));
+        TUNNEL tunnel=new TUNNEL().setBindAddress(InetAddress.getByName(bind_addr));
         tunnel.setGossipRouterHosts(gossip_router_hosts);
 
         JChannel ch=new JChannel(tunnel,
@@ -127,7 +127,7 @@ public class TUNNELDeadLockTest {
                                  new NAKACK2(),
                                  new UNICAST3(),
                                  new STABLE(),
-                                 new GMS().joinTimeout(1000)).name(name);
+                                 new GMS().setJoinTimeout(1000)).name(name);
         if(name != null)
             ch.setName(name);
         return ch;

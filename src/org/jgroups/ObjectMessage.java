@@ -95,7 +95,7 @@ public class ObjectMessage extends BaseMessage {
         obj=Util.readGenericStreamable(in);
     }
 
-    @Override protected <T extends Message> T copyPayload(T copy) {
+    @Override protected Message copyPayload(Message copy) {
         if(obj != null)
             copy.setObject(obj);
         return copy;

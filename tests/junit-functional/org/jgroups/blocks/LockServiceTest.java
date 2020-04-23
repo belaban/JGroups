@@ -292,7 +292,7 @@ public class LockServiceTest {
         init(locking_class);
         CyclicBarrier barrier=null;
         try {
-            setProp(LOCK_CLASS, "use_thread_id_for_lock_owner", false, c1,c2,c3);
+            setProp(LOCK_CLASS, false, c1,c2,c3);
             barrier=new CyclicBarrier(2);
             Thread locker=new Locker(barrier);
             locker.start();
@@ -301,7 +301,7 @@ public class LockServiceTest {
             assert rc;
         }
         finally {
-            setProp(LOCK_CLASS, "use_thread_id_for_lock_owner", true,c1,c2,c3);
+            setProp(LOCK_CLASS, true,c1,c2,c3);
             unlock(lock, LOCK);
         }
     }
@@ -368,10 +368,10 @@ public class LockServiceTest {
         return new JChannel(stack).name(name);
     }
 
-    protected static void setProp(Class<? extends Protocol> clazz, String prop_name, Object value, JChannel... channels) {
+    protected static void setProp(Class<? extends Locking> clazz, boolean value, JChannel... channels) {
         for(JChannel ch: channels) {
-            Protocol prot=ch.getProtocolStack().findProtocol(clazz);
-            prot.setValue(prop_name, value);
+            Locking prot=ch.getProtocolStack().findProtocol(clazz);
+            prot.useThreadIdForLockOwner(value);
         }
     }
     

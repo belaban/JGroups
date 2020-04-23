@@ -99,16 +99,15 @@ public class RemoteGetStressTest {
 
     protected static JChannel createChannel(String name) throws Exception {
         Protocol[] protocols={
-          new SHARED_LOOPBACK().setValue("thread_pool_min_threads", 1)
-            .setValue("thread_pool_max_threads", 5),
+          new SHARED_LOOPBACK().setThreadPoolMinThreads(1).setThreadPoolMaxThreads(5),
           new SHARED_LOOPBACK_PING(),
           new NAKACK2(),
           new UNICAST3(),
           new STABLE(),
           new GMS(),
           new UFC(),
-          new MFC().setValue("max_credits", 2000000).setValue("min_threshold", 0.4),
-          new FRAG2().fragSize(8000),
+          new MFC().setMaxCredits(2000000).setMinThreshold(0.4),
+          new FRAG2().setFragSize(8000),
         };
         return new JChannel(protocols).name(name);
     }

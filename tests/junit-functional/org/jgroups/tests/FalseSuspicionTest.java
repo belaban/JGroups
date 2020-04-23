@@ -76,11 +76,11 @@ public class FalseSuspicionTest {
         return new JChannel(
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
-          new FD_SOCK().setValue("bind_addr", InetAddress.getByName("127.0.0.1")),
+          new FD_SOCK().setBindAddress(InetAddress.getByName("127.0.0.1")),
           new VERIFY_SUSPECT(),
           new NAKACK2(),
           new UNICAST3(),
           new STABLE(),
-          new GMS().joinTimeout(1000)).name(name);
+          new GMS().setJoinTimeout(1000)).name(name);
     }
 }

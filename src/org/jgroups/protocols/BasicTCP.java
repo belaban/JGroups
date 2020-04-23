@@ -25,10 +25,10 @@ public abstract class BasicTCP extends TP implements Receiver {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
     @Property(description="Reaper interval in msec. Default is 0 (no reaping)")
-    protected long        reaper_interval=0; // time in msecs between connection reaps
+    protected long        reaper_interval; // time in msecs between connection reaps
 
     @Property(description="Max time connection can be idle before being reaped (in ms)")
-    protected long        conn_expire_time=0; // max time a conn can be idle before being reaped
+    protected long        conn_expire_time; // max time a conn can be idle before being reaped
 
     @Property(description="Receiver buffer size in bytes")
     protected int         recv_buf_size;
@@ -78,7 +78,34 @@ public abstract class BasicTCP extends TP implements Receiver {
     public BasicTCP reaperInterval(long interval)    {this.reaper_interval=interval; return this;}
     public long     getConnExpireTime()              {return conn_expire_time;}
     public BasicTCP setConnExpireTime(long time)     {this.conn_expire_time=time; return this;}
-    public BasicTCP connExpireTime(long time)        {this.conn_expire_time=time; return this;}
+
+    public int getRecvBufSize() {return recv_buf_size;}
+    public BasicTCP setRecvBufSize(int r) {this.recv_buf_size=r; return this;}
+
+    public int getSendBufSize() {return send_buf_size;}
+    public BasicTCP setSendBufSize(int s) {this.send_buf_size=s; return this;}
+
+    public int getSockConnTimeout() {return sock_conn_timeout;}
+    public BasicTCP setSockConnTimeout(int s) {this.sock_conn_timeout=s; return this;}
+
+    public int getPeerAddrReadTimeout() {return peer_addr_read_timeout;}
+    public BasicTCP setPeerAddrReadTimeout(int p) {this.peer_addr_read_timeout=p; return this;}
+
+    public boolean tcpNodelay() {return tcp_nodelay;}
+    public BasicTCP tcpNodelay(boolean t) {this.tcp_nodelay=t; return this;}
+
+    public int getLinger() {return linger;}
+    public BasicTCP setLinger(int l) {this.linger=l; return this;}
+
+    public InetAddress getClientBindAddr() {return client_bind_addr;}
+    public BasicTCP setClientBindAddr(InetAddress c) {this.client_bind_addr=c; return this;}
+
+    public int getClientBindPort() {return client_bind_port;}
+    public BasicTCP setClientBindPort(int c) {this.client_bind_port=c; return this;}
+
+    public boolean deferClientBindAddr() {return defer_client_bind_addr;}
+    public BasicTCP deferClientBindAddr(boolean d) {this.defer_client_bind_addr=d; return this;}
+
 
 
     public void init() throws Exception {

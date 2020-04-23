@@ -63,11 +63,11 @@ public class SYM_ENCRYPT extends Encrypt<KeyStore.SecretKeyEntry> {
     public SYM_ENCRYPT storePassword(String pwd)           {this.store_password=pwd; return this;}
 
     @Override
-    public void setKeyStoreEntry(KeyStore.SecretKeyEntry entry) {
-        this.setSecretKey(entry.getSecretKey());
+    public SYM_ENCRYPT setKeyStoreEntry(KeyStore.SecretKeyEntry entry) {
+        return setSecretKey(entry.getSecretKey());
     }
 
-    public void setSecretKey(SecretKey key) {
+    public SYM_ENCRYPT setSecretKey(SecretKey key) {
         String key_algorithm = key.getAlgorithm();
         if (sym_algorithm == null)
             sym_algorithm = key_algorithm;
@@ -79,6 +79,7 @@ public class SYM_ENCRYPT extends Encrypt<KeyStore.SecretKeyEntry> {
             this.sym_algorithm = key_algorithm;
         }
         this.secret_key = key;
+        return this;
     }
 
     @Override

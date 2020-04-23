@@ -185,8 +185,13 @@ public class MERGE3 extends Protocol {
         return this;
     }
 
-    public long    getCheckInterval()        {return check_interval;}
-    public MERGE3  setCheckInterval(long ci) {this.check_interval=ci; return this;}
+    public long    getCheckInterval()               {return check_interval;}
+    public MERGE3  setCheckInterval(long ci)        {this.check_interval=ci; return this;}
+    public int     getMaxParticipantsInMerge()      {return max_participants_in_merge;}
+    public MERGE3  setMaxParticipantsInMerge(int m) {this.max_participants_in_merge=m; return this;}
+
+    public boolean isCoord() {return is_coord;}
+
 
     protected long computeCheckInterval() {
         return (long)(max_interval * 1.6);

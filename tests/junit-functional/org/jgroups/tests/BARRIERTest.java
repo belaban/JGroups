@@ -84,7 +84,7 @@ public class BARRIERTest {
         final CyclicBarrier barrier=new CyclicBarrier(3);
         BlockingReceiver receiver=new BlockingReceiver(barrier);
         ch.setReceiver(receiver);
-        barrier_prot.setValue("flush_timeout", 2000);
+        barrier_prot.setFlushTimeout(2000);
 
         Thread[] threads=new Thread[2];
         for(int i=1; i <= threads.length; i++) {

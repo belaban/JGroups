@@ -92,7 +92,7 @@ public class ConcurrentStartupTest {
           new NAKACK2(),
           new UNICAST3(),
           new STABLE(),
-          new GMS().joinTimeout(1000).leaveTimeout(100)
+          new GMS().setJoinTimeout(1000).setLeaveTimeout(100)
         };
         return new JChannel(protocols).name(name);
     }

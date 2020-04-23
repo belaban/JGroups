@@ -106,8 +106,9 @@ public class COUNTER extends Protocol {
         return bypass_bundling;
     }
 
-    public void setBypassBundling(boolean bypass_bundling) {
+    public COUNTER setBypassBundling(boolean bypass_bundling) {
         this.bypass_bundling=bypass_bundling;
+        return this;
     }
 
 

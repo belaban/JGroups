@@ -38,10 +38,10 @@ public class INJECT_VIEWTest {
             if(prot instanceof GMS)
                 ((GMS)prot).setJoinTimeout(1000);
             if(prot instanceof STABLE)
-                prot.setValue("stability_delay", 200);
+                ((STABLE)prot).setStabilityDelay(200);
             if(prot instanceof NAKACK2) {
-                ((NAKACK2)prot).setLogDiscardMessages(false);
-                ((NAKACK2)prot).setLogNotFoundMessages(false);
+                ((NAKACK2)prot).logDiscardMessages(false);
+                ((NAKACK2)prot).logNotFoundMessages(false);
             }
         }
         return retval;

@@ -98,9 +98,10 @@ public class FD_HOST extends Protocol {
         suspect_history.clear();
     }
 
-    public void setCommand(String command) {
+    public FD_HOST setCommand(String command) {
         this.cmd=command;
         ping_command=this.cmd != null? new ExternalPingCommand(cmd) : new IsReachablePingCommand();
+        return this;
     }
 
     @ManagedOperation(description="Prints history of suspected hosts")

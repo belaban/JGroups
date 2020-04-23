@@ -92,14 +92,14 @@ public class FrozenCoordinatorTest {
 
 
     protected JChannel create(String name) throws Exception {
-        FILE_PING ping=new FILE_PING().setLocation(root_dir.toString()).setValue("remove_all_data_on_view_change", true);
+        FILE_PING ping=new FILE_PING().setLocation(root_dir.toString()).removeAllDataOnViewChange(true);
         Protocol[] protocols={
           new SHARED_LOOPBACK(),
           ping,
           new NAKACK2(),
           new UNICAST3(),
           new STABLE(),
-          new GMS().joinTimeout(1000).setMaxJoinAttempts(5),
+          new GMS().setJoinTimeout(1000).setMaxJoinAttempts(5),
         };
         return new JChannel(protocols).name(name);
     }

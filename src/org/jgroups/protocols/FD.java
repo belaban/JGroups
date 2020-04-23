@@ -113,10 +113,16 @@ public class FD extends Protocol {
     @ManagedAttribute(description="Number of suspect events received")
     public int getNumSuspectEventsGenerated() {return num_suspect_events;}
     public long getTimeout() {return timeout;}
-    public void setTimeout(long timeout) {this.timeout=timeout;}
+    public FD setTimeout(long timeout) {this.timeout=timeout; return this;}
     public int getMaxTries() {return max_tries;}
-    public void setMaxTries(int max_tries) {this.max_tries=max_tries;}
+    public FD  setMaxTries(int max_tries) {this.max_tries=max_tries; return this;}
     public int getCurrentNumTries() {return num_tries.get();}
+
+    public boolean msgCountsAsHeartbeat() {return msg_counts_as_heartbeat;}
+    public FD msgCountsAsHeartbeat(boolean m) {this.msg_counts_as_heartbeat=m; return this;}
+
+
+
 
     @ManagedOperation(description="Print suspect history")
     public String printSuspectHistory() {

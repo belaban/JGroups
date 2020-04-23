@@ -105,12 +105,12 @@ public class ConnectStressTest {
     protected static JChannel createChannel(String name) throws Exception {
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
-                            new MERGE3().setValue("min_interval", 2000).setValue("max_interval", 5000),
-                            new NAKACK2().setValue("log_discard_msgs", false),
+                            new MERGE3().setMinInterval(2000).setMaxInterval(5000),
+                            new NAKACK2().logDiscardMessages(false),
                             new UNICAST3(),
                             new STABLE(),
-                            new GMS().joinTimeout(1000).setValue("print_local_addr", false),
-                            new FRAG2().fragSize(8000));
+                            new GMS().setJoinTimeout(1000).printLocalAddress(false),
+                            new FRAG2().setFragSize(8000));
 
     }
 

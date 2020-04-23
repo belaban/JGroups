@@ -160,11 +160,52 @@ public class FD_SOCK extends Protocol implements Runnable {
     public boolean isLogSuspectedMessages() {
         return log_suspected_msgs;
     }
-    public void setLogSuspectedMessages(boolean log_suspected_msgs) {
-        this.log_suspected_msgs=log_suspected_msgs;
+    public FD_SOCK setLogSuspectedMessages(boolean log_suspected_msgs) {
+        this.log_suspected_msgs=log_suspected_msgs; return this;
     }
     @ManagedAttribute(description="The actual client_bind_port")
     public int  getClientBindPortActual() {return ping_sock != null? ping_sock.getLocalPort() : 0;}
+
+    public InetAddress getBindAddress() {return bind_addr;}
+    public FD_SOCK setBindAddress(InetAddress b) {this.bind_addr=b; return this;}
+
+    public InetAddress getExternalAddress() {return external_addr;}
+    public FD_SOCK setExternalAddress(InetAddress e) {this.external_addr=e; return this;}
+
+    public int getExternalPort() {return external_port;}
+    public FD_SOCK setExternalPort(int e) {this.external_port=e; return this;}
+
+    public long getGetCacheTimeout() {return get_cache_timeout;}
+    public FD_SOCK setGetCacheTimeout(long g) {this.get_cache_timeout=g; return this;}
+
+    public int getCacheMaxElements() {return cache_max_elements;}
+    public FD_SOCK setCacheMaxElements(int c) {this.cache_max_elements=c; return this;}
+
+    public long getCacheMaxAge() {return cache_max_age;}
+    public FD_SOCK setCacheMaxAge(long c) {this.cache_max_age=c; return this;}
+
+    public long getSuspectMsgInterval() {return suspect_msg_interval;}
+    public FD_SOCK setSuspectMsgInterval(long s) {this.suspect_msg_interval=s; return this;}
+
+    public int getNumTries() {return num_tries;}
+    public FD_SOCK setNumTries(int n) {this.num_tries=n; return this;}
+
+    public int getStartPort() {return start_port;}
+    public FD_SOCK setStartPort(int s) {this.start_port=s; return this;}
+
+    public int getClientBindPort() {return client_bind_port;}
+    public FD_SOCK setClientBindPort(int c) {this.client_bind_port=c; return this;}
+
+    public int getPortRange() {return port_range;}
+    public FD_SOCK setPortRange(int p) {this.port_range=p; return this;}
+
+    public boolean keepAlive() {return keep_alive;}
+    public FD_SOCK keepAlive(boolean k) {this.keep_alive=k; return this;}
+
+    public int getSockConnTimeout() {return sock_conn_timeout;}
+    public FD_SOCK setSockConnTimeout(int s) {this.sock_conn_timeout=s; return this;}
+
+
 
     @ManagedOperation(description="Print suspect history")
     public String printSuspectHistory() {
@@ -179,10 +220,6 @@ public class FD_SOCK extends Protocol implements Runnable {
         return cache.printCache();
     }
 
-    /*@ManagedOperation
-    public void clearCache() {
-        cache.clear(false);
-    }*/
 
     @ManagedOperation(description="Starts node crash monitor if member count > 1 and monitor is not running")
     public boolean startNodeCrashMonitor() {

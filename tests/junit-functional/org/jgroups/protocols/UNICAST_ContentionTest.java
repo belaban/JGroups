@@ -37,7 +37,7 @@ public class UNICAST_ContentionTest {
 
 
     @Test(dataProvider="provider")
-    public void testSimpleMessageReception(Class<? extends Protocol> unicast_class) throws Exception {
+    public void testSimpleMessageReception(Class<? extends UNICAST3> unicast_class) throws Exception {
         a=create(unicast_class, "A");
         b=create(unicast_class, "B");
         MyReceiver r1=new MyReceiver("A"), r2=new MyReceiver("B");
@@ -74,7 +74,7 @@ public class UNICAST_ContentionTest {
      * @throws Exception
      */
     @Test(dataProvider="provider")
-    public void testMessageReceptionUnderHighLoad(Class<? extends Protocol> unicast_class) throws Exception {
+    public void testMessageReceptionUnderHighLoad(Class<? extends UNICAST3> unicast_class) throws Exception {
         CountDownLatch latch=new CountDownLatch(1);
         a=create(unicast_class, "A");
         b=create(unicast_class, "B");
@@ -119,8 +119,9 @@ public class UNICAST_ContentionTest {
         assert r2.getNum() == NUM_EXPECTED_MSGS : "expected " + NUM_EXPECTED_MSGS + ", but got " + r2.getNum();
     }
 
-    protected static JChannel create(Class<? extends Protocol> unicast_class, String name) throws Exception {
-        return new JChannel(new SHARED_LOOPBACK(), unicast_class.getDeclaredConstructor().newInstance().setValue("xmit_interval", 500)).name(name);
+    protected static JChannel create(Class<? extends UNICAST3> unicast_class, String name) throws Exception {
+        return new JChannel(new SHARED_LOOPBACK(),
+                            unicast_class.getDeclaredConstructor().newInstance().setXmitInterval(500)).name(name);
     }
 
     private static long getNumberOfRetransmissions(JChannel ch) {

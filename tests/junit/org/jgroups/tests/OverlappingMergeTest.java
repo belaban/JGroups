@@ -356,7 +356,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
             MERGE3 merge_prot=ch.getProtocolStack().findProtocol(MERGE3.class);
             if(merge_prot == null) {
                 merge_prot=new MERGE3();
-                merge_prot.setMinInterval(500).setMaxInterval(1000).setValue("check_interval", 3000);
+                merge_prot.setMinInterval(500).setMaxInterval(1000).setCheckInterval(3000);
                 ch.getProtocolStack().insertProtocol(merge_prot, ProtocolStack.Position.ABOVE, Discovery.class);
                 merge_prot.init();
                 merge_prot.start();
@@ -537,7 +537,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
             stack.removeProtocols("MERGE3","FD_SOCK","FD","FD_ALL","FC","MFC","UFC","VERIFY_SUSPECT", "STATE_TRANSFER");
             NAKACK2 nak=stack.findProtocol(NAKACK2.class);
             if(nak != null)
-                nak.setLogDiscardMessages(false);
+                nak.logDiscardMessages(false);
         }
     }
 

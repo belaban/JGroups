@@ -33,9 +33,6 @@ import java.util.stream.Stream;
  * @see CENTRAL_LOCK
  */
 public class CENTRAL_LOCK2 extends Locking {
-    @Property(description="By default, a lock owner is address:thread-id. If false, we only use the node's address. " +
-      "See https://issues.jboss.org/browse/JGRP-1886 for details")
-    protected boolean                                   use_thread_id_for_lock_owner=true;
     @Property(description="Max time (im ms) to wait for lock info responses from members in a lock reconciliation phase")
     protected long                                      lock_reconciliation_timeout=10_000;
 

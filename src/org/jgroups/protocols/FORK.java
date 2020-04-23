@@ -66,7 +66,7 @@ public class FORK extends Protocol {
 
     protected Address local_addr;
 
-    public void setUnknownForkHandler(UnknownForkHandler unknownForkHandler) {
+    public FORK setUnknownForkHandler(UnknownForkHandler unknownForkHandler) {
         this.unknownForkHandler = unknownForkHandler;
         fork_stacks.values().forEach(p -> {
             if(p instanceof ForkProtocol) {
@@ -75,15 +75,19 @@ public class FORK extends Protocol {
                     st.setUnknownForkHandler(unknownForkHandler);
             }
         });
+        return this;
     }
 
     public UnknownForkHandler getUnknownForkHandler() {
         return this.unknownForkHandler;
     }
-
-    public Protocol get(String fork_stack_id)                        {return fork_stacks.get(fork_stack_id);}
-    public Protocol putIfAbsent(String fork_stack_id, Protocol prot) {return fork_stacks.put(fork_stack_id, prot);}
-    public void     remove(String fork_stack_id)                     {fork_stacks.remove(fork_stack_id);}
+    public String   getConfig()                                   {return config;}
+    public FORK     setConfig(String c)                           {this.config=c; return this;}
+    public boolean  processStateEvents()                          {return process_state_events;}
+    public FORK     processStateEvents(boolean p)                 {this.process_state_events=p; return this;}
+    public Protocol get(String fork_stack_id)                     {return fork_stacks.get(fork_stack_id);}
+    public Protocol putIfAbsent(String fork_stack_id, Protocol p) {return fork_stacks.put(fork_stack_id, p);}
+    public void     remove(String fork_stack_id)                  {fork_stacks.remove(fork_stack_id);}
 
     @ManagedAttribute(description="Number of fork-stacks")
     public int getForkStacks() {return fork_stacks.size();}

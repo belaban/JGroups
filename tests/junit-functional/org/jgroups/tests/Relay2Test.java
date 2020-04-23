@@ -326,13 +326,12 @@ public class Relay2Test {
                                   String sm_picker, Receiver receiver) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
                                  new SHARED_LOOPBACK_PING(),
-                                 new MERGE3().setValue("max_interval", 3000).setValue("min_interval", 1000),
+                                 new MERGE3().setMaxInterval(3000).setMinInterval(1000),
                                  new NAKACK2(),
                                  new UNICAST3(),
-                                 new GMS().setValue("print_local_addr", false),
-                                 createRELAY2(site_name)
-                                   .setValue("max_site_masters", num_site_masters)
-                                   .setValue("site_master_picker_impl", sm_picker)).name(node_name);
+                                 new GMS().printLocalAddress(false),
+                                 createRELAY2(site_name).setMaxSiteMasters(num_site_masters)
+                                   .setSiteMasterPickerImpl(sm_picker)).name(node_name);
         if(receiver != null)
             ch.setReceiver(receiver);
         if(cluster_name != null)
@@ -358,10 +357,10 @@ public class Relay2Test {
         return new Protocol[] {
           new TCP().setBindAddress(LOOPBACK),
           new MPING(),
-          new MERGE3().setValue("max_interval", 3000).setValue("min_interval", 1000),
-          new NAKACK2().setUseMcastXmit(false),
+          new MERGE3().setMaxInterval(3000).setMinInterval(1000),
+          new NAKACK2().useMcastXmit(false),
           new UNICAST3(),
-          new GMS().setValue("print_local_addr", false)
+          new GMS().printLocalAddress(false)
         };
     }
 

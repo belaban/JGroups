@@ -70,6 +70,14 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     public TUNNEL() {
     }
 
+
+    public long    getReconnectInterval()       {return reconnect_interval;}
+    public TUNNEL  setReconnectInterval(long r) {this.reconnect_interval=r; return this;}
+    public boolean isTcpNodelay()               {return tcp_nodelay;}
+    public TUNNEL  setTcpNodelay(boolean nd)    {this.tcp_nodelay=nd;return this;}
+    public boolean useNio()                     {return use_nio;}
+    public TUNNEL  useNio(boolean use_nio)      {this.use_nio=use_nio; return this;}
+
     /** We can simply send a message with dest == null and the GossipRouter will take care of routing it to all
      * members in the cluster */
     public boolean supportsMulticasting() {
@@ -77,12 +85,13 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     }
 
 
-    public void setGossipRouterHosts(String hosts) throws UnknownHostException {
+    public TUNNEL setGossipRouterHosts(String hosts) throws UnknownHostException {
         gossip_routers.clear();
         // if we get passed value of List<SocketAddress>#toString() we have to strip []
         if(hosts.startsWith("[") && hosts.endsWith("]"))
             hosts=hosts.substring(1, hosts.length() - 1);
         gossip_router_hosts=hosts; //.addAll(Util.parseCommaDelimitedHosts2(hosts, port_range));
+        return this;
     }
 
     @ManagedOperation(description="Prints all stubs and the reconnect list")
@@ -109,20 +118,15 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         return "TUNNEL";
     }
 
-    public long getReconnectInterval() {
-        return reconnect_interval;
-    }
 
-    public void setReconnectInterval(long reconnect_interval) {
-        this.reconnect_interval = reconnect_interval;
-    }
 
     /*------------------------------ Protocol interface ------------------------------ */
 
-    public synchronized void setTUNNELPolicy(TUNNELPolicy policy) {
+    public synchronized TUNNEL setTUNNELPolicy(TUNNELPolicy policy) {
         if (policy == null)
             throw new IllegalArgumentException("Tunnel policy has to be non null");
         tunnel_policy = policy;
+        return this;
     }
 
     public void init() throws Exception {

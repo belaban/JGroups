@@ -143,16 +143,18 @@ public class FLUSH extends Protocol {
         return start_flush_timeout;
     }
 
-    public void setStartFlushTimeout(long start_flush_timeout) {
+    public FLUSH setStartFlushTimeout(long start_flush_timeout) {
         this.start_flush_timeout = start_flush_timeout;
+        return this;
     }
 
     public long getRetryTimeout() {
         return retry_timeout;
     }
 
-    public void setRetryTimeout(long retry_timeout) {
+    public FLUSH setRetryTimeout(long retry_timeout) {
         this.retry_timeout = retry_timeout;
+        return this;
     }
 
     public void start() throws Exception {

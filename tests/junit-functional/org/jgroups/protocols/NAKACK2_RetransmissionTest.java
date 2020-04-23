@@ -32,7 +32,7 @@ public class NAKACK2_RetransmissionTest {
     @BeforeMethod
     protected void setup() throws Exception {
         receiver=new MockProtocol();
-        nak=new NAKACK2().setValue("use_mcast_xmit", false);
+        nak=new NAKACK2().useMcastXmit(false);
         transport=new MockTransport();
         ProtocolStack stack=new ProtocolStack();
         stack.addProtocols(transport, nak, receiver);

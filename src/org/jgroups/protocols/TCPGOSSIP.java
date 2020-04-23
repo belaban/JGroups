@@ -43,16 +43,18 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
     
     @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership", 
               converter=PropertyConverters.InitialHosts2.class)
-    public void setInitialHosts(List<InetSocketAddress> hosts) {
+    public TCPGOSSIP setInitialHosts(List<InetSocketAddress> hosts) {
         if(hosts == null || hosts.isEmpty())
             throw new IllegalArgumentException("initial_hosts must contain the address of at least one GossipRouter");
-        initial_hosts.addAll(hosts) ;
+        initial_hosts.addAll(hosts);
+        return this;
     }
 
-    public void setInitialHosts(Collection<InetSocketAddress> hosts) {
+    public TCPGOSSIP setInitialHosts(Collection<InetSocketAddress> hosts) {
         if(hosts == null || hosts.isEmpty())
             throw new IllegalArgumentException("initial_hosts must contain the address of at least one GossipRouter");
         initial_hosts.addAll(hosts) ;
+        return this;
     }
 
     public List<InetSocketAddress> getInitialHosts() {

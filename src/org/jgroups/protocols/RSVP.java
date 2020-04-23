@@ -63,7 +63,16 @@ public class RSVP extends Protocol {
 
 
     @ManagedAttribute(description="Number of pending RSVP requests")
-    public int getPendingRsvpRequests() {return ids.size();}
+    public int     getPendingRsvpRequests()           {return ids.size();}
+    public long    getTimeout()                       {return timeout;}
+    public RSVP    setTimeout(long t)                 {this.timeout=t; return this;}
+    public boolean throwExceptionOnTimeout()          {return throw_exception_on_timeout;}
+    public RSVP    throwExceptionOnTimeout(boolean b) {throw_exception_on_timeout=b; return this;}
+    public boolean ackOnDelivery()                    {return ack_on_delivery;}
+    public RSVP    ackOnDelivery(boolean b)           {ack_on_delivery=b; return this;}
+    public long    getResendInterval()                {return resend_interval;}
+    public RSVP    setResendInterval(long i)          {resend_interval=i; return this;}
+
 
 
     public void init() throws Exception {

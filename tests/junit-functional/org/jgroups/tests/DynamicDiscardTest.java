@@ -36,13 +36,12 @@ public class DynamicDiscardTest {
             channels[i]= new JChannel(new SHARED_LOOPBACK(),
                                       new SHARED_LOOPBACK_PING(),
                                       new MERGE3(),
-                                      new FD().setValue("timeout", 1000).setValue("max_tries", 1),
+                                      new FD().setTimeout(1000).setMaxTries(1),
                                       new NAKACK2(),
                                       new UNICAST3(),
                                       new STABLE(),
                                       new GMS(),
-                                      new RSVP().setValue("ack_on_delivery", false)
-                                        .setValue("throw_exception_on_timeout", false));
+                                      new RSVP().ackOnDelivery(false).throwExceptionOnTimeout(false));
             channels[i].setName(Character.toString((char) ('A' + i)));
             channels[i].setDiscardOwnMessages(true);
             dispatchers[i]=new MessageDispatcher(channels[i], new MyRequestHandler());
@@ -53,7 +52,7 @@ public class DynamicDiscardTest {
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, channels);
 
         // discard all messages (except those to self)
-        DISCARD discard = new DISCARD().setDiscardAll(true);
+        DISCARD discard = new DISCARD().discardAll(true);
         channels[0].getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
 
         // send a RSVP message

@@ -105,21 +105,19 @@ public class GossipRouterTest {
     }
 
     protected JChannel createTunnelChannel(String name, boolean include_failure_detection) throws Exception {
-        TUNNEL tunnel=new TUNNEL().setBindAddress(bind_addr).setValue("reconnect_interval", 1000);
+        TUNNEL tunnel=new TUNNEL().setReconnectInterval(1000).setBindAddress(bind_addr);
         tunnel.setGossipRouterHosts(gossip_router_hosts);
-        List<Protocol> protocols=new ArrayList<>(Arrays.asList(tunnel,
-                                                               new PING(),
-                                                               new MERGE3().setValue("min_interval", 1000)
-                                                                 .setValue("max_interval", 3000)));
+        List<Protocol> prots=new ArrayList<>(Arrays.asList(tunnel, new PING(),
+                                                           new MERGE3().setMinInterval(1000).setMaxInterval(3000)));
         if(include_failure_detection) {
             List<Protocol> tmp=new ArrayList<>(2);
-            tmp.add(new FD().setValue("timeout", 2000).setValue("max_tries", 2));
+            tmp.add(new FD().setTimeout(2000).setMaxTries(2));
             tmp.add(new VERIFY_SUSPECT());
-            protocols.addAll(tmp);
+            prots.addAll(tmp);
         }
-        protocols.addAll(Arrays.asList(new NAKACK2().setValue("use_mcast_xmit", false), new UNICAST3(), new STABLE(),
-                                       new GMS().joinTimeout(1000)));
-        JChannel ch=new JChannel(protocols);
+        prots.addAll(Arrays.asList(new NAKACK2().useMcastXmit(false), new UNICAST3(), new STABLE(),
+                                   new GMS().setJoinTimeout(1000)));
+        JChannel ch=new JChannel(prots);
         if(name != null)
             ch.setName(name);
         return ch;

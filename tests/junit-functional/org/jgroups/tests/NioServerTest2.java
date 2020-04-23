@@ -78,14 +78,12 @@ public class NioServerTest2 {
 
     protected static JChannel create(String name) throws Exception {
         return new JChannel(
-          new TCP_NIO2()
-            .setValue("bind_addr", Util.getLoopback())
-            .setValue("recv_buf_size", recv_buf_size).setValue("send_buf_size", send_buf_size),
+          new TCP_NIO2().setRecvBufSize(recv_buf_size).setSendBufSize(send_buf_size).setBindAddress(Util.getLoopback()),
           new MPING(),
-          new NAKACK2().setValue("use_mcast_xmit", false),
+          new NAKACK2().useMcastXmit(false),
           new UNICAST3(),
           new STABLE(),
-          new GMS().joinTimeout(1000),
+          new GMS().setJoinTimeout(1000),
           new FRAG2()).name(name);
     }
 

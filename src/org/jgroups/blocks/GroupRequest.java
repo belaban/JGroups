@@ -81,7 +81,6 @@ public class GroupRequest<T> extends Request<RspList<T>> {
      * <b>Callback</b> (called by RequestCorrelator or Transport).
      * Adds a response to the response table. When all responses have been received, {@code execute()} returns.
      */
-    @SuppressWarnings("unchecked")
     public void receiveResponse(Object response_value, Address sender, boolean is_exception) {
         Rsp<T> rsp;
         if(isDone() || (rsp=rsps.get(sender)) == null)

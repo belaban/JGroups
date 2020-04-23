@@ -67,8 +67,9 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
 
 
     @Override
-    public void setKeyStoreEntry(KeyStore.PrivateKeyEntry entry) {
+    public ASYM_ENCRYPT setKeyStoreEntry(KeyStore.PrivateKeyEntry entry) {
         this.key_pair = new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey());
+        return this;
     }
 
     public boolean       getChangeKeyOnLeave()                {return change_key_on_leave;}

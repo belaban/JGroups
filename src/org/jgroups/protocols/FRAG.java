@@ -2,10 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
 import org.jgroups.util.ByteArray;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.MessageIterator;
@@ -38,17 +35,7 @@ import java.util.function.Predicate;
  * @author Bela Ban
  * @author Filip Hanik
  */
-@MBean(description="Fragments messages larger than fragmentation size into smaller packets")
-public class FRAG extends Protocol {
-    
-    /* -----------------------------------------    Properties     -------------------------------------------------- */
-
-    @Property(description="The max number of bytes in a message. Larger messages will be fragmented. Default is 8192 bytes")
-    private int frag_size=8192; // conservative value
-
-
-    /* --------------------------------------------- Fields ------------------------------------------------------ */
-
+public class FRAG extends Fragmentation {
     
     /** Contains a frag table per sender, this way it becomes easier to clean up if a sender leaves or crashes */
     protected final FragmentationList  fragment_list=new FragmentationList();
@@ -59,17 +46,15 @@ public class FRAG extends Protocol {
  
 
     @ManagedAttribute(description="Number of sent messages")
-    long num_sent_msgs=0;
+    long num_sent_msgs;
     @ManagedAttribute(description="Number of sent fragments")
-    long num_sent_frags=0;
+    long num_sent_frags;
     @ManagedAttribute(description="Number of received messages")
-    long num_received_msgs=0;
+    long num_received_msgs;
     @ManagedAttribute(description="Number of received fragments")
-    long num_received_frags=0;
+    long num_received_frags;
 
 
-    public int getFragSize() {return frag_size;}
-    public void setFragSize(int s) {frag_size=s;}
     public long getNumberOfSentMessages() {return num_sent_msgs;}
     public long getNumberOfSentFragments() {return num_sent_frags;}
     public long getNumberOfReceivedMessages() {return num_received_msgs;}

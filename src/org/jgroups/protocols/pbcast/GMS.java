@@ -159,8 +159,30 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public GMS() {
     }
 
-    public ViewId getViewId() {return view != null? view.getViewId() : null;}
-    public View   view()      {return view;}
+    public long    getJoinTimeout()                    {return join_timeout;}
+    public GMS     setJoinTimeout(long t)              {join_timeout=t; return this;}
+    public long    getLeaveTimeout()                   {return leave_timeout;}
+    public GMS     setLeaveTimeout(long t)             {leave_timeout=t; return this;}
+    public long    getMergeTimeout()                   {return merge_timeout;}
+    public GMS     setMergeTimeout(long t)             {merge_timeout=t; return this;}
+    public int     getMaxJoinAttempts()                {return max_join_attempts;}
+    public GMS     setMaxJoinAttempts(int t)           {max_join_attempts=t; return this;}
+    public int     getMaxLeaveAttempts()               {return max_leave_attempts;}
+    public GMS     setMaxLeaveAttempts(int t)          {max_leave_attempts=t; return this;}
+    public boolean printLocalAddress()                 {return print_local_addr;}
+    public GMS     printLocalAddress(boolean p)        {print_local_addr=p; return this;}
+    public boolean printPhysicalAddress()              {return print_physical_addrs;}
+    public GMS     printPhysicalAddress(boolean p)     {print_physical_addrs=p; return this;}
+    public boolean useDeltaViews()                     {return use_delta_views;}
+    public GMS     useDeltaViews(boolean b)            {use_delta_views=b; return this;}
+    public long    getViewAckCollectionTimeout()       {return view_ack_collection_timeout;}
+    public GMS     setViewAckCollectionTimeout(long v) {this.view_ack_collection_timeout=v; return this;}
+    public boolean logCollectMessages()                {return log_collect_msgs;}
+    public GMS     logCollectMessages(boolean b)           {log_collect_msgs=b; return this;}
+    public boolean logViewWarnings()                   {return log_view_warnings;}
+    public GMS     logViewWarnings(boolean b)          {log_view_warnings=b; return this;}
+    public ViewId  getViewId()                         {return view != null? view.getViewId() : null;}
+    public View    view()                              {return view;}
 
     /** Returns the current view and digest. Try to find a matching digest twice (if not found on the first try) */
     public Tuple<View,Digest> getViewAndDigest() {
@@ -177,18 +199,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @ManagedAttribute
     public String getMembers()               {return members.toString();}
     @ManagedAttribute
-    public int getNumMembers()               {return members.size();}
-    public long getJoinTimeout()             {return join_timeout;}
-    public GMS setJoinTimeout(long t)        {join_timeout=t; return this;}
-    public GMS joinTimeout(long timeout)     {this.join_timeout=timeout; return this;}
-    public GMS leaveTimeout(long timeout)    {this.leave_timeout=timeout; return this;}
-    public GMS setLeaveTimeout(long t)       {return leaveTimeout(t);}
-    public long getMergeTimeout()            {return merge_timeout;}
-    public GMS setMergeTimeout(long timeout) {merge_timeout=timeout; return this;}
-    public int getMaxJoinAttempts()          {return max_join_attempts;}
-    public GMS setMaxJoinAttempts(int t)     {max_join_attempts=t; return this;}
-    public int getMaxLeaveAttempts()         {return max_leave_attempts;}
-    public GMS setMaxLeaveAttempts(int t)    {max_leave_attempts=t; return this;}
+    public int  getNumMembers()              {return members.size();}
+
 
     @ManagedAttribute(description="impl")
     public String getImplementation() {
@@ -241,26 +253,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         return prev_members == null? "" : prev_members.stream().map(Object::toString).collect(Collectors.joining(", "));
     }
 
-    public GMS setPrintLocalAddress(boolean flag) {print_local_addr=flag; return this;}
-    public GMS setPrintLocalAddr(boolean flag) {setPrintLocalAddress(flag); return this;}
-    public GMS printLocalAddress(boolean flag) {print_local_addr=flag; return this;}
 
-    public long getViewAckCollectionTimeout() {
-        return view_ack_collection_timeout;
-    }
-
-    public GMS setViewAckCollectionTimeout(long view_ack_collection_timeout) {
-        if(view_ack_collection_timeout <= 0)
-            throw new IllegalArgumentException("view_ack_collection_timeout has to be greater than 0");
-        this.view_ack_collection_timeout=view_ack_collection_timeout;
-        return this;
-    }
-    public GMS viewAckCollectionTimeout(long view_ack_collection_timeout) {
-        if(view_ack_collection_timeout <= 0)
-            throw new IllegalArgumentException("view_ack_collection_timeout has to be greater than 0");
-        this.view_ack_collection_timeout=view_ack_collection_timeout;
-        return this;
-    }
 
     @ManagedAttribute
     public int getViewHandlerSize() {return view_handler.size();}
@@ -1398,7 +1391,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         public GmsHeader mergeRejected(boolean flag)              {this.merge_rejected=flag; return this;}
         public Address   getMember()                              {return mbr;}
         public MergeId   getMergeId()                             {return merge_id;}
-        public void      setMergeId(MergeId merge_id)             {this.merge_id=merge_id;}
+        public GmsHeader setMergeId(MergeId merge_id)             {this.merge_id=merge_id; return this;}
         public boolean   isMergeRejected()                        {return merge_rejected;}
         public GmsHeader setMergeRejected(boolean merge_rejected) {this.merge_rejected=merge_rejected; return this;}
 

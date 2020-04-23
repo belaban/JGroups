@@ -118,7 +118,7 @@ public class NAKACK_RetransmitTest {
             NAKACK2 nak=ch.getProtocolStack().findProtocol(NAKACK2.class);
             if(nak == null)
                 throw new IllegalStateException("NAKACK2 not present in the stack");
-            nak.setValue("max_xmit_req_size", 5000);
+            nak.setMaxXmitReqSize(5000);
         }
     }
 

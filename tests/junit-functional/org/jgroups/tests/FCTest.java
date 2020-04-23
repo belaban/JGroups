@@ -6,7 +6,6 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
@@ -32,18 +31,18 @@ public class FCTest {
         };
     }
 
-    protected void setUp(Class<? extends Protocol> flow_control_class) throws Exception {
-        Protocol flow_control_prot=flow_control_class.getDeclaredConstructor().newInstance();
-        flow_control_prot.setValue("min_credits", 1000).setValue("max_credits", 10000).setValue("max_block_time", 1000);
+    protected void setUp(Class<? extends FlowControl> flow_control_class) throws Exception {
+        FlowControl f=flow_control_class.getDeclaredConstructor().newInstance();
+        f.setMinCredits(1000).setMaxCredits(10000).setMaxBlockTime(1000);
 
         ch=new JChannel(new SHARED_LOOPBACK(),
                         new SHARED_LOOPBACK_PING(),
-                        new NAKACK2().setValue("use_mcast_xmit", false),
+                        new NAKACK2().useMcastXmit(false),
                         new UNICAST3(),
-                        new STABLE().setValue("max_bytes", 50000),
-                        new GMS().setValue("print_local_addr", false),
-                        flow_control_prot,
-                        new FRAG2().fragSize(800));
+                        new STABLE().setMaxBytes(50000),
+                        new GMS().printLocalAddress(false),
+                        f,
+                        new FRAG2().setFragSize(800));
         ch.connect("FCTest");
     }
 
@@ -51,7 +50,7 @@ public class FCTest {
 
 
     @Test(dataProvider="configProvider")
-    public void testReceptionOfAllMessages(Class<? extends Protocol> flow_control_class) throws Exception {
+    public void testReceptionOfAllMessages(Class<? extends FlowControl> flow_control_class) throws Exception {
         int num_received=0;
         MyReceiver r=new MyReceiver();
         setUp(flow_control_class);

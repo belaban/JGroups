@@ -101,7 +101,7 @@ public class DeltaViewTest {
         ch.getProtocolStack().removeProtocol(STABLE.class, FRAG2.class, FRAG3.class);
         GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
         gms.setViewAckCollectionTimeout(1000);
-        gms.setValue("join_timeout", 1500);
+        gms.setJoinTimeout(1500);
           //.setValue("install_view_locally_first", false); // setting this to true should fix the issue!
         return ch;
     }

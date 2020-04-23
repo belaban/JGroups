@@ -24,7 +24,7 @@ public class UNICAST_DropFirstAndLastTest {
     protected MyReceiver<Integer> rb;
     protected DISCARD             discard; // on A
 
-    protected void setup(Class<? extends Protocol> unicast_class) throws Exception {
+    protected void setup(Class<? extends UNICAST3> unicast_class) throws Exception {
         a=createChannel(unicast_class, "A");
         discard=a.getProtocolStack().findProtocol(DISCARD.class);
         assert discard != null;
@@ -51,14 +51,14 @@ public class UNICAST_DropFirstAndLastTest {
      * within a short time period, and we don't have to rely on the stable task to kick in.
      */
     @Test(dataProvider="configProvider")
-    public void testLastMessageDropped(Class<? extends Protocol> unicast_class) throws Exception {
+    public void testLastMessageDropped(Class<? extends UNICAST3> unicast_class) throws Exception {
         setup(unicast_class);
         setLevel("trace", a, b);
         Address dest=b.getAddress();
         for(int i=1; i <= 5; i++) {
             Message msg=new BytesMessage(dest, i);
             if(i == 5)
-                discard.setDropDownUnicasts(1); // drops the next unicast
+                discard.dropDownUnicasts(1); // drops the next unicast
             a.send(msg);
         }
 
@@ -73,7 +73,7 @@ public class UNICAST_DropFirstAndLastTest {
      * within a short time period, and we don't have to rely on the stable task to kick in.
      */
     @Test(dataProvider="configProvider")
-    public void testFirstMessageDropped(Class<? extends Protocol> unicast_class) throws Exception {
+    public void testFirstMessageDropped(Class<? extends UNICAST3> unicast_class) throws Exception {
         setup(unicast_class);
 
         System.out.println("**** closing all connections ****");
@@ -86,7 +86,7 @@ public class UNICAST_DropFirstAndLastTest {
         setLevel("trace", a, b);
 
         System.out.println("--> A sending first message to B (dropped before it reaches B)");
-        discard.setDropDownUnicasts(1); // drops the next unicast
+        discard.dropDownUnicasts(1); // drops the next unicast
         a.send(new BytesMessage(b.getAddress(), 1));
 
         List<Integer> msgs=rb.list();
@@ -104,14 +104,14 @@ public class UNICAST_DropFirstAndLastTest {
     }
 
 
-    protected static JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
-        Protocol unicast=unicast_class.getDeclaredConstructor().newInstance();
+    protected static JChannel createChannel(Class<? extends UNICAST3> unicast_class, String name) throws Exception {
+        UNICAST3 unicast=unicast_class.getDeclaredConstructor().newInstance();
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
-                            new NAKACK2().setValue("use_mcast_xmit", false),
+                            new NAKACK2().useMcastXmit(false),
                             new DISCARD(),
-                            unicast.setValue("xmit_interval", 500),
-                            new GMS().setValue("print_local_addr", false))
+                            unicast.setXmitInterval(500),
+                            new GMS().printLocalAddress(false))
           .name(name);
     }
 

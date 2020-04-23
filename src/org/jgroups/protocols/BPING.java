@@ -49,8 +49,8 @@ public class BPING extends PING implements Runnable {
         return bind_port;
     }
 
-    public void setBindPort(int bind_port) {
-        this.bind_port=bind_port;
+    public BPING setBindPort(int bind_port) {
+        this.bind_port=bind_port; return this;
     }
 
 

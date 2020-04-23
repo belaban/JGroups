@@ -196,16 +196,16 @@ public class SequencerMergeTest {
 
     protected static JChannel create(String name, boolean insert_discard) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
-                                 new DISCARD().setValue("discard_all", insert_discard),
+                                 new DISCARD().discardAll(insert_discard),
                                  new PING(),
-                                 new NAKACK2().setValue("use_mcast_xmit",false)
-                                   .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
+                                 new NAKACK2().useMcastXmit(false)
+                                   .logDiscardMessages(false).logNotFoundMessages(false),
                                  new UNICAST3(),
-                                 new STABLE().setValue("max_bytes",50000),
+                                 new STABLE().setMaxBytes(50000),
                                  new SEQUENCER(), // below GMS, to establish total order between views and messages
-                                 new GMS().setValue("print_local_addr",false).setValue("join_timeout", 100).setValue("leave_timeout",100)
-                                   .setValue("log_view_warnings",false).setValue("view_ack_collection_timeout",50)
-                                   .setValue("log_collect_msgs",false));
+                                 new GMS().printLocalAddress(false).setJoinTimeout(100).setLeaveTimeout(100)
+                                   .logViewWarnings(false).setViewAckCollectionTimeout(50)
+                                   .logCollectMessages(false));
         ch.setName(name);
         return ch;
     }

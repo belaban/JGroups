@@ -286,8 +286,8 @@ public class Util {
           new NAKACK2(),
           new UNICAST3(),
           new STABLE(),
-          new GMS().joinTimeout(1000),
-          new FRAG2().fragSize(8000)
+          new GMS().setJoinTimeout(1000),
+          new FRAG2().setFragSize(8000)
         };
 
         if(additional_protocols == null)
@@ -532,7 +532,7 @@ public class Util {
     public static void shutdown(JChannel ch) throws Exception {
         DISCARD discard=new DISCARD();
         discard.setLocalAddress(ch.getAddress());
-        discard.setDiscardAll(true);
+        discard.discardAll(true);
         ProtocolStack stack=ch.getProtocolStack();
         TP transport=stack.getTransport();
         stack.insertProtocol(discard,ProtocolStack.Position.ABOVE,transport.getClass());

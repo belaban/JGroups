@@ -31,10 +31,10 @@ public class UnicastTestSharedLoopback {
 
     protected static Protocol[] props() {
         return new Protocol[]{
-          new SHARED_LOOPBACK().setValue("bundler_type", "sender-sends").setValue("ignore_dont_bundle", false),
+          new SHARED_LOOPBACK().setBundlerType("sender-sends"),
           new SHARED_LOOPBACK_PING(),
           new NAKACK2(),
-          new UNICAST3().setValue("conn_expiry_timeout", 0).setValue("conn_close_timeout", 0),
+          new UNICAST3().setConnExpiryTimeout(0).setConnCloseTimeout(0),
           new STABLE(),
           new GMS()};
     }

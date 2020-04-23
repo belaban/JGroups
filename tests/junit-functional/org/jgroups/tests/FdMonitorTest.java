@@ -63,10 +63,10 @@ public class FdMonitorTest {
     protected static JChannel createChannel(String name) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
                                  new SHARED_LOOPBACK_PING(),
-                                 new FD().setValue("timeout", 1000).setValue("max_tries", 3),
+                                 new FD().setTimeout(1000).setMaxTries(3),
                                  new NAKACK2(),
                                  new UNICAST3(),
-                                 new GMS().setValue("print_local_addr",false)).name(name);
+                                 new GMS().printLocalAddress(false)).name(name);
         ch.setName(name);
         return ch;
     }

@@ -157,7 +157,7 @@ public class NioMessage extends BaseMessage {
      * @return Message with specified data
      */
     public NioMessage copy(boolean copy_payload, boolean copy_headers) {
-        NioMessage retval=super.copy(copy_payload, copy_headers);
+        NioMessage retval=(NioMessage)super.copy(copy_payload, copy_headers);
         retval.useDirectMemory(use_direct_memory_for_allocations);
         return retval;
     }
@@ -173,7 +173,7 @@ public class NioMessage extends BaseMessage {
         return String.format("%s %s", super.toString(), use_direct_memory_for_allocations? "(direct)" : "");
     }
 
-    @Override protected <T extends Message> T copyPayload(T copy) {
+    @Override protected Message copyPayload(Message copy) {
         if(buf != null)
             ((NioMessage)copy).buf=buf.duplicate();
         return copy;

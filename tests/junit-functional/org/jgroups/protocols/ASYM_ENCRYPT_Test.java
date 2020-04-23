@@ -61,11 +61,11 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         ProtocolStack stack=rogue.getProtocolStack();
         GMS gms=stack.findProtocol(GMS.class);
         gms.setMaxJoinAttempts(1);
-        DISCARD discard=new DISCARD().setDiscardAll(true);
+        DISCARD discard=new DISCARD().discardAll(true);
         stack.insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
         rogue.connect(cluster_name);
         assert rogue.getView().size() == 1;
-        discard.setDiscardAll(false);
+        discard.discardAll(false);
         stack.removeProtocol(NAKACK2.class, UNICAST3.class);
 
         View rogue_view=View.create(a.getAddress(), a.getView().getViewId().getId() +5,
@@ -93,7 +93,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         gms.setMaxJoinAttempts(1).setJoinTimeout(1000).setLeaveTimeout(1000);
 
         // make the rogue member become a singletone cluster
-        rogue.getProtocolStack().insertProtocol(new DISCARD().setDiscardAll(true), ProtocolStack.Position.ABOVE, TP.class);
+        rogue.getProtocolStack().insertProtocol(new DISCARD().discardAll(true), ProtocolStack.Position.ABOVE, TP.class);
         rogue.connect(cluster_name);
         rogue.getProtocolStack().removeProtocol(DISCARD.class);
 
@@ -275,10 +275,10 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
           new SSL_KEY_EXCHANGE().setKeystoreName(KEYSTORE).setKeystorePassword(KEYSTORE_PWD).setPortRange(10),
           new ASYM_ENCRYPT().setUseExternalKeyExchange(useExternalKeyExchange())
             .symKeylength(128).symAlgorithm(symAlgorithm()).symIvLength(symIvLength()).asymKeylength(512).asymAlgorithm("RSA"),
-          new NAKACK2().setUseMcastXmit(false),
+          new NAKACK2().useMcastXmit(false),
           new UNICAST3(),
           new STABLE(),
-          new GMS().joinTimeout(2000)));
+          new GMS().setJoinTimeout(2000)));
         if(c != null)
             c.accept(protocols);
         return new JChannel(protocols).name(name);

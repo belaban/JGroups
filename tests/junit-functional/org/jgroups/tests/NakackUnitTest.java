@@ -101,7 +101,7 @@ public class NakackUnitTest {
           new UNICAST3(),
           new STABLE(),
           new GMS(),
-          new FRAG2().fragSize(8000),
+          new FRAG2().setFragSize(8000),
         };
         return new JChannel(protocols).name(name);
     }

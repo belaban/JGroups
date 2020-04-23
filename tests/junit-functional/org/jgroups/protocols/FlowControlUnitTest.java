@@ -268,15 +268,15 @@ public class FlowControlUnitTest {
                             new UNICAST3(),
                             new STABLE(),
                             new GMS(),
-                            new UFC().setValue("max_credits", MAX_CREDITS).setValue("min_threshold", 0.2),
-                            new MFC().setValue("max_credits", MAX_CREDITS).setValue("min_threshold", 0.2),
-                            new FRAG2().fragSize(1500)).name(name);
+                            new UFC().setMaxCredits(MAX_CREDITS).setMinThreshold(0.2),
+                            new MFC().setMaxCredits(MAX_CREDITS).setMinThreshold(0.2),
+                            new FRAG2().setFragSize(1500)).name(name);
     }
 
     protected static void replaceUFC(int max_queue_size, JChannel... channels) throws Exception {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
-            UFC_NB ufc_nb=new UFC_NB().setValue("max_credits", MAX_CREDITS).setValue("min_threshold", 0.2);
+            UFC_NB ufc_nb=new UFC_NB().setMaxCredits(MAX_CREDITS).setMinThreshold(0.2);
             ufc_nb.setMaxQueueSize(max_queue_size);
             ufc_nb.frag_size=1500;
             View view=ch.getView();
@@ -291,7 +291,7 @@ public class FlowControlUnitTest {
     protected static void replaceMFC(int max_queue_size, JChannel... channels) throws Exception {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
-            MFC_NB mfc_nb=new MFC_NB().setValue("max_credits", MAX_CREDITS).setValue("min_threshold", 0.2);
+            MFC_NB mfc_nb=new MFC_NB().setMaxCredits(MAX_CREDITS).setMinThreshold( 0.2);
             mfc_nb.setMaxQueueSize(max_queue_size);
             mfc_nb.frag_size=1500;
             mfc_nb.init();

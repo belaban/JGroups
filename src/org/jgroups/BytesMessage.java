@@ -225,7 +225,7 @@ public class BytesMessage extends BaseMessage {
      * The consequence is that the headers array of the copy hold the *same* references as the original, so do *not*
      * modify the headers ! If you want to change a header, copy it and call {@link BytesMessage#putHeader(short,Header)} again.
      */
-    @Override protected <T extends Message> T copyPayload(T copy) {
+    @Override protected Message copyPayload(Message copy) {
         if(array != null)
             copy.setArray(array, offset, length);
         return copy;

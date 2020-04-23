@@ -33,7 +33,7 @@ public class ConfiguratorTest {
 
     @BeforeMethod
     void setUp() throws Exception {
-        ch=new JChannel(new UDP(), new PING(), new FD_ALL3(), new NAKACK2().setValue("xmit_interval", 500),
+        ch=new JChannel(new UDP(), new PING(), new FD_ALL3(), new NAKACK2().setXmitInterval(500),
                         new UNICAST3(), new MFC());
         stack=ch.getProtocolStack();
     }

@@ -49,17 +49,13 @@ public class MessageDispatcherRSVPTest {
             channels[i]=new JChannel(shared_loopback,
                                      new DISCARD(),
                                      new SHARED_LOOPBACK_PING(),
-                                     new MERGE3().setValue("min_interval", 1000).setValue("max_interval", 3000),
-                                     new NAKACK2().setValue("use_mcast_xmit",false)
-                                       .setValue("discard_delivered_msgs",true)
-                                       .setValue("log_discard_msgs", false).setValue("log_not_found_msgs", false),
-                                     new UNICAST3().setValue("xmit_table_num_rows",5).setValue("xmit_interval", 300),
-                                     new RSVP().setValue("timeout", 10000).setValue("throw_exception_on_timeout", true),
-                                     new GMS().setValue("print_local_addr",false)
-                                       .setValue("leave_timeout",100).setValue("join_timeout", 500)
-                                       .setValue("log_view_warnings",false)
-                                       .setValue("view_ack_collection_timeout",2000)
-                                       .setValue("log_collect_msgs",false));
+                                     new MERGE3().setMinInterval(1000).setMaxInterval(3000),
+                                     new NAKACK2().useMcastXmit(false),
+                                     new UNICAST3().setXmitTableNumRows(5).setXmitInterval(300),
+                                     new RSVP().setTimeout(10000).throwExceptionOnTimeout(true),
+                                     new GMS().printLocalAddress(false).setLeaveTimeout(100).setJoinTimeout( 500)
+                                       .logViewWarnings(false).setViewAckCollectionTimeout(2000)
+                                       .logCollectMessages(false));
             channels[i].setName(String.valueOf((i + 1)));
             dispatchers[i]=new MessageDispatcher(channels[i]);
             channels[i].connect("MessageDispatcherRSVPTest");
@@ -119,7 +115,7 @@ public class MessageDispatcherRSVPTest {
 
     protected void testCancellationByClosing(boolean unicast, Thread closer) throws Exception {
         DISCARD discard=channels[0].getProtocolStack().findProtocol(DISCARD.class);
-        discard.setDiscardAll(true);
+        discard.discardAll(true);
 
         try {
             Address target=unicast? channels[1].getAddress() : null;

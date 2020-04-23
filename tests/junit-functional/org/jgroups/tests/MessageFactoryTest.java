@@ -67,11 +67,11 @@ public class MessageFactoryTest {
             return 0;
         }
 
-        public <T extends Message> T setArray(byte[] b, int offset, int length) {
+        public Message setArray(byte[] b, int offset, int length) {
             return null;
         }
 
-        public <T extends Message> T setArray(ByteArray buf) {
+        public Message setArray(ByteArray buf) {
             return null;
         }
 
@@ -79,7 +79,7 @@ public class MessageFactoryTest {
             return null;
         }
 
-        public <T extends Message> T setObject(Object obj) {
+        public Message setObject(Object obj) {
             return null;
         }
 

@@ -138,7 +138,7 @@ public class MFC_Test {
     protected static void inject(Class<MFC> clazz, JChannel ... channels) throws Exception {
         for(JChannel ch: channels) {
             MFC mfc=clazz.getConstructor().newInstance();
-            mfc.maxCredits(MAX_CREDITS).maxBlockTime(60000);
+            mfc.setMaxCredits(MAX_CREDITS).setMaxBlockTime(60000);
             if(mfc instanceof MFC_NB)
                 ((MFC_NB)mfc).setMaxQueueSize(MAX_CREDITS);
             mfc.init();

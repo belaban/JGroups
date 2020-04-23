@@ -86,13 +86,11 @@ public class RpcLockingTest {
     protected static JChannel createChannel(String name, Class<? extends Locking> locking_class) throws Exception {
         return new JChannel(
           new SHARED_LOOPBACK(), new SHARED_LOOPBACK_PING(),
-          new MERGE3().setValue("min_interval", 1000).setValue("max_interval", 3000),
-          new NAKACK2().setValue("use_mcast_xmit", false).setValue("discard_delivered_msgs", true)
-            .setValue("log_discard_msgs", false).setValue("log_not_found_msgs", false),
-          new UNICAST3().setValue("xmit_table_num_rows", 5).setValue("xmit_interval", 500),
-          new GMS().joinTimeout(1000).setValue("print_local_addr", false).setValue("leave_timeout", 100)
-            .setValue("log_view_warnings", false).setValue("view_ack_collection_timeout", 2000)
-            .setValue("log_collect_msgs", false),
+          new MERGE3().setMinInterval(1000).setMaxInterval(3000),
+          new NAKACK2().useMcastXmit(false).logDiscardMessages(false).logNotFoundMessages(false),
+          new UNICAST3().setXmitTableNumRows(5).setXmitInterval(500),
+          new GMS().setJoinTimeout(1000).printLocalAddress(false).setLeaveTimeout(100)
+            .logViewWarnings(false).setViewAckCollectionTimeout(2000).logCollectMessages(false),
           locking_class.getDeclaredConstructor().newInstance())
           .name(name);
     }

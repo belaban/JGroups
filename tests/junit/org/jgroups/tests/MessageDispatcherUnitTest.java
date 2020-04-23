@@ -44,7 +44,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         a=createChannel(true, 2, "A");
         GMS gms=a.getProtocolStack().findProtocol(GMS.class);
         if(gms != null)
-            gms.setPrintLocalAddress(false);
+            gms.printLocalAddress(false);
         d1=new MessageDispatcher(a);
         a.connect("MessageDispatcherUnitTest");
     }

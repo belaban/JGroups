@@ -117,11 +117,11 @@ public class NakackTest {
         Protocol[] protocols={
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
-          new MERGE3().setValue("min_interval", 1000).setValue("max_interval", 3000),
-          new NAKACK2().setValue("use_mcast_xmit", false),
+          new MERGE3().setMinInterval(1000).setMaxInterval(3000),
+          new NAKACK2().useMcastXmit(false),
           new UNICAST3(),
-          new STABLE().setValue("max_bytes", 50000),
-          new GMS().setValue("print_local_addr", false),
+          new STABLE().setMaxBytes( 50000),
+          new GMS().printLocalAddress(false),
           new UFC(),
           new MFC(),
           new FRAG2()

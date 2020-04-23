@@ -87,13 +87,12 @@ public class InfinispanStackMerge3Test {
                             new FD_SOCK(),
                             new FD_ALL3().setTimeout(8000).setInterval(2000),
                             new VERIFY_SUSPECT().setTimeout(5000),
-                            new NAKACK2().setUseMcastXmit(false),
+                            new NAKACK2().useMcastXmit(false),
                             new UNICAST3(),
                             new STABLE(),
-                            new GMS().joinTimeout(1000).printLocalAddress(false),
+                            new GMS().setJoinTimeout(1000).printLocalAddress(false),
                             new MFC(),
-                            new FRAG3()
-                              .fragSize(8_000)
+                            new FRAG3().setFragSize(8000)
         ).setName(name).connect(InfinispanStackMerge3Test.class.getSimpleName());
     }
 

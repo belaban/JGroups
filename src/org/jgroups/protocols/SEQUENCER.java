@@ -100,9 +100,9 @@ public class SEQUENCER extends Protocol {
     @ManagedAttribute(description="Number of messages in the forward-table")
     public int getForwardTableSize() {return forward_table.size();}
 
-    public void setThreshold(int new_threshold) {this.threshold=new_threshold;}
+    public SEQUENCER setThreshold(int new_threshold) {this.threshold=new_threshold; return this;}
 
-    public void setDeliveryTableMaxSize(int size) {delivery_table_max_size=size;}
+    public SEQUENCER setDeliveryTableMaxSize(int size) {delivery_table_max_size=size; return this;}
 
     @ManagedOperation
     public void resetStats() {

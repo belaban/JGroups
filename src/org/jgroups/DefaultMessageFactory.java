@@ -33,7 +33,7 @@ public class DefaultMessageFactory implements MessageFactory {
         return (T)creator.get();
     }
 
-    public void register(short type, Supplier<? extends Message> generator) {
+    public <T extends MessageFactory> T register(short type, Supplier<? extends Message> generator) {
         Objects.requireNonNull(generator, "the creator must be non-null");
         if(type < MIN_TYPE)
             throw new IllegalArgumentException(String.format("type (%d) must be >= 32", type));
@@ -42,5 +42,6 @@ public class DefaultMessageFactory implements MessageFactory {
         if(map.containsKey(type))
             throw new IllegalArgumentException(String.format("type %d is already taken", type));
         map.put(type, generator);
+        return (T)this;
     }
 }

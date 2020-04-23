@@ -97,14 +97,12 @@ public class FILE_PING_Test {
 
 
     protected static JChannel create(String name, String location, long uuid) throws Exception {
-        return new JChannel(new TCP().setBindAddress(Util.getLoopback()).setValue("bundler_type", "nb"),
+        return new JChannel(new TCP().setBindAddress(Util.getLoopback()).setBundlerType("nb"),
                             new DISCARD(),
-                            new FILE_PING().setRemoveAllDataOnViewChange(true).setLocation(location)
-                              .setValue("write_data_on_find", true)
-                              .setValue("info_writer_max_writes_after_view", 0)
-                              .setValue("info_writer_sleep_time", 2000),
+                            new FILE_PING().removeAllDataOnViewChange(true).setLocation(location)
+                              .writeDataOnFind(true).setInfoWriterMaxWritesAfterView(0).setInfoWriterSleepTime(2000),
                             new MERGE3().setMinInterval(2000).setMaxInterval(5000),
-                            new FD_SOCK(), new NAKACK2(), new UNICAST3(), new STABLE(), new GMS().joinTimeout(3000))
+                            new FD_SOCK(), new NAKACK2(), new UNICAST3(), new STABLE(), new GMS().setJoinTimeout(3000))
           .addAddressGenerator(() -> new UUID(uuid, 0))
           .name(name);
     }

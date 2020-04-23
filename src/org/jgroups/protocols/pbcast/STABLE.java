@@ -111,7 +111,7 @@ public class STABLE extends Protocol {
     /** The total number of bytes received from unicast and multicast messages */
     @GuardedBy("received")
     @ManagedAttribute(description="Bytes accumulated so far")
-    protected long                num_bytes_received=0;
+    protected long                num_bytes_received;
 
     protected final Lock          received=new ReentrantLock();
 
@@ -133,23 +133,12 @@ public class STABLE extends Protocol {
     public STABLE() {             
     }
 
-    public long getDesiredAverageGossip() {
-        return desired_avg_gossip;
-    }
-
-    public void setDesiredAverageGossip(long gossip_interval) {
-        desired_avg_gossip=gossip_interval;
-    }
-
-    public STABLE desiredAverageGossip(long g) {this.desired_avg_gossip=g; return this;}
-
-    public long getMaxBytes() {
-        return max_bytes;
-    }
-
-    public void setMaxBytes(long max_bytes) {
-        this.max_bytes=max_bytes;
-    }
+    public long   getDesiredAverageGossip()       {return desired_avg_gossip;}
+    public STABLE setDesiredAverageGossip(long g) {desired_avg_gossip=g; return this;}
+    public long   getMaxBytes()                   {return max_bytes;}
+    public STABLE setMaxBytes(long m)             {this.max_bytes=m; return this;}
+    public long   getStabilityDelay()             {return stability_delay;}
+    public STABLE setStabilityDelay(long d)       {stability_delay=d; return this;}
 
     // @ManagedAttribute(name="bytes_received")
     public long getBytes() {return num_bytes_received;}

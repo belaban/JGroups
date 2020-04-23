@@ -35,7 +35,7 @@ public class ClassConfigurator {
     private static final short MIN_CUSTOM_PROTOCOL_ID=512;
 
     // this is where we store magic numbers; contains data from jg-magic-map.xml;  key=Class, value=magic number
-    private static final Map<Class,Short> classMap=new IdentityHashMap<>(MAX_MAGIC_VALUE);
+    private static final Map<Class<?>,Short> classMap=new IdentityHashMap<>(MAX_MAGIC_VALUE);
 
 
     // Magic map for all values defined in jg-magic-map.xml; elements are supplier functions which create instances
@@ -45,8 +45,8 @@ public class ClassConfigurator {
     private static final Map<Short,Object> magicMapUser=new HashMap<>(); // key=magic number, value=Class or Supplier<Header>
 
     /** Contains data read from jg-protocol-ids.xml */
-    private static final Map<Class,Short> protocol_ids=new HashMap<>(MAX_MAGIC_VALUE);
-    private static final Map<Short,Class> protocol_names=new HashMap<>(MAX_MAGIC_VALUE);
+    private static final Map<Class<?>,Short> protocol_ids=new HashMap<>(MAX_MAGIC_VALUE);
+    private static final Map<Short,Class<?>> protocol_names=new HashMap<>(MAX_MAGIC_VALUE);
 
     static {
         try {
@@ -68,7 +68,7 @@ public class ClassConfigurator {
      * @param clazz The class. Usually a subclass of Header
      * @throws IllegalArgumentException If the magic number is already taken, or the magic number is <= 1024
      */
-    public static void add(short magic, Class clazz) {
+    public static void add(short magic, Class<?> clazz) {
         if(magic < MIN_CUSTOM_MAGIC_NUMBER)
             throw new IllegalArgumentException("magic ID (" + magic + ") must be >= " + MIN_CUSTOM_MAGIC_NUMBER);
         if(magicMapUser.containsKey(magic) || classMap.containsKey(clazz))
@@ -89,7 +89,7 @@ public class ClassConfigurator {
         }
 
         if(Constructable.class.isAssignableFrom(clazz)) {
-            val=((Constructable)inst).create();
+            val=((Constructable<?>)inst).create();
             inst=((Supplier<?>)val).get();
             if(!inst.getClass().equals(clazz))
                 throw new IllegalStateException(String.format("%s.create() returned the wrong class: %s\n",
@@ -101,7 +101,7 @@ public class ClassConfigurator {
     }
 
 
-    public static void addProtocol(short id, Class protocol) {
+    public static void addProtocol(short id, Class<?> protocol) {
         if(id < MIN_CUSTOM_PROTOCOL_ID)
             throw new IllegalArgumentException("protocol ID (" + id + ") needs to be greater than or equal to " + MIN_CUSTOM_PROTOCOL_ID);
         if(protocol_ids.containsKey(protocol))
@@ -139,11 +139,11 @@ public class ClassConfigurator {
      * @param clazzname a fully classified class name to be loaded
      * @return a Class object that represents a class that implements java.io.Externalizable
      */
-    public static Class get(String clazzname, ClassLoader loader) throws ClassNotFoundException {
+    public static Class<?> get(String clazzname, ClassLoader loader) throws ClassNotFoundException {
         return Util.loadClass(clazzname, loader != null? loader : ClassConfigurator.class.getClassLoader());
     }
 
-    public static Class get(String clazzname) throws ClassNotFoundException {
+    public static Class<?> get(String clazzname) throws ClassNotFoundException {
         return Util.loadClass(clazzname, ClassConfigurator.class);
     }
 
@@ -153,7 +153,7 @@ public class ClassConfigurator {
      * @param clazz a class object that we want the magic number for
      * @return the magic number for a class, -1 if no mapping is available
      */
-    public static short getMagicNumber(Class clazz) {
+    public static short getMagicNumber(Class<?> clazz) {
         Short i=classMap.get(clazz);
         if(i == null)
             return -1;
@@ -162,13 +162,13 @@ public class ClassConfigurator {
     }
 
 
-    public static short getProtocolId(Class protocol) {
+    public static short getProtocolId(Class<?> protocol) {
         Short retval=protocol_ids.get(protocol);
         return retval != null? retval : 0;
     }
 
 
-    public static Class getProtocol(short id) {
+    public static Class<?> getProtocol(short id) {
         return protocol_names.get(id);
     }
 
@@ -176,10 +176,9 @@ public class ClassConfigurator {
 
     public static String printClassMap() {
         StringBuilder sb=new StringBuilder();
-        Map.Entry entry;
 
-        for(Iterator it=classMap.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
+        for(Iterator<Map.Entry<Class<?>,Short>> it=classMap.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<Class<?>,Short> entry=it.next();
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
         }
         return sb.toString();
@@ -213,12 +212,12 @@ public class ClassConfigurator {
                     alreadyInMagicMap(m, tuple.getVal2());
                 continue;
             }
-            Class clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
+            Class<?> clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
             if(magicMap[m] != null)
                 alreadyInMagicMap(m, clazz.getName());
 
             if(Constructable.class.isAssignableFrom(clazz)) {
-                Constructable obj=(Constructable)clazz.getDeclaredConstructor().newInstance();
+                Constructable<?> obj=(Constructable<?>)clazz.getDeclaredConstructor().newInstance();
                 magicMap[m]=obj.create();
             }
             else {
@@ -257,7 +256,7 @@ public class ClassConfigurator {
                 continue;
             }
 
-            Class clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
+            Class<?> clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
             if(protocol_ids.containsKey(clazz))
                 alreadyInProtocolsMap(m, clazz.getName());
             protocol_ids.put(clazz, m);

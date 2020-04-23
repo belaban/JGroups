@@ -81,9 +81,9 @@ public class MessageBeforeConnectedTest extends BMNGRunner {
     protected static JChannel createChannel(String name) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
                                  new SHARED_LOOPBACK_PING(),
-                                 new NAKACK2().setValue("become_server_queue_size", 10),
+                                 new NAKACK2().setBecomeServerQueueSize(10),
                                  new UNICAST3(),
-                                 new GMS().setValue("print_local_addr", false));
+                                 new GMS().printLocalAddress(false));
         ch.setName(name);
         return ch;
     }

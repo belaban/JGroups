@@ -154,6 +154,28 @@ public class RELAY2 extends Protocol {
     public void incrementRelayed()                     {relayed.increment();}
     public void addToRelayedTime(long delta)           {relayed_time.add(delta);}
 
+    public String getSite() {return site;}
+    public RELAY2 setSite(String s) {this.site=s; return this;}
+
+    public String getConfig() {return config;}
+    public RELAY2 setConfig(String c) {this.config=c; return this;}
+
+    public int getMaxSiteMasters() {return max_site_masters;}
+    public RELAY2 setMaxSiteMasters(int m) {this.max_site_masters=m; return this;}
+
+    public String getSiteMasterPickerImpl() {return site_master_picker_impl;}
+    public RELAY2 setSiteMasterPickerImpl(String s) {this.site_master_picker_impl=s; return this;}
+
+    public boolean broadcastRouteNotifications() {return broadcast_route_notifications;}
+    public RELAY2 broadcastRouteNotifications(boolean b) {this.broadcast_route_notifications=b; return this;}
+
+    public boolean canForwardLocalCluster() {return can_forward_local_cluster;}
+    public RELAY2 canForwardLocalCluster(boolean c) {this.can_forward_local_cluster=c; return this;}
+
+    public long getTopoWaitTime() {return topo_wait_time;}
+    public RELAY2 setTopoWaitTime(long t) {this.topo_wait_time=t; return this;}
+
+
 
     public RouteStatusListener getRouteStatusListener()       {return route_status_listener;}
     public void setRouteStatusListener(RouteStatusListener l) {this.route_status_listener=l;}

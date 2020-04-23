@@ -68,6 +68,10 @@ public class BARRIER extends Protocol {
 
     protected static final Object        NULL=new Object();
 
+    public long    getMaxCloseTime()       {return max_close_time;}
+    public BARRIER setMaxCloseTime(long m) {this.max_close_time=m; return this;}
+    public long    getFlushTimeout()       {return flush_timeout;}
+    public BARRIER setFlushTimeout(long f) {this.flush_timeout=f; return this;}
 
     @ManagedAttribute(description="Shows whether the barrier closed")
     public boolean isClosed() {

@@ -142,7 +142,7 @@ public class SequencerFailoverTest extends BMNGRunner {
         // insert DISCARD into A
         DISCARD discard=new DISCARD();
         discard.setLocalAddress(a.getAddress());
-        discard.setDiscardAll(true);
+        discard.discardAll(true);
         ProtocolStack stack=a.getProtocolStack();
         TP transport=stack.getTransport();
         stack.insertProtocol(discard,  ProtocolStack.Position.ABOVE, transport.getClass());

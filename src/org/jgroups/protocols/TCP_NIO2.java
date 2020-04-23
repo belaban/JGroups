@@ -41,6 +41,14 @@ public class TCP_NIO2 extends BasicTCP {
 
     public TCP_NIO2() {}
 
+    public int      getMaxSendBuffers() {return max_send_buffers;}
+    public TCP_NIO2 setMaxSendBuffers(int m) {this.max_send_buffers=m; return this;}
+
+    public boolean  copyOnPartialWrite() {return copy_on_partial_write;}
+    public TCP_NIO2 copyOnPartialWrite(boolean c) {this.copy_on_partial_write=c; return this;}
+
+    public long     getReaderIdleTime() {return reader_idle_time;}
+    public TCP_NIO2 setReaderIdleTime(long r) {this.reader_idle_time=r; return this;}
 
     @ManagedAttribute
     public int getOpenConnections() {return server.getNumConnections();}

@@ -68,15 +68,15 @@ public class DISCARD extends Protocol {
         return localAddress;
     }
 
-    public boolean isDiscardAll() {
+    public boolean discardAll() {
         return discard_all;
     }
 
-    public DISCARD setDiscardAll(boolean discard_all) {
+    public DISCARD discardAll(boolean discard_all) {
         this.discard_all=discard_all; return this;
     }
 
-    public boolean isExcludeItself() {
+    public boolean excludeItself() {
         return excludeItself;
     }
 
@@ -87,7 +87,7 @@ public class DISCARD extends Protocol {
         return this;
     }
 
-    public DISCARD setExcludeItself(boolean excludeItself) {
+    public DISCARD excludeItself(boolean excludeItself) {
         this.excludeItself=excludeItself; return this;
     }
 
@@ -115,15 +115,15 @@ public class DISCARD extends Protocol {
      * Drop the next N unicasts down the stack
      * @param drop_down_unicasts
      */
-    public DISCARD setDropDownUnicasts(int drop_down_unicasts) {
+    public DISCARD dropDownUnicasts(int drop_down_unicasts) {
         this.drop_down_unicasts=drop_down_unicasts; return this;
     }
 
-    public int getDropDownMulticasts() {
+    public int dropDownMulticasts() {
         return drop_down_multicasts;
     }
 
-    public DISCARD setDropDownMulticasts(int drop_down_multicasts) {
+    public DISCARD dropDownMulticasts(int drop_down_multicasts) {
         this.drop_down_multicasts=drop_down_multicasts; return this;
     }
 

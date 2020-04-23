@@ -244,22 +244,68 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     public long    getXmitRequestsSent()                   {return xmit_reqs_sent.sum();}
     public long    getXmitResponsesReceived()              {return xmit_rsps_received.sum();}
     public long    getXmitResponsesSent()                  {return xmit_rsps_sent.sum();}
-    public boolean isUseMcastXmit()                        {return use_mcast_xmit;}
-    public boolean isXmitFromRandomMember()                {return xmit_from_random_member;}
-    public boolean isDiscardDeliveredMsgs()                {return discard_delivered_msgs;}
-    public boolean getLogDiscardMessages()                 {return log_discard_msgs;}
-    public NAKACK2 setUseMcastXmit(boolean use_mcast_xmit) {this.use_mcast_xmit=use_mcast_xmit; return this;}
-    public NAKACK2 setUseMcastXmitReq(boolean flag)        {this.use_mcast_xmit_req=flag; return this;}
-    public NAKACK2 setLogDiscardMessages(boolean flag)     {log_discard_msgs=flag; return this;}
-    public NAKACK2 setLogNotFoundMessages(boolean flag)    {log_not_found_msgs=flag; return this;}
+    public boolean useMcastXmit()                          {return use_mcast_xmit;}
+    public NAKACK2 useMcastXmit(boolean u)                 {this.use_mcast_xmit=u; return this;}
+    public boolean useMcastXmitReq()                       {return use_mcast_xmit_req;}
+    public NAKACK2 useMcastXmitReq(boolean flag)           {this.use_mcast_xmit_req=flag; return this;}
+    public boolean xmitFromRandomMember()                  {return xmit_from_random_member;}
+    public NAKACK2 xmitFromRandomMember(boolean x)         {this.xmit_from_random_member=x; return this;}
+    public boolean discardDeliveredMsgs()                  {return discard_delivered_msgs;}
+    public NAKACK2 discardDeliveredMsgs(boolean d)         {this.discard_delivered_msgs=d; return this;}
+    public boolean logDiscardMessages()                    {return log_discard_msgs;}
+    public NAKACK2 logDiscardMessages(boolean l)           {this.log_discard_msgs=l; return this;}
+    public boolean logNotFoundMessages()                   {return log_not_found_msgs;}
+    public NAKACK2 logNotFoundMessages(boolean flag)       {log_not_found_msgs=flag; return this;}
     public NAKACK2 setResendLastSeqnoMaxTimes(int n)       {this.resend_last_seqno_max_times=n; return this;}
+    public int getResendLastSeqnoMaxTimes()                {return resend_last_seqno_max_times;}
 
     public NAKACK2 setXmitFromRandomMember(boolean xmit_from_random_member) {
         this.xmit_from_random_member=xmit_from_random_member; return this;
     }
-    public void    setDiscardDeliveredMsgs(boolean discard_delivered_msgs) {
+
+    public NAKACK2 setDiscardDeliveredMsgs(boolean discard_delivered_msgs) {
         this.discard_delivered_msgs=discard_delivered_msgs;
+        return this;
     }
+
+    public long getMaxRebroadcastTimeout() {return max_rebroadcast_timeout;}
+    public NAKACK2 setMaxRebroadcastTimeout(long m) {this.max_rebroadcast_timeout=m; return this;}
+
+    public long getXmitInterval() {return xmit_interval;}
+    public NAKACK2 setXmitInterval(long x) {this.xmit_interval=x; return this;}
+
+    public int getXmitTableNumRows() {return xmit_table_num_rows;}
+    public NAKACK2 setXmitTableNumRows(int x) {this.xmit_table_num_rows=x; return this;}
+
+    public int getXmitTableMsgsPerRow() {return xmit_table_msgs_per_row;}
+    public NAKACK2 setXmitTableMsgsPerRow(int x) {this.xmit_table_msgs_per_row=x; return this;}
+
+    public double getXmitTableResizeFactor() {return xmit_table_resize_factor;}
+    public NAKACK2 setXmitTableResizeFactor(double x) {this.xmit_table_resize_factor=x; return this;}
+
+    public long getXmitTableMaxCompactionTime() {return xmit_table_max_compaction_time;}
+    public NAKACK2 setXmitTableMaxCompactionTime(long x) {this.xmit_table_max_compaction_time=x; return this;}
+
+    public int getBecomeServerQueueSize() {return become_server_queue_size;}
+    public NAKACK2 setBecomeServerQueueSize(int b) {this.become_server_queue_size=b; return this;}
+
+    public long getSuppressTimeNonMemberWarnings() {return suppress_time_non_member_warnings;}
+    public NAKACK2 setSuppressTimeNonMemberWarnings(long s) {this.suppress_time_non_member_warnings=s; return this;}
+
+    public int getMaxXmitReqSize() {return max_xmit_req_size;}
+    public NAKACK2 setMaxXmitReqSize(int m) {this.max_xmit_req_size=m; return this;}
+
+    public boolean sendsCanBlock() {return sends_can_block;}
+    public NAKACK2 sendsCanBlock(boolean s) {this.sends_can_block=s; return this;}
+
+    public int getNumMessagesSent() {return num_messages_sent;}
+    public NAKACK2 setNumMessagesSent(int n) {this.num_messages_sent=n; return this;}
+
+    public int getNumMessagesReceived() {return num_messages_received;}
+    public NAKACK2 setNumMessagesReceived(int n) {this.num_messages_received=n; return this;}
+
+    public boolean isTrace() {return is_trace;}
+    public NAKACK2 isTrace(boolean i) {this.is_trace=i; return this;}
 
     public <T extends Protocol> T setLevel(String level) {
         T retval=super.setLevel(level);

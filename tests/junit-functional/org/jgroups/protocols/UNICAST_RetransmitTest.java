@@ -81,7 +81,7 @@ public class UNICAST_RetransmitTest {
             UNICAST3 ucast=ch.getProtocolStack().findProtocol(UNICAST3.class);
             if(ucast == null)
                 throw new IllegalStateException("UNICAST3 not present in the stack");
-            ucast.setValue("max_xmit_req_size", 5000);
+            ucast.setMaxXmitReqSize(5000);
         }
     }
 

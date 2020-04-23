@@ -85,15 +85,16 @@ public class GossipData implements SizeStreamable {
     public int              getOffset()          {return offset;}
     public int              getLength()          {return length;}
     public PhysicalAddress  getPhysicalAddress() {return physical_addr;}
-    public void setPingData(List<PingData> mbrs) {
-        this.ping_data=mbrs;
+    public GossipData setPingData(List<PingData> mbrs) {
+        this.ping_data=mbrs; return this;
     }
 
-    public void addPingData(PingData data) {
+    public GossipData addPingData(PingData data) {
         if(ping_data == null)
             ping_data=new ArrayList<>();
         if(data != null)
             ping_data.add(data);
+        return this;
     }
 
 

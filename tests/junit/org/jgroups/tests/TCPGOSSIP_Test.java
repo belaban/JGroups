@@ -176,13 +176,13 @@ public class TCPGOSSIP_Test {
         initial_hosts.add(new InetSocketAddress(bind_addr, gossip_router_port));
         gossip.setInitialHosts(initial_hosts);
 
-        JChannel ch=new JChannel(new TCP().setValue("sock_conn_timeout",300).setValue("bind_addr", bind_addr),
+        JChannel ch=new JChannel(new TCP().setSockConnTimeout(300).setBindAddress(bind_addr),
                                  gossip,
-                                 new MERGE3().setValue("min_interval",1000).setValue("max_interval",3000),
-                                 new FD().setValue("timeout",2000).setValue("max_tries",2),
+                                 new MERGE3().setMinInterval(1000).setMaxInterval(3000),
+                                 new FD().setTimeout(2000).setMaxTries(2),
                                  new VERIFY_SUSPECT(),
-                                 new NAKACK2().setValue("use_mcast_xmit",false),
-                                 new UNICAST3(), new STABLE(), new GMS().joinTimeout(1000));
+                                 new NAKACK2().useMcastXmit(false),
+                                 new UNICAST3(), new STABLE(), new GMS().setJoinTimeout(1000));
         if(name != null)
             ch.setName(name);
         return ch;

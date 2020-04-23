@@ -10,10 +10,9 @@ import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CyclicBarrier;
+import java.util.stream.Stream;
 
 /**
  * Tests unilateral closings of UNICAST connections. The test scenarios are described in doc/design/UNICAST2.txt.
@@ -36,29 +35,15 @@ public class UNICAST_ConnectionTests {
         };
     }
 
-    protected void setup(Class<? extends Protocol> unicast_class) throws Exception {
-        setup(unicast_class, null);
-    }
-
-    protected void setup(Class<? extends Protocol> unicast_class, Map<String,Object> props) throws Exception {
+    protected void setup(Class<? extends UNICAST3> unicast_class) throws Exception {
         r1=new MyReceiver("A");
         r2=new MyReceiver("B");
         a=createChannel(unicast_class, "A");
-        if(props != null) {
-            Protocol prot=a.getProtocolStack().findProtocol(unicast_class);
-            for(Map.Entry<String,Object> entry: props.entrySet())
-                prot.setValue(entry.getKey(), entry.getValue());
-        }
         a.connect(CLUSTER);
         a_addr=a.getAddress();
         a.setReceiver(r1);
         u1=a.getProtocolStack().findProtocol(unicast_class);
         b=createChannel(unicast_class, "B");
-        if(props != null) {
-            Protocol prot=b.getProtocolStack().findProtocol(unicast_class);
-            for(Map.Entry<String,Object> entry: props.entrySet())
-                prot.setValue(entry.getKey(), entry.getValue());
-        }
         b.connect(CLUSTER);
         b_addr=b.getAddress();
         b.setReceiver(r2);
@@ -74,7 +59,7 @@ public class UNICAST_ConnectionTests {
      * @throws Exception
      */
     @Test(dataProvider="configProvider")
-    public void testRegularMessageReception(Class<? extends Protocol> unicast) throws Exception {
+    public void testRegularMessageReception(Class<? extends UNICAST3> unicast) throws Exception {
         setup(unicast);
         sendAndCheck(a, b_addr, 100, r2);
         sendAndCheck(b,a_addr,50,r1);
@@ -85,7 +70,7 @@ public class UNICAST_ConnectionTests {
      * Tests case #3 of UNICAST.new.txt
      */
     @Test(dataProvider="configProvider")
-    public void testBothChannelsClosing(Class<? extends Protocol> unicast) throws Exception {
+    public void testBothChannelsClosing(Class<? extends UNICAST3> unicast) throws Exception {
         setup(unicast);
         sendToEachOtherAndCheck(10);
         
@@ -104,7 +89,7 @@ public class UNICAST_ConnectionTests {
      * Scenario #4 (A closes the connection unilaterally (B keeps it open), then reopens it and sends messages)
      */
     @Test(dataProvider="configProvider")
-    public void testAClosingUnilaterally(Class<? extends Protocol> unicast) throws Exception {
+    public void testAClosingUnilaterally(Class<? extends UNICAST3> unicast) throws Exception {
         setup(unicast);
         sendToEachOtherAndCheck(10);
 
@@ -120,7 +105,7 @@ public class UNICAST_ConnectionTests {
      * Scenario #5 (B closes the connection unilaterally (A keeps it open), then A sends messages to B)
      */
     @Test(dataProvider="configProvider")
-    public void testBClosingUnilaterally(Class<? extends Protocol> unicast) throws Exception {
+    public void testBClosingUnilaterally(Class<? extends UNICAST3> unicast) throws Exception {
         setup(unicast);
         sendToEachOtherAndCheck(10);
 
@@ -133,11 +118,11 @@ public class UNICAST_ConnectionTests {
     }
 
     @Test(dataProvider="configProvider")
-    public void testBRemovingUnilaterally(Class<? extends Protocol> unicast) throws Exception {
+    public void testBRemovingUnilaterally(Class<? extends UNICAST3> unicast) throws Exception {
         if(!unicast.equals(UNICAST3.class))
             return; // only tested for UNICAST3
 
-        setup(unicast, null);
+        setup(unicast);
         sendAndCheck(a, b_addr, 10, r2);
 
         // now remove connection on A unilaterally
@@ -154,7 +139,7 @@ public class UNICAST_ConnectionTests {
      * but loses the first message
      */
     @Test(dataProvider="configProvider")
-    public void testAClosingUnilaterallyButLosingFirstMessage(Class<? extends Protocol> unicast) throws Exception {
+    public void testAClosingUnilaterallyButLosingFirstMessage(Class<? extends UNICAST3> unicast) throws Exception {
         setup(unicast);
         sendAndCheck(a, b_addr, 10, r2);
 
@@ -172,7 +157,7 @@ public class UNICAST_ConnectionTests {
 
     /** Tests concurrent reception of multiple messages with a different conn_id (https://issues.jboss.org/browse/JGRP-1347) */
     @Test(dataProvider="configProvider")
-    public void testMultipleConcurrentResets(Class<? extends Protocol> unicast) throws Exception {
+    public void testMultipleConcurrentResets(Class<? extends UNICAST3> unicast) throws Exception {
         setup(unicast);
         sendAndCheck(a, b_addr, 1, r2);
 
@@ -223,10 +208,9 @@ public class UNICAST_ConnectionTests {
     }
 
     @Test(dataProvider="configProvider")
-    public void testMessageToNonExistingMember(Class<? extends Protocol> unicast) throws Exception {
-        Map<String,Object> props=new HashMap<>(1);
-        props.put("max_retransmit_time",5000);
-        setup(unicast,props);
+    public void testMessageToNonExistingMember(Class<? extends UNICAST3> unicast) throws Exception {
+        setup(unicast);
+        Stream.of(a,b).forEach(ch -> ((UNICAST3)ch.getProtocolStack().findProtocol(unicast)).setMaxRetransmitTime(5000));
         Address target=Util.createRandomAddress("FakeAddress");
         a.send(target, "hello");
         Protocol prot=a.getProtocolStack().findProtocol(unicast);

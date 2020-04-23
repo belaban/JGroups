@@ -35,7 +35,7 @@ public abstract class Request<T> extends CompletableFuture<T> {
         return req_id;
     }
 
-    public Request setResponseFilter(RspFilter filter) {
+    public Request<T> setResponseFilter(RspFilter filter) {
         options.rspFilter(filter);
         return this;
     }

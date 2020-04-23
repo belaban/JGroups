@@ -66,8 +66,8 @@ public class ASYM_ENCRYPT_BlockTest extends BMNGRunner {
           new NAKACK2(),
           new UNICAST3(),
           new STABLE(),
-          new GMS().joinTimeout(5000),
-          new FRAG2().fragSize(8000)
+          new GMS().setJoinTimeout(5000),
+          new FRAG2().setFragSize(8000)
         };
 
         return new JChannel(protocols).name(name);

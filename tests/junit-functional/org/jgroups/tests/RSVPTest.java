@@ -51,22 +51,15 @@ public class RSVPTest {
             channels[i]=new JChannel(shared_loopback,
                                      new DISCARD(),
                                      new SHARED_LOOPBACK_PING(),
-                                     new MERGE3().setValue("min_interval", 1000).setValue("max_interval", 3000),
-                                     new NAKACK2().setValue("use_mcast_xmit", false)
-                                       .setValue("discard_delivered_msgs", true)
-                                       .setValue("log_discard_msgs", false).setValue("log_not_found_msgs", false)
-                                       .setValue("xmit_table_num_rows", 5)
-                                       .setValue("xmit_table_msgs_per_row", 10),
-                                     new UNICAST3().setValue("xmit_table_num_rows", 5).setValue("xmit_interval", 300)
-                                       .setValue("xmit_table_msgs_per_row", 10)
-                                       .setValue("conn_expiry_timeout", 10000),
-                                     new RSVP().setValue("timeout", 10000).setValue("throw_exception_on_timeout", false)
-                                       .setValue("resend_interval", 500),
-                                     new GMS().setValue("print_local_addr", false).setValue("join_timeout", 100)
-                                       .setValue("leave_timeout", 100)
-                                       .setValue("log_view_warnings", false)
-                                       .setValue("view_ack_collection_timeout", 2000)
-                                       .setValue("log_collect_msgs", false));
+                                     new MERGE3().setMinInterval(1000).setMaxInterval(3000),
+                                     new NAKACK2().useMcastXmit(false)
+                                       .logDiscardMessages( false).logNotFoundMessages(false)
+                                       .setXmitTableNumRows(5).setXmitTableMsgsPerRow(10),
+                                     new UNICAST3().setXmitTableNumRows(5).setXmitInterval(300)
+                                       .setXmitTableMsgsPerRow(10).setConnExpiryTimeout(10000),
+                                     new RSVP().setTimeout(10000).throwExceptionOnTimeout(false).setResendInterval(500),
+                                     new GMS().printLocalAddress(false).setJoinTimeout(100).setLeaveTimeout(100)
+                                       .logViewWarnings( false).setViewAckCollectionTimeout(2000).logCollectMessages(false));
             channels[i].setName(String.valueOf((i + 1)));
             receivers[i]=new MyReceiver();
             channels[i].setReceiver(receivers[i]);
@@ -100,7 +93,7 @@ public class RSVPTest {
         msg.setFlag(Message.Flag.RSVP);
 
         DISCARD discard=channels[0].getProtocolStack().findProtocol(DISCARD.class);
-        discard.setDropDownMulticasts(1);
+        discard.dropDownMulticasts(1);
 
         long start=System.currentTimeMillis();
         channels[0].send(msg);
@@ -124,7 +117,7 @@ public class RSVPTest {
         Message msg=new BytesMessage(channels[1].getAddress(), value).setFlag(Message.Flag.RSVP);
 
         DISCARD discard=channels[0].getProtocolStack().findProtocol(DISCARD.class);
-        discard.setDropDownUnicasts(1);
+        discard.dropDownUnicasts(1);
         
         long start=System.currentTimeMillis();
         channels[0].send(msg);
@@ -150,10 +143,10 @@ public class RSVPTest {
         Message msg=new BytesMessage(null, value).setFlag(Message.Flag.RSVP);
 
         DISCARD discard=channels[0].getProtocolStack().findProtocol(DISCARD.class);
-        discard.setDiscardAll(true);
+        discard.discardAll(true);
 
         RSVP rsvp=channels[0].getProtocolStack().findProtocol(RSVP.class);
-        rsvp.setValue("throw_exception_on_timeout", true).setValue("timeout", 5000).setValue("resend_interval", 500);
+        rsvp.throwExceptionOnTimeout(true).setTimeout(5000).setResendInterval(500);
 
         try {
             Thread closer=new Thread(() -> {
@@ -166,8 +159,8 @@ public class RSVPTest {
             // test fails if we get a TimeoutException
         }
         finally {
-            discard.setDiscardAll(false);
-            rsvp.setValue("throw_exception_on_timeout", false);
+            discard.discardAll(false);
+            rsvp.throwExceptionOnTimeout(false);
         }
     }
 
@@ -185,7 +178,7 @@ public class RSVPTest {
         }
 
         DISCARD discard=channels[0].getProtocolStack().findProtocol(DISCARD.class);
-        discard.setDropDownMulticasts(1);
+        discard.dropDownMulticasts(1);
         RequestOptions opts=RequestOptions.SYNC().flags(Message.Flag.RSVP_NB);
 
         long start=System.currentTimeMillis();
@@ -211,9 +204,9 @@ public class RSVPTest {
         Message msg=new BytesMessage(null, value).setFlag(Message.Flag.RSVP_NB);
 
         DISCARD discard=channels[0].getProtocolStack().findProtocol(DISCARD.class);
-        discard.setDiscardAll(true);
+        discard.discardAll(true);
         RSVP rsvp=channels[0].getProtocolStack().findProtocol(RSVP.class);
-        rsvp.setValue("timeout", 2000).setValue("resend_interval", 200);
+        rsvp.setTimeout(2000).setResendInterval(200);
         channels[0].send(msg);
         assert rsvp.getPendingRsvpRequests() == 1;
         for(int i=0; i < 10; i++) {

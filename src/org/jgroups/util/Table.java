@@ -142,8 +142,9 @@ public class Table<T> implements Iterable<T> {
     public long getHighestDelivered()    {return hd;}
     public long getHighestReceived()     {return hr;}
     public long getMaxCompactionTime()   {return max_compaction_time;}
-    public void setMaxCompactionTime(long max_compaction_time) {
+    public Table<T> setMaxCompactionTime(long max_compaction_time) {
         this.max_compaction_time=TimeUnit.NANOSECONDS.convert(max_compaction_time, TimeUnit.MILLISECONDS);
+        return this;
     }
     public int  getNumRows()             {return matrix.length;}
     public void resetStats()             {num_compactions=num_moves=num_resizes=num_purges=0;}
@@ -181,10 +182,11 @@ public class Table<T> implements Iterable<T> {
      * your own !
      * @param seqno
      */
-    public void setHighestDelivered(long seqno) {
+    public Table<T> setHighestDelivered(long seqno) {
         lock.lock();
         try {
             hd=seqno;
+            return this;
         }
         finally {
             lock.unlock();

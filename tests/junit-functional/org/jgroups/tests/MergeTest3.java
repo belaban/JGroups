@@ -85,7 +85,7 @@ public class MergeTest3 {
             GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.setJoinTimeout(3000);
             DISCARD discard=ch.getProtocolStack().findProtocol(DISCARD.class);
-            discard.setDiscardAll(false);
+            discard.discardAll(false);
         }
 
         System.out.println("Injecting MERGE event into merge leader " + merge_leader.getAddress());
@@ -161,19 +161,19 @@ public class MergeTest3 {
 
     protected static JChannel createChannel(String name) throws Exception {
         JChannel retval=new JChannel(new SHARED_LOOPBACK(),
-                                     new DISCARD().setValue("discard_all",true),
+                                     new DISCARD().discardAll(true),
                                      new SHARED_LOOPBACK_PING(),
-                                     new NAKACK2().setValue("use_mcast_xmit",false)
-                                       .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
+                                     new NAKACK2().useMcastXmit(false)
+                                       .logDiscardMessages(false).logNotFoundMessages(false),
                                      new UNICAST3(),
-                                     new STABLE().setValue("max_bytes",50000),
-                                     new GMS().setValue("print_local_addr",false)
-                                       .setValue("join_timeout", 1)
-                                       .setValue("leave_timeout",100)
-                                       .setValue("merge_timeout",5000)
-                                       .setValue("log_view_warnings",false)
-                                       .setValue("view_ack_collection_timeout",50)
-                                       .setValue("log_collect_msgs",false))
+                                     new STABLE().setMaxBytes(50000),
+                                     new GMS().printLocalAddress(false)
+                                       .setJoinTimeout( 1)
+                                       .setLeaveTimeout(100)
+                                       .setMergeTimeout(5000)
+                                       .logViewWarnings(false)
+                                       .setViewAckCollectionTimeout(50)
+                                       .logCollectMessages(false))
           .name(name);
         retval.connect("MergeTest3");
         JmxConfigurator.registerChannel(retval, Util.getMBeanServer(), name, retval.getClusterName(), true);

@@ -23,5 +23,5 @@ public interface MessageFactory {
      *             needs to be available (ie., not taken by JGroups or other applications).
      * @param generator The creator of the payload associated with the given type
      */
-    void register(short type, Supplier<? extends Message> generator);
+    <M extends MessageFactory> M register(short type, Supplier<? extends Message> generator);
 }

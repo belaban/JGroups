@@ -35,11 +35,10 @@ import java.util.function.Consumer;
  * in an application.
  * <p/>
  * Messages can be sent to the cluster members using the <em>send</em> method and messages can be received by setting
- * a {@link Receiver} in {@link #setReceiver(Receiver)} and implementing the {@link Receiver#receive(Message)} callback,
- * or extending {@link ReceiverAdapter} and overriding the {@link ReceiverAdapter#receive(Message)} method.
+ * a {@link Receiver} in {@link #setReceiver(Receiver)} and implementing the {@link Receiver#receive(Message)} callback.
  *
  * @author Bela Ban
- * @since 2.0
+ * @since  2.0
  */
 @MBean(description="JGroups channel")
 public class JChannel implements Closeable {
@@ -828,10 +827,10 @@ public class JChannel implements Closeable {
         }
     }
 
-    protected void cleanup() {
+    protected JChannel cleanup() {
         stopStack(true, false);
         state=State.OPEN;
-        init();
+        return init();
     }
 
     protected JChannel getState(Address target, long timeout, Callable<Boolean> flushInvoker) throws Exception {

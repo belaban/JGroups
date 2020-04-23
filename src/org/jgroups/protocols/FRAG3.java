@@ -1,11 +1,8 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import java.util.ArrayList;
@@ -36,21 +33,10 @@ import java.util.function.Predicate;
  * @author Bela Ban
  * @since 4.0
  */
-@MBean(description="Fragments messages larger than fragmentation size into smaller packets")
-public class FRAG3 extends Protocol {
+public class FRAG3 extends Fragmentation {
     
 
-    /* -----------------------------------------    Properties     -------------------------------------------------- */
-    
-    @Property(description="The max number of bytes in a message. Larger messages will be fragmented")
-    protected int                 frag_size=60000;
-  
-    /* --------------------------------------------- Fields ------------------------------------------------------ */
-    
-    
-    /*the fragmentation list contains a fragmentation table per sender
-     *this way it becomes easier to clean up if a sender (member) leaves or crashes
-     */
+    // fragmentation list has a fragtable per sender; this way it becomes easier to clean up if a member leaves or crashes
     protected final ConcurrentMap<Address,ConcurrentMap<Integer,FragEntry>> fragment_list=Util.createConcurrentMap(11);
 
     protected final Predicate<Message> HAS_FRAG_HEADER=msg -> msg.getHeader(id) != null;
@@ -71,12 +57,8 @@ public class FRAG3 extends Protocol {
     protected final AverageMinMax avg_size_down=new AverageMinMax();
     protected final AverageMinMax avg_size_up=new AverageMinMax();
 
-    public int   getFragSize()                  {return frag_size;}
-    public void  setFragSize(int s)             {frag_size=s;}
     public long  getNumberOfSentFragments()     {return num_frags_sent.sum();}
     public long  getNumberOfReceivedFragments() {return num_frags_received.sum();}
-    public int   fragSize()                     {return frag_size;}
-    public FRAG3 fragSize(int size)             {frag_size=size; return this;}
 
     @ManagedAttribute(description="min/avg/max size (in bytes) for messages sent down that needed to be fragmented")
     public String getAvgSizeDown() {return avg_size_down.toString();}

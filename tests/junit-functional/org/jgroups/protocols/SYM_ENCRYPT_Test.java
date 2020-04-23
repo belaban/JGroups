@@ -55,10 +55,10 @@ public class SYM_ENCRYPT_Test extends EncryptTest {
           new SHARED_LOOPBACK_PING(),
           // omit MERGE3 from the stack -- nodes are leaving gracefully
           encr,
-          new NAKACK2().setUseMcastXmit(false),
+          new NAKACK2().useMcastXmit(false),
           new UNICAST3(),
           new STABLE(),
-          new GMS().joinTimeout(2000))
+          new GMS().setJoinTimeout(2000))
           .name(name);
     }
 
