@@ -295,22 +295,22 @@ public class TcpConnection extends Connection {
         public int     bufferSize() {return buffer != null? buffer.length : 0;}
 
         public void run() {
-            Throwable t=null;
-            while(canRun()) {
-                try {
+            try {
+                while(canRun()) {
                     int len=in.readInt(); // needed to read messages from TCP_NIO2
                     server.receive(peer_addr, in, len);
                     updateLastAccessed();
                 }
-                catch(OutOfMemoryError | IOException ignore) {
-                    t=ignore;
-                    break;
-                }
-                catch(Throwable e) {
-                }
             }
-            server.notifyConnectionClosed(TcpConnection.this, String.format("%s: %s", getClass().getSimpleName(),
-                                                                            t != null? t.toString() : "n/a"));
+            catch(EOFException eof) {
+                ; // regular use case when a peer closes its connection - we don't want to log this as exception
+            }
+            catch(Exception e) {
+                throw new RuntimeException(String.format("failed handling message from %s: %s", peer_addr, e));
+            }
+            finally {
+                server.notifyConnectionClosed(TcpConnection.this);
+            }
         }
     }
 

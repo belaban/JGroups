@@ -110,7 +110,7 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
     }
 
     @Override
-    public void connectionClosed(Connection conn, String cause) {
+    public void connectionClosed(Connection conn) {
         stop();
     }
 

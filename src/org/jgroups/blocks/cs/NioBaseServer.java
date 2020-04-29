@@ -148,7 +148,7 @@ public abstract class NioBaseServer extends BaseServer {
                         }
                     }
                     catch(Throwable ex) {
-                        closeConnection(conn, ex);
+                        closeConnection(conn);
                     }
                 }
             }

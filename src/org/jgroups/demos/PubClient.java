@@ -53,11 +53,11 @@ public class PubClient extends ReceiverAdapter implements ConnectionListener {
     }
 
     @Override
-    public void connectionClosed(Connection conn, String cause) {
+    public void connectionClosed(Connection conn) {
         client.stop();
         running=false;
         Util.close(in);
-        System.out.printf("connection to %s closed: %s", conn.peerAddress(), cause);
+        System.out.printf("connection to %s closed", conn.peerAddress());
     }
 
     @Override
