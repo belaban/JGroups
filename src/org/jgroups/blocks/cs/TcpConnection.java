@@ -302,7 +302,7 @@ public class TcpConnection extends Connection {
                     updateLastAccessed();
                 }
             }
-            catch(EOFException eof) {
+            catch(EOFException | SocketException ex) {
                 ; // regular use case when a peer closes its connection - we don't want to log this as exception
             }
             catch(Exception e) {
