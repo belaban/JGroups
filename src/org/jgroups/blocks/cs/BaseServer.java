@@ -232,7 +232,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
 
     @Override
-    public void connectionClosed(Connection conn, String reason) {
+    public void connectionClosed(Connection conn) {
         removeConnectionIfPresent(conn.peerAddress(), conn);
     }
 
@@ -318,9 +318,9 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         Util.close(previous); // closes previous connection (if present)
     }
 
-    public void closeConnection(Connection conn, Throwable ex) {
+    public void closeConnection(Connection conn) {
         Util.close(conn);
-        notifyConnectionClosed(conn, ex.toString());
+        notifyConnectionClosed(conn);
         removeConnectionIfPresent(conn != null? conn.peerAddress() : null, conn);
     }
 
@@ -401,10 +401,10 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         copy.clear();
     }
 
-    public void notifyConnectionClosed(Connection conn, String cause) {
+    public void notifyConnectionClosed(Connection conn) {
         for(ConnectionListener l: conn_listeners) {
             try {
-                l.connectionClosed(conn, cause);
+                l.connectionClosed(conn);
             }
             catch(Throwable t) {
                 log.warn("failed notifying listener %s of connection close: %s", l, t);

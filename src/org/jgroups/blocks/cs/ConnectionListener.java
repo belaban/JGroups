@@ -5,6 +5,6 @@ package org.jgroups.blocks.cs;
  * @since  3.6.5
  */
 public interface ConnectionListener {
-    void connectionClosed(Connection conn, String reason);
+    void connectionClosed(Connection conn);
     void connectionEstablished(Connection conn);
 }

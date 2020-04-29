@@ -477,7 +477,7 @@ public class NioConnection extends Connection {
                             break;
                     }
                     catch(Exception ex) {
-                        server.closeConnection(NioConnection.this, ex);
+                        server.closeConnection(NioConnection.this);
                         state(State.done);
                         return;
                     }
