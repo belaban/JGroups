@@ -309,9 +309,8 @@ public class TcpConnection extends Connection {
         public int     bufferSize() {return buffer != null? buffer.length : 0;}
 
         public void run() {
-            Throwable t=null;
-            while(canRun()) {
-                try {
+            try {
+                while(canRun()) {
                     int len=in.readInt();
                     if(buffer == null || buffer.length < len)
                         buffer=new byte[len];
@@ -319,19 +318,16 @@ public class TcpConnection extends Connection {
                     updateLastAccessed();
                     server.receive(peer_addr, buffer, 0, len);
                 }
-                catch(OutOfMemoryError mem_ex) {
-                    t=mem_ex;
-                    break; // continue;
-                }
-                catch(IOException io_ex) {
-                    t=io_ex;
-                    break;
-                }
-                catch(Throwable e) {
-                }
             }
-            server.notifyConnectionClosed(TcpConnection.this, String.format("%s: %s", getClass().getSimpleName(),
-                                                                            t != null? t.toString() : "n/a"));
+            catch(EOFException | SocketException ex) {
+                ; // regular use case when a peer closes its connection - we don't want to log this as exception
+            }
+            catch(Exception e) {
+                throw new RuntimeException(String.format("failed handling message from %s: %s", peer_addr, e));
+            }
+            finally {
+                server.notifyConnectionClosed(TcpConnection.this);
+            }
         }
     }
 
@@ -394,8 +390,7 @@ public class TcpConnection extends Connection {
                     t=ignored;
                 }
             }
-            server.notifyConnectionClosed(TcpConnection.this, String.format("%s: %s", getClass().getSimpleName(),
-                                                                            t != null? t.toString() : "normal stop"));
+            server.notifyConnectionClosed(TcpConnection.this);
         }
     }
 

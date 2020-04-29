@@ -214,7 +214,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
 
 
     @Override
-    public void connectionClosed(Connection conn, String reason) {
+    public void connectionClosed(Connection conn) {
         if(close_listener != null)
             close_listener.closed(this);
     }

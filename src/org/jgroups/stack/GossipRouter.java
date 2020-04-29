@@ -261,7 +261,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
 
 
     @Override
-    public void connectionClosed(Connection conn, String reason) {
+    public void connectionClosed(Connection conn) {
         removeFromAddressMappings(conn.peerAddress());
     }
 
