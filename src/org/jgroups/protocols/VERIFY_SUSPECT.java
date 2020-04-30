@@ -2,7 +2,11 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.*;
+import org.jgroups.annotations.LocalAddress;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
@@ -30,7 +34,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
     
-    @Property(description="Number of millisecs to wait for a response from a suspected member")
+    @Property(description="Number of millisecs to wait for a response from a suspected member",type=AttributeType.TIME)
     protected long                    timeout=2000;
     
     @Property(description="Number of verify heartbeats sent to a suspected member")

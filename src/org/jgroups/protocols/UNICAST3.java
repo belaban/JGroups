@@ -5,6 +5,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -38,10 +39,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     @Property(description="Time (in milliseconds) after which an idle incoming or outgoing connection is closed. The " +
       "connection will get re-established when used again. 0 disables connection reaping. Note that this creates " +
-      "lingering connection entries, which increases memory over time.")
+      "lingering connection entries, which increases memory over time.",type=AttributeType.TIME)
     protected long    conn_expiry_timeout=(long) 60000 * 2;
 
-    @Property(description="Time (in ms) until a connection marked to be closed will get removed. 0 disables this")
+    @Property(description="Time (in ms) until a connection marked to be closed will get removed. 0 disables this",
+      type=AttributeType.TIME)
     protected long    conn_close_timeout=240_000; // 4 mins == TIME_WAIT timeout (= 2 * MSL)
 
     @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
@@ -55,13 +57,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected double  xmit_table_resize_factor=1.2;
 
     @Property(description="Number of milliseconds after which the matrix in the retransmission table " +
-      "is compacted (only for experts)",writable=false)
+      "is compacted (only for experts)",writable=false,type=AttributeType.TIME)
     protected long    xmit_table_max_compaction_time= (long) 10 * 60 * 1000;
 
     // @Property(description="Max time (in ms) after which a connection to a non-member is closed")
     protected long    max_retransmit_time=60 * 1000L;
 
-    @Property(description="Interval (in milliseconds) at which messages in the send windows are resent")
+    @Property(description="Interval (in milliseconds) at which messages in the send windows are resent",type=AttributeType.TIME)
     protected long    xmit_interval=500;
 
     @Property(description="If true, trashes warnings about retransmission messages not found in the xmit_table (used for testing)")
@@ -71,7 +73,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
       "Otherwise send delayed acks. If 1, ack single messages (similar to UNICAST)")
     protected int     ack_threshold=5;
 
-    @Property(description="Min time (in ms) to elapse for successive SEND_FIRST_SEQNO messages to be sent to the same sender")
+    @Property(description="Min time (in ms) to elapse for successive SEND_FIRST_SEQNO messages to be sent to the same sender",
+      type=AttributeType.TIME)
     protected long    sync_min_interval=2000;
 
     @Property(description="Max number of messages to ask for in a retransmit request. 0 disables this and uses " +
@@ -84,13 +87,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected long    num_msgs_sent=0, num_msgs_received=0;
     protected long    num_acks_sent=0, num_acks_received=0, num_xmits=0;
 
-    @ManagedAttribute(description="Number of retransmit requests received")
+    @ManagedAttribute(description="Number of retransmit requests received",type=AttributeType.SCALAR)
     protected final LongAdder  xmit_reqs_received=new LongAdder();
 
-    @ManagedAttribute(description="Number of retransmit requests sent")
+    @ManagedAttribute(description="Number of retransmit requests sent",type=AttributeType.SCALAR)
     protected final LongAdder  xmit_reqs_sent=new LongAdder();
 
-    @ManagedAttribute(description="Number of retransmit responses sent")
+    @ManagedAttribute(description="Number of retransmit responses sent",type=AttributeType.SCALAR)
     protected final LongAdder  xmit_rsps_sent=new LongAdder();
 
     protected final AverageMinMax avg_delivery_batch_size=new AverageMinMax();
@@ -228,15 +231,21 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return sb.toString();
     }
 
-    @ManagedAttribute public long getNumMessagesSent()     {return num_msgs_sent;}
-    @ManagedAttribute public long getNumMessagesReceived() {return num_msgs_received;}
-    @ManagedAttribute public long getNumAcksSent()         {return num_acks_sent;}
-    @ManagedAttribute public long getNumAcksReceived()     {return num_acks_received;}
-    @ManagedAttribute public long getNumXmits()            {return num_xmits;}
-    public long                   getMaxRetransmitTime()   {return max_retransmit_time;}
+    @ManagedAttribute(type=AttributeType.SCALAR)
+    public long getNumMessagesSent()     {return num_msgs_sent;}
+    @ManagedAttribute(type=AttributeType.SCALAR)
+    public long getNumMessagesReceived() {return num_msgs_received;}
+    @ManagedAttribute(type=AttributeType.SCALAR)
+    public long getNumAcksSent()         {return num_acks_sent;}
+    @ManagedAttribute(type=AttributeType.SCALAR)
+    public long getNumAcksReceived()     {return num_acks_received;}
+    @ManagedAttribute(type=AttributeType.SCALAR)
+    public long getNumXmits()            {return num_xmits;}
+    public long getMaxRetransmitTime()   {return max_retransmit_time;}
 
     @Property(description="Max number of milliseconds we try to retransmit a message to any given member. After that, " +
-      "the connection is removed. Any new connection to that member will start with seqno #1 again. 0 disables this")
+      "the connection is removed. Any new connection to that member will start with seqno #1 again. 0 disables this",
+      type=AttributeType.TIME)
     public UNICAST3 setMaxRetransmitTime(long max_retransmit_time) {
         this.max_retransmit_time=max_retransmit_time;
         if(cache != null && max_retransmit_time > 0)
@@ -268,22 +277,22 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     /** The number of messages in all Entry.sent_msgs tables (haven't received an ACK yet) */
-    @ManagedAttribute
+    @ManagedAttribute(type=AttributeType.SCALAR)
     public int getNumUnackedMessages() {
         return accumulate(Table::size, send_table.values());
     }
 
-    @ManagedAttribute(description="Total number of undelivered messages in all receive windows")
+    @ManagedAttribute(description="Total number of undelivered messages in all receive windows",type=AttributeType.SCALAR)
     public int getXmitTableUndeliveredMessages() {
         return accumulate(Table::size, recv_table.values());
     }
 
-    @ManagedAttribute(description="Total number of missing messages in all receive windows")
+    @ManagedAttribute(description="Total number of missing messages in all receive windows",type=AttributeType.SCALAR)
     public int getXmitTableMissingMessages() {
         return accumulate(Table::getNumMissing, recv_table.values());
     }
 
-    @ManagedAttribute(description="Total number of deliverable messages in all receive windows")
+    @ManagedAttribute(description="Total number of deliverable messages in all receive windows",type=AttributeType.SCALAR)
     public int getXmitTableDeliverableMessages() {
         return accumulate(Table::getNumDeliverable, recv_table.values());
     }

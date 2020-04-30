@@ -7,6 +7,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.TimeScheduler;
@@ -37,11 +38,12 @@ import java.util.stream.Collectors;
 @MBean(description="Blocks all multicast threads when closed")
 public class BARRIER extends Protocol {
     
-    @Property(description="Max time barrier can be closed. Default is 60000 ms")
+    @Property(description="Max time barrier can be closed. Default is 60000 ms",type=AttributeType.TIME)
     protected long                       max_close_time=60000; // how long can the barrier stay closed (in ms) ? 0 means forever
 
     @Property(description="Max time (in ms) to wait until the threads which passed the barrier before it was closed " +
-      "have completed. If this time elapses, an exception will be thrown and state transfer will fail. 0 = wait forever")
+      "have completed. If this time elapses, an exception will be thrown and state transfer will fail. 0= wait forever",
+    type=AttributeType.TIME)
     protected long                       flush_timeout=5000;
 
 

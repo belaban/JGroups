@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.ByteArray;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.MessageIterator;
@@ -45,21 +46,15 @@ public class FRAG extends Fragmentation {
     protected final Predicate<Message> HAS_FRAG_HEADER=msg -> msg.getHeader(id) != null;
  
 
-    @ManagedAttribute(description="Number of sent messages")
+    @ManagedAttribute(description="Number of sent messages",type=AttributeType.SCALAR)
     long num_sent_msgs;
-    @ManagedAttribute(description="Number of sent fragments")
-    long num_sent_frags;
-    @ManagedAttribute(description="Number of received messages")
+    @ManagedAttribute(description="Number of received messages",type=AttributeType.SCALAR)
     long num_received_msgs;
-    @ManagedAttribute(description="Number of received fragments")
-    long num_received_frags;
 
 
     public long getNumberOfSentMessages() {return num_sent_msgs;}
-    public long getNumberOfSentFragments() {return num_sent_frags;}
     public long getNumberOfReceivedMessages() {return num_received_msgs;}
-    public long getNumberOfReceivedFragments() {return num_received_frags;}
-  
+
 
     public void init() throws Exception {
         super.init();
@@ -71,7 +66,7 @@ public class FRAG extends Fragmentation {
 
     public void resetStats() {
         super.resetStats();
-        num_sent_msgs=num_sent_frags=num_received_msgs=num_received_frags=0;
+        num_sent_msgs=num_received_msgs=0;
     }
 
 
@@ -85,7 +80,7 @@ public class FRAG extends Fragmentation {
                 handleViewChange(evt.getArg());
                 break;
         }
-        return down_prot.down(evt);  // Pass on to the layer below us
+        return super.down(evt);  // Pass on to the layer below us
     }
 
     public Object down(Message msg) {
@@ -185,7 +180,7 @@ public class FRAG extends Fragmentation {
             byte[] buffer=tmp.getArray();
             byte[][] fragments=Util.fragmentBuffer(buffer, frag_size, tmp.getLength());
             num_frags=fragments.length;
-            num_sent_frags+=num_frags;
+            num_frags_sent.add(num_frags);
 
             if(log.isTraceEnabled()) {
                 StringBuilder sb=new StringBuilder();
@@ -226,7 +221,7 @@ public class FRAG extends Fragmentation {
                 frag_table=fragment_list.get(sender);
             }
         }
-        num_received_frags++;
+        num_frags_received.add(1);
         byte[] buf=frag_table.add(hdr.id, hdr.frag_id, hdr.num_frags, msg.getArray());
         if(buf == null)
             return null;

@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
@@ -49,22 +48,10 @@ public class FRAG2 extends Fragmentation {
     protected int                 curr_id=1;
 
     protected final List<Address> members=new ArrayList<>(11);
-
-    protected Address             local_addr;
-
     protected MessageFactory      msg_factory;
-
-
-    @ManagedAttribute(description="Number of sent fragments")
-    protected LongAdder           num_frags_sent=new LongAdder();
-    @ManagedAttribute(description="Number of received fragments")
-    protected LongAdder           num_frags_received=new LongAdder();
 
     protected final AverageMinMax avg_size_down=new AverageMinMax();
     protected final AverageMinMax avg_size_up=new AverageMinMax();
-
-    public long  getNumberOfSentFragments()     {return num_frags_sent.sum();}
-    public long  getNumberOfReceivedFragments() {return num_frags_received.sum();}
 
     @ManagedAttribute(description="min/avg/max size (in bytes) for messages sent down that needed to be fragmented")
     public String getAvgSizeDown() {return avg_size_down.toString();}
@@ -99,8 +86,6 @@ public class FRAG2 extends Fragmentation {
 
     public void resetStats() {
         super.resetStats();
-        num_frags_sent.reset();
-        num_frags_received.reset();
         avg_size_down.clear();
         avg_size_up.clear();
     }
@@ -116,11 +101,8 @@ public class FRAG2 extends Fragmentation {
             case Event.VIEW_CHANGE:
                 handleViewChange(evt.getArg());
                 break;
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
         }
-        return down_prot.down(evt);  // Pass on to the layer below us
+        return super.down(evt);
     }
 
     public Object down(Message msg) {

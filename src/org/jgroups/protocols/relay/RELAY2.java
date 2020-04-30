@@ -2,6 +2,7 @@ package org.jgroups.protocols.relay;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.Protocol;
@@ -99,7 +100,7 @@ public class RELAY2 extends Protocol {
       "members of the local site for load balancing, reducing work for itself")
     protected boolean                                  can_forward_local_cluster;
 
-    @Property(description="Number of millis to wait for topology detection")
+    @Property(description="Number of millis to wait for topology detection",type=AttributeType.TIME)
     protected long                                     topo_wait_time=2000;
 
     // protocol IDs above RELAY2
@@ -185,7 +186,8 @@ public class RELAY2 extends Protocol {
     @ManagedAttribute(description="Number of messages forwarded to the local SiteMaster")
     public long getNumForwardedToSiteMaster() {return forward_to_site_master.sum();}
 
-    @ManagedAttribute(description="The total time (in ms) spent forwarding messages to the local SiteMaster")
+    @ManagedAttribute(description="The total time (in ms) spent forwarding messages to the local SiteMaster"
+      ,type=AttributeType.TIME)
     public long getTimeForwardingToSM() {return TimeUnit.MILLISECONDS.convert(forward_sm_time.sum(),TimeUnit.NANOSECONDS);}
 
     @ManagedAttribute(description="The average number of messages / s for forwarding messages to the local SiteMaster")
@@ -197,7 +199,8 @@ public class RELAY2 extends Protocol {
     @ManagedAttribute(description="Number of messages sent by this SiteMaster to a remote SiteMaster")
     public long getNumRelayed() {return relayed.sum();}
 
-    @ManagedAttribute(description="The total time (ms) spent relaying messages from this SiteMaster to remote SiteMasters")
+    @ManagedAttribute(description="The total time (ms) spent relaying messages from this SiteMaster to remote SiteMasters"
+      ,type=AttributeType.TIME)
     public long getTimeRelaying() {return TimeUnit.MILLISECONDS.convert(relayed_time.sum(), TimeUnit.NANOSECONDS);}
 
     @ManagedAttribute(description="The average number of messages / s for relaying messages from this SiteMaster to remote SiteMasters")
@@ -207,7 +210,8 @@ public class RELAY2 extends Protocol {
       "by this SiteMaster to a local node")
     public long getNumForwardedToLocalMbr() {return forward_to_local_mbr.sum();}
 
-    @ManagedAttribute(description="The total time (in ms) spent forwarding messages to a member in the same site")
+    @ManagedAttribute(description="The total time (in ms) spent forwarding messages to a member in the same site",
+      type=AttributeType.TIME)
     public long getTimeForwardingToLocalMbr() {return TimeUnit.MILLISECONDS.convert(forward_to_local_mbr_time.sum(),TimeUnit.NANOSECONDS);}
 
     @ManagedAttribute(description="The average number of messages / s for forwarding messages to a member in the same site")
@@ -217,7 +221,7 @@ public class RELAY2 extends Protocol {
     @ManagedAttribute(description="Number of messages delivered locally, e.g. received and delivered to self")
     public long getNumLocalDeliveries() {return local_deliveries.sum();}
 
-    @ManagedAttribute(description="The total time (ms) spent delivering received messages locally")
+    @ManagedAttribute(description="The total time (ms) spent delivering received messages locally",type=AttributeType.TIME)
     public long getTimeDeliveringLocally() {return TimeUnit.MILLISECONDS.convert(local_delivery_time.sum(),TimeUnit.NANOSECONDS);}
 
     @ManagedAttribute(description="The average number of messages / s for delivering received messages locally")

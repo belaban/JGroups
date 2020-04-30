@@ -3,15 +3,18 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.blocks.LazyRemovalCache;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
-import org.jgroups.util.ThreadFactory;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -60,16 +63,17 @@ public class FD_SOCK extends Protocol implements Runnable {
               systemProperty=Global.EXTERNAL_PORT,writable=false)
     protected int         external_port;
 
-    @Property(description="Timeout for getting socket cache from coordinator")
+    @Property(description="Timeout for getting socket cache from coordinator",type=AttributeType.TIME)
     protected long        get_cache_timeout=1000;
 
     @Property(description="Max number of elements in the cache until deleted elements are removed")
     protected int         cache_max_elements=200;
 
-    @Property(description="Max age (in ms) an element marked as removed has to have until it is removed")
+    @Property(description="Max age (in ms) an element marked as removed has to have until it is removed",
+      type=AttributeType.TIME)
     protected long        cache_max_age=10000;
 
-    @Property(description="Interval for broadcasting suspect messages")
+    @Property(description="Interval for broadcasting suspect messages",type=AttributeType.TIME)
     protected long        suspect_msg_interval=5000;
 
     @Property(description="Number of attempts coordinator is solicited for socket cache until we give up")
@@ -87,7 +91,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     @Property(description="Whether to use KEEP_ALIVE on the ping socket or not. Default is true")
     protected boolean     keep_alive=true;
 
-    @Property(description="Max time in millis to wait for ping Socket.connect() to return")
+    @Property(description="Max time in millis to wait for ping Socket.connect() to return",type=AttributeType.TIME)
     protected int         sock_conn_timeout=1000;
 
 

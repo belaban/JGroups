@@ -5,6 +5,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
@@ -25,7 +26,8 @@ public class SIZE extends Protocol {
     @Property protected boolean   raw_buffer=false; // just print the payload size of the message
 
     /** Min size in bytes above which msgs should be printed */
-    protected @Property long      min_size;
+    @Property(type=AttributeType.BYTES)
+    protected long                min_size;
 
     protected Address             local_addr;
 

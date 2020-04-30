@@ -5,6 +5,7 @@ import org.jgroups.Version;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
@@ -27,7 +28,8 @@ public class SOS extends Protocol {
     @Property(description="File to which the periodic data is written",writable=false)
     protected String            filename="${sos.filename:jgroups.sos}";
 
-    @Property(description="Interval in ms at which the attributes are fetched and written to the file",writable=false)
+    @Property(description="Interval in ms at which the attributes are fetched and written to the file",
+      writable=false,type=AttributeType.TIME)
     protected long              interval=60_000 * 15;
 
     @Property(description="The attributes to be fetched. In probe format ('jmx' or 'op' command)",writable=false)

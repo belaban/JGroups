@@ -7,6 +7,7 @@ import org.jgroups.View;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Runner;
 import org.jgroups.util.Tuple;
@@ -89,7 +90,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected boolean         require_client_authentication=true;
 
     @Property(description="Timeout (in ms) for a socket read. This applies for example to the initial SSL handshake, " +
-      "e.g. if the client connects to a non-JGroups service accidentally running on the same port")
+      "e.g. if the client connects to a non-JGroups service accidentally running on the same port",type=AttributeType.TIME)
     protected int             socket_timeout=1000;
 
     @Property(description="The fully qualified name of a class implementing SessionVerifier")

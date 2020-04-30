@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
@@ -32,13 +33,17 @@ public class DELAY extends Protocol {
 
     private static final Random randomNumberGenerator = new Random();
 
-    @Property(description = "Upper bound of number of milliseconds to delay passing a message up the stack (exclusive)")
+    @Property(description="Upper bound of number of milliseconds to delay passing a message up the stack (exclusive)",
+      type=AttributeType.TIME)
     protected int in_delay;
-    @Property(description = "Upper bound number of milliseconds to delay passing a message down the stack (exclusive)")
+    @Property(description = "Upper bound number of milliseconds to delay passing a message down the stack (exclusive)",
+    type=AttributeType.TIME)
     protected int out_delay;
-    @Property(description = "Number of nanoseconds to delay passing a message up the stack")
+    @Property(description = "Number of nanoseconds to delay passing a message up the stack",
+      type=AttributeType.TIME,unit=TimeUnit.NANOSECONDS)
     protected int in_delay_nanos;
-    @Property(description = "Number of nanoseconds to delay passing a message down the stack")
+    @Property(description = "Number of nanoseconds to delay passing a message down the stack",
+      type=AttributeType.TIME,unit=TimeUnit.NANOSECONDS)
     protected int out_delay_nanos;
     @Property(description = "Keep the delay constant. By default delay time randoms between 0 and upper bound")
     protected boolean constant_delay;

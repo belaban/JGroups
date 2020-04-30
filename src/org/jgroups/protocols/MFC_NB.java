@@ -5,6 +5,7 @@ import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.CreditMap;
 import org.jgroups.util.NonBlockingCreditMap;
 import org.jgroups.util.Tuple;
@@ -26,7 +27,7 @@ import java.util.function.Consumer;
 public class MFC_NB extends MFC {
     @Property(description="Max number of bytes of all queued messages for a given destination. If a given destination " +
       "has no credits left and the message cannot be added to the queue because it is full, then the sender thread " +
-      "will be blocked until there is again space available in the queue, or the protocol is stopped.")
+      "will be blocked until there is again space available in the queue, or the protocol is stopped.",type=AttributeType.BYTES)
     protected int                     max_queue_size=10_000_000;
     protected final Consumer<Message> send_function=msg -> down_prot.down(msg);
     protected Future<?>               credit_send_task;
@@ -40,17 +41,19 @@ public class MFC_NB extends MFC {
         return ((NonBlockingCreditMap)credits).isQueuing();
     }
 
-    @ManagedAttribute(description="The number of messages currently queued due to insufficient credit")
+    @ManagedAttribute(description="The number of messages currently queued due to insufficient credit"
+      ,type=AttributeType.SCALAR)
     public int getNumberOfQueuedMessages() {
         return ((NonBlockingCreditMap)credits).getQueuedMessages();
     }
 
-    @ManagedAttribute(description="The total size of all currently queued messages")
+    @ManagedAttribute(description="The total size of all currently queued messages",type=AttributeType.BYTES)
     public int getQueuedSize() {
         return ((NonBlockingCreditMap)credits).getQueuedMessageSize();
     }
 
-    @ManagedAttribute(description="The number of times messages have been queued due to insufficient credits")
+    @ManagedAttribute(description="The number of times messages have been queued due to insufficient credits"
+      ,type=AttributeType.SCALAR)
     public int getNumberOfQueuings() {
         return ((NonBlockingCreditMap)credits).getEnqueuedMessages();
     }

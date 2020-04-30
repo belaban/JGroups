@@ -9,6 +9,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.*;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -60,13 +61,16 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     @ManagedAttribute(description="server port on which the GossipRouter accepts client connections", writable=true)
     protected int                  port=12001;
     
-    @ManagedAttribute(description="time (in msecs) until gossip entry expires. 0 disables expiration.", writable=true)
+    @ManagedAttribute(description="time (in msecs) until gossip entry expires. 0 disables expiration.",
+      writable=true,type=AttributeType.TIME)
     protected long                 expiry_time;
 
-    @Property(description="Time (in ms) for setting SO_LINGER on sockets returned from accept(). 0 means do not set SO_LINGER")
+    @Property(description="Time (in ms) for setting SO_LINGER on sockets returned from accept(). 0 means do not set SO_LINGER"
+      ,type=AttributeType.TIME)
     protected long                 linger_timeout=2000L;
 
-    @Property(description="Time (in ms) for SO_TIMEOUT on sockets returned from accept(). 0 means don't set SO_TIMEOUT")
+    @Property(description="Time (in ms) for SO_TIMEOUT on sockets returned from accept(). 0 means don't set SO_TIMEOUT"
+      ,type=AttributeType.TIME)
     protected long                 sock_read_timeout;
 
     protected ThreadFactory        thread_factory=new DefaultThreadFactory("gossip", false, true);

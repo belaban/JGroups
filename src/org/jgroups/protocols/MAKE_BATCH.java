@@ -5,6 +5,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.AsciiString;
 import org.jgroups.util.MessageBatch;
@@ -31,7 +32,8 @@ public class MAKE_BATCH extends Protocol {
     @Property(description="handle unicast messages")
     protected boolean unicasts=false;
 
-    @Property(description="Time to sleep (in ms) from the reception of the first message to sending a batch up")
+    @Property(description="Time to sleep (in ms) from the reception of the first message to sending a batch up",
+      type=AttributeType.TIME)
     protected long sleep_time=100;
 
     // all maps have sender and msg list pairs

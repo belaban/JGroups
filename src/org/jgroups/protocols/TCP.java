@@ -7,6 +7,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.TcpServer;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.SocketFactory;
 
 import java.util.Collection;
@@ -34,11 +35,12 @@ public class TCP extends BasicTCP {
     public TCP() {}
 
     @Property(description="Size of the buffer of the BufferedInputStream in TcpConnection. A read always tries to read " +
-      "ahead as much data as possible into the buffer. 0: default size")
+      "ahead as much data as possible into the buffer. 0: default size",type=AttributeType.BYTES)
     protected int buffered_input_stream_size=8192;
 
     @Property(description="Size of the buffer of the BufferedOutputStream in TcpConnection. Smaller messages are " +
-      " buffered until this size is exceeded or flush() is called. Bigger messages are sent immediately. 0: default size")
+      " buffered until this size is exceeded or flush() is called. Bigger messages are sent immediately. 0: default size",
+      type=AttributeType.BYTES)
     protected int buffered_output_stream_size=8192;
 
     public int getBufferedInputStreamSize() {

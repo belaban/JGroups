@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.TimeScheduler;
@@ -41,7 +42,7 @@ public class SHUFFLE extends Protocol {
     @Property(description="max number of messages before we reorder queued messages and send them up")
     protected int                 max_size=10;
 
-    @Property(description="max time (in millis) before we pass the reordered messages up or down")
+    @Property(description="max time (in millis) before we pass the reordered messages up or down",type=AttributeType.TIME)
     protected long                max_time=1500L;
 
 

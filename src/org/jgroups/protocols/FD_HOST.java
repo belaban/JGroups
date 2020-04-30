@@ -8,6 +8,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -42,13 +43,14 @@ public class FD_HOST extends Protocol {
       "If null, InetAddress.isReachable() will be used by default")
     protected String                                     cmd;
 
-    @Property(description="Max time (in ms) after which a host is suspected if it failed all liveness checks")
+    @Property(description="Max time (in ms) after which a host is suspected if it failed all liveness checks",
+    type=AttributeType.TIME)
     protected long                                       timeout=60000;
 
-    @Property(description="The interval (in ms) at which the hosts are checked for liveness")
+    @Property(description="The interval (in ms) at which the hosts are checked for liveness",type=AttributeType.TIME)
     protected long                                       interval=20000;
 
-    @Property(description="Max time (in ms) that a liveness check for a single host can take")
+    @Property(description="Max time (in ms) that a liveness check for a single host can take",type=AttributeType.TIME)
     protected long                                       check_timeout=3000;
 
     @Property(description="Uses TimeService to get the current time rather than System.currentTimeMillis. Might get " +

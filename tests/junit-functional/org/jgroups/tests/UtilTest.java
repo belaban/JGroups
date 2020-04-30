@@ -24,7 +24,8 @@ import java.util.stream.LongStream;
 
 @Test(groups=Global.FUNCTIONAL)
 public class UtilTest {
-
+    protected static final char decimal_sep=DecimalFormatSymbols.getInstance().getDecimalSeparator();
+    //protected static final char decimal_sep=DecimalFormatSymbols.getInstance().getDecimalSeparator();
 
     public void testShuffle() {
         Integer[] array={1,2,3,4,5};
@@ -262,13 +263,8 @@ public class UtilTest {
     }
 
     public void testPrintBytes() {
-        long num;
-        String s;
-
-        char decimal_sep=DecimalFormatSymbols.getInstance().getDecimalSeparator();
-
-        num=1;
-        s=Util.printBytes(num);
+        long num=1;
+        String s=Util.printBytes(num);
         System.out.println(num + " is " + s);
         Assert.assertEquals("1b", s);
 
@@ -280,7 +276,7 @@ public class UtilTest {
         num=1000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1" + decimal_sep +"00KB", s);
+        Assert.assertEquals("1KB", s);
 
         num=1001;
         s=Util.printBytes(num);
@@ -290,49 +286,59 @@ public class UtilTest {
         num=1010;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1"+decimal_sep+"01KB", s);
+        Assert.assertEquals("1"+ decimal_sep +"01KB", s);
 
         num=1543;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1"+decimal_sep+"54KB", s);
+        Assert.assertEquals("1"+ decimal_sep +"54KB", s);
 
         num=10000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("10"+decimal_sep+"00KB", s);
+        Assert.assertEquals("10KB", s);
 
         num=150000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("150"+decimal_sep+"00KB", s);
+        Assert.assertEquals("150KB", s);
 
         num=150023;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("150"+decimal_sep+"02KB", s);
+        Assert.assertEquals("150"+ decimal_sep +"02KB", s);
 
         num=1200000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1"+decimal_sep+"20MB", s);
+        Assert.assertEquals("1"+ decimal_sep +"20MB", s);
 
         num=150000000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("150"+decimal_sep+"00MB", s);
+        Assert.assertEquals("150MB", s);
 
         num=150030000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("150"+decimal_sep+"03MB", s);
+        Assert.assertEquals("150"+ decimal_sep +"03MB", s);
 
         num=1200000000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1"+decimal_sep+"20GB", s);
+        Assert.assertEquals("1"+ decimal_sep +"20GB", s);
     }
 
+    public void testPrintBytes2() {
+        String s=Util.printBytes(24.54);
+        assert ("24" + decimal_sep + "54b").equals(s);
+
+        s=Util.printBytes(24.00);
+        assert "24b".equals(s);
+
+        s=Util.printBytes(322649.00);
+        assert ("322" + decimal_sep + "65KB").equals(s);
+    }
 
     public void testProductBiggerThan() {
         boolean rc=Util.productGreaterThan(3, 4, 12);

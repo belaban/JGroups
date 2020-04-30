@@ -6,6 +6,7 @@ import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.Credit;
 import org.jgroups.util.Util;
 
@@ -69,7 +70,7 @@ public class UFC extends FlowControl {
         sent.values().forEach(cred -> cred.increment(max_credits, max_credits));
     }
 
-    @ManagedAttribute(description="Number of times flow control blocks sender")
+    @ManagedAttribute(description="Number of times flow control blocks sender",type=AttributeType.SCALAR)
     public int getNumberOfBlockings() {
         int retval=0;
         for(Credit cred: sent.values())
@@ -77,7 +78,8 @@ public class UFC extends FlowControl {
         return retval;
     }
 
-    @ManagedAttribute(description="Average time blocked (in ms) in flow control when trying to send a message")
+    @ManagedAttribute(description="Average time blocked (in ms) in flow control when trying to send a message",
+      type=AttributeType.TIME)
     public double getAverageTimeBlocked() {
         return sent.values().stream().mapToDouble(c -> c.getAverageBlockTime() / 1_000_000).average().orElse(0.0);
     }

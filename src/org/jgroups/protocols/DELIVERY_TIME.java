@@ -3,10 +3,13 @@ package org.jgroups.protocols;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.AverageMinMax;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Protocol measuring delivery times. Should be placed towards the top of the stack.
@@ -19,7 +22,8 @@ public class DELIVERY_TIME extends Protocol {
     protected AverageMinMax delivery_times=new AverageMinMax();
 
     @ManagedAttribute(description="Average delivery time (in microseconds). This is computed as the average " +
-      "delivery time for single messages, plus the delivery time for batches")
+      "delivery time for single messages, plus the delivery time for batches",
+      type=AttributeType.TIME,unit=TimeUnit.MICROSECONDS)
     public double getAvgDeliveryTimeUs() {
         return delivery_times.average();
     }

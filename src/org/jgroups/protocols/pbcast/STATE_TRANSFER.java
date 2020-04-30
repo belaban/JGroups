@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Digest;
@@ -48,8 +49,10 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
     protected boolean                        flushProtocolInStack=false;
 
     @ManagedAttribute public long   getNumberOfStateRequests()  {return num_state_reqs.sum();}
-    @ManagedAttribute public long   getNumberOfStateBytesSent() {return num_bytes_sent.sum();}
-    @ManagedAttribute public double getAverageStateSize()       {return avg_state_size;}
+    @ManagedAttribute(type=AttributeType.BYTES)
+                      public long   getNumberOfStateBytesSent() {return num_bytes_sent.sum();}
+    @ManagedAttribute(type=AttributeType.BYTES)
+                      public double getAverageStateSize()       {return avg_state_size;}
 
     public List<Integer> requiredDownServices() {
         return Arrays.asList(Event.GET_DIGEST, Event.OVERWRITE_DIGEST);

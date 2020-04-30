@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.*;
 
 import java.util.Collection;
@@ -33,7 +34,8 @@ import java.util.stream.Stream;
  * @see CENTRAL_LOCK
  */
 public class CENTRAL_LOCK2 extends Locking {
-    @Property(description="Max time (im ms) to wait for lock info responses from members in a lock reconciliation phase")
+    @Property(description="Max time (im ms) to wait for lock info responses from members in a lock reconciliation phase",
+    type=AttributeType.TIME)
     protected long                                      lock_reconciliation_timeout=10_000;
 
     protected Address                                   coord;

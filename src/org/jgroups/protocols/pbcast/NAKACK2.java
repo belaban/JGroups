@@ -2,6 +2,7 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.protocols.TCP;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.DiagnosticsHandler;
@@ -76,7 +77,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @Property(description="Should messages delivered to application be discarded")
     protected boolean discard_delivered_msgs=true;
 
-    @Property(description="Timeout to rebroadcast messages. Default is 2000 msec")
+    @Property(description="Timeout to rebroadcast messages. Default is 2000 msec",type=AttributeType.TIME)
     protected long    max_rebroadcast_timeout=2000;
 
     /** If true, logs messages discarded because received from other members */
@@ -87,7 +88,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected boolean log_not_found_msgs=true;
 
     @Property(description="Interval (in milliseconds) at which missing messages (from all retransmit buffers) " +
-      "are retransmitted")
+      "are retransmitted",type=AttributeType.TIME)
     protected long    xmit_interval=1000;
 
     @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
@@ -102,7 +103,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected double  xmit_table_resize_factor=1.2;
 
     @Property(description="Number of milliseconds after which the matrix in the retransmission table " +
-      "is compacted (only for experts)",writable=false)
+      "is compacted (only for experts)",writable=false,type=AttributeType.TIME)
     protected long    xmit_table_max_compaction_time=10000;
 
     @Property(description="Size of the queue to hold messages received after creating the channel, but before being " +
@@ -112,11 +113,12 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected int     become_server_queue_size=50;
 
     @Property(description="Time during which identical warnings about messages from a non member will be suppressed. " +
-      "0 disables this (every warning will be logged). Setting the log level to ERROR also disables this.")
+      "0 disables this (every warning will be logged). Setting the log level to ERROR also disables this.",
+      type=AttributeType.TIME)
     protected long    suppress_time_non_member_warnings=60000;
 
     @Property(description="Max number of messages to ask for in a retransmit request. 0 disables this and uses " +
-      "the max bundle size in the transport")
+      "the max bundle size in the transport",type=AttributeType.SCALAR)
     protected int     max_xmit_req_size;
 
     @Property(description="If enabled, multicasts the highest sent seqno every xmit_interval ms. This is skipped if " +
@@ -133,10 +135,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 
 
-    @ManagedAttribute(description="Number of messages sent")
+    @ManagedAttribute(description="Number of messages sent",type=AttributeType.SCALAR)
     protected int                          num_messages_sent;
 
-    @ManagedAttribute(description="Number of messages received")
+    @ManagedAttribute(description="Number of messages received",type=AttributeType.SCALAR)
     protected int                          num_messages_received;
 
     protected static final Message DUMMY_OOB_MSG=new EmptyMessage().setFlag(Message.Flag.OOB);
@@ -152,22 +154,22 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
 
 
-    @ManagedAttribute(description="Number of retransmit requests received")
+    @ManagedAttribute(description="Number of retransmit requests received",type=AttributeType.SCALAR)
     protected final LongAdder xmit_reqs_received=new LongAdder();
 
-    @ManagedAttribute(description="Number of retransmit requests sent")
+    @ManagedAttribute(description="Number of retransmit requests sent",type=AttributeType.SCALAR)
     protected final LongAdder xmit_reqs_sent=new LongAdder();
 
-    @ManagedAttribute(description="Number of retransmit responses received")
+    @ManagedAttribute(description="Number of retransmit responses received",type=AttributeType.SCALAR)
     protected final LongAdder xmit_rsps_received=new LongAdder();
 
-    @ManagedAttribute(description="Number of retransmit responses sent")
+    @ManagedAttribute(description="Number of retransmit responses sent",type=AttributeType.SCALAR)
     protected final LongAdder xmit_rsps_sent=new LongAdder();
 
     @ManagedAttribute(description="Is the retransmit task running")
     public boolean isXmitTaskRunning() {return xmit_task != null && !xmit_task.isDone();}
 
-    @ManagedAttribute(description="Number of messages from non-members")
+    @ManagedAttribute(description="Number of messages from non-members",type=AttributeType.SCALAR)
     public int getNonMemberMessages() {
         return suppress_log_non_member != null? suppress_log_non_member.getCache().size() : 0;
     }
@@ -313,7 +315,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         return retval;
     }
 
-    @ManagedAttribute(description="Actual size of the become_server_queue")
+    @ManagedAttribute(description="Actual size of the become_server_queue",type=AttributeType.SCALAR)
     public int getBecomeServerQueueSizeActual() {
         return become_server_queue != null? become_server_queue.size() : -1;
     }
@@ -328,7 +330,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     public void setTimer(TimeScheduler timer) {this.timer=timer;}
     
 
-    @ManagedAttribute(description="Total number of undelivered messages in all retransmit buffers")
+    @ManagedAttribute(description="Total number of undelivered messages in all retransmit buffers",type=AttributeType.SCALAR)
     public int getXmitTableUndeliveredMsgs() {
         int num=0;
         for(Table<Message> buf: xmit_table.values())
@@ -336,7 +338,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         return num;
     }
 
-    @ManagedAttribute(description="Total number of missing (= not received) messages in all retransmit buffers")
+    @ManagedAttribute(description="Total number of missing (= not received) messages in all retransmit buffers"
+      ,type=AttributeType.SCALAR)
     public int getXmitTableMissingMessages() {
         int num=0;
         for(Table<Message> buf: xmit_table.values())
@@ -358,7 +361,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
     @ManagedAttribute(description="Returns the number of bytes of all messages in all retransmit buffers. " +
-      "To compute the size, Message.getLength() is used")
+      "To compute the size, Message.getLength() is used",type=AttributeType.BYTES)
     public long getSizeOfAllMessages() {
         long retval=0;
         for(Table<Message> buf: xmit_table.values())
@@ -367,7 +370,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
     @ManagedAttribute(description="Returns the number of bytes of all messages in all retransmit buffers. " +
-      "To compute the size, Message.size() is used")
+      "To compute the size, Message.size() is used",type=AttributeType.BYTES)
     public long getSizeOfAllMessagesInclHeaders() {
         long retval=0;
         for(Table<Message> buf: xmit_table.values())

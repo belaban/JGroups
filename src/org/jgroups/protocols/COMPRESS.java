@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.ByteArray;
 import org.jgroups.util.MessageBatch;
@@ -35,7 +36,8 @@ public class COMPRESS extends Protocol {
       "(0=no compression, 1=best speed, 9=best compression). Default is 9")
     protected int compression_level=Deflater.BEST_COMPRESSION; // this is 9
    
-    @Property(description="Minimal payload size of a message (in bytes) for compression to kick in. Default is 500 bytes")
+    @Property(description="Minimal payload size of a message (in bytes) for compression to kick in. Default is 500 bytes",
+      type=AttributeType.BYTES)
     protected int min_size=500;
     
     @Property(description="Number of inflaters/deflaters for concurrent processing. Default is 2 ")

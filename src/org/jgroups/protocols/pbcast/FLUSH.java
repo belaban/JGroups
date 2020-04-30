@@ -2,6 +2,7 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -48,16 +49,18 @@ public class FLUSH extends Protocol {
     /*
      * ------------------------------------------ Properties------------------------------------------
      */
-    @Property(description = "Max time to keep channel blocked in flush. Default is 8000 msec")
+    @Property(description = "Max time to keep channel blocked in flush. Default is 8000 msec",type=AttributeType.TIME)
     protected long timeout = 8000;
 
-    @Property(description = "Timeout (per atttempt) to quiet the cluster during the first flush phase. Default is 2000 msec")
+    @Property(description = "Timeout (per atttempt) to quiet the cluster during the first flush phase. " +
+      "Default is 2000 msec",type=AttributeType.TIME)
     protected long start_flush_timeout = 2000;
     
-    @Property(description = "Timeout to wait for UNBLOCK after STOP_FLUSH is issued. Default is 2000 msec")
+    @Property(description = "Timeout to wait for UNBLOCK after STOP_FLUSH is issued. Default is 2000 msec",type=AttributeType.TIME)
     protected long end_flush_timeout = 2000;
 
-    @Property(description = "Retry timeout after an unsuccessful attempt to quiet the cluster (first flush phase). Default is 3000 msec")
+    @Property(description = "Retry timeout after an unsuccessful attempt to quiet the cluster (first flush phase)." +
+      "Default is 3000 msec", type=AttributeType.TIME)
     protected long retry_timeout = 2000;
 
     @Property(description = "Reconciliation phase toggle. Default is true")
@@ -185,12 +188,12 @@ public class FLUSH extends Protocol {
 
     /* -------------------JMX attributes and operations --------------------- */
 
-    @ManagedAttribute
+    @ManagedAttribute(type=AttributeType.TIME)
     public double getAverageFlushDuration() {
         return averageFlushDuration;
     }
 
-    @ManagedAttribute
+    @ManagedAttribute(type=AttributeType.TIME)
     public long getTotalTimeInFlush() {
         return totalTimeInFlush;
     }

@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Average;
 import org.jgroups.util.MessageBatch;
@@ -11,6 +12,7 @@ import org.jgroups.util.MessageBatch;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
@@ -31,10 +33,10 @@ public class PERF extends Protocol {
     @Property(description="Number of samples to maintain for rolling average")
     protected int     avg_size=20;
 
-    @ManagedAttribute(description="Average latency in ns")
+    @ManagedAttribute(description="Average latency in ns",type=AttributeType.TIME,unit=TimeUnit.NANOSECONDS)
     public double latencyInNs() {return avg.getAverage();}
 
-    @ManagedAttribute(description="Average latency in ms")
+    @ManagedAttribute(description="Average latency in ms",type=AttributeType.TIME)
     public double latencyInMs() {return avg.getAverage() / 1000000.0;}
 
     public void init() throws Exception {

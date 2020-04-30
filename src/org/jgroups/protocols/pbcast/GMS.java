@@ -6,6 +6,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GmsImpl.Request;
 import org.jgroups.stack.DiagnosticsHandler;
@@ -49,17 +50,18 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
 
-    @Property(description="Join timeout")
+    @Property(description="Join timeout",type=AttributeType.TIME)
     protected long                      join_timeout=3000;
 
     @Property(description="Number of join attempts before we give up and become a singleton. 0 means 'never give up'.")
     protected int                       max_join_attempts=10;
 
     @Property(description="Time (in ms) to wait for another discovery round when all discovery responses were " +
-      "clients. A timeout of 0 means don't wait at all.")
+      "clients. A timeout of 0 means don't wait at all.",type=AttributeType.TIME)
     protected int                       all_clients_retry_timeout=100;
 
-    @Property(description="Max time (in ms) to wait for a LEAVE response after a LEAVE req has been sent to the coord")
+    @Property(description="Max time (in ms) to wait for a LEAVE response after a LEAVE req has been sent to the coord",
+      type=AttributeType.TIME)
     protected long                      leave_timeout=2000;
 
     @Property(description="Number of times a LEAVE request is sent to the coordinator (without receiving a LEAVE " +
@@ -67,7 +69,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
       "A value of 0 means wait forever")
     protected int                       max_leave_attempts=10;
 
-    @Property(description="Timeout (in ms) to complete merge")
+    @Property(description="Timeout (in ms) to complete merge",type=AttributeType.TIME)
     protected long                      merge_timeout=5000; // time to wait for all MERGE_RSPS
 
     @Property(description="Print local address of this member after connect. Default is true")
@@ -86,7 +88,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @Property(description="Number of views to store in history")
     protected int                       num_prev_views=10;
 
-    @Property(description="Time in ms to wait for all VIEW acks (0 == wait forever. Default is 2000 msec" )
+    @Property(description="Time in ms to wait for all VIEW acks (0 == wait forever. Default is 2000 msec",
+      type=AttributeType.TIME)
     protected long                      view_ack_collection_timeout=2000;
 
     @Property(description="Use flush for view changes. Default is true")

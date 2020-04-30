@@ -7,6 +7,7 @@ import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
 import org.jgroups.util.TimeScheduler;
@@ -48,7 +49,7 @@ public class FILE_PING extends Discovery {
     @Property(description="The max number of times my own information should be written to the storage after a view change")
     protected int     info_writer_max_writes_after_view=2;
 
-    @Property(description="Interval (in ms) at which the info writer should kick in")
+    @Property(description="Interval (in ms) at which the info writer should kick in",type=AttributeType.TIME)
     protected long    info_writer_sleep_time=10000;
 
     @Property(description="When a non-initial discovery is run, and InfoWriter is not running, write the data to " +

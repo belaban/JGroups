@@ -5,6 +5,7 @@ import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.Credit;
 import org.jgroups.util.NonBlockingCredit;
 
@@ -23,7 +24,7 @@ import java.util.function.Consumer;
 public class UFC_NB extends UFC {
     @Property(description="Max number of bytes of all queued messages for a given destination. If a given destination " +
       "has no credits left and the message cannot be added to the queue because it is full, then the sender thread " +
-      "will be blocked until there is again space available in the queue, or the protocol is stopped.")
+      "will be blocked until there is again space available in the queue, or the protocol is stopped.",type=AttributeType.BYTES)
     protected int                     max_queue_size=10_000_000;
     protected final Consumer<Message> send_function=msg -> down_prot.down(msg);
     protected Future<?>               credit_send_task;
@@ -32,17 +33,17 @@ public class UFC_NB extends UFC {
     public int      getMaxQueueSize()      {return max_queue_size;}
     public UFC_NB   setMaxQueueSize(int s) {this.max_queue_size=s; return this;}
 
-    @ManagedAttribute(description="The number of messages currently queued due to insufficient credit")
+    @ManagedAttribute(description="The number of messages currently queued due to insufficient credit",type=AttributeType.SCALAR)
     public int getNumberOfQueuedMessages() {
         return sent.values().stream().map(c -> ((NonBlockingCredit)c).getQueuedMessages()).reduce(0, Integer::sum);
     }
 
-    @ManagedAttribute(description="The total size of all currently queued messages for all destinations")
+    @ManagedAttribute(description="The total size of all currently queued messages for all destinations",type=AttributeType.BYTES)
     public int getQueuedSize() {
         return sent.values().stream().map(c -> ((NonBlockingCredit)c).getQueuedMessageSize()).reduce(0, Integer::sum);
     }
 
-    @ManagedAttribute(description="The number of times messages have been queued due to insufficient credits")
+    @ManagedAttribute(description="The number of times messages have been queued due to insufficient credits",type=AttributeType.SCALAR)
     public int getNumberOfQueuings() {
         return sent.values().stream().map(c -> ((NonBlockingCredit)c).getEnqueuedMessages()).reduce(0, Integer::sum);
     }

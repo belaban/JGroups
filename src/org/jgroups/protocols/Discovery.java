@@ -5,6 +5,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
@@ -46,7 +47,7 @@ public abstract class Discovery extends Protocol {
 
     @Property(description="If greater than 0, we'll wait a random number of milliseconds in range [0..stagger_timeout] " +
       "before sending a discovery response. This prevents traffic spikes in large clusters when everyone sends their " +
-      "discovery response at the same time")
+      "discovery response at the same time",type=AttributeType.TIME)
     protected long                       stagger_timeout;
 
 
@@ -59,7 +60,7 @@ public abstract class Discovery extends Protocol {
       "not individual members")
     protected int                        max_members_in_discovery_request=500;
 
-    @Property(description="Expiry time of discovery responses in ms")
+    @Property(description="Expiry time of discovery responses in ms",type=AttributeType.TIME)
     protected long                       discovery_rsp_expiry_time=60000;
 
     @Property(description="If true then the discovery is done on a separate timer thread. Should be set to true when " +

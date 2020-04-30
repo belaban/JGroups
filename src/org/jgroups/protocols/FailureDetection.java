@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -23,19 +24,20 @@ import java.util.function.Supplier;
 @MBean(description="Heartbeat-based failure detection protocol")
 public abstract class FailureDetection extends Protocol {
 
-    @Property(description="Timeout after which a node P is suspected if neither a heartbeat nor data were received from P")
+    @Property(description="Timeout after which a node is suspected if neither a heartbeat nor data have been received from it",
+      type=AttributeType.TIME)
     protected long                                   timeout=40000;
 
-    @Property(description="Interval at which a HEARTBEAT is sent to the cluster")
+    @Property(description="Interval at which a HEARTBEAT is sent to the cluster",type=AttributeType.TIME)
     protected long                                   interval=8000;
 
-    @ManagedAttribute(description="Number of heartbeats sent")
+    @ManagedAttribute(description="Number of heartbeats sent",type=AttributeType.SCALAR)
     protected int                                    num_heartbeats_sent;
 
-    @ManagedAttribute(description="Number of heartbeats received")
+    @ManagedAttribute(description="Number of heartbeats received",type=AttributeType.SCALAR)
     protected int                                    num_heartbeats_received;
 
-    @ManagedAttribute(description="Number of suspected events received")
+    @ManagedAttribute(description="Number of suspected events received",type=AttributeType.SCALAR)
     protected int                                    num_suspect_events;
 
     @ManagedAttribute(description="Shows whether there are currently any suspected members")

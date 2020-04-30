@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.*;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
@@ -22,10 +23,10 @@ import java.util.concurrent.locks.ReentrantLock;
 public class RATE_LIMITER extends Protocol {
 
     @Property(description="Max number of bytes to be sent in time_period ms. Blocks the sender if exceeded until a new " +
-            "time period has started")
+            "time period has started",type=AttributeType.BYTES)
     protected long max_bytes=300_000;
 
-    @Property(description="Number of milliseconds during which max_bytes bytes can be sent")
+    @Property(description="Number of milliseconds during which max_bytes bytes can be sent",type=AttributeType.TIME)
     protected long time_period=10L;
 
     protected long time_period_ns;
@@ -33,7 +34,8 @@ public class RATE_LIMITER extends Protocol {
 
     /** Keeps track of the number of bytes sent in the current time period */
     @GuardedBy("lock")
-    @ManagedAttribute(description="Number of bytes sent in the current time period. Reset after every time period.")
+    @ManagedAttribute(description="Number of bytes sent in the current time period. Reset after every time period.",
+      type=AttributeType.BYTES)
     protected long num_bytes_sent_in_period=0L;
 
     @GuardedBy("lock")
@@ -67,7 +69,7 @@ public class RATE_LIMITER extends Protocol {
         this.time_period_ns=TimeUnit.NANOSECONDS.convert(time_period, TimeUnit.MILLISECONDS);
     }
 
-    @ManagedAttribute(description="Total block time in milliseconds")
+    @ManagedAttribute(description="Total block time in milliseconds",type=AttributeType.TIME)
     public long getTotalBlockTime() {
         return TimeUnit.MILLISECONDS.convert(total_block_time,TimeUnit.NANOSECONDS);
     }

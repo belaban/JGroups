@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.MessageBatch;
@@ -47,7 +48,8 @@ public class FD extends Protocol {
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
-    @Property(description="Timeout to suspect a node P if neither a heartbeat nor data were received from P.")
+    @Property(description="Timeout to suspect a node P if neither a heartbeat nor data were received from P.",
+      type=AttributeType.TIME)
     protected long                       timeout=3000;
 
     @Property(description="Number of times to send an are-you-alive message")

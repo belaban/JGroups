@@ -6,6 +6,7 @@ import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.CreditMap;
 import org.jgroups.util.Tuple;
 
@@ -73,12 +74,13 @@ public class MFC extends FlowControl {
         return credits.toString();
     }
 
-    @ManagedAttribute(description="Number of times flow control blocks sender")
+    @ManagedAttribute(description="Number of times flow control blocks sender",type=AttributeType.SCALAR)
     public int getNumberOfBlockings() {
         return credits.getNumBlockings();
     }
 
-    @ManagedAttribute(description="Average time blocked (in ms) in flow control when trying to send a message")
+    @ManagedAttribute(description="Average time blocked (in ms) in flow control when trying to send a message",
+      type=AttributeType.TIME)
     public double getAverageTimeBlocked() {
         return credits.getAverageBlockTime();
     }

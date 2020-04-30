@@ -1,5 +1,12 @@
 package org.jgroups.annotations;
-import java.lang.annotation.*;
+
+import org.jgroups.conf.AttributeType;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Indicates that a public method or a field (any visibility) in 
@@ -20,4 +27,10 @@ public @interface ManagedAttribute {
     String name() default "";
     
     boolean writable() default false;
+
+    /* Defines the type, used for pretty printing */
+    AttributeType type() default AttributeType.UNDEFINED;
+
+    /** Only used if type is TIME */
+    TimeUnit unit() default TimeUnit.MILLISECONDS;
 }

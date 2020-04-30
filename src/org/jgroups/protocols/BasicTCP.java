@@ -7,6 +7,7 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.Receiver;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.Util;
 
 import java.net.InetAddress;
@@ -24,22 +25,22 @@ public abstract class BasicTCP extends TP implements Receiver {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
-    @Property(description="Reaper interval in msec. Default is 0 (no reaping)")
+    @Property(description="Reaper interval in msec. Default is 0 (no reaping)",type=AttributeType.TIME)
     protected long        reaper_interval; // time in msecs between connection reaps
 
-    @Property(description="Max time connection can be idle before being reaped (in ms)")
+    @Property(description="Max time connection can be idle before being reaped (in ms)",type=AttributeType.TIME)
     protected long        conn_expire_time; // max time a conn can be idle before being reaped
 
-    @Property(description="Receiver buffer size in bytes")
+    @Property(description="Receiver buffer size in bytes",type=AttributeType.BYTES)
     protected int         recv_buf_size;
 
-    @Property(description="Send buffer size in bytes")
+    @Property(description="Send buffer size in bytes",type=AttributeType.BYTES)
     protected int         send_buf_size;
 
-    @Property(description="Max time allowed for a socket creation in connection table")
+    @Property(description="Max time allowed for a socket creation in connection table",type=AttributeType.TIME)
     protected int         sock_conn_timeout=2000; // max time in millis for a socket creation in connection table
     
-    @Property(description="Max time to block on reading of peer address")
+    @Property(description="Max time to block on reading of peer address",type=AttributeType.TIME)
     protected int         peer_addr_read_timeout=1000; // max time to block on reading of peer address
     
     @Property(description="Should TCP no delay flag be turned on")

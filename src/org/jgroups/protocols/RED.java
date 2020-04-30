@@ -4,6 +4,7 @@ import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
@@ -61,10 +62,10 @@ public class RED extends Protocol {
 
 
 
-    @ManagedAttribute(description="The number of dropped messages")
+    @ManagedAttribute(description="The number of dropped messages",type=AttributeType.SCALAR)
     public long    getDroppedMessages() {return dropped_msgs.sum();}
 
-    @ManagedAttribute(description="Total number of messages processed")
+    @ManagedAttribute(description="Total number of messages processed",type=AttributeType.SCALAR)
     public long    getTotalMessages()   {return total_msgs.sum();}
 
     @ManagedAttribute(description="Percentage of all messages that were dropped")

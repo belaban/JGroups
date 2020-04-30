@@ -6,6 +6,7 @@ import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.GossipData;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RouterStub;
@@ -45,7 +46,8 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
 
     /* ----------------------------------------- Properties -------------------------------------------------- */
 
-    @Property(description = "Interval in msec to attempt connecting back to router in case of torn connection. Default is 5000 msec")
+    @Property(description = "Interval in msec to attempt connecting back to router in case of torn connection",
+      type=AttributeType.TIME)
     protected long    reconnect_interval=5000;
 
     @Property(description="Should TCP no delay flag be turned on")

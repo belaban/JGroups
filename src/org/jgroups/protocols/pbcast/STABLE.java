@@ -3,6 +3,7 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.protocols.TCP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -45,14 +46,14 @@ public class STABLE extends Protocol {
     /**
      * Sends a STABLE gossip every 20 seconds on average. 0 disables gossiping of STABLE messages
      */
-    @Property(description="Average time to send a STABLE message")
+    @Property(description="Average time to send a STABLE message",type=AttributeType.TIME)
     protected long   desired_avg_gossip=20000;
 
     /**
      * delay before we send STABILITY msg (give others a change to send first).
      * This should be set to a very small number (> 0 !) if {@code max_bytes} is used
      */
-    @Property(description="Delay before stability message is sent")
+    @Property(description="Delay before stability message is sent",type=AttributeType.TIME)
     protected long   stability_delay=6000;
 
     /**
@@ -62,7 +63,8 @@ public class STABLE extends Protocol {
      * ideally {@code stability_delay} should be set to a low number as
      * well
      */
-    @Property(description="Maximum number of bytes received in all messages before sending a STABLE message is triggered")
+    @Property(description="Maximum number of bytes received in all messages before sending a STABLE message is triggered",
+      type=AttributeType.BYTES)
     protected long   max_bytes=2000000;
 
 
@@ -110,7 +112,7 @@ public class STABLE extends Protocol {
 
     /** The total number of bytes received from unicast and multicast messages */
     @GuardedBy("received")
-    @ManagedAttribute(description="Bytes accumulated so far")
+    @ManagedAttribute(description="Bytes accumulated so far",type=AttributeType.BYTES)
     protected long                num_bytes_received;
 
     protected final Lock          received=new ReentrantLock();
@@ -142,13 +144,13 @@ public class STABLE extends Protocol {
 
     // @ManagedAttribute(name="bytes_received")
     public long getBytes() {return num_bytes_received;}
-    @ManagedAttribute
+    @ManagedAttribute(type=AttributeType.SCALAR)
     public int getStableSent() {return num_stable_msgs_sent;}
-    @ManagedAttribute
+    @ManagedAttribute(type=AttributeType.SCALAR)
     public int getStableReceived() {return num_stable_msgs_received;}
-    @ManagedAttribute
+    @ManagedAttribute(type=AttributeType.SCALAR)
     public int getStabilitySent() {return num_stability_msgs_sent;}
-    @ManagedAttribute
+    @ManagedAttribute(type=AttributeType.SCALAR)
     public int getStabilityReceived() {return num_stability_msgs_received;}
 
     @ManagedAttribute

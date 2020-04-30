@@ -5,6 +5,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Credit;
 import org.jgroups.util.MessageBatch;
@@ -30,14 +31,15 @@ public abstract class FlowControl extends Protocol {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
     /** Max number of bytes to send per receiver until an ack must be received before continuing sending */
-    @Property(description="Max number of bytes to send per receiver until an ack must be received to proceed")
+    @Property(description="Max number of bytes to send per receiver until an ack must be received to proceed",
+      type=AttributeType.BYTES)
     protected long           max_credits=5_000_000;
 
     /**
      * Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
      * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to wait forever.
      */
-    @Property(description="Max time (in ms) to block")
+    @Property(description="Max time (in ms) to block",type=AttributeType.TIME)
     protected long           max_block_time=500;
 
     /**
@@ -66,7 +68,7 @@ public abstract class FlowControl extends Protocol {
      * Computed as <tt>max_credits</tt> times <tt>min_theshold</tt>. If explicitly set, this will
      * override the above computation
      */
-    @Property(description="Computed as max_credits x min_theshold unless explicitly set")
+    @Property(description="Computed as max_credits x min_theshold unless explicitly set",type=AttributeType.BYTES)
     protected long           min_credits;
     
 
@@ -162,22 +164,22 @@ public abstract class FlowControl extends Protocol {
 
     public abstract double getAverageTimeBlocked();
 
-    @ManagedAttribute(description="Number of credit requests received")
+    @ManagedAttribute(description="Number of credit requests received",type=AttributeType.SCALAR)
     public int getNumberOfCreditRequestsReceived() {
         return num_credit_requests_received;
     }
     
-    @ManagedAttribute(description="Number of credit requests sent")
+    @ManagedAttribute(description="Number of credit requests sent",type=AttributeType.SCALAR)
     public int getNumberOfCreditRequestsSent() {
         return num_credit_requests_sent;
     }
 
-    @ManagedAttribute(description="Number of credit responses received")
+    @ManagedAttribute(description="Number of credit responses received",type=AttributeType.SCALAR)
     public int getNumberOfCreditResponsesReceived() {
         return num_credit_responses_received;
     }
 
-    @ManagedAttribute(description="Number of credit responses sent")
+    @ManagedAttribute(description="Number of credit responses sent",type=AttributeType.SCALAR)
     public int getNumberOfCreditResponsesSent() {
         return num_credit_responses_sent;
     }

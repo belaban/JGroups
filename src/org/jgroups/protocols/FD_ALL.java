@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.TimeService;
 import org.jgroups.util.Util;
 
@@ -22,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class FD_ALL extends FailureDetection {
 
-    @Property(description="Interval at which the HEARTBEAT timeouts are checked")
+    @Property(description="Interval at which the HEARTBEAT timeouts are checked",type=AttributeType.TIME)
     protected long                                   timeout_check_interval=2000;
 
     @Property(description="Uses TimeService to get the current time rather than calling System.nanoTime().")

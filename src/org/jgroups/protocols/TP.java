@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.blocks.LazyRemovalCache;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.jmx.AdditionalJmxObjects;
@@ -100,11 +101,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected int logical_addr_cache_max_size=2000;
 
     @Property(description="Time (in ms) after which entries in the logical address cache marked as removable " +
-      "can be removed. 0 never removes any entries (not recommended)")
+      "can be removed. 0 never removes any entries (not recommended)",type=AttributeType.TIME)
     protected long logical_addr_cache_expiration=360000;
 
     @Property(description="Interval (in ms) at which the reaper task scans logical_addr_cache and removes entries " +
-      "marked as removable. 0 disables reaping.")
+      "marked as removable. 0 disables reaping.",type=AttributeType.TIME)
     protected long logical_addr_cache_reaper_interval=60000;
 
     /** The port to which the transport binds. 0 means to bind to any (ephemeral) port. See also {@link #port_range} */
@@ -152,11 +153,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(name="thread_pool.max_threads",description="Maximum thread pool size for the thread pool")
     protected int thread_pool_max_threads=100;
 
-    @Property(name="thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle threads from pool")
+    @Property(name="thread_pool.keep_alive_time",description="Timeout (ms) to remove idle threads from the pool",
+      type=AttributeType.TIME)
     protected long thread_pool_keep_alive_time=30000;
 
 
-    @Property(description="Interval (in ms) at which the time service updates its timestamp. 0 disables the time service")
+    @Property(description="Interval (in ms) at which the time service updates its timestamp. 0 disables the time service",
+      type=AttributeType.TIME)
     protected long time_service_interval=500;
 
     @Property(description="Switch to enable diagnostic probing. Default is true")
@@ -201,17 +204,17 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property(description="Timeout (in ms) to determine how long to wait until a request to fetch the physical address " +
       "for a given logical address will be sent again. Subsequent requests for the same physical address will therefore " +
-      "be spaced at least who_has_cache_timeout ms apart")
+      "be spaced at least who_has_cache_timeout ms apart",type=AttributeType.TIME)
     protected long who_has_cache_timeout=2000;
 
     @Property(description="Time during which identical warnings about messages from a member with a different version " +
       "will be suppressed. 0 disables this (every warning will be logged). Setting the log level to ERROR also " +
-      "disables this.")
+      "disables this.",type=AttributeType.TIME)
     protected long suppress_time_different_version_warnings=60000;
 
     @Property(description="Time during which identical warnings about messages from a member from a different cluster " +
       "will be suppressed. 0 disables this (every warning will be logged). Setting the log level to ERROR also " +
-      "disables this.")
+      "disables this.",type=AttributeType.TIME)
     protected long suppress_time_different_cluster_warnings=60000;
 
     @Property(description="The fully qualified name of a MessageFactory implementation",exposeAsManagedAttribute=false)
@@ -227,7 +230,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * Maximum number of bytes for messages to be queued until they are sent.
      * This value needs to be smaller than the largest datagram packet size in case of UDP
      */
-    @Property(name="max_bundle_size", description="Maximum number of bytes for messages to be queued until they are sent")
+    @Property(name="max_bundle_size", type=AttributeType.BYTES,
+      description="Maximum number of bytes for messages to be queued until they are sent")
     protected int max_bundle_size=64000;
 
     @Property(description="The type of bundler used (\"ring-buffer\", \"transfer-queue\" (default), \"sender-sends\" or " +
@@ -351,7 +355,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return msg_factory != null? msg_factory.getClass().getName() : "n/a";
     }
 
-    @ManagedAttribute public int getBundlerBufferSize() {
+    @ManagedAttribute(type=AttributeType.BYTES)
+    public int getBundlerBufferSize() {
         if(bundler instanceof TransferQueueBundler)
             return ((TransferQueueBundler)bundler).getBufferSize();
         return bundler != null? bundler.size() : 0;

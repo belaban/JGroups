@@ -4,6 +4,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Util;
@@ -14,6 +15,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
@@ -185,7 +187,7 @@ public class ResourceDMBean implements DynamicMBean {
                     attr_name=attr_name.trim();
                 else
                     attr_name=f.getName();
-                map.put(attr_name, value != null? value.toString() : null);
+                map.put(attr_name, prettyPrint(value, f));
             }
             catch(Exception e) {
                 log.warn("Could not retrieve value of attribute (field) " + attr_name, e);
@@ -205,9 +207,7 @@ public class ResourceDMBean implements DynamicMBean {
                     method_name=Util.attributeNameToMethodName(field_name);
                 }
                 String attributeName=Util.methodNameToAttributeName(method_name);
-                if(value instanceof Double)
-                    value=String.format("%.2f", value);
-                map.put(attributeName, value != null? value.toString() : null);
+                map.put(attributeName, prettyPrint(value, m));
             }
             catch(Exception e) {
                 log.warn("Could not retrieve value of attribute (method) " + method_name,e);
@@ -217,6 +217,56 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
 
+    @SuppressWarnings("MalformedFormatString")
+    public static String prettyPrint(Object val, AccessibleObject a) {
+        if(val == null) return "null";
+        Class<?> cl=val.getClass();
+        AttributeType type=getType(a);
+        if(type != null) {
+            switch(type) {
+                case BYTES:
+                    return Util.printBytes(((Number)val).doubleValue());
+                case TIME:
+                    TimeUnit unit=getTimeUnit(a);
+                    return Util.printTime(((Number)val).doubleValue(), unit);
+                case SCALAR:
+                    if(isNumeric(cl))
+                        return String.format("%,d", val);
+                    break;
+            }
+        }
+        if(isNumeric(cl))
+            return String.format("%d", val);
+        if(isFractional(cl))
+            return String.format("%,.2f", val);
+        return val.toString();
+    }
+
+    public static boolean isNumeric(Class<?> cl) {
+        return cl.equals(short.class) || cl.equals(Short.class) || cl.equals(int.class) || cl.equals(Integer.class)
+          || cl.equals(long.class) || cl.equals(Long.class);
+    }
+
+    public static boolean isFractional(Class<?> cl) {
+        return cl.equals(float.class) || cl.equals(Float.class) || cl.equals(double.class) || cl.equals(Double.class);
+    }
+
+
+    protected static AttributeType getType(AccessibleObject ao) {
+        Property prop=ao.getAnnotation(Property.class);
+        if(prop != null)
+            return prop.type();
+        ManagedAttribute attr=ao.getAnnotation(ManagedAttribute.class);
+        return attr != null? attr.type() : null;
+    }
+
+    protected static TimeUnit getTimeUnit(AccessibleObject ao) {
+        Property prop=ao.getAnnotation(Property.class);
+        if(prop != null)
+            return prop.unit();
+        ManagedAttribute attr=ao.getAnnotation(ManagedAttribute.class);
+        return attr != null? attr.unit() : null;
+    }
 
 
     protected static Class<?> getClassForName(String name) throws ClassNotFoundException {

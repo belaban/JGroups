@@ -5,6 +5,7 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.*;
 
@@ -26,18 +27,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 @MBean(description="Simple TCP based transport")
 public class SimpleTCP extends TP {
 
-    @Property(description="size in bytes of TCP receiver window")
+    @Property(description="size in bytes of TCP receiver window",type=AttributeType.BYTES)
     protected int recv_buf_size=500000;
 
-    @Property(description="size in bytes of TCP send window")
+    @Property(description="size in bytes of TCP send window",type=AttributeType.BYTES)
     protected int send_buf_size=500000;
 
     @Property(description="Size of the buffer of the BufferedInputStream in TcpConnection. A read always tries to read " +
-      "ahead as much data as possible into the buffer. 0: default size")
+      "ahead as much data as possible into the buffer. 0: default size",type=AttributeType.BYTES)
     protected int buffered_input_stream_size=8192;
 
     @Property(description="Size of the buffer of the BufferedOutputStream in TcpConnection. Smaller messages are " +
-      " buffered until this size is exceeded or flush() is called. Bigger messages are sent immediately. 0: default size")
+      " buffered until this size is exceeded or flush() is called. Bigger messages are sent immediately. 0: default size",
+      type=AttributeType.BYTES)
     protected int buffered_output_stream_size=8192;
 
 

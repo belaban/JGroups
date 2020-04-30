@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.AckCollector;
 import org.jgroups.util.MessageBatch;
@@ -28,7 +29,8 @@ import java.util.function.Supplier;
 public class RSVP extends Protocol {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
-    @Property(description="Max time in milliseconds to block for an RSVP'ed message (0 blocks forever).")
+    @Property(description="Max time in milliseconds to block for an RSVP'ed message (0 blocks forever).",
+      type=AttributeType.TIME)
     protected long    timeout=10000;
 
     @Property(description="Whether an exception should be thrown when the timeout kicks in, and we haven't yet received " +
@@ -39,7 +41,8 @@ public class RSVP extends Protocol {
       "we send an ack first and only then pass the message up to the application.")
     protected boolean ack_on_delivery=true;
 
-    @Property(description="Interval (in milliseconds) at which we resend the RSVP request. Needs to be < timeout. 0 disables it.")
+    @Property(description="Interval (in milliseconds) at which we resend the RSVP request. " +
+      "Needs to be < timeout. 0 disables it.",type=AttributeType.TIME)
     protected long    resend_interval=2000;
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     /** ID to be used to identify messages. Short.MAX_VALUE (ca 32K plus 32K negative) should be enough, and wrap-around

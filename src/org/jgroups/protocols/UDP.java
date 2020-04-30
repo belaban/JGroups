@@ -7,6 +7,7 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.SuppressLog;
 import org.jgroups.util.Util;
@@ -82,16 +83,16 @@ public class UDP extends TP {
     @Property(description="The time-to-live (TTL) for multicast datagram packets. Default is 8",systemProperty=Global.UDP_IP_TTL)
     protected int ip_ttl=8;
 
-    @Property(description="Send buffer size of the multicast datagram socket")
+    @Property(description="Send buffer size of the multicast datagram socket",type=AttributeType.BYTES)
     protected int mcast_send_buf_size=Global.MAX_DATAGRAM_PACKET_SIZE + MSG_OVERHEAD;
 
-    @Property(description="Receive buffer size of the multicast datagram socket")
+    @Property(description="Receive buffer size of the multicast datagram socket",type=AttributeType.BYTES)
     protected int mcast_recv_buf_size=5_000_000;
 
-    @Property(description="Send buffer size of the unicast datagram socket")
+    @Property(description="Send buffer size of the unicast datagram socket",type=AttributeType.BYTES)
     protected int ucast_send_buf_size=200_000;
 
-    @Property(description="Receive buffer size of the unicast datagram socket")
+    @Property(description="Receive buffer size of the unicast datagram socket",type=AttributeType.BYTES)
     protected int ucast_recv_buf_size=5_000_000;
 
     @Property(description="If true, disables IP_MULTICAST_LOOP on the MulticastSocket (for sending and receiving of " +
@@ -99,7 +100,7 @@ public class UDP extends TP {
     protected boolean disable_loopback=false;
 
     @Property(description="Suppresses warnings on Mac OS (for now) about not enough buffer space when sending " +
-      "a datagram packet")
+      "a datagram packet",type=AttributeType.TIME)
     protected long suppress_time_out_of_buffer_space=60000;
 
     protected int unicast_receiver_threads=1;
@@ -203,7 +204,8 @@ public class UDP extends TP {
         return super.setMaxBundleSize(size);
     }
 
-    @ManagedAttribute(description="Number of messages dropped when sending because of insufficient buffer space")
+    @ManagedAttribute(description="Number of messages dropped when sending because of insufficient buffer space"
+      ,type=AttributeType.SCALAR)
     public int getDroppedMessages() {
         return suppress_log_out_of_buffer_space != null? suppress_log_out_of_buffer_space.getCache().size() : 0;
     }

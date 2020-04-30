@@ -231,10 +231,6 @@ public class Util {
         }
     }
 
-    public static void assertEquals(Object val1,Object val2) {
-        assertEquals(null,val1,val2);
-    }
-
     public static void assertNotNull(String message,Object val) {
         if(message != null)
             assert val != null : message;
@@ -1195,10 +1191,6 @@ public class Util {
     }
 
 
-    public static Message messageFromBuffer(byte[] buf, MessageFactory mf) throws Exception {
-        return messageFromBuffer(buf, 0, buf.length, mf);
-    }
-
     public static Message messageFromBuffer(byte[] buf, int offset, int length, MessageFactory mf) throws Exception {
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
         short type=in.readShort();
@@ -1272,24 +1264,6 @@ public class Util {
             sb.append(Integer.toHexString(v));
         }
         return sb.toString().toUpperCase();
-    }
-
-    public static void binaryToAscii(InputStream in, OutputStream out) throws IOException {
-        byte[] input=new byte[2];
-        for(;;) {
-            input[0]=(byte)in.read();
-            if(input[0] == '\n' || input[0] == '\r')
-                continue;
-            if(input[0] < 0)
-                break;
-            input[1]=(byte)in.read();
-            if(input[1] == '\n' || input[1] < 0)
-                break;
-            String tmp=new String(input);
-            int val=Integer.parseInt(tmp, 16);
-            char c=(char)val;
-            out.write(c);
-        }
     }
 
     public static boolean isAsciiString(String str) {
@@ -1478,11 +1452,6 @@ public class Util {
     public static void parse(byte[] buf, int offset, int length, BiConsumer<Short,Message> msg_consumer,
                         BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) {
         parse(new ByteArrayInputStream(buf, offset, length), msg_consumer, batch_consumer, tcp);
-    }
-
-    public static void parse(String filename, BiConsumer<Short,Message> msg_consumer,
-                             BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) throws FileNotFoundException {
-        parse(new FileInputStream(filename), msg_consumer, batch_consumer, tcp);
     }
 
     public static void parse(InputStream input, BiConsumer<Short,Message> msg_consumer,
@@ -1885,30 +1854,6 @@ public class Util {
     }
 
 
-
-    public static void writeObject(Object obj,DataOutput out) throws IOException {
-        if(obj instanceof Streamable) {
-            out.writeInt(-1);
-            writeGenericStreamable((Streamable)obj,out);
-        }
-        else {
-            byte[] buf=objectToByteBuffer(obj);
-            out.writeInt(buf.length);
-            out.write(buf,0,buf.length);
-        }
-    }
-
-    public static Object readObject(DataInput in) throws IOException, ClassNotFoundException {
-        int len=in.readInt();
-        if(len == -1)
-            return readGenericStreamable(in);
-
-        byte[] buf=new byte[len];
-        in.readFully(buf, 0, len);
-        return objectFromByteBuffer(buf);
-    }
-
-
     public static String readFile(String filename) throws FileNotFoundException {
         FileInputStream in=new FileInputStream(filename);
         try {
@@ -2041,27 +1986,6 @@ public class Util {
             return obj1.equals(obj2);
         else
             return obj2.equals(obj1);
-    }
-
-
-    public static boolean match(long[] a1,long[] a2) {
-        if(a1 == null && a2 == null)
-            return true;
-        if(a1 == null || a2 == null)
-            return false;
-
-        if(a1.hashCode() == a2.hashCode()) // identity
-            return true;
-
-        // at this point, a1 != null and a2 != null
-        if(a1.length != a2.length)
-            return false;
-
-        for(int i=0; i < a1.length; i++) {
-            if(a1[i] != a2[i])
-                return false;
-        }
-        return true;
     }
 
 
@@ -2419,44 +2343,45 @@ public class Util {
     }
 
 
-    public static String mapToString(Map<? extends Object,? extends Object> map) {
-        if(map == null)
-            return "null";
-        StringBuilder sb=new StringBuilder();
-        for(Map.Entry<? extends Object,? extends Object> entry : map.entrySet()) {
-            Object key=entry.getKey();
-            Object val=entry.getValue();
-            sb.append(key).append("=");
-            if(val == null)
-                sb.append("null");
-            else
-                sb.append(val);
-            sb.append("\n");
+    public static String printTime(double time, TimeUnit unit) {
+        switch(unit) {
+            case NANOSECONDS:
+                if(time < 1000) return print(time, unit);
+                return printTime(time / 1000.0, TimeUnit.MICROSECONDS);
+            case MICROSECONDS:
+                if(time < 1000) return print(time, unit);
+                return printTime(time / 1000.0, TimeUnit.MILLISECONDS);
+            case MILLISECONDS:
+                if(time < 1000) return print(time, unit);
+                return printTime(time / 1000.0, TimeUnit.SECONDS);
+            case SECONDS:
+                if(time < 60) return print(time, unit);
+                return printTime(time / 60.0, TimeUnit.MINUTES);
+            case MINUTES:
+                if(time < 60) return print(time, unit);
+                return printTime(time / 60.0, TimeUnit.HOURS);
+            case HOURS:
+                if(time < 24) return print(time, unit);
+                return printTime(time / 24.0, TimeUnit.DAYS);
+            default:           return print(time, unit);
         }
-        return sb.toString();
     }
 
-
-    public static String printNanos(long time_ns) {
-        double us=time_ns / 1_000.0;
-        return String.format("%d ns (%.2f us)", time_ns, us);
+    public static String suffix(TimeUnit u) {
+        switch(u) {
+            case NANOSECONDS:  return "ns";
+            case MICROSECONDS: return "us";
+            case MILLISECONDS: return "ms";
+            case SECONDS:      return "s";
+            case MINUTES:      return "m";
+            case HOURS:        return "h";
+            case DAYS:         return "d";
+            default:           return u.toString();
+        }
     }
 
-    public static String printNanos(double time_ns) {
-        double us=time_ns / 1_000.0;
-        return String.format("%.2f ns (%.2f us)", time_ns, us);
-    }
-
-    public static String printTime(long time,TimeUnit unit) {
-        long ns=TimeUnit.NANOSECONDS.convert(time,unit);
-        long us=TimeUnit.MICROSECONDS.convert(time,unit);
-        long ms=TimeUnit.MILLISECONDS.convert(time,unit);
-        long secs=TimeUnit.SECONDS.convert(time,unit);
-
-        if(secs > 0) return secs + "s";
-        if(ms > 0) return ms + "ms";
-        if(us > 0) return us + " us";
-        return ns + "ns";
+    public static String print(double time, TimeUnit unit) {
+        return format(time, suffix(unit));
     }
 
 
@@ -2502,46 +2427,32 @@ public class Util {
     }
 
     /**
-     * MByte nowadays doesn't mean 1024 * 1024 bytes, but 1 million bytes, see http://en.wikipedia.org/wiki/Megabyte
+     * MB nowadays doesn't mean 1024 * 1024 bytes, but 1 million bytes, see http://en.wikipedia.org/wiki/Megabyte
      * @param bytes
-     * @return
      */
-    public static String printBytes(long bytes) {
-        double tmp;
-
-        if(bytes < 1000)
-            return String.format("%db", bytes);
-        if(bytes < 1_000_000) {
-            tmp=bytes / 1000.0;
-            return String.format("%,.2fKB", tmp);
-        }
-        if(bytes < 1_000_000_000) {
-            tmp=bytes / 1_000_000.0;
-            return String.format("%,.2fMB", tmp);
-        }
-        else {
-            tmp=bytes / 1_000_000_000.0;
-            return String.format("%,.2fGB", tmp);
-        }
-    }
-
     public static String printBytes(double bytes) {
         double tmp;
 
         if(bytes < 1000)
-            return String.format("%.2fb", bytes);
+            return format(bytes, "b");
         if(bytes < 1_000_000) {
             tmp=bytes / 1000.0;
-            return String.format("%,.2fKB", tmp);
+            return format(tmp, "KB");
         }
         if(bytes < 1_000_000_000) {
             tmp=bytes / 1000_000.0;
-            return String.format("%,.2fMB", tmp);
+            return format(tmp, "MB");
         }
         else {
             tmp=bytes / 1_000_000_000.0;
-            return String.format("%,.2fGB", tmp);
+            return format(tmp, "GB");
         }
+    }
+
+    public static String format(double val, String suffix) {
+        int trailing=Math.floor(val) == val? 0 : 2;
+        String fmt=String.format("%%,.%df%s", trailing, suffix);
+        return String.format(fmt, val);
     }
 
 
@@ -2774,19 +2685,6 @@ public class Util {
             if(tmp == id)
                 return true;
         return false;
-    }
-
-
-    public static List<View> detectDifferentViews(Map<Address,View> map) {
-        final List<View> ret=new ArrayList<>();
-        for(View view : map.values()) {
-            if(view == null)
-                continue;
-            ViewId vid=view.getViewId();
-            if(!Util.containsViewId(ret,vid))
-                ret.add(view);
-        }
-        return ret;
     }
 
 
@@ -3039,30 +2937,6 @@ public class Util {
             sb.append(entry.getKey()).append("=").append(entry.getValue());
         }
         return sb.toString();
-    }
-
-
-    public static String printPingData(List<PingData> rsps) {
-        StringBuilder sb=new StringBuilder();
-        if(rsps != null) {
-            int total=rsps.size();
-            int servers=0, clients=0, coords=0;
-            for(PingData rsp : rsps) {
-                if(rsp.isCoord())
-                    coords++;
-                if(rsp.isServer())
-                    servers++;
-                else
-                    clients++;
-            }
-            sb.append(total + " total (" + servers + " servers (" + coords + " coord), " + clients + " clients)");
-        }
-        return sb.toString();
-    }
-
-
-    public static String print(ByteBuffer buf) {
-        return buf == null? "null" : String.format("[pos=%d lim=%d cap=%d]", buf.position(), buf.limit(), buf.capacity());
     }
 
 
@@ -3468,50 +3342,6 @@ public class Util {
     }
 
 
-    /**
-     * Parses comma-delimited longs; e.g., 2000,4000,8000.
-     * Returns array of long, or null.
-     */
-    public static int[] parseCommaDelimitedInts(String s) {
-        StringTokenizer tok;
-        List<Integer> v=new ArrayList<>();
-        int[] retval=null;
-
-        if(s == null) return null;
-        tok=new StringTokenizer(s,",");
-        while(tok.hasMoreTokens()) {
-            Integer l=Integer.valueOf(tok.nextToken());
-            v.add(l);
-        }
-        if(v.isEmpty()) return null;
-        retval=new int[v.size()];
-        for(int i=0; i < v.size(); i++)
-            retval[i]=v.get(i);
-        return retval;
-    }
-
-    /**
-     * Parses comma-delimited longs; e.g., 2000,4000,8000.
-     * Returns array of long, or null.
-     */
-    public static long[] parseCommaDelimitedLongs(String s) {
-        StringTokenizer tok;
-        List<Long> v=new ArrayList<>();
-        long[] retval=null;
-
-        if(s == null) return null;
-        tok=new StringTokenizer(s,",");
-        while(tok.hasMoreTokens()) {
-            Long l=Long.valueOf(tok.nextToken());
-            v.add(l);
-        }
-        if(v.isEmpty()) return null;
-        retval=new long[v.size()];
-        for(int i=0; i < v.size(); i++)
-            retval[i]=v.get(i);
-        return retval;
-    }
-
     /** e.g. "bela,jeannette,michelle" --> List{"bela", "jeannette", "michelle"} */
     public static List<String> parseCommaDelimitedStrings(String l) {
         return parseStringList(l,",");
@@ -3581,43 +3411,6 @@ public class Util {
         return tmp;
     }
 
-    public static Map<String,String> parseCommaDelimitedProps(String s) {
-        if (s == null)
-            return null;
-        Map<String,String> props=new HashMap<>();
-        Pattern p=Pattern.compile("\\s*([^=\\s]+)\\s*=\\s*([^=\\s,]+)\\s*,?"); //Pattern.compile("\\s*([^=\\s]+)\\s*=\\s([^=\\s]+)\\s*,?");
-        Matcher matcher=p.matcher(s);
-        while(matcher.find()) {
-            props.put(matcher.group(1), matcher.group(2));
-        }
-        return props;
-    }
-
-
-    /**
-     * Reads and discards all characters from the input stream until a \r\n or EOF is encountered
-     * @param in
-     * @return
-     */
-    public static int discardUntilNewLine(InputStream in) {
-        int ch;
-        int num=0;
-
-        while(true) {
-            try {
-                ch=in.read();
-                if(ch == -1)
-                    break;
-                num++;
-                if(ch == '\n')
-                    break;
-            }
-            catch(IOException e) {
-                break;
-            }
-        }
-        return num;
-    }
 
     /**
      * Reads a line of text.  A line is considered to be terminated by any one
@@ -3848,17 +3641,6 @@ public class Util {
         }
     }
 
-    /**
-     * Finds first available port starting at start_port and returns server
-     * socket. Will not bind to port >end_port. Sets srv_port
-     */
-    public static ServerSocket createServerSocketAndBind(SocketFactory factory,String service_name,InetAddress bind_addr,
-                                                  int start_port,int end_port) throws Exception {
-        ServerSocket ret=factory.createServerSocket(service_name);
-        bind(ret, bind_addr, start_port, end_port);
-        return ret;
-    }
-
 
     public static void bind(ServerSocket srv_sock, InetAddress bind_addr,
                             int start_port, int end_port) throws Exception {
@@ -3914,14 +3696,6 @@ public class Util {
     }
 
 
-
-    public static ServerSocketChannel createServerSocketChannelAndBind(InetAddress bind_addr,
-                                                                int start_port, int end_port) throws Exception {
-        ServerSocketChannel channel=ServerSocketChannel.open();
-        bind(channel, bind_addr, start_port, end_port);
-        return channel;
-    }
-
     public static ServerSocketChannel createServerSocketChannel(SocketFactory factory,String service_name, InetAddress bind_addr,
                                                                 int start_port, int end_port) throws Exception {
         int original_start_port=start_port;
@@ -3944,33 +3718,6 @@ public class Util {
                 }
                 start_port++;
             }
-        }
-    }
-
-
-    public static void bind(final ServerSocketChannel ch, InetAddress bind_addr, int start_port, int end_port) throws Exception {
-        bind(ch, bind_addr, start_port, end_port, 50);
-    }
-
-
-    public static void bind(final ServerSocketChannel ch, InetAddress bind_addr, int start_port, int end_port, int backlog) throws Exception {
-        int original_start_port=start_port;
-        while(true) {
-            try {
-                ch.bind(new InetSocketAddress(bind_addr, start_port), backlog);
-            }
-            catch(SocketException bind_ex) {
-                if(start_port == end_port)
-                    throw new BindException("No available port to bind to in range [" + original_start_port + " .. " + end_port + "]");
-                if(bind_addr != null && !bind_addr.isLoopbackAddress()) {
-                    NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
-                    if(nic == null)
-                        throw new BindException("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
-                }
-                start_port++;
-                continue;
-            }
-            break;
         }
     }
 
@@ -4165,12 +3912,6 @@ public class Util {
 
     public static InetAddress getLoopback() throws UnknownHostException {
         return getLoopback(Util.getIpStackType());
-    }
-
-    public static InetAddress getLocalMulticastAddress(StackType ip_version) throws UnknownHostException {
-        if(ip_version == StackType.IPv6)
-            return InetAddress.getByName("ff0e::5:5:5");
-        return InetAddress.getByName("225.5.5.5");
     }
 
 
@@ -4413,29 +4154,6 @@ public class Util {
         return ip_stack_type;
     }
 
-    public static boolean isIpv4StackAvailable() {
-        return ipv4_stack_available;
-    }
-
-    public static boolean isIpv6StackAvailable() {
-        return ipv6_stack_available;
-    }
-
-    public static boolean isIpAddressPermissible(InetAddress addr) {
-        if(ipv4_stack_available && !ipv6_stack_available)
-            return !(addr instanceof Inet6Address);
-        // todo: when we have an IPv4 address in an IPv6 stack -> map it to an IPv6 address
-        return true;
-    }
-
-    /** Returns true if the 2 addresses are of the same type (IPv4 or IPv6) */
-    public static boolean sameAddresses(InetAddress one,InetAddress two) {
-        return one == null
-          || two == null
-          || (one instanceof Inet6Address && two instanceof Inet6Address)
-          || (one instanceof Inet4Address && two instanceof Inet4Address);
-    }
-
     /**
      * Tries to determine the type of IP stack from the available interfaces and their addresses and from the
      * system properties (java.net.preferIPv4Stack and java.net.preferIPv6Addresses)
@@ -4518,21 +4236,6 @@ public class Util {
             sb.append('[').append(prot_name).append("] ");
         sb.append(bind_addr).append(" is not a valid address on any local network interface");
         throw new BindException(sb.toString());
-    }
-
-
-    public static InetAddress convertToIPv6(InetAddress ipv4_addr) throws UnknownHostException {
-        if(!(ipv4_addr instanceof Inet4Address))
-            throw new IllegalArgumentException(String.format("address %s is not an IPv4 address", ipv4_addr));
-        byte[] bytes=ipv4_addr.getAddress();
-        byte[] ipv4asIpV6addr=new byte[16];
-        ipv4asIpV6addr[10]=(byte)0xff;
-        ipv4asIpV6addr[11]=(byte)0xff;
-        ipv4asIpV6addr[12]=bytes[0];
-        ipv4asIpV6addr[13]=bytes[1];
-        ipv4asIpV6addr[14]=bytes[2];
-        ipv4asIpV6addr[15]=bytes[3];
-        return InetAddress.getByAddress(ipv4asIpV6addr);
     }
 
 
@@ -4620,52 +4323,6 @@ public class Util {
                 e.printStackTrace();
             }
         }
-    }
-
-
-    protected static void append(StringBuilder sb, String str) {
-        if(sb == null || str == null)
-            return;
-        sb.append(str.replace("\\${", "${"));
-    }
-
-
-    /**
-     * Try to resolve a "key" from the provided properties by checking if it is
-     * actually a "key1,key2", in which case try first "key1", then "key2". If
-     * all fails, return null.
-     * <p/>
-     * It also accepts "key1," and ",key2".
-     * @param key   the key to resolve
-     * @param props the properties to use
-     * @return the resolved key or null
-     */
-    private static String resolveCompositeKey(String key,Properties props) {
-        String value=null;
-
-        // Look for the comma
-        int comma=key.indexOf(',');
-        if(comma > -1) {
-            // If we have a first part, try resolve it
-            if(comma > 0) {
-                // Check the first part
-                String key1=key.substring(0,comma);
-                if(props != null)
-                    value=props.getProperty(key1);
-                else
-                    value=System.getProperty(key1);
-            }
-            // Check the second part, if there is one and first lookup failed
-            if(value == null && comma < key.length() - 1) {
-                String key2=key.substring(comma + 1);
-                if(props != null)
-                    value=props.getProperty(key2);
-                else
-                    value=System.getProperty(key2);
-            }
-        }
-        // Return whatever we've found or null
-        return value;
     }
 
 
@@ -4770,57 +4427,6 @@ public class Util {
         return default_value;
     }
 
-
-    /**
-     * Used to convert a byte array in to a java.lang.String object
-     * @param bytes the bytes to be converted
-     * @return the String representation
-     */
-    private static String getString(byte[] bytes) {
-        StringBuilder sb=new StringBuilder();
-        for(int i=0; i < bytes.length; i++) {
-            byte b=bytes[i];
-            sb.append(0x00FF & b);
-            if(i + 1 < bytes.length) {
-                sb.append("-");
-            }
-        }
-        return sb.toString();
-    }
-
-
-    /**
-     * Converts a java.lang.String in to a MD5 hashed String
-     * @param source the source String
-     * @return the MD5 hashed version of the string
-     */
-    public static String md5(String source) {
-        try {
-            MessageDigest md=MessageDigest.getInstance("MD5");
-            byte[] bytes=md.digest(source.getBytes());
-            return getString(bytes);
-        }
-        catch(Exception e) {
-            return null;
-        }
-    }
-
-    /**
-     * Converts a java.lang.String in to a SHA hashed String
-     * @param source the source String
-     * @return the MD5 hashed version of the string
-     */
-    public static String sha(String source) {
-        try {
-            MessageDigest md=MessageDigest.getInstance("SHA");
-            byte[] bytes=md.digest(source.getBytes());
-            return getString(bytes);
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 
     /** Converts a method name to an attribute name, e.g. getFooBar() --> foo_bar, isFlag --> flag */
     public static String methodNameToAttributeName(final String methodName) {

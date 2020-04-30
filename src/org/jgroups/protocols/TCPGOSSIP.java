@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RouterStub;
@@ -35,10 +36,11 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
-    @Property(description="Max time for socket creation. Default is 1000 msec")
+    @Property(description="Max time for socket creation. Default is 1000 ms",type=AttributeType.TIME)
     protected int sock_conn_timeout=1000;
 
-    @Property(description="Interval (ms) by which a disconnected stub attempts to reconnect to the GossipRouter")
+    @Property(description="Interval (ms) by which a disconnected stub attempts to reconnect to the GossipRouter",
+      type=AttributeType.TIME)
     protected long reconnect_interval=10000L;
     
     @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership", 

@@ -37,15 +37,12 @@ public class DAISYCHAIN extends Protocol {
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     protected volatile Address       local_addr, next;
-    protected int                    view_size=0;
-    protected Executor               default_pool=null;
+    protected int                    view_size;
+    protected Executor               default_pool;
     protected volatile boolean       running=true;
 
-    @ManagedAttribute
-    public int msgs_forwarded=0;
-
-    @ManagedAttribute
-    public int msgs_sent=0;
+    @ManagedAttribute public int msgs_forwarded;
+    @ManagedAttribute public int msgs_sent;
 
 
 

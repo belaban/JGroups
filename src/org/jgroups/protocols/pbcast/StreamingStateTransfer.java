@@ -2,6 +2,7 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
@@ -51,13 +52,13 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
     /*
      * ----------------------------------------------Properties -----------------------------------
      */
-    @Property(description="Size (in bytes) of the state transfer buffer")
+    @Property(description="Size (in bytes) of the state transfer buffer",type=AttributeType.BYTES)
     protected int                 buffer_size=8 * 1024;
 
     @Property(description="Maximum number of pool threads serving state requests")
     protected int                 max_pool=5;
 
-    @Property(description="Keep alive for pool threads serving state requests")
+    @Property(description="Keep alive for pool threads serving state requests",type=AttributeType.TIME)
     protected long                pool_thread_keep_alive=(long) 20 * 1000;
 
 
@@ -96,8 +97,10 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
 
     @ManagedAttribute public long   getNumberOfStateRequests()    {return num_state_reqs.sum();}
-    @ManagedAttribute public long   getNumberOfStateBytesSent()   {return num_bytes_sent.sum();}
-    @ManagedAttribute public double getAverageStateSize()         {return avg_state_size;}
+    @ManagedAttribute(type=AttributeType.BYTES)
+                      public long   getNumberOfStateBytesSent()   {return num_bytes_sent.sum();}
+    @ManagedAttribute(type=AttributeType.BYTES)
+                      public double getAverageStateSize()         {return avg_state_size;}
     @ManagedAttribute public int    getThreadPoolSize()           {return thread_pool.getPoolSize();}
     @ManagedAttribute public long   getThreadPoolCompletedTasks() {return thread_pool.getCompletedTaskCount();}
 

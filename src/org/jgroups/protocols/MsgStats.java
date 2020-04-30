@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.Util;
 
 import java.lang.reflect.Field;
@@ -43,79 +44,83 @@ public class MsgStats {
     protected final AtomicInteger num_threads_spawned=new AtomicInteger(0);
 
 
-    @ManagedAttribute(description="Number of messages sent")
+    @ManagedAttribute(description="Number of messages sent",type=AttributeType.SCALAR)
     public long     getNumMsgsSent()                   {return num_msgs_sent.sum();}
     public MsgStats incrNumMsgsSent(int d)             {num_msgs_sent.add(d); return this;}
 
-    @ManagedAttribute(description="Number of unicast messages sent")
+    @ManagedAttribute(description="Number of unicast messages sent",type=AttributeType.SCALAR)
     public long     getNumUcastMsgsSent()              {return num_ucasts_sent.sum();}
     public MsgStats incrNumUcastMsgsSent(int d)        {num_ucasts_sent.add(d); return this;}
 
-    @ManagedAttribute(description="Number of multicast messages sent")
+    @ManagedAttribute(description="Number of multicast messages sent",type=AttributeType.SCALAR)
     public long     getNumMcastMsgsSent()              {return num_mcasts_sent.sum();}
     public MsgStats incrNumMcastMsgsSent(int d)        {num_mcasts_sent.add(d); return this;}
 
-    @ManagedAttribute(description="Number of unicast messages received")
+    @ManagedAttribute(description="Number of unicast messages received",type=AttributeType.SCALAR)
     public long     getNumUcastMsgsReceived()          {return num_ucasts_received.sum();}
     public MsgStats incrNumUcastMsgsReceived(int d)    {num_ucasts_received.add(d); return this;}
 
-    @ManagedAttribute(description="Number of multicast messages received")
+    @ManagedAttribute(description="Number of multicast messages received",type=AttributeType.SCALAR)
     public long     getNumMcastMsgsReceived()          {return num_mcasts_received.sum();}
     public MsgStats incrNumMcastMsgsReceived(int d)    {num_mcasts_received.add(d); return this;}
 
-    @ManagedAttribute(description="Number of regular messages received")
+    @ManagedAttribute(description="Number of regular messages received",type=AttributeType.SCALAR)
     public long     getNumMsgsReceived()               {return num_msgs_received.sum();}
     public MsgStats incrNumMsgsReceived(int d)         {num_msgs_received.add(d); return this;}
 
-    @ManagedAttribute(description="Number of OOB messages received. This value is included in num_msgs_received.")
+    @ManagedAttribute(description="Number of OOB messages received. This value is included in num_msgs_received."
+      ,type=AttributeType.SCALAR)
     public long     getNumOOBMsgsReceived()            {return num_oob_msgs_received.sum();}
     public MsgStats incrNumOOBMsgsReceived(int d)      {num_oob_msgs_received.add(d); return this;}
 
-    @ManagedAttribute(description="Number of internal messages received. This value is included in num_msgs_received.")
+    @ManagedAttribute(description="Number of internal messages received. This value is included in num_msgs_received."
+      ,type=AttributeType.SCALAR)
     public long     getNumInternalMsgsReceived()       {return num_internal_msgs_received.sum();}
     public MsgStats incrNumInternalMsgsReceived(int d) {num_internal_msgs_received.add(d); return this;}
 
-    @ManagedAttribute(description="Number of single messages sent")
+    @ManagedAttribute(description="Number of single messages sent",type=AttributeType.SCALAR)
     public long     getNumSingleMsgsSent()             {return num_single_msgs_sent.sum();}
     public MsgStats incrNumSingleMsgsSent(int d)       {num_single_msgs_sent.add(d); return this;}
 
-    @ManagedAttribute(description="Number of message batches sent")
+    @ManagedAttribute(description="Number of message batches sent",type=AttributeType.SCALAR)
     public long     getNumBatchesSent()                {return num_batches_sent.sum();}
     public MsgStats incrNumBatchesSent(int d)          {num_batches_sent.add(d); return this;}
 
-    @ManagedAttribute(description="Number of message batches received")
+    @ManagedAttribute(description="Number of message batches received",type=AttributeType.SCALAR)
     public long     getNumBatchesReceived()            {return num_batches_received.sum();}
     public MsgStats incrNumBatchesReceived(int d)      {num_batches_received.add(d); return this;}
 
-    @ManagedAttribute(description="Number of bytes sent")
+    @ManagedAttribute(description="Number of bytes sent",type=AttributeType.BYTES)
     public long     getNumBytesSent()                  {return num_bytes_sent.sum();}
     public MsgStats incrNumBytesSent(int d)            {num_bytes_sent.add(d); return this;}
 
-    @ManagedAttribute(description="Number of unicast bytes sent")
+    @ManagedAttribute(description="Number of unicast bytes sent",type=AttributeType.BYTES)
     public long     getNumUcastBytesSent()             {return num_ucast_bytes_sent.sum();}
     public MsgStats incrNumUcastBytesSent(int d)       {num_ucast_bytes_sent.add(d); return this;}
 
-    @ManagedAttribute(description="Number of multicast bytes sent")
+    @ManagedAttribute(description="Number of multicast bytes sent",type=AttributeType.BYTES)
     public long     getNumMcastBytesSent()             {return num_mcast_bytes_sent.sum();}
     public MsgStats incrNumMcastBytesSent(int d)       {num_mcast_bytes_sent.add(d); return this;}
 
-    @ManagedAttribute(description="Number of bytes received")
+    @ManagedAttribute(description="Number of bytes received",type=AttributeType.BYTES)
     public long     getNumBytesReceived()              {return num_bytes_received.sum();}
     public MsgStats incrNumBytesReceived(int d)        {num_bytes_received.add(d); return this;}
 
-    @ManagedAttribute(description="Number of unicast bytes received")
+    @ManagedAttribute(description="Number of unicast bytes received",type=AttributeType.BYTES)
     public long     getNumUcastBytesReceived()         {return num_ucast_bytes_received.sum();}
     public MsgStats incrNumUcastBytesReceived(int d)   {num_ucast_bytes_received.add(d); return this;}
 
-    @ManagedAttribute(description="Number of multicast bytes received")
+    @ManagedAttribute(description="Number of multicast bytes received",type=AttributeType.BYTES)
     public long     getNumMcastBytesReceived()         {return num_mcast_bytes_received.sum();}
     public MsgStats incrNumMcastBytesReceived(int d)   {num_mcast_bytes_received.add(d); return this;}
 
-    @ManagedAttribute(description="Number of dropped messages that were rejected by the thread pool")
+    @ManagedAttribute(description="Number of dropped messages that were rejected by the thread pool"
+      ,type=AttributeType.SCALAR)
     public int      getNumRejectedMsgs()               {return num_rejected_msgs.get();}
     public MsgStats incrNumRejectedMsgs(int d)         {num_rejected_msgs.addAndGet(d); return this;}
 
-    @ManagedAttribute(description="Number of threads spawned as a result of thread pool rejection")
+    @ManagedAttribute(description="Number of threads spawned as a result of thread pool rejection"
+      ,type=AttributeType.SCALAR)
     public int      getNumThreadsSpawned()             {return num_threads_spawned.get();}
     public MsgStats incrNumThreadsSpawned(int d)       {num_threads_spawned.addAndGet(d); return this;}
 

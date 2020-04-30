@@ -6,9 +6,10 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
 import org.jgroups.util.UUID;
+import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -42,18 +43,18 @@ public class MERGE3 extends Protocol {
     
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
-    @Property(description="Minimum time in ms before sending an info message")
+    @Property(description="Minimum time in ms before sending an info message",type=AttributeType.TIME)
     protected long                          min_interval=1000;
 
     @Property(description="Interval (in milliseconds) when the next info " +
-            "message will be sent. A random value is picked from range [1..max_interval]")
+            "message will be sent. A random value is picked from range [1..max_interval]",type=AttributeType.TIME)
     protected long                          max_interval=10000;
 
     @Property(description="The max number of merge participants to be involved in a merge. 0 sets this to unlimited.")
     protected int                           max_participants_in_merge=100;
 
     /* ---------------------------------------------- JMX -------------------------------------------------------- */
-    @Property(description="Interval (in ms) after which we check for view inconsistencies")
+    @Property(description="Interval (in ms) after which we check for view inconsistencies",type=AttributeType.TIME)
     protected long                          check_interval;
 
     @ManagedAttribute(description="Number of cached ViewIds")

@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.blocks.atomic.Counter;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -23,10 +24,12 @@ public class COUNTER extends Protocol {
     @Property(description="Bypasses message bundling if true")
     protected boolean bypass_bundling=true;
 
-    @Property(description="Request timeouts (in ms). If the timeout elapses, a Timeout (runtime) exception will be thrown")
+    @Property(description="Request timeouts (in ms). If the timeout elapses, a TimeoutException will be thrown",
+      type=AttributeType.TIME)
     protected long timeout=60000;
 
-    @Property(description="Number of milliseconds to wait for reconciliation responses from all current members")
+    @Property(description="Number of milliseconds to wait for reconciliation responses from all current members",
+      type=AttributeType.TIME)
     protected long reconciliation_timeout=10000;
 
     @Property(description="Number of backup coordinators. Modifications are asynchronously sent to all backup coordinators")

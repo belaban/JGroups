@@ -7,6 +7,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.NioServer;
+import org.jgroups.conf.AttributeType;
 
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
@@ -35,7 +36,7 @@ public class TCP_NIO2 extends BasicTCP {
     protected boolean copy_on_partial_write=true;
 
     @Property(description="Number of ms a reader thread on a given connection can be idle (not receiving any messages) " +
-      "until it terminates. New messages will start a new reader")
+      "until it terminates. New messages will start a new reader",type=AttributeType.TIME)
     protected long    reader_idle_time=5000;
 
 

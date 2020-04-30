@@ -1,9 +1,14 @@
 package org.jgroups.annotations;
 
-import java.lang.annotation.*;
-
+import org.jgroups.conf.AttributeType;
 import org.jgroups.conf.PropertyConverter;
 import org.jgroups.conf.PropertyConverters;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Represents a Protocol property assigned from corresponding field in JGroups
@@ -62,6 +67,12 @@ public @interface Property {
 
     /* Should this managed attribute be writeable ? If set to true, automatically sets exposeAsManagedAttribute to true */
     boolean writable() default true;
+
+    /** Defines the type, used for pretty printing */
+    AttributeType type() default AttributeType.UNDEFINED;
+
+    /** Only used if type is TIME */
+    TimeUnit unit() default TimeUnit.MILLISECONDS;
 }
 
 
