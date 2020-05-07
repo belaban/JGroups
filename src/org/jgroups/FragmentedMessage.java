@@ -43,13 +43,13 @@ public class FragmentedMessage extends BytesMessage { // we need the superclass'
         return Global.INT_SIZE + length;
     }
 
-    protected void writePayload(DataOutput out) throws IOException {
+    public void writePayload(DataOutput out) throws IOException {
         out.writeInt(length);
         PartialOutputStream pos=new PartialOutputStream(out, offset, length);
         original_msg.writeTo(pos);
     }
 
-    protected void readPayload(DataInput in) throws IOException {
+    public void readPayload(DataInput in) throws IOException {
         this.length=in.readInt();
         if(this.length > 0) {
             this.array=new byte[this.length];

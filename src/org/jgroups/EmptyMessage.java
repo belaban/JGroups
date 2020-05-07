@@ -33,11 +33,11 @@ public class EmptyMessage extends BaseMessage {
     public <T extends Object> T  getObject()                          {throw new UnsupportedOperationException();}
     public EmptyMessage          setObject(Object obj)                {throw new UnsupportedOperationException();}
 
-    protected void               writePayload(DataOutput out) throws IOException {
+    public void                  writePayload(DataOutput out) throws IOException {
         // no payload to write
     }
 
-    protected void               readPayload(DataInput in) throws IOException, ClassNotFoundException {
+    public void                  readPayload(DataInput in) throws IOException, ClassNotFoundException {
         // no payload to read
     }
 }

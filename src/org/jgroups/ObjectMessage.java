@@ -87,11 +87,11 @@ public class ObjectMessage extends BaseMessage {
     }
 
 
-    @Override protected void writePayload(DataOutput out) throws IOException {
+    public void writePayload(DataOutput out) throws IOException {
         Util.writeGenericStreamable((Streamable)obj, out);
     }
 
-    @Override protected void readPayload(DataInput in) throws IOException, ClassNotFoundException {
+    public void readPayload(DataInput in) throws IOException, ClassNotFoundException {
         obj=Util.readGenericStreamable(in);
     }
 

@@ -3,6 +3,7 @@ package org.jgroups;
 import org.jgroups.util.ByteArray;
 import org.jgroups.util.SizeStreamable;
 
+import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Map;
@@ -177,6 +178,9 @@ public interface Message extends SizeStreamable, Constructable<Message> {
     /** Writes the message to an output stream excluding the destination (and possibly source) address, plus a number of headers */
     void                 writeToNoAddrs(Address src, DataOutput out, short... excluded_headers) throws IOException;
 
+    void                 writePayload(DataOutput out) throws IOException;
+
+    void                 readPayload(DataInput in) throws IOException, ClassNotFoundException;
 
 
     // =============================== Flags ====================================

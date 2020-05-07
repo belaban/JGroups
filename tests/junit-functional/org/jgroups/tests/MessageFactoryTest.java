@@ -83,10 +83,10 @@ public class MessageFactoryTest {
             return null;
         }
 
-        protected void writePayload(DataOutput out) throws IOException {
+        public void writePayload(DataOutput out) throws IOException {
         }
 
-        protected void readPayload(DataInput in) throws IOException, ClassNotFoundException {
+        public void readPayload(DataInput in) throws IOException, ClassNotFoundException {
         }
     }
 }

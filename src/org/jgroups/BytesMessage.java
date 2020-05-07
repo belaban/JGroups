@@ -238,13 +238,13 @@ public class BytesMessage extends BaseMessage {
         return retval;
     }
 
-    @Override protected void writePayload(DataOutput out) throws IOException {
+    public void writePayload(DataOutput out) throws IOException {
         out.writeInt(array != null? length : -1);
         if(array != null)
             out.write(array, offset, length);
     }
 
-    @Override protected void readPayload(DataInput in) throws IOException {
+    public void readPayload(DataInput in) throws IOException {
         int len=in.readInt();
         if(len >= 0) {
             array=new byte[len];

@@ -1,9 +1,12 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.util.ByteArray;
+import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
+import java.io.DataInput;
 import java.nio.ByteBuffer;
 
 /**
@@ -17,6 +20,8 @@ public class CompositeMessageTest extends MessageTestBase {
     protected static final Message M1=create(DEST, 10, false, false);
     protected static final Message M2=create(DEST, 1000, true, true);
     protected static final Message M3=new EmptyMessage(DEST);
+
+    protected static final MessageFactory MF=new DefaultMessageFactory();
 
     public void testCreation() {
         CompositeMessage msg=new CompositeMessage(DEST, M1, M2);
@@ -53,6 +58,36 @@ public class CompositeMessageTest extends MessageTestBase {
         assert msg.size() == copy.size();
     }
 
+    public void testCollapse() throws Exception {
+        CompositeMessage msg=new CompositeMessage(DEST, M1, M2, M3).collapse(true);
+        int length=msg.getLength();
+        ByteArray buf=Util.messageToBuffer(msg);
+        Message msg2=Util.messageFromBuffer(buf.getArray(), buf.getOffset(), buf.getLength(), MF);
+        assert msg2 instanceof BytesMessage;
+        assert msg2.getLength() == length;
+    }
+
+    public void testCollapse2() throws Exception {
+        CompositeMessage msg=new CompositeMessage(DEST)
+          .add(new BytesMessage(DEST, "hello".getBytes()))
+          .add(new NioMessage(DEST, ByteBuffer.wrap(" world".getBytes())))
+          .add(new ObjectMessage(DEST, "hello"))
+          .collapse(true);
+        int length=msg.getLength();
+        ByteArray buf=Util.messageToBuffer(msg);
+        Message msg2=Util.messageFromBuffer(buf.getArray(), buf.getOffset(), buf.getLength(), MF);
+        assert msg2 instanceof BytesMessage;
+        assert msg2.getLength() == length;
+
+        byte[] bytes=msg2.getArray();
+        String s=new String(bytes, 0, 11);
+        assert s.equals("hello world");
+        DataInput in=new ByteArrayDataInputStream(bytes, s.length(), bytes.length-s.length());
+        ObjectMessage om=new ObjectMessage();
+        om.readPayload(in);
+        assert om.getObject() instanceof String;
+        assert om.getObject().equals("hello");
+    }
 
     protected static Message create(Address dest, int length, boolean nio, boolean direct) {
         if(!nio)

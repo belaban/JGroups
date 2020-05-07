@@ -183,7 +183,7 @@ public class NioMessage extends BaseMessage {
         return Global.INT_SIZE + getLength() + Global.BYTE_SIZE; // for use_direct_memory_for_allocations
     }
 
-    @Override protected void writePayload(DataOutput out) throws IOException {
+    public void writePayload(DataOutput out) throws IOException {
         out.writeBoolean(use_direct_memory_for_allocations);
         out.writeInt(buf != null? getLength() : -1);
         if(buf != null) {
@@ -208,7 +208,7 @@ public class NioMessage extends BaseMessage {
         }
     }
 
-    @Override protected void readPayload(DataInput in) throws IOException {
+    public void readPayload(DataInput in) throws IOException {
         use_direct_memory_for_allocations=in.readBoolean();
         int len=in.readInt();
         if(len < 0)

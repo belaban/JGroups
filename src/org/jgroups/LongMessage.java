@@ -48,11 +48,11 @@ public class LongMessage extends BaseMessage {
     }
 
 
-    protected void writePayload(DataOutput out) throws IOException {
+    public void writePayload(DataOutput out) throws IOException {
         Bits.writeLong(value, out);
     }
 
-    protected void readPayload(DataInput in) throws IOException, ClassNotFoundException {
+    public void readPayload(DataInput in) throws IOException, ClassNotFoundException {
         value=Bits.readLong(in);
     }
 

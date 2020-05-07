@@ -26,8 +26,11 @@ import java.util.function.Supplier;
  * @since  5.0
  */
 public class CompositeMessage extends BaseMessage implements Iterable<Message> {
-    protected Message[]                   msgs;
-    protected int                         index; // index of the next message to be added
+    protected Message[] msgs;
+    protected int       index;    // index of the next message to be added
+    protected boolean   collapse; // send as a BytesMessage when true
+
+
     protected static final MessageFactory mf=new DefaultMessageFactory();
 
     public CompositeMessage() {
@@ -44,17 +47,21 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
     }
 
 
-    public Supplier<Message>      create()                              {return CompositeMessage::new;}
-    public short                  getType()                             {return Message.COMPOSITE_MSG;}
-    public boolean                hasPayload()                          {return msgs != null && index > 0;}
-    public boolean                hasArray()                            {return false;}
-    public int                    getNumberOfMessages()                 {return index;}
-    public int                    getOffset()                           {throw new UnsupportedOperationException();}
-    public byte[]                 getArray()                            {throw new UnsupportedOperationException();}
-    public CompositeMessage       setArray(byte[] b, int off, int len)  {throw new UnsupportedOperationException();}
-    public CompositeMessage       setArray(ByteArray buf)               {throw new UnsupportedOperationException();}
-    public CompositeMessage       setObject(Object obj)                 {throw new UnsupportedOperationException();}
-    public <T extends Object>  T  getObject()                           {throw new UnsupportedOperationException();}
+    public Supplier<Message>      create()                          {return CompositeMessage::new;}
+    public short                  getType()                         {return collapse? Message.BYTES_MSG : Message.COMPOSITE_MSG;}
+    public boolean                hasPayload()                      {return msgs != null && index > 0;}
+    public boolean                hasArray()                        {return false;}
+    public int                    getNumberOfMessages()             {return index;}
+    public int                    getOffset()                       {throw new UnsupportedOperationException();}
+    public byte[]                 getArray()                        {throw new UnsupportedOperationException();}
+    public CompositeMessage       setArray(byte[] b, int o, int l)  {throw new UnsupportedOperationException();}
+    public CompositeMessage       setArray(ByteArray buf)           {throw new UnsupportedOperationException();}
+    public CompositeMessage       setObject(Object obj)             {throw new UnsupportedOperationException();}
+    public <T extends Object>  T  getObject()                       {throw new UnsupportedOperationException();}
+    public boolean                collapse()                        {return collapse;}
+    public CompositeMessage       collapse(boolean b)               {collapse=b; return this;}
+
+
 
     public int getLength() {
         int total=0;
@@ -119,7 +126,11 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
     }
 
 
-    @Override protected void writePayload(DataOutput out) throws IOException {
+    public void writePayload(DataOutput out) throws IOException {
+        if(collapse) {
+            writePayloadAsBytes(out);
+            return;
+        }
         out.writeInt(index);
         if(msgs != null) {
             for(int i=0; i < index; i++) {
@@ -130,7 +141,7 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
         }
     }
 
-    @Override protected void readPayload(DataInput in) throws IOException, ClassNotFoundException {
+    public void readPayload(DataInput in) throws IOException, ClassNotFoundException {
         index=in.readInt();
         if(index > 0) {
             msgs=new Message[index]; // a bit of additional space should we add byte arrays
@@ -141,6 +152,22 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
             }
         }
     }
+
+    // Writes all payloads (hasArray() == true) without any sizes in-between
+    protected void writePayloadAsBytes(DataOutput out) throws IOException {
+        int len=getLength();
+        out.writeInt(msgs == null? -1 : len);
+        if(msgs != null) {
+            for(int i=0; i < index; i++) {
+                Message msg=msgs[i];
+                if(msg.hasArray())
+                    out.write(msg.getArray(), msg.getOffset(), msg.getLength());
+                else
+                    msg.writePayload(out);
+            }
+        }
+    }
+
 
     /* --------------------------------- End of Interface Streamable ----------------------------- */
 

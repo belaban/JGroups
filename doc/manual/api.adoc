@@ -200,7 +200,7 @@ The `Message` interface has a number of subclasses, each having a different payl
 for example can be used with byte arrays, <<NioMessage,`NioMessage`>> handles `ByteBuffer` types and
 <<ObjectMessage,`ObjectMessage`>> accepts (serializable) `Objects` as payload.
 
-A second set of message types operates on other messages and does not provide a payload of their own:
+A second set of message types operates on other messages and does not provide a payload of its own:
 
 <<FragmentedMessage,`FragmentedMessage`>> wraps any other message that's too big to be sent by the transport (e.g.
 UDP has a datagram size limit of ~65K) with a fragmentation size, and creates fragments of the underlying message
@@ -332,16 +332,16 @@ Alternatively, a custom message factory could manage a pool of off-heap memory a
 
 The methods of `NioMessage` are:
 
-[width="80%",cols="2,3",frame="topbot",options="header"]
+[width="100%",cols="2,6",frame="topbot",options="header"]
 |==========================
 |Name    |Description
-|boolean isDirect() | Returns true if the buffer is off-heap, false otherwise
-|ByteBuffer getBuf() | Returns the `ByteBuffer` payload
-|NioMessage setBuf(ByteBuffer) | Sets the `ByteBuffer` payload
-|boolean useDirectMemory() | When true, the `ByteBuffer` will be created on-heap when unmarshalled, otherwise
+|isDirect() | Returns true if the buffer is off-heap, false otherwise
+|getBuf() | Returns the `ByteBuffer` payload
+|setBuf(ByteBuffer) | Sets the `ByteBuffer` payload
+|useDirectMemory() | When true, the `ByteBuffer` will be created on-heap when unmarshalled, otherwise
                              it will be created off-heap (direct `ByteBuffer`). See the setter below for more details. +
                              Default: `false`
-|NioMessage useDirectMemory(boolean b) | If true, use direct memory when creating `ByteBuffer` payloads,
+|useDirectMemory(boolean b) | If true, use direct memory when creating `ByteBuffer` payloads,
                          e.g. on `setArray(byte a)`, `setArray(ByteArray)`, `setObject(Object)` or when getting read
                          from the network (`readPayload(DataInput)`). +
       Unless this flag is set to true, a direct `ByteBuffer` payload will become a heap-based payload by a
@@ -485,9 +485,65 @@ The methods of `CompositeMessage` are:
 |add(Message) | Adds a message, increasing the capacity if needed
 |add(Message ... msgs) | Adds a number of messages
 |get(int index) | Returns the message at the given index
+|collapse(boolean)|Collapses the payload and sends the message as a `BytesMessage` (see next section)
 |==========================
 
 For a detailed listing of all methods consult the javadoc.
+
+===== Collapsing a CompositeMessage
+When we send a `CompositeMessage` consisting of a `BytesMessage` of 1000 bytes and an `NioMessage` of 50 bytes,
+we may want to receive a `BytesMessage` of 1050 bytes, with the payloads of the individual messages
+*collapsed*, rather than a `CompositeMessage`.
+
+This is oftentimes the case when we would like to combine the 2 payloads at the sender side into 1, but
+want to avoid the overhead of the byte array creation of size 1050, but don't mind handling the full 1050-byte
+array at the receiver side.
+
+The code below shows how to use `collapse()`:
+
+[source,java]
+----
+public void testCollapse2() throws Exception {
+    CompositeMessage msg=new CompositeMessage(DEST)
+        .add(new BytesMessage(DEST, "hello".getBytes()))
+        .add(new NioMessage(DEST, ByteBuffer.wrap(" world".getBytes())))
+        .add(new ObjectMessage(DEST, "hello"))
+        .collapse(true);
+    int length=msg.getLength();
+    ByteArray buf=Util.messageToBuffer(msg);
+    Message msg2=Util.messageFromBuffer(buf.getArray(),
+                                        buf.getOffset(),
+                                        buf.getLength(), MF);
+    assert msg2 instanceof BytesMessage;
+    assert msg2.getLength() == length;
+
+    byte[] bytes=msg2.getArray();
+    String s=new String(bytes, 0, 11);
+    assert s.equals("hello world");
+    DataInput in=new ByteArrayDataInputStream(bytes,
+                                              s.length(),
+                                              bytes.length-s.length());
+    ObjectMessage om=new ObjectMessage();
+    om.readPayload(in);
+    assert om.getObject() instanceof String;
+    assert om.getObject().equals("hello");
+}
+----
+
+Here, we're adding a byte array, an NIO `ByteBuffer` and an object and then set `collapse()` in the
+`CompositeMessage`.
+
+This means that - at serialization time - the byte array is written first (without the size), then the
+`ByteBuffer`, then the object.
+
+When receiving the message, we see that it's a `BytesMessage`, _not_ a `CompositeMessage`. We know that the
+payloads of the `BytesMessage` (`"hello"`) and the payload of the `NioMessage` (`" world"`) have been combined
+and can therefore read the entire 11 bytes directly into a string `"hello world"`.
+
+After this, we read the object (via an `ObjectMessage`).
+
+NOTE: Payload collapsing is envisaged to be used mainly for message types which have an array (e.g. `BytesMessage`
+or `NioMessage`).
 
 
 

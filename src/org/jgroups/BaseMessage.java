@@ -314,9 +314,6 @@ public abstract class BaseMessage implements Message {
         readPayload(in);
     }
 
-    protected abstract void writePayload(DataOutput out) throws IOException;
-
-    protected abstract void readPayload(DataInput in) throws IOException, ClassNotFoundException;
 
     /** Copies the payload */
     protected Message copyPayload(Message copy) {
