@@ -16,6 +16,7 @@ import org.jgroups.util.*;
 import java.io.*;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -111,6 +112,14 @@ public class JChannel implements Closeable {
      */
     public JChannel(InputStream input) throws Exception {
         this(ConfiguratorFactory.getStackConfigurator(input));
+    }
+
+    /**
+     * Constructs a JChannel instance with the protocol stack configuration indicated by the specified URL.
+     * @param properties A URL pointing to a JGroups XML protocol stack configuration.
+     */
+    public JChannel(URL properties) throws Exception {
+        this(properties.openStream());
     }
 
     /**
