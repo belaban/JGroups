@@ -29,19 +29,12 @@ public class FragmentedMessage extends BytesMessage { // we need the superclass'
         this.length=len;
     }
 
-    public Message getOriginalMessage() {
-        return original_msg;
-    }
-
-    public short getType() {return Message.FRAG_MSG;}
-
-    public Supplier<Message> create() {
-        return FragmentedMessage::new;
-    }
-
-    protected int sizeOfPayload() {
-        return Global.INT_SIZE + length;
-    }
+    public Message           getOriginalMessage() {return original_msg;}
+    public short             getType()            {return Message.FRAG_MSG;}
+    public boolean           hasArray()           {return false;}
+    public boolean           hasPayload()         {return true;}
+    public Supplier<Message> create()             {return FragmentedMessage::new;}
+    protected int            sizeOfPayload()      {return Global.INT_SIZE + length;}
 
     public void writePayload(DataOutput out) throws IOException {
         out.writeInt(length);
@@ -60,7 +53,7 @@ public class FragmentedMessage extends BytesMessage { // we need the superclass'
 
     public String toString() {
         return String.format("%s [off=%d len=%d] (original msg: %s)",
-                             FragmentedMessage.class.getSimpleName(), offset, length, original_msg);
+                             getClass().getSimpleName(), offset, length, original_msg);
     }
 
 

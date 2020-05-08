@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
@@ -15,6 +16,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
@@ -46,6 +48,7 @@ public class COMPRESS extends Protocol {
     protected BlockingQueue<Deflater> deflater_pool;
     protected BlockingQueue<Inflater> inflater_pool;
     protected MessageFactory          msg_factory;
+    protected final LongAdder         num_compressions=new LongAdder(), num_decompressions=new LongAdder();
 
 
 
@@ -56,6 +59,16 @@ public class COMPRESS extends Protocol {
     public int      getMinSize()      {return min_size;}
     public COMPRESS setMinSize(int s) {this.min_size=s; return this;}
 
+    @ManagedAttribute(description="Number of compressions",type=AttributeType.SCALAR)
+    public long getNumCompressions() {return num_compressions.sum();}
+
+    @ManagedAttribute(description="Number of un-compressions",type=AttributeType.SCALAR)
+    public long getNumUncompressions() {return num_decompressions.sum();}
+
+    public void resetStats() {
+        super.resetStats();
+        num_compressions.reset(); num_decompressions.reset();
+    }
 
     public void init() throws Exception {
         deflater_pool=new ArrayBlockingQueue<>(pool_size);
@@ -107,6 +120,7 @@ public class COMPRESS extends Protocol {
                       .putHeader(this.id, new CompressHeader(length).needsDeserialization(serialize));
                     if(log.isTraceEnabled())
                         log.trace("compressed payload from %d bytes to %d bytes", length, compressed_size);
+                    num_compressions.increment();
                     return down_prot.down(copy);
                 }
                 else {
@@ -137,6 +151,7 @@ public class COMPRESS extends Protocol {
             if(uncompressed_msg != null) {
                 if(log.isTraceEnabled())
                     log.trace("uncompressed %d bytes to %d bytes", msg.getLength(), uncompressed_msg.getLength());
+                num_decompressions.increment();
                 return up_prot.up(uncompressed_msg);
             }
         }
@@ -154,6 +169,7 @@ public class COMPRESS extends Protocol {
                     if(log.isTraceEnabled())
                         log.trace("uncompressed %d bytes to %d bytes", msg.getLength(), uncompressed_msg.getLength());
                     it.replace(uncompressed_msg); // replace msg in batch with uncompressed_msg
+                    num_decompressions.increment();
                 }
             }
         }

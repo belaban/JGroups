@@ -7,6 +7,7 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MyReceiver;
 import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Streamable;
@@ -20,6 +21,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -57,8 +59,13 @@ public class FragTest {
 
     @Test(enabled=false)
     protected void setup(Class<? extends Fragmentation> frag_clazz) throws Exception {
-        a=createChannel("A", frag_clazz, FRAG_SIZE).connect("FragTest");
-        b=createChannel("B", frag_clazz, FRAG_SIZE).connect("FragTest");
+        setup(frag_clazz, false);
+    }
+
+    @Test(enabled=false)
+    protected void setup(Class<? extends Fragmentation> frag_clazz, boolean use_encrypt) throws Exception {
+        a=createChannel("A", frag_clazz, use_encrypt).connect("FragTest");
+        b=createChannel("B", frag_clazz, use_encrypt).connect("FragTest");
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b);
         a.setReceiver(r1);
         b.setReceiver(r2);
@@ -170,8 +177,25 @@ public class FragTest {
     }
 
 
-    public void testObjectMessage2(Class<? extends Fragmentation> frag_clazz) throws Exception {
+    public void testObjectMessageWithCompression(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
+        for(JChannel ch: Arrays.asList(a,b)) {
+            COMPRESS c=new COMPRESS();
+            ch.getProtocolStack().insertProtocol(c, ProtocolStack.Position.BELOW, NAKACK2.class);
+            c.init();
+        }
+
+        MySizeData obj=new MySizeData(322649, array);
+        Message m1=new ObjectMessage(null, obj), m2=new ObjectMessage(b.getAddress(), obj);
+        send(m1, m2);
+        assertForAllMessages(m -> {
+            MySizeData data=m.getObject();
+            return data.equals(obj) && Util.verifyArray(data.array());
+        });
+    }
+
+    public void testObjectMessageWithEncryption(Class<? extends Fragmentation> frag_clazz) throws Exception {
+        setup(frag_clazz, true);
         MySizeData obj=new MySizeData(322649, array);
         Message m1=new ObjectMessage(null, obj), m2=new ObjectMessage(b.getAddress(), obj);
         send(m1, m2);
@@ -234,11 +258,14 @@ public class FragTest {
 
 
 
-    protected static JChannel createChannel(String name, Class<? extends Fragmentation> clazz, int frag_size) throws Exception {
+    protected static JChannel createChannel(String name, Class<? extends Fragmentation> clazz,
+                                            boolean use_encr) throws Exception {
         Fragmentation frag_prot=clazz.getDeclaredConstructor().newInstance();
-        frag_prot.setFragSize(frag_size);
+        frag_prot.setFragSize(FRAG_SIZE);
+        ASYM_ENCRYPT e=use_encr? new ASYM_ENCRYPT().setChangeKeyOnLeave(false).setUseExternalKeyExchange(false) : null;
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
+                            e,
                             new NAKACK2().useMcastXmit(false),
                             new UNICAST3(),
                             new STABLE().setMaxBytes(50000),

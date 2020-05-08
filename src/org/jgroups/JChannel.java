@@ -147,8 +147,10 @@ public class JChannel implements Closeable {
     public JChannel(List<Protocol> protocols) throws Exception {
         prot_stack=new ProtocolStack().setChannel(this);
         for(Protocol prot: protocols) {
-            prot_stack.addProtocol(prot);
-            prot.setProtocolStack(prot_stack);
+            if(prot != null) {
+                prot_stack.addProtocol(prot);
+                prot.setProtocolStack(prot_stack);
+            }
         }
         prot_stack.init();
 

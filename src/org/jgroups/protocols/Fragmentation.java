@@ -22,9 +22,9 @@ public class Fragmentation extends Protocol {
       type=AttributeType.BYTES)
     protected int                 frag_size=60000;
 
-    @ManagedAttribute(description="Number of sent fragments",type=AttributeType.SCALAR)
+
     protected LongAdder num_frags_sent=new LongAdder();
-    @ManagedAttribute(description="Number of received fragments",type=AttributeType.SCALAR)
+
     protected LongAdder num_frags_received=new LongAdder();
 
     protected Address   local_addr;
@@ -32,7 +32,11 @@ public class Fragmentation extends Protocol {
 
     public int                         getFragSize()      {return frag_size;}
     public <T extends Fragmentation> T setFragSize(int f) {this.frag_size=f; return (T)this;}
+
+    @ManagedAttribute(description="Number of sent fragments",type=AttributeType.SCALAR)
     public long                        getNumberOfSentFragments()     {return num_frags_sent.sum();}
+
+    @ManagedAttribute(description="Number of received fragments",type=AttributeType.SCALAR)
     public long                        getNumberOfReceivedFragments() {return num_frags_received.sum();}
 
     public void resetStats() {
