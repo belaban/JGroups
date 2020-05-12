@@ -30,9 +30,9 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
 
     private static final Log log=LogFactory.getLog(ReplCache.class);
     private JChannel ch=null;
-    private Address local_addr=null;
+    private Address local_addr;
     private View    view;
-    private RpcDispatcher disp=null;
+    private RpcDispatcher disp;
     @ManagedAttribute(writable=true)
     private String props="udp.xml";
     @ManagedAttribute(writable=true)
@@ -259,9 +259,6 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
 
         ch=new JChannel(props);
         disp=new RpcDispatcher(ch, this).setMethodLookup(methods::get).setReceiver(this);
-        Marshaller marshaller=new CustomMarshaller();
-        disp.setMarshaller(marshaller);
-
         ch.connect(cluster_name);
         local_addr=ch.getAddress();
         view=ch.getView();
@@ -827,43 +824,4 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
         }
     }
 
-
-    private static class CustomMarshaller implements Marshaller {
-        static final byte NULL        = 1;
-        static final byte OBJ         = 2;
-        static final byte VALUE       = 3;
-
-        @Override
-        public void objectToStream(Object obj, DataOutput out) throws IOException {
-            if(obj == null) {
-                out.write(NULL);
-                return;
-            }
-            if(obj instanceof Cache.Value) {
-                Cache.Value value=(Cache.Value)obj;
-                out.writeByte(VALUE);
-                out.writeLong(value.getTimeout());
-                Util.objectToStream(value.getValue(), out);
-            }
-            else {
-                out.writeByte(OBJ);
-                Util.objectToStream(obj, out);
-            }
-        }
-
-        @Override
-        public Object objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
-            byte type=in.readByte();
-            if(type == NULL)
-                return null;
-            if(type == VALUE) {
-                long expiration_time=in.readLong();
-                Object obj=Util.objectFromStream(in);
-                return new Cache.Value(obj, expiration_time);
-            }
-            else
-                return Util.objectFromStream(in);
-        }
-
-    }
 }

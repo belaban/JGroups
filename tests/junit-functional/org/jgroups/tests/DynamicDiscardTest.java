@@ -58,7 +58,8 @@ public class DynamicDiscardTest {
         // send a RSVP message
         byte[] data="message2".getBytes();
         ByteArray buf=new ByteArray(data, 0, data.length);
-        RspList<Object> rsps=dispatchers[0].castMessage(null, buf, RequestOptions.SYNC().timeout(5000)
+        RspList<Object> rsps=dispatchers[0].castMessage(null, new BytesMessage(null, buf),
+                                                        RequestOptions.SYNC().timeout(5000)
           .flags(Message.Flag.RSVP, Message.Flag.OOB));
         Rsp<Object> objectRsp=rsps.get(channels[1].getAddress());
         assertFalse(objectRsp.wasReceived());

@@ -53,7 +53,7 @@ public class MessageDispatcherRSVPTest {
                                      new NAKACK2().useMcastXmit(false),
                                      new UNICAST3().setXmitTableNumRows(5).setXmitInterval(300),
                                      new RSVP().setTimeout(10000).throwExceptionOnTimeout(true),
-                                     new GMS().printLocalAddress(false).setLeaveTimeout(100).setJoinTimeout( 500)
+                                     new GMS().printLocalAddress(false).setLeaveTimeout(100).setJoinTimeout(500)
                                        .logViewWarnings(false).setViewAckCollectionTimeout(2000)
                                        .logCollectMessages(false));
             channels[i].setName(String.valueOf((i + 1)));
@@ -126,12 +126,14 @@ public class MessageDispatcherRSVPTest {
             closer.start();
             if(unicast) {
                 System.out.println("sending unicast message to " + target);
-                dispatchers[0].sendMessage(target, buf, RequestOptions.SYNC().flags(Message.Flag.RSVP));
+                dispatchers[0].sendMessage(new BytesMessage(target, buf), RequestOptions.SYNC().flags(Message.Flag.RSVP));
                 assert false: "sending the message on a closed channel should have thrown an exception";
             }
             else {
                 System.out.println("sending multicast message");
-                RspList<Object> rsps=dispatchers[0].castMessage(Collections.singleton(channels[1].getAddress()),buf,RequestOptions.SYNC());
+                Address dst=channels[1].getAddress();
+                RspList<Object> rsps=dispatchers[0].castMessage(Collections.singleton(dst),
+                                                                new BytesMessage(dst, buf), RequestOptions.SYNC());
                 System.out.println("rsps = " + rsps);
                 assert rsps.size() == 1;
                 Rsp<Object> rsp=rsps.iterator().next();
@@ -153,10 +155,12 @@ public class MessageDispatcherRSVPTest {
         ByteArray buf=new ByteArray(data, 0, data.length);
         channels[0].close();
         try {
-            if(dest == null) // multicast
-                dispatchers[0].castMessage(Collections.singleton(channels[1].getAddress()), buf, opts);
+            if(dest == null) { // multicast
+                Address dst=channels[1].getAddress();
+                dispatchers[0].castMessage(Collections.singleton(dst), new BytesMessage(dst, buf), opts);
+            }
             else
-                dispatchers[0].sendMessage(dest, buf, opts);
+                dispatchers[0].sendMessage(new BytesMessage(dest, buf), opts);
             assert false: "sending the message on a closed channel should have thrown an exception";
         }
         catch(IllegalStateException t) {

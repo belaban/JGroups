@@ -2,7 +2,10 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.blocks.*;
+import org.jgroups.blocks.MethodCall;
+import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.ResponseMode;
+import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.SiteMaster;
@@ -10,9 +13,6 @@ import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
 import java.io.BufferedReader;
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -64,8 +64,7 @@ public class UnicastTestRpc implements Receiver {
         channel=new JChannel(props);
         if(name != null)
             channel.setName(name);
-        disp=new RpcDispatcher(channel, this).setMethodLookup(id -> METHODS[id]).setMarshaller(new CustomMarshaller())
-          .setReceiver(this);
+        disp=new RpcDispatcher(channel, this).setMethodLookup(id -> METHODS[id]).setReceiver(this);
         channel.connect(groupname);
         local_addr=channel.getAddress();
 
@@ -356,27 +355,6 @@ public class UnicastTestRpc implements Receiver {
         }
     }
 
-
-    protected class CustomMarshaller implements Marshaller {
-
-        public int estimatedSize(Object arg) {
-            if(arg == null)
-                return 10;
-            if(arg instanceof byte[])
-                return UnicastTestRpc.this.msg_size;
-            return 50;
-        }
-
-        @Override
-        public void objectToStream(Object obj, DataOutput out) throws IOException {
-            Util.objectToStream(obj, out);
-        }
-
-        @Override
-        public Object objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
-            return Util.objectFromStream(in);
-        }
-    }
 
 
     public static void main(String[] args) {

@@ -14,9 +14,9 @@ are located in the `org.jgroups.blocks` package.
 [[MessageDispatcher]]
 === MessageDispatcher
 
-A channels is a simple class _asynchronously_
+A channel is a simple class to _asynchronously_
 send and receive messages. However, a significant number of communication patterns in group communication
-require _synchronous_ communication. For example, a sender would like to send a message to
+require _synchronous_ communication. For example, a sender would like to send a message to all members of
 the group and wait for all responses. Or another application would like to send a message to the group and
 wait only until the majority of the receivers have sent a response, or until a timeout occurred.
 
@@ -92,8 +92,8 @@ An example of how to use RequestOptions is:
 [source,java]
 ----
 RpcDispatcher disp;
-RequestOptions opts=new RequestOptions(Request.GET_ALL)
-                    .setFlags(Message.NO_FC, Message.OOB);
+RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, 1000L)
+                 .setFlags(Message.Flag.NO_FC, Message.Flag.OOB);
 Object val=disp.callRemoteMethod(target, method_call, opts);
 ----
 
@@ -103,24 +103,23 @@ The methods to send requests are:
 [source,java]
 ----
 public <T> RspList<T>
-       castMessage(Collection<Address> dests, byte[] data, int offset, int length,
-                   RequestOptions opts) throws Exception;
+       castMessage(Collection<Address> dests, Message msg, RequestOptions opts)
+       throws Exception;
 
 public <T> CompletableFuture<RspList<T>>
-       castMessageWithFuture(Collection<Address> dests, Buffer data,
-                             RequestOptions opts) throws Exception;
+       castMessageWithFuture(Collection<Address> dests, Message msg, RequestOptions opts)
+       throws Exception;
 
-public <T> T sendMessage(Address dest, byte[] data, int offset, int length,
-                         RequestOptions opts) throws Exception;
+public <T> T sendMessage(Message msg, RequestOptions opts) throws Exception;
 
 public <T> CompletableFuture<T>
-       sendMessageWithFuture(Address dest, byte[] data, int offset, int length,
-                             RequestOptions opts) throws Exception;
+       sendMessageWithFuture(Message msg, RequestOptions opts) throws Exception;
 ----
 
 `castMessage()` sends a message to all members defined in `dests`. If `dests` is null, the message is sent to all
 members of the current cluster.
-If a message is sent synchronously (defined by `options.mode`), then `options.timeout`
+
+If a message is sent synchronously (defined by `opts.mode`), then `opts.timeout`
 defines the maximum amount of time (in milliseconds) to wait for the responses.
 
 `castMessage()` returns a `RspList`, which contains a map of addresses and Rsps;
@@ -130,17 +129,19 @@ A `Rsp` instance contains the response value (or null), an exception if the targ
 an exception, whether the target member was suspected, or not, and so on. See the example below for
 more details.
 
-`castMessageWithFuture()` returns immediately, with a CompletableFuture. The future
+`castMessageWithFuture()` returns immediately, with a `CompletableFuture`. The future
 can be used to fetch the response list (now or later), and it also allows for installation of a callback
 which will be invoked when the future is done.
 See <<CompleteableFuture>> for details on how to use CompletableFutures.
 
-Note that `Buffer` is a simple wrapper around a byte[] array, an offset and a length.
+NOTE: The message passed to the `cast*`() and `send*()` methods needs to have a `null` destination for the `cast*()`
+calls and a non-`null` destination for the `send*()` methods. +
+It can be any kind of message type, e.g. `ObjectMessage` or `BytesMessage`.
 
-`sendMessage()` allows an application programmer to send a unicast message to a
-single cluster member and receive the response. The destination of the message has to be non-null (valid
-address of a member). The mode argument is ignored (it is by default set to
-`ResponseMode.GET_FIRST`) unless it is set to `GET_NONE` in which case
+`sendMessage()` sends a unicast message to a single cluster member and receives the response.
+
+The destination of the message has to be non-null (valid address of a member). The mode argument is ignored
+(it is by default set to `ResponseMode.GET_FIRST`) unless it is set to `GET_NONE` in which case
 the request becomes asynchronous, ie. we will not wait for the response.
       
 `sendMessageWithFuture()` returns immediately with a future, which can be used to fetch the result.
@@ -148,8 +149,7 @@ the request becomes asynchronous, ie. we will not wait for the response.
 One advantage of using this building block is that failed members are removed from the set of expected
 responses. For example, when sending a message to 10 members and waiting for all responses, and 2 members
 crash before being able to send a response, the call will return with 8 valid responses and 2 marked as
-failed. The return value of castMessage() is a RspList
-which contains all responses (not all methods shown):
+failed. The return value of castMessage() is a RspList which contains all responses (not all methods shown):
 
 [source,java]
 ----
@@ -213,9 +213,9 @@ public class MessageDispatcherTest implements RequestHandler {
         for(int i=0; i < 10; i++) {
             Util.sleep(100);
             System.out.println("Casting message #" + i);
-            byte[] payload=("Number #" + i).getBytes();
+            byte[] pl=("Number #" + i).getBytes();
             rsp_list=disp.castMessage(null,
-                                      payload, 0, payload.length,
+                                      new BytesMessage(null, pl, 0, pl.length),
                                       RequestOptions.SYNC());
             System.out.println("Responses:\n" +rsp_list);
         }
@@ -256,7 +256,7 @@ Finally both the MessageDispatcher and channel are closed.
 [[RpcDispatcher]]
 === RpcDispatcher
 
-`RpcDispatcher` is derived from `MessageDispatcher`. It allows a
+`RpcDispatcher` extends `MessageDispatcher`. It allows a
 programmer to invoke remote methods in all (or single) cluster members and optionally wait for the return
 value(s). An application will typically create a channel first, and then create an
 RpcDispatcher on top of it. RpcDispatcher can be used to invoke remote methods

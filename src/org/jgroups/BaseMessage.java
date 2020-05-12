@@ -179,8 +179,6 @@ public abstract class BaseMessage implements Message {
     }
 
 
-    /*---------------------- Used by protocol layers ----------------------*/
-
     /** Puts a header given an ID into the hashmap. Overwrites potential existing entry. */
     public Message putHeader(short id, Header hdr) {
         if(id < 0)
@@ -206,7 +204,9 @@ public abstract class BaseMessage implements Message {
         return Headers.getHeader(this.headers, id);
     }
 
-    /*---------------------------------------------------------------------*/
+    public <T> T   getPayload() {return getObject();}
+
+    public Message setPayload(Object pl) {return setObject(pl);}
 
     public String toString() {
         return String.format("[%s to %s, %d bytes%s%s]", sender, dest == null? "<all>" : dest,

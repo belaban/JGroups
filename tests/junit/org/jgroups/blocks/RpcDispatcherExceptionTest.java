@@ -4,6 +4,7 @@ package org.jgroups.blocks;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.tests.ChannelTestBase;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -19,17 +20,14 @@ public class RpcDispatcherExceptionTest extends ChannelTestBase {
     JChannel channel;
     private final Target target=new Target();
 
-    @BeforeClass
-    void setUp() throws Exception {
+    @BeforeClass void setUp() throws Exception {
         channel=createChannel(true);
         disp=new RpcDispatcher(channel, target);
         channel.connect("RpcDispatcherExceptionTest");
     }
 
-    @AfterClass
-    void tearDown() throws Exception {
-        disp.stop();
-        channel.close();
+    @AfterClass void tearDown() throws Exception {
+        Util.close(disp,channel);
     }
 
 
@@ -41,11 +39,10 @@ public class RpcDispatcherExceptionTest extends ChannelTestBase {
         }
         catch(Throwable t) {
             System.out.println("received an exception as expected: " + t);
-            assert t instanceof NotSerializableException;
+            assert t instanceof NotSerializableException || t.getCause() instanceof NotSerializableException;
         }
     }
 
-    // @Test(expectedExceptions=NotSerializableException.class)
     public void testUnserializableValue2() {
         try {
             disp.callRemoteMethod(channel.getAddress(), "foo", new Object[]{new Pojo()}, new Class[]{Pojo.class},
@@ -53,7 +50,7 @@ public class RpcDispatcherExceptionTest extends ChannelTestBase {
         }
         catch(Exception e) {
             System.out.println("received an exception as expected: " + e);
-            assert e instanceof NotSerializableException;
+            assert e instanceof NotSerializableException || e.getCause() instanceof NotSerializableException;
         }
     }
 

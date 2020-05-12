@@ -48,10 +48,13 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
     protected Address                               local_addr;
     protected final Log                             log=LogFactory.getLog(MessageDispatcher.class);
     protected final RpcStats                        rpc_stats=new RpcStats(false);
-    protected static final RspList                  empty_rsplist=new RspList();
+    @SuppressWarnings("rawtypes")
+    protected static final RspList                  empty_rsplist;
+    @SuppressWarnings("rawtypes")
     protected static final GroupRequest             empty_group_request;
 
     static {
+        empty_rsplist=new RspList<>();
         empty_group_request=new GroupRequest<>(null, Collections.emptyList(), RequestOptions.SYNC());
         empty_group_request.complete(empty_rsplist);
     }
@@ -156,7 +159,6 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
         if(corr == null)
             corr=createRequestCorrelator(prot_adapter, this, local_addr)
               .asyncDispatching(async_dispatching).wrapExceptions(this.wrap_exceptions);
-        correlatorStarted();
         corr.start();
 
         if(channel != null) {
@@ -174,9 +176,6 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
         return new RequestCorrelator(transport, handler, local_addr);
     }
 
-    protected void correlatorStarted() {
-        ;
-    }
 
     @Override public void close() throws IOException {stop();}
 
@@ -218,56 +217,33 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
     /**
      * Sends a message to all members and expects responses from members in dests (if non-null).
      * @param dests A list of group members from which to expect responses (if the call is blocking).
-     * @param data The buffer
-     * @param offset the offset into data
-     * @param length the number of bytes to send
-     * @param opts A set of options that govern the call. See {@link org.jgroups.blocks.RequestOptions} for details
-     * @return RspList A list of Rsp elements, or null if the RPC is asynchronous
-     * @throws Exception If the request cannot be sent
-     * @since 4.0
-     */
-    public <T> RspList<T> castMessage(Collection<Address> dests, byte[] data, int offset, int length,
-                                      RequestOptions opts) throws Exception {
-        return castMessage(dests, new ByteArray(data, offset, length), opts);
-    }
-
-
-    /**
-     * Sends a message to all members and expects responses from members in dests (if non-null).
-     * @param dests A list of group members from which to expect responses (if the call is blocking).
-     * @param data The message to be sent
+     * @param msg The message to be sent
      * @param opts A set of options that govern the call. See {@link org.jgroups.blocks.RequestOptions} for details
      * @return RspList A list of Rsp elements, or null if the RPC is asynchronous
      * @throws Exception If the request cannot be sent
      * @since 2.9
      */
-    public <T> RspList<T> castMessage(final Collection<Address> dests, ByteArray data, RequestOptions opts) throws Exception {
-        GroupRequest<T> req=cast(dests, data, opts, true);
+    public <T> RspList<T> castMessage(final Collection<Address> dests, Message msg, RequestOptions opts) throws Exception {
+        GroupRequest<T> req=cast(dests, msg, opts, true);
         return req != null? req.getNow(null) : null;
     }
-
 
     /**
      * Sends a message to all members and expects responses from members in dests (if non-null).
      * @param dests A list of group members from which to expect responses (if the call is blocking).
-     * @param data The message to be sent
+     * @param msg The message to be sent
      * @param opts A set of options that govern the call. See {@link org.jgroups.blocks.RequestOptions} for details
      * @return CompletableFuture<T> A future from which the results (RspList) can be retrieved, or null if the request
      *                              was sent asynchronously
      * @throws Exception If the request cannot be sent
      */
-    public <T> CompletableFuture<RspList<T>> castMessageWithFuture(final Collection<Address> dests, ByteArray data,
+    public <T> CompletableFuture<RspList<T>> castMessageWithFuture(final Collection<Address> dests, Message msg,
                                                                    RequestOptions opts) throws Exception {
-        return cast(dests,data,opts,false);
+        return cast(dests, msg, opts,false);
     }
 
 
-    protected <T> GroupRequest<T> cast(final Collection<Address> dests, byte[] data, int offset, int length,
-                                       RequestOptions options, boolean block_for_results) throws Exception {
-        return cast(dests, new ByteArray(data, offset, length), options, block_for_results);
-    }
-
-    protected <T> GroupRequest<T> cast(final Collection<Address> dests, ByteArray data, RequestOptions options,
+    protected <T> GroupRequest<T> cast(final Collection<Address> dests, Message msg, RequestOptions options,
                                        boolean block_for_results) throws Exception {
         if(options == null) {
             log.warn("request options were null, using default of sync");
@@ -304,18 +280,19 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
             updateStats(real_dests, anycast, sync, 0);
 
         if(!sync) {
-            corr.sendRequest(real_dests, data, null, options);
+            corr.sendRequest(real_dests, msg, null, options);
             return null;
         }
 
         GroupRequest<T> req=new GroupRequest<>(corr, real_dests, options);
         long start=non_blocking || !rpc_stats.extendedStats()? 0 : System.nanoTime();
-        req.execute(data, block_for_results);
+        req.execute(msg, block_for_results);
         long time=non_blocking || !rpc_stats.extendedStats()? 0 : System.nanoTime() - start;
         if(!non_blocking)
             updateStats(real_dests, anycast, true, time);
         return req;
     }
+
 
 
     public void done(long req_id) {
@@ -325,31 +302,15 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
 
     /**
      * Sends a unicast message and - depending on the options - returns a result
-     * @param dest the target to which to send the unicast message. Must not be null.
-     * @param data the payload to send
-     * @param offset the offset at which the data starts
-     * @param length the number of bytes to send
+     * @param msg the payload to send
      * @param opts the options to be used
      * @return T the result. Null if the call is asynchronous (non-blocking) or if the response is null
      * @throws Exception If there was problem sending the request, processing it at the receiver, or processing
      *                   it at the sender.
      * @throws TimeoutException If the call didn't succeed within the timeout defined in options (if set)
      */
-    public <T> T sendMessage(Address dest, byte[] data, int offset, int length, RequestOptions opts) throws Exception {
-        return sendMessage(dest, new ByteArray(data, offset, length), opts);
-    }
-
-    /**
-     * Sends a unicast message and - depending on the options - returns a result
-     * @param dest the target to which to send the unicast message. Must not be null.
-     * @param data the payload to send
-     * @param opts the options to be used
-     * @return T the result. Null if the call is asynchronous (non-blocking) or if the response is null
-     * @throws Exception If there was problem sending the request, processing it at the receiver, or processing
-     *                   it at the sender.
-     * @throws TimeoutException If the call didn't succeed within the timeout defined in options (if set)
-     */
-    public <T> T sendMessage(Address dest, ByteArray data, RequestOptions opts) throws Exception {
+    public <T> T sendMessage(Message msg, RequestOptions opts) throws Exception {
+        Address dest=msg.getDest();
         if(dest == null)
             throw new IllegalArgumentException("message destination is null, cannot send message");
 
@@ -361,7 +322,7 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
         // invoke an async RPC directly and return null, without creating a UnicastRequest instance
         if(opts.mode() == ResponseMode.GET_NONE) {
             rpc_stats.add(RpcStats.Type.UNICAST, dest, false, 0);
-            corr.sendUnicastRequest(dest, data, null, opts);
+            corr.sendUnicastRequest(msg, null, opts);
             return null;
         }
 
@@ -369,7 +330,7 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
         UnicastRequest<T> req=new UnicastRequest<>(corr, dest, opts);
         long start=!rpc_stats.extendedStats()? 0 : System.nanoTime();
         try {
-            return req.execute(data, true);
+            return req.execute(msg, true);
         }
         finally {
             long time=!rpc_stats.extendedStats()? 0 : System.nanoTime() - start;
@@ -378,32 +339,16 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
     }
 
 
-     /**
-     * Sends a unicast message to the target defined by msg.getDest() and returns a future
-     * @param dest the target to which to send the unicast message. Must not be null.
-     * @param data the payload to send
-     * @param offset the offset at which the data starts
-     * @param length the number of bytes to send
-     * @param opts the options
-     * @return CompletableFuture<T> A future from which the result can be fetched, or null if the call was asynchronous
-     * @throws Exception If there was problem sending the request, processing it at the receiver, or processing
-     *                   it at the sender. {@link java.util.concurrent.Future#get()} will throw this exception
-     */
-     public <T> CompletableFuture<T> sendMessageWithFuture(Address dest, byte[] data, int offset, int length,
-                                                           RequestOptions opts) throws Exception {
-         return sendMessageWithFuture(dest, new ByteArray(data, offset, length), opts);
-     }
-
     /**
      * Sends a unicast message to the target defined by msg.getDest() and returns a future
-     * @param dest the target to which to send the unicast message. Must not be null.
-     * @param data the payload to send
+     * @param msg the payload to send
      * @param opts the options
      * @return CompletableFuture<T> A future from which the result can be fetched, or null if the call was asynchronous
      * @throws Exception If there was problem sending the request, processing it at the receiver, or processing
      *                   it at the sender. {@link java.util.concurrent.Future#get()} will throw this exception
      */
-    public <T> CompletableFuture<T> sendMessageWithFuture(Address dest, ByteArray data, RequestOptions opts) throws Exception {
+    public <T> CompletableFuture<T> sendMessageWithFuture(Message msg, RequestOptions opts) throws Exception {
+        Address dest=msg.getDest();
         if(dest == null)
             throw new IllegalArgumentException("message destination is null, cannot send message");
 
@@ -414,16 +359,15 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
         rpc_stats.add(RpcStats.Type.UNICAST, dest, opts.mode() != ResponseMode.GET_NONE, 0);
 
         if(opts.mode() == ResponseMode.GET_NONE) {
-            corr.sendUnicastRequest(dest, data, null, opts);
+            corr.sendUnicastRequest(msg, null, opts);
             return null;
         }
 
         // if we get here, the RPC is synchronous
         UnicastRequest<T> req=new UnicastRequest<>(corr, dest, opts);
-        req.execute(data, false);
+        req.execute(msg, false);
         return req;
     }
-
 
 
     /* ------------------------ RequestHandler Interface ---------------------- */

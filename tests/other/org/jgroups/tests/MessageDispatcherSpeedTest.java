@@ -79,7 +79,7 @@ public class MessageDispatcherSpeedTest implements Receiver, RequestHandler {
 
         System.out.println("-- sending " + num + " messages");
         for(int i=1; i <= num; i++) {
-            disp.castMessage(null, buf, opts);
+            disp.castMessage(null, new BytesMessage(null, buf), opts);
             if(i % show == 0)
                 System.out.println("-- sent " + i);
         }

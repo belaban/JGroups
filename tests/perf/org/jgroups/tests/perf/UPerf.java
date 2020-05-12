@@ -2,8 +2,10 @@ package org.jgroups.tests.perf;
 
 import org.jgroups.*;
 import org.jgroups.annotations.Property;
-import org.jgroups.blocks.*;
-import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.blocks.MethodCall;
+import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.ResponseMode;
+import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.relay.RELAY2;
@@ -11,15 +13,14 @@ import org.jgroups.stack.AddressGenerator;
 import org.jgroups.util.*;
 
 import javax.management.MBeanServer;
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
+
+import static org.jgroups.tests.perf.PerfUtil.*;
 
 
 /**
@@ -67,7 +68,6 @@ public class UPerf implements Receiver {
       READ_PERCENTAGE, ALLOW_LOCAL_GETS, PRINT_INVOKERS, PRINT_DETAILS;
 
 
-    private final AtomicInteger COUNTER=new AtomicInteger(1);
     private byte[]              BUFFER=new byte[msg_size];
     protected static final String format=
       "[1] Start test [2] View [4] Threads (%d) [6] Time (%,ds) [7] Msg size (%s)" +
@@ -85,7 +85,7 @@ public class UPerf implements Receiver {
             METHODS[GET_CONFIG]            = UPerf.class.getMethod("getConfig");
             METHODS[SET]                   = UPerf.class.getMethod("set", String.class, Object.class);
             METHODS[QUIT_ALL]              = UPerf.class.getMethod("quitAll");
-            ClassConfigurator.add((short)11000, Results.class);
+
             SYNC=Util.getField(UPerf.class, "sync", true);
             OOB=Util.getField(UPerf.class, "oob", true);
             NUM_THREADS=Util.getField(UPerf.class, "num_threads", true);
@@ -96,6 +96,7 @@ public class UPerf implements Receiver {
             ALLOW_LOCAL_GETS=Util.getField(UPerf.class, "allow_local_gets", true);
             PRINT_INVOKERS=Util.getField(UPerf.class, "print_invokers", true);
             PRINT_DETAILS=Util.getField(UPerf.class, "print_details", true);
+            PerfUtil.init();
         }
         catch(Exception e) {
             throw new RuntimeException(e);
@@ -115,8 +116,7 @@ public class UPerf implements Receiver {
             transport.setBindPort(bind_port);
         }
 
-        disp=new RpcDispatcher(channel, this).setReceiver(this).setMethodLookup(id -> METHODS[id])
-          .setMarshaller(new UPerfMarshaller());
+        disp=new RpcDispatcher(channel, this).setReceiver(this).setMethodLookup(id -> METHODS[id]);
         channel.connect(groupname);
         local_addr=channel.getAddress();
 
@@ -377,7 +377,7 @@ public class UPerf implements Receiver {
             Results result=rsp.getValue();
             if(result != null) {
                 total_reqs+=result.num_gets + result.num_puts;
-                total_time+=result.time;
+                total_time+=result.total_time;
                 if(avg_gets == null)
                     avg_gets=result.avg_gets;
                 else
@@ -460,28 +460,6 @@ public class UPerf implements Receiver {
         }
     }
 
-    protected class UPerfMarshaller implements Marshaller {
-        public int estimatedSize(Object arg) {
-            if(arg == null)
-                return 2;
-            if(arg instanceof byte[])
-                return msg_size + 24;
-            if(arg instanceof Long)
-                return 10;
-            return 50;
-        }
-
-        @Override
-        public void objectToStream(Object obj, DataOutput out) throws IOException {
-            Util.objectToStream(obj, out);
-        }
-
-        @Override
-        public Object objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
-            return Util.objectFromStream(in);
-        }
-    }
-
 
     private class Invoker implements Runnable {
         private final List<Address>  dests=new ArrayList<>();
@@ -504,8 +482,8 @@ public class UPerf implements Receiver {
         public void run() {
             Object[] put_args={0, BUFFER};
             Object[] get_args={0};
-            MethodCall get_call=new MethodCall(GET, get_args);
-            MethodCall put_call=new MethodCall(PUT, put_args);
+            MethodCall get_call=new GetCall(GET, get_args);
+            MethodCall put_call=new PutCall(PUT, put_args);
             RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, 40000, false, null);
             RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, 40000, true, null);
 
@@ -542,6 +520,7 @@ public class UPerf implements Receiver {
                         long start=System.nanoTime();
                         disp.callRemoteMethods(targets, put_call, put_options);
                         long put_time=System.nanoTime()-start;
+                        targets.clear();
                         avg_puts.add(put_time);
                         num_writes.increment();
                     }
@@ -568,94 +547,7 @@ public class UPerf implements Receiver {
     }
 
 
-    public static class Results implements Streamable {
-        protected long          num_gets;
-        protected long          num_puts;
-        protected long          time;     // in ms
-        protected AverageMinMax avg_gets; // RTT in ns
-        protected AverageMinMax avg_puts; // RTT in ns
-
-        public Results() {
-            
-        }
-
-        public Results(int num_gets, int num_puts, long time, AverageMinMax avg_gets, AverageMinMax avg_puts) {
-            this.num_gets=num_gets;
-            this.num_puts=num_puts;
-            this.time=time;
-            this.avg_gets=avg_gets;
-            this.avg_puts=avg_puts;
-        }
-
-        @Override
-        public void writeTo(DataOutput out) throws IOException {
-            Bits.writeLong(num_gets, out);
-            Bits.writeLong(num_puts, out);
-            Bits.writeLong(time, out);
-            Util.writeStreamable(avg_gets, out);
-            Util.writeStreamable(avg_puts, out);
-        }
-
-        @Override
-        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-            num_gets=Bits.readLong(in);
-            num_puts=Bits.readLong(in);
-            time=Bits.readLong(in);
-            avg_gets=Util.readStreamable(AverageMinMax::new, in);
-            avg_puts=Util.readStreamable(AverageMinMax::new, in);
-        }
-
-        public String toString() {
-            long total_reqs=num_gets + num_puts;
-            double total_reqs_per_sec=total_reqs / (time / 1000.0);
-            return String.format("%,.2f reqs/sec (%,d gets, %,d puts, get RTT %,.2f us, put RTT %,.2f us)",
-                                 total_reqs_per_sec, num_gets, num_puts, avg_gets.average() / 1000.0,
-                                 avg_puts.getAverage()/1000.0);
-        }
-    }
-
-
-    public static class Config implements Streamable {
-        protected Map<String,Object> values=new HashMap<>();
-
-        public Config() {
-        }
-
-        public Config add(String key, Object value) {
-            values.put(key, value);
-            return this;
-        }
-
-        @Override
-        public void writeTo(DataOutput out) throws IOException {
-            out.writeInt(values.size());
-            for(Map.Entry<String,Object> entry: values.entrySet()) {
-                Bits.writeString(entry.getKey(),out);
-                Util.objectToStream(entry.getValue(), out);
-            }
-        }
-
-        @Override
-        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-            int size=in.readInt();
-            for(int i=0; i < size; i++) {
-                String key=Bits.readString(in);
-                Object value=Util.objectFromStream(in);
-                if(key == null)
-                    continue;
-                values.put(key, value);
-            }
-        }
-
-        public String toString() {
-            return values.toString();
-        }
-    }
-
-
-
-
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, ClassNotFoundException {
         String  props=null, name=null;
         boolean run_event_loop=true, use_fibers=true;
         AddressGenerator addr_generator=null;

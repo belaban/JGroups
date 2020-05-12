@@ -8,6 +8,7 @@ import org.jgroups.util.Util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 /**
@@ -177,6 +178,13 @@ public class BytesMessage extends BaseMessage {
             return setArray((byte[])obj, 0, ((byte[])obj).length);
         if(obj instanceof ByteArray)
             return setArray((ByteArray)obj);
+        if(obj instanceof ByteBuffer) {
+            ByteBuffer bb=(ByteBuffer)obj;
+            if(bb.isDirect())
+                return (BytesMessage)setArray(Util.bufferToArray(bb));
+            else
+                return setArray(bb.array(), bb.arrayOffset()+bb.position(), bb.remaining());
+        }
         try {
             byte[] tmp=Util.objectToByteBuffer(obj);
             return setArray(tmp, 0, tmp.length);
@@ -210,8 +218,10 @@ public class BytesMessage extends BaseMessage {
         }
     }
 
+    public <T> T getPayload() {
+        return (T)getArray();
+    }
 
-    /* ----------------------------------- Interface Streamable  ------------------------------- */
 
     public int size() {
         return super.size() +sizeOfPayload();

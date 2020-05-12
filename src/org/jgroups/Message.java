@@ -168,6 +168,19 @@ public interface Message extends SizeStreamable, Constructable<Message> {
      */
     Message              setObject(Object obj);
 
+    /**
+     * Returns the payload without any conversion (e.g. as in {@link #getObject()} or {@link #getArray()})
+     * @param <T> The type of the object
+     * @return The payload
+     */
+    <T extends Object> T getPayload();
+
+    /**
+     * Sets the payload
+     * @param pl The paylolad
+     */
+    Message              setPayload(Object pl);
+
 
     /**
      * Returns the exact size of the marshalled message

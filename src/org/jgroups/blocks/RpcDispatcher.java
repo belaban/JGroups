@@ -20,9 +20,6 @@ import java.util.concurrent.CompletableFuture;
  */
 public class RpcDispatcher extends MessageDispatcher {
     protected Object        server_obj;
-    /** Marshaller to marshall requests at the caller, unmarshal requests at the receiver(s), marshall responses at the
-     * receivers and unmarshall responses at the caller */
-    protected Marshaller    marshaller;
     protected MethodLookup  method_lookup;
     protected MethodInvoker method_invoker;
 
@@ -38,9 +35,6 @@ public class RpcDispatcher extends MessageDispatcher {
     }
 
 
-    public Marshaller    getMarshaller()                      {return marshaller;}
-    public RpcDispatcher setMarshaller(Marshaller m)          {marshaller=m; if(corr != null)
-                                                                                corr.setMarshaller(m); return this;}
     public Object        getServerObject()                    {return server_obj;}
     public RpcDispatcher setServerObject(Object obj)          {this.server_obj=obj; return this;}
     public RpcDispatcher setReceiver(Receiver r)              {return (RpcDispatcher)super.setReceiver(r);}
@@ -63,7 +57,7 @@ public class RpcDispatcher extends MessageDispatcher {
      *                   object for the particular member in the RspList
      */
     public <T> RspList<T> callRemoteMethods(Collection<Address> dests, String method_name, Object[] args,
-                                            Class[] types, RequestOptions options) throws Exception {
+                                            Class<?>[] types, RequestOptions options) throws Exception {
         MethodCall method_call=new MethodCall(method_name, args, types);
         return callRemoteMethods(dests, method_call, options);
     }
@@ -88,9 +82,8 @@ public class RpcDispatcher extends MessageDispatcher {
             log.trace("destination list of %s() is empty: no need to send message", method_call.methodName());
             return empty_rsplist;
         }
-
-        ByteArray buf=methodCallToBuffer(method_call, marshaller);
-        RspList<T> retval=super.castMessage(dests, buf, opts);
+        Message msg=new ObjectMessage(null, method_call);
+        RspList<T> retval=super.castMessage(dests, msg, opts);
         if(log.isTraceEnabled())
             log.trace("dests=%s, method_call=%s, options=%s, responses: %s", dests, method_call, opts, retval);
         return retval;
@@ -100,23 +93,23 @@ public class RpcDispatcher extends MessageDispatcher {
     /**
      * Invokes a method in all members and expects responses from members contained in dests (or all members if dests is null).
      * @param dests A list of addresses. If null, we'll wait for responses from all cluster members
-     * @param method_call The method (plus args) to be invoked
+     * @param call The method (plus args) to be invoked
      * @param options A collection of call options, e.g. sync versus async, timeout etc
      * @return CompletableFuture A future from which the results can be fetched, or null if the RPC is asynchronous
      * @throws Exception If the sending of the message threw an exception. Note that <em>no</em> exception will be
      *                   thrown if any of the target members threw an exception; such an exception will be in the Rsp
      *                   element for the particular member in the RspList
      */
-    public <T> CompletableFuture<RspList<T>> callRemoteMethodsWithFuture(Collection<Address> dests, MethodCall method_call,
+    public <T> CompletableFuture<RspList<T>> callRemoteMethodsWithFuture(Collection<Address> dests, MethodCall call,
                                                                          RequestOptions options) throws Exception {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
-            log.trace("destination list of %s() is empty: no need to send message", method_call.methodName());
+            log.trace("destination list of %s() is empty: no need to send message", call.methodName());
             return CompletableFuture.completedFuture(empty_rsplist);
         }
-        ByteArray buf=methodCallToBuffer(method_call, marshaller);
-        CompletableFuture<RspList<T>> retval=super.castMessageWithFuture(dests, buf, options);
+        Message msg=new ObjectMessage(null, call);
+        CompletableFuture<RspList<T>> retval=super.castMessageWithFuture(dests, msg, options);
         if(log.isTraceEnabled())
-            log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, options);
+            log.trace("dests=%s, method_call=%s, options=%s", dests, call, options);
         return retval;
     }
 
@@ -132,7 +125,7 @@ public class RpcDispatcher extends MessageDispatcher {
      * @return The result. Null if the call is asynchronous (non-blocking) or if the method returns void
      * @throws Exception Thrown if the method invocation threw an exception, either at the caller or the callee
      */
-    public <T> T callRemoteMethod(Address dest, String meth, Object[] args, Class[] types, RequestOptions opts) throws Exception {
+    public <T> T callRemoteMethod(Address dest, String meth, Object[] args, Class<?>[] types, RequestOptions opts) throws Exception {
         MethodCall method_call=new MethodCall(meth, args, types);
         return (T)callRemoteMethod(dest, method_call, opts);
     }
@@ -147,8 +140,8 @@ public class RpcDispatcher extends MessageDispatcher {
      * @throws Exception Thrown if the method invocation threw an exception, either at the caller or the callee
      */
     public <T> T callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Exception {
-        ByteArray buf=methodCallToBuffer(call, marshaller);
-        T retval=super.sendMessage(dest, buf, options);
+        Message req=new ObjectMessage(dest, call);
+        T retval=super.sendMessage(req, options);
         if(log.isTraceEnabled())
             log.trace("dest=%s, method_call=%s, options=%s, retval: %s", dest, call, options, retval);
         return retval;
@@ -167,8 +160,8 @@ public class RpcDispatcher extends MessageDispatcher {
     public <T> CompletableFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions opts) throws Exception {
         if(log.isTraceEnabled())
             log.trace("dest=%s, method_call=%s, options=%s", dest, call, opts);
-        ByteArray buf=methodCallToBuffer(call, marshaller);
-        return super.sendMessageWithFuture(dest, buf, opts);
+        Message msg=new ObjectMessage(dest, call);
+        return super.sendMessageWithFuture(msg, opts);
     }
 
 
@@ -189,7 +182,7 @@ public class RpcDispatcher extends MessageDispatcher {
             return null;
         }
 
-        MethodCall method_call=methodCallFromBuffer(req.getArray(), req.getOffset(), req.getLength(), marshaller);
+        MethodCall method_call=req.getObject();   // methodCallFromBuffer(req.getArray(), req.getOffset(), req.getLength(), marshaller);
         if(log.isTraceEnabled())
             log.trace("[sender=%s], method_call: %s", req.getSrc(), method_call);
 
@@ -204,31 +197,6 @@ public class RpcDispatcher extends MessageDispatcher {
             method_call.method(m);
         }
         return method_call.invoke(server_obj);
-    }
-
-    protected static ByteArray methodCallToBuffer(final MethodCall call, Marshaller marshaller) throws Exception {
-        Object[] args=call.args();
-
-        int estimated_size=64;
-        if(args != null)
-            for(Object arg: args)
-                estimated_size+=marshaller != null? marshaller.estimatedSize(arg) : (arg == null? 2 : 50);
-
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(estimated_size, true);
-        call.writeTo(out, marshaller);
-        return out.getBuffer();
-    }
-
-    protected static MethodCall methodCallFromBuffer(final byte[] buf, int offset, int length, Marshaller marshaller) throws Exception {
-        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
-        MethodCall call=new MethodCall();
-        call.readFrom(in, marshaller);
-        return call;
-    }
-
-    protected void correlatorStarted() {
-        if(corr != null)
-            corr.setMarshaller(marshaller);
     }
 
 }

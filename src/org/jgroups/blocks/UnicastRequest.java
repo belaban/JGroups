@@ -1,13 +1,9 @@
 package org.jgroups.blocks;
 
 
-import org.jgroups.Address;
-import org.jgroups.SuspectedException;
-import org.jgroups.UnreachableException;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.protocols.relay.SiteAddress;
-import org.jgroups.util.ByteArray;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -30,17 +26,17 @@ public class UnicastRequest<T> extends Request<T> {
         this.target=target; // target is guaranteed to be non-null
     }
 
-
-    public void sendRequest(ByteArray data) throws Exception {
+    @Override public void sendRequest(Message msg) throws Exception {
         try {
-            corr.sendUnicastRequest(target, data, options.mode() == ResponseMode.GET_NONE? null : this, this.options);
+            corr.sendUnicastRequest(msg, options.mode() == ResponseMode.GET_NONE? null : this, this.options);
         }
         catch(Exception ex) {
             corrDone();
             throw ex;
         }
     }
-    
+
+
 
     /* ---------------------- Interface RspCollector -------------------------- */
     /**

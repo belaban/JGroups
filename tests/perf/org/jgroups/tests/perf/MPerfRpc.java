@@ -108,8 +108,7 @@ public class MPerfRpc implements Receiver {
 
         channel=new JChannel(props);
         channel.setName(name);
-        disp=new RpcDispatcher(channel, this).setReceiver(this).setMethodLookup(id -> METHODS[id])
-          .setMarshaller(new MperfMarshaller());
+        disp=new RpcDispatcher(channel, this).setReceiver(this).setMethodLookup(id -> METHODS[id]);
 
         send_options.mode(sync? ResponseMode.GET_ALL : ResponseMode.GET_NONE);
         if(oob)
@@ -225,7 +224,7 @@ public class MPerfRpc implements Receiver {
 
 
 
-    protected RspList invokeRpc(short method_id, RequestOptions options, Object ... args) throws Exception {
+    protected RspList<?> invokeRpc(short method_id, RequestOptions options, Object ... args) throws Exception {
         MethodCall call=new MethodCall(method_id, args);
         return disp.callRemoteMethods(null, call, options);
     }
@@ -649,27 +648,6 @@ public class MPerfRpc implements Receiver {
         public String toString() {
             return msgs + " in " + time + " ms";
         }
-    }
-
-    protected class MperfMarshaller implements Marshaller {
-
-        public int estimatedSize(Object arg) {
-            if(arg == null) return 10;
-            if(arg instanceof byte[])
-                return MPerfRpc.this.msg_size;
-            return 50;
-        }
-
-        @Override
-        public void objectToStream(Object obj, DataOutput out) throws IOException {
-            Util.objectToStream(obj, out);
-        }
-
-        @Override
-        public Object objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
-            return Util.objectFromStream(in);
-        }
-
     }
 
 

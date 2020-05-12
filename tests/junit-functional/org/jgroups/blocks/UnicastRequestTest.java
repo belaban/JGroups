@@ -35,7 +35,7 @@ public class UnicastRequestTest {
         MyCorrelator corr=new MyCorrelator(false, new Object[]{new BytesMessage(b, (long)322649)}, 0);
         UnicastRequest<Long> req=new UnicastRequest<>(corr, a, RequestOptions.SYNC().timeout(1000));
         corr.setRequest(req);
-        Long result=req.execute(buf, true);
+        Long result=req.execute(new BytesMessage(a, buf), true);
         System.out.println("result = " + result);
         assert result != null && result == 322649;
 
@@ -48,7 +48,7 @@ public class UnicastRequestTest {
         MyCorrelator corr=new MyCorrelator(false, new Object[]{new BytesMessage(b, (String)null)}, 0);
         UnicastRequest<String> req=new UnicastRequest<>(corr, a, RequestOptions.SYNC().timeout(1000));
         corr.setRequest(req);
-        String result=req.execute(buf, true);
+        String result=req.execute(new BytesMessage(a, buf), true);
         assert req.isDone();
         System.out.println("result = " + result);
         assert result == null;
@@ -63,7 +63,7 @@ public class UnicastRequestTest {
         UnicastRequest<Object> req=new UnicastRequest<>(corr, a, RequestOptions.SYNC().timeout(1000));
         corr.setRequest(req);
         req.receiveResponse(new NullPointerException("booom"), b, false);
-        Object result=req.execute(buf, true);
+        Object result=req.execute(new BytesMessage(a, buf), true);
         System.out.println("result = " + result);
         assert result instanceof NullPointerException;
 
@@ -76,7 +76,7 @@ public class UnicastRequestTest {
         req.receiveResponse(new NullPointerException("booom"), b, true);
 
         try {
-            req.execute(buf, true);
+            req.execute(new BytesMessage(a, buf), true);
             assert false : "should have thrown NullPointerException";
         }
         catch(NullPointerException ex) {
@@ -100,7 +100,7 @@ public class UnicastRequestTest {
         corr.setRequest(req);
 
         try {
-            req.execute(buf, true);
+            req.execute(new BytesMessage(a, buf), true);
             assert false : "should have thrown TimeoutException";
         }
         catch(TimeoutException ex) {
@@ -125,7 +125,7 @@ public class UnicastRequestTest {
         req.viewChange(new_view);
 
         try {
-            req.execute(buf, true);
+            req.execute(new BytesMessage(a, buf), true);
         }
         catch(SuspectedException ex) {
             System.out.printf("received %s as expected\n", ex);
@@ -148,7 +148,7 @@ public class UnicastRequestTest {
         req.cancel(true);
 
         try {
-            req.execute(buf, true);
+            req.execute(new BytesMessage(a, buf), true);
             assert false : "should have thrown CancellationException";
         }
         catch(CancellationException ex) {
@@ -161,7 +161,7 @@ public class UnicastRequestTest {
         new Thread(() -> {Util.sleep(1000); req2.cancel(true);}).start();
 
         try {
-            req2.execute(buf, true);
+            req2.execute(new BytesMessage(a, buf), true);
             assert false : "should have thrown CancellationException";
         }
         catch(CancellationException ex) {
@@ -175,10 +175,10 @@ public class UnicastRequestTest {
 
 
     protected static class MyCorrelator extends RequestCorrelator {
-        protected UnicastRequest request;
-        protected boolean        async=true;
-        protected Object[]       responses;
-        protected long           delay;
+        protected UnicastRequest<?> request;
+        protected boolean           async=true;
+        protected Object[]          responses;
+        protected long              delay;
 
         public MyCorrelator(boolean async, Object[] responses, long delay) {
             super(null, null, null);
@@ -192,19 +192,19 @@ public class UnicastRequestTest {
             };
         }
 
-        public void setRequest(UnicastRequest r) {
+        public void setRequest(UnicastRequest<?> r) {
             request=r;
         }
 
 
         @Override
-        public void sendUnicastRequest(Address dest, ByteArray data, Request req, RequestOptions opts) throws Exception {
+        public <T> void sendUnicastRequest(Message msg, Request<T> req, RequestOptions opts) throws Exception {
             send();
         }
 
         protected void send() {
             if(async) {
-                new Thread(() -> sendResponses()).start();
+                new Thread(this::sendResponses).start();
             }
             else {
                 sendResponses();

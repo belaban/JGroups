@@ -12,15 +12,16 @@ import org.jgroups.stack.NonReflectiveProbeHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
+
+import static org.jgroups.tests.perf.PerfUtil.Config;
+import static org.jgroups.tests.perf.PerfUtil.Results;
+import static org.jgroups.tests.perf.PerfUtil.*;
 
 
 /**
@@ -108,7 +109,7 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
 
 
     public void init(String name, AddressGenerator generator, String bind_addr, int bind_port) throws Throwable {
-
+        PerfUtil.init();
         InetAddress bind_address=bind_addr != null? Util.getAddress(bind_addr, Util.getIpStackType()) : Util.getLoopback();
 
         // bind_address=InetAddress.getByName("::1"); // todo:" remove!!!
@@ -141,14 +142,13 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
         transport.registerProbeHandler(h);
         h.initialize(channel.getProtocolStack().getProtocols());
         // System.out.printf("contents:\n%s\n", h.dump());
-        disp=new RpcDispatcher(channel, this).setReceiver(this)
-          .setMethodInvoker(this).setMarshaller(new UPerfMarshaller());
+        disp=new RpcDispatcher(channel, this).setReceiver(this).setMethodInvoker(this);
         channel.connect(groupname);
         local_addr=channel.getAddress();
         if(members.size() < 2)
             return;
         Address coord=members.get(0);
-        Config config=disp.callRemoteMethod(coord, new MethodCall(GET_CONFIG), new RequestOptions(ResponseMode.GET_ALL, 5000));
+        Config config=disp.callRemoteMethod(coord, new CustomCall(GET_CONFIG), new RequestOptions(ResponseMode.GET_ALL, 5000));
         if(config != null) {
             applyConfig(config);
             System.out.println("Fetched config from " + coord + ": " + config + "\n");
@@ -422,7 +422,7 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
                         try {
                             RequestOptions options=new RequestOptions(ResponseMode.GET_NONE, 0)
                               .flags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
-                            disp.callRemoteMethods(null, new MethodCall(QUIT_ALL), options);
+                            disp.callRemoteMethods(null, new CustomCall(QUIT_ALL), options);
                             break;
                         }
                         catch(Throwable t) {
@@ -441,7 +441,7 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
     }
 
     void invoke(short method_id, Object... args) throws Exception {
-        MethodCall call=new MethodCall(method_id, args);
+        MethodCall call=new CustomCall(method_id, args);
         disp.callRemoteMethods(null, call, RequestOptions.SYNC());
     }
 
@@ -451,7 +451,7 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
         try {
             RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0);
             options.flags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
-            responses=disp.callRemoteMethods(null, new MethodCall(START), options);
+            responses=disp.callRemoteMethods(null, new CustomCall(START), options);
         }
         catch(Throwable t) {
             System.err.println("starting the benchmark failed: " + t);
@@ -469,7 +469,7 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
             Results result=rsp.getValue();
             if(result != null) {
                 total_reqs+=result.num_gets + result.num_puts;
-                total_time+=result.time;
+                total_time+=result.total_time;
                 if(avg_gets == null)
                     avg_gets=result.avg_gets;
                 else
@@ -529,64 +529,6 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
     }
 
 
-    protected class UPerfMarshaller implements Marshaller {
-        protected static final byte NORMAL=0, EXCEPTION=1, CONFIG=2,RESULTS=3;
-
-        public int estimatedSize(Object arg) {
-            if(arg == null)
-                return 2;
-            if(arg instanceof byte[])
-                return msg_size + 24;
-            if(arg instanceof Long)
-                return 10;
-            return 50;
-        }
-
-        // Unless and until serialization is supported on GraalVM, we're sending only the exception message across the
-        // wire, but not the entire exception
-        public void objectToStream(Object obj, DataOutput out) throws IOException {
-            if(obj instanceof Throwable) {
-                Throwable t=(Throwable)obj;
-                out.writeByte(EXCEPTION);
-                out.writeUTF(t.getMessage());
-                return;
-            }
-            if(obj instanceof Config) {
-                out.writeByte(CONFIG);
-                ((Config)obj).writeTo(out);
-                return;
-            }
-            if(obj instanceof Results) {
-                out.writeByte(RESULTS);
-                ((Results)obj).writeTo(out);
-                return;
-            }
-            out.writeByte(NORMAL);
-            Util.objectToStream(obj, out);
-        }
-
-        public Object objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
-            byte type=in.readByte();
-            switch(type) {
-                case NORMAL:
-                    return Util.objectFromStream(in);
-                case EXCEPTION:  // read exception
-                    String message=in.readUTF();
-                    return new RuntimeException(message);
-                case CONFIG:
-                    Config cfg=new Config();
-                    cfg.readFrom(in);
-                    return cfg;
-                case RESULTS:
-                    Results res=new Results();
-                    res.readFrom(in);
-                    return res;
-                default:
-                    throw new IllegalArgumentException("type " + type + " not known");
-            }
-        }
-    }
-
 
     private class Invoker extends Thread {
         private final List<Address>  dests=new ArrayList<>();
@@ -610,8 +552,8 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
         public void run() {
             Object[] put_args={0, BUFFER};
             Object[] get_args={0};
-            MethodCall get_call=new MethodCall(GET, get_args);
-            MethodCall put_call=new MethodCall(PUT, put_args);
+            MethodCall get_call=new GetCall(GET, get_args);
+            MethodCall put_call=new PutCall(PUT, put_args);
             RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, 40000, false, null);
             RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, 40000, true, null);
 
@@ -648,6 +590,7 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
                         long start=System.nanoTime();
                         disp.callRemoteMethods(targets, put_call, put_options);
                         long put_time=System.nanoTime()-start;
+                        targets.clear();
                         avg_puts.add(put_time);
                         num_writes.increment();
                     }
@@ -672,88 +615,6 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
             }
         }
     }
-
-
-    public static class Results implements Streamable {
-        protected long          num_gets;
-        protected long          num_puts;
-        protected long          time;     // in ms
-        protected AverageMinMax avg_gets; // RTT in ns
-        protected AverageMinMax avg_puts; // RTT in ns
-
-        public Results() {
-            
-        }
-
-        public Results(int num_gets, int num_puts, long time, AverageMinMax avg_gets, AverageMinMax avg_puts) {
-            this.num_gets=num_gets;
-            this.num_puts=num_puts;
-            this.time=time;
-            this.avg_gets=avg_gets;
-            this.avg_puts=avg_puts;
-        }
-
-        public void writeTo(DataOutput out) throws IOException {
-            Bits.writeLong(num_gets, out);
-            Bits.writeLong(num_puts, out);
-            Bits.writeLong(time, out);
-            Util.writeStreamable(avg_gets, out);
-            Util.writeStreamable(avg_puts, out);
-        }
-
-        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-            num_gets=Bits.readLong(in);
-            num_puts=Bits.readLong(in);
-            time=Bits.readLong(in);
-            avg_gets=Util.readStreamable(AverageMinMax::new, in);
-            avg_puts=Util.readStreamable(AverageMinMax::new, in);
-        }
-
-        public String toString() {
-            long total_reqs=num_gets + num_puts;
-            double total_reqs_per_sec=total_reqs / (time / 1000.0);
-            return String.format("%,.2f reqs/sec (%,d gets, %,d puts, get RTT %,.2f us, put RTT %,.2f us)",
-                                 total_reqs_per_sec, num_gets, num_puts, avg_gets.average() / 1000.0,
-                                 avg_puts.getAverage()/1000.0);
-        }
-    }
-
-
-    public static class Config implements Streamable {
-        protected Map<String,Object> values=new HashMap<>();
-
-        public Config() {
-        }
-
-        public Config add(String key, Object value) {
-            values.put(key, value);
-            return this;
-        }
-
-        public void writeTo(DataOutput out) throws IOException {
-            out.writeInt(values.size());
-            for(Map.Entry<String,Object> entry: values.entrySet()) {
-                Bits.writeString(entry.getKey(),out);
-                Util.objectToStream(entry.getValue(), out);
-            }
-        }
-
-        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-            int size=in.readInt();
-            for(int i=0; i < size; i++) {
-                String key=Bits.readString(in);
-                Object value=Util.objectFromStream(in);
-                if(key == null)
-                    continue;
-                values.put(key, value);
-            }
-        }
-
-        public String toString() {
-            return values.toString();
-        }
-    }
-
 
 
 

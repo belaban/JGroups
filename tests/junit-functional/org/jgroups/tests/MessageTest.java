@@ -13,6 +13,8 @@ import org.testng.annotations.Test;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -23,6 +25,7 @@ import java.util.function.Supplier;
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageTest extends MessageTestBase {
+    protected static final String HELLO="hello world";
 
     public void testFlags() {
         Message m1=new BytesMessage();
@@ -207,6 +210,26 @@ public class MessageTest extends MessageTestBase {
         Assert.assertEquals(m1.getArray().length, m1.getLength());
         String s2=m1.getObject();
         Assert.assertEquals(s2, s1);
+    }
+
+    public void testSetObjectWithByteBuffer() {
+        byte[] H=HELLO.getBytes();
+        Message msg=new BytesMessage(null, "bela".getBytes());
+        ByteBuffer buf=ByteBuffer.wrap(H);
+        msg.setObject(buf);
+        assert msg.getLength() == H.length;
+        assert msg.getOffset() == 0;
+        byte[] pl=msg.getPayload();
+        assert Arrays.equals(pl, H);
+
+        buf=ByteBuffer.allocateDirect(H.length);
+        buf.put(H).rewind();
+
+        msg.setObject(buf);
+        assert msg.getLength() == H.length;
+        assert msg.getOffset() == 0;
+        pl=msg.getPayload();
+        assert Arrays.equals(pl, H);
     }
 
 

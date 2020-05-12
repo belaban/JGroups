@@ -1123,6 +1123,16 @@ public class Util {
         return exceptionFromStream(in);
     }
 
+    /** Returns a copy of the byte array between position and limit; requires a non-null buffer */
+    public static byte[] bufferToArray(final ByteBuffer buf) {
+        if(buf == null)
+            return null;
+        ByteBuffer tmp=buf.duplicate();
+        int length=tmp.remaining();
+        byte[] retval=new byte[length];
+        tmp.get(retval, 0, retval.length);
+        return retval;
+    }
 
     public static void bufferToArray(final Address sender, final ByteBuffer buf, org.jgroups.blocks.cs.Receiver target) {
         if(buf == null)

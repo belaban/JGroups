@@ -1,5 +1,6 @@
 package org.jgroups.tests;
 
+import org.jgroups.BytesMessage;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -68,7 +69,8 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
     public void testNullMessageToSelf() throws Exception {
         MyHandler handler=new MyHandler(null);
         d1.setRequestHandler(handler);
-        RspList rsps=d1.castMessage(null, buf, new RequestOptions(ResponseMode.GET_ALL, 0));
+        RspList<byte[]> rsps=d1.castMessage(null, new BytesMessage(null, buf),
+                                            new RequestOptions(ResponseMode.GET_ALL, 0));
         System.out.println("rsps:\n" + rsps);
         assertNotNull(rsps);
         Assert.assertEquals(1, rsps.size());
@@ -100,13 +102,14 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
 
         System.out.println("casting message");
         start=System.currentTimeMillis();
-        RspList<Object> rsps=d1.castMessage(null, buf, new RequestOptions(ResponseMode.GET_ALL, 0));
+        RspList<byte[]> rsps=d1.castMessage(null, new BytesMessage(null, buf),
+                                            new RequestOptions(ResponseMode.GET_ALL, 0));
         stop=System.currentTimeMillis();
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop - start) + " ms");
         assertNotNull(rsps);
         Assert.assertEquals(2,rsps.size());
-        Rsp rsp=rsps.get(a.getAddress());
+        Rsp<byte[]> rsp=rsps.get(a.getAddress());
         assertNotNull(rsp);
         Object ret=rsp.getValue();
         assert ret == null;
@@ -151,7 +154,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         Assert.assertEquals(2,b.getView().size());
         blockableHandler.installThreadTrap();
         try {
-            RspList<Object> rsps = d1.castMessage(null, buf, requestOptions);
+            RspList<Object> rsps = d1.castMessage(null, new BytesMessage(null, buf), requestOptions);
             System.out.printf("responses: %s\n", rsps);
             Assert.assertEquals(1, rsps.size());
             Rsp rsp = rsps.get(b.getAddress());
@@ -170,14 +173,17 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         long start, stop;
         MyHandler handler=new MyHandler(new byte[size]);
         d1.setRequestHandler(handler);
+
+        Message msg=new BytesMessage(null, buf);
+        RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, 0);
         start=System.currentTimeMillis();
-        RspList rsps=d1.castMessage(null, buf, new RequestOptions(ResponseMode.GET_ALL, 0));
+        RspList<byte[]> rsps=d1.castMessage(null, msg, opts);
         stop=System.currentTimeMillis();
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop - start) + " ms");
         assertNotNull(rsps);
         Assert.assertEquals(1, rsps.size());
-        byte[] tmp=(byte[])rsps.getFirst();
+        byte[] tmp=rsps.getFirst();
         assertNotNull(tmp);
         Assert.assertEquals(size, tmp.length);
     }
@@ -194,7 +200,10 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
 
         System.out.println("casting message");
         start=System.currentTimeMillis();
-        RspList<Object> rsps=d1.castMessage(null, buf, new RequestOptions(ResponseMode.GET_ALL, 0));
+
+        // RspList<Object> rsps=d1.castMessage(null, buf, new RequestOptions(ResponseMode.GET_ALL, 0));
+        RspList<Object> rsps=d1.castMessage(null, new BytesMessage(null, buf), new RequestOptions(ResponseMode.GET_ALL, 0));
+
         stop=System.currentTimeMillis();
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop - start) + " ms");

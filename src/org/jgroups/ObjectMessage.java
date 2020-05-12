@@ -76,12 +76,6 @@ public class ObjectMessage extends BaseMessage {
     }
 
 
-    protected int objSize() {
-        return Util.size((SizeStreamable)obj);
-    }
-
-    /* ----------------------------------- Interface Streamable  ------------------------------- */
-
     public int size() {
         return super.size() + objSize();
     }
@@ -103,5 +97,9 @@ public class ObjectMessage extends BaseMessage {
 
     public String toString() {
         return super.toString() + String.format(", obj: %s", obj);
+    }
+
+    protected int objSize() {
+        return Util.size((SizeStreamable)obj);
     }
 }

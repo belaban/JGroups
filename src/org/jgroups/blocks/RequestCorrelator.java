@@ -14,7 +14,6 @@ import org.jgroups.util.*;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.io.NotSerializableException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
@@ -41,9 +40,6 @@ public class RequestCorrelator {
 
     /** The handler for the incoming requests. It is called from inside the dispatcher thread */
     protected RequestHandler                         request_handler;
-
-    /** Possibility for an external marshaller to marshal/unmarshal responses */
-    protected Marshaller                             marshaller;
 
     /** makes the instance unique (together with IDs) */
     protected short                                  corr_id=ClassConfigurator.getProtocolId(this.getClass());
@@ -74,9 +70,7 @@ public class RequestCorrelator {
      *
      * @param corr_id Used to differentiate between different RequestCorrelators (e.g. in different protocol layers).
      *                Has to be unique if multiple request correlators are used.
-     *
      * @param transport Used to send/pass up requests.
-     *
      * @param handler Request handler. Method {@code handle(Message)} will be called when a request is received.
      */
     public RequestCorrelator(short corr_id, Protocol transport, RequestHandler handler, Address local_addr) {
@@ -102,8 +96,6 @@ public class RequestCorrelator {
 
     public Address                getLocalAddress()              {return local_addr;}
     public RequestCorrelator      setLocalAddress(Address a)     {this.local_addr=a; return this;}
-    public Marshaller             getMarshaller()                {return marshaller;}
-    public RequestCorrelator      setMarshaller(Marshaller m)    {this.marshaller=m; return this;}
     public boolean                asyncDispatching()             {return async_dispatching;}
     public RequestCorrelator      asyncDispatching(boolean flag) {async_dispatching=flag; return this;}
     public boolean                wrapExceptions()               {return wrap_exceptions;}
@@ -112,25 +104,19 @@ public class RequestCorrelator {
 
     /**
      * Sends a request to a group. If no response collector is given, no responses are expected (making the call asynchronous)
-     * @param dest_mbrs The list of members who should receive the call. Usually a group RPC
-     *                  is sent via multicast, but a receiver drops the request if its own address
-     *                  is not in this list. Will not be used if it is null.
-     * @param data the data to be sent.
+     * @param dest_mbrs The list of members who should receive the call. Usually a group RPC is sent via multicast,
+     *                  but a receiver drops the request if its own address is not in this list. Will not be used if it is null.
+     * @param msg The message to be sent.
      * @param req A request (usually the object that invokes this method). Its methods {@code receiveResponse()} and
      *            {@code suspect()} will be invoked when a message has been received or a member is suspected.
      */
-    public <T> void sendRequest(Collection<Address> dest_mbrs, ByteArray data, Request<T> req, RequestOptions opts) throws Exception {
-        if(transport == null) {
-            log.warn("transport is not available !");
-            return;
-        }
-
+    public <T> void sendRequest(Collection<Address> dest_mbrs, Message msg, Request<T> req, RequestOptions opts) throws Exception {
         // i.   Create the request correlator header and add it to the msg
         // ii.  If a reply is expected (coll != null), add a coresponding entry in the pending requests table
         Header hdr=opts.hasExclusionList()? new MultiDestinationHeader(Header.REQ, 0, this.corr_id, opts.exclusionList())
           : new Header(Header.REQ, 0, this.corr_id);
 
-        Message msg=new BytesMessage(null, data).putHeader(this.corr_id, hdr)
+        msg.putHeader(this.corr_id, hdr)
           .setFlag(opts.flags(), false).setFlag(opts.transientFlags(), true);
 
         if(req != null) { // sync
@@ -166,23 +152,21 @@ public class RequestCorrelator {
             transport.down(msg);
     }
 
-    /** Sends a request to a single destination */
-    public <T> void sendUnicastRequest(Address dest, ByteArray data, Request<T> req, RequestOptions opts) throws Exception {
-        if(transport == null) {
-            if(log.isWarnEnabled()) log.warn("transport is not available !");
-            return;
-        }
 
+    /** Sends a request to a single destination */
+    public <T> void sendUnicastRequest(Message msg, Request<T> req, RequestOptions opts) throws Exception {
+        Address dest=msg.getDest();
         Header hdr=new Header(Header.REQ, 0, this.corr_id);
-        Message msg=new BytesMessage(dest, data).putHeader(this.corr_id, hdr)
-          .setFlag(opts.flags(), false).setFlag(opts.transientFlags(), true);
+        msg.putHeader(this.corr_id, hdr)
+          .setFlag(opts.flags(), false)
+          .setFlag(opts.transientFlags(), true);
 
         if(req != null) { // sync RPC
             long req_id=REQUEST_ID.getAndIncrement();
             req.requestId(req_id);
             hdr.requestId(req_id); // set the request-id only for *synchronous RPCs*
             if(log.isTraceEnabled())
-                log.trace("%s: invoking unicast RPC [req-id=%d] on %s", local_addr, req_id, msg.getDest());
+                log.trace("%s: invoking unicast RPC [req-id=%d] on %s", local_addr, req_id, dest);
             requests.putIfAbsent(req_id, req);
             // make sure no view is received before we add ourself as a view handler (https://issues.jboss.org/browse/JGRP-1428)
             req.viewChange(view);
@@ -355,8 +339,10 @@ public class RequestCorrelator {
             case Header.RSP:
             case Header.EXC_RSP:
                 Request<?> req=requests.get(hdr.req_id);
-                if(req != null)
-                    handleResponse(req, msg.getSrc(), msg.getArray(), msg.getOffset(), msg.getLength(), hdr.type == Header.EXC_RSP);
+                if(req != null) {
+                    Object retval=msg.getPayload();
+                    req.receiveResponse(retval, msg.getSrc(), hdr.type == Header.EXC_RSP);
+                }
                 break;
 
             default:
@@ -398,40 +384,10 @@ public class RequestCorrelator {
             sendReply(req, hdr.req_id, retval, threw_exception);
     }
 
-    protected <T> void handleResponse(Request<T> req, Address sender, byte[] buf, int offset, int length, boolean is_exception) {
-        Object retval;
-        try {
-            retval=replyFromBuffer(buf, offset, length, marshaller);
-        }
-        catch(Exception e) {
-            log.error(Util.getMessage("FailedUnmarshallingBufferIntoReturnValue"), e);
-            retval=e;
-            is_exception=true;
-        }
-        req.receiveResponse(retval, sender, is_exception);
-    }
-
 
     protected void sendReply(final Message req, final long req_id, Object reply, boolean is_exception) {
-        ByteArray rsp_buf;
-        try {  // retval could be an exception, or a real value
-            rsp_buf=replyToBuffer(reply, marshaller);
-        }
-        catch(Throwable t) {
-            try {  // this call should succeed (all exceptions are serializable)
-                rsp_buf=replyToBuffer(t, marshaller);
-                is_exception=true;
-            }
-            catch(NotSerializableException not_serializable) {
-                if(log.isErrorEnabled()) log.error(Util.getMessage("FailedMarshallingRsp") + reply + "): not serializable");
-                return;
-            }
-            catch(Throwable tt) {
-                if(log.isErrorEnabled()) log.error(Util.getMessage("FailedMarshallingRsp") + reply + "): " + tt);
-                return;
-            }
-        }
-        Message rsp=makeReply(req).setFlag(req.getFlags(false), false).setArray(rsp_buf)
+        Message rsp=makeReply(req).setFlag(req.getFlags(false), false)
+          .setPayload(reply)
           .clearFlag(Message.Flag.RSVP, Message.Flag.INTERNAL); // JGRP-1940
         sendResponse(rsp, req_id, is_exception);
     }
@@ -450,22 +406,6 @@ public class RequestCorrelator {
             log.trace("sending rsp for %d to %s", req_id, rsp.getDest());
         transport.down(rsp);
     }
-
-    protected static ByteArray replyToBuffer(Object obj, Marshaller marshaller) throws Exception {
-        int estimated_size=marshaller != null? marshaller.estimatedSize(obj) : (obj == null? 2 : 50);
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(estimated_size, true);
-        if(marshaller != null)
-            marshaller.objectToStream(obj, out);
-        else
-            Util.objectToStream(obj, out);
-        return out.getBuffer();
-    }
-
-    protected static Object replyFromBuffer(final byte[] buf, int offset, int length, Marshaller marshaller) throws Exception {
-        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
-        return marshaller != null? marshaller.objectFromStream(in) : Util.objectFromStream(in);
-    }
-
 
     // .......................................................................
 

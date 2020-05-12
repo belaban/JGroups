@@ -121,7 +121,7 @@ public class RpcDispatcherTest {
             rsps=d2.callRemoteMethods(null, "foobar", null, null, new RequestOptions(ResponseMode.GET_ALL, 5000));
             System.out.println("rsps:\n" + rsps);
             assert rsps.size() == 2;
-            for(Rsp rsp: rsps.values()) {
+            for(Rsp<Integer> rsp: rsps.values()) {
                 assert rsp.wasReceived();
                 assert !rsp.wasSuspected();
                 assert rsp.getValue() != null;
@@ -302,7 +302,7 @@ public class RpcDispatcherTest {
         RspList<Long> rsps=da.callRemoteMethods(null, new MethodCall(meth, 5000), opts);
         long time=System.currentTimeMillis()-start;
         System.out.printf("responses:\n%s\ncall took ~%d ms\n", rsps, time);
-        rsps.values().stream().noneMatch(rsp -> rsp.wasReceived());
+        rsps.values().stream().noneMatch(Rsp::wasReceived);
     }
 
     public void testMulticastInvocationWithFutureAndTimeout() throws Exception {

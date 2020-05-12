@@ -22,19 +22,21 @@ import java.util.Map;
 @Test(groups=Global.FUNCTIONAL)
 public class MethodCallTest {
 
-    protected static final Method CALL;
+    protected static final Method CALL, FOO;
     protected static final Map<Short,Method> methods=new HashMap<>();
 
     static {
         try {
             CALL=MethodCallTest.class.getMethod("call", boolean.class, Boolean.class, int.class, double.class,
                                                 float.class, byte[].class, String[].class);
+            FOO=TargetClass.class.getMethod("foo", int.class, String.class);
         }
         catch(NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
 
         methods.put((short)1, CALL);
+
 
         try {
             methods.put((short)2, TargetClass.class.getMethod("foobar"));
@@ -152,7 +154,7 @@ public class MethodCallTest {
     }
 
 
-    public static void testBufferSize() throws Exception {
+    public void testBufferSize() throws Exception {
         MethodCall m=new MethodCall("foo", new Object[]{10,"Bela"}, new Class[]{int.class, String.class});
         byte[] data=Util.objectToByteBuffer(m);
         
@@ -164,6 +166,16 @@ public class MethodCallTest {
         assert args[1].equals("Bela");
     }
 
+    public void testSize() throws Exception {
+        MethodCall m=new MethodCall("foo", new Object[]{10,"Bela"}, new Class[]{int.class, String.class});
+        byte[] data=Util.streamableToByteBuffer(m);
+        System.out.printf("size (TYPES): %d\n", data.length);
+
+        m=new MethodCall(FOO, 10, "Bela");
+        data=Util.streamableToByteBuffer(m);
+        System.out.printf("size (METHOD): %d\n", data.length);
+
+    }
 
     public static void testOLD() throws Exception {
         MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"}, new Class[]{String.class});

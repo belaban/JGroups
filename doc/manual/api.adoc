@@ -140,6 +140,17 @@ public interface Message extends SizeStreamable, Constructable<Message> {
      */
     <T extends Message> T setObject(Object obj);
 
+    /**
+     * Returns the payload without any conversion (e.g. as in {@link #getObject()} or {@link #getArray()})
+     */
+     <T extends Object> T getPayload();
+
+     /**
+      * Sets the payload
+      * @param pl The paylolad
+      */
+     Message              setPayload(Object pl);
+
 
     /** Returns the exact size of the marshalled message */
     int                   size();
@@ -173,7 +184,7 @@ not choose to implement them.
 The table below describes the payload-related methods of `Message`:
 
 .Payload related methods
-[width="80%",cols="2,10",frame="topbot",options="header"]
+[width="100%",cols="1,10",frame="topbot",options="header"]
 |==========================
 |Name    |Description
 |hasPayload | Returns true if the message has a payload, e.g. a byte array or an object.
@@ -190,6 +201,10 @@ The table below describes the payload-related methods of `Message`:
              If the payload is an object (e.g. as in an `ObjectMessage`), the object will be returned directly.
 |setObject | Sets an object in a message. In a `ObjectMessage` (see below), the object is set directly. In a
              `BytesMessage`, the object is serialized into a byte array and set as the payload of the message.
+|getPayload | Gets the payload from a message. The actual payload without any conversions is returned. E.g. compared
+to `getObject()`, in a `BytesMessage` the actual byte array would be returned with `getPayload()`, whereas
+`getObject()` would try to deserialize the byte array into an object.
+|setPayload | Sets the payload
 |==========================
 
 

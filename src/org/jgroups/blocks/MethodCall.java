@@ -12,7 +12,9 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Supplier;
 
 
@@ -23,12 +25,12 @@ import java.util.function.Supplier;
  * @author Bela Ban
  */
 public class MethodCall implements Streamable, Constructable<MethodCall> {
-    protected short              mode;
-    protected String             method_name;
-    protected short              method_id; // the ID of a method, maps to a java.lang.reflect.Method
-    protected Object[]           args;      // the arguments to the call
-    protected Class[]            types;     // the types of the arguments, e.g., new Class[]{String.class, int.class}
-    protected Method             method;
+    protected short        mode;
+    protected String       method_name;
+    protected short        method_id; // the ID of a method, maps to a java.lang.reflect.Method
+    protected Object[]     args;      // the arguments to the call
+    protected Class<?>[]   types;     // the types of the arguments, e.g., new Class[]{String.class, int.class}
+    protected Method       method;
 
 
     protected static final short METHOD = 1;
@@ -55,7 +57,7 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
     }
 
 
-    public MethodCall(String method_name, Object[] args, Class[] types) {
+    public MethodCall(String method_name, Object[] args, Class<?>[] types) {
         this.method_name=method_name;
         this.args=args;
         this.types=types;
@@ -102,7 +104,7 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
         if(target == null)
             throw new IllegalArgumentException("target is null");
 
-        Class cl=target.getClass();
+        Class<?> cl=target.getClass();
         Method meth=null;
 
         switch(mode) {
@@ -146,7 +148,7 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
 
     /** Called by the ProbeHandler impl. All args are strings. Needs to find a method where all parameter
      * types are primitive types, so the strings can be converted */
-    public static Method findMethod(Class target_class, String method_name, Object[] args) throws Exception {
+    public static Method findMethod(Class<?> target_class, String method_name, Object[] args) throws Exception {
         int len=args != null? args.length : 0;
         Method retval=null;
         Method[] methods=getAllMethods(target_class);
@@ -214,11 +216,7 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
 
     @Override
     public void writeTo(DataOutput out) throws IOException {
-        writeTo(out, null);
-    }
-
-    public void writeTo(DataOutput out, Marshaller marshaller) throws IOException {
-        out.write(mode);
+        out.writeByte(mode);
 
         switch(mode) {
             case METHOD:
@@ -235,15 +233,11 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
             default:
                 throw new IllegalStateException("mode " + mode + " unknown");
         }
-        writeArgs(out, marshaller);
+        writeArgs(out);
     }
 
     @Override
     public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-       readFrom(in, null);
-    }
-
-    public void readFrom(DataInput in, Marshaller marshaller) throws IOException, ClassNotFoundException {
         switch(mode=in.readByte()) {
             case METHOD:
                 method_name=Bits.readString(in);
@@ -259,7 +253,7 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
             default:
                 throw new IllegalStateException("mode " + mode + " unknown");
         }
-        readArgs(in, marshaller);
+        readArgs(in);
     }
 
 
@@ -276,7 +270,7 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
      * The method is chosen from all the methods of the current class and all its superclasses and superinterfaces.
      * @return the matching method or null if no matching method has been found.
      */
-    protected static Method getMethod(Class target, String methodName, Class[] types) {
+    protected static Method getMethod(Class<?> target, String methodName, Class<?>[] types) {
         if(types == null)
             types=new Class[0];
 
@@ -285,7 +279,7 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
             Method m= methods[i];
             if(!methodName.equals(m.getName()))
                 continue;
-            Class[] parameters = m.getParameterTypes();
+            Class<?>[] parameters = m.getParameterTypes();
             if (types.length != parameters.length) {
                 continue;
             }
@@ -299,28 +293,31 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
         return null;
     }
 
-    protected void writeArgs(DataOutput out, Marshaller marshaller) throws IOException {
+    protected void writeArgs(DataOutput out) throws IOException {
         int args_len=args != null? args.length : 0;
-        out.write(args_len);
+        out.writeByte(args_len);
         if(args_len == 0)
             return;
-        for(Object obj: args) {
-            if(marshaller != null)
-                marshaller.objectToStream(obj, out);
-            else
-                Util.objectToStream(obj, out);
-        }
+        for(Object obj: args)
+            writeArg(out, obj);
     }
 
-    protected void readArgs(DataInput in, Marshaller marshaller) throws IOException, ClassNotFoundException {
+    protected void writeArg(DataOutput out, Object obj) throws IOException {
+        Util.objectToStream(obj, out);
+    }
+
+    protected void readArgs(DataInput in) throws IOException, ClassNotFoundException {
         int args_len=in.readByte();
         if(args_len == 0)
             return;
         args=new Object[args_len];
         for(int i=0; i < args_len; i++)
-            args[i]=marshaller != null? marshaller.objectFromStream(in) : Util.objectFromStream(in);
+            args[i]=readArg(in);
     }
 
+    protected Object readArg(DataInput in) throws IOException, ClassNotFoundException {
+        return Util.objectFromStream(in);
+    }
 
     protected void writeTypes(DataOutput out) throws IOException {
         int types_len=types != null? types.length : 0;
@@ -351,8 +348,8 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
 
     protected void readMethod(DataInput in) throws IOException, ClassNotFoundException {
         if(in.readByte() == 1) {
-            Class[] parametertypes=Util.objectFromStream(in);
-            Class   declaringclass=Util.objectFromStream(in);
+            Class<?>[] parametertypes=Util.objectFromStream(in);
+            Class<?>   declaringclass=Util.objectFromStream(in);
             try {
                 method=declaringclass.getDeclaredMethod(method_name, parametertypes);
             }
@@ -368,8 +365,8 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
      * The method walks up the class hierarchy and returns <i>all</i> methods of this class
      * and those inherited from superclasses and superinterfaces.
      */
-    protected static Method[] getAllMethods(Class target) {
-        Class       superclass = target;
+    protected static Method[] getAllMethods(Class<?> target) {
+        Class<?>    superclass = target;
         Set<Method> methods = new HashSet<>();
 
         while(superclass != null) {
@@ -378,9 +375,9 @@ public class MethodCall implements Streamable, Constructable<MethodCall> {
                 Collections.addAll(methods, m);
 
                 // find the default methods of all interfaces (https://issues.jboss.org/browse/JGRP-2247)
-                Class[] interfaces=superclass.getInterfaces();
+                Class<?>[] interfaces=superclass.getInterfaces();
                 if(interfaces != null) {
-                    for(Class cl: interfaces) {
+                    for(Class<?> cl: interfaces) {
                         Method[] tmp=getAllMethods(cl);
                         if(tmp != null) {
                             for(Method mm: tmp)

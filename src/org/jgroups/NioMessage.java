@@ -75,9 +75,13 @@ public class NioMessage extends BaseMessage {
     public boolean           isDirect()                 {return buf != null && buf.isDirect();}
     public int               getOffset()                {return hasArray()? buf.arrayOffset()+buf.position() : 0;}
     public int               getLength()                {return buf != null? buf.remaining() : 0;}
-    public byte[]            getArray()                 {return buf != null? (isDirect()?getContents() : buf.array()) : null;}
+    public <T> T             getPayload()               {return (T)buf;}
 
 
+
+    public byte[] getArray() {
+        return buf != null? (isDirect()?Util.bufferToArray(buf) : buf.array()) : null;
+    }
 
     /**
      * Sets the internal buffer to point to a subset of a given buffer.<p/>
@@ -137,6 +141,8 @@ public class NioMessage extends BaseMessage {
             return setArray((byte[])obj, 0, ((byte[])obj).length);
         if(obj instanceof ByteArray)
             return setArray((ByteArray)obj);
+        if(obj instanceof ByteBuffer)
+            return setBuf((ByteBuffer)obj);
         try {
             byte[] tmp=Util.objectToByteBuffer(obj);
             return setArray(tmp, 0, tmp.length);
@@ -217,15 +223,6 @@ public class NioMessage extends BaseMessage {
         byte[] tmp=new byte[len];
         in.readFully(tmp, 0, tmp.length);
         buf=createBuffer(tmp, 0, tmp.length);
-    }
-
-    /** Returns a copy of the byte array between position and limit; requires a non-null buffer */
-    protected byte[] getContents() {
-        ByteBuffer tmp=buf.duplicate();
-        int length=tmp.remaining();
-        byte[] retval=new byte[length];
-        tmp.get(retval, 0, retval.length);
-        return retval;
     }
 
     protected ByteBuffer createBuffer(byte[] array, int offset, int length) {
