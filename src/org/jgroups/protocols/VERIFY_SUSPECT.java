@@ -300,13 +300,11 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         timer.start();
     }
 
-    public void init() throws Exception {
-        super.init();
+    public void start() throws Exception {
+        super.start();
         if(bind_addr != null)
             intf=NetworkInterface.getByInetAddress(bind_addr);
     }
-
-
 
     public synchronized void stop() {
         clearSuspects();
