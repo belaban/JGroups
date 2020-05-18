@@ -186,8 +186,8 @@ public class BytesMessage extends BaseMessage {
                 return setArray(bb.array(), bb.arrayOffset()+bb.position(), bb.remaining());
         }
         try {
-            byte[] tmp=Util.objectToByteBuffer(obj);
-            return setArray(tmp, 0, tmp.length);
+            ByteArray tmp=Util.objectToBuffer(obj);
+            return setArray(tmp);
         }
         catch(Exception ex) {
             throw new IllegalArgumentException(ex);

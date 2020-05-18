@@ -346,11 +346,11 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
 
     protected Method findMethod(Protocol prot, String method_name, String[] args) throws Exception {
         Object target=prot;
-        Method method=MethodCall.findMethod(target.getClass(), method_name, args);
+        Method method=Util.findMethod(target.getClass(), method_name, args);
         if(method == null) {
             if(prot instanceof AdditionalJmxObjects) {
                 for(Object obj: ((AdditionalJmxObjects)prot).getJmxObjects()) {
-                    method=MethodCall.findMethod(obj.getClass(), method_name, args);
+                    method=Util.findMethod(obj.getClass(), method_name, args);
                     if(method != null) {
                         target=obj;
                         break;

@@ -73,7 +73,7 @@ public class RelayDemoRpc implements Receiver {
             }
 
 
-            call.args(line, local_addr);
+            call.setArgs(line, local_addr);
 
             // unicast to every member of the local cluster
             if(line.equalsIgnoreCase("unicast")) {

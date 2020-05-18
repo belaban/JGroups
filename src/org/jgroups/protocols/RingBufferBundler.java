@@ -190,7 +190,7 @@ public class RingBufferBundler extends BaseBundler {
             case "spin-yield":      return wait_strategy=SPIN_YIELD;
             default:
                 try {
-                    Class<BiConsumer<Integer,Integer>> clazz=Util.loadClass(st, this.getClass());
+                    Class<BiConsumer<Integer,Integer>> clazz=(Class<BiConsumer<Integer,Integer>>)Util.loadClass(st, this.getClass());
                     return clazz.getDeclaredConstructor().newInstance();
                 }
                 catch(Throwable t) {

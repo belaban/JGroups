@@ -462,7 +462,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             return;
         }
         try {
-            Class<MessageProcessingPolicy> clazz=Util.loadClass(policy, getClass());
+            Class<MessageProcessingPolicy> clazz=(Class<MessageProcessingPolicy>)Util.loadClass(policy, getClass());
             msg_processing_policy=clazz.getDeclaredConstructor().newInstance();
             message_processing_policy=policy;
             msg_processing_policy.init(this);
@@ -1015,7 +1015,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             msg_processing_policy.init(this);
 
         if(msg_factory_class != null) {
-            Class<MessageFactory> clazz=Util.loadClass(msg_factory_class, getClass());
+            Class<MessageFactory> clazz=(Class<MessageFactory>)Util.loadClass(msg_factory_class, getClass());
             msg_factory=clazz.getDeclaredConstructor().newInstance();
         }
     }
@@ -1382,7 +1382,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         try {
-            Class<Bundler> clazz=Util.loadClass(type, getClass());
+            Class<Bundler> clazz=(Class<Bundler>)Util.loadClass(type, getClass());
             return clazz.getDeclaredConstructor().newInstance();
         }
         catch(Throwable t) {

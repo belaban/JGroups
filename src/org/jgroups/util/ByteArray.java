@@ -32,6 +32,15 @@ public class ByteArray {
         return new ByteArray(new_buf, 0, new_length);
     }
 
+    public byte[] getBytes() {
+        if(array == null) return null;
+        if(offset == 0 && length == array.length)
+            return array;
+        byte[] tmp=new byte[length];
+        System.arraycopy(array, offset, tmp, 0, length);
+        return tmp;
+    }
+
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append(length).append(" bytes");

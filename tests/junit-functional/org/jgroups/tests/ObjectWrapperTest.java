@@ -49,7 +49,7 @@ public class ObjectWrapperTest {
         o.setObject(WORLD);
         String s=o.getObject();
         assert s.equals(WORLD);
-        byte[] ser=o.getSerialized();
+        byte[] ser=o.getSerialized().getArray();
         assert Arrays.equals(ser, WORLD_SER);
     }
 

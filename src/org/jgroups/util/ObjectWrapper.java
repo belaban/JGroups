@@ -13,8 +13,8 @@ import java.util.Objects;
  * @since  5.0.0
  */
 public class ObjectWrapper implements SizeStreamable {
-    protected Object obj;
-    protected byte[] serialized; // serialized version of obj (cached)
+    protected Object    obj;
+    protected ByteArray serialized; // serialized version of obj (cached)
 
     public ObjectWrapper() {
         // only used for deserialization
@@ -34,11 +34,11 @@ public class ObjectWrapper implements SizeStreamable {
         return this;
     }
 
-    public synchronized byte[] getSerialized() {
+    public synchronized ByteArray getSerialized() {
         if(serialized != null)
             return serialized;
         try {
-            return serialized=Util.objectToByteBuffer(obj);
+            return serialized=Util.objectToBuffer(obj);
         }
         catch(Exception ex) {
             throw new RuntimeException(ex);
@@ -46,11 +46,11 @@ public class ObjectWrapper implements SizeStreamable {
     }
 
     public int getLength() {
-        return getSerialized().length;
+        return getSerialized().getLength();
     }
 
     public String toString() {
-        return String.format("obj: %s %s", obj, serialized != null? "(" + serialized.length + " bytes)" : "");
+        return String.format("obj: %s %s", obj, serialized != null? "(" + serialized.getLength() + " bytes)" : "");
     }
 
     public int serializedSize() {
@@ -62,9 +62,9 @@ public class ObjectWrapper implements SizeStreamable {
 
     public void writeTo(DataOutput out) throws IOException {
         if(obj != null) {
-            byte[] arr=getSerialized();
-            out.writeInt(arr.length);
-            out.write(arr, 0, arr.length);
+            ByteArray arr=getSerialized();
+            out.writeInt(arr.getLength());
+            out.write(arr.getArray(), 0, arr.getLength());
         }
         else
             out.writeInt(-1);
@@ -74,9 +74,10 @@ public class ObjectWrapper implements SizeStreamable {
         int len=in.readInt();
         if(len == -1)
             return;
-        serialized=new byte[len];
-        in.readFully(serialized, 0, len);
-        obj=Util.objectFromByteBuffer(serialized);
+        byte[] tmp=new byte[len];
+        in.readFully(tmp, 0, len);
+        serialized=new ByteArray(tmp);
+        obj=Util.objectFromBuffer(serialized, null);
         // serialized=null;
     }
 

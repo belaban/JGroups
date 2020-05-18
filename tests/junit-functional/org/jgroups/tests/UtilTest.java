@@ -71,27 +71,27 @@ public class UtilTest {
         System.setProperty("name", "Michelle");
         System.setProperty("name2", "Nicole");
 
-        String retval=Util.getProperty(new String[]{"name", "name2"}, props, "name", "Jeannette");
+        String retval=Util.getProperty(new String[]{"name", "name2"}, props, "name", "Bine");
         Assert.assertEquals("Bela", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
-        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name", "Jeannette");
+        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name", "Bine");
         Assert.assertEquals("Bela", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
-        retval=Util.getProperty(new String[]{"name3", "name"}, props, "name", "Jeannette");
+        retval=Util.getProperty(new String[]{"name3", "name"}, props, "name", "Bine");
         Assert.assertEquals("Bela", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
-        retval=Util.getProperty(new String[]{"name3", "name4"}, props, "name", "Jeannette");
+        retval=Util.getProperty(new String[]{"name3", "name4"}, props, "name", "Bine");
         Assert.assertEquals("Bela", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
-        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name", "Jeannette");
+        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name", "Bine");
         Assert.assertEquals("Bela", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
-        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name2", "Jeannette");
+        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name2", "Bine");
         Assert.assertEquals("Nicole", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
@@ -424,7 +424,7 @@ public class UtilTest {
         Address addr=Util.createRandomAddress(), addr2;
         List<String> list=new ArrayList<>(), list2;
         list.add("Bela");
-        list.add("Jeannette");
+        list.add("Bine");
 
         buf=Util.objectToByteBuffer(addr);
         addr2=Util.objectFromByteBuffer(buf);
@@ -451,6 +451,7 @@ public class UtilTest {
         assert obj == null;
 
         Object[] values={
+          byte.class, Byte.class, int.class, Integer.class, Boolean.class, boolean.class, byte[].class,
           Boolean.TRUE,
           true,
           false,
@@ -495,7 +496,20 @@ public class UtilTest {
         }
     }
 
+    public void testWriteAndReadString() throws IOException {
+        String s1="Béla Bån", s2="Bela Ban";
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(30);
+        Util.writeString(s1, out);
+        Util.writeString(s2, out);
 
+        ByteArray array=out.getBuffer();
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(array.getArray(), array.getOffset(), array.getLength());
+        String str=Util.readString(in);
+        assert str.equals(s1);
+        str=Util.readString(in);
+        assert str.equals(s2);
+
+    }
 
     public void testMessageToByteBuffer() throws Exception {
         MessageFactory mf=new DefaultMessageFactory();

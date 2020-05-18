@@ -79,7 +79,7 @@ public class RpcDispatcher extends MessageDispatcher {
     public <T> RspList<T> callRemoteMethods(Collection<Address> dests, MethodCall method_call,
                                             RequestOptions opts) throws Exception {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
-            log.trace("destination list of %s() is empty: no need to send message", method_call.methodName());
+            log.trace("destination list of %s() is empty: no need to send message", method_call.getMethodName());
             return empty_rsplist;
         }
         Message msg=new ObjectMessage(null, method_call);
@@ -103,7 +103,7 @@ public class RpcDispatcher extends MessageDispatcher {
     public <T> CompletableFuture<RspList<T>> callRemoteMethodsWithFuture(Collection<Address> dests, MethodCall call,
                                                                          RequestOptions options) throws Exception {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
-            log.trace("destination list of %s() is empty: no need to send message", call.methodName());
+            log.trace("destination list of %s() is empty: no need to send message", call.getMethodName());
             return CompletableFuture.completedFuture(empty_rsplist);
         }
         Message msg=new ObjectMessage(null, call);
@@ -186,15 +186,15 @@ public class RpcDispatcher extends MessageDispatcher {
         if(log.isTraceEnabled())
             log.trace("[sender=%s], method_call: %s", req.getSrc(), method_call);
 
-        if(method_call.mode() == MethodCall.ID) {
+        if(method_call.useIds()) {
             if(method_invoker != null) // this trumps a method lookup
-                return method_invoker.invoke(server_obj, method_call.methodId(), method_call.args());
+                return method_invoker.invoke(server_obj, method_call.getMethodId(), method_call.getArgs());
             if(method_lookup == null)
-                throw new Exception(String.format("MethodCall uses ID=%d, but method_lookup has not been set", method_call.methodId()));
-            Method m=method_lookup.findMethod(method_call.methodId());
+                throw new Exception(String.format("MethodCall uses ID=%d, but method_lookup has not been set", method_call.getMethodId()));
+            Method m=method_lookup.findMethod(method_call.getMethodId());
             if(m == null)
-                throw new Exception("no method found for " + method_call.methodId());
-            method_call.method(m);
+                throw new Exception("no method found for " + method_call.getMethodId());
+            method_call.setMethod(m);
         }
         return method_call.invoke(server_obj);
     }

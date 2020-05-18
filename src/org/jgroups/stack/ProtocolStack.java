@@ -930,7 +930,7 @@ public class ProtocolStack extends Protocol {
     protected static void callAfterCreationHook(Protocol prot, String classname) throws Exception {
         if(classname == null || prot == null)
             return;
-        Class<ProtocolHook> clazz=Util.loadClass(classname, prot.getClass());
+        Class<ProtocolHook> clazz=(Class<ProtocolHook>)Util.loadClass(classname, prot.getClass());
         ProtocolHook hook=clazz.getDeclaredConstructor().newInstance();
         hook.afterCreation(prot);
     }

@@ -144,8 +144,8 @@ public class NioMessage extends BaseMessage {
         if(obj instanceof ByteBuffer)
             return setBuf((ByteBuffer)obj);
         try {
-            byte[] tmp=Util.objectToByteBuffer(obj);
-            return setArray(tmp, 0, tmp.length);
+            ByteArray tmp=Util.objectToBuffer(obj);
+            return setArray(tmp);
         }
         catch(Exception ex) {
             throw new IllegalArgumentException(ex);

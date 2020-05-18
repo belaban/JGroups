@@ -5,10 +5,17 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.blocks.MethodCall;
+import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.util.Bits;
+import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -22,7 +29,7 @@ import java.util.Map;
 @Test(groups=Global.FUNCTIONAL)
 public class MethodCallTest {
 
-    protected static final Method CALL, FOO;
+    protected static final Method CALL, FOO, GET_P, SET_P, GET_SP, SET_SP;
     protected static final Map<Short,Method> methods=new HashMap<>();
 
     static {
@@ -30,6 +37,10 @@ public class MethodCallTest {
             CALL=MethodCallTest.class.getMethod("call", boolean.class, Boolean.class, int.class, double.class,
                                                 float.class, byte[].class, String[].class);
             FOO=TargetClass.class.getMethod("foo", int.class, String.class);
+            GET_P=TargetClass.class.getMethod("getPerson");
+            SET_P=TargetClass.class.getMethod("setPerson", Person.class);
+            GET_SP=TargetClass.class.getMethod("getSPerson");
+            SET_SP=TargetClass.class.getMethod("setPerson", StreamablePerson.class);
         }
         catch(NoSuchMethodException e) {
             throw new RuntimeException(e);
@@ -48,6 +59,9 @@ public class MethodCallTest {
 
 
     public static class TargetClass {
+        protected Person           p;
+        protected StreamablePerson sp;
+
         public static boolean foo(int a, String b) {
             System.out.println("test(" + a + ", " + b + ')');
             return true;
@@ -71,6 +85,20 @@ public class MethodCallTest {
         public static void foobar() {
             System.out.println("foobar()");
         }
+
+        public void setPerson(Person p) {
+            this.p=p;
+            System.out.printf("person set to %s\n", p);
+        }
+
+        public Person getPerson() {return p;}
+
+        public void setPerson(StreamablePerson p) {
+            this.sp=p;
+            System.out.printf("person set to %s\n", sp);
+        }
+
+        public StreamablePerson getSPerson() {return sp;}
     }
 
     @Test(enabled=false)
@@ -160,7 +188,7 @@ public class MethodCallTest {
         
         MethodCall m2=Util.objectFromByteBuffer(data);
         System.out.println(m2);
-        Object[] args=m2.args();
+        Object[] args=m2.getArgs();
         assert args.length == 2;
         assert args[0].equals(10);
         assert args[1].equals("Bela");
@@ -170,12 +198,79 @@ public class MethodCallTest {
         MethodCall m=new MethodCall("foo", new Object[]{10,"Bela"}, new Class[]{int.class, String.class});
         byte[] data=Util.streamableToByteBuffer(m);
         System.out.printf("size (TYPES): %d\n", data.length);
+        assert data.length < 30;
+        m=Util.streamableFromByteBuffer(MethodCall::new, data);
 
         m=new MethodCall(FOO, 10, "Bela");
         data=Util.streamableToByteBuffer(m);
         System.out.printf("size (METHOD): %d\n", data.length);
-
+        assert data.length < 30;
+        m=Util.streamableFromByteBuffer(MethodCall::new, data);
     }
+
+    public void testSizeWithIDs() throws Exception {
+        MethodCall m=new MethodCall((short)0, 10, "Bela");
+        byte[] data=Util.streamableToByteBuffer(m);
+        System.out.printf("size (TYPES): %d\n", data.length);
+        assert data.length < 30;
+        m=Util.streamableFromByteBuffer(MethodCall::new, data);
+    }
+
+    public void testSizeWithSerializable() throws Exception {
+        Person p=new Person("Bela Ban", 55);
+        MethodCall m=new MethodCall("setPerson", new Object[]{p}, new Class[]{Person.class});
+        byte[] data=Util.streamableToByteBuffer(m);
+        System.out.printf("size (TYPES): %d\n", data.length);
+        assert data.length < 230;
+        m=Util.streamableFromByteBuffer(MethodCall::new, data);
+
+        m=new MethodCall(SET_P, p);
+        data=Util.streamableToByteBuffer(m);
+        System.out.printf("size (METHOD): %d\n", data.length);
+        assert data.length < 230;
+        m=Util.streamableFromByteBuffer(MethodCall::new, data);
+
+        m=new MethodCall("getPerson", null, null);
+        data=Util.streamableToByteBuffer(m);
+        System.out.printf("size (TYPES): %d\n", data.length);
+        assert data.length < 20;
+        m=Util.streamableFromByteBuffer(MethodCall::new, data);
+
+        m=new MethodCall(GET_P);
+        data=Util.streamableToByteBuffer(m);
+        System.out.printf("size (METHOD): %d\n", data.length);
+        assert data.length < 20;
+        m=Util.streamableFromByteBuffer(MethodCall::new, data);
+    }
+
+    public void testSizeWithStreamable() throws Exception {
+        ClassConfigurator.add((short)2233, StreamablePerson.class);
+        StreamablePerson p=new StreamablePerson("Bela Ban", 55);
+        MethodCall m=new MethodCall("setPerson", new Object[]{p}, new Class[]{StreamablePerson.class});
+        byte[] data=Util.streamableToByteBuffer(m);
+        System.out.printf("size (TYPES): %d\n", data.length);
+        assert data.length < 110;
+        m=Util.streamableFromByteBuffer(MethodCall::new, data);
+
+        m=new MethodCall(SET_SP, p);
+        data=Util.streamableToByteBuffer(m);
+        System.out.printf("size (METHOD): %d\n", data.length);
+        assert data.length < 110;
+        m=Util.streamableFromByteBuffer(MethodCall::new, data);
+
+        m=new MethodCall("getPerson", null, null);
+        data=Util.streamableToByteBuffer(m);
+        System.out.printf("size (TYPES): %d\n", data.length);
+        assert data.length < 20;
+        m=Util.streamableFromByteBuffer(MethodCall::new, data);
+
+        m=new MethodCall(GET_SP);
+        data=Util.streamableToByteBuffer(m);
+        System.out.printf("size (METHOD): %d\n", data.length);
+        assert data.length < 20;
+        m=Util.streamableFromByteBuffer(MethodCall::new, data);
+    }
+
 
     public static void testOLD() throws Exception {
         MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"}, new Class[]{String.class});
@@ -202,19 +297,19 @@ public class MethodCallTest {
     }
 
 
-    public static void testInheritanceMETHOD() throws Exception {
+    public void testInheritanceMETHOD() throws Exception {
         Method method = Target.class.getMethod("someMethod", String.class);
         MethodCall methodCall = new MethodCall(method, "abc");
-        TargetSubclass target = new TargetSubclass();
-        Object result = methodCall.invoke(target);
+        TargetSubclass t = new TargetSubclass();
+        Object result = methodCall.invoke(t);
         Assert.assertEquals("ABC",result);
     }
 
 
-    public static void testTYPES() throws Exception {
+    public void testTYPES() throws Exception {
         MethodCall methodCall = new MethodCall("someMethod", new Object[] { "abc" }, new Class[] { String.class });
-        Target target = new Target();
-        Object result = methodCall.invoke(target);
+        Target t = new Target();
+        Object result = methodCall.invoke(t);
         Assert.assertEquals("ABC",result);
     }
 
@@ -345,6 +440,52 @@ public class MethodCallTest {
 
         public String overriddenMethod(String arg) {
             return "TargetSubclass" + arg.toUpperCase();
+        }
+    }
+
+    protected static class Person implements Serializable {
+        private static final long serialVersionUID=-3554749804011321665L;
+        protected String name;
+        protected int    age;
+
+        public Person(String name, int age) {
+            this.name=name;
+            this.age=age;
+        }
+
+        public String toString() {
+            return String.format("name=%s, age=%d", name, age);
+        }
+    }
+
+    protected static class StreamablePerson implements SizeStreamable {
+        protected String name;
+        protected int    age;
+
+        public StreamablePerson() {
+        }
+
+        public StreamablePerson(String name, int age) {
+            this.name=name;
+            this.age=age;
+        }
+
+        public String toString() {
+            return String.format("name=%s, age=%d", name, age);
+        }
+
+        public void writeTo(DataOutput out) throws IOException {
+            out.writeInt(age);
+            Bits.writeString(name, out);
+        }
+
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+            age=in.readInt();
+            name=Bits.readString(in);
+        }
+
+        public int serializedSize() {
+            return Global.INT_SIZE + Bits.size(name);
         }
     }
 }

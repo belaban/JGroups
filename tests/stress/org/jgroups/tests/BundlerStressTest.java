@@ -171,7 +171,7 @@ public class BundlerStressTest {
         if(bundler.startsWith("no-bundler") || bundler.equals("nb"))
             return new NoBundler();
         try {
-            Class<Bundler> clazz=Util.loadClass(bundler, getClass());
+            Class<Bundler> clazz=(Class<Bundler>)Util.loadClass(bundler, getClass());
             return clazz.getDeclaredConstructor().newInstance();
         }
         catch(Throwable t) {

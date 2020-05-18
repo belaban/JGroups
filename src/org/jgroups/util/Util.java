@@ -53,21 +53,32 @@ import static org.jgroups.protocols.TP.MULTICAST;
  * @author Bela Ban
  */
 public class Util {
-    private static final Map<Class<? extends Object>,Byte> PRIMITIVE_TYPES=new HashMap<>(15);
+    private static final Map<Class<?>,Byte> TYPES=new HashMap<>(30);
+    private static final Map<Byte,Class<?>> TYPES2=new HashMap<>(30);
+
     private static final byte    TYPE_NULL         =  0;
     private static final byte    TYPE_STREAMABLE   =  1;
     private static final byte    TYPE_SERIALIZABLE =  2;
-    private static final byte    TYPE_BOOLEAN      = 10;
-    private static final byte    TYPE_BYTE         = 11;
-    private static final byte    TYPE_CHAR         = 12;
-    private static final byte    TYPE_DOUBLE       = 13;
-    private static final byte    TYPE_FLOAT        = 14;
-    private static final byte    TYPE_INT          = 15;
-    private static final byte    TYPE_LONG         = 16;
-    private static final byte    TYPE_SHORT        = 17;
-    private static final byte    TYPE_STRING       = 18; // ascii
-    private static final byte    TYPE_BYTEARRAY    = 19;
-    private static final byte    TYPE_UTF_STRING   = 21; // multibyte charset
+    private static final byte    TYPE_BOOLEAN      =  3; // boolean
+    private static final byte    TYPE_BOOLEAN_OBJ  =  4; // Boolean
+    private static final byte    TYPE_BYTE         =  5; // byte
+    private static final byte    TYPE_BYTE_OBJ     =  6; // Byte
+    private static final byte    TYPE_CHAR         =  7; // char
+    private static final byte    TYPE_CHAR_OBJ     =  8; // Character
+    private static final byte    TYPE_DOUBLE       =  9; // double
+    private static final byte    TYPE_DOUBLE_OBJ   = 10; // Double
+    private static final byte    TYPE_FLOAT        = 11; // float
+    private static final byte    TYPE_FLOAT_OBJ    = 12; // Float
+    private static final byte    TYPE_INT          = 13; // int
+    private static final byte    TYPE_INT_OBJ      = 14; // Integer
+    private static final byte    TYPE_LONG         = 15; // long
+    private static final byte    TYPE_LONG_OBJ     = 16; // Long
+    private static final byte    TYPE_SHORT        = 17; // short
+    private static final byte    TYPE_SHORT_OBJ    = 18; // Short
+    private static final byte    TYPE_STRING       = 19; // ascii
+    private static final byte    TYPE_BYTEARRAY    = 20;
+    private static final byte    TYPE_CLASS        = 21; // a class
+
 
     public static final int      MAX_PORT=65535; // highest port allocatable
 
@@ -104,19 +115,33 @@ public class Util {
     protected static Class<?>       BUILDER_CLASS=null;
 
 
+
     static {
         String tmp;
         resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Util.class.getClassLoader());
-        PRIMITIVE_TYPES.put(Boolean.class,TYPE_BOOLEAN);
-        PRIMITIVE_TYPES.put(Byte.class,TYPE_BYTE);
-        PRIMITIVE_TYPES.put(Character.class,TYPE_CHAR);
-        PRIMITIVE_TYPES.put(Double.class,TYPE_DOUBLE);
-        PRIMITIVE_TYPES.put(Float.class,TYPE_FLOAT);
-        PRIMITIVE_TYPES.put(Integer.class,TYPE_INT);
-        PRIMITIVE_TYPES.put(Long.class,TYPE_LONG);
-        PRIMITIVE_TYPES.put(Short.class,TYPE_SHORT);
-        PRIMITIVE_TYPES.put(String.class,TYPE_STRING);
-        PRIMITIVE_TYPES.put(byte[].class,TYPE_BYTEARRAY);
+
+        add(TYPE_NULL, Void.class);
+        //add(TYPE_STREAMABLE,   Streamable.class);
+        //add(TYPE_SERIALIZABLE, Serializable.class);
+        add(TYPE_BOOLEAN,      boolean.class);
+        add(TYPE_BOOLEAN_OBJ,  Boolean.class);
+        add(TYPE_BYTE,         byte.class);
+        add(TYPE_BYTE_OBJ,     Byte.class);
+        add(TYPE_CHAR,         char.class);
+        add(TYPE_CHAR_OBJ,     Character.class);
+        add(TYPE_DOUBLE,       double.class);
+        add(TYPE_DOUBLE_OBJ,   Double.class);
+        add(TYPE_FLOAT,        float.class);
+        add(TYPE_FLOAT_OBJ,    Float.class);
+        add(TYPE_INT,          int.class);
+        add(TYPE_INT_OBJ,      Integer.class);
+        add(TYPE_LONG,         long.class);
+        add(TYPE_LONG_OBJ,     Long.class);
+        add(TYPE_SHORT,        short.class);
+        add(TYPE_SHORT_OBJ,    Short.class);
+        add(TYPE_STRING,       String.class);
+        add(TYPE_BYTEARRAY,    byte[].class);
+        add(TYPE_CLASS,        Class.class);
 
         can_bind_to_mcast_addr=(Util.checkForLinux() && !Util.checkForAndroid())
           || Util.checkForSolaris() || Util.checkForHp() || Util.checkForMac();
@@ -171,7 +196,6 @@ public class Util {
             BUILD=BUILDER_CLASS.getMethod("build");
         }
         catch(Exception ex) {
-            // ex.printStackTrace(System.err);
         }
     }
 
@@ -640,6 +664,9 @@ public class Util {
         return objectFromByteBuffer(buffer, offset, length, null);
     }
 
+    public static <T extends Object> T objectFromBuffer(ByteArray b, ClassLoader loader) throws IOException, ClassNotFoundException {
+        return objectFromByteBuffer(b.getArray(), b.getOffset(), b.getLength(), loader);
+    }
 
     public static <T extends Object> T objectFromByteBuffer(byte[] buffer,int offset,int length, ClassLoader loader) throws IOException, ClassNotFoundException {
         if(buffer == null) return null;
@@ -655,22 +682,23 @@ public class Util {
                 try(ObjectInputStream oin=new ObjectInputStreamWithClassloader(in_stream, loader)) {
                     return (T)oin.readObject();
                 }
-            case TYPE_BOOLEAN: return (T)(Boolean)(buffer[offset] == 1);
-            case TYPE_BYTE:    return (T)(Byte)buffer[offset];
-            case TYPE_CHAR:    return (T)(Character)Bits.readChar(buffer, offset);
-            case TYPE_DOUBLE:  return (T)(Double)Bits.readDouble(buffer, offset);
-            case TYPE_FLOAT:   return (T)(Float)Bits.readFloat(buffer, offset);
-            case TYPE_INT:     return (T)(Integer)Bits.readInt(buffer, offset);
-            case TYPE_LONG:    return (T)(Long)Bits.readLong(buffer, offset);
-            case TYPE_SHORT:   return (T)(Short)Bits.readShort(buffer, offset);
-            case TYPE_STRING:  return (T)new String(buffer, offset, length);
-            case TYPE_UTF_STRING:
+            case TYPE_BOOLEAN: case TYPE_BOOLEAN_OBJ: return (T)(Boolean)(buffer[offset] == 1);
+            case TYPE_BYTE:    case TYPE_BYTE_OBJ:    return (T)(Byte)buffer[offset];
+            case TYPE_CHAR:    case TYPE_CHAR_OBJ:    return (T)(Character)Bits.readChar(buffer, offset);
+            case TYPE_DOUBLE:  case TYPE_DOUBLE_OBJ:  return (T)(Double)Bits.readDouble(buffer, offset);
+            case TYPE_FLOAT:   case TYPE_FLOAT_OBJ:   return (T)(Float)Bits.readFloat(buffer, offset);
+            case TYPE_INT:     case TYPE_INT_OBJ:     return (T)(Integer)Bits.readInt(buffer, offset);
+            case TYPE_LONG:    case TYPE_LONG_OBJ:    return (T)(Long)Bits.readLong(buffer, offset);
+            case TYPE_SHORT:   case TYPE_SHORT_OBJ:   return (T)(Short)Bits.readShort(buffer, offset);
+            case TYPE_STRING:
                 in=new ByteArrayDataInputStream(buffer, offset, length);
-                return (T)in.readUTF();
+                return (T)readString(in);
             case TYPE_BYTEARRAY:
                 byte[] tmp=new byte[length];
                 System.arraycopy(buffer,offset,tmp,0,length);
                 return (T)tmp;
+            case TYPE_CLASS:
+                return (T)TYPES2.get(buffer[offset]);
             default:
                 throw new IllegalArgumentException("type " + type + " is invalid");
         }
@@ -684,7 +712,8 @@ public class Util {
         if(buffer == null) return null;
         byte type=buffer.get();
         switch(type) {
-            case TYPE_NULL:    return null;
+            case TYPE_NULL:
+                return null;
             case TYPE_STREAMABLE:
                 DataInput in=new ByteBufferInputStream(buffer);
                 return readGenericStreamable(in, loader);
@@ -693,153 +722,146 @@ public class Util {
                 try(ObjectInputStream oin=new ObjectInputStreamWithClassloader(in_stream, loader)) {
                     return (T)oin.readObject();
                 }
-            case TYPE_BOOLEAN: return (T)(Boolean)(buffer.get() == 1);
-            case TYPE_BYTE:    return (T)(Byte)buffer.get();
-            case TYPE_CHAR:    return (T)(Character)Bits.readChar(buffer);
-            case TYPE_DOUBLE:  return (T)(Double)Bits.readDouble(buffer);
-            case TYPE_FLOAT:   return (T)(Float)Bits.readFloat(buffer);
-            case TYPE_INT:     return (T)(Integer)Bits.readInt(buffer);
-            case TYPE_LONG:    return (T)(Long)Bits.readLong(buffer);
-            case TYPE_SHORT:   return (T)(Short)Bits.readShort(buffer);
+            case TYPE_BOOLEAN: case TYPE_BOOLEAN_OBJ: return (T)(Boolean)(buffer.get() == 1);
+            case TYPE_BYTE:    case TYPE_BYTE_OBJ:    return (T)(Byte)buffer.get();
+            case TYPE_CHAR:    case TYPE_CHAR_OBJ:    return (T)(Character)Bits.readChar(buffer);
+            case TYPE_DOUBLE:  case TYPE_DOUBLE_OBJ:  return (T)(Double)Bits.readDouble(buffer);
+            case TYPE_FLOAT:   case TYPE_FLOAT_OBJ:   return (T)(Float)Bits.readFloat(buffer);
+            case TYPE_INT:     case TYPE_INT_OBJ:     return (T)(Integer)Bits.readInt(buffer);
+            case TYPE_LONG:    case TYPE_LONG_OBJ:    return (T)(Long)Bits.readLong(buffer);
+            case TYPE_SHORT:   case TYPE_SHORT_OBJ:   return (T)(Short)Bits.readShort(buffer);
             case TYPE_BYTEARRAY:
                 byte[] tmp=new byte[buffer.remaining()];
                 buffer.get(tmp);
                 return (T)tmp;
             case TYPE_STRING:
-                tmp=new byte[buffer.remaining()];
-                buffer.get(tmp);
-                return (T)new String(tmp);
-            case TYPE_UTF_STRING:
                 in=new ByteBufferInputStream(buffer);
-                return (T)in.readUTF();
+                return (T)readString(in);
+            case TYPE_CLASS:
+                return (T)TYPES2.get(buffer.get());
             default:
                 throw new IllegalArgumentException("type " + type + " is invalid");
         }
     }
 
-
+    public static byte[] objectToByteBuffer(Object obj) throws IOException {
+        return objectToBuffer(obj).getBytes();
+    }
 
     /**
      * Serializes/Streams an object into a byte buffer.
      * The object has to implement interface Serializable or Externalizable or Streamable.
      */
-    public static byte[] objectToByteBuffer(Object obj) throws IOException {
-        if(obj == null)
-            return TYPE_NULL_ARRAY;
-
-        if(obj instanceof Streamable) {
-            int expected_size=obj instanceof SizeStreamable? Util.size((SizeStreamable)obj)+1 : 512;
-            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(expected_size, true);
-            out.write(TYPE_STREAMABLE);
-            writeGenericStreamable((Streamable)obj,out);
-            return Arrays.copyOf(out.buf,out.position());
-        }
-
-        Byte type=PRIMITIVE_TYPES.get(obj.getClass());
-        if(type == null) { // will throw an exception if object is not serializable
-            final ByteArrayDataOutputStream out_stream=new ByteArrayDataOutputStream(512, true);
-            out_stream.write(TYPE_SERIALIZABLE);
-            try(ObjectOutputStream out=new ObjectOutputStream(new OutputStreamAdapter(out_stream))) {
-                out.writeObject(obj);
-                out.flush();
-                return Arrays.copyOf(out_stream.buffer(), out_stream.position());
-            }
-        }
-
-        return marshalPrimitiveType(type, obj);
-    }
-
-
     public static ByteArray objectToBuffer(Object obj) throws IOException {
         if(obj == null)
             return new ByteArray(TYPE_NULL_ARRAY);
+        if(obj instanceof Streamable)
+            return writeStreamable((Streamable)obj);
+        Byte type=obj instanceof Class<?>? TYPES.get(obj) : TYPES.get(obj.getClass());
+        return type == null? writeSerializable(obj) : new ByteArray(marshalPrimitiveType(type, obj));
+    }
 
-        if(obj instanceof Streamable) {
-            int expected_size=obj instanceof SizeStreamable? ((SizeStreamable)obj).serializedSize() : 512;
-            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(expected_size, true);
-            out.write(TYPE_STREAMABLE);
-            writeGenericStreamable((Streamable)obj,out);
-            return out.getBuffer();
-        }
+    protected static ByteArray writeStreamable(Streamable obj) throws IOException {
+        int expected_size=obj instanceof SizeStreamable? ((SizeStreamable)obj).serializedSize() : 512;
+        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(expected_size, true);
+        out.write(TYPE_STREAMABLE);
+        writeGenericStreamable(obj, out);
+        return out.getBuffer();
+    }
 
-        Byte type=PRIMITIVE_TYPES.get(obj.getClass());
-        if(type == null) { // will throw an exception if object is not serializable
-            final ByteArrayDataOutputStream out_stream=new ByteArrayDataOutputStream(512, true);
-            out_stream.write(TYPE_SERIALIZABLE);
-            try(ObjectOutputStream out=new ObjectOutputStream(new OutputStreamAdapter(out_stream))) {
-                out.writeObject(obj);
-                out.flush();
-                return out_stream.getBuffer();
-            }
+    protected static ByteArray writeSerializable(Object obj) throws IOException {
+        final ByteArrayDataOutputStream out_stream=new ByteArrayDataOutputStream(512, true);
+        out_stream.write(TYPE_SERIALIZABLE);
+        try(ObjectOutputStream out=new ObjectOutputStream(new OutputStreamAdapter(out_stream))) {
+            out.writeObject(obj);
+            out.flush();
+            return out_stream.getBuffer();
         }
-        return new ByteArray(marshalPrimitiveType(type, obj));
     }
 
 
-    protected static byte[] marshalPrimitiveType(byte type, Object obj) {
-          switch(type) {
-              case TYPE_BOOLEAN:
-                  return ((Boolean)obj)? TYPE_BOOLEAN_TRUE : TYPE_BOOLEAN_FALSE;
-              case TYPE_BYTE:
-                  return new byte[]{TYPE_BYTE, (byte)obj};
-              case TYPE_CHAR:
-                  byte[] buf=new byte[Global.BYTE_SIZE *3];
-                  buf[0]=TYPE_CHAR;
-                  Bits.writeChar((char)obj, buf, 1);
-                  return buf;
-              case TYPE_DOUBLE:
-                  buf=new byte[Global.BYTE_SIZE + Global.DOUBLE_SIZE];
-                  buf[0]=TYPE_DOUBLE;
-                  Bits.writeDouble((double)obj, buf, 1);
-                  return buf;
-              case TYPE_FLOAT:
-                  buf=new byte[Global.BYTE_SIZE + Global.FLOAT_SIZE];
-                  buf[0]=TYPE_FLOAT;
-                  Bits.writeFloat((float)obj, buf, 1);
-                  return buf;
-              case TYPE_INT:
-                  buf=new byte[Global.BYTE_SIZE + Global.INT_SIZE];
-                  buf[0]=TYPE_INT;
-                  Bits.writeInt((int)obj, buf, 1);
-                  return buf;
-              case TYPE_LONG:
-                  buf=new byte[Global.BYTE_SIZE + Global.LONG_SIZE];
-                  buf[0]=TYPE_LONG;
-                  Bits.writeLong((long)obj, buf, 1);
-                  return buf;
-              case TYPE_SHORT:
-                  buf=new byte[Global.BYTE_SIZE + Global.SHORT_SIZE];
-                  buf[0]=TYPE_SHORT;
-                  Bits.writeShort((short)obj, buf, 1);
-                  return buf;
-              case TYPE_STRING:
-                  String str=(String)obj;
-                  if(Util.isAsciiString(str)) {
-                      int len=str.length();
-                      ByteBuffer retval=ByteBuffer.allocate(Global.BYTE_SIZE + len).put(TYPE_STRING);
-                      for(int i=0; i < len; i++)
-                          retval.put((byte)str.charAt(i));
-                      return retval.array();
-                  }
-                  else {
-                      ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(str.length()*2 +3);
-                      out.write(TYPE_UTF_STRING);
-                      out.writeUTF(str);
-                      byte[] ret=new byte[out.position()];
-                      System.arraycopy(out.buffer(), 0, ret, 0, ret.length);
-                      return ret;
-                  }
-              case TYPE_BYTEARRAY:
-                  buf=(byte[])obj;
-                  byte[] buffer=new byte[Global.BYTE_SIZE + buf.length];
-                  buffer[0]=TYPE_BYTEARRAY;
-                  System.arraycopy(buf, 0, buffer, 1, buf.length);
-                  return buffer;
-              default:
-                  throw new IllegalArgumentException("type " + type + " is invalid");
-          }
-      }
+    protected static byte[] marshalPrimitiveType(Byte type, Object obj) {
+        if(obj instanceof Class<?>)
+            return new byte[]{TYPE_CLASS, type};
+        switch(type) {
+            case TYPE_BOOLEAN: case TYPE_BOOLEAN_OBJ:
+                return ((Boolean)obj)? TYPE_BOOLEAN_TRUE : TYPE_BOOLEAN_FALSE;
+            case TYPE_BYTE: case TYPE_BYTE_OBJ:
+                return new byte[]{type, (byte)obj};
+            case TYPE_CHAR: case TYPE_CHAR_OBJ:
+                byte[] buf=new byte[Global.BYTE_SIZE *3];
+                buf[0]=type;
+                Bits.writeChar((char)obj, buf, 1);
+                return buf;
+            case TYPE_DOUBLE: case TYPE_DOUBLE_OBJ:
+                buf=new byte[Global.BYTE_SIZE + Global.DOUBLE_SIZE];
+                buf[0]=type;
+                Bits.writeDouble((double)obj, buf, 1);
+                return buf;
+            case TYPE_FLOAT: case TYPE_FLOAT_OBJ:
+                buf=new byte[Global.BYTE_SIZE + Global.FLOAT_SIZE];
+                buf[0]=type;
+                Bits.writeFloat((float)obj, buf, 1);
+                return buf;
+            case TYPE_INT: case TYPE_INT_OBJ:
+                buf=new byte[Global.BYTE_SIZE + Global.INT_SIZE];
+                buf[0]=type;
+                Bits.writeInt((int)obj, buf, 1);
+                return buf;
+            case TYPE_LONG: case TYPE_LONG_OBJ:
+                buf=new byte[Global.BYTE_SIZE + Global.LONG_SIZE];
+                buf[0]=type;
+                Bits.writeLong((long)obj, buf, 1);
+                return buf;
+            case TYPE_SHORT: case TYPE_SHORT_OBJ:
+                buf=new byte[Global.BYTE_SIZE + Global.SHORT_SIZE];
+                buf[0]=type;
+                Bits.writeShort((short)obj, buf, 1);
+                return buf;
+            case TYPE_STRING:
+                String str=(String)obj;
+                ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(str.length()*2 +3);
+                try {
+                    out.writeByte(TYPE_STRING);
+                    writeString(str, out);
+                    byte[] ret=new byte[out.position()];
+                    System.arraycopy(out.buffer(), 0, ret, 0, ret.length);
+                    return ret;
+                }
+                catch(IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            case TYPE_BYTEARRAY:
+                buf=(byte[])obj;
+                byte[] buffer=new byte[Global.BYTE_SIZE + buf.length];
+                buffer[0]=TYPE_BYTEARRAY;
+                System.arraycopy(buf, 0, buffer, 1, buf.length);
+                return buffer;
+            default:
+                throw new IllegalArgumentException("type " + type + " is invalid");
+        }
+    }
 
+    public static void writeString(String str, DataOutput out) throws IOException {
+        boolean is_ascii=isAsciiString(str);
+        out.writeBoolean(is_ascii);
+        if(is_ascii) {
+            int len=str.length();
+            out.writeInt(len);
+            for(int i=0; i < len; i++)
+                out.write((byte)str.charAt(i));
+        }
+        else
+            out.writeUTF(str);
+    }
+
+    public static String readString(DataInput in) throws IOException {
+        if(in.readBoolean() == false)
+            return in.readUTF();
+        byte[] tmp=new byte[in.readInt()];
+        in.readFully(tmp);
+        return new String(tmp);
+    }
 
 
     public static void objectToStream(Object obj, DataOutput out) throws IOException {
@@ -847,74 +869,64 @@ public class Util {
             out.write(TYPE_NULL);
             return;
         }
-
-        Byte type;
-        if(obj instanceof Streamable) {  // use Streamable if we can
-            out.write(TYPE_STREAMABLE);
+        if(obj instanceof Streamable) {
+            out.writeByte(TYPE_STREAMABLE);
             writeGenericStreamable((Streamable)obj,out);
+            return;
         }
-        else if((type=PRIMITIVE_TYPES.get(obj.getClass())) != null) {
-            if(type != TYPE_STRING)
-                out.write(type);
-            switch(type) {
-                case TYPE_BOOLEAN:
-                    out.writeBoolean((Boolean)obj);
-                    break;
-                case TYPE_BYTE:
-                    out.writeByte((Byte)obj);
-                    break;
-                case TYPE_CHAR:
-                    out.writeChar((Character)obj);
-                    break;
-                case TYPE_DOUBLE:
-                    out.writeDouble((Double)obj);
-                    break;
-                case TYPE_FLOAT:
-                    out.writeFloat((Float)obj);
-                    break;
-                case TYPE_INT:
-                    out.writeInt((Integer)obj);
-                    break;
-                case TYPE_LONG:
-                    out.writeLong((Long)obj);
-                    break;
-                case TYPE_SHORT:
-                    out.writeShort((Short)obj);
-                    break;
-                case TYPE_STRING:
-                    String str=(String)obj;
-                    if(Util.isAsciiString(str)) {
-                        int len=str.length();
-                        out.write(TYPE_STRING);
-                        out.writeInt(len);
-                        for(int i=0; i < len; i++)
-                            out.write((byte)str.charAt(i));
-                    }
-                    else {
-                        out.write(TYPE_UTF_STRING);
-                        out.writeUTF(str);
-                    }
-                    break;
-                case TYPE_BYTEARRAY:
-                    byte[] buf=(byte[])obj;
-                    out.writeInt(buf.length);
-                    out.write(buf,0,buf.length);
-                    break;
-                default:
-                    throw new IllegalArgumentException("type " + type + " is invalid");
-            }
-        }
-        else { // will throw an exception if object is not serializable
+        Byte type=obj instanceof Class<?>? TYPES.get(obj) : TYPES.get(obj.getClass());
+        if(type == null) {
             out.write(TYPE_SERIALIZABLE);
-            ObjectOutputStream tmp=new ObjectOutputStream(out instanceof ByteArrayDataOutputStream?
-                                                            new OutputStreamAdapter((ByteArrayDataOutputStream)out) :
-                                                            (OutputStream)out);
-            try {
+            try(ObjectOutputStream tmp=new ObjectOutputStream(out instanceof ByteArrayDataOutputStream?
+                                                                new OutputStreamAdapter((ByteArrayDataOutputStream)out) :
+                                                                (OutputStream)out)) {
                 tmp.writeObject(obj);
+                return;
             }
-            finally {
-                Util.close(tmp);
+        }
+        if(obj instanceof Class<?>) {
+            if(type != null) {
+                out.writeByte(TYPE_CLASS);
+                out.writeByte(type);
+                return;
             }
+        }
+        out.writeByte(type);
+        switch(type) {
+            case TYPE_BOOLEAN: case TYPE_BOOLEAN_OBJ:
+                out.writeBoolean((Boolean)obj);
+                break;
+            case TYPE_BYTE: case TYPE_BYTE_OBJ:
+                out.writeByte((Byte)obj);
+                break;
+            case TYPE_CHAR: case TYPE_CHAR_OBJ:
+                out.writeChar((Character)obj);
+                break;
+            case TYPE_DOUBLE: case TYPE_DOUBLE_OBJ:
+                out.writeDouble((Double)obj);
+                break;
+            case TYPE_FLOAT: case TYPE_FLOAT_OBJ:
+                out.writeFloat((Float)obj);
+                break;
+            case TYPE_INT: case TYPE_INT_OBJ:
+                out.writeInt((Integer)obj);
+                break;
+            case TYPE_LONG: case TYPE_LONG_OBJ:
+                out.writeLong((Long)obj);
+                break;
+            case TYPE_SHORT: case TYPE_SHORT_OBJ:
+                out.writeShort((Short)obj);
+                break;
+            case TYPE_STRING:
+                writeString((String)obj, out);
+                break;
+            case TYPE_BYTEARRAY:
+                byte[] buf=(byte[])obj;
+                out.writeInt(buf.length);
+                out.write(buf, 0, buf.length);
+                break;
+            default:
+                throw new IllegalArgumentException("type " + type + " is invalid");
         }
     }
 
@@ -935,29 +947,21 @@ public class Util {
                 try(ObjectInputStream tmp=new ObjectInputStreamWithClassloader(is, loader)) {
                     return (T)tmp.readObject();
                 }
-            case TYPE_BOOLEAN:    return (T)(Boolean)in.readBoolean();
-            case TYPE_BYTE:       return (T)(Byte)in.readByte();
-            case TYPE_CHAR:       return (T)(Character)in.readChar();
-            case TYPE_DOUBLE:     return (T)(Double)in.readDouble();
-            case TYPE_FLOAT:      return (T)(Float)in.readFloat();
-            case TYPE_INT:        return (T)(Integer)in.readInt();
-            case TYPE_LONG:       return (T)(Long)in.readLong();
-            case TYPE_SHORT:      return (T)(Short)in.readShort();
-            case TYPE_STRING:
-                int str_len=in.readInt();
-                if(str_len == 0) return (T)"";
-                byte[] tmp=new byte[str_len];
-                for(int i=0; i < str_len; i++) {
-                    tmp[i]=in.readByte();
-                }
-                return (T)new String(tmp);
-            case TYPE_UTF_STRING:
-                return (T)in.readUTF();
+            case TYPE_BOOLEAN: case TYPE_BOOLEAN_OBJ: return (T)(Boolean)in.readBoolean();
+            case TYPE_BYTE:    case TYPE_BYTE_OBJ:    return (T)(Byte)in.readByte();
+            case TYPE_CHAR:    case TYPE_CHAR_OBJ:    return (T)(Character)in.readChar();
+            case TYPE_DOUBLE:  case TYPE_DOUBLE_OBJ:  return (T)(Double)in.readDouble();
+            case TYPE_FLOAT:   case TYPE_FLOAT_OBJ:   return (T)(Float)in.readFloat();
+            case TYPE_INT:     case TYPE_INT_OBJ:     return (T)(Integer)in.readInt();
+            case TYPE_LONG:    case TYPE_LONG_OBJ:    return (T)(Long)in.readLong();
+            case TYPE_SHORT:   case TYPE_SHORT_OBJ:   return (T)(Short)in.readShort();
+            case TYPE_STRING:                         return (T)readString(in);
             case TYPE_BYTEARRAY:
-                int len=in.readInt();
-                byte[] tmpbuf=new byte[len];
-                in.readFully(tmpbuf,0,tmpbuf.length);
+                byte[] tmpbuf=new byte[in.readInt()];
+                in.readFully(tmpbuf);
                 return (T)tmpbuf;
+            case TYPE_CLASS:
+                return (T)TYPES2.get(in.readByte());
             default:
                 throw new IllegalArgumentException("type " + b + " is invalid");
         }
@@ -1023,6 +1027,16 @@ public class Util {
             return new InvocationTargetException(readException(in, recursion_count));
         return readException(in, recursion_count);
     }
+
+
+    protected static void add(byte type, Class<?> cl) {
+        if(TYPES.putIfAbsent(cl, type) != null)
+            throw new IllegalStateException(String.format("type %d (class=%s) is already present in types map", type, cl));
+        if(TYPES2.putIfAbsent(type, cl) != null)
+            throw new IllegalStateException(String.format("type %d (class=%s) is already present in types2 map", type, cl));
+    }
+
+
 
     protected static void writeException(Set<Throwable> causes, Throwable t, DataOutput out) throws IOException {
         // 3. classname
@@ -2958,7 +2972,7 @@ public class Util {
      *                  if no context class loader is available.
      * @return Class, or null on failure.
      */
-    public static Class loadClass(String classname,Class clazz) throws ClassNotFoundException {
+    public static Class<?> loadClass(String classname, Class<?> clazz) throws ClassNotFoundException {
         return loadClass(classname, clazz != null? clazz.getClassLoader() : null);
     }
 
@@ -2991,13 +3005,13 @@ public class Util {
         String defaultProtocolName=Global.PREFIX + protocol_name;
         Class<? extends Protocol> clazz=null;
         try {
-            clazz=Util.loadClass(defaultProtocolName, cl);
+            clazz=(Class<? extends Protocol>)Util.loadClass(defaultProtocolName, cl);
         }
         catch(ClassNotFoundException e) {
         }
         if(clazz == null) {
             try {
-                clazz=Util.loadClass(protocol_name, cl);
+                clazz=(Class<? extends Protocol>)Util.loadClass(protocol_name, cl);
             }
             catch(ClassNotFoundException e) {
             }
@@ -3008,9 +3022,9 @@ public class Util {
     }
 
     @SafeVarargs
-    public static Field[] getAllDeclaredFieldsWithAnnotations(final Class clazz, Class<? extends Annotation>... annotations) {
+    public static Field[] getAllDeclaredFieldsWithAnnotations(final Class<?> clazz, Class<? extends Annotation>... annotations) {
         List<Field> list=new ArrayList<>(30);
-        for(Class curr=clazz; curr != null; curr=curr.getSuperclass()) {
+        for(Class<?> curr=clazz; curr != null; curr=curr.getSuperclass()) {
             Field[] fields=curr.getDeclaredFields();
             if(fields != null) {
                 for(Field field: fields) {
@@ -3168,6 +3182,117 @@ public class Util {
         return null;
     }
 
+    /** Called by the ProbeHandler impl. All args are strings. Needs to find a method where all parameter
+     * types are primitive types, so the strings can be converted */
+    public static Method findMethod(Class<?> target_class, String method_name, Object[] args) throws Exception {
+        int len=args != null? args.length : 0;
+        Method retval=null;
+        Method[] methods=getAllMethods(target_class);
+        for(int i=0; i < methods.length; i++) {
+            Method m=methods[i];
+            if(m.getName().equals(method_name)) {
+                Class<?>[] parameter_types=m.getParameterTypes();
+                if(parameter_types.length == len) {
+                    retval=m;
+                    // now check if all parameter types are primitive types:
+                    boolean all_primitive=true;
+                    for(Class<?> parameter_type: parameter_types) {
+                        if(!isPrimitiveType(parameter_type)) {
+                            all_primitive=false;
+                            break;
+                        }
+                    }
+                    if(all_primitive)
+                        return m;
+                }
+            }
+        }
+        return retval;
+    }
+
+    /**
+     * Returns the first method that matches the specified name and parameter types. The overriding methods have priority.
+     * The method is chosen from all the methods of the current class and all its superclasses and superinterfaces.
+     * @return the matching method or null if no matching method has been found.
+     */
+    /*public static Method findMethod(Class<?> target, String methodName, Class<?>[] types) {
+        if(types == null)
+            types=new Class[0];
+
+        Method[] methods = getAllMethods(target);
+        methods: for(int i = 0; i < methods.length; i++) {
+            Method m= methods[i];
+            if(!methodName.equals(m.getName()))
+                continue;
+            Class<?>[] parameters = m.getParameterTypes();
+            if (types.length != parameters.length) {
+                continue;
+            }
+            for(int j = 0; j < types.length; j++) {
+                if(!parameters[j].isAssignableFrom(types[j])) {
+                    continue methods;
+                }
+            }
+            return m;
+        }
+        return null;
+    }
+*/
+
+    /**
+     * The method walks up the class hierarchy and returns <i>all</i> methods of this class
+     * and those inherited from superclasses and superinterfaces.
+     */
+    public static Method[] getAllMethods(Class<?> target) {
+        Class<?>    superclass = target;
+        Set<Method> methods = new HashSet<>();
+
+        while(superclass != null) {
+            try {
+                Method[] m = superclass.getDeclaredMethods();
+                Collections.addAll(methods, m);
+
+                // find the default methods of all interfaces (https://issues.jboss.org/browse/JGRP-2247)
+                Class<?>[] interfaces=superclass.getInterfaces();
+                if(interfaces != null) {
+                    for(Class<?> cl: interfaces) {
+                        Method[] tmp=getAllMethods(cl);
+                        if(tmp != null) {
+                            for(Method mm: tmp)
+                                if(mm.isDefault())
+                                    methods.add(mm);
+                        }
+                    }
+                }
+                superclass = superclass.getSuperclass();
+            }
+            catch(SecurityException e) {
+                // if it runs in an applet context, it won't be able to retrieve methods from superclasses that belong
+                // to the java VM and it will raise a security exception, so we catch it here.
+                superclass=null;
+            }
+        }
+
+        Method[] result = new Method[methods.size()];
+        int index = 0;
+        for(Method m: methods)
+            result[index++]=m;
+        return result;
+    }
+
+
+    public static boolean isPrimitiveType(Class<?> type) {
+        return type.isPrimitive()
+          || type == String.class
+          || type == Boolean.class
+          || type == Character.class
+          || type == Byte.class
+          || type == Short.class
+          || type == Integer.class
+          || type == Long.class
+          || type == Float.class
+          || type == Double.class;
+    }
 
     public static Method findMethod(Object target,List<String> possible_names,Class<?>... parameter_types) {
         if(target == null)
@@ -3181,6 +3306,30 @@ public class Util {
             for(String name : possible_names) {
                 try {
                     return clazz.getDeclaredMethod(name,parameter_types);
+                }
+                catch(Exception ignored) {
+                }
+            }
+        }
+        return null;
+    }
+
+
+    public static Method findMethod(Class<?> cl, String method_name, Class<?>... parameter_types) {
+        for(Class<?> clazz=cl; clazz != null; clazz=clazz.getSuperclass()) {
+            try {
+                return clazz.getDeclaredMethod(method_name,parameter_types);
+            }
+            catch(Exception ignored) {
+            }
+        }
+
+        // if not found, check if any of the interfaces has a (default) impl
+        for(Class<?> clazz=cl; clazz != null; clazz=clazz.getSuperclass()) {
+            Class<?>[] interfaces=clazz.getInterfaces();
+            for(Class<?> clazz2: interfaces) {
+                try {
+                    return findMethod(clazz2, method_name, parameter_types); // clazz2.getDeclaredMethod(method_name, parameter_types);
                 }
                 catch(Exception ignored) {
                 }

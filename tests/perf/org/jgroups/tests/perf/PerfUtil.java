@@ -28,7 +28,7 @@ public class PerfUtil {
     }
 
     public static class PutCall extends MethodCall implements SizeStreamable {
-        public PutCall()                                {mode=ID;}
+        public PutCall()                                {}
         public PutCall(short method_id, Object... args) {super(method_id, args);}
 
         public Supplier<? extends MethodCall> create() {return PutCall::new;}
@@ -57,7 +57,7 @@ public class PerfUtil {
     }
 
     public static class GetCall extends MethodCall implements SizeStreamable {
-        public GetCall()                                {mode=ID;}
+        public GetCall()                                {}
         public GetCall(short method_id, Object... args) {super(method_id, args);}
 
         public Supplier<? extends MethodCall> create() {return GetCall::new;}
