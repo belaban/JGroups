@@ -1052,6 +1052,18 @@ public class UtilTest {
         assert result.contains(1) && result.contains(2) && result.contains(3);
     }
 
+    public void testPickNextWithSingleElementList() {
+        List<Integer> list=new ArrayList<>();
+        Integer next=Util.pickNext(list, 1);
+        assert next == null;
+        list.add(1);
+        next=Util.pickNext(list, 1);
+        assert next == 1;
+        list.add(2);
+        next=Util.pickNext(list, 1);
+        assert next == 2;
+    }
+
 
 
     public static void testParseCommaDelimitedString() {

@@ -5,6 +5,7 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
@@ -12,7 +13,6 @@ import org.jgroups.util.Util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 /**
@@ -30,19 +30,22 @@ import java.util.function.Supplier;
 @MBean(description="Protocol just above the transport which disseminates multicasts via daisy chaining")
 public class DAISYCHAIN extends Protocol {
 
-
-    /* -----------------------------------------    Properties     -------------------------------------------------- */
     @Property(description="Loop back multicast messages")
     boolean loopback=true;
 
-    /* --------------------------------------------- Fields ------------------------------------------------------ */
-    protected volatile Address       local_addr, next;
-    protected int                    view_size;
-    protected Executor               default_pool;
-    protected volatile boolean       running=true;
+    @ManagedAttribute(description="Local address")
+    protected volatile Address       local_addr;
+    @ManagedAttribute(description="The member to which all multicasts are forwarded")
+    protected volatile Address       next;
+    @ManagedAttribute(description="The current view")
 
-    @ManagedAttribute public int msgs_forwarded;
-    @ManagedAttribute public int msgs_sent;
+    protected volatile View          view;
+
+    @ManagedAttribute(type=AttributeType.SCALAR)
+    protected int                    msgs_forwarded;
+    @ManagedAttribute(type=AttributeType.SCALAR)
+    protected int                    msgs_sent;
+    protected TP                     transport;
 
 
 
@@ -52,17 +55,7 @@ public class DAISYCHAIN extends Protocol {
     }
 
     public void init() throws Exception {
-        default_pool=getTransport().getThreadPool();
-    }
-
-    public void start() throws Exception {
-        super.start();
-        running=true;
-    }
-
-    public void stop() {
-        super.stop();
-        running=false;
+        transport=getTransport();
     }
 
     public Object down(final Event evt) {
@@ -71,10 +64,6 @@ public class DAISYCHAIN extends Protocol {
                 handleView(evt.getArg());
                 break;
 
-            case Event.TMP_VIEW:
-                view_size=((View)evt.getArg()).size();
-                break;
-            
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=evt.getArg();
                 break;
@@ -86,28 +75,26 @@ public class DAISYCHAIN extends Protocol {
         if(msg.getDest() != null)
             return down_prot.down(msg); // only process multicast messages
 
-        if(next == null) // view hasn'<></> been received yet, use the normal transport
+        if(next == null) // view hasn't been received yet, use the normal transport
             return down_prot.down(msg);
 
+        if(loopback) {
+            if(msg.getSrc() == null && local_addr != null)
+                msg.setSrc(local_addr);
+            if(log.isTraceEnabled())
+                log.trace("%s: looping back message %s", local_addr, msg);
+            transport.loopback(msg, true);
+        }
+
+        short hdr_ttl=(short)(view.size()-1);
         // we need to copy the message, as we cannot do a msg.setSrc(next): the next retransmission
         // would use 'next' as destination  !
-        Message copy=msg.copy(true, true);
-        short hdr_ttl=(short)(loopback? view_size -1 : view_size);
-        DaisyHeader hdr=new DaisyHeader(hdr_ttl);
-        copy.setDest(next);
-        copy.putHeader(getId(), hdr);
-
+        Message copy=msg.copy(true, true).setDest(next)
+          .putHeader(getId(), new DaisyHeader(hdr_ttl));
         msgs_sent++;
-
-        if(loopback) {
-            if(log.isTraceEnabled()) log.trace(new StringBuilder("looping back message ").append(msg));
-            if(msg.getSrc() == null)
-                msg.setSrc(local_addr);
-
-            default_pool.execute(() -> up_prot.up(msg));
-        }
+        if(log.isTraceEnabled())
+            log.trace("%s: forwarding multicast message %s (hdrs: %s) to %s", local_addr, msg, msg.getHeaders(), next);
         return down_prot.down(copy);
-
     }
 
     public Object up(Message msg) {
@@ -118,14 +105,13 @@ public class DAISYCHAIN extends Protocol {
         // 1. forward the message to the next in line if ttl > 0
         short ttl=hdr.getTTL();
         if(log.isTraceEnabled())
-            log.trace(local_addr + ": received message from " + msg.getSrc() + " with ttl=" + ttl);
+            log.trace("%s: received message from %s with ttl=%d", local_addr, msg.getSrc(), ttl);
         if(--ttl > 0) {
-            Message copy=msg.copy(true, false);
-            copy.setDest(next);
-            copy.putHeader(getId(), new DaisyHeader(ttl));
+            Message copy=msg.copy(true, true)
+              .setDest(next).putHeader(getId(), new DaisyHeader(ttl));
             msgs_forwarded++;
             if(log.isTraceEnabled())
-                log.trace(local_addr + ": forwarding message to " + next + " with ttl=" + ttl);
+                log.trace("%s: forwarding message to %s with ttl=%d", local_addr, next, ttl);
             down_prot.down(copy);
         }
 
@@ -141,14 +127,13 @@ public class DAISYCHAIN extends Protocol {
                 // 1. forward the message to the next in line if ttl > 0
                 short ttl=hdr.getTTL();
                 if(log.isTraceEnabled())
-                    log.trace(local_addr + ": received message from " + msg.getSrc() + " with ttl=" + ttl);
+                    log.trace("%s: received message from %s with ttl=%d", local_addr, msg.getSrc(), ttl);
                 if(--ttl > 0) {
-                    Message copy=msg.copy(true, true);
-                    copy.setDest(next);
-                    copy.putHeader(getId(), new DaisyHeader(ttl));
+                    Message copy=msg.copy(true, true)
+                      .setDest(next).putHeader(getId(), new DaisyHeader(ttl));
                     msgs_forwarded++;
                     if(log.isTraceEnabled())
-                        log.trace(local_addr + ": forwarding message to " + next + " with ttl=" + ttl);
+                        log.trace("%s: forwarding message to %s with ttl=%d", local_addr, next, ttl);
                     down_prot.down(copy);
                 }
 
@@ -162,13 +147,14 @@ public class DAISYCHAIN extends Protocol {
     }
 
     protected void handleView(View view) {
-        view_size=view.size();
+        this.view=view;
         Address tmp=Util.pickNext(view.getMembers(), local_addr);
         if(tmp != null && !tmp.equals(local_addr)) {
             next=tmp;
-            if(log.isDebugEnabled())
-                log.debug("next=" + next);
+            log.debug("%s: next=%s", local_addr, next);
         }
+        else
+            next=null;
     }
 
 
@@ -182,34 +168,16 @@ public class DAISYCHAIN extends Protocol {
             this.ttl=ttl;
         }
 
-        public short getMagicId() {return 69;}
-
-        public short getTTL() {return ttl;}
-
-        public void setTTL(short ttl) {
-            this.ttl=ttl;
-        }
+        public short getMagicId()      {return 69;}
+        public short getTTL()          {return ttl;}
+        public void  setTTL(short ttl) {this.ttl=ttl;}
 
         public Supplier<? extends Header> create() {return DaisyHeader::new;}
 
-        @Override
-        public int serializedSize() {
-            return Global.SHORT_SIZE;
-        }
-
-        @Override
-        public void writeTo(DataOutput out) throws IOException {
-            out.writeShort(ttl);
-        }
-
-        @Override
-        public void readFrom(DataInput in) throws IOException {
-            ttl=in.readShort();
-        }
-
-        public String toString() {
-            return "ttl=" + ttl;
-        }
+        @Override public int  serializedSize()                           {return Global.SHORT_SIZE;}
+        @Override public void writeTo(DataOutput out) throws IOException {out.writeShort(ttl);}
+        @Override public void readFrom(DataInput in) throws IOException  {ttl=in.readShort();}
+        public String         toString()                                 {return "ttl=" + ttl;}
     }
 
 }
