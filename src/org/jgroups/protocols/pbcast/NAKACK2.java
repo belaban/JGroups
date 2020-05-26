@@ -57,7 +57,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      * be costly as every member in the cluster will send a response
      */
     @Property(description="Use a multicast to request retransmission of missing messages")
-    protected boolean use_mcast_xmit_req=false;
+    protected boolean use_mcast_xmit_req;
 
 
     /**
@@ -65,7 +65,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      * true, discard_delivered_msgs will be set to false
      */
     @Property(description="Ask a random member for retransmission of a missing message. Default is false")
-    protected boolean xmit_from_random_member=false;
+    protected boolean xmit_from_random_member;
 
 
     /**
