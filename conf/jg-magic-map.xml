@@ -11,16 +11,17 @@
     <class id="7"  name="org.jgroups.protocols.PingData"/>
     <class id="8"  name="org.jgroups.protocols.pbcast.JoinRsp"/>
     <class id="9"  name="org.jgroups.util.Digest"/>
-    <class id="10" name="org.jgroups.util.UUID"/>
-    <class id="11" name="org.jgroups.util.ExtendedUUID"/>
-    <class id="12" name="org.jgroups.protocols.relay.SiteUUID"/>
-    <class id="13" name="org.jgroups.protocols.relay.SiteMaster"/>
-    <class id="17" name="org.jgroups.util.SeqnoList"/>
-    <class id="20" name="org.jgroups.auth.FixedMembershipToken"/>
-    <class id="22" name="org.jgroups.auth.X509Token"/>
-    <class id="23" name="org.jgroups.blocks.MethodCall"/>
-    <class id="24" name="org.jgroups.util.FlagsUUID"/>
-    <class id="25" name="org.jgroups.util.ObjectWrapper"/>
+    <class id="10" name="org.jgroups.util.MutableDigest"/>
+    <class id="11" name="org.jgroups.util.UUID"/>
+    <class id="12" name="org.jgroups.util.ExtendedUUID"/>
+    <class id="13" name="org.jgroups.protocols.relay.SiteUUID"/>
+    <class id="14" name="org.jgroups.protocols.relay.SiteMaster"/>
+    <class id="15" name="org.jgroups.util.SeqnoList"/>
+    <class id="16" name="org.jgroups.auth.FixedMembershipToken"/>
+    <class id="17" name="org.jgroups.auth.X509Token"/>
+    <class id="18" name="org.jgroups.blocks.MethodCall"/>
+    <class id="19" name="org.jgroups.util.FlagsUUID"/>
+    <class id="20" name="org.jgroups.util.ObjectWrapper"/>
 
     <!-- Headers -->
     <class id="50"  name="org.jgroups.protocols.FD$FdHeader"/>

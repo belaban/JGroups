@@ -3,6 +3,7 @@ package org.jgroups.util;
 import org.jgroups.Address;
 
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 /**
  * A mutable version of Digest. Has a fixed size (that of the members), but individual seqnos can be changed.
@@ -10,6 +11,9 @@ import java.util.Arrays;
  * @author Bela Ban
  */
 public class MutableDigest extends Digest {
+
+    public MutableDigest() {
+    }
 
     public MutableDigest(Address[] members) {
         super(members, createEmptyArray(members.length *2));
@@ -32,6 +36,8 @@ public class MutableDigest extends Digest {
         }
         return this;
     }
+
+    public Supplier<? extends Digest> create() {return MutableDigest::new;}
 
     /** Returns true if all members have a corresponding seqno >= 0, else false */
     public boolean allSet() {

@@ -234,7 +234,7 @@ public class STABLE extends Protocol {
             return up_prot.up(msg);
         }
 
-        handleUpEvent(hdr, msg.getSrc(), readDigest(msg.getArray(), msg.getOffset(), msg.getLength()));
+        handleUpEvent(hdr, msg.getSrc(), msg.getObject());
         return null;  // don't pass STABLE or STABILITY messages up the stack
     }
 
@@ -259,7 +259,7 @@ public class STABLE extends Protocol {
             Message msg=it.next();
             if((hdr=msg.getHeader(id)) != null) {
                 it.remove();
-                handleUpEvent(hdr, batch.sender(), readDigest(msg.getArray(), msg.getOffset(), msg.getLength()));
+                handleUpEvent(hdr, batch.sender(), msg.getObject());
             }
         }
 
@@ -654,10 +654,9 @@ public class STABLE extends Protocol {
             return;
         }
 
-        final Message msg=new BytesMessage(dest)
+        final Message msg=new ObjectMessage(dest, d)
           .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
-          .putHeader(this.id, new StableHeader(StableHeader.STABLE_GOSSIP, current_view.getViewId()))
-          .setArray(marshal(d));
+          .putHeader(this.id, new StableHeader(StableHeader.STABLE_GOSSIP, current_view.getViewId()));
         try {
             if(!send_in_background) {
                 num_stable_msgs_sent++;
@@ -681,7 +680,7 @@ public class STABLE extends Protocol {
     }
 
 
-    public static ByteArray marshal(Digest digest) {
+   /* public static ByteArray marshal(Digest digest) {
         try {
             return Util.streamableToBuffer(digest);
         }
@@ -698,7 +697,7 @@ public class STABLE extends Protocol {
             log.error("%s: failed reading Digest from message: %s", local_addr, ex);
             return null;
         }
-    }
+    }*/
 
 
     /**
@@ -729,9 +728,9 @@ public class STABLE extends Protocol {
         // https://issues.jboss.org/browse/JGRP-1638: we reverted to sending the STABILITY message *unreliably*,
         // but clear votes *before* sending it
         try {
-            Message msg=new BytesMessage().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
-              .putHeader(id, new StableHeader(StableHeader.STABILITY, view_id))
-              .setArray(marshal(stability_digest));
+            Message msg=new ObjectMessage(null, stability_digest)
+              .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
+              .putHeader(id, new StableHeader(StableHeader.STABILITY, view_id));
             log.trace("%s: sending stability msg %s", local_addr, printDigest(stability_digest));
             num_stability_msgs_sent++;
             down_prot.down(msg);
