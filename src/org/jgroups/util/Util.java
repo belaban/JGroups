@@ -54,30 +54,31 @@ import static org.jgroups.protocols.TP.MULTICAST;
  */
 public class Util {
     private static final Map<Class<?>,Byte> TYPES=new HashMap<>(30);
-    private static final Map<Byte,Class<?>> TYPES2=new HashMap<>(30);
+    private static final Map<Byte,Class<?>> CLASS_TYPES=new HashMap<>(30);
 
     private static final byte    TYPE_NULL         =  0;
-    private static final byte    TYPE_STREAMABLE   =  1;
-    private static final byte    TYPE_SERIALIZABLE =  2;
-    private static final byte    TYPE_BOOLEAN      =  3; // boolean
-    private static final byte    TYPE_BOOLEAN_OBJ  =  4; // Boolean
-    private static final byte    TYPE_BYTE         =  5; // byte
-    private static final byte    TYPE_BYTE_OBJ     =  6; // Byte
-    private static final byte    TYPE_CHAR         =  7; // char
-    private static final byte    TYPE_CHAR_OBJ     =  8; // Character
-    private static final byte    TYPE_DOUBLE       =  9; // double
-    private static final byte    TYPE_DOUBLE_OBJ   = 10; // Double
-    private static final byte    TYPE_FLOAT        = 11; // float
-    private static final byte    TYPE_FLOAT_OBJ    = 12; // Float
-    private static final byte    TYPE_INT          = 13; // int
-    private static final byte    TYPE_INT_OBJ      = 14; // Integer
-    private static final byte    TYPE_LONG         = 15; // long
-    private static final byte    TYPE_LONG_OBJ     = 16; // Long
-    private static final byte    TYPE_SHORT        = 17; // short
-    private static final byte    TYPE_SHORT_OBJ    = 18; // Short
-    private static final byte    TYPE_STRING       = 19; // ascii
-    private static final byte    TYPE_BYTEARRAY    = 20;
-    private static final byte    TYPE_CLASS        = 21; // a class
+    private static final byte    TYPE_BOOLEAN      =  1; // boolean
+    private static final byte    TYPE_BOOLEAN_OBJ  =  2; // Boolean
+    private static final byte    TYPE_BYTE         =  3; // byte
+    private static final byte    TYPE_BYTE_OBJ     =  4; // Byte
+    private static final byte    TYPE_CHAR         =  5; // char
+    private static final byte    TYPE_CHAR_OBJ     =  6; // Character
+    private static final byte    TYPE_DOUBLE       =  7; // double
+    private static final byte    TYPE_DOUBLE_OBJ   =  8; // Double
+    private static final byte    TYPE_FLOAT        =  9; // float
+    private static final byte    TYPE_FLOAT_OBJ    = 10; // Float
+    private static final byte    TYPE_INT          = 11; // int
+    private static final byte    TYPE_INT_OBJ      = 12; // Integer
+    private static final byte    TYPE_LONG         = 13; // long
+    private static final byte    TYPE_LONG_OBJ     = 14; // Long
+    private static final byte    TYPE_SHORT        = 15; // short
+    private static final byte    TYPE_SHORT_OBJ    = 16; // Short
+    private static final byte    TYPE_STRING       = 17; // ascii
+    private static final byte    TYPE_BYTEARRAY    = 18;
+    private static final byte    TYPE_CLASS        = 19; // a class
+
+    private static final byte    TYPE_STREAMABLE   = 50;
+    private static final byte    TYPE_SERIALIZABLE = 51;
 
 
     public static final int      MAX_PORT=65535; // highest port allocatable
@@ -121,8 +122,6 @@ public class Util {
         resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Util.class.getClassLoader());
 
         add(TYPE_NULL, Void.class);
-        //add(TYPE_STREAMABLE,   Streamable.class);
-        //add(TYPE_SERIALIZABLE, Serializable.class);
         add(TYPE_BOOLEAN,      boolean.class);
         add(TYPE_BOOLEAN_OBJ,  Boolean.class);
         add(TYPE_BYTE,         byte.class);
@@ -698,7 +697,7 @@ public class Util {
                 System.arraycopy(buffer,offset,tmp,0,length);
                 return (T)tmp;
             case TYPE_CLASS:
-                return (T)TYPES2.get(buffer[offset]);
+                return (T)CLASS_TYPES.get(buffer[offset]);
             default:
                 throw new IllegalArgumentException("type " + type + " is invalid");
         }
@@ -738,7 +737,7 @@ public class Util {
                 in=new ByteBufferInputStream(buffer);
                 return (T)readString(in);
             case TYPE_CLASS:
-                return (T)TYPES2.get(buffer.get());
+                return (T)CLASS_TYPES.get(buffer.get());
             default:
                 throw new IllegalArgumentException("type " + type + " is invalid");
         }
@@ -863,6 +862,44 @@ public class Util {
         return new String(tmp);
     }
 
+    public static int size(Object obj) {
+        if(obj == null)
+            return Global.BYTE_SIZE;
+        if(obj instanceof SizeStreamable)
+            return Global.BYTE_SIZE + Util.size((SizeStreamable)obj);
+        Byte type=obj instanceof Class<?>? TYPES.get(obj) : TYPES.get(obj.getClass());
+        if(obj instanceof Class<?>) {
+            if(type != null)
+                return Global.BYTE_SIZE *2;
+        }
+        int retval=Global.BYTE_SIZE;
+        switch(type) {
+            case TYPE_BOOLEAN: case TYPE_BOOLEAN_OBJ:
+            case TYPE_BYTE: case TYPE_BYTE_OBJ:
+                return retval+Global.BYTE_SIZE;
+            case TYPE_SHORT: case TYPE_SHORT_OBJ:
+            case TYPE_CHAR: case TYPE_CHAR_OBJ:
+                return retval+Character.BYTES;
+            case TYPE_LONG: case TYPE_LONG_OBJ:
+            case TYPE_DOUBLE: case TYPE_DOUBLE_OBJ:
+                return retval+Double.BYTES;
+            case TYPE_INT: case TYPE_INT_OBJ:
+            case TYPE_FLOAT: case TYPE_FLOAT_OBJ:
+                return retval+Float.BYTES;
+            case TYPE_STRING:
+                String s=(String)obj;
+                retval+=Global.BYTE_SIZE; // is_ascii
+                if(isAsciiString(s))
+                    return retval+Global.INT_SIZE + s.length();
+                else
+                    return retval+Bits.sizeUTF(s);
+            case TYPE_BYTEARRAY:
+                byte[] buf=(byte[])obj;
+                return retval+Global.INT_SIZE + buf.length;
+            default:
+                throw new IllegalArgumentException("type " + type + " is invalid");
+        }
+    }
 
     public static void objectToStream(Object obj, DataOutput out) throws IOException {
         if(obj == null) {
@@ -961,7 +998,7 @@ public class Util {
                 in.readFully(tmpbuf);
                 return (T)tmpbuf;
             case TYPE_CLASS:
-                return (T)TYPES2.get(in.readByte());
+                return (T)CLASS_TYPES.get(in.readByte());
             default:
                 throw new IllegalArgumentException("type " + b + " is invalid");
         }
@@ -1032,7 +1069,7 @@ public class Util {
     protected static void add(byte type, Class<?> cl) {
         if(TYPES.putIfAbsent(cl, type) != null)
             throw new IllegalStateException(String.format("type %d (class=%s) is already present in types map", type, cl));
-        if(TYPES2.putIfAbsent(type, cl) != null)
+        if(CLASS_TYPES.putIfAbsent(type, cl) != null)
             throw new IllegalStateException(String.format("type %d (class=%s) is already present in types2 map", type, cl));
     }
 
@@ -3211,35 +3248,6 @@ public class Util {
     }
 
     /**
-     * Returns the first method that matches the specified name and parameter types. The overriding methods have priority.
-     * The method is chosen from all the methods of the current class and all its superclasses and superinterfaces.
-     * @return the matching method or null if no matching method has been found.
-     */
-    /*public static Method findMethod(Class<?> target, String methodName, Class<?>[] types) {
-        if(types == null)
-            types=new Class[0];
-
-        Method[] methods = getAllMethods(target);
-        methods: for(int i = 0; i < methods.length; i++) {
-            Method m= methods[i];
-            if(!methodName.equals(m.getName()))
-                continue;
-            Class<?>[] parameters = m.getParameterTypes();
-            if (types.length != parameters.length) {
-                continue;
-            }
-            for(int j = 0; j < types.length; j++) {
-                if(!parameters[j].isAssignableFrom(types[j])) {
-                    continue methods;
-                }
-            }
-            return m;
-        }
-        return null;
-    }
-*/
-
-    /**
      * The method walks up the class hierarchy and returns <i>all</i> methods of this class
      * and those inherited from superclasses and superinterfaces.
      */
@@ -3292,6 +3300,10 @@ public class Util {
           || type == Long.class
           || type == Float.class
           || type == Double.class;
+    }
+
+    public static boolean isPrimitiveType(Object obj) {
+        return (obj instanceof Class<?>? TYPES.get(obj) : TYPES.get(obj.getClass())) != null;
     }
 
     public static Method findMethod(Object target,List<String> possible_names,Class<?>... parameter_types) {

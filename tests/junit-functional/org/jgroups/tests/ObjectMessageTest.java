@@ -11,6 +11,7 @@ import org.testng.annotations.Test;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -45,17 +46,8 @@ public class ObjectMessageTest extends MessageTestBase {
         assert p != null && p.name.equals("Bela") && p.age == 53;
     }
 
+
     public void testObject2() throws Exception {
-        Message msg=new ObjectMessage(null, new Person(53, "Bela"));
-        _testSize(msg);
-        byte[] buf=marshal(msg);
-        Message msg2=unmarshal(ObjectMessage.class, buf);
-        Person p=msg2.getObject();
-        assert p != null && p.name.equals("Bela") && p.age == 53;
-    }
-
-
-    public void testObject3() throws Exception {
         Message msg=new ObjectMessage(null, new BasePerson(53, "Bela"));
         _testSize(msg);
         byte[] buf=marshal(msg);
@@ -64,7 +56,7 @@ public class ObjectMessageTest extends MessageTestBase {
         assert p != null && p.name.equals("Bela") && p.age == 53;
     }
 
-    public void testObject4() throws Exception {
+    public void testObject3() throws Exception {
         Message msg=new ObjectMessage(null, "hello world");
         _testSize(msg);
         byte[] buf=marshal(msg);
@@ -73,6 +65,41 @@ public class ObjectMessageTest extends MessageTestBase {
         assert Objects.equals(s, "hello world");
     }
 
+    public void testObject4() throws Exception {
+        Message msg=new ObjectMessage(null, 55);
+        _testSize(msg);
+        byte[] buf=marshal(msg);
+        Message msg2=unmarshal(ObjectMessage.class, buf);
+        int num=msg2.getObject();
+        assert num == 55;
+    }
+
+    public void testObject5() throws Exception {
+        byte[] BUF="hello world".getBytes();
+        Message msg=new ObjectMessage(null, BUF);
+        _testSize(msg);
+        byte[] buf=marshal(msg);
+        Message msg2=unmarshal(ObjectMessage.class, buf);
+        byte[] tmp=msg2.getObject();
+        assert new String(tmp).equals("hello world");
+    }
+
+    public void testMarshalling() throws Exception {
+        Object[] objects={null, int.class, Boolean.class, byte[].class, Person.class, "hello".getBytes(), (short)50, 50, 50L,
+        3.2345F, 3.1234, "hello world", "Béla Bån"};
+        for(Object obj: objects) {
+            Message msg=new ObjectMessage(null, obj);
+            _testSize(msg);
+            byte[] buf=marshal(msg);
+            Message msg2=unmarshal(ObjectMessage.class, buf);
+            Object tmp=msg2.getObject();
+            if(tmp instanceof byte[] && obj instanceof byte[])
+                assert Arrays.equals((byte[])tmp, (byte[])obj);
+            else
+                assert Objects.equals(tmp, obj) :
+                  String.format("%s (%s) != %s (%s)", tmp, tmp != null? tmp.getClass() : "null", obj, obj != null? obj.getClass(): "null");
+        }
+    }
 
     public void testSetNullObject() throws Exception {
         Message msg=new ObjectMessage(null, null);

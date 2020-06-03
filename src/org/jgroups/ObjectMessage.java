@@ -39,7 +39,7 @@ public class ObjectMessage extends BaseMessage {
     * Constructs a message given a destination address and the payload object
     * @param dest The Address of the receiver. If it is null, then the message is sent to the group. Otherwise, it is
     *             sent to a single member.
-    * @param obj To be used as payload. If obj doesn't implement {@link SizeStreamable}, an exception will be thrown
+    * @param obj To be used as payload.
     */
     public ObjectMessage(Address dest, Object obj) {
         super(dest);
@@ -58,11 +58,14 @@ public class ObjectMessage extends BaseMessage {
     public ObjectMessage     setArray(byte[] b, int off, int len) {throw new UnsupportedOperationException();}
     public ObjectMessage     setArray(ByteArray buf)              {throw new UnsupportedOperationException();}
 
-    /** Sets the object. If the object doesn't implement {@link SizeStreamable}, it will be wrapped into an
-     * {@link ObjectWrapper} (which does implement SizeStreamable)
+    /** Sets the object. If the object doesn't implement {@link SizeStreamable}, or is a primitive type,
+     * it will be wrapped into an {@link ObjectWrapper} (which does implement SizeStreamable)
      */
     public ObjectMessage setObject(Object obj) {
-        this.obj=obj == null || obj instanceof SizeStreamable? obj : new ObjectWrapper(obj);
+        if(obj == null || obj instanceof SizeStreamable || Util.isPrimitiveType(obj))
+            this.obj=obj;
+        else
+            this.obj=new ObjectWrapper(obj);
         return this;
     }
 
@@ -82,11 +85,11 @@ public class ObjectMessage extends BaseMessage {
 
 
     public void writePayload(DataOutput out) throws IOException {
-        Util.writeGenericStreamable((Streamable)obj, out);
+        Util.objectToStream(obj, out);
     }
 
     public void readPayload(DataInput in) throws IOException, ClassNotFoundException {
-        obj=Util.readGenericStreamable(in);
+        obj=Util.objectFromStream(in);
     }
 
     @Override protected Message copyPayload(Message copy) {
@@ -100,6 +103,6 @@ public class ObjectMessage extends BaseMessage {
     }
 
     protected int objSize() {
-        return Util.size((SizeStreamable)obj);
+        return Util.size(obj);
     }
 }
