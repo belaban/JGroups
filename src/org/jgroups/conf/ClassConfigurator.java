@@ -5,6 +5,7 @@ package org.jgroups.conf;
 import org.jgroups.Constructable;
 import org.jgroups.Global;
 import org.jgroups.Header;
+import org.jgroups.util.IntHashMap;
 import org.jgroups.util.Triple;
 import org.jgroups.util.Util;
 import org.w3c.dom.Document;
@@ -31,6 +32,7 @@ public class ClassConfigurator {
     public static final String MAGIC_NUMBER_FILE = "jg-magic-map.xml";
     public static final String PROTOCOL_ID_FILE  = "jg-protocol-ids.xml";
     private static final int   MAX_MAGIC_VALUE=100;
+    private static final int   MAX_PROT_ID_VALUE=256;
     private static final short MIN_CUSTOM_MAGIC_NUMBER=1024;
     private static final short MIN_CUSTOM_PROTOCOL_ID=512;
 
@@ -45,8 +47,8 @@ public class ClassConfigurator {
     private static final Map<Short,Object> magicMapUser=new HashMap<>(); // key=magic number, value=Class or Supplier<Header>
 
     /** Contains data read from jg-protocol-ids.xml */
-    private static final Map<Class<?>,Short> protocol_ids=new HashMap<>(MAX_MAGIC_VALUE);
-    private static final Map<Short,Class<?>> protocol_names=new HashMap<>(MAX_MAGIC_VALUE);
+    private static final Map<Class<?>,Short>  protocol_ids=new IdentityHashMap<>(MAX_PROT_ID_VALUE);
+    private static final IntHashMap<Class<?>> protocol_names=new IntHashMap<>(MAX_PROT_ID_VALUE);
 
     static {
         try {
@@ -107,7 +109,7 @@ public class ClassConfigurator {
         if(protocol_ids.containsKey(protocol))
             alreadyInProtocolsMap(id, protocol.getName());
         protocol_ids.put(protocol, id);
-        protocol_names.putIfAbsent(id, protocol);
+        protocol_names.put(id, protocol);
     }
 
 

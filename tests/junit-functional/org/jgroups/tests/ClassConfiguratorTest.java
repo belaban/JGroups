@@ -11,7 +11,7 @@ import org.testng.annotations.Test;
  */
 @Test(groups=Global.FUNCTIONAL)
 public class ClassConfiguratorTest {
-    protected static final short ID=5678;
+    protected static final short ID=512;
 
     public void testAddProtocol() {
         ClassConfigurator.addProtocol(ID, MyProtocol.class);

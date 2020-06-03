@@ -53,8 +53,8 @@ import static org.jgroups.protocols.TP.MULTICAST;
  * @author Bela Ban
  */
 public class Util {
-    private static final Map<Class<?>,Byte> TYPES=new HashMap<>(30);
-    private static final Map<Byte,Class<?>> CLASS_TYPES=new HashMap<>(30);
+    private static final Map<Class<?>,Byte>   TYPES=new IdentityHashMap<>(30);
+    private static final IntHashMap<Class<?>> CLASS_TYPES=new IntHashMap<>(20);
 
     private static final byte    TYPE_NULL         =  0;
     private static final byte    TYPE_BOOLEAN      =  1; // boolean
@@ -1069,8 +1069,7 @@ public class Util {
     protected static void add(byte type, Class<?> cl) {
         if(TYPES.putIfAbsent(cl, type) != null)
             throw new IllegalStateException(String.format("type %d (class=%s) is already present in types map", type, cl));
-        if(CLASS_TYPES.putIfAbsent(type, cl) != null)
-            throw new IllegalStateException(String.format("type %d (class=%s) is already present in types2 map", type, cl));
+        CLASS_TYPES.put(type, cl);
     }
 
 
@@ -2315,6 +2314,11 @@ public class Util {
         };
     }
 
+    public static <T extends Number> T nonNegativeValue(T num) {
+        if(num.longValue() < 0)
+            throw new IllegalArgumentException(String.format("%s must not be negative", num));
+        return num;
+    }
 
     /** Returns a random value in the range [1 - range]. If range is 0, 1 will be returned. If range is negative, an
      * exception will be thrown */
