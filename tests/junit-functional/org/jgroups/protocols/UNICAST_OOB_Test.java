@@ -121,7 +121,7 @@ public class UNICAST_OOB_Test {
 
         Address dest=b.getAddress();
         for(int i=1; i <=5; i++) {
-            Message msg=new BytesMessage(dest, (long)i);
+            Message msg=new ObjectMessage(dest, (long)i);
             if(i == 4 && oob)
                 msg.setFlag(Message.Flag.OOB);
             System.out.println("-- sending message #" + i);

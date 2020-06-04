@@ -42,7 +42,7 @@ public class MPerf implements Receiver {
     protected int                   log_interval=num_msgs / 10; // log every 10%
     protected int                   receive_log_interval=Math.max(1, num_msgs / 10);
     protected int                   num_senders=-1; // <= 0: all
-    protected boolean               oob=false;
+    protected boolean               oob;
 
     protected boolean cancelled=false;
 
@@ -83,10 +83,8 @@ public class MPerf implements Receiver {
         sb.append("JGroups version: ").append(Version.description).append('\n');
         System.out.println(sb);
 
-        channel=new JChannel(props);
-        channel.setName(name);
-        channel.setReceiver(this);
-        channel.connect("mperf");
+        channel=new JChannel(props).setName(name).setReceiver(this)
+          .connect("mperf");
         local_addr=channel.getAddress();
         JmxConfigurator.registerChannel(channel, Util.getMBeanServer(), "jgroups", "mperf", true);
 
@@ -212,7 +210,7 @@ public class MPerf implements Receiver {
 
 
     protected void send(Address target, Object payload, byte header, Message.Flag ... flags) throws Exception {
-        Message msg=new BytesMessage(target, payload);
+        Message msg=payload == null? new EmptyMessage(target) : new ObjectMessage(target, payload);
         if(flags != null)
             for(Message.Flag flag: flags)
                 msg.setFlag(flag);
@@ -348,8 +346,7 @@ public class MPerf implements Receiver {
                 break;
 
             case MPerfHeader.CONFIG_CHANGE:
-                ConfigChange config_change=msg.getObject();
-                handleConfigChange(config_change);
+                handleConfigChange(msg.getObject());
                 break;
 
             case MPerfHeader.CONFIG_REQ:
@@ -376,7 +373,7 @@ public class MPerf implements Receiver {
                 break;
 
             case MPerfHeader.NEW_CONFIG:
-                applyNewConfig(msg.getArray(), msg.getOffset(), msg.getLength());
+                applyNewConfig(msg.getObject());
                 break;
 
             case MPerfHeader.ACK:
@@ -423,8 +420,8 @@ public class MPerf implements Receiver {
         return retval;
     }
 
-    protected void applyNewConfig(byte[] buffer, int offset, int length) {
-        final InputStream in=new ByteArrayInputStream(buffer, offset, length);
+    protected void applyNewConfig(byte[] buffer) {
+        final InputStream in=new ByteArrayInputStream(buffer);
         Thread thread=new Thread(() -> {
             try {
                 JChannel ch=new JChannel(in);
@@ -561,7 +558,8 @@ public class MPerf implements Receiver {
                     if(tmp > num_msgs || cancelled)
                         break;
                     long new_seqno=seqno.getAndIncrement();
-                    Message msg=new BytesMessage(null, payload).putHeader(ID, new MPerfHeader(MPerfHeader.DATA, new_seqno));
+                    Message msg=new ObjectMessage(null, payload)
+                      .putHeader(ID, new MPerfHeader(MPerfHeader.DATA, new_seqno));
                     if(oob)
                         msg.setFlag(Message.Flag.OOB);
                     channel.send(msg);

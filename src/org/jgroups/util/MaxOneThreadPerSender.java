@@ -92,7 +92,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             Entry entry=map.get(sender);
             if(entry == null) {
                 IntFunction<MessageBatch> creator_func=cap -> new MessageBatch(cap).dest(dest)
-                  .clusterName(tp.getClusterNameAscii()). sender(sender).multicast(dest == null);
+                  .clusterName(tp.getClusterNameAscii()).sender(sender).multicast(dest == null);
                 Entry tmp=map.putIfAbsent(sender, entry=new Entry(creator_func));
                 if(tmp != null)
                     entry=tmp;
@@ -257,7 +257,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
     }
 
 
-    protected class BatchHandlerLoop extends BatchHandler {
+    public class BatchHandlerLoop extends BatchHandler {
         protected final Entry   entry;
         protected final boolean loopback;
 

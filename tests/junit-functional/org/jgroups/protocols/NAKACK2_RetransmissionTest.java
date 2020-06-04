@@ -142,7 +142,7 @@ public class NAKACK2_RetransmissionTest {
             if(hdr.getType() == NakAckHeader2.XMIT_REQ) {
                 SeqnoList seqnos=null;
                 try {
-                    seqnos=Util.streamableFromBuffer(SeqnoList::new, msg.getArray(), msg.getOffset(), msg.getLength());
+                    seqnos=msg.getObject();
                     System.out.println("-- XMIT-REQ: request retransmission for " + seqnos);
                     for(Long seqno: seqnos)
                         xmit_requests.add(seqno);

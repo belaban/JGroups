@@ -62,12 +62,14 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
     }
 
 
-    protected class SingleMessageHandler implements Runnable {
+    public class SingleMessageHandler implements Runnable {
         protected final Message msg;
 
         protected SingleMessageHandler(final Message msg) {
             this.msg=msg;
         }
+
+        public Message getMessage() {return msg;}
 
         public void run() {
             Address dest=msg.getDest();
@@ -75,10 +77,13 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
             try {
                 if(tp.statsEnabled()) {
                     MsgStats msg_stats=tp.getMessageStats();
-                    if(msg.isFlagSet(Message.Flag.OOB))
-                        msg_stats.incrNumOOBMsgsReceived(1);
-                    else if(msg.isFlagSet(Message.Flag.INTERNAL))
-                        msg_stats.incrNumInternalMsgsReceived(1);
+                    boolean oob=msg.isFlagSet(Message.Flag.OOB), internal=msg.isFlagSet(Message.Flag.INTERNAL);
+                    if(oob || internal) {
+                        if(oob)
+                            msg_stats.incrNumOOBMsgsReceived(1);
+                        if(internal)
+                            msg_stats.incrNumInternalMsgsReceived(1);
+                    }
                     else
                         msg_stats.incrNumMsgsReceived(1);
                     msg_stats.incrNumBytesReceived(msg.getLength());
@@ -110,12 +115,14 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
         }
     }
 
-    protected class BatchHandler implements Runnable {
+    public class BatchHandler implements Runnable {
         protected MessageBatch batch;
 
         public BatchHandler(final MessageBatch batch) {
             this.batch=batch;
         }
+
+        public MessageBatch getBatch() {return batch;}
 
         public void run() {
             if(batch == null || (!batch.multicast() && tp.unicastDestMismatch(batch.dest())))
@@ -123,10 +130,13 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
             if(tp.statsEnabled()) {
                 int batch_size=batch.size();
                 MsgStats msg_stats=tp.getMessageStats();
-                if(batch.getMode() == MessageBatch.Mode.OOB)
-                    msg_stats.incrNumOOBMsgsReceived(batch_size);
-                else if(batch.getMode() == MessageBatch.Mode.INTERNAL)
-                    msg_stats.incrNumInternalMsgsReceived(batch_size);
+                boolean oob=batch.getMode() == MessageBatch.Mode.OOB, internal=batch.getMode() == MessageBatch.Mode.INTERNAL;
+                if(oob || internal) {
+                    if(oob)
+                        msg_stats.incrNumOOBMsgsReceived(batch_size);
+                    if(internal)
+                        msg_stats.incrNumInternalMsgsReceived(batch_size);
+                }
                 else
                     msg_stats.incrNumMsgsReceived(batch_size);
                 msg_stats.incrNumBatchesReceived(1);

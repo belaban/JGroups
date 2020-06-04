@@ -44,7 +44,7 @@ public class UPerf implements Receiver {
 
 
     // ============ configurable properties ==================
-    @Property protected boolean sync=true, oob=true;
+    @Property protected boolean sync=true, oob;
     @Property protected int     num_threads=100;
     @Property protected int     time=60; // in seconds
     @Property protected int     msg_size=1000;
@@ -181,6 +181,7 @@ public class UPerf implements Receiver {
         for(int i=0; i < threads.length; i++) {
             invokers[i]=new Invoker(members, latch);
             threads[i]=thread_factory.newThread(invokers[i]);
+            threads[i].setName("invoker-" + (i+1));
             threads[i].start(); // waits on latch
         }
 

@@ -1482,7 +1482,7 @@ public class Util {
         int len=in.readInt();
         for(int i=0; i < len; i++) {
             short type=in.readShort();
-            Message msg=factory.create(type);  // new BytesMessage(false);
+            Message msg=factory.create(type);
             msg.readFrom(in);
             msg.setDest(dest);
             if(msg.getSrc() == null)
@@ -1491,17 +1491,16 @@ public class Util {
             boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
             int index=0;
             MessageBatch.Mode mode=MessageBatch.Mode.REG;
-
-            if(oob && !internal) {
-                index=1; mode=MessageBatch.Mode.OOB;
+            if(oob || internal) {
+                if(oob) {
+                    mode=MessageBatch.Mode.OOB;
+                    index=internal? 2 : 1;
+                }
+                else {
+                    index=3;
+                    mode=MessageBatch.Mode.INTERNAL;
+                }
             }
-            else if(oob && internal) {
-                index=2; mode=MessageBatch.Mode.OOB;
-            }
-            else if(!oob && internal) {
-                index=3; mode=MessageBatch.Mode.INTERNAL;
-            }
-
             if(batches[index] == null)
                 batches[index]=new MessageBatch(dest, src, cluster_name != null? new AsciiString(cluster_name) : null, multicast, mode, len);
             batches[index].add(msg);
@@ -2374,7 +2373,7 @@ public class Util {
 
 
     protected static void _printThreads(ThreadMXBean bean,long[] ids,StringBuilder sb) {
-        ThreadInfo[] threads=bean.getThreadInfo(ids,20);
+        ThreadInfo[] threads=bean.getThreadInfo(ids,100);
         for(ThreadInfo info : threads) {
             if(info == null)
                 continue;

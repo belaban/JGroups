@@ -15,7 +15,7 @@ import org.jgroups.stack.Protocol;
 public class DISCARD_PAYLOAD extends Protocol {
     @Property protected long seqno=3; // drop 3
     @Property protected long duplicate=4; // duplicate 4 (one time)
-    protected int            num_discards=0;
+    protected int            num_discards;
 
     public DISCARD_PAYLOAD() {
     }
@@ -27,8 +27,8 @@ public class DISCARD_PAYLOAD extends Protocol {
                 if(payload != null) {
                     if(payload == seqno) {
                         synchronized(this) {
-                            if(num_discards < 3) {
-                                num_discards++;
+                            if(num_discards++ < 3) {
+                                System.out.printf("** %s: discarded seqno %d\n", getTransport().getLocalAddress(), payload);
                                 return null;
                             }
                         }

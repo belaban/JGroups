@@ -71,7 +71,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     @Property(description="Send an ack immediately when a batch of ack_threshold (or more) messages is received. " +
       "Otherwise send delayed acks. If 1, ack single messages (similar to UNICAST)")
-    protected int     ack_threshold=5;
+    protected int     ack_threshold=100;
 
     @Property(description="Min time (in ms) to elapse for successive SEND_FIRST_SEQNO messages to be sent to the same sender",
       type=AttributeType.TIME)
@@ -430,7 +430,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                     handleResendingOfFirstMessage(sender, hdr.timestamp());
                     break;
                 case UnicastHeader3.XMIT_REQ:  // received ACK for previously sent message
-                    handleXmitRequest(sender, Util.streamableFromBuffer(SeqnoList::new, msg.getArray(), msg.getOffset(), msg.getLength()));
+                    handleXmitRequest(sender, msg.getObject());
                     break;
                 case UnicastHeader3.CLOSE:
                     log.trace("%s <-- %s: CLOSE(conn-id=%s)", local_addr, sender, hdr.conn_id);
@@ -707,17 +707,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     /** Sends a retransmit request to the given sender */
     protected void retransmit(SeqnoList missing, Address sender) {
-
-        ByteArray array=null;
-        try {
-            array=Util.streamableToBuffer(missing);
-        }
-        catch(Exception e) {
-            log.error("%s: serialization failure: %s", local_addr, e);
-            return;
-        }
-
-        Message xmit_msg=new BytesMessage(sender).setArray(array).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+        Message xmit_msg=new ObjectMessage(sender, missing).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .putHeader(id, UnicastHeader3.createXmitReqHeader());
         if(is_trace)
             log.trace("%s --> %s: XMIT_REQ(%s)", local_addr, sender, missing);
@@ -981,7 +971,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return entry;
     }
 
-    protected Table createTable(long seqno) {
+    protected Table<Message> createTable(long seqno) {
         return new Table<>(xmit_table_num_rows, xmit_table_msgs_per_row, seqno-1,
                            xmit_table_resize_factor, xmit_table_max_compaction_time);
     }
@@ -1337,7 +1327,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     @SafeVarargs
-    protected static int accumulate(ToIntFunction<Table> func, Collection<? extends Entry> ... entries) {
+    protected static int accumulate(ToIntFunction<Table<Message>> func, Collection<? extends Entry> ... entries) {
         return Stream.of(entries).flatMap(Collection::stream)
           .map(entry -> entry.msgs).filter(Objects::nonNull)
           .mapToInt(func).sum();

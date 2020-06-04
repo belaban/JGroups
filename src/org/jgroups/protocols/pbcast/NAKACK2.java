@@ -653,7 +653,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
             case NakAckHeader2.XMIT_REQ:
                 try {
-                    SeqnoList missing=Util.streamableFromBuffer(SeqnoList::new, msg.getArray(), msg.getOffset(), msg.getLength());
+                    SeqnoList missing=msg.getObject();
                     if(missing != null)
                         handleXmitReq(msg.getSrc(), missing, hdr.sender);
                 }
@@ -701,7 +701,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     break;
                 case NakAckHeader2.XMIT_REQ:
                     try {
-                        SeqnoList missing=Util.streamableFromBuffer(SeqnoList::new, msg.getArray(), msg.getOffset(), msg.getLength());
+                        SeqnoList missing=msg.getObject();
                         if(missing != null)
                             handleXmitReq(msg.getSrc(), missing, hdr.sender);
                     }
@@ -1008,7 +1008,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     /**
      * Flushes the queue. Done in a separate thread as we don't want to block the
-     * {@link ClientGmsImpl#installView(org.jgroups.View,org.jgroups.util.Digest)} method (called when a view is installed).
+     * {@link GMS#installView(org.jgroups.View,org.jgroups.util.Digest)} method (called when a view is installed).
      */
     protected void flushBecomeServerQueue() {
         if(become_server_queue != null && !become_server_queue.isEmpty()) {
@@ -1458,18 +1458,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 dest=random_member;
         }
 
-
-        ByteArray array=null;
-        try {
-            array=Util.streamableToBuffer(missing_msgs);
-        }
-        catch(Exception e) {
-            log.error("%s: serialization failure: %s", local_addr, e);
-            return;
-        }
-
-        Message retransmit_msg=new BytesMessage(dest).setArray(array)
-          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+        Message retransmit_msg=new ObjectMessage(dest, missing_msgs).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .putHeader(this.id, NakAckHeader2.createXmitRequestHeader(sender));
 
         log.trace("%s --> %s: XMIT_REQ(%s)", local_addr, dest, missing_msgs);

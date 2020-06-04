@@ -9,7 +9,9 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.stack.*;
+import org.jgroups.stack.DiagnosticsHandler;
+import org.jgroups.stack.MessageProcessingPolicy;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.UUID;
 import org.jgroups.util.*;
@@ -1543,12 +1545,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected void handleMessageBatch(DataInput in, boolean multicast, MessageFactory factory) {
         try {
             final MessageBatch[] batches=Util.readMessageBatch(in, multicast, factory);
-            final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch_oob=batches[2], internal_batch=batches[3];
+            final MessageBatch regular=batches[0], oob=batches[1], internal_oob=batches[2], internal=batches[3];
 
-            processBatch(oob_batch,          true,  false);
-            processBatch(batch,              false, false);
-            processBatch(internal_batch_oob, true,  true);
-            processBatch(internal_batch,     false, true);
+            processBatch(oob,          true,  false);
+            processBatch(regular,      false, false);
+            processBatch(internal_oob, true,  true);
+            processBatch(internal,     false, true);
         }
         catch(Throwable t) {
             log.error(String.format(Util.getMessage("IncomingMsgFailure"), local_addr), t);
@@ -1559,7 +1561,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected void handleSingleMessage(DataInput in, boolean multicast) {
         try {
             short type=in.readShort();
-            Message msg=msg_factory.create(type); //new BytesMessage(false); // don't create headers, readFrom() will do this
+            Message msg=msg_factory.create(type); // don't create headers, readFrom() will do this
             msg.readFrom(in);
 
             if(!multicast && unicastDestMismatch(msg.getDest()))
@@ -1588,16 +1590,18 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-    public boolean submitToThreadPool(Runnable task, boolean spawn_thread_on_rejection) {
-        return submitToThreadPool(thread_pool, task, spawn_thread_on_rejection, true);
+    public boolean submitToThreadPool(Runnable task, boolean internal) {
+        if(internal && internal_pool != null)
+            return submitToThreadPool(internal_pool, task, internal, false);
+        return submitToThreadPool(thread_pool, task, internal, true);
     }
 
-    public boolean submitToThreadPool(Executor pool, Runnable task, boolean spawn_thread_on_rejection, boolean forward_to_internal_pool) {
+    public boolean submitToThreadPool(Executor pool, Runnable task, boolean internal, boolean forward_to_internal_pool) {
         try {
             pool.execute(task);
         }
         catch(RejectedExecutionException ex) {
-            if(!spawn_thread_on_rejection) {
+            if(!internal) {
                 msg_stats.incrNumRejectedMsgs(1);
                 // https://issues.redhat.com/browse/JGRP-2403
                 if(thread_dump.compareAndSet(true, false)) {
@@ -1609,7 +1613,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
 
             if(forward_to_internal_pool && internal_pool != null)
-                return submitToThreadPool(internal_pool, task, true, false);
+                return submitToThreadPool(internal_pool, task, internal, false);
             else {
                 msg_stats.incrNumThreadsSpawned(1);
                 return runInNewThread(task);
