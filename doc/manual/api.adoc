@@ -398,9 +398,12 @@ While this message type is mainly used internally, it _is_ a public class and ca
 An `ObjectMessage` has a Plain Old Java Object (POJO) as payload. The object payload is marshalled directly into the
 output stream _at send time_, using `writeTo()`.
 
-If the object implements `SizeStreamable`, then it will be set directly as payload, otherwise the object is
-wrapped into an `ObjectWrapper` which uses just-in-time serialization to generate a byte array, which is
-later written to the output stream.
+If the object implements `SizeStreamable`, then the `writeTo()` and `readFrom()` methods will be used for efficient,
+application-controlled, marshalling. Otherwise, for some object types ('primitive types such as `int`, `Boolean`,
+`byte[]` etc), JGroups will try to do the marshalling.
+
+For all other cases, the the object is wrapped into an `ObjectWrapper` which uses just-in-time serialization to generate
+a byte array, which is later written to the output stream.
 
 WARNING: When the byte array is set, the contents of the object should not be changed anymore, or else the old state
          of the object will be sent on serialization. In case the object needs to be changed nevertheless, then
