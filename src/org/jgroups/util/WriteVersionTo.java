@@ -49,7 +49,7 @@ public class WriteVersionTo {
                     return;
             }
         }
-        InputStream in=Util.getResourceAsStream(input, null);
+        InputStream in=Util.getResourceAsStream(input, (ClassLoader) null);
         if(in == null)
             in=new FileInputStream(input);
         if(in == null)

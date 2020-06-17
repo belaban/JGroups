@@ -47,7 +47,6 @@ import static java.lang.System.nanoTime;
 import static org.jgroups.protocols.TP.LIST;
 import static org.jgroups.protocols.TP.MULTICAST;
 
-
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
@@ -146,7 +145,7 @@ public class Util {
           || Util.checkForSolaris() || Util.checkForHp() || Util.checkForMac();
 
         try {
-            String cchm_initial_capacity=System.getProperty(Global.CCHM_INITIAL_CAPACITY);
+            String cchm_initial_capacity=SecurityActions.getProperty(Global.CCHM_INITIAL_CAPACITY);
             if(cchm_initial_capacity != null)
                 CCHM_INITIAL_CAPACITY=Integer.parseInt(cchm_initial_capacity);
         }
@@ -154,7 +153,7 @@ public class Util {
         }
 
         try {
-            String cchm_load_factor=System.getProperty(Global.CCHM_LOAD_FACTOR);
+            String cchm_load_factor=SecurityActions.getProperty(Global.CCHM_LOAD_FACTOR);
             if(cchm_load_factor != null)
                 CCHM_LOAD_FACTOR=Float.parseFloat(cchm_load_factor);
         }
@@ -162,7 +161,7 @@ public class Util {
         }
 
         try {
-            String cchm_concurrency_level=System.getProperty(Global.CCHM_CONCURRENCY_LEVEL);
+            String cchm_concurrency_level=SecurityActions.getProperty(Global.CCHM_CONCURRENCY_LEVEL);
             if(cchm_concurrency_level != null)
                 CCHM_CONCURRENCY_LEVEL=Integer.parseInt(cchm_concurrency_level);
         }
@@ -170,7 +169,7 @@ public class Util {
         }
 
         try {
-            tmp=System.getProperty(Global.MAX_LIST_PRINT_SIZE);
+            tmp=SecurityActions.getProperty(Global.MAX_LIST_PRINT_SIZE);
             if(tmp != null)
                 MAX_LIST_PRINT_SIZE=Integer.parseInt(tmp);
         }
@@ -178,7 +177,7 @@ public class Util {
         }
 
         try {
-            tmp=System.getProperty(Global.DEFAULT_HEADERS);
+            tmp=SecurityActions.getProperty(Global.DEFAULT_HEADERS);
             DEFAULT_HEADERS=tmp != null? Integer.parseInt(tmp) : 4;
         }
         catch(Throwable t) {
@@ -3407,21 +3406,16 @@ public class Util {
 
 
     public static InputStream getResourceAsStream(String name,Class<?> clazz) {
-        ClassLoader loader;
-        InputStream retval=null;
+        return getResourceAsStream(name, clazz != null ? clazz.getClassLoader() : null);
+    }
 
-        // https://issues.jboss.org/browse/JGRP-1762: load the classloader from the defining class first
-        if(clazz != null) {
-            try {
-                loader=clazz.getClassLoader();
-                if(loader != null) {
-                    retval=loader.getResourceAsStream(name);
-                    if(retval != null)
-                        return retval;
-                }
-            }
-            catch(Throwable ignored) {
-            }
+    public static InputStream getResourceAsStream(String name,ClassLoader loader) {
+        InputStream retval;
+
+        if (loader != null) {
+            retval = loader.getResourceAsStream(name);
+            if (retval != null)
+                return retval;
         }
 
         try {
@@ -3447,12 +3441,11 @@ public class Util {
         }
 
         try {
-            retval=new FileInputStream(name);
+            return new FileInputStream(name);
         }
         catch(FileNotFoundException e) {
         }
-
-        return retval;
+        return null;
     }
 
     public static String getChild(final Element root, String path) {
@@ -4059,7 +4052,7 @@ public class Util {
 
     private static boolean checkForPresence(String key,String value) {
         try {
-            String tmp=System.getProperty(key);
+            String tmp=SecurityActions.getProperty(key);
             return tmp != null && tmp.trim().toLowerCase().startsWith(value);
         }
         catch(Throwable t) {
@@ -4069,7 +4062,7 @@ public class Util {
 
     private static boolean contains(String key,String value) {
         try {
-            String tmp=System.getProperty(key);
+            String tmp=SecurityActions.getProperty(key);
             return tmp != null && tmp.trim().toLowerCase().contains(value.trim().toLowerCase());
         }
         catch(Throwable t) {
@@ -4435,7 +4428,7 @@ public class Util {
                 prop=system_props[i];
                 if(prop != null) {
                     try {
-                        tmp=System.getProperty(prop);
+                        tmp=SecurityActions.getProperty(prop);
                         if(tmp != null)
                             return tmp;
                     }
@@ -4499,7 +4492,6 @@ public class Util {
             }
         }
     }
-
 
     /**
      * Replaces variables of ${var:default} with System.getProperty(var, default). If no variables are found, returns
@@ -4591,9 +4583,9 @@ public class Util {
             try {
                 if(p != null && (retval=p.getProperty(prop)) != null)
                     return retval;
-                if((retval=System.getProperty(prop)) != null)
+                if((retval=SecurityActions.getProperty(prop)) != null)
                     return retval;
-                if((retval=System.getenv(prop)) != null)
+                if((retval=SecurityActions.getEnv(prop)) != null)
                     return retval;
             }
             catch(Throwable ignored) {
