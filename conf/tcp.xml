@@ -9,7 +9,10 @@
         xmlns="urn:org:jgroups"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd"
         version="${version}">
-    <TCP bind_port="7800"
+    <TCP bind_addr="${jgroups.bind_addr:site_local}"
+         bind_port="${jgroups.bind_port:7800}"
+         external_addr="${jgroups.external_addr}"
+         external_port="${jgroups.external_port}"
          thread_pool.min_threads="0"
          thread_pool.max_threads="200"
          thread_pool.keep_alive_time="30000"/>
