@@ -1915,6 +1915,24 @@ group key. As a matter of fact, even a rogue member having the correct certficat
 group key!
 
 
+====== SSL_KEY_EXCHANGE and native OpenSSL support
+SSL_KEY_EXCHANGE can optionally use native OpenSSL libraries for higher performance compared to the default JDK
+implementation.
+To do so, you must add the WildFly OpenSSL libraries to the classpath. If you are using Maven, add the following to
+your `pom.xml` dependencies:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.wildfly.openssl</groupId>
+    <artifactId>wildfly-openssl</artifactId>
+    <version>1.0.9.Final</version>
+</dependency>
+----
+
+Even if WildFly OpenSSL is on the classpath, you can disable its use and revert to the JDK SSL support by setting the
+`org.jgroups.openssl` system property to false.
+
 [[AUTH]]
 ==== AUTH
 Authentication is performed by AUTH. Its main use is to make sure only authenticated members can join

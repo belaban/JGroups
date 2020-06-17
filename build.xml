@@ -664,7 +664,6 @@
 
         <sequential>
             <property name="default-excludes" value=""/>
-
             <testng classpathref="@{classpath}"
                     suitename="@{suitename}"
                     testname="@{suitename}"
