@@ -9,7 +9,9 @@
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd"
         version="${version}">
   
-    <TUNNEL gossip_router_hosts="${jgroups.tunnel.gossip_router_hosts:localhost[12001]}"/>
+    <TUNNEL
+            gossip_router_hosts="${jgroups.tunnel.gossip_router_hosts:localhost[12001]}"
+            port_range="${jgroups.tunnel.port_range:5}"/>
     <PING/>
     <MERGE3/>
     <FD_ALL3/>
