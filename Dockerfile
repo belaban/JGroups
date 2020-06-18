@@ -20,9 +20,7 @@ ENV JGROUPS_HOME=$HOME/JGroups
 WORKDIR /opt/jgroups
 
 COPY --from=build-stage /JGroups /opt/jgroups/JGroups
-COPY --from=build-stage /bin/ping /bin/
-COPY --from=build-stage /bin/netstat /bin/
-COPY --from=build-stage /bin/nc /bin/
+COPY --from=build-stage /bin/ping /bin/netstat /bin/nc /bin/
 COPY --from=build-stage /sbin/ifconfig /sbin/
 
 RUN chown -R jgroups.jgroups $HOME/*
