@@ -1,7 +1,7 @@
 
 ## The first stage is used to git-clone and build JGroups; this requires a JDK/javac/git/ant
 FROM adoptopenjdk/openjdk11 as build-stage
-RUN apt-get update ; apt-get install -y git ant net-tools iputil-ping
+RUN apt-get update ; apt-get install -y git ant net-tools iputils-ping
 
 ## Download and build JGroups src code
 RUN git clone https://github.com/belaban/JGroups.git
