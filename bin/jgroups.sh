@@ -36,7 +36,7 @@ fi;
 FLAGS="-server -Xmx1G -Xms500M"
 GC="-XX:+UseG1GC"
 
-FLAGS="$FLAGS -Duser.language=de"
+#FLAGS="$FLAGS -Duser.language=de"
 
 JMX="-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost"
 
