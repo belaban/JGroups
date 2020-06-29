@@ -49,8 +49,8 @@
     </scm>
 
     <issueManagement>
-        <system>jira</system>
-        <url>https://jira.jboss.com/jira/browse/JGRP</url>
+        <system>Jira</system>
+        <url>https://issues.redhat.com/browse/JGRP</url>
     </issueManagement>
 
     <distributionManagement>
