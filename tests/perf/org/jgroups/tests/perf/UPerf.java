@@ -325,7 +325,8 @@ public class UPerf implements Receiver {
                         changeFieldAcrossCluster(ALLOW_LOCAL_GETS, !allow_local_gets);
                         break;
                     case 'v':
-                        System.out.printf("Version: %s\n", Version.printVersion());
+                        System.out.printf("Version: %s, Java version: %s\n", Version.printVersion(),
+                                          System.getProperty("java.vm.version", "n/a"));
                         break;
                     case 'x':
                     case -1:
