@@ -497,7 +497,7 @@ public class UtilTest {
     }
 
     public void testWriteAndReadString() throws IOException {
-        String s1="Béla Bån", s2="Bela Ban";
+        String s1="B\u00e9la B\u00060n", s2="Bela Ban";
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(30);
         Util.writeString(s1, out);
         Util.writeString(s2, out);
