@@ -86,7 +86,7 @@ public class ObjectMessageTest extends MessageTestBase {
 
     public void testMarshalling() throws Exception {
         Object[] objects={null, int.class, Boolean.class, byte[].class, Person.class, "hello".getBytes(), (short)50, 50, 50L,
-        3.2345F, 3.1234, "hello world", "Béla Bån"};
+        3.2345F, 3.1234, "hello world", "B\u00e9la B\u00060n"};
         for(Object obj: objects) {
             Message msg=new ObjectMessage(null, obj);
             _testSize(msg);
