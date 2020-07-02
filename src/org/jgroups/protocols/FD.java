@@ -42,7 +42,9 @@ import java.util.function.Supplier;
  * is reduced.
  *
  * @author Bela Ban
+ * @deprecated Use {@link FD_ALL2} or {@link FD_ALL3} instead
  */
+@Deprecated(forRemoval=true)
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD extends Protocol {
     
