@@ -95,7 +95,11 @@ public class FD extends Protocol {
 
     // task that performs the actual monitoring for failure detection
     @GuardedBy("lock")
-    protected Future<?>                  monitor_future=null;
+    protected Future<?> timeout_checker_future =null;
+
+    // task which sends HEARTBEAT message
+    @GuardedBy("lock")
+    protected Future<?> heartbeat_sender_future =null;
     
     /** Transmits SUSPECT message until view change or UNSUSPECT is received */
     protected final Broadcaster          bcast_task=new Broadcaster();
@@ -184,24 +188,33 @@ public class FD extends Protocol {
     /** Requires lock to held by caller */
     @GuardedBy("lock")
     protected void startMonitor() {
-        if(monitor_future == null || monitor_future.isDone()) {
+        if(timeout_checker_future == null || timeout_checker_future.isDone()) {
             last_ack=System.nanoTime();  // start from scratch
-            monitor_future=timer.scheduleWithFixedDelay(new Monitor(), timeout, timeout, TimeUnit.MILLISECONDS, false);
+            timeout_checker_future =timer.scheduleWithFixedDelay(new TimeoutChecker(), timeout, timeout, TimeUnit.MILLISECONDS, false);
+
             num_tries.set(1);
+        }
+        if(heartbeat_sender_future == null || heartbeat_sender_future.isDone()){
+            heartbeat_sender_future =timer.scheduleWithFixedDelay(new HeartbeatSender(), timeout, timeout, TimeUnit.MILLISECONDS,
+                    getTransport() instanceof TCP);
         }
     }
 
     /** Requires lock to be held by caller */
     @GuardedBy("lock")
     protected void stopMonitor() {
-        if(monitor_future != null) {
-            monitor_future.cancel(true);
-            monitor_future=null;
+        if(timeout_checker_future != null) {
+            timeout_checker_future.cancel(true);
+            timeout_checker_future =null;
+        }
+        if(heartbeat_sender_future != null) {
+            heartbeat_sender_future.cancel(true);
+            heartbeat_sender_future =null;
         }
     }
 
     @ManagedAttribute(description="Whether the failure detection monitor is running")
-    public boolean isMonitorRunning() {return monitor_future != null && !monitor_future.isDone();}
+    public boolean isMonitorRunning() {return timeout_checker_future != null && !timeout_checker_future.isDone();}
 
 
 
@@ -444,27 +457,43 @@ public class FD extends Protocol {
     }
 
 
-    /** Task which periodically checks of the last_ack from ping_dest exceeded timeout and - if yes - broadcasts
-     * a SUSPECT message */
-    protected class Monitor implements Runnable {
+    protected class HeartbeatSender implements Runnable {
 
         public void run() {
             Address dest=ping_dest;
             if(dest == null) {
                 log.trace("%s: ping_dest is null, skipping timeout check: members=%s, pingable_mbrs=%s",
-                          local_addr, members, pingable_mbrs);
+                        local_addr, members, pingable_mbrs);
                 return;
             }
 
-            // 1. send heartbeat request
+            //send heartbeat request
             Message hb_req=new Message(dest).setFlag(Message.Flag.INTERNAL).putHeader(id, new FdHeader(FdHeader.HEARTBEAT));
             log.trace("%s: sending are-you-alive msg to %s", local_addr, dest);
             down_prot.down(hb_req);
             num_heartbeats++;
+        }
 
-            // 2. If the time of the last heartbeat is > timeout and max_tries heartbeat messages have not been
-            //    received, then broadcast a SUSPECT message. Will be handled by coordinator, which may install
-            //    a new view
+        public String toString() {
+            return FD.class.getSimpleName() + ":" + getClass().getSimpleName() + " (timeout=" + timeout + "ms)";
+        }
+    }
+
+    /** Task which periodically checks of the last_ack from ping_dest exceeded timeout and - if yes - broadcasts
+     * a SUSPECT message */
+    public class TimeoutChecker implements Runnable {
+
+        public void run() {
+            Address dest = ping_dest;
+            if (dest == null) {
+                log.debug("%s: ping_dest is null, skipping timeout check: members=%s, pingable_mbrs=%s",
+                        local_addr, members, pingable_mbrs);
+                return;
+            }
+
+            // If the time of the last heartbeat is > timeout and max_tries heartbeat messages have not been
+            // received, then broadcast a SUSPECT message. Will be handled by coordinator, which may install
+            // a new view
             // time in msecs we haven't heard from ping_dest
             long not_heard_from=TimeUnit.MILLISECONDS.convert(System.nanoTime() - last_ack, TimeUnit.NANOSECONDS);
             // quick & dirty fix: increase timeout by 500 ms to allow for latency (bela June 27 2003)
@@ -474,7 +503,7 @@ public class FD extends Protocol {
                     if(!dest.equals(ping_dest)) // ping_dest was changed meanwhile...
                         return;
                     log.debug("%s: received no heartbeat from %s for %d times (%d milliseconds), suspecting it",
-                              local_addr, dest, tmp_tries, tmp_tries * timeout);
+                            local_addr, dest, tmp_tries, tmp_tries * timeout);
                     // broadcast a SUSPECT message to all members - loop until unsuspect or view change is received
                     bcast_task.addSuspectedMember(dest);
                     num_tries.set(1);
@@ -491,10 +520,9 @@ public class FD extends Protocol {
         }
 
         public String toString() {
-            return FD.class.getSimpleName() + ": Monitor (timeout=" + timeout + "ms)";
+            return FD.class.getSimpleName() + ":" + getClass().getSimpleName() + " (timeout=" + timeout + "ms)";
         }
     }
-
 
     /**
      * Task that periodically broadcasts a list of suspected members to the group. Goal is not to lose
