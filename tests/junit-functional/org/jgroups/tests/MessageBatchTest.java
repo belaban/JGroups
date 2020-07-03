@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 public class MessageBatchTest {
     protected static final short UNICAST3_ID=ClassConfigurator.getProtocolId(UNICAST3.class),
       PING_ID=ClassConfigurator.getProtocolId(PING.class),
-      FD_ID=ClassConfigurator.getProtocolId(FD.class),
+      FD_ID=ClassConfigurator.getProtocolId(FD_ALL3.class),
       MERGE_ID=ClassConfigurator.getProtocolId(MERGE3.class),
       UDP_ID=ClassConfigurator.getProtocolId(UDP.class);
     protected final Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B");
@@ -692,7 +692,7 @@ public class MessageBatchTest {
             retval.add(new EmptyMessage(b).putHeader(UNICAST3_ID, UnicastHeader3.createDataHeader(seqno, (short)22, false)));
 
         retval.add(new EmptyMessage(b).putHeader(PING_ID, new PingHeader(PingHeader.GET_MBRS_RSP).clusterName("demo-cluster")));
-        retval.add(new EmptyMessage(b).putHeader(FD_ID, new FD.FdHeader(org.jgroups.protocols.FD.FdHeader.HEARTBEAT)));
+        retval.add(new EmptyMessage(b).putHeader(FD_ID, new FailureDetection.HeartbeatHeader()));
         retval.add(new EmptyMessage(b).putHeader(MERGE_ID, MERGE3.MergeHeader.createViewResponse()));
 
         for(long seqno=6; seqno <= 10; seqno++)

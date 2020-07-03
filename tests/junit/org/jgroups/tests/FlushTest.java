@@ -391,11 +391,6 @@ public class FlushTest {
 
     private static void changeProps(JChannel ... channels) {
         for(JChannel ch: channels) {
-            FD fd=ch.getProtocolStack().findProtocol(FD.class);
-            if(fd != null) {
-                fd.setTimeout(1000);
-                fd.setMaxTries(2);
-            }
             FailureDetection fd_all=ch.getProtocolStack().findProtocol(FailureDetection.class);
             if(fd_all != null) {
                 fd_all.setTimeout(2000);

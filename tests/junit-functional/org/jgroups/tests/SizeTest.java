@@ -134,17 +134,12 @@ public class SizeTest {
     }
 
 
-    public static void testFdHeaders() throws Exception {
-        FD.FdHeader hdr=new FD.FdHeader(FD.FdHeader.HEARTBEAT_ACK);
-        _testSize(hdr);
-
+    public void testFdHeaders() throws Exception {
         IpAddress a1=new IpAddress("127.0.0.1", 5555);
         IpAddress a2=new IpAddress("127.0.0.1", 6666);
         List<Address> suspects=new ArrayList<>();
         suspects.add(a1);
         suspects.add(a2);
-        hdr=new FD.FdHeader(FD.FdHeader.SUSPECT, suspects, a1);
-        _testSize(hdr);
 
         FD_SOCK.FdHeader sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE);
         _testSize(sockhdr);

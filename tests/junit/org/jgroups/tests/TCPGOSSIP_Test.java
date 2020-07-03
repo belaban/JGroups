@@ -179,7 +179,7 @@ public class TCPGOSSIP_Test {
         JChannel ch=new JChannel(new TCP().setSockConnTimeout(300).setBindAddress(bind_addr),
                                  gossip,
                                  new MERGE3().setMinInterval(1000).setMaxInterval(3000),
-                                 new FD().setTimeout(2000).setMaxTries(2),
+                                 new FD_ALL3().setTimeout(5000).setInterval(1500),
                                  new VERIFY_SUSPECT(),
                                  new NAKACK2().useMcastXmit(false),
                                  new UNICAST3(), new STABLE(), new GMS().setJoinTimeout(1000));

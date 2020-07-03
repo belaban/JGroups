@@ -111,7 +111,7 @@ public class GossipRouterTest {
                                                            new MERGE3().setMinInterval(1000).setMaxInterval(3000)));
         if(include_failure_detection) {
             List<Protocol> tmp=new ArrayList<>(2);
-            tmp.add(new FD().setTimeout(2000).setMaxTries(2));
+            tmp.add(new FD_ALL3().setTimeout(5000).setInterval(1500));
             tmp.add(new VERIFY_SUSPECT());
             prots.addAll(tmp);
         }
