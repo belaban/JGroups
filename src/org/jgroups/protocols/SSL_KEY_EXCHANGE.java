@@ -104,7 +104,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected String          ssl_protocol= SSLContextFactory.DEFAULT_SSL_PROTOCOL;
 
     @Property(description="Use Wildfly's OpenSSL impl if available")
-    protected boolean         use_native_if_available=true;
+    protected boolean         use_native_if_available;
 
 
     protected SSLContext                   client_ssl_ctx;
