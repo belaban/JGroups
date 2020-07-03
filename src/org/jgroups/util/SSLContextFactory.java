@@ -18,8 +18,6 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.wildfly.openssl.OpenSSLProvider;
-import org.wildfly.openssl.SSL;
 
 /**
  * SslContextFactory.
@@ -37,8 +35,8 @@ public class SSLContextFactory {
         String sslProtocolPrefix = "";
         if (Boolean.parseBoolean(SecurityActions.getProperty("org.jgroups.openssl", "true"))) {
             try {
-                OpenSSLProvider.register();
-                SSL.getInstance();
+                org.wildfly.openssl.OpenSSLProvider.register();
+                org.wildfly.openssl.SSL.getInstance();
                 sslProtocolPrefix = "openssl.";
                 log.info("Using OpenSSL");
             } catch (Throwable e) {

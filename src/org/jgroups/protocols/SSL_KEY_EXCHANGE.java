@@ -172,6 +172,8 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
                     .keyStoreType(keystore_type)
                     .keyStoreFileName(keystore_name)
                     .keyStorePassword(keystore_password.toCharArray())
+                    .trustStoreFileName(keystore_name)
+                    .trustStorePassword(keystore_password.toCharArray())
                     .sslProtocol(ssl_protocol).getContext();
             if (client_ssl_ctx == null) {
                 client_ssl_ctx = sslContext;
