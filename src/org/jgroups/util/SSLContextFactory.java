@@ -19,22 +19,7 @@ public class SSLContextFactory {
     protected static final Log log = LogFactory.getLog(SSLContextFactory.class);
     private static final String DEFAULT_KEYSTORE_TYPE = "JKS";
     private static final String CLASSPATH_RESOURCE = "classpath:";
-    private static final String SSL_PROTOCOL_PREFIX;
-
-    static {
-        String sslProtocolPrefix = "";
-        if (Boolean.parseBoolean(SecurityActions.getProperty("org.jgroups.openssl", "false"))) {
-            try {
-                org.wildfly.openssl.OpenSSLProvider.register();
-                org.wildfly.openssl.SSL.getInstance();
-                sslProtocolPrefix = "openssl.";
-                log.info("Using OpenSSL");
-            } catch (Throwable e) {
-                log.info("Using JDK SSL");
-            }
-        }
-        SSL_PROTOCOL_PREFIX = sslProtocolPrefix;
-    }
+    private static       String SSL_PROTOCOL_PREFIX="";
 
     private KeyStore keyStore;
     private String keyStoreFileName;
@@ -119,6 +104,8 @@ public class SSLContextFactory {
     }
 
     public SSLContext getContext() {
+        if(useNativeIfAvailable)
+            initNative();
         try {
             KeyManager[] keyManagers = null;
             if (keyStoreFileName != null) {
@@ -186,6 +173,19 @@ public class SSLContextFactory {
         sslEngine.setUseClientMode(useClientMode);
         sslEngine.setNeedClientAuth(needClientAuth);
         return sslEngine;
+    }
+
+    private SSLContextFactory initNative() {
+        try {
+            org.wildfly.openssl.OpenSSLProvider.register();
+            org.wildfly.openssl.SSL.getInstance();
+            SSL_PROTOCOL_PREFIX = "openssl.";
+            log.info("Using OpenSSL");
+        } catch (Throwable e) {
+            log.info("Using JDK SSL");
+            useNativeIfAvailable=false;
+        }
+        return this;
     }
 
     private static void loadKeyStore(KeyStore ks, String keyStoreFileName, char[] keyStorePassword, ClassLoader classLoader) throws IOException, GeneralSecurityException {

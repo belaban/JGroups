@@ -103,6 +103,9 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     @Property(description="The SSL protocol")
     protected String          ssl_protocol= SSLContextFactory.DEFAULT_SSL_PROTOCOL;
 
+    @Property(description="Use Wildfly's OpenSSL impl if available")
+    protected boolean         use_native_if_available=true;
+
 
     protected SSLContext                   client_ssl_ctx;
     protected SSLContext                   server_ssl_ctx;
@@ -143,6 +146,8 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     public SSL_KEY_EXCHANGE setClientSSLContext(SSLContext client_ssl_ctx) {this.client_ssl_ctx = client_ssl_ctx; return this;}
     public SSLContext getServerSSLContext()                                {return server_ssl_ctx;}
     public SSL_KEY_EXCHANGE setServerSSLContext(SSLContext server_ssl_ctx) {this.server_ssl_ctx = server_ssl_ctx; return this;}
+    public boolean          useNativeIfAvailable()                         {return use_native_if_available;}
+    public SSL_KEY_EXCHANGE useNativeIfAvailable(boolean b)                {use_native_if_available=b; return this;}
 
 
     public Address getServerLocation() {
@@ -174,7 +179,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
                     .keyStorePassword(keystore_password.toCharArray())
                     .trustStoreFileName(keystore_name)
                     .trustStorePassword(keystore_password.toCharArray())
-                    .sslProtocol(ssl_protocol).getContext();
+                    .sslProtocol(ssl_protocol).useNativeIfAvailable(use_native_if_available).getContext();
             if (client_ssl_ctx == null) {
                 client_ssl_ctx = sslContext;
             }
