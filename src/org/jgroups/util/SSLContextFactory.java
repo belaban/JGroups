@@ -1,23 +1,13 @@
 package org.jgroups.util;
 
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
-
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+
+import javax.net.ssl.*;
+import java.io.*;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 
 /**
  * SslContextFactory.
@@ -33,7 +23,7 @@ public class SSLContextFactory {
 
     static {
         String sslProtocolPrefix = "";
-        if (Boolean.parseBoolean(SecurityActions.getProperty("org.jgroups.openssl", "true"))) {
+        if (Boolean.parseBoolean(SecurityActions.getProperty("org.jgroups.openssl", "false"))) {
             try {
                 org.wildfly.openssl.OpenSSLProvider.register();
                 org.wildfly.openssl.SSL.getInstance();
