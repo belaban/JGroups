@@ -963,20 +963,24 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         // ====================================== Thread pool ===========================
         if(thread_pool == null || (thread_pool instanceof ExecutorService && ((ExecutorService)thread_pool).isShutdown())) {
             if(thread_pool_enabled) {
-                int num_cores=Runtime.getRuntime().availableProcessors();
-                int max_internal_size=Math.max(4, num_cores);
-                log.debug("thread pool min/max/keep-alive: %d/%d/%d, internal pool: %d/%d/%d (%d cores available)",
-                          thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
-                          0, max_internal_size, 30000, num_cores);
-                thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
-                                             "abort", new SynchronousQueue<>(), thread_factory);
-                internal_pool=createThreadPool(0, max_internal_size, 30000, "abort",
-                                               new SynchronousQueue<>(), internal_thread_factory);
+                if(use_fibers) {
+                    internal_pool=thread_pool=Util.createFiberThreadPool(); // Executors.newVirtualThreadExecutor();
+                }
+                else {
+                    int num_cores=Runtime.getRuntime().availableProcessors();
+                    int max_internal_size=Math.max(4, num_cores);
+                    log.debug("thread pool min/max/keep-alive: %d/%d/%d, internal pool: %d/%d/%d (%d cores available)",
+                              thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
+                              0, max_internal_size, 30000, num_cores);
+                    thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
+                                                 "abort", new SynchronousQueue<>(), thread_factory);
+                    internal_pool=createThreadPool(0, max_internal_size, 30000, "abort",
+                                                   new SynchronousQueue<>(), internal_thread_factory);
+                }
             }
             else // otherwise use the caller's thread to unmarshal the byte buffer into a message
                 thread_pool=new DirectExecutor();
         }
-
 
         // ========================================== Timer ==============================
         if(timer == null) {
@@ -1060,12 +1064,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             logical_addr_cache_reaper=null;
         }
 
-        // Stop the thread pool
-        if(thread_pool instanceof ExecutorService)
-            shutdownThreadPool(thread_pool);
-
-        if(internal_pool instanceof ExecutorService)
-            shutdownThreadPool(internal_pool);
+        // Stop the thread pools
+        shutdownThreadPool(thread_pool);
+        shutdownThreadPool(internal_pool);
     }
 
 

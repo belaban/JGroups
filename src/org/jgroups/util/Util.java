@@ -24,6 +24,9 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import java.io.*;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
@@ -111,9 +114,9 @@ public class Util {
     protected static ResourceBundle resource_bundle;
 
     // Fibers (project Loom - Java 15)
-    protected static Method         BUILDER=null, VIRTUAL=null, TASK=null, NAME=null, BUILD=null;
-    protected static Class<?>       BUILDER_CLASS=null;
-
+    protected static int            VIRTUAL=1;
+    protected static MethodHandle   THREAD_NEW_THREAD=null;
+    public static MethodHandle      EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY=null;
 
 
     static {
@@ -186,37 +189,45 @@ public class Util {
 
         // fibers
         try {
-            BUILDER_CLASS=Util.loadClass("java.lang.Thread$Builder", DefaultThreadFactory.class);
-            BUILDER=Thread.class.getMethod("builder");
-            VIRTUAL=BUILDER_CLASS.getMethod("virtual");
-            TASK=BUILDER_CLASS.getMethod("task", Runnable.class);
-            NAME=BUILDER_CLASS.getMethod("name", String.class);
-            BUILD=BUILDER_CLASS.getMethod("build");
+            MethodHandles.Lookup lookup=MethodHandles.publicLookup();
+            MethodHandle tmp_handle=lookup.findStaticGetter(Thread.class, "VIRTUAL", int.class);
+            VIRTUAL=(int)tmp_handle.invokeExact();
+
+            MethodType type=MethodType.methodType(Thread.class, String.class, int.class, Runnable.class);
+            THREAD_NEW_THREAD=lookup.findStatic(Thread.class, "newThread", type);
+            type=MethodType.methodType(ExecutorService.class);
+            EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY=lookup.findStatic(Executors.class, "newVirtualThreadExecutor", type);
         }
-        catch(Exception ex) {
+        catch(Throwable ex) {
         }
     }
 
     public static boolean fibersAvailable() {
-        return VIRTUAL != null;
+        return THREAD_NEW_THREAD != null;
+    }
+
+    public static ExecutorService createFiberThreadPool() {
+        if(EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY == null)
+            throw new IllegalStateException("failed to create fiber thread pool (factory is null)");
+        try {
+            return (ExecutorService)EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY.invokeExact();
+        }
+        catch(Throwable t) {
+            throw new IllegalStateException(String.format("failed to create fiber thread pool: %s", t));
+        }
     }
 
     /**
      * Use of reflection to create fibers. If a JDK < 15/Loom is found, we'll create regular threads.
      */
     public static Thread createFiber(Runnable r, String name) {
-        // the code below is the equivalent of: Thread.builder().virtual().task(r).name(name).build();
-        if(BUILD == null) {
+        if(THREAD_NEW_THREAD == null) {
             return new Thread(r, name);
         }
         try {
-            Object builder=BUILDER.invoke(null);
-            VIRTUAL.invoke(builder);
-            TASK.invoke(builder, r);
-            NAME.invoke(builder, name);
-            return (Thread)BUILD.invoke(builder);
+            return (Thread)THREAD_NEW_THREAD.invokeExact(name, VIRTUAL, r);
         }
-        catch(Exception ex) {
+        catch(Throwable ex) {
             return new Thread(r, name);
         }
     }
