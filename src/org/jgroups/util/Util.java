@@ -2381,6 +2381,13 @@ public class Util {
         return sb.toString();
     }
 
+    public static String printStackTrace(Thread t) {
+        if(t == null)
+            return "null";
+        return String.format("-- %s:\n%s", t, Stream.of(t.getStackTrace()).map(StackTraceElement::toString)
+          .collect(Collectors.joining("\n")));
+    }
+
 
     protected static void _printThreads(ThreadMXBean bean,long[] ids,StringBuilder sb) {
         ThreadInfo[] threads=bean.getThreadInfo(ids,100);
@@ -3115,7 +3122,8 @@ public class Util {
         }
         if(method_func != null) {
             Stream.of(Util.getAllDeclaredMethodsWithAnnotations(obj.getClass()))
-              .filter(m -> filter != null && filter.test(m)).forEach(m -> method_func.accept(m, obj));
+              .filter(m -> filter != null && filter.test(m)).peek(m -> m.setAccessible(true))
+              .forEach(m -> method_func.accept(m, obj));
         }
     }
 
