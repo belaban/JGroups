@@ -10,6 +10,10 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.stack.AddressGenerator;
+import org.jgroups.tests.perf.PerfUtil.Config;
+import org.jgroups.tests.perf.PerfUtil.GetCall;
+import org.jgroups.tests.perf.PerfUtil.PutCall;
+import org.jgroups.tests.perf.PerfUtil.Results;
 import org.jgroups.util.*;
 
 import javax.management.MBeanServer;
@@ -19,8 +23,6 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.LongAdder;
-
-import static org.jgroups.tests.perf.PerfUtil.*;
 
 
 /**
@@ -53,6 +55,7 @@ public class UPerf implements Receiver {
     @Property protected boolean allow_local_gets=true;
     @Property protected boolean print_invokers;
     @Property protected boolean print_details;
+    @Property protected long    rpc_timeout=40000;
     // ... add your own here, just don't forget to annotate them with @Property
     // =======================================================
 
@@ -64,14 +67,14 @@ public class UPerf implements Receiver {
     private static final short SET                   =  4;
     private static final short QUIT_ALL              =  5;
 
-    protected static final Field SYNC, OOB, NUM_THREADS, TIME, MSG_SIZE, ANYCAST_COUNT,
+    protected static final Field SYNC, OOB, NUM_THREADS, TIME, RPC_TIMEOUT, MSG_SIZE, ANYCAST_COUNT,
       READ_PERCENTAGE, ALLOW_LOCAL_GETS, PRINT_INVOKERS, PRINT_DETAILS;
 
 
     private byte[]              BUFFER=new byte[msg_size];
     protected static final String format=
       "[1] Start test [2] View [4] Threads (%d) [6] Time (%,ds) [7] Msg size (%s)" +
-        "\n[s] Sync (%b) [o] OOB (%b)" +
+        "\n[s] Sync (%b) [o] OOB (%b) [t] RPC timeout (%,dms)" +
         "\n[a] Anycast count (%d) [r] Read percentage (%.2f) " +
         "\n[l] local gets (%b) [d] print details (%b)  [i] print invokers (%b)" +
         "\n[v] Version [x] Exit [X] Exit all\n";
@@ -90,6 +93,7 @@ public class UPerf implements Receiver {
             OOB=Util.getField(UPerf.class, "oob", true);
             NUM_THREADS=Util.getField(UPerf.class, "num_threads", true);
             TIME=Util.getField(UPerf.class, "time", true);
+            RPC_TIMEOUT=Util.getField(UPerf.class, "rpc_timeout", true);
             MSG_SIZE=Util.getField(UPerf.class, "msg_size", true);
             ANYCAST_COUNT=Util.getField(UPerf.class, "anycast_count", true);
             READ_PERCENTAGE=Util.getField(UPerf.class, "read_percentage", true);
@@ -281,7 +285,7 @@ public class UPerf implements Receiver {
         while(looping) {
             try {
                 int c=Util.keyPress(String.format(format, num_threads, time, Util.printBytes(msg_size),
-                                                  sync, oob, anycast_count, read_percentage,
+                                                  sync, oob, rpc_timeout, anycast_count, read_percentage,
                                                   allow_local_gets, print_details, print_invokers));
                 switch(c) {
                     case '1':
@@ -323,6 +327,9 @@ public class UPerf implements Receiver {
                         break;
                     case 'l':
                         changeFieldAcrossCluster(ALLOW_LOCAL_GETS, !allow_local_gets);
+                        break;
+                    case 't':
+                        changeFieldAcrossCluster(RPC_TIMEOUT, Util.readIntFromStdin("RPC timeout (millisecs): "));
                         break;
                     case 'v':
                         System.out.printf("Version: %s, Java version: %s\n", Version.printVersion(),
@@ -486,8 +493,8 @@ public class UPerf implements Receiver {
             Object[] get_args={0};
             MethodCall get_call=new GetCall(GET, get_args);
             MethodCall put_call=new PutCall(PUT, put_args);
-            RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, 40000, false, null);
-            RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, 40000, true, null);
+            RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, rpc_timeout, false, null);
+            RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, rpc_timeout, true, null);
 
             if(oob) {
                 get_options.flags(Message.Flag.OOB);
