@@ -257,7 +257,7 @@ public class GroupRequest<T> extends Request<RspList<T>> {
         ret.append(super.toString());
 
         if(!rsps.isEmpty()) {
-            ret.append(", entries:\n");
+            ret.append(", rsps:\n");
             for(Map.Entry<Address,Rsp<T>> entry: rsps.entrySet()) {
                 Address mbr=entry.getKey();
                 Rsp<T> rsp=entry.getValue();
