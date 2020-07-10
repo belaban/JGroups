@@ -38,6 +38,10 @@ GC="-XX:+UseG1GC"
 
 #FLAGS="$FLAGS -Duser.language=de"
 
+#FLAGS="$FLAGS -Djdk.defaultScheduler.parallelism=2"
+
+#FLAGS="$FLAGS -Djava.util.concurrent.ForkJoinPool.common.parallelism=1"
+
 JMX="-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost"
 
 #java -Xrunhprof:cpu=samples,monitor=y,interval=5,lineno=y,thread=y -classpath $CP $LOG $JG_FLAGS $FLAGS $JMX  $*
