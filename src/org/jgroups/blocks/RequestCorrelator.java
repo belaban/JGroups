@@ -157,8 +157,7 @@ public class RequestCorrelator {
     public <T> void sendUnicastRequest(Message msg, Request<T> req, RequestOptions opts) throws Exception {
         Address dest=msg.getDest();
         Header hdr=new Header(Header.REQ, 0, this.corr_id);
-        msg.putHeader(this.corr_id, hdr)
-          .setFlag(opts.flags(), false)
+        msg.putHeader(this.corr_id, hdr).setFlag(opts.flags(), false)
           .setFlag(opts.transientFlags(), true);
 
         if(req != null) { // sync RPC
