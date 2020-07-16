@@ -137,10 +137,7 @@ public class UnicastRequest<T> extends Request<T> {
 
     protected T getResult(Callable<T> supplier) throws Exception {
         try {
-            T result=supplier.call();
-            if(result == null && !isDone())
-                throw new TimeoutException("timeout waiting for response from " + target + ", request: " + toString());
-            return result;
+            return supplier.call();
         }
         catch(ExecutionException ex) {
             Throwable exception=ex.getCause();
