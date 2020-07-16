@@ -38,7 +38,6 @@ public class UPerf implements Receiver {
     protected final List<Address>  members=new ArrayList<>();
     protected volatile View        view;
     protected volatile boolean     looping=true;
-    protected Thread               event_loop_thread;
     protected final LongAdder      num_reads=new LongAdder();
     protected final LongAdder      num_writes=new LongAdder();
     protected ThreadFactory        thread_factory;
@@ -148,18 +147,9 @@ public class UPerf implements Receiver {
         Util.close(disp, channel);
     }
 
-    protected void startEventThread(boolean use_fibers) throws InterruptedException {
-        event_loop_thread=use_fibers? Util.createFiber(UPerf.this::eventLoop,"EventLoop")
-          : new Thread(UPerf.this::eventLoop,"EventLoop");
-        event_loop_thread.start();
-        event_loop_thread.join();
-    }
 
-    protected void stopEventThread() {
-        Thread tmp=event_loop_thread;
+    protected void stopEventLoop() {
         looping=false;
-        if(tmp != null)
-            tmp.interrupt();
         Util.close(channel);
     }
 
@@ -198,7 +188,7 @@ public class UPerf implements Receiver {
         }
 
         for(Invoker invoker: invokers)
-            invoker.cancel();
+            invoker.stop();
         for(Thread t: threads)
             t.join();
         long total_time=System.currentTimeMillis() - start;
@@ -229,7 +219,7 @@ public class UPerf implements Receiver {
 
     public void quitAll() {
         System.out.println("-- received quitAll(): shutting down");
-        stopEventThread();
+        stopEventLoop();
         System.exit(0);
     }
 
@@ -281,7 +271,6 @@ public class UPerf implements Receiver {
 
 
     public void eventLoop() {
-
         while(looping) {
             try {
                 int c=Util.keyPress(String.format(format, num_threads, time, Util.printBytes(msg_size),
@@ -366,8 +355,8 @@ public class UPerf implements Receiver {
     void startBenchmark() {
         RspList<Results> responses=null;
         try {
-            RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0);
-            options.flags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
+            RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0)
+              .flags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
             responses=disp.callRemoteMethods(null, new MethodCall(START), options);
         }
         catch(Throwable t) {
@@ -486,7 +475,7 @@ public class UPerf implements Receiver {
         
         public AverageMinMax avgGets() {return avg_gets;}
         public AverageMinMax avgPuts() {return avg_puts;}
-        public void          cancel()  {running=false;}
+        public void          stop()    {running=false;}
 
         public void run() {
             Object[] put_args={0, BUFFER};
@@ -534,8 +523,10 @@ public class UPerf implements Receiver {
                         num_writes.increment();
                     }
                 }
-                catch(Throwable throwable) {
-                    throwable.printStackTrace();
+                catch(Throwable t) {
+                    if(running)
+                        t.printStackTrace();
+
                 }
             }
         }
@@ -597,7 +588,11 @@ public class UPerf implements Receiver {
             test=new UPerf();
             test.init(props, name, addr_generator, port, use_fibers);
             if(run_event_loop)
-                test.startEventThread(use_fibers);
+                test.eventLoop();
+            else {
+                for(;;)
+                    Util.sleep(60000);
+            }
         }
         catch(Throwable ex) {
             ex.printStackTrace();
