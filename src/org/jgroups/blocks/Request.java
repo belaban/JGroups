@@ -49,7 +49,7 @@ public abstract class Request<T> extends CompletableFuture<T> {
         if(!block_for_results || options.mode() == ResponseMode.GET_NONE)
             return null;
         long timeout=options.timeout();
-        return timeout > 0? waitForCompletion(options.timeout(), TimeUnit.MILLISECONDS) : waitForCompletion();
+        return timeout > 0? waitForCompletion(timeout, TimeUnit.MILLISECONDS) : waitForCompletion();
     }
 
     public abstract void       sendRequest(Message req) throws Exception;
