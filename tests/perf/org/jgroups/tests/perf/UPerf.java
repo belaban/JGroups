@@ -54,7 +54,7 @@ public class UPerf implements Receiver {
     @Property protected boolean allow_local_gets=true;
     @Property protected boolean print_invokers;
     @Property protected boolean print_details;
-    @Property protected long    rpc_timeout=40000;
+    @Property protected long    rpc_timeout=0;
     // ... add your own here, just don't forget to annotate them with @Property
     // =======================================================
 
