@@ -2,10 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.LocalAddress;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
@@ -63,7 +60,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     // a list of suspects, ordered by time when a SUSPECT event needs to be sent up
     protected final DelayQueue<Entry> suspects=new DelayQueue<>();
 
-    protected volatile Thread         timer;
+    protected Thread                  timer;
     protected volatile boolean        running;
 
 
@@ -295,10 +292,23 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
     protected synchronized void startTimer() {
-        timer=getThreadFactory().newThread(this,"VERIFY_SUSPECT.TimerThread");
-        timer.setDaemon(true);
-        timer.start();
+        if(timer == null || !timer.isAlive()) {
+            timer=getThreadFactory().newThread(this, "VERIFY_SUSPECT.TimerThread");
+            timer.setDaemon(true);
+            timer.start();
+        }
     }
+
+    @GuardedBy("lock")
+    protected void stopTimer() {
+        if(timer != null && timer.isAlive()) {
+            Thread tmp=timer;
+            timer=null;
+            tmp.interrupt();
+        }
+        timer=null;
+    }
+
 
     public void start() throws Exception {
         super.start();
@@ -309,12 +319,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     public synchronized void stop() {
         clearSuspects();
         running=false;
-        if(timer != null && timer.isAlive()) {
-            Thread tmp=timer;
-            timer=null;
-            tmp.interrupt();
-        }
-        timer=null;
+        stopTimer();
     }
 
     private static long getCurrentTimeMillis() {
