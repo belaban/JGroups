@@ -59,7 +59,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     // a list of suspects, ordered by time when a SUSPECT event needs to be sent up
     protected final DelayQueue<Entry> suspects=new DelayQueue<>();
 
-    protected volatile Thread         timer;
+    protected Thread                  timer;
     protected volatile boolean        running;
 
 
@@ -291,28 +291,33 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
     protected synchronized void startTimer() {
-        timer=getThreadFactory().newThread(this,"VERIFY_SUSPECT.TimerThread");
-        timer.setDaemon(true);
-        timer.start();
+        if(timer == null || !timer.isAlive()) {
+            timer=getThreadFactory().newThread(this, "VERIFY_SUSPECT.TimerThread");
+            timer.setDaemon(true);
+            timer.start();
+        }
     }
 
-    public void init() throws Exception {
-        super.init();
-        if(bind_addr != null)
-            intf=NetworkInterface.getByInetAddress(bind_addr);
-    }
-
-
-
-    public synchronized void stop() {
-        clearSuspects();
-        running=false;
+    @GuardedBy("lock")
+    protected void stopTimer() {
         if(timer != null && timer.isAlive()) {
             Thread tmp=timer;
             timer=null;
             tmp.interrupt();
         }
         timer=null;
+    }
+
+    public void start() throws Exception {
+        super.start();
+        if(bind_addr != null)
+            intf=NetworkInterface.getByInetAddress(bind_addr);
+    }
+
+    public synchronized void stop() {
+        clearSuspects();
+        running=false;
+        stopTimer();
     }
 
     private static long getCurrentTimeMillis() {
