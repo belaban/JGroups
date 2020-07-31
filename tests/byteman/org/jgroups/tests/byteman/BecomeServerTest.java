@@ -70,7 +70,7 @@ public class BecomeServerTest extends BMNGRunner {
 
     protected void sendMessage(JChannel ch, String message) {
         try {
-            ch.send(new BytesMessage(null, message).setFlag(Message.Flag.OOB));
+            ch.send(new ObjectMessage(null, message).setFlag(Message.Flag.OOB));
         }
         catch(Exception e) {
             e.printStackTrace(System.err);
