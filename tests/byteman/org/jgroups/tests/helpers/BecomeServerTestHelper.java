@@ -28,4 +28,11 @@ public class BecomeServerTestHelper extends Helper {
                 return true;
         return false;
     }
+
+    public int rv(String rv_name, String ctx) {
+        traceln(String.format("-- acquiring rendezvous %s (ctx: %s)\n", rv_name, ctx));
+        int rc=rendezvous(rv_name);
+        traceln(String.format("-- acquired rendezvous %s (ctx: %s): rc=%d\n", rv_name, ctx, rc));
+        return rc;
+    }
 }

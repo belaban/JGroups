@@ -39,11 +39,8 @@ public class BecomeServerTest extends BMNGRunner {
         });
         a.connect("BecomeServerTest");
 
-        new Thread("MsgSender-A") {
-            public void run() {
-                sendMessage(a, "hello from A"); // will be blocked by byteman rendezvous
-            }
-        }.start();
+        Thread t=new Thread(() -> sendMessage(a, "hello from A"), // will be blocked by byteman rendezvous
+                            "MsgSender-A");
 
         b=createChannel("B");
         b.setReceiver(new Receiver() {
@@ -59,6 +56,8 @@ public class BecomeServerTest extends BMNGRunner {
                 }
             }
         });
+
+        t.start();
 
         b.connect("BecomeServerTest");
 
