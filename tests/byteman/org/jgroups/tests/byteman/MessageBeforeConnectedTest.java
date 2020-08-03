@@ -12,8 +12,8 @@ import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Tests the behavior of receiving a unicast message before being connected and sending a response which will
@@ -27,7 +27,7 @@ public class MessageBeforeConnectedTest extends BMNGRunner {
     protected static final String HELLO1="hello-1";
     protected static final String HELLO2="hello-2";
     protected Throwable           ex;
-    protected final List<String>  msgs=new ArrayList<>();
+    protected final Collection<String> msgs=new ConcurrentLinkedQueue<>();
 
     @AfterMethod
     protected void cleanup() {

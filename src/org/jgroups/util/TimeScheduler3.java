@@ -257,10 +257,8 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
     }
 
     protected Task add(Task task) {
-        //  if(!isRunning())
-        //    return null;
         queue.add(task);
-        removeCancelledTasks();
+        // removeCancelledTasks();
         return task;
     }
 
