@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -66,8 +67,8 @@ public class RELAY extends Protocol {
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
     protected Address          local_addr;
     @ManagedAttribute
-    protected volatile boolean is_coord=false;
-    protected volatile Address coord=null;
+    protected volatile boolean is_coord;
+    protected volatile Address coord;
 
     /** The bridge between the two local clusters, usually based on a TCP config */
     protected JChannel         bridge;
@@ -85,11 +86,13 @@ public class RELAY extends Protocol {
     protected View             global_view;
 
     /** To generate new global views */
-    protected long             global_view_id=0;
+    protected long             global_view_id;
 
     protected TimeScheduler    timer;
 
     protected Future<?>        remote_view_fetcher_future;
+
+    protected Function<String,JChannel> bridge_creator;
 
     protected static final byte[] SITE_ID=Util.stringToBytes("site-id");
 
@@ -120,6 +123,8 @@ public class RELAY extends Protocol {
     }
 
 
+    public Function<String,JChannel> getBridgeCreator()                             {return bridge_creator;}
+    public RELAY                     setBridgeCreator(Function<String,JChannel> bc) {bridge_creator=bc; return this;}
 
     public void init() throws Exception {
         super.init();
@@ -422,12 +427,14 @@ public class RELAY extends Protocol {
 
     protected void createBridge() {
         try {
-            if(log.isTraceEnabled())
-                log.trace("I'm the coordinator, creating a channel (props=" + bridge_props + ", cluster_name=" + bridge_name + ")");
-            bridge=new JChannel(bridge_props);
-            bridge.setDiscardOwnMessages(true); // don't receive my own messages
-            bridge.setReceiver(new Receiver());
-            bridge.connect(bridge_name);
+            log.trace("I'm the coordinator, creating a channel (props=%s, cluster_name=%s)", bridge_props, bridge_name);
+            if(bridge_creator != null)
+                bridge=bridge_creator.apply(bridge_props);
+            else
+                bridge=new JChannel(bridge_props);
+            bridge.setDiscardOwnMessages(true) // don't receive my own messages
+              .setReceiver(new Receiver())
+              .connect(bridge_name);
         }
         catch(Exception e) {
             log.error(Util.getMessage("FailedCreatingBridgeChannelProps") + bridge_props + ")", e);
