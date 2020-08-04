@@ -2028,16 +2028,6 @@ ${COMPRESS}
 
 
 
-[[RELAY]]
-
-
-==== RELAY
-
-RELAY bridges traffic between seperate clusters, see <<RelayAdvanced>> for details.
-            
-
-${RELAY}
-
 [[RELAY2]]
 
 

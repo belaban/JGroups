@@ -592,18 +592,6 @@ public class SizeTest {
         _testSize(hdr);
     }
 
-    public static void testRelayHeader() throws Exception {
-        RELAY.RelayHeader hdr=RELAY.RelayHeader.create(RELAY.RelayHeader.Type.FORWARD);
-        _testSize(hdr);
-
-        hdr=RELAY.RelayHeader.createDisseminateHeader(Util.createRandomAddress("A"));
-        _testSize(hdr);
-
-        Map<Address,String> uuid_cache=new HashMap<>();
-        uuid_cache.put(Util.createRandomAddress("A"), "A");
-        uuid_cache.put(Util.createRandomAddress("B"), "B");
-        uuid_cache.put(Util.createRandomAddress("B"), "B");
-    }
 
     public static void testStateHeader() throws Exception {
         STATE_TRANSFER.StateHeader hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_REQ, null);
