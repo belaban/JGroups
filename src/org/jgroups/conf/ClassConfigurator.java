@@ -63,6 +63,11 @@ public class ClassConfigurator {
     }
 
 
+    public static void addIfAbsent(short magic, Class<?> clazz) {
+        if(!magicMapUser.containsKey(magic) && !classMap.containsKey(clazz))
+            add(magic, clazz);
+    }
+
 
     /**
      * Method to register a user-defined header with jg-magic-map at runtime

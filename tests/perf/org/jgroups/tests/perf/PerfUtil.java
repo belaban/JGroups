@@ -20,11 +20,11 @@ import java.util.function.Supplier;
 public class PerfUtil {
 
     public static void init() {
-        ClassConfigurator.add((short)1040, GetCall.class);
-        ClassConfigurator.add((short)1041, PutCall.class);
-        ClassConfigurator.add((short)1042, Results.class);
-        ClassConfigurator.add((short)1043, Config.class);
-        ClassConfigurator.add((short)1044, CustomCall.class);
+        ClassConfigurator.addIfAbsent((short)1040, GetCall.class);
+        ClassConfigurator.addIfAbsent((short)1041, PutCall.class);
+        ClassConfigurator.addIfAbsent((short)1042, Results.class);
+        ClassConfigurator.addIfAbsent((short)1043, Config.class);
+        ClassConfigurator.addIfAbsent((short)1044, CustomCall.class);
     }
 
     public static class PutCall extends MethodCall implements SizeStreamable {
