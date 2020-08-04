@@ -15,9 +15,9 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -71,23 +71,21 @@ public class RpcDispatcherAsyncInvocationTest {
 
     protected void invoke(int num_invocations, boolean use_oob, long expected_min, long expected_max) throws Exception {
         long start=System.currentTimeMillis();
-        List<Integer> list=invokeRpc(num_invocations, use_oob);
+        Collection<Integer> list=invokeRpc(num_invocations, use_oob);
         long time=System.currentTimeMillis() - start;
         System.out.println("took " + time + " ms: " + list);
-        assert list.size() == num_invocations : String.format("expected %d, but list is %d (%s)",
-                                                              num_invocations, list.size(), list);
         assert time >= expected_min && time <= expected_max : // extreme GC could cause this (or even worse)
           "time was expected to be in range [" + expected_min + " .. " + expected_max + "] but was " + time;
     }
 
 
 
-    protected List<Integer> invokeRpc(final int num_invocations, boolean use_oob) throws Exception {
+    protected Collection<Integer> invokeRpc(final int num_invocations, boolean use_oob) throws Exception {
         RequestOptions opts=RequestOptions.SYNC();
         if(use_oob)
             opts.flags(Message.Flag.OOB);
 
-        final List<Integer> results=new ArrayList<>(num_invocations);
+        final Collection<Integer> results=new ConcurrentLinkedQueue<>();
 
         MethodCall call=new MethodCall(incr_method);
         for(int i=0; i < num_invocations; i++) {
@@ -96,23 +94,12 @@ public class RpcDispatcherAsyncInvocationTest {
                 try {
                     results.add((Integer)result);
                     System.out.println("<-- " + result);
-                    if(results.size() == num_invocations) {
-                        synchronized(results) {
-                            results.notifyAll();
-                        }
-                    }
                 }
                 catch(Exception ignored) {}
             });
         }
-
-        for(int i=0; i < 20; i++) {
-            synchronized(results) {
-                if(results.size() == num_invocations)
-                    break;
-                results.wait(500);
-            }
-        }
+        Util.waitUntil(10000, 50, () -> results.size() == num_invocations,
+                       () -> String.format("expected %d but size is %d: %s", num_invocations, results.size(), results));
         return results;
     }
 
