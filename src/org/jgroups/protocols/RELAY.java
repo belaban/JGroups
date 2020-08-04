@@ -33,7 +33,9 @@ import java.util.function.Supplier;
  *
  * @author Bela Ban
  * @since 2.12
+ * @deprecated Use {@link org.jgroups.protocols.relay.RELAY2} instead
  */
+@Deprecated
 @MBean(description="RELAY protocol")
 public class RELAY extends Protocol {
 
