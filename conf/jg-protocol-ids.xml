@@ -29,7 +29,6 @@
     <class id="26" name="org.jgroups.protocols.DISCARD"/>
     <class id="27" name="org.jgroups.protocols.SHARED_LOOPBACK"/>
     <class id="28" name="org.jgroups.protocols.DAISYCHAIN"/>
-    <class id="29" name="org.jgroups.protocols.RELAY"/>
     <class id="30" name="org.jgroups.protocols.MFC"/>
     <class id="31" name="org.jgroups.protocols.UFC"/>
     <class id="32" name="org.jgroups.protocols.JDBC_PING"/>
