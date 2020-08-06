@@ -78,7 +78,7 @@ public class XMLSchemaGenerator {
             allType.setAttribute("maxOccurs", "unbounded");
             complexType.appendChild(allType);
             Element attributeElement = xmldoc.createElement("xs:attribute");
-            attributeElement.setAttribute("version", "${version}");
+            attributeElement.setAttribute("name", "version");
             attributeElement.setAttribute("type", "xs:string");
             complexType.appendChild(attributeElement);
             generateProtocolSchema(xmldoc, allType, PACKAGES);
