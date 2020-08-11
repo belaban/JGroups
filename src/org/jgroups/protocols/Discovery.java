@@ -131,7 +131,7 @@ public abstract class Discovery extends Protocol {
     }
 
     public void stop() {
-        is_server=false;
+        is_server=is_coord=false;
         clearRequestFutures();
     }
 
