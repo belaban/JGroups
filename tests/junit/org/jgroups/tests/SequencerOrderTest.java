@@ -81,10 +81,10 @@ public class SequencerOrderTest {
             sender.join(60000);
         System.out.println("Ok, senders have completed");
 
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < 50; i++) {
             if(r1.size() == EXPECTED_MSGS && r2.size() == EXPECTED_MSGS && r3.size() == EXPECTED_MSGS)
                 break;
-            Util.sleep(1000);
+            Util.sleep(200);
         }
 
         final List<String> l1=r1.getMsgs();
@@ -98,13 +98,14 @@ public class SequencerOrderTest {
 
     protected static void insertShuffle(JChannel... channels) throws Exception {
         for(JChannel ch: channels) {
-            SHUFFLE shuffle=new SHUFFLE();
-            shuffle.setDown(false);
-            shuffle.setUp(true);
-            shuffle.setMaxSize(10);
-            shuffle.setMaxTime(1000);
+            SHUFFLE shuffle=new SHUFFLE()
+              .setDown(false)
+              .setUp(true)
+              .setMaxSize(10)
+              .setMaxTime(1000);
             ch.getProtocolStack().insertProtocol(shuffle, ProtocolStack.Position.BELOW, NAKACK2.class);
-            shuffle.init(); // starts the timer
+            shuffle.init();
+            shuffle.start(); // starts the timer
         }
     }
 
