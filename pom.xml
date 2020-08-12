@@ -1,11 +1,10 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.jgroups</groupId>
     <artifactId>jgroups</artifactId>
     <packaging>bundle</packaging>
     <name>JGroups</name>
-    <version>4.1.10-SNAPSHOT</version>
+    <version>4.1.10.Final</version>
     <url>http://www.jgroups.org</url>
 
     <properties>
@@ -48,7 +47,8 @@
         <connection>scm:git:git://github.com/belaban/JGroups.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/belaban/JGroups.git</developerConnection>
         <url>https://github.com/belaban/JGroups</url>
-    </scm>
+      <tag>jgroups-4.1.10.Final</tag>
+  </scm>
 
     <issueManagement>
         <system>jira</system>
@@ -275,20 +275,20 @@
                         </goals>
                         <configuration>
                             <target>
-                                <property name="compile_classpath" refid="maven.compile.classpath"/>
-                                <property name="plugin_classpath" refid="maven.plugin.classpath"/>
-                                <delete dir="${project.build.directory}/schema" failonerror="false"/>
-                                <mkdir dir="${project.build.directory}/schema"/>
+                                <property name="compile_classpath" refid="maven.compile.classpath" />
+                                <property name="plugin_classpath" refid="maven.plugin.classpath" />
+                                <delete dir="${project.build.directory}/schema" failonerror="false" />
+                                <mkdir dir="${project.build.directory}/schema" />
                                 <java classname="org.jgroups.util.XMLSchemaGenerator">
                                     <classpath>
-                                        <pathelement path="${compile_classpath}"/>
-                                        <pathelement path="${plugin_classpath}"/>
+                                        <pathelement path="${compile_classpath}" />
+                                        <pathelement path="${plugin_classpath}" />
                                     </classpath>
-                                    <arg line="-o ${project.build.directory}/schema"/>
+                                    <arg line="-o ${project.build.directory}/schema" />
                                 </java>
                                 <copy todir="${project.build.directory}/schema">
                                     <fileset dir="conf">
-                                        <include name="*.xsd"/>
+                                        <include name="*.xsd" />
                                     </fileset>
                                 </copy>
                             </target>
