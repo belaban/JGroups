@@ -208,6 +208,7 @@ public class MPerf implements Receiver {
                 start_time=System.currentTimeMillis();
                 Result r=null;
                 r=sendMessages();
+                System.out.println("-- done");
                 sendNoException(msg.getSrc(), r, MPerfHeader.RESULT, Message.Flag.OOB);
                 break;
 
@@ -304,7 +305,7 @@ public class MPerf implements Receiver {
             senders[i].setName("sender-" + i);
             senders[i].start();
         }
-        System.out.printf("running test for %d seconds with %d sender threads\n", time, num_threads);
+        System.out.printf("-- running test for %d seconds with %d sender threads\n", time, num_threads);
 
         long interval=(long)((time * 1000.0) / 10.0);
         long start=System.currentTimeMillis();
