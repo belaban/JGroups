@@ -1,11 +1,10 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
+import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ObjectMessage;
-import org.jgroups.util.Bits;
-import org.jgroups.util.SizeStreamable;
-import org.jgroups.util.Streamable;
+import org.jgroups.util.*;
 import org.testng.annotations.Test;
 
 import java.io.DataInput;
@@ -133,6 +132,28 @@ public class ObjectMessageTest extends MessageTestBase {
         Message msg=new ObjectMessage();
         int size=msg.size();
         assert size > 1;
+    }
+
+
+    // https://issues.redhat.com/browse/JGRP-2285
+    public void testIncorrectSize() throws Exception {
+        try(JChannel a=create("A", "test-size");
+            JChannel b=create("B", "test-size");) {
+            Util.waitUntilAllChannelsHaveSameView(10000, 500, a,b);
+
+            IncorrectSizeObject obj=new IncorrectSizeObject(1000);
+            MyReceiver<IncorrectSizeObject> r=new MyReceiver<>();
+            b.setReceiver(r);
+            Message msg=new ObjectMessage(b.getAddress(), obj);
+            a.send(msg);
+            Util.waitUntil(10000, 250, () -> r.size() > 0);
+            IncorrectSizeObject obj2=r.list().get(0);
+            assert obj2 != null && obj2.buf.length == 1000;
+        }
+    }
+
+    protected static JChannel create(String name, String cluster) throws Exception {
+        return new JChannel(Util.getTestStack()).setName(name).connect(cluster);
     }
 
 
