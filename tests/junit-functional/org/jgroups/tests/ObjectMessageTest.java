@@ -4,12 +4,13 @@ import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ObjectMessage;
-import org.jgroups.util.*;
+import org.jgroups.protocols.FRAG4;
+import org.jgroups.protocols.Fragmentation;
+import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.MyReceiver;
+import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -137,10 +138,11 @@ public class ObjectMessageTest extends MessageTestBase {
 
     // https://issues.redhat.com/browse/JGRP-2285
     public void testIncorrectSize() throws Exception {
-        try(JChannel a=create("A", "test-size");
-            JChannel b=create("B", "test-size");) {
+        try(JChannel a=create("A");
+            JChannel b=create("B");) {
+            a.connect("test-size");
+            b.connect("test-size");
             Util.waitUntilAllChannelsHaveSameView(10000, 500, a,b);
-
             IncorrectSizeObject obj=new IncorrectSizeObject(1000);
             MyReceiver<IncorrectSizeObject> r=new MyReceiver<>();
             b.setReceiver(r);
@@ -152,49 +154,37 @@ public class ObjectMessageTest extends MessageTestBase {
         }
     }
 
-    protected static JChannel create(String name, String cluster) throws Exception {
-        return new JChannel(Util.getTestStack()).setName(name).connect(cluster);
-    }
-
-
-    protected static class BasePerson implements Streamable {
-        protected int    age;
-        protected String name;
-
-        public BasePerson() {
-        }
-
-        public BasePerson(int age, String name) {
-            this.age=age;
-            this.name=name;
-        }
-
-        public void writeTo(DataOutput out) throws IOException {
-            out.writeInt(age);
-            Bits.writeString(name, out);
-        }
-
-        public void readFrom(DataInput in) throws IOException {
-            age=in.readInt();
-            name=Bits.readString(in);
-        }
-
-        public String toString() {
-            return String.format("name=%s, age=%d", name, age);
+    // https://issues.redhat.com/browse/JGRP-2289
+    public void testIncorrectSizeWithFRAG4() throws Exception {
+        try(JChannel a=create("A");
+            JChannel b=create("B")) {
+            setFRAG4(500, a,b); // replaces any existing fragmentation protocol with FRAG4
+            a.connect("test-size");
+            b.connect("test-size");
+            Util.waitUntilAllChannelsHaveSameView(10000, 500, a,b);
+            IncorrectSizeObject obj=new IncorrectSizeObject(1000);
+            MyReceiver<IncorrectSizeObject> r=new MyReceiver<>();
+            b.setReceiver(r);
+            Message msg=new ObjectMessage(b.getAddress(), obj);
+            a.send(msg);
+            Util.waitUntil(10000, 250, () -> r.size() > 0);
+            IncorrectSizeObject obj2=r.list().get(0);
+            assert obj2 != null && obj2.buf.length == 1000;
         }
     }
 
-    protected static class Person extends BasePerson implements SizeStreamable {
+    protected static JChannel create(String name) throws Exception {
+        return new JChannel(Util.getTestStack()).setName(name);
+    }
 
-        public Person() {
-        }
-
-        public Person(int age, String name) {
-            super(age, name);
-        }
-
-        public int serializedSize() {
-            return Global.INT_SIZE + Bits.size(name);
+    // removes any existing fragmentation protocols (if any) with FRAG4
+    protected static void setFRAG4(int frag_size, JChannel... channels) throws Exception {
+        for(JChannel c: channels) {
+            ProtocolStack stack=c.getProtocolStack();
+            stack.removeProtocols(Fragmentation.class);
+            FRAG4 f=new FRAG4().setFragSize(frag_size);
+            stack.insertProtocolAtTop(f);
+            f.init();
         }
     }
 
