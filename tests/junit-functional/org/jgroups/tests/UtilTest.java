@@ -1340,7 +1340,7 @@ public class UtilTest {
         addr=Util.getByName("localhost", StackType.IPv4);
         assert addr instanceof Inet4Address;
         addr=Util.getByName("localhost", StackType.IPv6);
-        assert addr instanceof Inet6Address;
+        assert addr instanceof Inet6Address || addr == null;
     }
 
 

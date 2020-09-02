@@ -102,4 +102,35 @@ public class MessageTestBase {
         }
     }
 
+    protected static class IncorrectSizeObject implements SizeStreamable {
+        protected byte[] buf;
+
+        public IncorrectSizeObject() {
+        }
+
+        public IncorrectSizeObject(int size) {
+            this.buf=new byte[size];
+        }
+
+        @Override public int serializedSize() {
+            return buf.length + 200 + Global.INT_SIZE; // incorrect, should be buf.length + 4
+        }
+
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
+            out.writeInt(buf.length);
+            out.write(buf, 0, buf.length);
+        }
+
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+            buf=new byte[in.readInt()];
+            in.readFully(buf);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%d bytes", buf != null? buf.length : 0);
+        }
+    }
 }

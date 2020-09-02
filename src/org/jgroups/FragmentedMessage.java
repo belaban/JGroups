@@ -1,5 +1,6 @@
 package org.jgroups;
 
+import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.PartialOutputStream;
 
 import java.io.DataInput;
@@ -37,9 +38,24 @@ public class FragmentedMessage extends BytesMessage { // we need the superclass'
     protected int            sizeOfPayload()      {return Global.INT_SIZE + length;}
 
     public void writePayload(DataOutput out) throws IOException {
+        ByteArrayDataOutputStream bos=out instanceof ByteArrayDataOutputStream? (ByteArrayDataOutputStream)out : null;
+        int size_pos=bos != null? bos.position() : -1;
         out.writeInt(length);
         PartialOutputStream pos=new PartialOutputStream(out, offset, length);
+
+        int prev_pos=bos != null? bos.position() : -1;
         original_msg.writeTo(pos);
+        int last_pos=bos != null? bos.position() : -1;
+        int written=last_pos-prev_pos;
+
+        // if we have a ByteArrayDataOutputStream *and* the number of bytes written doesn't correspond with the length,
+        // then fix the length in the output stream (https://issues.redhat.com/browse/JGRP-2289)
+        if(bos != null && written != length) {
+            int current_pos=bos.position();
+            bos.position(size_pos);
+            bos.writeInt(written);
+            bos.position(current_pos);
+        }
     }
 
     public void readPayload(DataInput in) throws IOException {
