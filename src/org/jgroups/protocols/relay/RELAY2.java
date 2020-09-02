@@ -66,6 +66,11 @@ public class RELAY2 extends Protocol {
     protected String                                   site_master_picker_impl;
 
 
+    @Property(description="Time during which identical errors about no route to host will be suppressed. " +
+      "0 disables this (every error will be logged).",type=AttributeType.TIME)
+    protected long                                     suppress_time_no_route_errors=60000;
+
+
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
 
     /** A map containing site names (e.g. "LON") as keys and SiteConfigs as values */
@@ -131,6 +136,9 @@ public class RELAY2 extends Protocol {
     protected final LongAdder                          local_delivery_time=new LongAdder();
 
     protected final ResponseCollector<String>          topo_collector=new ResponseCollector<>();
+
+    /** Log to suppress identical errors for messages to non-existing sites ('no route to site X') */
+    protected SuppressLog<String>                      suppress_log_no_route;
 
     // Fluent configuration
     public RELAY2 site(String site_name)               {site=site_name;              return this;}
@@ -231,6 +239,17 @@ public class RELAY2 extends Protocol {
     @ManagedAttribute(description="Whether or not this instance is a site master")
     public boolean isSiteMaster() {return relayer != null;}
 
+    @ManagedAttribute(description="Number of 'no route to site X' errors")
+    public int getNumberOfNoRouteErrors() {
+        return suppress_log_no_route != null? suppress_log_no_route.getCache().size() : 0;
+    }
+
+    @ManagedOperation(description="Clears the 'no route to site X' cache")
+    public RELAY2 clearNoRouteCache() {
+        if(suppress_log_no_route != null)
+            suppress_log_no_route.getCache().clear();
+        return this;
+    }
 
     public void resetStats() {
         super.resetStats();
@@ -242,6 +261,7 @@ public class RELAY2 extends Protocol {
         forward_to_local_mbr_time.reset();
         local_deliveries.reset();
         local_delivery_time.reset();
+        clearNoRouteCache();
     }
 
     public View getBridgeView(String cluster_name) {
@@ -274,6 +294,9 @@ public class RELAY2 extends Protocol {
                 }
             };
         }
+
+        if(suppress_time_no_route_errors > 0)
+            suppress_log_no_route=new SuppressLog<>(log, "RelayNoRouteToSite", "SuppressMsgRelay");
     }
 
     public void configure() throws Exception {
@@ -564,6 +587,8 @@ public class RELAY2 extends Protocol {
                     relayer.stop();
             }
         }
+        if(suppress_log_no_route != null)
+            suppress_log_no_route.removeExpired(suppress_time_no_route_errors);
     }
 
 
@@ -666,7 +691,10 @@ public class RELAY2 extends Protocol {
 
         Route route=tmp.getRoute(target_site, sender);
         if(route == null) {
-            log.error(local_addr + ": no route to " + target_site + ": dropping message");
+            if(suppress_log_no_route != null)
+                suppress_log_no_route.log(SuppressLog.Level.error, target_site, suppress_time_no_route_errors, sender, target_site);
+            else
+                log.error(Util.getMessage("RelayNoRouteToSite"), local_addr, target_site);
             sendSiteUnreachableTo(sender, target_site);
         }
         else
@@ -766,8 +794,7 @@ public class RELAY2 extends Protocol {
             return;
         Relay2Header hdr=new Relay2Header(down? Relay2Header.SITES_DOWN : Relay2Header.SITES_UP, null, null)
           .setSites(sites);
-        down_prot.down((Message)new EmptyMessage(null).putHeader(id, hdr).setFlag(Message.Flag.NO_RELAY));
-        // down_prot.down((Message)new EmptyMessage(null).setFlag(Message.Flag.NO_RELAY));
+        down_prot.down(new EmptyMessage(null).putHeader(id, hdr).setFlag(Message.Flag.NO_RELAY));
     }
 
     /** Copies the message, but only the headers above the current protocol (RELAY) (or RpcDispatcher related headers) */
