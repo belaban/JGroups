@@ -211,10 +211,6 @@ public abstract class Discovery extends Protocol {
      */
     protected abstract void findMembers(List<Address> members, boolean initial_discovery, Responses responses);
 
-    /** Calls {@link #findMembers(List, boolean, Responses)} */
-    protected void invokeFindMembers(List<Address> members, boolean initial_discovery, Responses rsps, boolean async) {
-        findMembers(members, initial_discovery, rsps); // ignores 'async' parameter
-    }
 
 
     public Responses findMembers(final List<Address> members, final boolean initial_discovery, boolean async, long timeout) {
@@ -224,7 +220,7 @@ public abstract class Discovery extends Protocol {
         Responses rsps=new Responses(num_expected, initial_discovery && break_on_coord_rsp, capacity);
         addResponse(rsps);
         if(async || async_discovery || (num_discovery_runs > 1) && initial_discovery) {
-            final Runnable find_method=() -> invokeFindMembers(members, initial_discovery, rsps, async);
+            final Runnable find_method=() -> callFindMembersInAllDiscoveryProtocols(members, initial_discovery, rsps);
             timer.execute(find_method);
             if(num_discovery_runs > 1 && initial_discovery) {
                 int num_reqs_to_send=num_discovery_runs-1;
@@ -240,7 +236,7 @@ public abstract class Discovery extends Protocol {
             }
         }
         else
-            invokeFindMembers(members, initial_discovery, rsps, async);
+            callFindMembersInAllDiscoveryProtocols(members, initial_discovery, rsps);
         weedOutCompletedDiscoveryResponses();
         return rsps;
     }
@@ -286,9 +282,9 @@ public abstract class Discovery extends Protocol {
     }
 
     public Object up(Event evt) {
-        switch(evt.getType()) {
-            case Event.FIND_MBRS:
-                return findMembers(evt.getArg(), false, true, 0); // this is done asynchronously
+        if(evt.getType() == Event.FIND_MBRS) {
+            Discovery d=findTopmostDiscoveryProtocol();
+            return d.findMembers(evt.getArg(), false, true, 0); // this is done asynchronously
         }
         return up_prot.up(evt);
     }
@@ -354,8 +350,12 @@ public abstract class Discovery extends Protocol {
             case PingHeader.GET_MBRS_RSP:
                 // add physical address (if available) to transport's cache
                 if(data != null) {
-                    log.trace("%s: received GET_MBRS_RSP from %s: %s", local_addr, msg.getSrc(), data);
-                    handleDiscoveryResponse(data, msg.getSrc());
+                    // find the top discovery prot and deliver the response: https://issues.redhat.com/browse/JGRP-2230
+                    Discovery d=findTopmostDiscoveryProtocol();
+                    log.trace("%s: received GET_MBRS_RSP from %s: %s%s",
+                              local_addr, msg.getSrc(), data,
+                              d != this? ", delivering it to " + d.getClass().getSimpleName() : "");
+                    d.handleDiscoveryResponse(data, msg.getSrc());
                 }
                 return null;
 
@@ -365,6 +365,23 @@ public abstract class Discovery extends Protocol {
         }
     }
 
+    /** Calls {@link #findMembers(List, boolean, Responses)} in this protocol and all discovery protocols below */
+    protected void callFindMembersInAllDiscoveryProtocols(List<Address> mbrs, boolean initial_discovery, Responses rsps) {
+        for(Protocol p=this; p != null; p=p.getDownProtocol()) {
+            if(p instanceof Discovery)
+                ((Discovery)p).findMembers(mbrs, initial_discovery, rsps);
+        }
+    }
+
+    /** Finds the top-most discovery protocol, starting from this. If none is found, returns this */
+    protected Discovery findTopmostDiscoveryProtocol() {
+        Discovery ret=this;
+        for(Protocol p=this; p != null; p=p.getUpProtocol()) {
+            if(p instanceof Discovery)
+                ret=(Discovery)p;
+        }
+        return ret;
+    }
 
     protected void handleDiscoveryResponse(PingData data, Address sender) {
         // add physical address (if available) to transport's cache

@@ -407,14 +407,13 @@ public class MERGE3 extends Protocol {
             }
 
             MergeHeader hdr=createInfo();
-            if(transport_supports_multicasting) { // mcast the discovery request to all but self
+            if(transport_supports_multicasting) {
                 Message msg=new EmptyMessage().setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr)
                   .setFlag(Message.TransientFlag.DONT_LOOPBACK);
                 down_prot.down(msg);
-                return;
             }
-
-            down_prot.down(ASYNC_DISCOVERY_EVENT);
+            else
+                down_prot.down(ASYNC_DISCOVERY_EVENT);
         }
 
         public long nextInterval() {

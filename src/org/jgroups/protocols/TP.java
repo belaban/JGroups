@@ -1696,7 +1696,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             // FIND_MBRS must return quickly
             Responses responses=fetchResponsesFromDiscoveryProtocol(Collections.singletonList(dest));
             try {
-                for(PingData data : responses) {
+                for(PingData data: responses) {
                     if(data.getAddress() != null && data.getAddress().equals(dest)) {
                         if((physical_dest=data.getPhysicalAddr()) != null) {
                             sendUnicast(physical_dest, buf, offset, length);

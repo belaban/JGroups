@@ -856,6 +856,55 @@ This is a discovery protocol that allows cluster nodes to run on the Azure cloud
 
 
 
+==== Multiple discovery protocols in the same stack
+We have a large number of discovery protocols, because every one is written for a different environment. For example,
+`PING` works where IP multicasting is supported, `TCPPING` lists individual members when IP multicasting is not supported
+(e.g. in clouds), `DNS_PING` uses DNS to retrieve the initial membership, and so on.
+
+This means that we have to write multiple configuration files if we want to deploy into different environments.
+
+However, it would be nice to have just a single configuration that can run in all environments. As of 5.1, this is
+possible (without using the (removed) `MULTI_PING` protocol).
+
+To do this, we can simply define all discovery protocols in the same config, e.g.:
+
+[source,xml]
+----
+<config>
+    <TCP />
+
+    <MPING/>
+    <TCPPING initial_hosts="${hosts:localhost[7800]}"
+             port_range="1"/>
+    <TCPGOSSIP />
+    <PING />
+
+    <MERGE3 />
+    ...
+</config>
+----
+In the example, we have 4 discovery protocols configured: `MPING`, `TCPPING`, `TCPGOSSIP` and `PING`:
+
+* `MPING` uses IP multicasting. If the environment support IP multicasting, this protocol will work
+* `TCPPING` lists all hosts, and will probably also work in this example if we have a host running on `localhost`
+at port `7800` or `7801`
+* `TCPGOSSIP` will only work if we have a `Gossiprouter` running
+* The top-most discovery protocol `PING` will not work, as we use `TCP` as transport, which doesn't
+support IP multicasting
+
+The discovery process is as follows:
+
+* The top-most protocol `PING` gets the discovery request from the top
+* `PING` sets up a response and then invokes the request on itself and all discovery protocols below it
+* When a response is received (by the bottom-most discovery protocol, `MPING`), it is forwarded to `PING`
+
+Having multiple discovery protocols in the same configuration allows one to ship a one-size-fits-all configuration,
+where some discovery protocols work, and others don't, but the chances that at least _one_ works, are high.
+
+NOTE: Once link:https://issues.redhat.com/browse/JGRP-1424[multiple transports] have been implemented, it will become
+possible to have just a single configuration file, containing all supported discovery protocols and transports.
+
+
 ==== PDC - Persistent Discovery Cache
 
 The Persistent Discovery Cache can be used to cache the results of the discovery process persistently.
@@ -883,31 +932,6 @@ An example of a TCP-based stack configuration is:
 ${PDC}
 
 
-
-==== MULTI_PING
-
-This discovery protocol allows for multiple discovery protocols to be used in a configuration. `MULTI_PING` adds
-all discovery protocols underneath it in the stack to a list at initialization time.
-
-When a discovery request is
-received from above, all discovery protocols in the list are contacted, either sequentially
-(`async_discovery=false`) or in parallel (`async_discovery=true`).
-
-A sample configuration is shown below:
-
-[source,xml]
-----
-<TCP ... />
-<TCPPING initial_hosts="127.0.0.1[7800]" port_range="0"/>
-<PING />
-<MPING/>
-<FILE_PING/>
-<MULTI_PING async_discovery="true"/>
-<MERGE3/>
- ...
-----
-
-${MULTI_PING}
 
 
 === Merging after a network partition

@@ -206,7 +206,6 @@ public class MPING extends PING implements Runnable {
                 log.error(Util.getMessage("FailedReceivingPacketFrom"), packet.getSocketAddress(), ex);
             }
         }
-        log.debug("receiver thread terminated");
     }
 
 
