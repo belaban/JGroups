@@ -114,9 +114,10 @@ public class Util {
     protected static ResourceBundle resource_bundle;
 
     // Fibers (project Loom - Java 15)
-    protected static int            VIRTUAL=1;
-    protected static MethodHandle   THREAD_NEW_THREAD=null;
-    public static MethodHandle      EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY=null;
+    protected static final MethodHandles.Lookup LOOKUP=MethodHandles.publicLookup();
+    protected static int                        VIRTUAL=getVirtual();
+    protected static MethodHandle               THREAD_NEW_THREAD=getThreadNewThread();
+    public static    MethodHandle               EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY=getNewVirtualThreadFactory();
 
 
     static {
@@ -186,25 +187,44 @@ public class Util {
         catch(Throwable t) {
             throw new IllegalArgumentException(String.format("property %s has an incorrect value", Global.DEFAULT_HEADERS), t);
         }
-
-        // fibers
-        try {
-            MethodHandles.Lookup lookup=MethodHandles.publicLookup();
-            MethodHandle tmp_handle=lookup.findStaticGetter(Thread.class, "VIRTUAL", int.class);
-            VIRTUAL=(int)tmp_handle.invokeExact();
-
-            MethodType type=MethodType.methodType(Thread.class, String.class, int.class, Runnable.class);
-            THREAD_NEW_THREAD=lookup.findStatic(Thread.class, "newThread", type);
-            type=MethodType.methodType(ExecutorService.class);
-            EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY=lookup.findStatic(Executors.class, "newVirtualThreadExecutor", type);
-        }
-        catch(Throwable ex) {
-        }
     }
+
 
     public static boolean fibersAvailable() {
         return THREAD_NEW_THREAD != null;
     }
+
+    protected static int getVirtual() {
+        MethodHandle tmp_handle=null;
+        try {
+            tmp_handle=LOOKUP.findStaticGetter(Thread.class, "VIRTUAL", int.class);
+            return (int)tmp_handle.invokeExact();
+        }
+        catch(Throwable t) {
+            return 1;
+        }
+    }
+
+    protected static MethodHandle getThreadNewThread() {
+        MethodType type=MethodType.methodType(Thread.class, String.class, int.class, Runnable.class);
+        try {
+            return LOOKUP.findStatic(Thread.class, "newThread", type);
+        }
+        catch(Exception e) {
+            return null;
+        }
+    }
+
+    protected static MethodHandle getNewVirtualThreadFactory() {
+        MethodType type=MethodType.methodType(ExecutorService.class);
+        try {
+            return LOOKUP.findStatic(Executors.class, "newVirtualThreadExecutor", type);
+        }
+        catch(Exception e) {
+            return null;
+        }
+    }
+
 
     public static ExecutorService createFiberThreadPool() {
         if(EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY == null)
