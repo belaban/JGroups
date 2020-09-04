@@ -73,13 +73,13 @@ public class ModClusterAdvertizeListener {
             }
             else {
                 if(bind_addr != null)
-                    sock.setInterface(bind_addr);
-                sock.joinGroup(join_addr, null);
+                    sock.setNetworkInterface(NetworkInterface.getByInetAddress(bind_addr));
+                sock.joinGroup(join_addr, bind_addr == null?  null : NetworkInterface.getByInetAddress(bind_addr));
             }
 
 
             System.out.println("Socket=" + sock.getLocalAddress() + ':' + sock.getLocalPort() + ", bind interface=" +
-                               sock.getInterface());
+                               sock.getNetworkInterface());
 
             int length;
             while(true) {

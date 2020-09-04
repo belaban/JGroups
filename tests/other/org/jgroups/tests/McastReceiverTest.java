@@ -1,10 +1,7 @@
 
 package org.jgroups.tests;
 
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
-import java.net.NetworkInterface;
+import java.net.*;
 import java.util.Enumeration;
 
 
@@ -97,10 +94,16 @@ public class McastReceiverTest {
         Receiver(InetAddress mcast_addr, InetAddress bind_interface, int port) throws Exception {
             sock=new MulticastSocket(port);
             if(bind_interface != null)
-                sock.setInterface(bind_interface);
-            sock.joinGroup(mcast_addr);
-            System.out.println("Socket=" + sock.getLocalAddress() + ':' + sock.getLocalPort() + ", bind interface=" +
-                    sock.getInterface());
+                sock.setNetworkInterface(NetworkInterface.getByInetAddress(bind_interface));
+            try {
+                sock.joinGroup(new InetSocketAddress(mcast_addr, port),
+                               bind_interface == null? null : NetworkInterface.getByInetAddress(bind_interface));
+                System.out.println("Socket=" + sock.getLocalAddress() + ':' + sock.getLocalPort() + ", bind interface=" +
+                                     sock.getNetworkInterface());
+            }
+            catch(Exception ex) {
+                System.err.printf("failed joining interface %s: %s\n", bind_interface, ex);
+            }
         }
 
 

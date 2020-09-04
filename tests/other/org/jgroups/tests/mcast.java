@@ -118,6 +118,7 @@ public class mcast {
             if(mcast_addr == null) {
                 switch(ip_version) {
                     case IPv4:
+                    case Dual:
                         mcast_addr=InetAddress.getByName("232.5.5.5");
                         break;
                     case IPv6:
@@ -154,7 +155,7 @@ public class mcast {
                 s.joinGroup(tmp_mcast_addr, intf);
             }
             catch(IOException e) {
-                e.printStackTrace();
+                System.err.printf("failed joining interface %s: %s\n", intf, e);
             }
         }
     }
@@ -180,7 +181,7 @@ public class mcast {
             }
 
             System.out.println("Socket=" + mcast_sock.getLocalAddress() + ':' + mcast_sock.getLocalPort() + ", bind interface=" +
-                                 mcast_sock.getInterface());
+                                 mcast_sock.getNetworkInterface());
         }
 
         protected void kill() {

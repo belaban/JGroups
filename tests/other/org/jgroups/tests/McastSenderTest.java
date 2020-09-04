@@ -86,7 +86,7 @@ public class McastSenderTest {
             for(int i=0; i < v.size(); i++) {
                 sock=new MulticastSocket(port);
                 sock.setTimeToLive(ttl);
-                sock.setInterface(v.get(i));
+                sock.setNetworkInterface(NetworkInterface.getByInetAddress(v.get(i)));
                 sockets[i]=sock;
                 ack_receiver=new AckReceiver(sock);
                 ack_receiver.start();
@@ -97,7 +97,7 @@ public class McastSenderTest {
                 sock=sockets[i];
                 if(sock == null) continue;
                 System.out.println("Socket #" + (i + 1) + '=' + sock.getLocalAddress() + ':' + sock.getLocalPort() +
-                        ", ttl=" + sock.getTimeToLive() + ", bind interface=" + sock.getInterface());
+                        ", ttl=" + sock.getTimeToLive() + ", bind interface=" + sock.getNetworkInterface());
             }
 
             in=new DataInputStream(System.in);

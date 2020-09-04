@@ -43,7 +43,7 @@ public class MulticastTest2 {
         SocketAddress saddr=new InetSocketAddress(MCAST_ADDR, MCAST_PORT);
         sock=new MulticastSocket(saddr);
         if(BIND_ADDR != null)
-            sock.setInterface(BIND_ADDR);
+            sock.setNetworkInterface(NetworkInterface.getByInetAddress(BIND_ADDR));
         return sock;
     }
 

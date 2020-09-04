@@ -374,7 +374,7 @@ public class UDP extends TP {
     /** Creates the  UDP sender and receiver sockets */
     protected void createSockets() throws Exception {
         if(bind_addr == null)
-            throw new IllegalArgumentException("bind_addr cannot be null") ;
+            throw new IllegalArgumentException("bind_addr cannot be null");
 
         Util.checkIfValidAddress(bind_addr, getName());
         if(log.isDebugEnabled()) log.debug("sockets will use interface " + bind_addr.getHostAddress());
@@ -415,7 +415,7 @@ public class UDP extends TP {
                 mcast_sock=getSocketFactory().createMulticastSocket("jgroups.udp.mcast_sock", mcast_port);
 
             if(disable_loopback)
-                mcast_sock.setLoopbackMode(disable_loopback);
+                mcast_sock.setOption(StandardSocketOptions.IP_MULTICAST_LOOP, false);
 
             mcast_addr=new IpAddress(mcast_group_addr, mcast_port);
 
@@ -443,8 +443,9 @@ public class UDP extends TP {
             }
             else {
                 if(bind_addr != null)
-                    setInterface(bind_addr, mcast_sock); // not strictly needed for receiving, only for sending of mcasts
-                 mcast_sock.joinGroup(mcast_group_addr);
+                    setNetworkInterface(bind_addr, mcast_sock); // not strictly needed for receiving, only for sending of mcasts
+                mcast_sock.joinGroup(new InetSocketAddress(mcast_group_addr, mcast_port),
+                                     bind_addr == null? null : NetworkInterface.getByInetAddress(bind_addr));
             }
         }
 
@@ -488,13 +489,16 @@ public class UDP extends TP {
         return (T)this;
     }
 
-    protected <T extends UDP> T setInterface(InetAddress intf, MulticastSocket s) {
+    protected <T extends UDP> T setNetworkInterface(InetAddress addr, MulticastSocket s) {
+        NetworkInterface intf=null;
         try {
-            if(s != null && intf != null)
-                s.setInterface(intf);
+            if(s != null && addr != null) {
+                intf=NetworkInterface.getByInetAddress(addr);
+                s.setNetworkInterface(intf);
+            }
         }
         catch(Throwable ex) {
-            log.error("failed setting interface to %s: %s", intf, ex);
+            log.error("failed setting interface to %s (%s): %s", intf, addr, ex);
         }
         return (T)this;
     }
@@ -520,7 +524,7 @@ public class UDP extends TP {
             //[ JGRP-680] - receive_on_all_interfaces requires every NIC to be configured
             try {
                 s.joinGroup(tmp_mcast_addr, intf);
-                log.trace("joined %s on %s", tmp_mcast_addr, intf.getName());
+                log.debug("joined %s on %s", tmp_mcast_addr, intf.getName());
             }
             catch(IOException e) {
                 log.warn(Util.getMessage("InterfaceJoinFailed"), tmp_mcast_addr, intf.getName());
@@ -562,7 +566,7 @@ public class UDP extends TP {
         // Creates an *unbound* multicast socket (because SocketAddress is null)
         MulticastSocket retval=getSocketFactory().createMulticastSocket(service_name, null); // causes *no* binding !
         if(bind_addr != null)
-            setInterface(bind_addr, retval);
+            setNetworkInterface(bind_addr, retval);
         retval.setReuseAddress(false); // so we get a conflict if binding to the same port and increment the port
         retval.bind(new InetSocketAddress(bind_addr, port));
         return retval;
@@ -580,7 +584,7 @@ public class UDP extends TP {
 
         if(mcast_sock != null)
             formatter.format("\nmcast_sock: bound to %s:%d, send buffer size=%d, receive buffer size=%d",
-                             mcast_sock.getInterface().getHostAddress(), mcast_sock.getLocalPort(),
+                             mcast_sock.getLocalAddress(), mcast_sock.getLocalPort(),
                              mcast_sock.getSendBufferSize(), mcast_sock.getReceiveBufferSize());
         if(bind_port > 0)
             formatter.format("\n%s: using the network interface '%s' with port range '%s-%s'", bind_addr, NetworkInterface.getByInetAddress(bind_addr).getName(), bind_port, (bind_port + port_range));
@@ -664,13 +668,14 @@ public class UDP extends TP {
         if(mcast_sock != null) {
             try {
                 if(mcast_addr != null) {
-                    mcast_sock.leaveGroup(mcast_addr.getIpAddress());
+                    SocketAddress addr=new InetSocketAddress(mcast_addr.getIpAddress(), mcast_addr.getPort());
+                    mcast_sock.leaveGroup(addr, bind_addr == null? null : NetworkInterface.getByInetAddress(bind_addr));
                 }
                 getSocketFactory().close(mcast_sock); // this will cause the mcast receiver thread to break out of its loop
                 mcast_sock=null;
                 if(log.isDebugEnabled()) log.debug("%s: multicast socket closed", local_addr);
             }
-            catch(IOException ex) {
+            catch(IOException ignored) {
             }
             mcast_addr=null;
         }

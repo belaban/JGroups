@@ -249,9 +249,11 @@ public class McastDiscovery {
 
         MessageHandler(InetAddress bind_interface) throws Exception {
             mcast_sock = new MulticastSocket(mcast_port);
-            mcast_sock.setInterface(bind_interface);
+            if(bind_interface != null)
+                mcast_sock.setNetworkInterface(NetworkInterface.getByInetAddress(bind_interface));
             mcast_sock.setTimeToLive(ttl);
-            mcast_sock.joinGroup(mcast_addr);
+            mcast_sock.joinGroup(new InetSocketAddress(mcast_addr, mcast_port),
+                                 bind_interface == null? null : NetworkInterface.getByInetAddress(bind_interface));
             sock = new DatagramSocket(0, bind_interface);
             local_addr = sock.getLocalAddress();
             local_port = sock.getLocalPort();

@@ -149,8 +149,9 @@ public class MPING extends PING implements Runnable {
         }
         else {
             if(bind_addr != null)
-                mcast_receive_sock.setInterface(bind_addr);
-            mcast_receive_sock.joinGroup(mcast_addr);
+                mcast_receive_sock.setNetworkInterface(NetworkInterface.getByInetAddress(bind_addr));
+            mcast_receive_sock.joinGroup(new InetSocketAddress(mcast_addr, mcast_port),
+                                         bind_addr == null? null : NetworkInterface.getByInetAddress(bind_addr));
         }
 
 
@@ -222,7 +223,7 @@ public class MPING extends PING implements Runnable {
     protected <T extends MPING> T setInterface(InetAddress intf, MulticastSocket s) {
         try {
             if(s != null && intf != null)
-                s.setInterface(intf);
+                s.setNetworkInterface(NetworkInterface.getByInetAddress(intf));
         }
         catch(Throwable ex) {
             log.error("failed setting interface to %s: %s", intf, ex);

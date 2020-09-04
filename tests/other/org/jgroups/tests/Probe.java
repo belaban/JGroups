@@ -399,7 +399,7 @@ public class Probe {
             sock.setSoTimeout((int)timeout);
             sock.setTimeToLive(ttl);
             if(bind_addr != null)
-                sock.setInterface(bind_addr);
+                sock.setNetworkInterface(NetworkInterface.getByInetAddress(bind_addr));
             return (T)this;
         }
 
