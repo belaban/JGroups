@@ -300,11 +300,9 @@ public class UDP extends TP {
     @Override
     public Object down(Event evt) {
         Object retval=super.down(evt);
-        switch(evt.getType()) {
-            case Event.VIEW_CHANGE:
-                if(suppress_log_out_of_buffer_space != null)
-                    suppress_log_out_of_buffer_space.removeExpired(suppress_time_out_of_buffer_space);
-                break;
+        if(evt.getType() == Event.VIEW_CHANGE) {
+            if(suppress_log_out_of_buffer_space != null)
+                suppress_log_out_of_buffer_space.removeExpired(suppress_time_out_of_buffer_space);
         }
         return retval;
     }
