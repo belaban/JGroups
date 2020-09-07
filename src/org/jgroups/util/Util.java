@@ -115,10 +115,10 @@ public class Util {
     protected static ResourceBundle resource_bundle;
 
     // Fibers (project Loom - Java 15)
-    protected static final MethodHandles.Lookup LOOKUP=MethodHandles.publicLookup();
-    protected static int                        VIRTUAL=getVirtual();
-    protected static MethodHandle               THREAD_NEW_THREAD=getThreadNewThread();
-    public static    MethodHandle               EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY=getNewVirtualThreadFactory();
+    private static final MethodHandles.Lookup LOOKUP=MethodHandles.publicLookup();
+    private static final int                  VIRTUAL=getVirtual();
+    private static final MethodHandle         THREAD_NEW_THREAD=getThreadNewThread();
+    private static final MethodHandle         EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY=getNewVirtualThreadFactory();
 
 
     static {

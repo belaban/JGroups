@@ -13,14 +13,11 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
-import static org.jgroups.tests.perf.PerfUtil.Config;
-import static org.jgroups.tests.perf.PerfUtil.Results;
 import static org.jgroups.tests.perf.PerfUtil.*;
 
 
@@ -83,6 +80,9 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
         "\n[v] Version [x] Exit [X] Exit all\n";
 
 
+    static {
+        PerfUtil.init();
+    }
 
     public boolean getSync()                   {return sync;}
     public void    setSync(boolean s)          {this.sync=s;}
@@ -108,18 +108,14 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
 
 
 
-    public void init(String name, AddressGenerator generator, String bind_addr, int bind_port) throws Throwable {
-        PerfUtil.init();
+    public void init(String name, AddressGenerator generator, String bind_addr, int bind_port,
+                     boolean udp, String mcast_addr, int mcast_port,
+                     String initial_hosts) throws Throwable {
         InetAddress bind_address=bind_addr != null? Util.getAddress(bind_addr, Util.getIpStackType()) : Util.getLoopback();
 
-        // bind_address=InetAddress.getByName("::1"); // todo:" remove!!!
-
         Protocol[] prot_stack={
-          new TCP().setBindAddress(bind_address).setBindPort(7800)
-            .setDiagnosticsEnabled(true)
-            .diagEnableUdp(false) // todo: enable when MulticastSocket works
-            .diagEnableTcp(true),
-          new TCPPING().initialHosts(Collections.singletonList(new InetSocketAddress(bind_address, 7800))),
+          null,  // transport
+          null,  // discovery protocol
           new MERGE3(),
           new FD_SOCK(),
           new FD_ALL3(),
@@ -130,13 +126,27 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
           new GMS().setJoinTimeout(1000),
           new UFC(),
           new MFC(),
-          new FRAG2()};
+          new FRAG4()};
+
+        if(udp) {
+            prot_stack[0]=new UDP()
+              .setMulticastAddress(InetAddress.getByName(mcast_addr)).setMulticastPort(mcast_port)
+              .setDiagnosticsAddr(InetAddress.getByName("224.0.75.75")).diagEnableUdp(true);
+            prot_stack[1]=new PING();
+        }
+        else {
+            if(initial_hosts == null) {
+                InetAddress host=bind_addr == null? InetAddress.getLocalHost() : Util.getAddress(bind_addr, Util.getIpStackType());
+                initial_hosts=String.format("%s[%d]", host.getHostAddress(), bind_port);
+            }
+            prot_stack[0]=new TCP().diagEnableUdp(false).diagEnableTcp(true);
+            prot_stack[1]=new TCPPING().setInitialHosts2(Util.parseCommaDelimitedHosts(initial_hosts, 2));
+        }
+
+        ((TP)prot_stack[0]).setBindAddress(bind_address).setBindPort(bind_port).setDiagnosticsEnabled(true);
+
         channel=new JChannel(prot_stack).addAddressGenerator(generator).setName(name);
         TP transport=channel.getProtocolStack().getTransport();
-        if(bind_port > 0) {
-            transport=channel.getProtocolStack().getTransport();
-            transport.setBindPort(bind_port);
-        }
         // todo: remove default ProbeHandler for "jmx" and "op"
         NonReflectiveProbeHandler h=new NonReflectiveProbeHandler(channel);
         transport.registerProbeHandler(h);
@@ -618,11 +628,13 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
 
 
 
-    public static void main(String[] args) {
-        String  name=null, bind_addr=null;
-        boolean run_event_loop=true, jmx=false;
+    public static void main(String[] args) throws Exception {
+        String  name=null, bind_addr=null, mcast_addr="232.4.5.6";
+        boolean run_event_loop=true;
         AddressGenerator addr_generator=null;
-        int port=0;
+        int port=7800, mcast_port=45566;
+        boolean udp=true;
+        String initial_hosts=null;
 
         for(int i=0; i < args.length; i++) {
             if("-name".equals(args[i])) {
@@ -634,19 +646,31 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
                 continue;
             }
             if("-uuid".equals(args[i])) {
-                addr_generator=new OneTimeAddressGenerator(Long.valueOf(args[++i]));
+                addr_generator=new OneTimeAddressGenerator(Long.parseLong(args[++i]));
                 continue;
             }
             if("-port".equals(args[i])) {
-                port=Integer.valueOf(args[++i]);
+                port=Integer.parseInt(args[++i]);
                 continue;
             }
             if("-bind_addr".equals(args[i])) {
                 bind_addr=args[++i];
                 continue;
             }
-            if("-jmx".equals(args[i])) {
-                jmx=Boolean.parseBoolean(args[++i]);
+            if("-tcp".equals(args[i])) {
+                udp=false;
+                continue;
+            }
+            if("-mcast_addr".equals(args[i])) {
+                mcast_addr=args[++i];
+                continue;
+            }
+            if("-mcast_port".equals(args[i])) {
+                mcast_port=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if("-initial_hosts".equals(args[i])) {
+                initial_hosts=args[++i];
                 continue;
             }
             help();
@@ -656,7 +680,7 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
         ProgrammaticUPerf test=null;
         try {
             test=new ProgrammaticUPerf();
-            test.init(name, addr_generator, bind_addr, port);
+            test.init(name, addr_generator, bind_addr, port, udp, mcast_addr, mcast_port, initial_hosts);
             if(run_event_loop)
                 test.startEventThread();
         }
@@ -669,7 +693,9 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
 
     static void help() {
         System.out.printf("%s [-name name] [-nohup] [-uuid <UUID>] [-port <bind port>] " +
-                             "[-bind_addr bind-address]\n", ProgrammaticUPerf.class.getSimpleName());
+                             "[-bind_addr bind-address] [-tcp] [-mcast_addr addr] [-mcast_port port]\n" +
+                            "[-initial_hosts hosts]",
+                          ProgrammaticUPerf.class.getSimpleName());
     }
 
 

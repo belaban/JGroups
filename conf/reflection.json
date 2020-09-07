@@ -8,9 +8,27 @@
     ]
   },
   {
-    "name": "org.jgroups.protocols.UNICAST3",
-    "fields": [
-      {"name": "conn_close_timeout"}
+    "name": "org.jgroups.util.ObjectWrapper",
+    "methods" : [
+      { "name" : "<init>", "parameterTypes" : [] }
+    ]
+  },
+  {
+    "name": "org.jgroups.tests.perf.PerfUtil$Config",
+    "methods" : [
+      {"name" :  "<init>", "parameterTypes":  []}
+    ]
+  },
+  {
+    "name": "org.jgroups.tests.perf.PerfUtil$Results",
+    "methods" : [
+      {"name" :  "<init>", "parameterTypes":  []}
+    ]
+  },
+  {
+    "name": "org.jgroups.tests.perf.PerfUtil$CustomCall",
+    "methods" : [
+      {"name" :  "<init>", "parameterTypes":  []}
     ]
   }
 ]
