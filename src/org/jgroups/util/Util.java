@@ -31,6 +31,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.*;
+import java.math.BigInteger;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
@@ -1365,6 +1366,12 @@ public class Util {
         }
         return true;
     }
+
+    public static String hexToBin(String s) {
+        return new BigInteger(s, 16).toString(2);
+    }
+
+
 
     /** Compares 2 byte arrays, elements are treated as unigned */
     public static int compare(byte[] left,byte[] right) {
