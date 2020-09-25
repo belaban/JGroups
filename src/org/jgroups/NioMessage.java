@@ -78,7 +78,6 @@ public class NioMessage extends BaseMessage {
     public <T> T             getPayload()               {return (T)buf;}
 
 
-
     public byte[] getArray() {
         return buf != null? (isDirect()?Util.bufferToArray(buf) : buf.array()) : null;
     }

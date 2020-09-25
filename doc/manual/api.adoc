@@ -579,6 +579,94 @@ The second `FragmentedMessage` will only marshall the part of the underlying mes
 mainly for completeness.
 
 
+[[Refcounting]]
+==== Reference-counted messages
+When a sender wants to reuse the message payload, a shared pool of payloads may be used. For example, we may want to
+create a pool of direct ByteBuffers (allocated off-heap) and wrap ByteBuffers (taken from that pool) in NioMessages.
+
+After sending an NioMessage with ByteBuffer `buf`, we may want to modify `buf` and send another NioMessage with `buf`
+as payload. However, this might fail, as the message may not yet have been sent, or it may have been dropped and
+will later get retransmitted.
+
+For example, if we set `buf` to `123`, send it, then set it to `456` and send it again, the following
+might happen:
+
+* `123` is sent as NioMessage `m1`, but `m1` is dropped
+* `456` is sent as NioMessage `m2`
+* `m1` gets retransmitted. By now, its payload is `456`, as `buf` has been changed in the meantime
+* This leads to a receiver receiving `456` twice, rather than `123` followed by `456`.
+
+Reference counting makes sure that a payload is only available to be reused when
+
+* a unicast message has been sent to a receiver and the ack from the receiver has been received by the sender,
+so that the message can be purged from the retransmission table, or
+* a multicast message (= message to all members) has been seen by all members and has been purged from
+the retransmission table.
+
+This is achieved by reference counting: a message increments a reference count (refcnt) when being sent,
+and decrements it when `JChannel.send()` returns. Retransmission protocols (such as `NAKACK2` or `UNICAST3`)
+increment refcnt, and decrement it when the message is known to have been received by the receiver(s).
+
+When refcnt becomes 0, a callback is invoked (with the message as argument), which can (e.g.) return the
+message to a pool.
+
+As example of a refcounted message is `RefcountedNioMessage`:
+
+[source,java]
+----
+public class RefcountedNioMessage extends NioMessage implements Refcountable<Message> {
+    protected final RefcountImpl<Message> impl=new RefcountImpl<>();
+
+    public RefcountedNioMessage() {
+    }
+
+    public RefcountedNioMessage(Address dest) {
+        super(dest);
+    }
+
+    public RefcountedNioMessage(Address dest, ByteBuffer buf) {
+        super(dest, buf);
+    }
+
+    public synchronized byte getRefcount() {
+        return impl.getRefcount();
+    }
+
+    @Override public synchronized RefcountedNioMessage incr() {
+        impl.incr();
+        return this;
+    }
+
+    @Override public synchronized RefcountedNioMessage decr() {
+        impl.decr(this);
+        return this;
+    }
+
+    public RefcountedNioMessage onRelease(Consumer<Message> rc) {
+        impl.onRelease(rc);
+        return this;
+    }
+}
+----
+
+It subclasses `NioMessage` and implements methods `incr()` and `decr()` of the `Refcountable` interface. The latter calls
+a function previously passed in via `onRelease()`. This function may for example return the payload of the NioMessage
+to a pool. See `RefcountedNioMessageTest` as an example.
+
+NOTE: Reference counting is an experimental feature, introduced in 5.1.0, and is WIP. The authors are interested in
+scenarios where this would be beneficial, and its performance impact. Please contact us if you are serious
+about using this feature; we're interested in feedback, suggestions and are happy to collaborate on this!
+
+===== Reference counting on the receiver side
+Reference counting is currently only implemented on the sender side.
+
+However, it could also be useful on the receiver side: a `MessageFactory` could create instances of ref-counted messages
+(the payload would be taken from a buffer pool) and increment the refcount.
+
+When such a message is received and processed by the application, the `receive(Message)` callback (or, alternatively,
+the application itself) could decrement the refcount, thus returning the buffer to the pool.
+
+
 
 [[PayloadMismatch]]
 === Mismatch between message type and getters/setters

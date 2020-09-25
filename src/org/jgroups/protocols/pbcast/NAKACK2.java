@@ -153,6 +153,12 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
 
+    protected static final Table.Visitor<Message> DECR=(seqno, msg, row, col) -> {
+        if(msg instanceof Refcountable)
+            ((Refcountable<Message>)msg).decr();
+        return true;
+    };
+
 
     @ManagedAttribute(description="Number of retransmit requests received",type=AttributeType.SCALAR)
     protected final LongAdder xmit_reqs_received=new LongAdder();
@@ -608,6 +614,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         Address dest=msg.getDest();
         if(dest != null || msg.isFlagSet(Message.Flag.NO_RELIABILITY))
             return down_prot.down(msg); // unicast address: not null and not mcast, pass down unchanged
+        if(msg instanceof Refcountable)
+            ((Refcountable<Message>)msg).incr();
         send(msg);
         return null;    // don't pass down the stack
     }
@@ -1430,6 +1438,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
             // delete *delivered* msgs that are stable (all messages with seqnos <= seqno)
             if(hd >= 0 && buf != null) {
+                buf.forEach(buf.getLow(), hd, DECR);
                 log.trace("%s: deleting msgs <= %s from %s", local_addr, hd, member);
                 buf.purge(hd);
             }
