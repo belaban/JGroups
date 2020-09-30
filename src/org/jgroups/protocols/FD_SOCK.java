@@ -642,7 +642,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     protected void startServerSocket() throws Exception {
         srv_sock=Util.createServerSocket(getSocketFactory(),
-                                         "jgroups.fd_sock.srv_sock", bind_addr, start_port, start_port+port_range); // grab a random unused port above 10000
+                                         "jgroups.fd_sock.srv_sock", bind_addr, start_port, start_port+port_range, 0); // grab a random unused port above 10000
         srv_sock_addr=new IpAddress(external_addr != null? external_addr : bind_addr, external_port > 0? external_port : srv_sock.getLocalPort());
         if(local_addr != null)
             cache.add(local_addr, srv_sock_addr);

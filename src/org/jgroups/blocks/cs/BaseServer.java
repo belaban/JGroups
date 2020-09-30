@@ -6,6 +6,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.IpAddress;
@@ -44,11 +45,12 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected InetAddress                     client_bind_addr;
     protected int                             client_bind_port;
     protected boolean                         defer_client_binding;
-    @ManagedAttribute(description="Time (ms) after which an idle connection is closed. 0 disables connection reaping",writable=true)
+    @ManagedAttribute(description="Time (ms) after which an idle connection is closed. 0 disables connection reaping",
+      writable=true,type=AttributeType.TIME)
     protected long                            conn_expire_time;  // ns
-    @ManagedAttribute(description="Size (bytes) of the receive channel/socket",writable=true)
+    @ManagedAttribute(description="Size (bytes) of the receive channel/socket",writable=true,type=AttributeType.BYTES)
     protected int                             recv_buf_size;
-    @ManagedAttribute(description="Size (bytes) of the send channel/socket",writable=true)
+    @ManagedAttribute(description="Size (bytes) of the send channel/socket",writable=true,type=AttributeType.BYTES)
     protected int                             send_buf_size;
 
     @ManagedAttribute(description="When A connects to B, B reuses the same TCP connection to send data to A")

@@ -72,7 +72,8 @@ public class SimpleTCP extends TP {
 
     public void init() throws Exception {
         super.init();
-        srv_sock=Util.createServerSocket(new DefaultSocketFactory(), "srv-sock", bind_addr, bind_port, bind_port+50);
+        srv_sock=Util.createServerSocket(new DefaultSocketFactory(), "srv-sock", bind_addr,
+                                         bind_port, bind_port+50, recv_buf_size);
         acceptor=new Acceptor(bind_addr, bind_port);
     }
 

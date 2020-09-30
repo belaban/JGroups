@@ -49,7 +49,8 @@ public class UnicastTestTcp {
         local=new InetSocketAddress(local_addr, local_port);
         remote=new InetSocketAddress(remote_addr, remote_port);
         destination=new IpAddress(remote.getAddress(), remote.getPort());
-        srv_sock=Util.createServerSocket(new DefaultSocketFactory(), "server", local.getAddress(), local.getPort());
+        srv_sock=Util.createServerSocket(new DefaultSocketFactory(), "server", local.getAddress(),
+                                         local.getPort(), local.getPort(), 0);
         System.out.println("Listening on " + srv_sock.getLocalSocketAddress());
         acceptor=new Acceptor();
         acceptor.start();

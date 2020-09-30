@@ -209,7 +209,7 @@ public class DiagnosticsHandler extends ReceiverAdapter {
     protected DiagnosticsHandler startTCP() throws Exception {
         if(srv_sock == null || srv_sock.isClosed())
             srv_sock=Util.createServerSocket(socket_factory, "jgroups.tp.diag.tcp_sock",
-                                             diagnostics_bind_addr, diagnostics_port, diagnostics_port+diagnostics_port_range);
+                                             diagnostics_bind_addr, diagnostics_port, diagnostics_port+diagnostics_port_range, 0);
         if(tcp_runner == null)
             tcp_runner=new Runner(thread_factory, TCP_THREAD_NAME, this::runTCP, () -> Util.close(srv_sock));
         tcp_runner.start();

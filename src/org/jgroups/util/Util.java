@@ -3813,61 +3813,34 @@ public class Util {
         return new ConcurrentHashMap<>(CCHM_INITIAL_CAPACITY,CCHM_LOAD_FACTOR,CCHM_CONCURRENCY_LEVEL);
     }
 
-    public static ServerSocket createServerSocket(SocketFactory factory, String service_name, InetAddress bind_addr, int start_port) {
+    public static ServerSocket createServerSocket(SocketFactory factory, String service_name, InetAddress bind_addr,
+                                                  int start_port, int end_port, int recv_buf_size) {
         ServerSocket ret=null;
         try {
             ret=factory.createServerSocket(service_name);
-            Util.bind(ret, bind_addr, start_port, start_port+1000, 50);
+            if(recv_buf_size > 0)
+                ret.setReceiveBufferSize(recv_buf_size); // https://issues.redhat.com/browse/JGRP-2504
+            Util.bind(ret, bind_addr, start_port, end_port);
             return ret;
         }
         catch(Exception e) {
+            Util.close(ret);
             return null;
         }
     }
 
 
-    public static ServerSocket createServerSocket(SocketFactory factory,String service_name,InetAddress bind_addr,
-                                                  int start_port,int end_port) throws Exception {
-        int original_start_port=start_port;
-        ServerSocket srv_sock=null;
-
-        while(true) {
-            try {
-                if(srv_sock != null);
-                    Util.close(srv_sock);
-                srv_sock=factory.createServerSocket(service_name);
-                InetSocketAddress sock_addr=new InetSocketAddress(bind_addr, start_port);
-                srv_sock.bind(sock_addr);
-                return srv_sock;
-            }
-            catch(SocketException bind_ex) {
-                if(start_port == end_port)
-                    throw new BindException(String.format("no port available in range [%d .. %d] (bind_addr=%s)",
-                                                          original_start_port, end_port, bind_addr));
-                if(bind_addr != null && !(bind_addr.isLoopbackAddress() || bind_addr.isAnyLocalAddress())) {
-                    NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
-                    if(nic == null)
-                        throw new BindException("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
-                }
-                start_port++;
-            }
-        }
-    }
 
 
     public static void bind(ServerSocket srv_sock, InetAddress bind_addr,
                             int start_port, int end_port) throws Exception {
-        bind(srv_sock, bind_addr, start_port, end_port, 50);
-    }
-
-    public static void bind(ServerSocket srv_sock, InetAddress bind_addr,
-                            int start_port, int end_port, int backlog) throws Exception {
         int original_start_port=start_port;
 
         while(true) {
             try {
                 InetSocketAddress sock_addr=new InetSocketAddress(bind_addr, start_port);
-                srv_sock.bind(sock_addr, backlog);
+                srv_sock.bind(sock_addr);
+                break;
             }
             catch(SocketException bind_ex) {
                 if(start_port == end_port)
@@ -3878,9 +3851,7 @@ public class Util {
                         throw new BindException("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
                 }
                 start_port++;
-                continue;
             }
-            break;
         }
     }
 
@@ -3892,6 +3863,7 @@ public class Util {
             try {
                 InetSocketAddress sock_addr=new InetSocketAddress(bind_addr, start_port);
                 sock.bind(sock_addr);
+                break;
             }
             catch(SocketException bind_ex) {
                 if(start_port == end_port)
@@ -3902,22 +3874,21 @@ public class Util {
                         throw new BindException("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
                 }
                 start_port++;
-                continue;
             }
-            break;
         }
     }
 
 
     public static ServerSocketChannel createServerSocketChannel(SocketFactory factory,String service_name, InetAddress bind_addr,
-                                                                int start_port, int end_port) throws Exception {
+                                                                int start_port, int end_port, int recv_buf_size) throws Exception {
         int original_start_port=start_port;
         ServerSocketChannel ch=null;
         while(true) {
             try {
-                if(ch != null)
-                    Util.close(ch);
+                Util.close(ch);
                 ch=factory.createServerSocketChannel(service_name);
+                if(recv_buf_size > 0)
+                    ch.setOption(StandardSocketOptions.SO_RCVBUF, recv_buf_size);
                 ch.bind(new InetSocketAddress(bind_addr, start_port), 50);
                 return ch;
             }

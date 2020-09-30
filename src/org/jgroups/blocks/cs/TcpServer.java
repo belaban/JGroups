@@ -68,7 +68,8 @@ public class TcpServer extends TcpBaseServer {
         // this.srv_sock=this.socket_factory.createServerSocket("jgroups.tcp.server");
         // this.srv_sock.setReuseAddress(reuse_addr);
         // Util.bind(this.srv_sock, bind_addr, srv_port, end_port);
-        this.srv_sock=Util.createServerSocket(this.socket_factory, "jgroups.tcp.server", bind_addr, srv_port, end_port);
+        this.srv_sock=Util.createServerSocket(this.socket_factory, "jgroups.tcp.server", bind_addr,
+                                              srv_port, end_port, recv_buf_size);
         acceptor=factory.newThread(new Acceptor(),"TcpServer.Acceptor[" + srv_sock.getLocalPort() + "]");
         local_addr=localAddress(bind_addr, srv_sock.getLocalPort(), external_addr, external_port);
         addConnectionListener(this);

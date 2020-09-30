@@ -68,7 +68,8 @@ public class NioServer extends NioBaseServer {
         // channel=this.socket_factory.createServerSocketChannel("jgroups.nio.server");
         // channel.setOption(StandardSocketOptions.SO_REUSEADDR, reuse_addr);
         // Util.bind(channel, bind_addr, srv_port, end_port);
-        channel=Util.createServerSocketChannel(this.socket_factory, "jgroups.nio.server", bind_addr, srv_port, end_port);
+        channel=Util.createServerSocketChannel(this.socket_factory, "jgroups.nio.server", bind_addr,
+                                               srv_port, end_port, recv_buf_size);
         channel.configureBlocking(false);
         selector=Selector.open();
         acceptor=factory.newThread(new Acceptor(), "NioServer.Selector [" + channel.getLocalAddress() + "]");
