@@ -1,11 +1,14 @@
 package org.jgroups.protocols.dns;
 
+import org.jgroups.Address;
 import org.jgroups.stack.IpAddress;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,6 +41,34 @@ public class DNS_PINGTest {
       } catch (IllegalArgumentException e) {
          //then
       }
+   }
+
+   @Test
+   public void test_get_members() throws Exception {
+      //given
+      final DNS_PING ping = new DNS_PING();
+      final MockDirContext mockDirContext = MockDirContext.newDefault()
+              .addEntry("test-1", "192.168.0.1", DNSResolver.DNSRecordType.A)
+              .addEntry("test-2", "192.168.0.2", DNSResolver.DNSRecordType.A)
+              .addEntry("test-2", "192.168.1.1", DNSResolver.DNSRecordType.A)
+              .addEntry("test-2", "192.168.1.2", DNSResolver.DNSRecordType.A)
+              .addEntry("test-2", "192.168.1.3", DNSResolver.DNSRecordType.A)
+              .addEntry("test-3", "192.168.2.1", DNSResolver.DNSRecordType.A);
+
+      ping.dns_resolver = new AddressedDNSResolver(mockDirContext);
+
+      //when
+      final List<Address> addresses = ping.getMembers("test-1, test-2, test-3", DNSResolver.DNSRecordType.A);
+
+      //then
+      final List<Address> expectedResults = Arrays.asList(
+              new IpAddress("192.168.0.1"),
+              new IpAddress("192.168.0.2"),
+              new IpAddress("192.168.1.1"),
+              new IpAddress("192.168.1.2"),
+              new IpAddress("192.168.1.3"),
+              new IpAddress("192.168.2.1"));
+      Assert.assertEquals(addresses, expectedResults);
    }
 
    @Test
