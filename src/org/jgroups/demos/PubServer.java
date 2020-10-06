@@ -8,6 +8,8 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Bits;
+import org.jgroups.util.DefaultSocketFactory;
+import org.jgroups.util.DefaultThreadFactory;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -25,8 +27,12 @@ public class PubServer implements Receiver {
     protected final Log  log=LogFactory.getLog(PubServer.class);
 
 
-    protected void start(InetAddress bind_addr, int port, boolean nio) throws Exception {
-        server=nio? new NioServer(bind_addr, port) : new TcpServer(bind_addr, port);
+    protected void start(InetAddress bind_addr, int port, boolean nio, int recv_buf_size) throws Exception {
+        server=nio?
+          new NioServer(new DefaultThreadFactory("pubsrv", false), new DefaultSocketFactory(),
+                        bind_addr, port, port+50, null, 0, recv_buf_size)
+          : new TcpServer(new DefaultThreadFactory("pubsrv", false), new DefaultSocketFactory(),
+                          bind_addr, port, port+50, null, 0, recv_buf_size);
         server.receiver(this);
         server.start();
         JmxConfigurator.register(server, Util.getMBeanServer(), "pub:name=pub-server");
@@ -64,7 +70,7 @@ public class PubServer implements Receiver {
     }
 
     public static void main(String[] args) throws Exception {
-        int         port=7500;
+        int         port=7500, recv_buf_size=0;
         InetAddress bind_addr=null;
         boolean     nio=true;
 
@@ -81,14 +87,18 @@ public class PubServer implements Receiver {
                 nio=Boolean.parseBoolean(args[++i]);
                 continue;
             }
+            if(args[i].equals("-recv_buf_size")) {
+                recv_buf_size=Integer.parseInt(args[++i]);
+                continue;
+            }
             help();
             return;
         }
         PubServer server=new PubServer();
-        server.start(bind_addr, port, nio);
+        server.start(bind_addr, port, nio, recv_buf_size);
     }
 
     protected static void help() {
-        System.out.println("PubServer [-port port] [-bind_addr bind_addr] [-nio true|false]");
+        System.out.println("PubServer [-port port] [-bind_addr bind_addr] [-nio true|false] [-recv_buf_size bytes]");
     }
 }

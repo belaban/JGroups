@@ -80,6 +80,9 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     @Property(description="The max queue size of backlogged connections")
     protected int                  backlog=1000;
 
+    @Property(description="Initial size of the TCP/NIO receive buffer (in bytes)")
+    protected int                  recv_buf_size;
+
     @Property(description="Expose GossipRouter via JMX",writable=false)
     protected boolean              jmx=true;
 
@@ -130,6 +133,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     public GossipRouter  lingerTimeout(long t)              {this.linger_timeout=t; return this;}
     public long          socketReadTimeout()                {return sock_read_timeout;}
     public GossipRouter  socketReadTimeout(long t)          {this.sock_read_timeout=t; return this;}
+    public int           recvBufferSize()                   {return recv_buf_size;}
+    public GossipRouter  recvBufferSize(int s)              {recv_buf_size=s; return this;}
     public ThreadFactory threadPoolFactory()                {return thread_factory;}
     public GossipRouter  threadPoolFactory(ThreadFactory f) {this.thread_factory=f; return this;}
     public SocketFactory socketFactory()                    {return socket_factory;}
@@ -164,8 +169,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         if(jmx)
             JmxConfigurator.register(this, Util.getMBeanServer(), "jgroups:name=GossipRouter");
 
-        server=use_nio? new NioServer(thread_factory, socket_factory, bind_addr, port, port, null, 0)
-          : new TcpServer(thread_factory, socket_factory, bind_addr, port, port, null, 0);
+        server=use_nio? new NioServer(thread_factory, socket_factory, bind_addr, port, port, null, 0, recv_buf_size)
+          : new TcpServer(thread_factory, socket_factory, bind_addr, port, port, null, 0, recv_buf_size);
         server.receiver(this);
         server.start();
         server.addConnectionListener(this);
@@ -581,7 +586,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
 
     public static void main(String[] args) throws Exception {
         int port=12001;
-        int backlog=0;
+        int backlog=0, recv_buf_size=0;
         long soLinger=-1;
         long soTimeout=-1;
         long expiry_time=60000;
@@ -603,6 +608,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
             }
             if("-backlog".equals(arg)) {
                 backlog=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if("-recv_buf_size".equals(args[i])) {
+                recv_buf_size=Integer.parseInt(args[++i]);
                 continue;
             }
             if("-expiry".equals(arg)) {
@@ -641,6 +650,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
           .jmx(jmx).expiryTime(expiry_time)
           .useNio(nio)
           .backlog(backlog)
+          .recvBufferSize(recv_buf_size)
           .socketReadTimeout(soTimeout)
           .lingerTimeout(soLinger)
           .emitSuspectEvents(suspects)
@@ -663,7 +673,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         System.out.println("                              greater than zero or the default of 1000 will be");
         System.out.println("                              used.");
         System.out.println();
-        System.out.println("    -jmx <true|false>       - Expose attributes and operations via JMX.");
+        System.out.println("    -jmx <true|false>       - Expose attributes and operations via JMX.\n");
+        System.out.println("    -recv_buf_size <bytes>  - Sets the receive buffer");
         System.out.println();
         System.out.println("    -solinger <msecs>       - Time for setting SO_LINGER on connections. 0");
         System.out.println("                              means do not set SO_LINGER. Must be greater than");

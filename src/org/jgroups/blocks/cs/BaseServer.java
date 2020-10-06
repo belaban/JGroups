@@ -61,8 +61,9 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected TimeService                     time_service;
 
 
-    protected BaseServer(ThreadFactory f, SocketFactory sf) {
+    protected BaseServer(ThreadFactory f, SocketFactory sf, int recv_buf_size) {
         this.factory=f;
+        this.recv_buf_size=recv_buf_size;
         if(sf != null)
             this.socket_factory=sf;
     }

@@ -12,8 +12,8 @@ import org.jgroups.util.ThreadFactory;
 public abstract class TcpBaseServer extends BaseServer {
     protected int               peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
 
-    protected TcpBaseServer(ThreadFactory f, SocketFactory sf) {
-        super(f, sf);
+    protected TcpBaseServer(ThreadFactory f, SocketFactory sf, int recv_buf_size) {
+        super(f, sf, recv_buf_size);
     }
 
     @Override

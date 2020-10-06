@@ -34,8 +34,8 @@ public abstract class NioBaseServer extends BaseServer {
 
 
 
-    protected NioBaseServer(ThreadFactory f, SocketFactory sf) {
-        super(f, sf);
+    protected NioBaseServer(ThreadFactory f, SocketFactory sf, int recv_buf_size) {
+        super(f, sf, recv_buf_size);
     }
 
 

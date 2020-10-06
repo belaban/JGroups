@@ -103,7 +103,8 @@ public class TCP_NIO2 extends BasicTCP {
     }
 
     public void start() throws Exception {
-        server=new NioServer(getThreadFactory(), getSocketFactory(), bind_addr, bind_port, bind_port+port_range, external_addr, external_port);
+        server=new NioServer(getThreadFactory(), getSocketFactory(), bind_addr, bind_port, bind_port+port_range,
+                             external_addr, external_port, recv_buf_size);
         server.receiver(this)
           .timeService(time_service)
           .socketConnectionTimeout(sock_conn_timeout)

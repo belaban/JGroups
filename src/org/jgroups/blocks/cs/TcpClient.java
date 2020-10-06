@@ -45,16 +45,11 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
      * @throws Exception If the creation failed
      */
     public TcpClient(InetAddress bind_addr, int bind_port, InetAddress server_addr, int server_port) {
-        this(new DefaultThreadFactory("tcp", false), new DefaultSocketFactory());
+        super(new DefaultThreadFactory("tcp", false), new DefaultSocketFactory(), 0);
         clientBindAddress(bind_addr).clientBindPort(bind_port);
         this.remote_addr=new IpAddress(server_addr, server_port);
     }
 
-
-    protected TcpClient(ThreadFactory thread_factory, SocketFactory socket_factory) {
-        super(thread_factory, socket_factory);
-        this.socket_factory=socket_factory;
-    }
 
     public Address           remoteAddress()               {return remote_addr;}
     /** Sets the address of the server. Has no effect when already connected. */

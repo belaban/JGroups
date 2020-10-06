@@ -1,7 +1,6 @@
 package org.jgroups.blocks.cs;
 
 import org.jgroups.Address;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.*;
 
 import java.net.InetAddress;
@@ -17,9 +16,8 @@ import java.net.SocketException;
 public class TcpServer extends TcpBaseServer {
     protected ServerSocket srv_sock;
     protected Thread       acceptor;
-
-    protected int buffered_inputstream_size;
-    protected int buffered_outputstream_size;
+    protected int          buffered_inputstream_size;
+    protected int          buffered_outputstream_size;
 
 
     public int       getBufferedInputStreamSize()       {return buffered_inputstream_size;}
@@ -36,16 +34,10 @@ public class TcpServer extends TcpBaseServer {
      * @throws Exception Thrown if the creation failed
      */
     public TcpServer(InetAddress bind_addr, int port) throws Exception {
-        this(new DefaultThreadFactory("tcp", false), new DefaultSocketFactory(), bind_addr, port, port+50, null, 0);
+        this(new DefaultThreadFactory("tcp", false),
+             new DefaultSocketFactory(), bind_addr, port, port+50, null, 0, 0);
     }
 
-    /**
-     * Creates an instance of TcpServer.
-     * @param bind_addr The local bind address and port. If null, a bind address and port will be picked by the OS.
-     */
-    public TcpServer(IpAddress bind_addr) throws Exception {
-        this(bind_addr != null? bind_addr.getIpAddress() : null, bind_addr != null? bind_addr.getPort() : 0);
-    }
 
 
     /**
@@ -59,15 +51,13 @@ public class TcpServer extends TcpBaseServer {
      *                 exception will be thrown. If srv_port == end_port, only 1 port will be tried.
      * @param external_addr The external address in case of NAT. Ignored if null.
      * @param external_port The external port on the NA. If 0, srv_port is used.
+     * @param recv_buf_size The size of the initial TCP receive window (in bytes)
      * @throws Exception Thrown if the creation failed
      */
     public TcpServer(ThreadFactory thread_factory, SocketFactory socket_factory,
                      InetAddress bind_addr, int srv_port, int end_port,
-                     InetAddress external_addr, int external_port) throws Exception {
-        this(thread_factory, socket_factory);
-        // this.srv_sock=this.socket_factory.createServerSocket("jgroups.tcp.server");
-        // this.srv_sock.setReuseAddress(reuse_addr);
-        // Util.bind(this.srv_sock, bind_addr, srv_port, end_port);
+                     InetAddress external_addr, int external_port, int recv_buf_size) throws Exception {
+        super(thread_factory, socket_factory, recv_buf_size);
         this.srv_sock=Util.createServerSocket(this.socket_factory, "jgroups.tcp.server", bind_addr,
                                               srv_port, end_port, recv_buf_size);
         acceptor=factory.newThread(new Acceptor(),"TcpServer.Acceptor[" + srv_sock.getLocalPort() + "]");
@@ -75,10 +65,6 @@ public class TcpServer extends TcpBaseServer {
         addConnectionListener(this);
     }
 
-
-    protected TcpServer(ThreadFactory thread_factory, SocketFactory socket_factory) {
-        super(thread_factory, socket_factory);
-    }
 
 
     @Override
@@ -99,11 +85,9 @@ public class TcpServer extends TcpBaseServer {
     }
 
 
+    /** Acceptor thread. Continuously accepts new connections, creating a new thread for each new connection and
+     *  putting it in conns. When the thread should stop, it is interrupted by the thread creator */
     protected class Acceptor implements Runnable {
-        /**
-         * Acceptor thread. Continuously accept new connections. Create a new thread for each new connection and put
-         * it in conns. When the thread should stop, it is interrupted by the thread creator.
-         */
         public void run() {
             while(!srv_sock.isClosed() && !Thread.currentThread().isInterrupted()) {
                 Socket client_sock=null;
