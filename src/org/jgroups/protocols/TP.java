@@ -1681,17 +1681,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     protected void sendToSingleMember(final Address dest, byte[] buf, int offset, int length) throws Exception {
-        if(dest instanceof PhysicalAddress) {
-            sendUnicast((PhysicalAddress)dest, buf, offset, length);
-            return;
-        }
-
-        PhysicalAddress physical_dest;
-        if((physical_dest=getPhysicalAddressFromCache(dest)) != null) {
+        PhysicalAddress physical_dest=dest instanceof PhysicalAddress? (PhysicalAddress)dest : getPhysicalAddressFromCache(dest);
+        if(physical_dest != null) {
             sendUnicast(physical_dest,buf,offset,length);
             return;
         }
-
         if(who_has_cache.addIfAbsentOrExpired(dest)) { // true if address was added
             // FIND_MBRS must return quickly
             Responses responses=fetchResponsesFromDiscoveryProtocol(Collections.singletonList(dest));
