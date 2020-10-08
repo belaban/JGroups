@@ -550,7 +550,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected volatile        View view;
 
     /** The members of this group (updated when a member joins or leaves). With a shared transport,
-     * members contains *all* members from all channels sitting on the shared transport */
+     * members contains _all_ members from all channels sitting on the shared transport */
     protected final Set<Address> members=new CopyOnWriteArraySet<>();
 
 
@@ -606,18 +606,18 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected final AverageMinMax avg_batch_size=new AverageMinMax();
 
-    protected static final LazyRemovalCache.Printable<Address,LazyRemovalCache.Entry<PhysicalAddress>> print_function
-      =(logical_addr, entry) -> {
-        StringBuilder sb=new StringBuilder();
-        String tmp_logical_name=NameCache.get(logical_addr);
-        if(tmp_logical_name != null)
-            sb.append(tmp_logical_name).append(": ");
-        if(logical_addr instanceof UUID)
-            sb.append(((UUID)logical_addr).toStringLong()).append(": ");
-        sb.append(entry.toString(val -> val instanceof PhysicalAddress? val.printIpAddress() : val.toString()));
-        sb.append("\n");
-        return sb.toString();
-    };
+    protected static final LazyRemovalCache.Printable<Address,LazyRemovalCache.Entry<PhysicalAddress>> print_function=
+      (logical_addr, entry) -> {
+          StringBuilder sb=new StringBuilder();
+          String tmp_logical_name=NameCache.get(logical_addr);
+          if(tmp_logical_name != null)
+              sb.append(tmp_logical_name).append(": ");
+          if(logical_addr instanceof UUID)
+              sb.append(((UUID)logical_addr).toStringLong()).append(": ");
+          sb.append(entry.toString(val -> val instanceof PhysicalAddress? val.printIpAddress() : val.toString()));
+          sb.append("\n");
+          return sb.toString();
+      };
 
     /** Cache keeping track of WHO_HAS requests for physical addresses (given a logical address) and expiring
      * them after who_has_cache_timeout ms */
@@ -630,8 +630,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected SuppressLog<Address>   suppress_log_different_cluster;
 
     
-
-
 
 
     /**
@@ -1413,9 +1411,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected void _send(Message msg, Address dest) {
         try {
-            send(msg);
+            Bundler tmp_bundler=bundler;
+            if(tmp_bundler != null)
+                tmp_bundler.send(msg);
         }
-        catch(InterruptedIOException iex) {
+        catch(InterruptedIOException ignored) {
         }
         catch(InterruptedException interruptedEx) {
             Thread.currentThread().interrupt(); // let someone else handle the interrupt
@@ -1658,16 +1658,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
 
-    /** Serializes and sends a message. This method is not reentrant */
-    protected void send(Message msg) throws Exception {
-        // bundle all messages, even the ones tagged with DONT_BUNDLE: https://issues.jboss.org/browse/JGRP-1737
-        // remove the ones tagged as OOB|DONT_BUNDLE at the receiver and pass them up individually (in separate threads)
-        Bundler tmp_bundler=bundler;
-        if(tmp_bundler != null)
-            tmp_bundler.send(msg);
-    }
-
-
     public void doSend(byte[] buf, int offset, int length, Address dest) throws Exception {
         if(stats) {
             msg_stats.incrNumMsgsSent(1);
@@ -1851,7 +1841,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             try {
                 service.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
             }
-            catch(InterruptedException e) {
+            catch(InterruptedException ignored) {
             }
         }
     }

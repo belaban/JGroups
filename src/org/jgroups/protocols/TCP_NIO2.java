@@ -91,7 +91,7 @@ public class TCP_NIO2 extends BasicTCP {
             try {
                 server.send(dest, data, offset, length);
             }
-            catch(ClosedChannelException | CancelledKeyException ignored_exceptions) {}
+            catch(ClosedChannelException | CancelledKeyException ignored) {}
             catch(Throwable ex) {
                 log.warn("%s: failed sending message to %s: %s", local_addr, dest, ex);
             }

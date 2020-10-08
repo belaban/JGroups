@@ -171,7 +171,6 @@ public class Buffers implements Iterable<ByteBuffer> {
     /**
      * Writes the buffers from position to limit to the given channel. Note that all buffers need to have
      * their {@link ByteBuffer#position()} at the start of the data to be written
-     * be at the start of the data to be written.
      * @param ch The channel to write to
      * @return True if all the bytes of the buffer were written successfully, false otherwise (partial write).
      * @throws Exception Thrown if the write failed
