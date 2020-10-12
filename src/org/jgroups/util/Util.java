@@ -1793,7 +1793,7 @@ public class Util {
                 break;
             }
         }
-        return sb.toString();
+        return sb.length() > 0? sb.toString() : null;
     }
 
 
