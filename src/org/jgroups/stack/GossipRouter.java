@@ -19,6 +19,7 @@ import org.jgroups.util.*;
 import java.io.DataInput;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -226,11 +227,15 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
 
 
     @Override public void receive(Address sender, byte[] buf, int offset, int length) {
-        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
+        receive(sender, ByteBuffer.wrap(buf, offset, length));
+    }
+
+    @Override
+    public void receive(Address sender, ByteBuffer buf) {
+        int original_pos=buf.position();
         GossipType type;
         try {
-            type=GossipType.values()[in.readByte()];
-            in.position(Global.BYTE_SIZE);
+            type=GossipType.values()[buf.get()];
         }
         catch(Exception ex) {
             log.error("failed reading data from %s: %s", sender, ex);
@@ -239,6 +244,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
 
         switch(type) {
             case REGISTER:
+                DataInput in=new ByteArrayDataInputStream(buf);
                 handleRegister(sender, in);
                 break;
 
@@ -246,12 +252,13 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                 // we already read the type, now read group and dest (minimal info required to route the message)
                 // this way, we don't need to copy the buffer
                 try {
+                    in=new ByteArrayDataInputStream(buf);
                     String group=Bits.readString(in);
                     Address dest=Util.readAddress(in);
-                    route(group, dest, buf, offset, length);
+                    route(group, dest, buf.position(original_pos));
 
                     if(dump_msgs) {
-                        ByteArrayDataInputStream input=new ByteArrayDataInputStream(buf, offset, length);
+                        ByteArrayDataInputStream input=new ByteArrayDataInputStream(buf);
                         GossipData data=new GossipData();
                         data.readFrom(input);
                         dump(data);
@@ -264,10 +271,12 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                 break;
 
             case GET_MBRS:
+                in=new ByteArrayDataInputStream(buf);
                 handleGetMembersRequest(sender, in);
                 break;
 
             case UNREGISTER:
+                in=new ByteArrayDataInputStream(buf);
                 handleUnregister(in);
                 break;
         }
@@ -284,8 +293,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
 
             case MESSAGE:
                 try {
-                    // inefficient: we should transfer bytes from input stream to output stream, but Server currently
-                    // doesn't provide a way of reading from an input stream
+                    // inefficient: we should transfer bytes from input stream to output stream, but that is not
+                    // available natively
                     if((request=readRequest(in, type)) != null) {
                         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(request.serializedSize());
                         request.writeTo(out);
@@ -487,6 +496,23 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         }
     }
 
+    protected void route(String group, Address dest, ByteBuffer buf) {
+        ConcurrentMap<Address,Entry> map=address_mappings.get(group);
+        if(map == null)
+            return;
+        if(dest != null) { // unicast
+            Entry entry=map.get(dest);
+            if(entry != null)
+                sendToMember(entry.client_addr, buf);
+            else
+                log.warn("dest %s in cluster %s not found", dest, group);
+        }
+        else {             // multicast - send to all members in group
+            Set<Map.Entry<Address,Entry>> dests=map.entrySet();
+            sendToAllMembersInGroup(dests, buf);
+        }
+    }
+
 
 
     protected void sendToAllMembersInGroup(Set<Map.Entry<Address,Entry>> dests, GossipData request) {
@@ -529,12 +555,36 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         }
     }
 
+    protected void sendToAllMembersInGroup(Set<Map.Entry<Address,Entry>> dests, ByteBuffer buf) {
+        for(Map.Entry<Address,Entry> entry: dests) {
+            Entry e=entry.getValue();
+            if(e == null /* || e.phys_addr == null */)
+                continue;
+
+            try {
+                server.send(e.client_addr, buf.duplicate());
+            }
+            catch(Exception ex) {
+                log.error("failed sending message to %s (%s): %s", e.logical_name, e.phys_addr, ex);
+            }
+        }
+    }
+
 
     protected void sendToMember(Address dest, GossipData request) {
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(request.serializedSize());
         try {
             request.writeTo(out);
             server.send(dest, out.buffer(), 0, out.position());
+        }
+        catch(Exception ex) {
+            log.error("failed sending unicast message to %s: %s", dest, ex);
+        }
+    }
+
+    protected void sendToMember(Address dest, ByteBuffer buf) {
+        try {
+            server.send(dest, buf);
         }
         catch(Exception ex) {
             log.error("failed sending unicast message to %s: %s", dest, ex);
