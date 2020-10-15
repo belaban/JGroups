@@ -20,6 +20,7 @@ import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1650,7 +1651,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 if(!Objects.equals(local_physical_addr, target))
                     sendUnicast(target, buf, offset, length);
             }
-            catch(SocketException sock_ex) {
+            catch(SocketException | SocketTimeoutException sock_ex) {
                 log.debug(Util.getMessage("FailureSendingToPhysAddr"), local_addr, mbr, sock_ex);
             }
             catch(Throwable t) {
