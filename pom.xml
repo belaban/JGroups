@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.jgroups</groupId>
     <artifactId>jgroups</artifactId>
-    <packaging>jar</packaging>
+    <packaging>bundle</packaging>
     <name>JGroups</name>
     <version>4.2.7.Final-SNAPSHOT</version>
     <url>http://www.jgroups.org</url>
@@ -97,7 +97,7 @@
             </releases>
             <snapshots>
                 <enabled>true</enabled>
-                <updatePolicy>awlays</updatePolicy>
+                <updatePolicy>always</updatePolicy>
             </snapshots>
         </repository>
 
@@ -312,7 +312,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!--<plugin>
+            <!--plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
@@ -320,18 +320,27 @@
                         <manifestFile>conf/manifest.mf</manifestFile>
                     </archive>
                 </configuration>
-            </plugin>-->
+            </plugin-->
 
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
                 <configuration>
-                    <arguments>-DskipTests=true -Dmaven.test.skip=true -Dmaven.javadoc.skip=true</arguments>
-                    <preparationGoals>clean</preparationGoals>
+                    <instructions>
+                        <Main-Class>org.jgroups.Version</Main-Class>
+                        <Implementation-Version>${project.version}</Implementation-Version>
+                        <DynamicImport-Package>*</DynamicImport-Package>
+                        <Export-Package>
+                            schema;version=${project.version},
+                            ${project.groupId}.*;version=${project.version}
+                        </Export-Package>
+                    </instructions>
                 </configuration>
             </plugin>
 
-            <plugin>
+
+            <!--plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
@@ -340,13 +349,11 @@
                             <addDefaultEntries>true</addDefaultEntries>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addBuildEnvironmentEntries>true</addBuildEnvironmentEntries>
-                            <!--addClasspath>true</addClasspath-->
-                            <!--classpathPrefix>libs/</classpathPrefix-->
                             <mainClass>org.jgroups.Version</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
-            </plugin>
+            </plugin-->
 
             <!-- Disable default tests: they won't run since they are lacking configuration -->
             <plugin>
@@ -374,6 +381,11 @@
                     <groupId>org.sonatype.plugins</groupId>
                     <artifactId>nexus-staging-maven-plugin</artifactId>
                     <version>1.6.8</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>4.2.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
