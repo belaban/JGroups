@@ -1496,7 +1496,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected void processBatch(MessageBatch batch, boolean oob, boolean internal) {
         try {
-            if(batch != null && !batch.isEmpty())
+            if(batch != null && !batch.isEmpty() && !unicastDestMismatch(batch.getDest()))
                 msg_processing_policy.process(batch, oob, internal);
         }
         catch(Throwable t) {
