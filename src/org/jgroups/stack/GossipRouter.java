@@ -96,7 +96,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     @Property(description="Dumps messages (dest/src/length/headers to stdout if enabled")
     protected boolean              dump_msgs;
 
-    protected BaseServer                                        server;
+    protected BaseServer           server;
     protected final AtomicBoolean  running=new AtomicBoolean(false);
     protected Timer                timer;
     protected final Log            log=LogFactory.getLog(this.getClass());
