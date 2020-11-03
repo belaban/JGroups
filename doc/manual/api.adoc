@@ -242,7 +242,7 @@ The following example shows 4.x code:
 ----
 MyObject obj=...;
 byte[] buffer=Util.objectToByteBuffer(obj); // memory allocation
-Message msg=new BytesMessage(null, buffer);
+Message msg=new Message(null, buffer);
 channel.send(msg);
 ----
 
