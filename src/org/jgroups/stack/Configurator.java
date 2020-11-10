@@ -6,6 +6,7 @@ import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.RecommendedForUpgrade;
 import org.jgroups.conf.PropertyHelper;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.logging.Log;
@@ -180,6 +181,11 @@ public class Configurator {
         if(protocol_name == null)
             return null;
         Class<? extends Protocol> clazz=Util.loadProtocolClass(protocol_name, stack != null? stack.getClass() : null);
+        if(clazz.getAnnotation(Deprecated.class) != null)
+            log.warn("%s has been deprecated; please upgrade to a newer version of the protocol", clazz.getSimpleName());
+        if(clazz.getAnnotation(RecommendedForUpgrade.class) != null)
+            log.warn("there are more recent versions of %s present; " +
+                       "please upgrade to a newer version of the protocol", clazz.getSimpleName());
         try {
             Protocol retval=clazz.getDeclaredConstructor().newInstance();
             if(stack != null)
@@ -187,7 +193,8 @@ public class Configurator {
             return retval;
         }
         catch(InstantiationException inst_ex) {
-            throw new InstantiationException(String.format(Util.getMessage("ProtocolCreateError"), protocol_name, inst_ex.getLocalizedMessage()));
+            throw new InstantiationException(String.format(Util.getMessage("ProtocolCreateError"),
+                                                           protocol_name, inst_ex.getLocalizedMessage()));
         }
     }
 

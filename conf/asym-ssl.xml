@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!-- Demo config showing how to configure ASYM_ENCRYPT with a keystore and certificates -->
-<config version="${version}">
+<config >
     <TCP bind_addr="localhost" bind_port="7600"/>
     <TCPPING initial_hosts="localhost[7600]" port_range="10"/>
     <MERGE3/> 

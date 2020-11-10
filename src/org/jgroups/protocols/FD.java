@@ -42,6 +42,7 @@ import java.util.function.Supplier;
  *
  * @author Bela Ban
  */
+@RecommendedForUpgrade
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD extends Protocol {
     

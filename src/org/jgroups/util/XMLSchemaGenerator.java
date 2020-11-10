@@ -68,7 +68,6 @@ public class XMLSchemaGenerator {
             xmldoc.getDocumentElement().setAttribute("xmlns:tns", "urn:org:jgroups");
             xmldoc.getDocumentElement().setAttribute("elementFormDefault", "qualified");
             xmldoc.getDocumentElement().setAttribute("attributeFormDefault", "unqualified");
-            xmldoc.getDocumentElement().setAttribute("version", version);
 
             Element complexType = xmldoc.createElement("xs:complexType");
             complexType.setAttribute("name", "ConfigType");
@@ -77,10 +76,6 @@ public class XMLSchemaGenerator {
             Element allType = xmldoc.createElement("xs:choice");
             allType.setAttribute("maxOccurs", "unbounded");
             complexType.appendChild(allType);
-            Element attributeElement = xmldoc.createElement("xs:attribute");
-            attributeElement.setAttribute("name", "version");
-            attributeElement.setAttribute("type", "xs:string");
-            complexType.appendChild(attributeElement);
             generateProtocolSchema(xmldoc, allType, PACKAGES);
 
             Element xsElement = xmldoc.createElement("xs:element");
