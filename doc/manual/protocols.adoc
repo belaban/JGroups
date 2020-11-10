@@ -1779,10 +1779,9 @@ _entire message_ into the payload of a new message that's then encrypted and sen
 This is done by SYM_ENCRYPT. The configuration includes mainly attributes that define the keystore, e.g. `keystore_name`
 (name of the keystore, needs to be found on the classpath), `store_password`, `key_password` and `alias`.
 
-SYM_ENCRYPT uses store type JCEKS (for details between JKS and JCEKS see here), however `keytool` uses JKS, therefore
-a keystore generated with keytool will not be accessible.
+SYM_ENCRYPT uses store type JCEKS by default. To use a keystore in another format, use the `keystore_type` attribute.
 
-To generate a keystore compatible with JCEKS, use the following command line options to keytool:
+To generate a keystore in JCEKS format with keytool, use the following command line options:
 
 ----
 keytool -genseckey -alias myKey -keypass changeit -storepass changeit  -keyalg Blowfish -keysize 56 -keystore defaultStore.keystore -storetype  JCEKS
