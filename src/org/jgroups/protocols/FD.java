@@ -45,6 +45,7 @@ import java.util.function.Supplier;
  * @deprecated Use {@link FD_ALL2} or {@link FD_ALL3} instead
  */
 @Deprecated(forRemoval=true)
+@RecommendedForUpgrade
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD extends Protocol {
     

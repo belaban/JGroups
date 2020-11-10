@@ -7,7 +7,7 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns="urn:org:jgroups"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd"
-        version="${version}">
+        >
   
     <TUNNEL
             gossip_router_hosts="${jgroups.tunnel.gossip_router_hosts:localhost[12001]}"
