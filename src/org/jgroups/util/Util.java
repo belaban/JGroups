@@ -3033,6 +3033,12 @@ public class Util {
         return objs == null? "null" : objs.stream().map(Objects::toString).collect(Collectors.joining(", "));
     }
 
+    public static String print(Object[] objs) {
+        if(objs == null || objs.length == 0)
+            return "";
+        return objs.length == 1? (objs[0] == null? "" : objs[0].toString()) : Arrays.toString(objs);
+    }
+
 
     public static <T> String print(Map<T,T> map) {
         StringBuilder sb=new StringBuilder();

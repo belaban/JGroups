@@ -185,6 +185,14 @@ public class ViewTest {
         assert left[0].equals(a) && left[1].equals(e) && left[2].equals(f);
     }
 
+    public void testDiffSameView() {
+        View one=View.create(a, 1, a,b,c,d,e,f,g);
+        View two=View.create(a, 1, a,b,c,d,e,f,g);
+        Address[][] diff=View.diff(one, two);
+        assert diff[0].length == 0;
+        assert diff[1].length == 0;
+    }
+
     public void testSameMembers() {
         View one=View.create(a, 1, a,b,c,d,e);
         View two=View.create(a, 2, a,b,c);

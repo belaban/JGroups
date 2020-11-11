@@ -100,6 +100,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     @Property(description="Logs warnings for reception of views less than the current, and for views which don't include self")
     protected boolean                   log_view_warnings=true;
+
+    @Property(description="When true, left and joined members are printed in addition to the view")
+    protected boolean                   print_view_details=true;
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
@@ -181,9 +184,11 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public long    getViewAckCollectionTimeout()       {return view_ack_collection_timeout;}
     public GMS     setViewAckCollectionTimeout(long v) {this.view_ack_collection_timeout=v; return this;}
     public boolean logCollectMessages()                {return log_collect_msgs;}
-    public GMS     logCollectMessages(boolean b)           {log_collect_msgs=b; return this;}
+    public GMS     logCollectMessages(boolean b)       {log_collect_msgs=b; return this;}
     public boolean logViewWarnings()                   {return log_view_warnings;}
     public GMS     logViewWarnings(boolean b)          {log_view_warnings=b; return this;}
+    public boolean printViewDetails()                  {return print_view_details;}
+    public GMS     printViewDetails(boolean p)         {print_view_details=p; return this;}
     public ViewId  getViewId()                         {return view != null? view.getViewId() : null;}
     public View    view()                              {return view;}
 
@@ -637,13 +642,17 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 setDigest(digest);
         }
 
-        log.debug("%s: installing view %s", local_addr, new_view);
+        if(log.isDebugEnabled()) {
+            Address[][] diff=View.diff(view, new_view);
+            log.debug("%s: installing view %s %s", local_addr, new_view,
+                      print_view_details? View.printDiff(diff) : "");
+        }
 
         Event view_event;
         boolean was_coord, is_coord;
         synchronized(members) {
             was_coord=view != null && Objects.equals(local_addr, view.getCoord());
-            view=new_view; // new View(new_view.getVid(), new_view.getMembers());
+            view=new_view;
             is_coord=Objects.equals(local_addr, view.getCoord());
             view_event=new Event(Event.VIEW_CHANGE, new_view);
 
