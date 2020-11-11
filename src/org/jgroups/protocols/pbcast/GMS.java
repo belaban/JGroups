@@ -119,6 +119,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @Deprecated
     protected boolean                   install_view_locally_first=true; // https://issues.jboss.org/browse/JGRP-1751
 
+    @Property(description="When true, left and joined members are printed in addition to the view")
+    protected boolean                   print_view_details=true;
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
@@ -211,6 +213,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public GMS setMaxJoinAttempts(int t)     {max_join_attempts=t; return this;}
     public int getMaxLeaveAttempts()         {return max_leave_attempts;}
     public GMS setMaxLeaveAttempts(int t)    {max_leave_attempts=t; return this;}
+    public boolean printViewDetails()          {return print_view_details;}
+    public GMS     printViewDetails(boolean p) {print_view_details=p; return this;}
 
     @ManagedAttribute(description="impl")
     public String getImplementation() {
@@ -663,7 +667,11 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 setDigest(digest);
         }
 
-        log.debug("%s: installing view %s", local_addr, new_view);
+        if(log.isDebugEnabled()) {
+            Address[][] diff=View.diff(view, new_view);
+            log.debug("%s: installing view %s %s", local_addr, new_view,
+                      print_view_details? View.printDiff(diff) : "");
+        }
 
         Event view_event;
         boolean was_coord, is_coord;

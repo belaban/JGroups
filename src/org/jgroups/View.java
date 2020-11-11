@@ -285,6 +285,21 @@ public class View implements Comparable<View>, SizeStreamable, Iterable<Address>
         return new Address[][]{joined != null? joined : new Address[]{}, left != null? left : new Address[]{}};
     }
 
+    public static String printDiff(Address[][] diff) {
+        if(diff == null)
+            return "";
+        Address[] joined=diff[0], left=diff[1];
+        if(joined.length == 0 && left.length == 0)
+            return "";
+        if(joined.length > 0 && left.length > 0)
+            return String.format("(%s joined, %s left)", Util.print(joined), Util.print(left));
+        if(joined.length > 0)
+            return String.format("(%s joined)", Util.print(joined));
+        if(left.length > 0)
+            return String.format("(%s left)", Util.print(left));
+        return "";
+    }
+
     /** Returns true if all views are the same. Uses the view IDs for comparison */
     public static boolean sameViews(View ... views) {
         ViewId first_view_id=views[0].getViewId();
