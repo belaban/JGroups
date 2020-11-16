@@ -111,7 +111,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     public GossipRouter(String bind_addr, int local_port) {
         this.port=local_port;
         try {
-            this.bind_addr=InetAddress.getByName(bind_addr);
+            this.bind_addr=bind_addr != null? InetAddress.getByName(bind_addr) : null;
         }
         catch(UnknownHostException e) {
             log.error("failed setting bind address %s: %s", bind_addr, e);
