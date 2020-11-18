@@ -76,8 +76,8 @@ public final class PropertyConverters {
     public static class InitialHosts2 implements PropertyConverter {
 
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String prop_val, boolean check_scope, StackType ip_version) throws Exception {
-            // port range is 1
-            return Util.parseCommaDelimitedHosts2(prop_val, 1);
+            // port range is 0
+            return Util.parseCommaDelimitedHosts2(prop_val, 0);
         }
 
         public String toString(Object value) {
