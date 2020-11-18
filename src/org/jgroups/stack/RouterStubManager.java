@@ -30,7 +30,7 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     protected volatile List<RouterStub>                 stubs;
 
     // List of destinations that the reconnect task needs to create and connect
-    protected volatile Set<Target>                      reconnect_list;
+    protected final Set<Target>                         reconnect_list=new HashSet<>();
 
     protected final Protocol                            owner;
     protected final TimeScheduler                       timer;
@@ -48,8 +48,7 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
                              String logical_name, PhysicalAddress phys_addr, long interval) {
         this.owner = owner;
         this.stubs = new ArrayList<>();
-        this.reconnect_list=new HashSet<>();
-        this.log = LogFactory.getLog(owner.getClass());     
+        this.log = LogFactory.getLog(owner.getClass());
         this.timer = owner.getTransport().getTimer();
         this.cluster_name=cluster_name;
         this.local_addr=local_addr;
@@ -151,7 +150,20 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     }
 
     public void run() {
-        if(reconnect_list.removeIf(this::reconnect) && reconnect_list.isEmpty())
+        Collection<Target> tmp;
+        boolean            empty;
+
+        synchronized(reconnect_list) {
+            tmp=new ArrayList<>(reconnect_list);
+        }
+        for(Target t: tmp) {
+            if(reconnect(t))
+                remove(t);
+        }
+        synchronized(reconnect_list) {
+            empty=reconnect_list.isEmpty();
+        }
+        if(empty)
             stopReconnector();
     }
 
@@ -196,12 +208,9 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
 
     protected boolean add(Target target) {
         if(target == null) return false;
-        Set<Target> new_set=new HashSet<>(reconnect_list);
-        if(new_set.add(target)) {
-            this.reconnect_list=new_set;
-            return true;
+        synchronized(reconnect_list) {
+            return reconnect_list.add(target);
         }
-        return false;
     }
 
     protected boolean remove(RouterStub stub) {
@@ -215,12 +224,9 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
 
     protected boolean remove(Target target) {
         if(target == null) return false;
-        Set<Target> new_set=new HashSet<>(reconnect_list);
-        if(new_set.remove(target)) {
-            this.reconnect_list=new_set;
-            return true;
+        synchronized(reconnect_list) {
+            return reconnect_list.remove(target);
         }
-        return false;
     }
 
 
