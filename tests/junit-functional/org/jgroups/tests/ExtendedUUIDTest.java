@@ -10,9 +10,11 @@ import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Tests {@link ExtendedUUID}
@@ -252,4 +254,30 @@ public class ExtendedUUIDTest {
         assert copy.getName().equals(sb.getName());
         assert copy.getSite().equals(sb.getSite());
     }
+
+    public void testPrintFunction() throws IOException {
+        ExtendedUUID uuid=ExtendedUUID.randomUUID("A").put("name", Util.stringToBytes("Bela"));
+
+        Function<ExtendedUUID,String> print_func=e -> {
+            byte[] val=e.get("name");
+            return Util.bytesToString(val);
+        };
+
+        String output=uuid.toString();
+        assert "A(name=Bela)".equals(output);
+
+        ExtendedUUID.setPrintFunction(print_func);
+        output=uuid.toString();
+        assert "Bela".equals(output);
+
+        ExtendedUUID uuid2=ExtendedUUID.randomUUID("B").put("name", Util.stringToBytes("Sabine"));
+        output=uuid2.toString();
+        assert "Sabine".equals(output);
+
+        ExtendedUUID.setPrintFunction(ExtendedUUID::print);
+
+        System.out.printf("uuid=%s, uuid2=%s\n", uuid, uuid2);
+    }
+
+
 }
