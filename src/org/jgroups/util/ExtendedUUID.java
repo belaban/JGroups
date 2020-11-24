@@ -2,8 +2,11 @@ package org.jgroups.util;
 
 import org.jgroups.Global;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -14,8 +17,9 @@ import java.util.function.Supplier;
  * @since  3.5
  */
 public class ExtendedUUID extends FlagsUUID {
-    protected byte[][]        keys;
-    protected byte[][]        values;
+    protected byte[][]                             keys;
+    protected byte[][]                             values;
+    protected static Function<ExtendedUUID,String> print_function=ExtendedUUID::print;
 
 
     public ExtendedUUID() {
@@ -44,6 +48,9 @@ public class ExtendedUUID extends FlagsUUID {
     public Supplier<? extends UUID> create() {
         return ExtendedUUID::new;
     }
+
+    public static void setPrintFunction(Function<ExtendedUUID,String> f) {
+        print_function=f;}
 
     public static ExtendedUUID randomUUID() {return new ExtendedUUID(generateRandomBytes());}
 
@@ -179,6 +186,12 @@ public class ExtendedUUID extends FlagsUUID {
     }
 
     public String toString() {
+        if(print_function != null)
+            return print_function.apply(this);
+        return print();
+    }
+
+    public String print() {
         if(keys == null)
             return super.toString();
         StringBuilder sb=new StringBuilder(super.toString());
