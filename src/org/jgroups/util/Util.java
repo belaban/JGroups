@@ -3851,7 +3851,7 @@ public class Util {
             catch(SocketException bind_ex) {
                 if(start_port == end_port)
                     throw new BindException("No available port to bind to in range [" + original_start_port + " .. " + end_port + "]");
-                if(bind_addr != null && !bind_addr.isLoopbackAddress()) {
+                if(bind_addr != null && !bind_addr.isLoopbackAddress() && !bind_addr.isAnyLocalAddress()) {
                     NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
                     if(nic == null)
                         throw new BindException("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
