@@ -29,7 +29,8 @@ public class DNS_PING extends Discovery {
     @Property(description = "DNS Record type")
     protected String  dns_record_type = DEFAULT_DNS_RECORD_TYPE;
 
-    @Property(description = "A comma-separated list of DNS queries for fetching members")
+    @Property(description = "A comma-separated list of DNS queries for fetching members",
+      systemProperty="jgroups.dns.dns_query")
     protected String  dns_query;
 
     @Property(description="For SRV records returned by the DNS query, the non-0 ports returned by DNS are" +
