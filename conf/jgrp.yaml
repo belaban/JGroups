@@ -8,7 +8,7 @@ metadata:
   labels:
     run: jgrp
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       run: jgrp
@@ -19,10 +19,10 @@ spec:
         run: jgrp
     spec:
       containers:
-      - image: belaban/jgroups
+      - image: belaban/jgrp
         name: jgrp
-        command: ["chat.sh"]
-        args: ["-props dns-ping.xml -o"]
+        command: ["bash"]
+        args: ["org.jgroups.demos.Chat -props udp.xml -nohup"]
         env:
           - name: DNS_QUERY
             value: "jgrp.default.svc.cluster.local"

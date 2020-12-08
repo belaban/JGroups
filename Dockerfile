@@ -1,5 +1,9 @@
 
 ## The first stage is used to git-clone and build JGroups; this requires a JDK/javac/git/ant
+# Build: docker build --no-cache -f Dockerfile -t belaban/jgrp .
+# Push: docker push belaban/jgrp
+
+
 FROM adoptopenjdk/openjdk11 as build-stage
 RUN apt-get update ; apt-get install -y git ant net-tools netcat iputils-ping
 
