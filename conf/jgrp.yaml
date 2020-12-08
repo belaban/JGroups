@@ -21,8 +21,8 @@ spec:
       containers:
       - image: belaban/jgrp
         name: jgrp
-        command: ["bash"]
-        args: ["org.jgroups.demos.Chat -props udp.xml -nohup"]
+        command: ["chat.sh"]
+        args: ["-props udp.xml -nohup"]
         env:
           - name: DNS_QUERY
             value: "jgrp.default.svc.cluster.local"
