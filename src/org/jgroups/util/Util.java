@@ -16,6 +16,7 @@ import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.tests.ParseMessages;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -1543,6 +1544,38 @@ public class Util {
             batches[index].add(msg);
         }
         return batches;
+    }
+
+    public static void parseWithTimeEpoch(InputStream input, BiConsumer<Short,Message> msg_consumer,
+                                          BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) {
+        try {
+            for(;;) {
+                String epochTime = ((ParseMessages.BinaryToAsciiWithEpochInputStream) input).readEpochTime();
+                // there is a \t separator
+                ((ParseMessages.BinaryToAsciiWithEpochInputStream) input).readPlainByte();
+
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                // after the \t separator, the data field could be empty
+                for(;;) {
+                    byte b = ((ParseMessages.BinaryToAsciiWithEpochInputStream) input).readPlainByte();
+                    if (b == '\n' || b == '\r' || b == -1) {
+                        break;
+                    }
+                    outputStream.write(b);
+                }
+                if (outputStream.size() != 0) {
+                    System.out.print(epochTime + " ");
+                    ParseMessages.BinaryToAsciiWithEpochInputStream targetStream =
+                          new ParseMessages.BinaryToAsciiWithEpochInputStream(new ByteArrayInputStream(outputStream.toByteArray()));
+                    parse(targetStream, msg_consumer, batch_consumer, tcp);
+                }
+            }
+        } catch(EOFException ignored) {
+            //ignored.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     public static void parse(byte[] buf, int offset, int length, BiConsumer<Short,Message> msg_consumer,

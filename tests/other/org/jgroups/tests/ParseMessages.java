@@ -12,6 +12,10 @@ import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
 import java.io.*;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -30,14 +34,18 @@ public class ParseMessages {
     }
 
     public static void parse(InputStream in, BiConsumer<Short,Message> msg_consumer,
-                             BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) throws FileNotFoundException {
-        Util.parse(in, msg_consumer, batch_consumer, tcp);
+                             BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) {
+        if (in instanceof BinaryToAsciiWithEpochInputStream) {
+            Util.parseWithTimeEpoch(in, msg_consumer, batch_consumer, tcp);
+        } else {
+            Util.parse(in, msg_consumer, batch_consumer, tcp);
+        }
     }
 
 
     public static void main(String[] args) throws Exception {
         String file=null;
-        boolean print_vers=false, binary_to_ascii=true, parse_discovery_responses=true, tcp=false;
+        boolean print_vers=false, binary_to_ascii=true, parse_discovery_responses=true, tcp=false, parse_time_epoch=false;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-file")) {
@@ -66,6 +74,10 @@ public class ParseMessages {
             }
             if("-show-views".equalsIgnoreCase(args[i])) {
                 show_views=Boolean.parseBoolean(args[++i]);
+                continue;
+            }
+            if ("-parse_time_epoch".equalsIgnoreCase(args[i])) {
+                parse_time_epoch=true;
                 continue;
             }
             help();
@@ -117,8 +129,13 @@ public class ParseMessages {
             }
         };
         InputStream in=file != null? new FileInputStream(file) : System.in;
-        if(binary_to_ascii)
-            in=new BinaryToAsciiInputStream(in);
+        if(binary_to_ascii) {
+            if (parse_time_epoch) {
+                in=new BinaryToAsciiWithEpochInputStream(in);
+            } else {
+                in=new BinaryToAsciiInputStream(in);
+            }
+        }
         parse(in, msg_consumer, batch_consumer, tcp);
     }
 
@@ -214,6 +231,41 @@ public class ParseMessages {
             int val=Integer.parseInt(tmp, 16);
             return (char)val;
         }
+    }
 
+    public static class BinaryToAsciiWithEpochInputStream extends BinaryToAsciiInputStream {
+
+        private static final DateTimeFormatter TIME_EPOCH_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss,SSS");
+        private static final ZoneId ZONE_ID=ZoneId.systemDefault();
+
+        public BinaryToAsciiWithEpochInputStream(InputStream in) {
+            super(in);
+        }
+
+        public String readEpochTime() throws IOException {
+            String timestamp="";
+            while (timestamp.length() != 20) {
+                input[0] = (byte)in.read();
+                if (input[0] == '\n' || input[0] == '\r') {
+                    continue;
+                }
+                input[1] = (byte)in.read();
+                // end of file
+                if (input[0] == -1 || input[1] == -1) {
+                    throw new EOFException();
+                }
+                timestamp+=new String(input);
+            }
+            String[] time = timestamp.split("\\.");
+            long epochMilli = Long.valueOf(time[0]) * 1000;
+            long nanos = Long.valueOf(time[1]);
+            ZonedDateTime zonedDateTime = Instant.ofEpochMilli(epochMilli).plusNanos(nanos).atZone(ZONE_ID);
+            String epochTime = TIME_EPOCH_DATE_TIME_FORMATTER.format(zonedDateTime);
+            return epochTime;
+        }
+
+        public byte readPlainByte() throws IOException {
+            return (byte)in.read();
+        }
     }
 }
