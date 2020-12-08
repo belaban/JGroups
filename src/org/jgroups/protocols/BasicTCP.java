@@ -8,10 +8,8 @@ import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.Receiver;
 import org.jgroups.conf.AttributeType;
-import org.jgroups.util.Util;
 
 import java.net.InetAddress;
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -148,10 +146,6 @@ public abstract class BasicTCP extends TP implements Receiver {
     public abstract void send(Address dest, byte[] data, int offset, int length) throws Exception;
 
     public abstract void retainAll(Collection<Address> members);
-
-    @Override public void receive(Address sender, ByteBuffer buf) {
-        Util.bufferToArray(sender, buf, this);
-    }
 
     @Override
     public Object down(Event evt) {

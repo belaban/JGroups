@@ -13,7 +13,6 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.net.InetAddress;
-import java.nio.ByteBuffer;
 import java.util.*;
 
 
@@ -206,11 +205,6 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
         catch(Exception ex) {
             log.error(Util.getMessage("FailedReadingData"), ex);
         }
-    }
-
-    @Override
-    public void receive(Address sender, ByteBuffer buf) {
-        Util.bufferToArray(sender, buf, this);
     }
 
     public void receive(Address sender, DataInput in) throws Exception {

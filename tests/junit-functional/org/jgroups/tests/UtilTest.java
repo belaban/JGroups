@@ -662,11 +662,6 @@ public class UtilTest {
         public void receive(Address sender, byte[] buf, int offset, int length) {
             name=new String(buf, offset, length);
         }
-
-        @Override
-        public void receive(Address sender, ByteBuffer buf) {
-            Util.bufferToArray(sender, buf, this);
-        }
     }
 
     public void testCombine() {

@@ -1,6 +1,7 @@
 package org.jgroups.blocks.cs;
 
 import org.jgroups.Address;
+import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.nio.ByteBuffer;
@@ -31,7 +32,9 @@ public interface Receiver {
      *            if an application needs to use a buffer after this callback returns, it must make a copy.<p/>
      *            Note that buf could be a direct ByteBuffer.
      */
-    void receive(Address sender, ByteBuffer buf); // should be a default method in Java 8
+    default void receive(Address sender, ByteBuffer buf) {
+        Util.bufferToArray(sender, buf, this);
+    }
 
     void receive(Address sender, DataInput in) throws Exception;
 }
