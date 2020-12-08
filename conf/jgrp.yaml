@@ -1,0 +1,76 @@
+##
+## Can be used to deploy 3 pods running with dns-ping.xml and a service to Kubernetes
+##
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: jgrp
+  labels:
+    run: jgrp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      run: jgrp
+  serviceName: "jgrp"
+  template:
+    metadata:
+      labels:
+        run: jgrp
+    spec:
+      containers:
+      - image: belaban/jgroups
+        name: jgrp
+        command: ["chat.sh"]
+        args: ["-props dns-ping.xml -o"]
+        env:
+          - name: DNS_QUERY
+            value: "jgrp.default.svc.cluster.local"
+          - name: DNS_RECORD_TYPE
+            value: A
+#          - name: DNS_QUERY
+#            value: "_ping._tcp.jgrp.default.svc.cluster.local"
+#          - name: DNS_RECORD_TYPE
+#            value: SRV
+#          - name: DNS_ADDRESS
+#            value: 10.96.0.10
+#          - name: DNS_PROBE_TRANSPORT_PORTS
+#            value: "true"
+---
+apiVersion: v1
+kind: Service
+metadata:
+#  annotations:
+#    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  name: jgrp
+  labels:
+    run: jgrp
+spec:
+  publishNotReadyAddresses: true
+  clusterIP: None
+  ports:
+    - name: ping
+      port: 7800
+      protocol: TCP
+      targetPort: 7800
+    - name: probe
+      port: 7500
+      protocol: UDP
+      targetPort: 7500
+    - name: debug
+      port: 8787
+      protocol: TCP
+      targetPort: 8787
+    - name: stomp
+      port: 9000
+      protocol: TCP
+      targetPort: 9000
+  selector:
+     run: jgrp
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+---
+
+
