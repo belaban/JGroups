@@ -5,7 +5,7 @@
 
 OPTIONS="-H:+JNI --no-server -H:+ReportExceptionStackTraces"
 
-OPTIONS="$OPTIONS -H:+AllowVMInspection -H:+TraceClassInitialization --no-fallback --allow-incomplete-classpath"
+OPTIONS="$OPTIONS -H:+AllowVMInspection -H:TraceClassInitialization=true --no-fallback --allow-incomplete-classpath"
 
 OPTIONS="$OPTIONS -H:ReflectionConfigurationFiles=conf/reflection.json"
 
