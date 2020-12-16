@@ -17,7 +17,10 @@ import org.jgroups.util.Util;
 import org.w3c.dom.Node;
 
 import java.lang.reflect.*;
-import java.net.*;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,16 +37,19 @@ import java.util.stream.Collectors;
  */
 public class Configurator {
     protected static final Log    log=LogFactory.getLog(Configurator.class);
+    protected static boolean      skip_setting_default_values=false;
     protected final ProtocolStack stack;
 
 
     public Configurator() {
         stack=null;
     }
-
     public Configurator(ProtocolStack protocolStack) {
         stack=protocolStack;
     }
+
+    public static boolean skipSettingDefaultValues()              {return skip_setting_default_values;}
+    public static void    skipSettingDefaultValues(boolean f)     {skip_setting_default_values=f;}
 
     public Protocol setupProtocolStack(List<ProtocolConfiguration> config) throws Exception {
         return setupProtocolStack(config, stack);
@@ -125,7 +131,7 @@ public class Configurator {
             Protocol prot=protocols.get(i);
             initializeAttrs(prot, config, ip_version);
         }
-        setDefaultValues(cfgs, protocols, ip_version);
+        setDefaultAddressValues(protocols, ip_version);
         ensureValidBindAddresses(protocols);
         return protocols;
     }
@@ -419,139 +425,115 @@ public class Configurator {
         return retval;
     }
 
-
-    /**
-     * Method which processes @Property.defaultValue() values, associated with the annotation using the defaultValue()
-     * annotation. This method does the following:
-     * - find all properties which have no user value assigned
-     * - if the defaultValue attribute is not "", generate a value for the field using the property converter for that
-     *   property and assign it to the field
-     */
-    public static void setDefaultValues(List<ProtocolConfiguration> protocol_configs, List<Protocol> protocols,
-                                        StackType ip_version) throws Exception {
-        InetAddress default_ip_address=Util.getNonLoopbackAddress(ip_version);
-        if(default_ip_address == null) {
-            log.warn(Util.getMessage("OnlyLoopbackFound"), ip_version);
-            default_ip_address=Util.getLoopback(ip_version);
-        }
-
-        for(int i=0; i < protocol_configs.size(); i++) {
-            ProtocolConfiguration protocol_config=protocol_configs.get(i);
-            Protocol protocol=protocols.get(i);
-            String protocolName=protocol.getName();
-
-            // regenerate the Properties which were destroyed during basic property processing
-            Map<String,String> properties=new HashMap<>(protocol_config.getProperties());
-
-            Method[] methods=Util.getAllDeclaredMethodsWithAnnotations(protocol.getClass(), Property.class);
-            for(int j=0; j < methods.length; j++) {
-                if(isSetPropertyMethod(methods[j], protocol.getClass())) {
-                    String propertyName=PropertyHelper.getPropertyName(methods[j]);
-                    Object propertyValue=getValueFromProtocol(protocol, propertyName);
-                    if(propertyValue == null) { // if propertyValue is null, check if there is a default value we can use
-                        Property annotation=methods[j].getAnnotation(Property.class);
-
-                        // get the default value for the method- check for InetAddress types
-                        if(InetAddressInfo.isInetAddressRelated(methods[j])) {
-                            String defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
-                            if(defaultValue != null && !defaultValue.isEmpty()) {
-                                Object converted=null;
-                                try {
-                                    if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
-                                        converted=default_ip_address;
-                                    else
-                                        converted=PropertyHelper.getConvertedValue(protocol, methods[j], properties,
-                                                                                   defaultValue, true, ip_version);
-                                    methods[j].invoke(protocol, converted);
-                                }
-                                catch(Exception e) {
-                                    throw new Exception("default could not be assigned for method " + propertyName + " in "
-                                                          + protocolName + " with default " + defaultValue, e);
-                                }
-                                log.debug("set property %s.%s to default value %s", protocolName, propertyName, converted);
-                            }
+    /** Returns a map of protocol.attr/InetAddress tuples */
+    public static Map<String,InetAddress> getInetAddresses2(List<Protocol> protocols) {
+        Map<String,InetAddress> map=new HashMap<>();
+        if(protocols != null) {
+            for(Protocol p: protocols) {
+                Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(p.getClass(), Property.class);
+                for(Field f: fields) {
+                    if(InetAddress.class.isAssignableFrom(f.getType())) {
+                        try {
+                            map.put(p.getName() + "." + f.getName(), getValueFromProtocol(p, f));
                         }
-                    }
-                }
-            }
-
-            //traverse class hierarchy and find all annotated fields and add them to the list if annotated
-            Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(protocol.getClass(), Property.class);
-            for(int j=0; j < fields.length; j++) {
-                String propertyName=PropertyHelper.getPropertyName(fields[j], properties);
-                Object propertyValue=getValueFromProtocol(protocol, fields[j]);
-                if(propertyValue == null) {
-                    // add to collection of @Properties with no user specified value
-                    Property annotation=fields[j].getAnnotation(Property.class);
-
-                    // get the default value for the field - check for InetAddress types
-                    if(InetAddressInfo.isInetAddressRelated(fields[j])) {
-                        String defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
-                        if(defaultValue != null && !defaultValue.isEmpty()) {
-                            // condition for invoking converter
-                            if(defaultValue != null || !PropertyHelper.usesDefaultConverter(fields[j])) {
-                                Object converted=null;
-                                try {
-                                    if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
-                                        converted=default_ip_address;
-                                    else
-                                        converted=PropertyHelper.getConvertedValue(protocol, fields[j], properties,
-                                                                                   defaultValue, true, ip_version);
-                                    if(converted != null)
-                                        Util.setField(fields[j], protocol, converted);
-                                }
-                                catch(Exception e) {
-                                    throw new Exception("default could not be assigned for field " + propertyName + " in "
-                                                          + protocolName + " with default value " + defaultValue, e);
-                                }
-                                log.debug("set property " + protocolName + "." + propertyName + " to default value " + converted);
-                            }
+                        catch(IllegalAccessException e) {
+                            map.put(p.getName() + "." + f.getName(), null);
                         }
                     }
                 }
             }
         }
+        return map;
     }
 
 
-    public static void setDefaultValues(List<Protocol> protocols, StackType ip_version) throws Exception {
+
+    public static boolean isInetAddressOrCompatibleType(Class<?> c) {
+        return InetAddress.class.isAssignableFrom(c)
+          || SocketAddress.class.isAssignableFrom(c)
+          || PhysicalAddress.class.isAssignableFrom(c);
+    }
+
+
+    /**
+     * Processes fields and methods which are inet address related, and assigns them default values defined by
+     * ({@link Property#defaultValueIPv4()} and {@link Property#defaultValueIPv6()}).
+     * This method does the following:
+     * - find all properties which have no value assigned
+     * - generate a value for the field using the property converter for that property and assign it to the field
+     */
+    public static void setDefaultAddressValues(List<Protocol> protocols, StackType ip_version) throws Exception {
+        if(skip_setting_default_values) {
+            log.warn("skipped setting default address values in protocols as skip_setting_default_values=%b",
+                     skip_setting_default_values);
+            return;
+        }
+        Map<String,String> properties=new HashMap<>(); // dummy properties
         InetAddress default_ip_address=Util.getNonLoopbackAddress(ip_version);
         if(default_ip_address == null) {
             log.warn(Util.getMessage("OnlyLoopbackFound"), ip_version);
             default_ip_address=Util.getLoopback(ip_version);
         }
 
-        for(Protocol protocol : protocols) {
-            String protocolName=protocol.getName();
+        for(Protocol prot: protocols) {
+            // Process the attributes which are defined via methods first:
+            Method[] methods=Util.getAllDeclaredMethodsWithAnnotations(prot.getClass(), Property.class);
+            for(Method method: methods) {
+                if(isSetPropertyMethod(method, prot.getClass())) {
+                    String propertyName=PropertyHelper.getPropertyName(method);
+                    Object existing_value=getValueFromProtocol(prot, propertyName);
+                    if(existing_value != null || !InetAddressInfo.isInetAddressRelated(method))
+                        continue;
 
-            //traverse class hierarchy and find all annotated fields and add them to the list if annotated
-            Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(protocol.getClass(), Property.class);
-            for(int j=0; j < fields.length; j++) {
-                // get the default value for the field - check for InetAddress types
-                if(InetAddressInfo.isInetAddressRelated(fields[j])) {
-                    Object propertyValue=getValueFromProtocol(protocol, fields[j]);
-                    if(propertyValue == null) {
-                        // add to collection of @Properties with no user specified value
-                        Property annotation=fields[j].getAnnotation(Property.class);
-
-                        String defaultValue=ip_version == StackType.IPv6? annotation.defaultValueIPv6() : annotation.defaultValueIPv4();
-                        if(defaultValue != null && !defaultValue.isEmpty()) {
-                            // condition for invoking converter
-                            Object converted=null;
-                            try {
-                                if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
-                                    converted=default_ip_address;
-                                else
-                                    converted=PropertyHelper.getConvertedValue(protocol, fields[j], defaultValue, true, ip_version);
-                                if(converted != null)
-                                    Util.setField(fields[j], protocol, converted);
-                            }
-                            catch(Exception e) {
-                                throw new Exception("default could not be assigned for field " + fields[j].getName() + " in "
-                                                      + protocolName + " with default value " + defaultValue, e);
-                            }
-                            log.debug("set property " + protocolName + "." + fields[j].getName() + " to default value " + converted);
+                    Property annotation=method.getAnnotation(Property.class);
+                    String defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
+                    if(defaultValue != null && !defaultValue.isEmpty()) {
+                        Object converted=null;
+                        try {
+                            if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
+                                converted=default_ip_address;
+                            else
+                                converted=PropertyHelper.getConvertedValue(prot, method, properties,
+                                                                           defaultValue, true, ip_version);
+                            method.invoke(prot, converted);
                         }
+                        catch(Exception e) {
+                            throw new Exception("default could not be assigned for method " + propertyName + " in "
+                                                  + prot.getName() + " with default " + defaultValue, e);
+                        }
+                        log.debug("set attribute %s.%s to default value %s", prot.getName(), propertyName, converted);
+                    }
+                }
+            }
+
+            // Next process the fields:
+            Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(prot.getClass(), Property.class);
+            for(Field field: fields) {
+                String propertyName=PropertyHelper.getPropertyName(field, properties);
+                Object existing_value=getValueFromProtocol(prot, field);
+                if(existing_value != null || !InetAddressInfo.isInetAddressRelated(field))
+                    continue;
+
+                Property annotation=field.getAnnotation(Property.class);
+                String defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
+                if(defaultValue != null && !defaultValue.isEmpty()) {
+                    // condition for invoking converter
+                    if(defaultValue != null || !PropertyHelper.usesDefaultConverter(field)) {
+                        Object converted=null;
+                        try {
+                            if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
+                                converted=default_ip_address;
+                            else
+                                converted=PropertyHelper.getConvertedValue(prot, field, properties,
+                                                                           defaultValue, true, ip_version);
+                            if(converted != null)
+                                Util.setField(field, prot, converted);
+                        }
+                        catch(Exception e) {
+                            throw new Exception("default could not be assigned for field " + propertyName + " in "
+                                                  + prot.getName() + " with default value " + defaultValue, e);
+                        }
+                        log.debug("set property " + prot.getName() + "." + propertyName + " to default value " + converted);
                     }
                 }
             }
@@ -1025,11 +1007,7 @@ public class Configurator {
             }
         }
 
-        static boolean isInetAddressOrCompatibleType(Class<?> c) {
-            return InetAddress.class.isAssignableFrom(c)
-              || SocketAddress.class.isAssignableFrom(c)
-              || PhysicalAddress.class.isAssignableFrom(c);
-        }
+
 
         /*
          * Check if the parameterized type represents one of:

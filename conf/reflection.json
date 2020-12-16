@@ -30,5 +30,11 @@
     "methods" : [
       {"name" :  "<init>", "parameterTypes":  []}
     ]
+  },
+  {
+    "name": "javax.xml.parsers.DocumentBuilderFactory",
+    "methods": [
+      {"name": "<init>", "parameterTypes":  []}
+    ]
   }
 ]

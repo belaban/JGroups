@@ -132,6 +132,8 @@ public class MPING extends PING implements Runnable {
     }
 
     public void start() throws Exception {
+        if(bind_addr == null)
+            bind_addr=getTransport().getBindAddr();
         if(Util.can_bind_to_mcast_addr) // https://jira.jboss.org/jira/browse/JGRP-836 - prevent cross talking on Linux
             mcast_receive_sock=Util.createMulticastSocket(getSocketFactory(), "jgroups.mping.mcast_sock", mcast_addr, mcast_port, log);
         else
@@ -150,22 +152,20 @@ public class MPING extends PING implements Runnable {
         else {
             if(bind_addr != null)
                 mcast_receive_sock.setNetworkInterface(NetworkInterface.getByInetAddress(bind_addr));
-            mcast_receive_sock.joinGroup(new InetSocketAddress(mcast_addr, mcast_port),
-                                         bind_addr == null? null : NetworkInterface.getByInetAddress(bind_addr));
+            InetSocketAddress group=new InetSocketAddress(mcast_addr, mcast_port);
+            NetworkInterface intf=bind_addr == null? null : NetworkInterface.getByInetAddress(bind_addr);
+            log.debug("%s: joining group %s on NIC %s\n", local_addr, group, intf);
+            mcast_receive_sock.joinGroup(group, intf);
         }
 
 
         // Create mcast sender socket
         if(send_on_all_interfaces || (send_interfaces != null && !send_interfaces.isEmpty())) {
-            List interfaces;
-            if(send_interfaces != null)
-                interfaces=send_interfaces;
-            else
-                interfaces=Util.getAllAvailableInterfaces();
-            mcast_send_sockets=new MulticastSocket[interfaces.size()];
+            List<NetworkInterface> nics=send_interfaces != null? send_interfaces : Util.getAllAvailableInterfaces();
+            mcast_send_sockets=new MulticastSocket[nics.size()];
             int index=0;
-            for(Iterator it=interfaces.iterator(); it.hasNext();) {
-                NetworkInterface intf=(NetworkInterface)it.next();
+            for(Iterator<NetworkInterface> it=nics.iterator(); it.hasNext();) {
+                NetworkInterface intf=it.next();
                 mcast_send_sockets[index]=new MulticastSocket();
                 mcast_send_sockets[index].setNetworkInterface(intf);
                 mcast_send_sockets[index].setTimeToLive(ip_ttl);

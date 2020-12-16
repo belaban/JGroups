@@ -90,6 +90,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         return timeout;
     }
 
+    public VERIFY_SUSPECT setBindAddress(InetAddress ba) {this.bind_addr=ba; return this;}
+
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.SET_LOCAL_ADDRESS:
@@ -312,6 +314,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
     public void start() throws Exception {
         super.start();
+        if(bind_addr == null)
+            bind_addr=getTransport().getBindAddr();
         if(bind_addr != null)
             intf=NetworkInterface.getByInetAddress(bind_addr);
     }

@@ -247,6 +247,8 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     public void start() throws Exception {
+        if(bind_addr == null)
+            bind_addr=getTransport().getBindAddr();
         shuttin_down=false;
         super.start();
         timer=getTransport().getTimer();

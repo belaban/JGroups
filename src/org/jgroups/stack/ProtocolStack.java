@@ -835,7 +835,7 @@ public class ProtocolStack extends Protocol {
             ip_version=resolved_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
         else if(ip_version == StackType.Dual)
             ip_version=StackType.IPv4; // prefer IPv4 addresses
-        Configurator.setDefaultValues(protocols, ip_version);
+        Configurator.setDefaultAddressValues(protocols, ip_version);
         initProtocolStack();
     }
 

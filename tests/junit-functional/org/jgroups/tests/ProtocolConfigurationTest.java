@@ -83,7 +83,6 @@ public class ProtocolConfigurationTest {
 	 * Checks assignment of defaults
 	 */
 	public void testDefaultAssignment() throws Exception {
-
 		List<ProtocolConfiguration> protocol_configs = new ArrayList<>() ;
 		List<Protocol> protocols = new ArrayList<>() ;
 
@@ -92,7 +91,7 @@ public class ProtocolConfigurationTest {
 		// process the defaults
 		protocol_configs.add(new ProtocolConfiguration(defaultProps)) ;
 		protocols.add(protocol) ;
-		Configurator.setDefaultValues(protocol_configs, protocols, StackType.IPv4) ;
+		Configurator.setDefaultAddressValues(protocols, StackType.IPv4) ;
 		
 		// get the value which should have been assigned a default
 		int a = ((DEFAULTS)protocol).getA() ;
