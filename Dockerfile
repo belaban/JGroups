@@ -1,18 +1,19 @@
 
-## The first stage is used to git-clone and build JGroups; this requires a JDK/javac/git/ant
-# Build: docker build --no-cache -f Dockerfile -t belaban/jgrp .
+## Builds an image containing JGroups.
+
+## **********************************************************
+## Make sure you have JGroups compiled (ant) before doing so!
+## **********************************************************
+
+# Build: docker build -f Dockerfile -t belaban/jgrp .
 # Push: docker push belaban/jgrp
 
 
-FROM adoptopenjdk/openjdk11 as build-stage
+FROM adoptopenjdk/openjdk11:jre as build-stage
 RUN apt-get update ; apt-get install -y git ant net-tools netcat iputils-ping
 
-## Download and build JGroups src code
-RUN git clone https://github.com/belaban/JGroups.git
-RUN cd JGroups ; ant retrieve compile
-
 # For the runtime, we only need a JRE (smaller footprint)
-FROM adoptopenjdk/openjdk11:jre
+FROM adoptopenjdk/openjdk11:jre as make-dirs
 LABEL maintainer="Bela Ban (belaban@mailbox.org)"
 RUN useradd --uid 1000 --home /opt/jgroups --create-home --shell /bin/bash jgroups
 RUN echo root:root | chpasswd ; echo jgroups:jgroups | chpasswd
@@ -23,9 +24,12 @@ ENV PATH $PATH:$HOME/JGroups/bin
 ENV JGROUPS_HOME=$HOME/JGroups
 WORKDIR /opt/jgroups
 
-COPY --from=build-stage /JGroups /opt/jgroups/JGroups
 COPY --from=build-stage /bin/ping /bin/netstat /bin/nc /bin/
 COPY --from=build-stage /sbin/ifconfig /sbin/
+COPY README $JGROUPS_HOME/
+COPY ./classes $JGROUPS_HOME/classes
+COPY ./lib $JGROUPS_HOME/lib
+COPY ./bin $JGROUPS_HOME/bin
 
 RUN chown -R jgroups.jgroups $HOME/*
 
