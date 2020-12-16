@@ -9,7 +9,7 @@ RUN apt-get update ; apt-get install -y git ant net-tools netcat iputils-ping
 
 ## Download and build JGroups src code
 RUN git clone https://github.com/belaban/JGroups.git
-RUN cd JGroups && ant retrieve ; ant compile
+RUN cd JGroups ; ant retrieve compile
 
 # For the runtime, we only need a JRE (smaller footprint)
 FROM adoptopenjdk/openjdk11:jre
