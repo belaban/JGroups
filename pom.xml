@@ -289,7 +289,7 @@
                                         <pathelement path="${compile_classpath}" />
                                         <pathelement path="${plugin_classpath}" />
                                     </classpath>
-                                    <arg line="-o ${project.build.directory}/schema" />
+                                    <arg line="-Dlog4j2.disable.jmx=true -o ${project.build.directory}/schema" />
                                 </java>
                                 <copy todir="${project.build.directory}/schema">
                                     <fileset dir="conf">
