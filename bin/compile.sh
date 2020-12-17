@@ -2,12 +2,16 @@
 
 ## Creates a native image using the GraalVM compiler (needs to be on the path)
 
+LIB=`dirname $0`/../lib
+CLASSES=`dirname $0`/../classes
+CONF=`dirname $0`/../conf
+CLASSPATH="$CLASSES:$LIB/*"
 
 OPTIONS="-H:+JNI --no-server -H:+ReportExceptionStackTraces --features=org.graalvm.home.HomeFinderFeature"
 
 OPTIONS="$OPTIONS -H:+AllowVMInspection -H:TraceClassInitialization=true --no-fallback --allow-incomplete-classpath"
 
-OPTIONS="$OPTIONS -H:ReflectionConfigurationFiles=conf/reflection.json"
+OPTIONS="$OPTIONS -H:ReflectionConfigurationFiles=$CONF/reflection.json"
 
 # OPTIONS="$OPTIONS -H:+PrintAnalysisCallTree"
 
