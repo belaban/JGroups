@@ -312,13 +312,18 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public <T extends TP> T setTimeServiceInterval(long t) {this.time_service_interval=t; return (T)this;}
 
     public InetAddress getDiagnosticsAddr() {return diagnostics_addr;}
-    public <T extends TP> T setDiagnosticsAddr(InetAddress d) {this.diagnostics_addr=d; return (T)this;}
+    public <T extends TP> T setDiagnosticsAddr(InetAddress d) {
+        this.diagnostics_addr=d; if(diag_handler != null) diag_handler.setDiagnosticsBindAddress(d); return (T)this;
+    }
 
     public InetAddress getDiagnosticsBindAddr() {return diagnostics_bind_addr;}
-    public <T extends TP> T setDiagnosticsBindAddr(InetAddress d) {this.diagnostics_bind_addr=d; return (T)this;}
+    public <T extends TP> T setDiagnosticsBindAddr(InetAddress d) {
+        this.diagnostics_bind_addr=d; if(diag_handler != null) diag_handler.setDiagnosticsBindAddress(d); return (T)this;
+    }
 
     public int getDiagnosticsPort() {return diagnostics_port;}
-    public <T extends TP> T setDiagnosticsPort(int d) {this.diagnostics_port=d; return (T)this;}
+    public <T extends TP> T setDiagnosticsPort(int d) {
+        this.diagnostics_port=d; if(diag_handler != null) diag_handler.setDiagnosticsPort(d); return (T)this;}
 
     public int getDiagnosticsPortRange() {return diagnostics_port_range;}
     public <T extends TP> T setDiagnosticsPortRange(int d) {this.diagnostics_port_range=d; return (T)this;}

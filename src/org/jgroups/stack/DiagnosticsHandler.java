@@ -78,6 +78,8 @@ public class DiagnosticsHandler extends ReceiverAdapter {
     public DiagnosticsHandler enableUdp(boolean f)                     {udp_enabled=f; return this;}
     public boolean            tcpEnabled()                             {return tcp_enabled;}
     public DiagnosticsHandler enableTcp(boolean f)                     {tcp_enabled=f; return this;}
+    public int                getDiagnosticsPort()                     {return diagnostics_port;}
+    public DiagnosticsHandler setDiagnosticsPort(int p)                {diagnostics_port=p; return this;}
     public int                getDiagnosticsPortRange()                {return diagnostics_port_range;}
     public DiagnosticsHandler setDiagnosticsPortRange(int r)           {diagnostics_port_range=r; return this;}
 
