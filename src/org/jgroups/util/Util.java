@@ -2979,6 +2979,17 @@ public class Util {
         return true;
     }
 
+    public static boolean verifyByteBuffer(ByteBuffer buf) {
+        int index=buf.position(), expected_num=1;
+        while(index + Global.INT_SIZE <= buf.limit()) {
+            int actual_num=buf.getInt();
+            assert expected_num == actual_num : String.format("expected %d, but got %d", expected_num, actual_num);
+            index+=Global.INT_SIZE;
+            expected_num++;
+        }
+        return true;
+    }
+
 
     public static Address createRandomAddress() {
         return createRandomAddress(generateLocalName());

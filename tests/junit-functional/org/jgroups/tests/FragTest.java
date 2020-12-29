@@ -232,7 +232,7 @@ public class FragTest {
         NioMessage m1=new NioMessage(null, ByteBuffer.wrap(array)),
           m2=new NioMessage(b.getAddress(), ByteBuffer.wrap(array));
         send(m1, m2);
-        assertForAllMessages(m -> Util.verifyArray(m.getArray()));
+        assertForAllMessages(m -> Util.verifyByteBuffer(((NioMessage)m).getBuf()));
     }
 
     public void testNioDirectMessage(Class<? extends Fragmentation> frag_clazz) throws Exception {
@@ -240,7 +240,7 @@ public class FragTest {
         NioMessage m1=new NioMessage(null, Util.wrapDirect(array)),
           m2=new NioMessage(b.getAddress(), Util.wrapDirect(array));
         send(m1, m2);
-        assertForAllMessages(m -> Util.verifyArray(m.getArray()));
+        assertForAllMessages(m -> Util.verifyByteBuffer(((NioMessage)m).getBuf()));
     }
 
     public void testCompositeMessage(Class<? extends Fragmentation> frag_clazz) throws Exception {
