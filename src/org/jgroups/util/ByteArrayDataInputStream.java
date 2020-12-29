@@ -15,6 +15,7 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
 
     // index of last byte to be read, reading beyond will return -1 or throw EOFException. Limit has to be <= buf.length
     protected final int    limit;
+    protected static final ByteBuffer EMPTY=ByteBuffer.allocate(0);
 
     public ByteArrayDataInputStream(byte[] buf) {
         this(buf, 0, buf != null? buf.length : 0);
@@ -97,6 +98,17 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
                 throw new EOFException();
             n += count;
         }
+    }
+
+    public ByteBuffer readBuffer(int len) {
+        int avail=limit - pos;
+        if(len > avail || len < 0)
+            throw new IndexOutOfBoundsException();
+        if(len == 0)
+            return EMPTY;
+        ByteBuffer val=ByteBuffer.wrap(buf, pos, len);
+        pos += len;
+        return val;
     }
 
     public int skipBytes(int n) {
