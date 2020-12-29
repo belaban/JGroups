@@ -440,7 +440,7 @@ public class ByteArrayDataInputOutputStreamTest {
         assert tmp == null;
     }
 
-    public static void testReadLine() throws IOException {
+    public void testReadLine() throws IOException {
         String str="Gallia est omnis divisa in partes tres,\n\rquarum unam incolunt Belgae,\naliam Aquitani," +
           "\ntertiam qui ipsorum lingua Celtae, nostra Galli appellantur";
         byte[] buf=str.getBytes();
@@ -452,5 +452,19 @@ public class ByteArrayDataInputOutputStreamTest {
             lines.add(line);
         }
         assert lines.size() == 4;
+    }
+    
+    public void testReadBuffer() throws IOException {
+        String str="JGroups";
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(str.getBytes());
+        ByteBuffer buf=in.readBuffer(3);
+        byte[] a=new byte[3];
+        buf.get(a);
+        byte[] b=new byte[4];
+        in.readFully(b);
+        assert "JGr".equals(new String(a));
+        assert "oups".equals(new String(b));
+        buf=in.readBuffer(0);
+        assert !buf.hasRemaining();
     }
 }

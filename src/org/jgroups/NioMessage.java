@@ -3,6 +3,7 @@ package org.jgroups;
 
 
 import org.jgroups.util.ByteArray;
+import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -218,15 +219,26 @@ public class NioMessage extends BaseMessage {
         int len=in.readInt();
         if(len < 0)
             return;
-        // unfortunately, we cannot create a ByteBuffer and read directly into it from an input stream (no such API)
-        byte[] tmp=new byte[len];
-        in.readFully(tmp, 0, tmp.length);
-        buf=createBuffer(tmp, 0, tmp.length);
+        if(in instanceof ByteArrayDataInputStream) {
+            ByteArrayDataInputStream bin=(ByteArrayDataInputStream) in;
+            buf=createBuffer(bin.readBuffer(len));
+        } else {
+            // fallback
+            byte[] tmp=new byte[len];
+            in.readFully(tmp, 0, tmp.length);
+            buf=createBuffer(tmp, 0, tmp.length);
+        }
     }
 
     protected ByteBuffer createBuffer(byte[] array, int offset, int length) {
         return use_direct_memory_for_allocations? Util.wrapDirect(array, offset, length)
           : ByteBuffer.wrap(array, offset, length);
+    }
+
+    protected ByteBuffer createBuffer(ByteBuffer buffer) {
+        if(!use_direct_memory_for_allocations) 
+            return buffer;
+        return Util.wrapDirect(buffer.array(), buffer.position(), buffer.remaining());
     }
 
 }
