@@ -68,6 +68,10 @@ public class ClassConfigurator {
             add(magic, clazz);
     }
 
+    public static <T> void addIfAbsent(short magic, Class<T> clazz, Supplier<T> supplier) {
+        if(!magicMapUser.containsKey(magic) && !classMap.containsKey(clazz))
+            add(magic, clazz, supplier);
+    }
 
     /**
      * Method to register a user-defined header with jg-magic-map at runtime
@@ -76,6 +80,10 @@ public class ClassConfigurator {
      * @throws IllegalArgumentException If the magic number is already taken, or the magic number is <= 1024
      */
     public static void add(short magic, Class<?> clazz) {
+        add(magic, clazz, null);
+    }
+
+    public static <T> void add(short magic, Class<T> clazz, Supplier<T> supplier) {
         if(magic < MIN_CUSTOM_MAGIC_NUMBER)
             throw new IllegalArgumentException("magic ID (" + magic + ") must be >= " + MIN_CUSTOM_MAGIC_NUMBER);
         if(magicMapUser.containsKey(magic) || classMap.containsKey(clazz))
@@ -97,6 +105,14 @@ public class ClassConfigurator {
 
         if(Constructable.class.isAssignableFrom(clazz)) {
             val=((Constructable<?>)inst).create();
+            inst=((Supplier<?>)val).get();
+            if(!inst.getClass().equals(clazz))
+                throw new IllegalStateException(String.format("%s.create() returned the wrong class: %s\n",
+                                                              clazz.getSimpleName(), inst.getClass().getSimpleName()));
+        }
+
+        if (supplier != null) {
+            val=supplier;
             inst=((Supplier<?>)val).get();
             if(!inst.getClass().equals(clazz))
                 throw new IllegalStateException(String.format("%s.create() returned the wrong class: %s\n",
