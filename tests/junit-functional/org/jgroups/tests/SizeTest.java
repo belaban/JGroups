@@ -3,7 +3,9 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.auth.*;
+import org.jgroups.auth.FixedMembershipToken;
+import org.jgroups.auth.RegexMembership;
+import org.jgroups.auth.X509Token;
 import org.jgroups.blocks.RequestCorrelator;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.*;
@@ -13,8 +15,8 @@ import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.GossipData;
 import org.jgroups.stack.GossipType;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.*;
 import org.jgroups.util.UUID;
+import org.jgroups.util.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -37,6 +39,16 @@ public class SizeTest {
         _testSize(new TpHeader("DemoChannel"));
     }
 
+    public void testByteArray() throws Exception {
+        byte[] arr={};
+        ByteArray ba=new ByteArray(arr);
+        _testSize(ba);
+        arr="hello world".getBytes();
+        ba=new ByteArray(arr);
+        _testSize(ba);
+        ba=new ByteArray(arr, 6, 5);
+        _testSize(ba);
+    }
 
     public void testPingHeader() throws Exception {
         _testSize(new PingHeader(PingHeader.GET_MBRS_REQ).clusterName("bla"));

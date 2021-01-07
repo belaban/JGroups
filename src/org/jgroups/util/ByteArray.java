@@ -1,14 +1,18 @@
 package org.jgroups.util;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 /**
- * Byte array with an offset and length. This class is immutable.<br/>
+ * Byte array with an offset and length.<br/>
  * Note that the underlying byte array must <em>not</em> be changed as long as this instance is in use !
  * @author Bela Ban
  */
-public class ByteArray {
-    private final byte[] array;
-    private final int    offset;
-    private final int    length;
+public class ByteArray implements SizeStreamable {
+    private byte[] array;
+    private int    offset;
+    private int    length;
 
     public ByteArray(byte[] array, int offset, int length) {
         this.array=array;
@@ -41,6 +45,28 @@ public class ByteArray {
         return tmp;
     }
 
+    @Override
+    public int serializedSize() {
+        return Bits.size(length) + length;
+    }
+
+    @Override
+    public void writeTo(DataOutput out) throws IOException {
+        Bits.writeInt(length, out);
+        if(length > 0)
+            out.write(array, offset, length);
+    }
+
+    @Override
+    public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+        length=Bits.readInt(in);
+        offset=0;
+        if(length > 0) {
+            array=new byte[length];
+            in.readFully(array);
+        }
+    }
+
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append(length).append(" bytes");
@@ -48,5 +74,6 @@ public class ByteArray {
             sb.append(" (offset=").append(offset).append(")");
         return sb.toString();
     }
+
 
 }
