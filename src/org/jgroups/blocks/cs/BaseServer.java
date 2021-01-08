@@ -51,6 +51,10 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     @ManagedAttribute(description="Size (bytes) of the send channel/socket",writable=true)
     protected int                             send_buf_size;
 
+    @ManagedAttribute(description="The max number of bytes a message can have. If greater, an exception will be " +
+      "thrown. 0 disables this", writable=true)
+    protected int                             max_length;
+
     @ManagedAttribute(description="When A connects to B, B reuses the same TCP connection to send data to A")
     protected boolean                         use_peer_connections;
     protected int                             sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
@@ -94,6 +98,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public BaseServer       receiveBufferSize(int recv_buf_size)    {this.recv_buf_size = recv_buf_size; return this;}
     public int              sendBufferSize()                        {return send_buf_size;}
     public BaseServer       sendBufferSize(int send_buf_size)       {this.send_buf_size = send_buf_size; return this;}
+    public int              getMaxLength()                          {return max_length;}
+    public BaseServer       setMaxLength(int len)                   {max_length=len; return this;}
     public int              linger()                                {return linger;}
     public BaseServer       linger(int linger)                      {this.linger=linger; return this;}
     public boolean          tcpNodelay()                            {return tcp_nodelay;}
@@ -167,6 +173,11 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     }
 
     public void receive(Address sender, DataInput in, int len) throws Exception {
+        // https://issues.redhat.com/browse/JGRP-2523: check if max_length has been exceeded
+        if(max_length > 0 && len > max_length)
+            throw new IllegalStateException(String.format("the length of a message (%s) from %s is bigger than the " +
+                                                            "max accepted length (%s): discarding the message",
+                                                          Util.printBytes(len), sender, Util.printBytes(max_length)));
         if(this.receiver != null)
             this.receiver.receive(sender, in);
         else {

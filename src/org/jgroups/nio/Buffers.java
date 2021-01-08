@@ -1,5 +1,7 @@
 package org.jgroups.nio;
 
+import org.jgroups.util.Util;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,6 +32,7 @@ public class Buffers implements Iterable<ByteBuffer> {
     protected short position;          // points to the next buffer in bufs to be read or written
     protected short limit;             // points beyond the last buffer in bufs that was read or written
     protected short next_to_copy;      // index of the next buffer to copy, set by copy(): position <= last_copied <= limit
+    protected int   max_length;        // max number of bytes to read (JGRP-2523)
 
     /**
      * Creates a new instance with an array of capacity buffers
@@ -57,7 +60,8 @@ public class Buffers implements Iterable<ByteBuffer> {
     public Buffers limit(int new_limit)    {this.limit=toPositiveUnsignedShort(new_limit); return this;}
     public int     nextToCopy()            {return next_to_copy;}
     public Buffers nextToCopy(int next)    {next_to_copy=toPositiveUnsignedShort(next); return this;}
-
+    public int     maxLength()             {return max_length;}
+    public Buffers maxLength(int len)      {max_length=len; return this;}
 
     public int remaining() {
         int remaining=0;
@@ -128,6 +132,12 @@ public class Buffers implements Iterable<ByteBuffer> {
             return null;
 
         int len=bufs[0].getInt(0);
+        // https://issues.redhat.com/browse/JGRP-2523: check if max_length has been exceeded
+        if(max_length > 0 && len > max_length)
+            throw new IllegalStateException(String.format("the length of a message (%s) from %s is bigger than the " +
+                                                            "max accepted length (%s): discarding the message",
+                                                          Util.printBytes(len), ch.getRemoteAddress(),
+                                                          Util.printBytes(max_length)));
         if(bufs[1] == null || len > bufs[1].capacity())
             bufs[1]=ByteBuffer.allocate(len);
         // Workaround for JDK8 compatibility

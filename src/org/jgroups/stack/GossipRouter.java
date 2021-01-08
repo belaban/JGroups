@@ -88,7 +88,11 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     @Property(description="Dumps messages (dest/src/length/headers to stdout if enabled")
     protected boolean              dump_msgs;
 
-    protected BaseServer                                        server;
+    @Property(description="The max number of bytes a message can have. If greater, an exception will be " +
+      "thrown. 0 disables this")
+    protected int                  max_length;
+
+    protected BaseServer           server;
     protected final AtomicBoolean  running=new AtomicBoolean(false);
     protected Timer                timer;
     protected final Log            log=LogFactory.getLog(this.getClass());
@@ -140,6 +144,9 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     public GossipRouter  emitSuspectEvents(boolean flag)    {emit_suspect_events=flag; return this;}
     public boolean       dumpMessages()                     {return dump_msgs;}
     public GossipRouter  dumpMessages(boolean flag)         {dump_msgs=flag; return this;}
+    public int           maxLength()                        {return max_length;}
+    public GossipRouter  maxLength(int len)                 {max_length=len; if(server != null) server.setMaxLength(len);
+                                                             return this;}
     @ManagedAttribute(description="operational status", name="running")
     public boolean       running()                          {return running.get();}
 
@@ -162,7 +169,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
 
         server=use_nio? new NioServer(thread_factory, socket_factory, bind_addr, port, port, null, 0)
           : new TcpServer(thread_factory, socket_factory, bind_addr, port, port, null, 0);
-        server.receiver(this);
+        server.receiver(this).setMaxLength(max_length);
         server.start();
         server.addConnectionListener(this);
         Runtime.getRuntime().addShutdownHook(new Thread(GossipRouter.this::stop));
@@ -577,7 +584,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
 
     public static void main(String[] args) throws Exception {
         int port=12001;
-        int backlog=0;
+        int backlog=0, max_length=0;
         long soLinger=-1;
         long soTimeout=-1;
         long expiry_time=60000;
@@ -629,6 +636,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                 dump_msgs=Boolean.parseBoolean(args[++i]);
                 continue;
             }
+            if("-max_length".equals(arg)) {
+                max_length=Integer.parseInt(args[++i]);
+                continue;
+            }
             help();
             return;
         }
@@ -640,7 +651,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
           .socketReadTimeout(soTimeout)
           .lingerTimeout(soLinger)
           .emitSuspectEvents(suspects)
-          .dumpMessages(dump_msgs);
+          .dumpMessages(dump_msgs)
+          .maxLength(max_length);
         router.start();
         long time=System.currentTimeMillis()-start;
         IpAddress local=(IpAddress)router.localAddress();
@@ -675,6 +687,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         System.out.println("                              means don't expire.");
         System.out.println();
         System.out.println("    -nio <true|false>       - Whether or not to use non-blocking connections (NIO)");
+        System.out.println();
+        System.out.println("    -max_length <bytes>     - The max size (in bytes) of a message");
         System.out.println();
         System.out.println("    -suspect <true|false>   - Whether or not to use send SUSPECT events when a conn is closed");
         System.out.println();
