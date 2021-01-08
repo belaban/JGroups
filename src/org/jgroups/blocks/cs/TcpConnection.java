@@ -306,7 +306,7 @@ public class TcpConnection extends Connection {
                 ; // regular use case when a peer closes its connection - we don't want to log this as exception
             }
             catch(Exception e) {
-                server.log.warn("failed handling message from %s: %s", peer_addr, e);
+                server.log.warn("failed handling message", e);
             }
             finally {
                 server.notifyConnectionClosed(TcpConnection.this);

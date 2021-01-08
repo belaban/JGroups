@@ -5,15 +5,20 @@ import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.nio.Buffers;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.*;
+import org.jgroups.util.ByteArrayDataInputStream;
+import org.jgroups.util.ByteArrayDataOutputStream;
+import org.jgroups.util.CondVar;
+import org.jgroups.util.Util;
 
 import java.io.Closeable;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
@@ -58,6 +63,7 @@ public class NioConnection extends Connection {
         channel.configureBlocking(false);
         setSocketParameters(channel.socket());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
+        recv_buf.maxLength(server.getMaxLength());
     }
 
     public NioConnection(SocketChannel channel, NioBaseServer server) throws Exception {
@@ -70,6 +76,7 @@ public class NioConnection extends Connection {
         this.peer_addr=server.usePeerConnections()? null /* read by first receive() */
           : new IpAddress((InetSocketAddress)channel.getRemoteAddress());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
+        recv_buf.maxLength(server.getMaxLength());
     }
 
 
@@ -232,7 +239,7 @@ public class NioConnection extends Connection {
         Receiver   receiver=server.receiver();
 
         if(peer_addr == null && server.usePeerConnections() && (peer_addr=readPeerAddress()) != null) {
-            recv_buf=new Buffers(2).add(ByteBuffer.allocate(Global.INT_SIZE), null);
+            recv_buf=new Buffers(2).add(ByteBuffer.allocate(Global.INT_SIZE), null).maxLength(server.max_length);
             server.addConnection(peer_addr, this);
             return true;
         }
@@ -477,6 +484,9 @@ public class NioConnection extends Connection {
                             break;
                     }
                     catch(Exception ex) {
+                        if(!(ex instanceof SocketException || ex instanceof EOFException
+                          || ex instanceof ClosedChannelException))
+                            server.log.warn("failed handling message", ex);
                         server.closeConnection(NioConnection.this);
                         state(State.done);
                         return;
