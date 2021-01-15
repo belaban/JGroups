@@ -192,9 +192,6 @@ public class ClassConfigurator {
 
 
     protected static void init() throws Exception {
-        // make sure we have a class for DocumentBuilderFactory
-        Util.loadClass("javax.xml.parsers.DocumentBuilderFactory", ClassConfigurator.class);
-
         String magic_number_file=null, protocol_id_file=null;
         try { // PropertyPermission not granted if running in an untrusted environment with JNLP
             magic_number_file=Util.getProperty(new String[]{Global.MAGIC_NUMBER_FILE, "org.jgroups.conf.magicNumberFile"},
