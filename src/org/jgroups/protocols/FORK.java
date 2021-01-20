@@ -5,6 +5,7 @@ import org.jgroups.annotations.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolConfiguration;
+import org.jgroups.conf.XmlNode;
 import org.jgroups.fork.ForkConfig;
 import org.jgroups.fork.ForkProtocol;
 import org.jgroups.fork.ForkProtocolStack;
@@ -14,7 +15,6 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Bits;
 import org.jgroups.util.*;
-import org.w3c.dom.Node;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -277,7 +277,8 @@ public class FORK extends Protocol {
         }
     }
 
-    public void parse(Node node) throws Exception {
+    @Override
+    public void parse(XmlNode node) throws Exception {
         Map<String,List<ProtocolConfiguration>> protocols=ForkConfig.parse(node);
         createForkStacks(protocols);
     }

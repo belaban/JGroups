@@ -1,7 +1,6 @@
 package org.jgroups.conf;
 
 import org.jgroups.util.Util;
-import org.w3c.dom.Node;
 
 import java.util.*;
 
@@ -15,7 +14,7 @@ public class ProtocolConfiguration {
     private final ClassLoader         loader;
     private String                    properties_str;
     private final Map<String,String>  properties=new HashMap<>();
-    private List<Node>                subtrees; // roots to DOM elements, passed to protocol on creation
+    private List<XmlNode>             subtrees; // root to XmlNode tree, passed to protocol on creation
 
 
     /**
@@ -52,13 +51,13 @@ public class ProtocolConfiguration {
     public ProtocolConfiguration(String protocol_name, Map<String,String> properties, ClassLoader loader) {
         this.protocol_name=protocol_name;
         this.loader = loader;
-        if(!properties.isEmpty()) {
+        if(properties != null && !properties.isEmpty()) {
             this.properties.putAll(properties);
             properties_str=propertiesToString();
         }
     }
 
-    public void addSubtree(Node node){
+    public void addSubtree(XmlNode node) {
         if(node == null)
             return;
         if(subtrees == null)
@@ -66,7 +65,7 @@ public class ProtocolConfiguration {
         subtrees.add(node);
     }
 
-    public List<Node> getSubtrees() {
+    public List<XmlNode> getSubtrees() {
         return subtrees;
     }
 
