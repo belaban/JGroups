@@ -4,11 +4,11 @@ import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.conf.ConfiguratorFactory;
+import org.jgroups.conf.XmlNode;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.UUID;
 import org.jgroups.util.*;
-import org.w3c.dom.Node;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -357,7 +357,8 @@ public class RELAY2 extends Protocol {
         }
     }
 
-    public void parse(Node node) throws Exception {
+    @Override
+    public void parse(XmlNode node) throws Exception {
         RelayConfig.parse(node, sites);
     }
 

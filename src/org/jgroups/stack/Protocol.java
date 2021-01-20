@@ -9,6 +9,7 @@ import org.jgroups.Message;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.conf.XmlNode;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
@@ -16,7 +17,6 @@ import org.jgroups.util.MessageBatch;
 import org.jgroups.util.SocketFactory;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
-import org.w3c.dom.Node;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -130,7 +130,7 @@ public abstract class Protocol {
 
     /** Called by the XML parser when subelements are found in the configuration of a protocol. This allows
      * a protocol to define protocol-specific information and to parse it */
-    public void parse(Node node) throws Exception {;}
+    public void parse(XmlNode node) throws Exception {;}
 
     /** Returns the protocol IDs of all protocols above this one (excluding the current protocol) */
     public short[] getIdsAbove() {

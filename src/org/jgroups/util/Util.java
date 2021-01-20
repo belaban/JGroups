@@ -2023,6 +2023,26 @@ public class Util {
         return sb.length() > 0? sb.toString() : null;
     }
 
+    /** Returns all characters read from the current position until the next occurrence of 'c' has been read
+     * (including 'c'), or eof, whichever comes first */
+    public static String readTillMatchingCharacter(InputStream in, char c) throws IOException {
+        StringBuilder sb=new StringBuilder();
+        boolean eof=false;
+        for(;;) {
+            int ch=in.read();
+            if(ch == -1) {
+                eof=true;
+                break;
+            }
+            sb.append((char)ch);
+            if(ch == c)
+                break;
+        }
+
+        String retval=sb.toString().trim();
+        return eof && retval.isEmpty()? null : retval;
+    }
+
 
     public static String readStringFromStdin(String message) throws Exception {
         System.out.print(message);

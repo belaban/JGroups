@@ -9,12 +9,12 @@ import org.jgroups.annotations.Property;
 import org.jgroups.annotations.RecommendedForUpgrade;
 import org.jgroups.conf.PropertyHelper;
 import org.jgroups.conf.ProtocolConfiguration;
+import org.jgroups.conf.XmlNode;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
-import org.w3c.dom.Node;
 
 import java.lang.reflect.*;
 import java.net.Inet6Address;
@@ -232,9 +232,9 @@ public class Configurator {
             throw new IllegalArgumentException(String.format(Util.getMessage("ConfigurationError"), protocol_name, properties));
 
         // if we have protocol-specific XML configuration, pass it to the protocol
-        List<Node> subtrees=config.getSubtrees();
+        List<XmlNode> subtrees=config.getSubtrees();
         if(subtrees != null) {
-            for(Node node : subtrees)
+            for(XmlNode node : subtrees)
                 prot.parse(node);
         }
     }
@@ -816,7 +816,7 @@ public class Configurator {
 
     public static boolean isSetPropertyMethod(Method method, Class<?> enclosing_clazz) {
         return (method.getName().startsWith("set")
-          && (method.getReturnType() == java.lang.Void.TYPE || enclosing_clazz.isAssignableFrom(method.getReturnType()))
+          && (method.getReturnType() == java.lang.Void.TYPE || method.getReturnType().isAssignableFrom(enclosing_clazz))
           && method.getParameterTypes().length == 1);
     }
 

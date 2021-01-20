@@ -1,15 +1,17 @@
 package org.jgroups.protocols.relay.config;
 
 import org.jgroups.JChannel;
+import org.jgroups.conf.XmlConfigurator;
+import org.jgroups.conf.XmlNode;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
-import org.w3c.dom.*;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Parses and maintains the RELAY2 configuration (in memory)
@@ -30,76 +32,49 @@ public final class RelayConfig {
 	}
 
 
-    /*public String toString() {
-        StringBuilder sb=new StringBuilder();
-        sb.append("sites:\n");
-        for(Map.Entry<String,SiteConfig> entry: sites.entrySet())
-            sb.append(entry.getKey() + " --> " + entry.getValue() + "\n");
-
-        return sb.toString();
-    }*/
 
     /** Parses site names and their configuration (e.g. "nyc" --> SiteConfig) into the map passed as argument */
     public static void parse(InputStream input, final Map<String,SiteConfig> map) throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setValidating(false); // for now
-        DocumentBuilder builder=factory.newDocumentBuilder();
-        Document document=builder.parse(input);
-        Element root=document.getDocumentElement();
+        XmlNode root=XmlConfigurator.parseXmlDocument(input);
         parse(root, map);
     }
 
-    public static void parse(Node root, final Map<String,SiteConfig> map) throws Exception {
-        match(RELAY_CONFIG, root.getNodeName(), true);
-        NodeList children=root.getChildNodes();
-        if(children == null || children.getLength() == 0)
+    public static void parse(XmlNode root, final Map<String,SiteConfig> map) throws Exception {
+        match(RELAY_CONFIG, root.getName());
+        List<XmlNode> children=root.getChildren();
+        if(children == null || children.isEmpty())
             return;
-        for(int i=0; i < children.getLength(); i++) {
-            Node node=children.item(i);
-            if(node.getNodeType() != Node.ELEMENT_NODE)
-                continue;
-            String element_name=node.getNodeName();
-            if(SITES.equals(element_name))
-                parseSites(map, node);
-            else
-                throw new Exception("expected <" + SITES + ">, but got " + "<" + element_name + ">");
+        for(XmlNode node: children) {
+            match(SITES, node.getName());
+            parseSites(map, node);
         }
     }
 
 
-    protected static void parseSites(final Map<String,SiteConfig> map, Node root) throws Exception {
-        NodeList children=root.getChildNodes();
-        if(children == null || children.getLength() == 0)
+    protected static void parseSites(final Map<String,SiteConfig> map, XmlNode root) throws Exception {
+        List<XmlNode> children=root.getChildren();
+        if(children == null || children.isEmpty())
             return;
-        for(int i=0; i < children.getLength(); i++) {
-            Node node=children.item(i);
-            if(node.getNodeType() != Node.ELEMENT_NODE)
-                continue;
-            match(SITE, node.getNodeName(), true);
-            NamedNodeMap attrs=node.getAttributes();
-            if(attrs == null || attrs.getLength() == 0)
-                continue;
-            Attr name_attr=(Attr)attrs.getNamedItem("name");
-            String name=name_attr.getValue();
-            if(map.containsKey(name))
-                throw new Exception("Site \"" + name + "\" already defined");
-            SiteConfig site_config=new SiteConfig(name);
-            map.put(name, site_config);
-
+        for(XmlNode node: children) {
+            match(SITE, node.getName());
+            Map<String,String> attrs=node.getAttributes();
+            if(attrs == null || attrs.isEmpty() || !attrs.containsKey("name"))
+                throw new IllegalStateException(String.format("site must have a name (attrs: %s)", attrs));
+            String site_name=attrs.get("name");
+            if(map.containsKey(site_name))
+                throw new Exception("Site \"" + site_name + "\" already defined");
+            SiteConfig site_config=new SiteConfig(site_name);
+            map.put(site_name, site_config);
             parseBridgesAndForwards(site_config, node);
         }
     }
 
-    protected static void parseBridgesAndForwards(SiteConfig site_config, Node root) throws Exception {
-        NodeList children=root.getChildNodes();
-        if(children == null || children.getLength() == 0)
+    protected static void parseBridgesAndForwards(SiteConfig site_config, XmlNode root) throws Exception {
+        List<XmlNode> children=root.getChildren();
+        if(children == null || children.isEmpty())
             return;
-        for(int i=0; i < children.getLength(); i++) {
-            Node node=children.item(i);
-            if(node.getNodeType() != Node.ELEMENT_NODE)
-                continue;
-            String node_name=node.getNodeName();
-
+        for(XmlNode node: children) {
+            String node_name=node.getName();
             if(BRIDGES.equals(node_name))
                 parseBridges(site_config, node);
             else if(FORWARDS.equals(node_name))
@@ -109,56 +84,44 @@ public final class RelayConfig {
         }
     }
 
-    protected static void parseBridges(SiteConfig site_config, Node root) throws Exception {
-        NodeList children=root.getChildNodes();
-        if(children == null || children.getLength() == 0)
+    protected static void parseBridges(SiteConfig site_config, XmlNode root) throws Exception {
+        List<XmlNode> children=root.getChildren();
+        if(children == null || children.isEmpty())
             return;
-        for(int i=0; i < children.getLength(); i++) {
-            Node node=children.item(i);
-            if(node.getNodeType() != Node.ELEMENT_NODE)
-                continue;
-            String node_name=node.getNodeName();
-            match(BRIDGE, node_name, true);
+        for(XmlNode node: children) {
+            String node_name=node.getName();
+            match(BRIDGE, node_name);
 
-            NamedNodeMap attrs=node.getAttributes();
-            if(attrs == null || attrs.getLength() == 0)
+            Map<String,String> attrs=node.getAttributes();
+            if(attrs == null || attrs.isEmpty())
                 continue;
-            Attr name_attr=(Attr)attrs.getNamedItem("name");
-            Attr config_attr=(Attr)attrs.getNamedItem("config");
-            String name=name_attr != null? name_attr.getValue() : null;
-            String config=config_attr.getValue();
+            String name=attrs.get("name");
+            String config=attrs.get("config");
             BridgeConfig bridge_config=new PropertiesBridgeConfig(name, config);
             site_config.addBridge(bridge_config);
         }
     }
 
-    protected static void parseForwards(SiteConfig site_config, Node root) throws Exception {
-        NodeList children=root.getChildNodes();
-        if(children == null || children.getLength() == 0)
+    protected static void parseForwards(SiteConfig site_config, XmlNode root) throws Exception {
+        List<XmlNode> children=root.getChildren();
+        if(children == null || children.isEmpty())
             return;
-        for(int i=0; i < children.getLength(); i++) {
-            Node node=children.item(i);
-            if(node.getNodeType() != Node.ELEMENT_NODE)
+        for(XmlNode node: children) {
+            match(FORWARD, node.getName());
+            Map<String,String> attrs=node.getAttributes();
+            if(attrs == null || attrs.isEmpty())
                 continue;
-            String node_name=node.getNodeName();
-            match(FORWARD, node_name, true);
-
-            NamedNodeMap attrs=node.getAttributes();
-            if(attrs == null || attrs.getLength() == 0)
-                continue;
-            Attr to_attr=(Attr)attrs.getNamedItem("to");
-            Attr gw_attr=(Attr)attrs.getNamedItem("gateway");
-            String to=to_attr.getValue();
-            String gateway=gw_attr.getValue();
+            String to=attrs.get("to");
+            String gateway=attrs.get("gateway");
             ForwardConfig forward_config=new ForwardConfig(to, gateway);
             site_config.addForward(forward_config);
         }
     }
 
 
-    protected static void match(String expected_name, String name, boolean is_element) throws Exception {
+    protected static void match(String expected_name, String name) throws Exception {
         if(!expected_name.equals(name))
-            throw new Exception((is_element? "Element " : "Attribute ") + "\"" + name + "\" didn't match \"" + expected_name + "\"");
+            throw new Exception("\"" + name + "\" didn't match \"" + expected_name + "\"");
     }
 
     public static class SiteConfig {
@@ -206,7 +169,7 @@ public final class RelayConfig {
 
         public PropertiesBridgeConfig(String cluster_name, String config) {
             super(cluster_name);
-            this.config= Util.substituteVariable(config);
+            this.config=Util.substituteVariable(config);
         }
 
         public JChannel createChannel() throws Exception {return new JChannel(config);}
