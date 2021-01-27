@@ -85,7 +85,24 @@ public class ConnectTest extends ChannelTestBase {
     }
 
 
-    public void testDisconnectConnectndMessageSending() throws Exception {
+    public void testMultipleConnectsAndDisconnects() throws Exception {
+        coordinator=createChannel(true, 2, "coord");
+        coordinator.connect("testMultipleConnectsAndDisconnects");
+        channel=createChannel(coordinator, "channel");
+        channel.connect("testMultipleConnectsAndDisconnects");
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, coordinator, channel);
+        for(int i=1; i <= 50; i++) {
+            channel.disconnect();
+            Util.waitUntil(10000, 100, () -> coordinator.getView().size() == 1);
+            assert coordinator.getView().size() == 1 : String.format("coord's view is %s\n", coordinator.getView());
+            assert channel.isConnected() == false;
+            channel.connect("testMultipleConnectsAndDisconnects");
+            Util.waitUntilAllChannelsHaveSameView(10000, 500, coordinator, channel);
+            System.out.printf("#%d: %s\n", i, coordinator.getView());
+        }
+    }
+
+    public void testDisconnectConnectedMessageSending() throws Exception {
         coordinator=createChannel(true, 2).name("A");
         channel=createChannel(coordinator, "B");
         coordinator.connect("ConnectTest");
