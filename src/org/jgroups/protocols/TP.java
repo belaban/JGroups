@@ -270,6 +270,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public <T extends TP> T setBundlerCapacity(int c)           {this.bundler_capacity=c; return (T)this;}
     public int              getMessageProcessingMaxBufferSize() {return msg_processing_max_buffer_size;}
     public MessageFactory   getMessageFactory()                 {return msg_factory;}
+    public <T extends TP> T setMessageFactory(MessageFactory m) {msg_factory=m; return (T)this;}
     public boolean          useFibers()                         {return use_fibers;}
 
     public InetAddress getBindAddr() {return bind_addr;}
@@ -349,7 +350,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public long getSuppressTimeDifferentClusterWarnings() {return suppress_time_different_cluster_warnings;}
     public <T extends TP> T setSuppressTimeDifferentClusterWarnings(long s) {this.suppress_time_different_cluster_warnings=s; return (T)this;}
 
-    public String getMsgFactoryClass() {return msg_factory_class;}
+    public String           getMsgFactoryClass()         {return msg_factory_class;}
     public <T extends TP> T setMsgFactoryClass(String m) {this.msg_factory_class=m; return (T)this;}
 
     public String getBundlerType() {return bundler_type;}
