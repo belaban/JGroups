@@ -552,10 +552,12 @@ public class UDP extends TP {
             formatter.format("\nmcast_sock: bound to %s:%d, send buffer size=%d, receive buffer size=%d",
                              mcast_sock.getInterface().getHostAddress(), mcast_sock.getLocalPort(),
                              mcast_sock.getSendBufferSize(), mcast_sock.getReceiveBufferSize());
+        NetworkInterface nic=bind_addr != null? NetworkInterface.getByInetAddress(bind_addr) : null;
+        String nic_name=nic != null? nic.getName() : "n/a";
         if(bind_port > 0)
-            formatter.format("\n%s: using the network interface '%s' with port range '%s-%s'", bind_addr, NetworkInterface.getByInetAddress(bind_addr).getName(), bind_port, (bind_port + port_range));
+            formatter.format("\n%s: using network interface '%s' with port range '%s-%s'", bind_addr, nic_name, bind_port, (bind_port + port_range));
         else
-            formatter.format("\n%s: using the network interface '%s' to any (ephemeral) port", bind_addr, NetworkInterface.getByInetAddress(bind_addr).getName());
+            formatter.format("\n%s: using network interface '%s' to any (ephemeral) port", bind_addr, nic_name);
         return sb.toString();
     }
 
