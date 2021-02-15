@@ -600,9 +600,9 @@ public class COUNTER extends Protocol {
         for(String name: names)
             Bits.writeString(name,out);
         for(long value: values)
-            Bits.writeLong(value, out);
+            Bits.writeLongCompressed(value, out);
         for(long version: versions)
-            Bits.writeLong(version, out);
+            Bits.writeLongCompressed(version, out);
     }
 
     protected static String[] readReconciliationNames(DataInput in, int len) throws IOException {
@@ -615,7 +615,7 @@ public class COUNTER extends Protocol {
     protected static long[] readReconciliationLongs(DataInput in, int len) throws IOException {
         long[] retval=new long[len];
         for(int i=0; i < len; i++)
-            retval[i]=Bits.readLong(in);
+            retval[i]=Bits.readLongCompressed(in);
         return retval;
     }
 
@@ -814,13 +814,13 @@ public class COUNTER extends Protocol {
         @Override
         public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             super.readFrom(in);
-            initial_value=Bits.readLong(in);
+            initial_value=Bits.readLongCompressed(in);
         }
 
         @Override
         public void writeTo(DataOutput out) throws IOException {
             super.writeTo(out);
-            Bits.writeLong(initial_value, out);
+            Bits.writeLongCompressed(initial_value, out);
         }
     }
 
@@ -862,13 +862,13 @@ public class COUNTER extends Protocol {
         @Override
         public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             super.readFrom(in);
-            value=Bits.readLong(in);
+            value=Bits.readLongCompressed(in);
         }
 
         @Override
         public void writeTo(DataOutput out) throws IOException {
             super.writeTo(out);
-            Bits.writeLong(value, out);
+            Bits.writeLongCompressed(value, out);
         }
 
         public String toString() {return super.toString() + ": " + value;}
@@ -889,15 +889,15 @@ public class COUNTER extends Protocol {
         @Override
         public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             super.readFrom(in);
-            expected=Bits.readLong(in);
-            update=Bits.readLong(in);
+            expected=Bits.readLongCompressed(in);
+            update=Bits.readLongCompressed(in);
         }
 
         @Override
         public void writeTo(DataOutput out) throws IOException {
             super.writeTo(out);
-            Bits.writeLong(expected, out);
-            Bits.writeLong(update, out);
+            Bits.writeLongCompressed(expected, out);
+            Bits.writeLongCompressed(update, out);
         }
 
         public String toString() {return super.toString() + ", expected=" + expected + ", update=" + update;}
@@ -950,15 +950,15 @@ public class COUNTER extends Protocol {
         @Override
         public void writeTo(DataOutput out) throws IOException {
             Bits.writeString(name,out);
-            Bits.writeLong(value, out);
-            Bits.writeLong(version, out);
+            Bits.writeLongCompressed(value, out);
+            Bits.writeLongCompressed(version, out);
         }
 
         @Override
         public void readFrom(DataInput in) throws IOException {
             name=Bits.readString(in);
-            value=Bits.readLong(in);
-            version=Bits.readLong(in);
+            value=Bits.readLongCompressed(in);
+            version=Bits.readLongCompressed(in);
         }
 
         public String toString() {return "UpdateRequest(" + name + ": "+ value + " (" + version + ")";}
@@ -985,13 +985,13 @@ public class COUNTER extends Protocol {
         public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             owner=new Owner();
             owner.readFrom(in);
-            version=Bits.readLong(in);
+            version=Bits.readLongCompressed(in);
         }
 
         @Override
         public void writeTo(DataOutput out) throws IOException {
             owner.writeTo(out);
-            Bits.writeLong(version, out);
+            Bits.writeLongCompressed(version, out);
         }
 
         public String toString() {return "Response";}
@@ -1036,13 +1036,13 @@ public class COUNTER extends Protocol {
         @Override
         public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             super.readFrom(in);
-            result=Bits.readLong(in);
+            result=Bits.readLongCompressed(in);
         }
 
         @Override
         public void writeTo(DataOutput out) throws IOException {
             super.writeTo(out);
-            Bits.writeLong(result, out);
+            Bits.writeLongCompressed(result, out);
         }
 
         public String toString() {return "ValueResponse(" + result + ")";}

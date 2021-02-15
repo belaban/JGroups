@@ -47,9 +47,9 @@ public class FragHeader extends Header {
 
     @Override
     public void writeTo(DataOutput out) throws IOException {
-        Bits.writeLong(id,out);
-        Bits.writeInt(frag_id, out);
-        Bits.writeInt(num_frags, out);
+        Bits.writeLongCompressed(id, out);
+        Bits.writeIntCompressed(frag_id, out);
+        Bits.writeIntCompressed(num_frags, out);
         out.writeBoolean(needs_deserialization);
         out.writeShort(original_type);
     }
@@ -61,9 +61,9 @@ public class FragHeader extends Header {
 
     @Override
     public void readFrom(DataInput in) throws IOException {
-        id=Bits.readLong(in);
-        frag_id=Bits.readInt(in);
-        num_frags=Bits.readInt(in);
+        id=Bits.readLongCompressed(in);
+        frag_id=Bits.readIntCompressed(in);
+        num_frags=Bits.readIntCompressed(in);
         needs_deserialization=in.readBoolean();
         original_type=in.readShort();
     }

@@ -462,14 +462,14 @@ public class SEQUENCER2 extends Protocol {
         @Override
         public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
-            Bits.writeLong(seqno,out);
+            Bits.writeLongCompressed(seqno, out);
             out.writeShort(num_seqnos);
         }
 
         @Override
         public void readFrom(DataInput in) throws IOException {
             type=in.readByte();
-            seqno=Bits.readLong(in);
+            seqno=Bits.readLongCompressed(in);
             num_seqnos=in.readUnsignedShort();
         }
 

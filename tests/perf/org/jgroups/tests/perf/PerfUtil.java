@@ -154,18 +154,18 @@ public class PerfUtil {
 
         @Override
         public void writeTo(DataOutput out) throws IOException {
-            Bits.writeLong(num_gets, out);
-            Bits.writeLong(num_puts, out);
-            Bits.writeLong(total_time, out);
+            Bits.writeLongCompressed(num_gets, out);
+            Bits.writeLongCompressed(num_puts, out);
+            Bits.writeLongCompressed(total_time, out);
             Util.writeStreamable(avg_gets, out);
             Util.writeStreamable(avg_puts, out);
         }
 
         @Override
         public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-            num_gets=Bits.readLong(in);
-            num_puts=Bits.readLong(in);
-            total_time=Bits.readLong(in);
+            num_gets=Bits.readLongCompressed(in);
+            num_puts=Bits.readLongCompressed(in);
+            total_time=Bits.readLongCompressed(in);
             avg_gets=Util.readStreamable(AverageMinMax::new, in);
             avg_puts=Util.readStreamable(AverageMinMax::new, in);
         }

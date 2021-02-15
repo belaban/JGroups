@@ -492,14 +492,14 @@ public class RequestCorrelator {
         @Override
         public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
-            Bits.writeLong(req_id, out);
+            Bits.writeLongCompressed(req_id, out);
             out.writeShort(corrId);
         }
 
         @Override
         public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             type=in.readByte();
-            req_id=Bits.readLong(in);
+            req_id=Bits.readLongCompressed(in);
             corrId=in.readShort();
         }
 

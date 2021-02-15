@@ -36,13 +36,13 @@ public class Owner implements Streamable, Comparable<Owner> {
     @Override
     public void writeTo(DataOutput out) throws IOException {
         Util.writeAddress(address, out);
-        Bits.writeLong(thread_id, out);
+        Bits.writeLongCompressed(thread_id, out);
     }
 
     @Override
     public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         address=Util.readAddress(in);
-        thread_id=Bits.readLong(in);
+        thread_id=Bits.readLongCompressed(in);
     }
 
     public boolean equals(Object obj) {

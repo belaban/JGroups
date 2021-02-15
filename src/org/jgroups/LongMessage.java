@@ -49,11 +49,11 @@ public class LongMessage extends BaseMessage {
 
 
     public void writePayload(DataOutput out) throws IOException {
-        Bits.writeLong(value, out);
+        Bits.writeLongCompressed(value, out);
     }
 
     public void readPayload(DataInput in) throws IOException, ClassNotFoundException {
-        value=Bits.readLong(in);
+        value=Bits.readLongCompressed(in);
     }
 
     public int size() {

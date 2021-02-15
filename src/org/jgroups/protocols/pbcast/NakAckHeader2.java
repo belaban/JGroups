@@ -78,7 +78,7 @@ public class NakAckHeader2 extends Header {
             case MSG:
             case XMIT_RSP:
             case HIGHEST_SEQNO:
-                Bits.writeLong(seqno, out);
+                Bits.writeLongCompressed(seqno, out);
                 break;
             case XMIT_REQ:
                 Util.writeAddress(sender, out);
@@ -93,7 +93,7 @@ public class NakAckHeader2 extends Header {
             case MSG:
             case XMIT_RSP:
             case HIGHEST_SEQNO:
-                seqno=Bits.readLong(in);
+                seqno=Bits.readLongCompressed(in);
                 break;
             case XMIT_REQ:
                 sender=Util.readAddress(in);

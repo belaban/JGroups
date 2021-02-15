@@ -652,14 +652,14 @@ public class SEQUENCER extends Protocol {
         @Override
         public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
-            Bits.writeLong(seqno,out);
+            Bits.writeLongCompressed(seqno, out);
             out.writeBoolean(flush_ack);
         }
 
         @Override
         public void readFrom(DataInput in) throws IOException {
             type=in.readByte();
-            seqno=Bits.readLong(in);
+            seqno=Bits.readLongCompressed(in);
             flush_ack=in.readBoolean();
         }
 

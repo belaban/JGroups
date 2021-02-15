@@ -717,8 +717,8 @@ public class Util {
             case TYPE_CHAR:    case TYPE_CHAR_OBJ:    return (T)(Character)Bits.readChar(buffer, offset);
             case TYPE_DOUBLE:  case TYPE_DOUBLE_OBJ:  return (T)(Double)Bits.readDouble(buffer, offset);
             case TYPE_FLOAT:   case TYPE_FLOAT_OBJ:   return (T)(Float)Bits.readFloat(buffer, offset);
-            case TYPE_INT:     case TYPE_INT_OBJ:     return (T)(Integer)Bits.readInt(buffer, offset);
-            case TYPE_LONG:    case TYPE_LONG_OBJ:    return (T)(Long)Bits.readLong(buffer, offset);
+            case TYPE_INT:     case TYPE_INT_OBJ:     return (T)(Integer)Bits.readIntCompressed(buffer, offset);
+            case TYPE_LONG:    case TYPE_LONG_OBJ:    return (T)(Long)Bits.readLongCompressed(buffer, offset);
             case TYPE_SHORT:   case TYPE_SHORT_OBJ:   return (T)(Short)Bits.readShort(buffer, offset);
             case TYPE_STRING:
                 in=new ByteArrayDataInputStream(buffer, offset, length);
@@ -757,8 +757,8 @@ public class Util {
             case TYPE_CHAR:    case TYPE_CHAR_OBJ:    return (T)(Character)Bits.readChar(buffer);
             case TYPE_DOUBLE:  case TYPE_DOUBLE_OBJ:  return (T)(Double)Bits.readDouble(buffer);
             case TYPE_FLOAT:   case TYPE_FLOAT_OBJ:   return (T)(Float)Bits.readFloat(buffer);
-            case TYPE_INT:     case TYPE_INT_OBJ:     return (T)(Integer)Bits.readInt(buffer);
-            case TYPE_LONG:    case TYPE_LONG_OBJ:    return (T)(Long)Bits.readLong(buffer);
+            case TYPE_INT:     case TYPE_INT_OBJ:     return (T)(Integer)Bits.readIntCompressed(buffer);
+            case TYPE_LONG:    case TYPE_LONG_OBJ:    return (T)(Long)Bits.readLongCompressed(buffer);
             case TYPE_SHORT:   case TYPE_SHORT_OBJ:   return (T)(Short)Bits.readShort(buffer);
             case TYPE_BYTEARRAY:
                 byte[] tmp=new byte[buffer.remaining()];
@@ -834,14 +834,16 @@ public class Util {
                 Bits.writeFloat((float)obj, buf, 1);
                 return buf;
             case TYPE_INT: case TYPE_INT_OBJ:
-                buf=new byte[Global.BYTE_SIZE + Global.INT_SIZE];
+                int i=(int)obj;
+                buf=new byte[Global.BYTE_SIZE + Bits.size(i)];
                 buf[0]=type;
-                Bits.writeInt((int)obj, buf, 1);
+                Bits.writeIntCompressed(i, buf, 1);
                 return buf;
             case TYPE_LONG: case TYPE_LONG_OBJ:
-                buf=new byte[Global.BYTE_SIZE + Global.LONG_SIZE];
+                long l=(long)obj;
+                buf=new byte[Global.BYTE_SIZE + Bits.size(l)];
                 buf[0]=type;
-                Bits.writeLong((long)obj, buf, 1);
+                Bits.writeLongCompressed((long)obj, buf, 1);
                 return buf;
             case TYPE_SHORT: case TYPE_SHORT_OBJ:
                 buf=new byte[Global.BYTE_SIZE + Global.SHORT_SIZE];
@@ -1122,7 +1124,7 @@ public class Util {
                 Bits.writeString(trace.getClassName(), out);
                 Bits.writeString(trace.getMethodName(), out);
                 Bits.writeString(trace.getFileName(), out);
-                Bits.writeInt(trace.getLineNumber(), out);
+                Bits.writeIntCompressed(trace.getLineNumber(), out);
             }
         }
 
@@ -1173,7 +1175,7 @@ public class Util {
                 String class_name=Bits.readString(in);
                 String method_name=Bits.readString(in);
                 String filename=Bits.readString(in);
-                int line_number=Bits.readInt(in);
+                int line_number=Bits.readIntCompressed(in);
                 StackTraceElement trace=new StackTraceElement(class_name, method_name, filename, line_number);
                 stack_trace[i]=trace;
             }
@@ -1929,7 +1931,7 @@ public class Util {
 
 
     public static <T extends Streamable> void write(T[] array, DataOutput out) throws IOException {
-        Bits.writeInt(array != null? array.length : 0, out);
+        Bits.writeIntCompressed(array != null? array.length : 0, out);
         if(array == null)
             return;
         for(T el: array)
@@ -1937,7 +1939,7 @@ public class Util {
     }
 
     public static <T extends Streamable> T[] read(Class<T> clazz, DataInput in) throws Exception {
-        int size=Bits.readInt(in);
+        int size=Bits.readIntCompressed(in);
         if(size == 0)
             return null;
         T[] retval=(T[])Array.newInstance(clazz, size);

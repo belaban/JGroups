@@ -109,13 +109,13 @@ public class ViewId implements Comparable<ViewId>, SizeStreamable, Constructable
     @Override
     public void writeTo(DataOutput out) throws IOException {
         Util.writeAddress(creator, out);
-        Bits.writeLong(id,out);
+        Bits.writeLongCompressed(id, out);
     }
 
     @Override
     public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         creator=Util.readAddress(in);
-        id=Bits.readLong(in);
+        id=Bits.readLongCompressed(in);
     }
 
     @Override

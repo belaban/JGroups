@@ -467,13 +467,13 @@ public class MPerf implements Receiver {
         }
 
         public void writeTo(DataOutput out) throws IOException {
-            Bits.writeLong(time,out);
-            Bits.writeLong(msgs,out);
+            Bits.writeLongCompressed(time, out);
+            Bits.writeLongCompressed(msgs, out);
         }
 
         public void readFrom(DataInput in) throws IOException {
-            time=Bits.readLong(in);
-            msgs=Bits.readLong(in);
+            time=Bits.readLongCompressed(in);
+            msgs=Bits.readLongCompressed(in);
         }
 
         public String toString() {

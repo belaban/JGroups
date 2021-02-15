@@ -139,17 +139,17 @@ public class UnicastHeader3 extends Header {
         out.writeByte(type);
         switch(type) {
             case DATA:
-                Bits.writeLong(seqno, out);
+                Bits.writeLongCompressed(seqno, out);
                 out.writeShort(conn_id);
                 out.writeBoolean(first);
                 break;
             case ACK:
-                Bits.writeLong(seqno, out);
+                Bits.writeLongCompressed(seqno, out);
                 out.writeShort(conn_id);
-                Bits.writeInt(timestamp, out);
+                Bits.writeIntCompressed(timestamp, out);
                 break;
             case SEND_FIRST_SEQNO:
-                Bits.writeInt(timestamp, out);
+                Bits.writeIntCompressed(timestamp, out);
                 break;
             case XMIT_REQ:
                 break;
@@ -164,17 +164,17 @@ public class UnicastHeader3 extends Header {
         type=in.readByte();
         switch(type) {
             case DATA:
-                seqno=Bits.readLong(in);
+                seqno=Bits.readLongCompressed(in);
                 conn_id=in.readShort();
                 first=in.readBoolean();
                 break;
             case ACK:
-                seqno=Bits.readLong(in);
+                seqno=Bits.readLongCompressed(in);
                 conn_id=in.readShort();
-                timestamp=Bits.readInt(in);
+                timestamp=Bits.readIntCompressed(in);
                 break;
             case SEND_FIRST_SEQNO:
-                timestamp=Bits.readInt(in);
+                timestamp=Bits.readIntCompressed(in);
                 break;
             case XMIT_REQ:
                 break;

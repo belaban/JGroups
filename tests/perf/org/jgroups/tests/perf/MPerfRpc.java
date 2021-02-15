@@ -635,14 +635,14 @@ public class MPerfRpc implements Receiver {
 
         @Override
         public void writeTo(DataOutput out) throws IOException {
-            Bits.writeLong(time, out);
-            Bits.writeLong(msgs, out);
+            Bits.writeLongCompressed(time, out);
+            Bits.writeLongCompressed(msgs, out);
         }
 
         @Override
         public void readFrom(DataInput in) throws IOException {
-            time=Bits.readLong(in);
-            msgs=Bits.readLong(in);
+            time=Bits.readLongCompressed(in);
+            msgs=Bits.readLongCompressed(in);
         }
 
         public String toString() {

@@ -64,13 +64,13 @@ public class FlagsUUID extends UUID {
     @Override
     public void writeTo(DataOutput out) throws IOException {
         super.writeTo(out);
-        Bits.writeInt(flags, out);
+        Bits.writeIntCompressed(flags, out);
     }
 
     @Override
     public void readFrom(DataInput in) throws IOException {
         super.readFrom(in);
-        flags=Bits.readInt(in);
+        flags=Bits.readIntCompressed(in);
     }
 
     /** The number of bytes required to serialize this instance */
