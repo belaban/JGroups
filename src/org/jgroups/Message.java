@@ -207,7 +207,8 @@ public interface Message extends SizeStreamable, Constructable<Message> {
         RSVP(          (short)(1 <<  7)),    // ack of a multicast (https://issues.jboss.org/browse/JGRP-1389)
         RSVP_NB(       (short)(1 <<  8)),    // non blocking RSVP
         INTERNAL(      (short)(1 <<  9)),    // for internal use by JGroups only, don't use !
-        SKIP_BARRIER(  (short)(1 << 10));    // passing messages through a closed BARRIER
+        SKIP_BARRIER(  (short)(1 << 10)),    // passing messages through a closed BARRIER
+        SERIALIZED(    (short)(1 << 11));    // used by BytesMessage/NioMessage (internal flag)
 
         final short value;
         Flag(short value) {this.value=value;}

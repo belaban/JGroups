@@ -173,7 +173,12 @@ public class BytesMessage extends BaseMessage {
      * Externalizable or Streamable, or be a basic type (e.g. Integer, Short etc)).
      */
     public BytesMessage setObject(Object obj) {
-        if(obj == null) return this;
+        clearFlag(Flag.SERIALIZED);
+        if(obj == null) {
+            array=null;
+            offset=length=0;
+            return this;
+        }
         if(obj instanceof byte[])
             return setArray((byte[])obj, 0, ((byte[])obj).length);
         if(obj instanceof ByteArray)
@@ -187,6 +192,7 @@ public class BytesMessage extends BaseMessage {
         }
         try {
             ByteArray tmp=Util.objectToBuffer(obj);
+            setFlag(Flag.SERIALIZED);
             return setArray(tmp);
         }
         catch(Exception ex) {
@@ -210,16 +216,14 @@ public class BytesMessage extends BaseMessage {
      * @return the object
      */
     public <T extends Object> T getObject(ClassLoader loader) {
+        if(array == null)
+            return null;
         try {
-            return Util.objectFromByteBuffer(array, offset, length, loader);
+            return isFlagSet(Flag.SERIALIZED)? Util.objectFromByteBuffer(array, offset, length, loader) : (T)getArray();
         }
         catch(Exception ex) {
             throw new IllegalArgumentException(ex);
         }
-    }
-
-    public <T> T getPayload() {
-        return (T)getArray();
     }
 
 

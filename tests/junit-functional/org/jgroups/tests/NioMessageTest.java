@@ -3,9 +3,11 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.NioMessage;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -172,6 +174,59 @@ public class NioMessageTest extends MessageTestBase {
         Message msg2=unmarshal(NioMessage.class, buf);
         Object p=msg2.getObject();
         assert p == null;
+    }
+
+    public void testSetObjectWithArray() {
+        String s1="Bela Ban";
+        Message m1=new NioMessage(null).setObject(s1);
+        Assert.assertEquals(0, m1.getOffset());
+        Assert.assertEquals(m1.getArray().length, m1.getLength());
+        String s2=m1.getObject();
+        Assert.assertEquals(s2, s1);
+    }
+
+    public void testSerializableFlag() {
+        Message msg=new NioMessage();
+        assert msg.isFlagSet(Message.Flag.SERIALIZED) == false;
+        msg.setObject("hello");
+        assert msg.isFlagSet(Message.Flag.SERIALIZED);
+        msg.setObject("hello".getBytes());
+        assert msg.isFlagSet(Message.Flag.SERIALIZED) == false;
+    }
+
+    public void testSetObjectWithByteBuffer() {
+        byte[] H="bela".getBytes();
+        Message msg=new NioMessage(null).setObject("bela".getBytes());
+        byte[] tmp=msg.getObject();
+        assert tmp != null && new String(tmp).equals("bela");
+
+        ByteBuffer buf=ByteBuffer.wrap(H);
+        msg.setObject(buf);
+        assert msg.getLength() == H.length;
+        assert msg.getOffset() == 0;
+        byte[] pl=msg.getPayload();
+        assert Arrays.equals(pl, H);
+
+        buf=ByteBuffer.allocateDirect(H.length);
+        buf.put(H).rewind();
+
+        msg.setObject(buf);
+        assert msg.getLength() == H.length;
+        assert msg.getOffset() == 0;
+        pl=msg.getPayload();
+        assert Arrays.equals(pl, H);
+    }
+
+    public void testSetNullObject2() {
+        Message msg=new NioMessage(null).setObject(null);
+        Object obj=msg.getObject();
+        assert obj == null;
+        msg.setObject(322649);
+        obj=msg.getObject();
+        assert obj.equals(322649);
+        msg.setObject(null);
+        obj=msg.getObject();
+        assert obj == null;
     }
 
 }

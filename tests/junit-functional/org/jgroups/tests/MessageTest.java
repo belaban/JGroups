@@ -215,6 +215,9 @@ public class MessageTest extends MessageTestBase {
     public void testSetObjectWithByteBuffer() {
         byte[] H=HELLO.getBytes();
         Message msg=new BytesMessage(null, "bela".getBytes());
+        byte[] tmp=msg.getObject();
+        assert tmp != null && new String(tmp).equals("bela");
+
         ByteBuffer buf=ByteBuffer.wrap(H);
         msg.setObject(buf);
         assert msg.getLength() == H.length;
@@ -232,6 +235,46 @@ public class MessageTest extends MessageTestBase {
         assert Arrays.equals(pl, H);
     }
 
+    public void testSetNullObject() {
+        Message msg=new BytesMessage(null).setObject(null);
+        Object obj=msg.getObject();
+        assert obj == null;
+        msg.setObject(322649);
+        assert msg.getObject().equals(322649);
+        msg.setObject(null);
+        obj=msg.getObject();
+        assert obj == null;
+    }
+
+    public void testSerializableFlag() {
+        Message msg=new BytesMessage();
+        assert msg.isFlagSet(Message.Flag.SERIALIZED) == false;
+        msg.setObject("hello");
+        assert msg.isFlagSet(Message.Flag.SERIALIZED);
+        msg.setObject("hello".getBytes());
+        assert msg.isFlagSet(Message.Flag.SERIALIZED) == false;
+    }
+
+    public void testSetObjectWithVariousTypes() {
+        Object[] objects={null, true, false, Boolean.TRUE, (byte)22, 's', 'Ü', '\u20AC',
+          255, 322649, 322649L, (short)33, "hello", "hello".getBytes(), 2.34F, 2.43,};
+
+        for(Object obj: objects) {
+            Object o=null;
+            for(Message msg : new Message[]{new BytesMessage(null), new NioMessage(null)}) {
+                try {
+                    msg.setObject(obj);
+                    o=msg.getObject();
+                    msg.setObject(null);
+                }
+                catch(Throwable t) {
+                    System.err.printf("failed setting %s (class: %s)\n", obj, obj != null? obj.getClass().getSimpleName() : "null");
+                    throw t;
+                }
+                assert Objects.equals(obj, o) : String.format("expected %s, but got %s", obj, o);
+            }
+        }
+    }
 
     public void testCopy() {
         Message m1=new BytesMessage(null, "Bela Ban")
