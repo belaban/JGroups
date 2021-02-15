@@ -47,7 +47,7 @@ public class BitsTest {
     public void testWriteAndReadInt() throws Exception {
         int[] values={Integer.MIN_VALUE, -322649, -100, -1, 0, 1, 2, 4, 8, 9, 250, 260, Short.MAX_VALUE, 322649, Integer.MAX_VALUE};
         for(int val: values) {
-            byte[] buf=marshall(val);
+            byte[] buf=marshallInt(val);
             int new_val=unmarshalInt(buf);
             System.out.println(val + " --> " + new_val);
             assert val == new_val;
@@ -221,6 +221,7 @@ public class BitsTest {
             ByteBuffer buf=marshalToByteBuffer(f);
             buf.rewind();
             float fl=unmarshalFloat(buf);
+            System.out.printf("fl=%f f=%f\n", fl, f);
             assert fl == f;
         }
     }
@@ -244,6 +245,107 @@ public class BitsTest {
         }
     }
 
+    public void testChar() {
+        char[] chars={'b', 'ü', 'Ü', 'ë'};
+        for(char c: chars) {
+            byte[] buf=new byte[Character.BYTES];
+            Bits.writeChar(c, buf, 0);
+            char cc=Bits.readChar(buf, 0);
+            assert c == cc;
+            ByteBuffer bb=ByteBuffer.wrap(buf);
+            cc=Bits.readChar(bb);
+            assert cc == c;
+        }
+    }
+
+    public void testShort() {
+        short[] shorts={0,-100,200, Short.MIN_VALUE, Short.MAX_VALUE};
+        for(short s: shorts) {
+            byte[] buf=new byte[Short.BYTES];
+            Bits.writeShort(s, buf, 0);
+            short ss=Bits.readShort(buf, 0);
+            assert s == ss;
+            ByteBuffer bb=ByteBuffer.wrap(buf);
+            ss=Bits.readShort(bb);
+            assert s == ss;
+        }
+    }
+
+    public void testInt() {
+        int[] ints={0,-100,200, Integer.MIN_VALUE, Integer.MAX_VALUE};
+        for(int i: ints) {
+            byte[] buf=new byte[Integer.BYTES];
+            Bits.writeInt(i, buf, 0);
+            int ii=Bits.readInt(buf, 0);
+            assert i == ii;
+
+            ByteBuffer bb=ByteBuffer.wrap(buf);
+            ii=Bits.readInt(bb);
+            assert i == ii;
+        }
+    }
+
+    public void testIntCompressed() throws Exception {
+        int[] ints={0, 200, 322649, Integer.MIN_VALUE, Integer.MAX_VALUE};
+        for(int i: ints) {
+            byte[] buf=new byte[Integer.BYTES+1];
+
+            Bits.writeIntCompressed(i, buf, 0);
+            int ii=Bits.readIntCompressed(buf, 0);
+            assert i == ii;
+
+            ByteBuffer bb=ByteBuffer.allocate(Integer.BYTES+1);
+            Bits.writeIntCompressed(i, bb);
+            bb.flip();
+            ii=Bits.readIntCompressed(bb);
+            assert i == ii;
+
+            buf=marshallInt(i);
+            ii=unmarshalInt(buf);
+            assert i == ii;
+            int size=Bits.size(i);
+            assert buf.length == size;
+        }
+    }
+
+
+    public void testLong() {
+        long[] values={0,-100, 200L, 322649L, Long.MIN_VALUE, Long.MAX_VALUE};
+        for(long i: values) {
+            byte[] buf=new byte[Long.BYTES];
+            Bits.writeLong(i, buf, 0);
+            long ii=Bits.readLong(buf, 0);
+            assert i == ii;
+
+            ByteBuffer bb=ByteBuffer.wrap(buf);
+            ii=Bits.readLong(bb);
+            assert i == ii;
+        }
+    }
+
+    public void testLongCompressed() throws Exception {
+        long[] values={0, -100L, 200L, 322649L, Long.MIN_VALUE, Long.MAX_VALUE};
+        for(long i: values) {
+            byte[] buf=new byte[Long.BYTES+1];
+
+            Bits.writeLongCompressed(i, buf, 0);
+            long ii=Bits.readLongCompressed(buf, 0);
+            assert i == ii;
+
+            ByteBuffer bb=ByteBuffer.allocate(Long.BYTES+1);
+            Bits.writeLongCompressed(i, bb);
+            bb.flip();
+            ii=Bits.readLongCompressed(bb);
+            assert i == ii;
+
+            buf=marshall(i);
+            ii=unmarshalLong(buf);
+            assert i == ii;
+            int size=Bits.size(i);
+            assert buf.length == size;
+        }
+    }
+
 
     protected static String printBuffer(byte[] buf) {
         StringBuilder sb=new StringBuilder();
@@ -257,28 +359,28 @@ public class BitsTest {
     protected static byte[] marshall(long val) throws Exception {
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutput out=new DataOutputStream(output);
-        Bits.writeLong(val, out);
+        Bits.writeLongCompressed(val, out);
         return output.toByteArray();
     }
 
     protected static ByteBuffer marshallToByteBuffer(long val) throws Exception {
         int size=Bits.size(val);
         ByteBuffer buf=ByteBuffer.allocate(size);
-        Bits.writeLong(val, buf);
+        Bits.writeLongCompressed(val, buf);
         return buf;
     }
 
-    protected static byte[] marshall(int val) throws Exception {
+    protected static byte[] marshallInt(int val) throws Exception {
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutput out=new DataOutputStream(output);
-        Bits.writeInt(val, out);
+        Bits.writeIntCompressed(val, out);
         return output.toByteArray();
     }
 
     protected static ByteBuffer marshallToByteBuffer(int val) throws Exception {
         int size=Bits.size(val);
         ByteBuffer buf=ByteBuffer.allocate(size);
-        Bits.writeInt(val, buf);
+        Bits.writeIntCompressed(val, buf);
         return buf;
     }
 
@@ -353,19 +455,23 @@ public class BitsTest {
     }
 
     protected static long unmarshal(byte[] buf) throws Exception {
-        return Bits.readLong(createInputStream(buf));
+        return Bits.readLongCompressed(createInputStream(buf));
     }
 
     protected static long unmarshal(ByteBuffer buf) throws Exception {
-        return Bits.readLong(buf);
+        return Bits.readLongCompressed(buf);
     }
 
     protected static int unmarshalInt(byte[] buf) throws Exception {
-        return Bits.readInt(createInputStream(buf));
+        return Bits.readIntCompressed(createInputStream(buf));
+    }
+
+    protected static long unmarshalLong(byte[] buf) throws Exception {
+        return Bits.readLongCompressed(createInputStream(buf));
     }
 
     protected static int unmarshalInt(ByteBuffer buf) throws Exception {
-        return Bits.readInt(buf);
+        return Bits.readIntCompressed(buf);
     }
 
     protected static void unmarshalLongSeq(byte[] buf, long[] seqnos, int index) throws Exception {

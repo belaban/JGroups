@@ -52,14 +52,14 @@ public class ByteArray implements SizeStreamable {
 
     @Override
     public void writeTo(DataOutput out) throws IOException {
-        Bits.writeInt(length, out);
+        Bits.writeIntCompressed(length, out);
         if(length > 0)
             out.write(array, offset, length);
     }
 
     @Override
     public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-        length=Bits.readInt(in);
+        length=Bits.readIntCompressed(in);
         offset=0;
         if(length > 0) {
             array=new byte[length];

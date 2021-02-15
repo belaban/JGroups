@@ -322,10 +322,10 @@ public class ByteArrayDataInputOutputStreamTest {
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(1024);
         long[] numbers={Long.MIN_VALUE, -500, 0, 1, 100, Long.MAX_VALUE};
         for(long i: numbers)
-            Bits.writeLong(i, out);
+            Bits.writeLongCompressed(i, out);
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(out.buffer());
         for(long i: numbers) {
-            long num=Bits.readLong(in);
+            long num=Bits.readLongCompressed(in);
             assert num == i;
         }
     }

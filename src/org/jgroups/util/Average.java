@@ -66,12 +66,12 @@ public class Average implements Streamable {
     @Override
     public void writeTo(DataOutput out) throws IOException {
         out.writeDouble(avg);
-        Bits.writeLong(count, out);
+        Bits.writeLongCompressed(count, out);
     }
 
     @Override
     public void readFrom(DataInput in) throws IOException {
         avg=in.readDouble();
-        count=Bits.readLong(in);
+        count=Bits.readLongCompressed(in);
     }
 }

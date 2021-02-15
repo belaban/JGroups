@@ -81,14 +81,14 @@ public class AverageMinMax extends Average {
 
     public void writeTo(DataOutput out) throws IOException {
         super.writeTo(out);
-        Bits.writeLong(min, out);
-        Bits.writeLong(max, out);
+        Bits.writeLongCompressed(min, out);
+        Bits.writeLongCompressed(max, out);
     }
 
     public void readFrom(DataInput in) throws IOException {
         super.readFrom(in);
-        min=Bits.readLong(in);
-        max=Bits.readLong(in);
+        min=Bits.readLongCompressed(in);
+        max=Bits.readLongCompressed(in);
     }
 
 
