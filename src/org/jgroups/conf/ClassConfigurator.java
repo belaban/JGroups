@@ -121,7 +121,7 @@ public class ClassConfigurator {
         if(id >= MIN_CUSTOM_MAGIC_NUMBER) {
             Object val=magicMapUser.get(id);
             if(val == null)
-                throw new ClassNotFoundException("Class for magic number " + id + " cannot be found");
+                throw new ClassNotFoundException("Class for magic number " + id + " cannot be found, map: "+ magicMapUser);
             if (val instanceof Supplier) {
                 return ((Supplier<T>) val).get();
             }
