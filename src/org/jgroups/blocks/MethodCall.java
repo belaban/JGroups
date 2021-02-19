@@ -46,13 +46,13 @@ public class MethodCall implements Externalizable, Streamable {
     protected MethodLookup       lookup;
 
     /** Explicitly ship the method, caller has to determine method himself. */
-    protected static final short METHOD=1;
+    public static final short    METHOD=1;
 
     /** Use class information. */
-    protected static final short TYPES=2;
+    public static final short    TYPES=2;
 
     /** Use an ID to map to a method */
-    protected static final short ID=3;
+    public static final short    ID=3;
 
 
 
