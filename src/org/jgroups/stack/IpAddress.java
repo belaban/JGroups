@@ -32,7 +32,7 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
             ip_addr=InetAddress.getByName(addr_port);
         else {
             ip_addr=InetAddress.getByName(addr_port.substring(0, index));
-            port=Integer.valueOf(addr_port.substring(index+1));
+            port=Integer.parseInt(addr_port.substring(index+1));
         }
     }
 
@@ -148,6 +148,10 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
 
     public String printIpAddress() {
         return String.format("%s:%d", ip_addr != null? ip_addr.getHostAddress() : "<null>", port);
+    }
+
+    public String printIpAddress2() {
+        return String.format("%s[%d]", ip_addr != null? ip_addr.getHostAddress() : "localhost", port);
     }
 
 

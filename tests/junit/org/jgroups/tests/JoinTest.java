@@ -49,9 +49,7 @@ public class JoinTest extends ChannelTestBase {
     public void testJoinsOnTwoChannels() throws Exception {
         a.connect("JoinTest");
         b.connect("JoinTest");
-        
-        Util.sleep(2000); //no blocking is used, let the view propagate
-        
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a,b);
         View v1=a.getView(), v2=b.getView();
         System.out.println("v1=" + v1 + ", v2=" + v2);
         assert v1 != null;

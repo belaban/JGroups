@@ -3624,6 +3624,40 @@ public class Util {
         return new LinkedList<>(retval);
     }
 
+    /**
+     * Parses a string into a list of IpAddresses
+     * @param list The list to which to add parsed elements
+     * @param hosts The string with host:port pairs
+     * @param unresolved_hosts A list of unresolved hosts
+     * @param port_range The port range to consider
+     * @return True if all hostnames resolved fine, false otherwise
+     */
+    public static boolean parseCommaDelimitedHostsInto(final Collection<PhysicalAddress> list,
+                                                       final Collection<String> unresolved_hosts,
+                                                       String hosts,int port_range) {
+        StringTokenizer tok=hosts != null? new StringTokenizer(hosts,",") : null;
+        boolean all_resolved=true;
+        while(tok != null && tok.hasMoreTokens()) {
+            String t=tok.nextToken().trim();
+            String host=t.substring(0,t.indexOf('['));
+            host=host.trim();
+            int port=Integer.parseInt(t.substring(t.indexOf('[') + 1,t.indexOf(']')));
+            try {
+                InetAddress[] resolvedAddresses=InetAddress.getAllByName(host);
+                for(int i=0; i < resolvedAddresses.length; i++) {
+                    for(int p=port; p <= port + port_range; p++) {
+                        IpAddress addr=new IpAddress(resolvedAddresses[i], p);
+                        list.add(addr);
+                    }
+                }
+            }
+            catch(UnknownHostException ex) {
+                all_resolved=false;
+                unresolved_hosts.add(host);
+            }
+        }
+        return all_resolved;
+    }
 
     /**
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of

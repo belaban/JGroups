@@ -12,6 +12,7 @@ import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.conf.XmlNode;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.protocols.TCPPING;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
@@ -58,6 +59,11 @@ public class Configurator {
     public Protocol setupProtocolStack(ProtocolStack copySource) throws Exception {
         List<Protocol> protocols=copySource.copyProtocols(stack);
         Collections.reverse(protocols);
+        TCPPING ping=copySource.findProtocol(TCPPING.class);
+        if(ping != null) {
+            TCPPING p=(TCPPING)protocols.stream().filter(prot -> prot instanceof TCPPING).findFirst().orElse(null);
+            p.setInitialHosts2(ping.getInitialHosts());
+        }
         return connectProtocols(protocols);
     }
 
