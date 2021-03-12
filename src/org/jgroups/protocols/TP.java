@@ -160,6 +160,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       type=AttributeType.TIME)
     protected long thread_pool_keep_alive_time=30000;
 
+    @Property(description="When an internal message cannot be processed because of a full internal pool, a new thread "
+      + "is created to process the message. Setting this value to false disables this, and the message will be " +
+      "discarded (like regular messages)")
+    protected boolean spawn_thread_on_full_pool=true;
+
 
     @Property(description="Interval (in ms) at which the time service updates its timestamp. 0 disables the time service",
       type=AttributeType.TIME)
@@ -1632,8 +1637,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(forward_to_internal_pool && internal_pool != null)
                 return submitToThreadPool(internal_pool, task, internal, false);
             else {
-                msg_stats.incrNumThreadsSpawned(1);
-                return runInNewThread(task);
+                if(spawn_thread_on_full_pool) {
+                    msg_stats.incrNumThreadsSpawned(1);
+                    return runInNewThread(task);
+                }
+                else {
+                    msg_stats.incrNumRejectedMsgs(1);
+                    return false;
+                }
             }
         }
         catch(Throwable t) {
