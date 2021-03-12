@@ -256,7 +256,8 @@ public class MessageTest extends MessageTestBase {
     }
 
     public void testSetObjectWithVariousTypes() {
-        Object[] objects={null, true, false, Boolean.TRUE, (byte)22, 's', '\u00dc' /* 'Ü' */, '\u20AC' /* EUR sign */,
+        Object[] objects={null, true, false, Boolean.TRUE, (byte)22, 's', '\u00dc' /* big U umlaut */,
+          '\u20AC' /* EUR sign */,
           255, 322649, 322649L, (short)33, "hello", "hello".getBytes(), 2.34F, 2.43,};
 
         for(Object obj: objects) {
