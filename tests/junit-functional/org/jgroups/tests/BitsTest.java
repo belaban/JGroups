@@ -246,7 +246,10 @@ public class BitsTest {
     }
 
     public void testChar() {
-        char[] chars={'b', 'ü', 'Ü', 'ë'};
+        char[] chars={'b',
+          '\u00fc', // 'ü',
+          '\u00dc', // 'Ü',
+          '\u00eb'}; // 'ë';
         for(char c: chars) {
             byte[] buf=new byte[Character.BYTES];
             Bits.writeChar(c, buf, 0);
