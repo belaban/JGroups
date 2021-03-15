@@ -44,7 +44,7 @@ public class RED extends Protocol {
     @Property(description="The weight used to compute the average queue size. The higher the value is, the less the " +
       "current queue size is taken into account. E.g. with 2, 25% of the current queue size and 75% of the old " +
       "average is taken to compute the new average. In other words: with a high value, the average will take " +
-      "longer to reflect the current queueu size.")
+      "longer to reflect the current queue size.")
     protected double          weight_factor=2;
 
     protected final LongAdder dropped_msgs=new LongAdder(); // dropped messages
