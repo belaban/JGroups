@@ -163,7 +163,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="When an internal message cannot be processed because of a full internal pool, a new thread "
       + "is created to process the message. Setting this value to false disables this, and the message will be " +
       "discarded (like regular messages)")
-    protected boolean spawn_thread_on_full_pool=true;
+    protected boolean spawn_thread_on_full_pool;
 
 
     @Property(description="Interval (in ms) at which the time service updates its timestamp. 0 disables the time service",
