@@ -17,15 +17,17 @@ import java.net.SocketException;
 public class TcpServer extends TcpBaseServer {
     protected ServerSocket srv_sock;
     protected Thread       acceptor;
-
-    protected int buffered_inputstream_size;
-    protected int buffered_outputstream_size;
+    protected int          buffered_inputstream_size;
+    protected int          buffered_outputstream_size;
+    protected boolean      log_accept_error=true;
 
 
     public int       getBufferedInputStreamSize()       {return buffered_inputstream_size;}
     public TcpServer setBufferedInputStreamSize(int s)  {this.buffered_inputstream_size=s; return this;}
     public int       getBufferedOutputStreamSize()      {return buffered_outputstream_size;}
     public TcpServer setBufferedOutputStreamSize(int s) {this.buffered_outputstream_size=s; return this;}
+    public boolean   getLogAcceptError()                {return log_accept_error;}
+    public TcpServer setLogAcceptError(boolean l)       {log_accept_error=l; return this;}
 
 
     /**
@@ -113,7 +115,8 @@ public class TcpServer extends TcpBaseServer {
                 catch(Exception ex) {
                     if(ex instanceof SocketException && srv_sock.isClosed() || Thread.currentThread().isInterrupted())
                         break;
-                    log.warn(Util.getMessage("AcceptError"), client_sock, ex);
+                    if(log_accept_error)
+                        log.warn(Util.getMessage("AcceptError"), client_sock, ex);
                     Util.close(client_sock);
                 }
             }
