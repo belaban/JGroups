@@ -30,7 +30,7 @@ import java.util.Collection;
  * @author Bela Ban
  */
 public class TCP extends BasicTCP {
-    protected TcpServer server;
+    protected TcpServer srv;
 
     public TCP() {}
 
@@ -42,6 +42,9 @@ public class TCP extends BasicTCP {
       " buffered until this size is exceeded or flush() is called. Bigger messages are sent immediately. 0: default size",
       type=AttributeType.BYTES)
     protected int buffered_output_stream_size=8192;
+
+    @Property(description="Log a warning (or not) when ServerSocket.accept() throws an exception")
+    protected boolean log_accept_error=true; // https://issues.redhat.com/browse/JGRP-2540
 
     public int getBufferedInputStreamSize() {
         return buffered_input_stream_size;
@@ -61,52 +64,57 @@ public class TCP extends BasicTCP {
         return this;
     }
 
+    public boolean logAcceptError()          {return log_accept_error;}
+    public TCP     logAcceptError(boolean l) {this.log_accept_error=l;
+        if(srv != null) srv.setLogAcceptError(l); return this;}
+
     @ManagedAttribute
     public int getOpenConnections() {
-        return server.getNumConnections();
+        return srv.getNumConnections();
     }
 
     @ManagedOperation
     public String printConnections() {
-        return server.printConnections();
+        return srv.printConnections();
     }
 
     @ManagedOperation(description="Clears all connections (they will get re-established). For testing only, don't use !")
-    public TCP clearConnections() {server.clearConnections(); return this;}
+    public TCP clearConnections() {
+        srv.clearConnections(); return this;}
 
     @Override public void setSocketFactory(SocketFactory factory) {
         super.setSocketFactory(factory);
-        if(server != null)
-            server.socketFactory(factory);
+        if(srv != null)
+            srv.socketFactory(factory);
     }
 
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
-        if(server != null)
-            server.send(dest, data, offset, length);
+        if(srv != null)
+            srv.send(dest, data, offset, length);
     }
 
     public void retainAll(Collection<Address> members) {
-        server.retainAll(members);
+        srv.retainAll(members);
     }
 
     public void start() throws Exception {
-        server=new TcpServer(getThreadFactory(), getSocketFactory(), bind_addr, bind_port, bind_port+port_range,
-                             external_addr, external_port, recv_buf_size);
-        server.receiver(this)
+        srv=new TcpServer(getThreadFactory(), getSocketFactory(), bind_addr, bind_port, bind_port+port_range,
+                          external_addr, external_port, recv_buf_size).setLogAcceptError(log_accept_error);
+        srv.receiver(this)
           .timeService(time_service)
           .socketConnectionTimeout(sock_conn_timeout)
           .tcpNodelay(tcp_nodelay).linger(linger)
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
           .log(this.log);
-        server.setBufferedInputStreamSize(buffered_input_stream_size).setBufferedOutputStreamSize(buffered_output_stream_size)
+        srv.setBufferedInputStreamSize(buffered_input_stream_size).setBufferedOutputStreamSize(buffered_output_stream_size)
           .peerAddressReadTimeout(peer_addr_read_timeout)
           .usePeerConnections(true)
           .socketFactory(getSocketFactory());
 
         if(send_buf_size > 0)
-            server.sendBufferSize(send_buf_size);
+            srv.sendBufferSize(send_buf_size);
         if(recv_buf_size > 0)
-            server.receiveBufferSize(recv_buf_size);
+            srv.receiveBufferSize(recv_buf_size);
 
         if(reaper_interval > 0 || conn_expire_time > 0) {
             if(reaper_interval == 0) {
@@ -117,7 +125,7 @@ public class TCP extends BasicTCP {
                 conn_expire_time=(long) 1000 * 60 * 5;
                 log.warn("conn_expire_time was 0, set it to %d", conn_expire_time);
             }
-            server.connExpireTimeout(conn_expire_time).reaperInterval(reaper_interval);
+            srv.connExpireTimeout(conn_expire_time).reaperInterval(reaper_interval);
         }
 
         // we first start threads in TP (http://jira.jboss.com/jira/browse/JGRP-626)
@@ -127,21 +135,21 @@ public class TCP extends BasicTCP {
     public void stop() {
         if(log.isDebugEnabled()) log.debug("%s: closing sockets and stopping threads", local_addr);
         super.stop();
-        server.stop(); //not needed, but just in case
+        srv.stop(); //not needed, but just in case
     }
 
 
     protected void handleConnect() throws Exception {
-        server.start();
+        srv.start();
     }
 
     protected void handleDisconnect() {
-        server.stop();
+        srv.stop();
     }   
 
 
 
     protected PhysicalAddress getPhysicalAddress() {
-        return server != null? (PhysicalAddress)server.localAddress() : null;
+        return srv != null? (PhysicalAddress)srv.localAddress() : null;
     }
 }
