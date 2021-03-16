@@ -864,9 +864,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         // removal. Else insert the real message
         boolean added=loopback || buf.add(hdr.seqno, msg.isFlagSet(Message.Flag.OOB)? DUMMY_OOB_MSG : msg);
 
-        //if(added && is_trace)
-          //  log.trace("%s <-- %s: #%d", local_addr, sender, hdr.seqno);
-
         // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
         if(added && msg.isFlagSet(Message.Flag.OOB)) {
             if(loopback) { // sent by self
@@ -877,7 +874,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             else // sent by someone else
                 deliver(msg, sender, hdr.seqno, "OOB message");
         }
-
         removeAndDeliver(buf, sender, loopback, null); // at most 1 thread will execute this at any given time
     }
 
@@ -913,7 +909,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             }
             deliverBatch(oob_batch);
         }
-
         removeAndDeliver(buf, sender, loopback, cluster_name); // at most 1 thread will execute this at any given time
     }
 
@@ -1523,12 +1518,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     @ManagedOperation(description="Triggers the retransmission task, asking all senders for missing messages")
     public void triggerXmit() {
-        SeqnoList missing;
-
         for(Map.Entry<Address,Table<Message>> entry: xmit_table.entrySet()) {
             Address target=entry.getKey(); // target to send retransmit requests to
             Table<Message> buf=entry.getValue();
-
+            SeqnoList missing;
             if(buf != null && buf.getNumMissing() > 0 && (missing=buf.getMissing(max_xmit_req_size)) != null) { // getNumMissing() is fast
                 long highest=missing.getLast();
                 Long prev_seqno=xmit_task_map.get(target);
@@ -1546,7 +1539,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             else if(!xmit_task_map.isEmpty())
                 xmit_task_map.remove(target); // no current gaps for target
         }
-
         if(resend_last_seqno && last_seqno_resender != null)
             last_seqno_resender.execute(seqno.get());
     }

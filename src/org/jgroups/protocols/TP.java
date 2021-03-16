@@ -1426,7 +1426,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         // changed to fix http://jira.jboss.com/jira/browse/JGRP-506
         boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
         boolean oob=msg.isFlagSet(Message.Flag.OOB);
-        // submitToThreadPool(() -> passMessageUp(copy, null, false, multicast, false), internal);
         msg_processing_policy.loopback(msg, oob, internal);
     }
 
@@ -1641,10 +1640,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     msg_stats.incrNumThreadsSpawned(1);
                     return runInNewThread(task);
                 }
-                else {
-                    msg_stats.incrNumRejectedMsgs(1);
-                    return false;
-                }
+                msg_stats.incrNumRejectedMsgs(1);
+                return false;
             }
         }
         catch(Throwable t) {

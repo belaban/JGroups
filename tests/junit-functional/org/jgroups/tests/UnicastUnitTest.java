@@ -171,7 +171,7 @@ public class UnicastUnitTest {
           msg(dest)
         };
 
-        MyReceiver<Integer> receiver=new MyReceiver();
+        MyReceiver<Integer> receiver=new MyReceiver<>();
         a.setReceiver(receiver);
         send(a, msgs);
         checkReception(receiver, false, 1,2,3,5,8,9);

@@ -644,8 +644,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         }
 
         SenderEntry entry=getSenderEntry(dst);
-        boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK)
-          && dst.equals(local_addr);
+        boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK) && dst.equals(local_addr);
         short send_conn_id=entry.connId();
         long seqno=entry.sent_msgs_seqno.getAndIncrement();
         long sleep=10;

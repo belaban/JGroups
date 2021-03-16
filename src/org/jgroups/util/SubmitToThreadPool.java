@@ -27,7 +27,7 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
     }
 
     public void loopback(Message msg, boolean oob, boolean internal) {
-        tp.submitToThreadPool(() -> tp.passMessageUp(msg, null, false, msg.getDest() == null, false), internal);
+        tp.submitToThreadPool(new SingleLoopbackHandler(msg), internal);
     }
 
     public void process(Message msg, boolean oob, boolean internal) {
@@ -61,6 +61,17 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
         }
     }
 
+    public class SingleLoopbackHandler implements Runnable {
+        protected final Message msg;
+
+        public SingleLoopbackHandler(Message msg) {
+            this.msg=msg;
+        }
+
+        public void run() {
+            tp.passMessageUp(msg, null, false, msg.getDest() == null, false);
+        }
+    }
 
     public class SingleMessageHandler implements Runnable {
         protected final Message msg;

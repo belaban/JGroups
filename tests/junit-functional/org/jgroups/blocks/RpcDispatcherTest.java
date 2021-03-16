@@ -408,7 +408,7 @@ public class RpcDispatcherTest {
     public void testFuture() throws Exception {
         MethodCall sleep=new MethodCall("sleep", new Object[]{5000L}, new Class[]{long.class});
         CompletableFuture<RspList<Long>> future=da.callRemoteMethodsWithFuture(null, sleep,
-                                                                               new RequestOptions(ResponseMode.GET_ALL, 5000L, false, null));
+                                                                               RequestOptions.SYNC().timeout(5000));
         assert !future.isDone();
         assert !future.isCancelled();
 

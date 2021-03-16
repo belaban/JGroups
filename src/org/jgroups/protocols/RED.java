@@ -99,24 +99,16 @@ public class RED extends Protocol {
             lock.lock();
             try {
                 avg=avg_queue_size=computeAverage(avg_queue_size, current_queue_size);
-                // System.out.printf("-- avg=%.2f, size=%d\n", avg, current_queue_size);
             }
             finally {
                 lock.unlock();
             }
-
             total_msgs.increment();
-            if(avg <= min)
-                ;            // message will be sent
-            else if(avg >= max)
-                return null; // message will be dropped
-            else {           // min_threshold < avg < max_threshold
-                // message will be dropped with probability p
-                double p=computeDropProbability(avg);
-                if(Util.tossWeightedCoin(p)) {
-                    dropped_msgs.increment();
-                    return null; // drop the message
-                }
+            // don't drop if avg <= min, drop if avg >= max, and drop with a probability p if avg is between min and max
+            boolean drop=!(avg <= min) && (avg >= max || drop(avg));
+            if(drop) {
+                dropped_msgs.increment();
+                return null;
             }
         }
         return down_prot.down(msg);
@@ -136,6 +128,12 @@ public class RED extends Protocol {
      * Probability increases linearly with min moving toward max */
     protected double computeDropProbability(double avg) {
         return Math.min(1, (avg-min) / span);
+    }
+
+    protected boolean drop(double avg) {
+        // message will be dropped with probability p
+        double p=computeDropProbability(avg);
+        return Util.tossWeightedCoin(p); // returns true if message should be dropped, false otherwise
     }
 
     protected static double checkRange(double val, double min, double max, String name) {

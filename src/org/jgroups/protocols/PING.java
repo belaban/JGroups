@@ -7,6 +7,9 @@ import org.jgroups.util.Responses;
 import java.io.InterruptedIOException;
 import java.util.List;
 
+import static org.jgroups.Message.Flag.*;
+import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
+
 
 /**
  * The PING protocol retrieves the initial membership by mcasting a discovery request (via the multicast capable
@@ -49,8 +52,7 @@ public class PING extends Discovery {
         // the discovery *request* until the bundler thread has returned from sending M
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name).initialDiscovery(initial_discovery);
         Message msg=new BytesMessage(null).putHeader(getId(), hdr)
-          .setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
-          .setFlag(Message.TransientFlag.DONT_LOOPBACK);
+          .setFlag(INTERNAL, DONT_BUNDLE, OOB).setFlag(DONT_LOOPBACK);
         if(data != null)
             msg.setArray(marshal(data));
         sendMcastDiscoveryRequest(msg);

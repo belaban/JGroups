@@ -59,7 +59,7 @@ public class GMS_MergeTest {
         _testMergeRequestTimeout(true, "testMergeRequestTimeoutWithFlush");
     }
 
-    public static void testSimpleMerge() throws Exception {
+    public void testSimpleMerge() throws Exception {
         _testSimpleMerge(false, "testSimpleMerge");
     }
 

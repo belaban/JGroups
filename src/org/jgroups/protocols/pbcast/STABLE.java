@@ -20,6 +20,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
+import static org.jgroups.Message.Flag.*;
+import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
+
 
 /**
  * Computes the broadcast messages that are stable; i.e., have been delivered by all members. Sends STABLE events down
@@ -45,20 +48,14 @@ public class STABLE extends Protocol {
     @Property(description="Average time to send a STABLE message",type=AttributeType.TIME)
     protected long   desired_avg_gossip=20000;
 
-    /**
-     * delay before we send STABILITY msg (give others a change to send first).
-     * This should be set to a very small number (> 0 !) if {@code max_bytes} is used
-     */
     @Property(description="Delay before stability message is sent",type=AttributeType.TIME,deprecatedMessage="always 0")
     @Deprecated(forRemoval=true,since="5.1.6")
     protected long   stability_delay=0;
 
     /**
-     * Total amount of bytes from incoming messages (default = 0 = disabled).
-     * When exceeded, a STABLE message will be broadcast and
-     * {@code num_bytes_received} reset to 0 . If this is > 0, then
-     * ideally {@code stability_delay} should be set to a low number as
-     * well
+     * Total amount of bytes from incoming messages (default = 0 = disabled). When exceeded, a STABLE message will
+     * be broadcast and{@code num_bytes_received} reset to 0 . If this is > 0, then ideally {@code stability_delay}
+     * should be set to a low number as well
      */
     @Property(description="Maximum number of bytes received in all messages before sending a STABLE message is triggered",
       type=AttributeType.BYTES)
@@ -122,6 +119,7 @@ public class STABLE extends Protocol {
     protected Future<?>           resume_task_future;
     protected final Object        resume_task_mutex=new Object();
 
+    @ManagedAttribute(description="The coordinator")
     protected volatile Address    coordinator;
 
     
@@ -148,6 +146,8 @@ public class STABLE extends Protocol {
     public int getStabilitySent() {return num_stability_msgs_sent;}
     @ManagedAttribute(type=AttributeType.SCALAR)
     public int getStabilityReceived() {return num_stability_msgs_received;}
+    @ManagedAttribute(description="The number of votes for the current digest")
+    public int getNumVotes() {return votes != null? votes.cardinality() : 0;}
 
     @ManagedAttribute
     public boolean getStableTaskRunning() {
@@ -158,6 +158,23 @@ public class STABLE extends Protocol {
         finally {
             stable_task_lock.unlock();
         }
+    }
+
+
+    @ManagedOperation(description="Sends a STABLE message; when every member has received a STABLE message " +
+      "from everybody else, a STABILITY message will be sent")
+    public void gc() {
+        sendStableMessage(false);
+    }
+
+    @ManagedOperation(description="Prints the current digest")
+    public String printDigest() {
+        return printDigest(digest);
+    }
+
+    @ManagedOperation(description="Prints the current votes")
+    public String printVotes() {
+        return votes != null? votes.toString() : "n/a";
     }
 
     public void resetStats() {
@@ -334,13 +351,6 @@ public class STABLE extends Protocol {
     }
 
 
-    @ManagedOperation(description="Sends a STABLE message; when every member has received a STABLE message " +
-      "from everybody else, a STABILITY message will be sent")
-    public void gc() {
-        sendStableMessage(false);
-    }
-
-
     /* --------------------------------------- Private Methods ---------------------------------------- */
 
 
@@ -368,7 +378,7 @@ public class STABLE extends Protocol {
         StringBuilder sb=null;
         if(log.isTraceEnabled())
             sb=new StringBuilder().append(local_addr).append(": handling digest from ").append(sender).append(":\nmine:   ")
-              .append(printDigest(digest)).append("\nother:  ").append(printDigest(d));
+              .append(printDigest(digest)).append("\nsender: ").append(printDigest(d));
 
         for(Digest.Entry entry: d) {
             Address mbr=entry.getMember();
@@ -560,15 +570,8 @@ public class STABLE extends Protocol {
             if(log.isErrorEnabled()) log.error(Util.getMessage("StabilityDigestIsNull"));
             return;
         }
-
         if(!initialized || suspended) {
             log.trace("%s: STABLE message is ignored: initialized=%b, suspended=%b", local_addr, initialized, suspended);
-            return;
-        }
-
-        // received my own STABILITY message - no need to handle it as I already reset my digest before I sent the msg
-        if(Objects.equals(local_addr, sender)) {
-            num_stability_msgs_received++;
             return;
         }
 
@@ -600,20 +603,26 @@ public class STABLE extends Protocol {
     protected void sendStableMessage(boolean send_in_background) {
         if(suspended || view == null)
             return;
+        View          current_view=view;
+        Address       dest=coordinator;
+        boolean       is_coord=Objects.equals(local_addr, coordinator);
+        MutableDigest d=new MutableDigest(current_view.getMembersRaw()).set(getDigest());
+        boolean       all_set=d.allSet() || d.set(getDigest()).allSet();
 
-        final View          current_view=view;
-        final MutableDigest d=new MutableDigest(current_view.getMembersRaw()).set(getDigest());
-        Address dest=coordinator;
-
-        if(d.allSet() || d.set(getDigest()).allSet()) // try once more if the first digest didn't match
-            log.trace("%s: sending stable msg to %s: %s", local_addr, coordinator, printDigest(d));
-        else {
-            log.trace("%s: could not find matching digest for view %s, missing members: %s", local_addr, current_view, d.getNonSetMembers());
+        if(!all_set) {
+            log.trace("%s: could not find matching digest for view %s, missing members: %s",
+                      local_addr, current_view, d.getNonSetMembers());
             return;
         }
-
-        final Message msg=new ObjectMessage(dest, d)
-          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
+        // don't send a STABLE message to self when coord, but instead update the digest directly
+        if(is_coord) {
+            log.trace("%s: updating the local figest with a stable message (coordinator): %s", local_addr, d);
+            num_stable_msgs_sent++;
+            handleStableMessage(d, local_addr, current_view.getViewId());
+            return;
+        }
+        log.trace("%s: sending stable msg to %s: %s", local_addr, dest, printDigest(d));
+        final Message msg=new ObjectMessage(dest, d).setFlag(OOB, INTERNAL, NO_RELIABILITY)
           .putHeader(this.id, new StableHeader(StableHeader.STABLE_GOSSIP, current_view.getViewId()));
         try {
             if(!send_in_background) {
@@ -626,7 +635,10 @@ public class STABLE extends Protocol {
                     down_prot.down(msg);
                     num_stable_msgs_sent++;
                 }
-                public String toString() {return STABLE.class.getSimpleName() + ": STABLE-GOSSIP";}
+
+                public String toString() {
+                    return STABLE.class.getSimpleName() + ": STABLE-GOSSIP";
+                }
             };
 
             // Run in a separate thread so we don't potentially block (http://jira.jboss.com/jira/browse/JGRP-532)
@@ -640,10 +652,10 @@ public class STABLE extends Protocol {
 
 
     /**
-     Sends a stability message to all members.
-     @param tmp A copy of the stability digest, so we don't need to copy it again
+     Sends a stability message to all members except self.
+     @param d A copy of the stability digest, so we don't need to copy it again
      */
-    protected void sendStabilityMessage(Digest stability_digest, final ViewId view_id) {
+    protected void sendStabilityMessage(Digest d, final ViewId view_id) {
         if(suspended) {
             log.debug("STABILITY message will not be sent as suspended=%b", suspended);
             return;
@@ -652,11 +664,11 @@ public class STABLE extends Protocol {
         // https://issues.jboss.org/browse/JGRP-1638: we reverted to sending the STABILITY message *unreliably*,
         // but clear votes *before* sending it
         try {
-            Message msg=new ObjectMessage(null, stability_digest)
-              .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
+            Message msg=new ObjectMessage(null, d).setFlag(OOB, INTERNAL, NO_RELIABILITY).setFlag(DONT_LOOPBACK)
               .putHeader(id, new StableHeader(StableHeader.STABILITY, view_id));
-            log.trace("%s: sending stability msg %s", local_addr, printDigest(stability_digest));
+            log.trace("%s: sending stability msg %s", local_addr, printDigest(d));
             num_stability_msgs_sent++;
+            num_stability_msgs_received++; // since we don't receive this message
             down_prot.down(msg);
         }
         catch(Exception e) {

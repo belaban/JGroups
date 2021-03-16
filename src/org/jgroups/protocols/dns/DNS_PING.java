@@ -7,6 +7,7 @@ import org.jgroups.protocols.Discovery;
 import org.jgroups.protocols.PingData;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
 
@@ -14,6 +15,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
+import static org.jgroups.Message.Flag.*;
+import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 
 public class DNS_PING extends Discovery {
 
@@ -158,14 +162,15 @@ public class DNS_PING extends Discovery {
                           local_addr, dns_discovery_members, transportPort, transportPort + portRange);
         }
 
+        ByteArray data_buf=data != null? marshal(data) : null;
         PingHeader hdr = new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name).initialDiscovery(initial_discovery);
-        for (Address addr : cluster_members) {
+        for (Address addr: cluster_members) {
 
             // the message needs to be DONT_BUNDLE, see explanation above
-            final Message msg = new BytesMessage(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
+            final Message msg = new BytesMessage(addr).setFlag(INTERNAL, DONT_BUNDLE, OOB).setFlag(DONT_LOOPBACK)
               .putHeader(this.id, hdr);
-            if (data != null)
-                msg.setArray(marshal(data));
+            if (data_buf != null)
+                msg.setArray(data_buf);
 
             if (async_discovery_use_separate_thread_per_request)
                 timer.execute(() -> sendDiscoveryRequest(msg), sends_can_block);
