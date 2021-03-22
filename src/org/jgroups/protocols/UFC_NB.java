@@ -72,7 +72,7 @@ public class UFC_NB extends UFC {
             credit_send_task.cancel(true);
     }
 
-    @Override protected Object handleDownMessage(Message msg) {
+    @Override protected Object handleDownMessage(Message msg, int length) {
         Address dest=msg.getDest();
         if(dest == null) { // 2nd line of defense, not really needed
             log.error("%s doesn't handle multicast messages; passing message down", getClass().getSimpleName());
@@ -83,7 +83,6 @@ public class UFC_NB extends UFC {
         if(cred == null)
             return down_prot.down(msg);
 
-        int length=msg.getLength();
         if(running) {
             if(cred.decrementIfEnoughCredits(msg, length, 0)) // timeout is ignored
                 return down_prot.down(msg);

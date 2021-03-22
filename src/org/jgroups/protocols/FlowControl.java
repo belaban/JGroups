@@ -289,7 +289,7 @@ public abstract class FlowControl extends Protocol {
         if(length == 0)
             return down_prot.down(msg);
 
-        Object retval=handleDownMessage(msg);
+        Object retval=handleDownMessage(msg, length);
 
         // if the message is DONT_LOOPBACK, we will not receive it, therefore the credit
         // check needs to be done now
@@ -411,7 +411,7 @@ public abstract class FlowControl extends Protocol {
     }
 
     
-    protected abstract Object handleDownMessage(final Message msg);
+    protected abstract Object handleDownMessage(final Message msg, int length);
 
 
 
