@@ -97,10 +97,8 @@ public class UFC_NB extends UFC {
         return (T)new NonBlockingCredit(initial_credits, max_queue_size, new ReentrantLock(true), send_function);
     }
 
-    /**
-     * Checks the sent table: if some credits are in queueing mode and credits left are less than min_credits:
-     * send a credit request
-     */
+    /** Checks the sent table: if some credits are in queueing mode and credits left are less than min_credits:
+     *  send a credit request */
     protected void sendCreditRequestsIfNeeded() {
         sent.forEach((dest, c) -> {
             NonBlockingCredit cred=(NonBlockingCredit)c;

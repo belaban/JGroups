@@ -115,10 +115,9 @@ public class MFC extends FlowControl {
         if(dest != null) // 2nd line of defense, not really needed
             return down_prot.down(msg);
 
-        long block_time=max_block_times != null? getMaxBlockTime(length) : max_block_time;
         while(running) {
-            boolean rc=credits.decrement(msg, length, block_time);
-            if(rc || max_block_times != null || !running)
+            boolean rc=credits.decrement(msg, length, max_block_time);
+            if(rc || !running)
                 break;
 
             if(needToSendCreditRequest()) {

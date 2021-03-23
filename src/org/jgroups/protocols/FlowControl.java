@@ -14,7 +14,7 @@ import org.jgroups.util.Util;
 
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 
 /**
@@ -35,23 +35,11 @@ public abstract class FlowControl extends Protocol {
       type=AttributeType.BYTES)
     protected long           max_credits=5_000_000;
 
-    /**
-     * Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
+    /** Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
      * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to wait forever.
      */
     @Property(description="Max time (in ms) to block",type=AttributeType.TIME)
     protected long           max_block_time=500;
-
-    /**
-     * Defines the max number of milliseconds for a message to block before being sent, based on the length of
-     * the message. The property is defined as a comma-separated list of values (separated by ':'), where the key
-     * is the size in bytes and the value is the number of milliseconds to block.
-     * Example: max_block_times="50:1,500:3,1500:5,10000:10,100000:100". This means that messages up to 50 bytes wait
-     * 1 ms max until they get sent, messages up to 500 bytes 3 ms, and so on.
-     * If a message's length (size of the payload in bytes) is for example 15'000 bytes,
-     * FlowControl blocks it for a max of 100 ms.
-     */
-    protected Map<Long,Long> max_block_times;
 
 
     /**
@@ -115,51 +103,6 @@ public abstract class FlowControl extends Protocol {
     public <T extends FlowControl> T setMaxBlockTime(long t)   {max_block_time=t; return (T)this;}
 
 
-    @Property(description="Max times to block for the listed messages sizes (Message.getLength()). Example: \"1000:10,5000:30,10000:500\"")
-    public FlowControl setMaxBlockTimes(String str) {
-        if(str == null) return this;
-        Long prev_key=null, prev_val=null;
-        List<String> vals=Util.parseCommaDelimitedStrings(str);
-        if(max_block_times == null)
-            max_block_times=new TreeMap<>();
-        for(String tmp: vals) {
-            int index=tmp.indexOf(':');
-            if(index == -1)
-                throw new IllegalArgumentException("element '" + tmp + "'  is missing a ':' separator");
-            long key=Long.parseLong(tmp.substring(0, index).trim());
-            long val=Long.parseLong(tmp.substring(index +1).trim());
-
-            // sanity checks:
-            if(key < 0 || val < 0)
-                throw new IllegalArgumentException("keys and values must be >= 0");
-
-            if(prev_key != null && key <= prev_key)
-                throw new IllegalArgumentException("keys are not sorted: " + vals);
-            prev_key=key;
-
-            if(prev_val != null && val <= prev_val)
-                throw new IllegalArgumentException("values are not sorted: " + vals);
-            prev_val=val;
-            max_block_times.put(key, val);
-        }
-        log.debug("max_block_times: %s", max_block_times);
-        return this;
-    }
-
-    public String getMaxBlockTimes() {
-        if(max_block_times == null) return "n/a";
-        StringBuilder sb=new StringBuilder();
-        boolean first=true;
-        for(Map.Entry<Long,Long> entry: max_block_times.entrySet()) {
-            if(!first)
-                sb.append(", ");
-            else
-                first=false;
-            sb.append(entry.getKey()).append(":").append(entry.getValue());
-        }
-        return sb.toString();
-    }
-
     public abstract int getNumberOfBlockings();
 
     public abstract double getAverageTimeBlocked();
@@ -197,23 +140,7 @@ public abstract class FlowControl extends Protocol {
     }
 
 
-    protected long getMaxBlockTime(long length) {
-        if(max_block_times == null)
-            return 0;
-        Long retval=null;
-        for(Map.Entry<Long,Long> entry: max_block_times.entrySet()) {
-            retval=entry.getValue();
-            if(length <= entry.getKey())
-                break;
-        }
-        return retval != null? retval : 0;
-    }
-
-
-    /**
-     * Whether the protocol handles message with dest == null || dest.isMulticastAddress()
-     * @return
-     */
+    /** Whether the protocol handles message with dest == null || dest.isMulticastAddress() */
     protected abstract boolean handleMulticastMessage();
 
     protected abstract void    handleCredit(Address sender, long increase);
@@ -489,9 +416,8 @@ public abstract class FlowControl extends Protocol {
 
 
     protected static String printMap(Map<Address,? extends Credit> m) {
-        return m.entrySet().stream().collect(StringBuilder::new,
-                                             (sb,entry) -> sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n"),
-                                             (l,r) -> {}).toString();
+        return m.entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
+          .collect(Collectors.joining("\n"));
     }
 
 

@@ -45,9 +45,3 @@ Design:
 - If a message has not been received after a timeout, the receivers will flag that message as not-received and stop
   retransmission requests for it. When the special not-received message is removed, it won't be passed up
 
-
-Flow control:
--------------
-
-- We cannot have a sender block on a credit missing from a slow member
-- Solution: use max_block_times in FC, which is already implemented

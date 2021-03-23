@@ -108,11 +108,9 @@ public class UFC extends FlowControl {
         if(cred == null)
             return down_prot.down(msg);
 
-        long block_time=max_block_times != null? getMaxBlockTime(length) : max_block_time;
-        
         while(running && sent.containsKey(dest)) {
-            boolean rc=cred.decrementIfEnoughCredits(msg, length, block_time);
-            if(rc || !running || max_block_times != null)
+            boolean rc=cred.decrementIfEnoughCredits(msg, length, max_block_time);
+            if(rc || !running)
                 break;
 
             if(cred.needToSendCreditRequest(max_block_time))
