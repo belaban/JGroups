@@ -205,7 +205,7 @@ public class FORK extends Protocol {
 
 
     protected void getStateFrom(JChannel channel, Protocol prot, String stack, String ch, DataOutputStream out) throws Exception {
-        ByteArrayDataOutputStream output=new ByteArrayDataOutputStream(1024);
+        ByteArrayDataOutputStream output=new ByteArrayDataOutputStream(1024, true);
         OutputStreamAdapter out_ad=new OutputStreamAdapter(output);
         Event evt=new Event(Event.STATE_TRANSFER_OUTPUTSTREAM, out_ad);
         if(channel != null)
