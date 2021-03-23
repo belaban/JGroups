@@ -76,17 +76,13 @@ public class ForkChannelTest {
         fc3=new ForkChannel(b, "stack", "fc1").connect("bla");
         fc4=new ForkChannel(b, "stack", "fc2").connect("bla");
 
-        MyReceiver r3=new MyReceiver().rawMsgs(true), r4=new MyReceiver().rawMsgs(true);
+        MyReceiver<Message> r3=new MyReceiver<Message>().rawMsgs(true), r4=new MyReceiver<Message>().rawMsgs(true);
         fc3.setReceiver(r3);
         fc4.setReceiver(r4);
 
         fc1.send(null, "hello");
-        List l3=r3.list(), l4=r4.list();
-        for(int i=0; i < 10; i++) {
-            if(!l3.isEmpty() || !l4.isEmpty())
-                break;
-            Util.sleep(1000);
-        }
+        List<Message> l3=r3.list(), l4=r4.list();
+        Util.waitUntil(10000, 500, () -> !l3.isEmpty() || !l4.isEmpty());
         assert !l3.isEmpty();
         assert l4.isEmpty();
 
@@ -391,8 +387,7 @@ public class ForkChannelTest {
 
 
     public void testStateTransfer() throws Exception {
-        ReplicatedHashMap<String,Integer> rhm_a=new ReplicatedHashMap<>(a),
-          rhm_b, rhm_fc1, rhm_fc2, rhm_fc3, rhm_fc4;
+        ReplicatedHashMap<String,Integer> rhm_a=new ReplicatedHashMap<>(a), rhm_b, rhm_fc1, rhm_fc2, rhm_fc3, rhm_fc4;
 
         a.connect("state-transfer");
         fc1=createForkChannel(a, "stack1", "fc1");
@@ -412,17 +407,16 @@ public class ForkChannelTest {
         Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
         b.getState(null, 10000);
 
-        for(int i=0; i < 10; i++) {
-            if(rhm_b.size() == rhm_a.size() && rhm_fc1.size() == rhm_fc3.size() && rhm_fc2.size() == rhm_fc4.size())
-                break;
-            Util.sleep(1000);
-        }
+        Util.waitUntil(10000, 500,
+                       () -> rhm_b.size() == rhm_a.size() && rhm_fc1.size() == rhm_fc3.size()
+                         && rhm_fc2.size() == rhm_fc4.size());
         System.out.printf("rhm_a: %s, rhm_b: %s\nrhm_fc1: %s, rhm_fc3: %s\nrhm_fc2: %s, rhm_fc4: %s\n",
                           rhm_a, rhm_b, rhm_fc1, rhm_fc3, rhm_fc2, rhm_fc4);
         assert rhm_a.equals(rhm_b);
         assert rhm_fc1.equals(rhm_fc3);
         assert rhm_fc2.equals(rhm_fc4);
     }
+
 
     public void testSiteUnreachableReceived() throws Exception {
         a.connect(CLUSTER);
@@ -462,9 +456,7 @@ public class ForkChannelTest {
     }
 
     protected static ForkChannel createForkChannel(JChannel main, String stack_name, String ch_name) throws Exception {
-        ForkChannel fork_ch=new ForkChannel(main, stack_name, ch_name);
-        fork_ch.connect(ch_name);
-        return fork_ch;
+        return new ForkChannel(main, stack_name, ch_name).connect(ch_name);
     }
 
     protected static void addData(Map<String,Integer> a, Map<String,Integer> b, Map<String,Integer> c) {
