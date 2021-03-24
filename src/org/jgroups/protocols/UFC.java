@@ -70,6 +70,11 @@ public class UFC extends FlowControl {
         sent.values().forEach(cred -> cred.increment(max_credits, max_credits));
     }
 
+    public long getSenderCreditsFor(Address mbr) {
+        Credit credits=sent.get(mbr);
+        return credits == null? 0 : credits.get();
+    }
+
     @ManagedAttribute(description="Number of times flow control blocks sender",type=AttributeType.SCALAR)
     public int getNumberOfBlockings() {
         int retval=0;
