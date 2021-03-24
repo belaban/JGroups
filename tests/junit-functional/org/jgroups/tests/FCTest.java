@@ -51,7 +51,6 @@ public class FCTest {
 
     @Test(dataProvider="configProvider")
     public void testReceptionOfAllMessages(Class<? extends FlowControl> flow_control_class) throws Exception {
-        int num_received=0;
         MyReceiver r=new MyReceiver();
         setUp(flow_control_class);
         ch.setReceiver(r);
@@ -61,16 +60,8 @@ public class FCTest {
             if(i % PRINT == 0)
                 System.out.println("==> " + i);
         }
-        int num_tries=10;
-        while(num_tries > 0) {
-            Util.sleep(1000);
-            num_received=r.getNumberOfReceivedMessages();
-            System.out.println("-- num received=" + num_received);
-            if(num_received >= NUM_MSGS)
-                break;
-            num_tries--;
-        }
-        assert num_received == NUM_MSGS : String.format("expected %d messages, but got %d", NUM_MSGS, num_received);
+        Util.waitUntil(10000, 1000, () -> r.getNumberOfReceivedMessages() >= NUM_MSGS,
+                       () -> String.format("expected %d messages, but got %d", NUM_MSGS, r.getNumberOfReceivedMessages()));
     }
 
 
@@ -86,15 +77,15 @@ public class FCTest {
 
 
     protected static class MyReceiver implements Receiver {
-        int num_mgs_received=0;
+        protected int num_mgs_received;
 
-        public void receive(Message msg) {
+        public synchronized void receive(Message msg) {
             num_mgs_received++;
             if(num_mgs_received % PRINT == 0)
                 System.out.println("<== " + num_mgs_received);
         }
 
-        public int getNumberOfReceivedMessages() {
+        public synchronized int getNumberOfReceivedMessages() {
             return num_mgs_received;
         }
     }
