@@ -6,15 +6,14 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Bits;
-import org.jgroups.util.Credit;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.MessageIterator;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
+
+import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 
 
 /**
@@ -218,6 +217,10 @@ public abstract class FlowControl extends Protocol {
         return printMap(received);
     }
 
+    public long getReceiverCreditsFor(Address mbr) {
+        Credit credits=received.get(mbr);
+        return credits == null? 0 : credits.get();
+    }
 
     public String printCredits() {
         return String.format("receivers:\n%s", printMap(received));
@@ -308,7 +311,8 @@ public abstract class FlowControl extends Protocol {
         Address dest=msg.getDest();
         boolean multicast=dest == null;
         boolean handle_multicasts=handleMulticastMessage();
-        boolean process=(handle_multicasts && multicast) || (!handle_multicasts && !multicast);
+        boolean process=(multicast && handle_multicasts)
+          || (!multicast && !handle_multicasts && !(msg.isTransientFlagSet(DONT_LOOPBACK) && Objects.equals(dest, local_addr)));
         if(!process)
             return down_prot.down(msg);
 
@@ -318,9 +322,9 @@ public abstract class FlowControl extends Protocol {
 
         Object retval=handleDownMessage(msg);
 
-        // if the message is DONT_LOOPBACK, we will not receive it, therefore the credit
-        // check needs to be done now
-        if(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK)) {
+        // If the message is DONT_LOOPBACK, we will not receive it, therefore the credit check needs to be done now.
+        // This is only done for multicast messages (unicasts to self are discarded above)
+        if(multicast && msg.isTransientFlagSet(DONT_LOOPBACK)) {
             long new_credits=adjustCredit(received, local_addr, length);
             if(new_credits > 0)
                 sendCredit(local_addr, new_credits);
