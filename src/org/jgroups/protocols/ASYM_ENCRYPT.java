@@ -343,7 +343,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             return Processing.DROP; // the encrypted msg was already sent; no need to send the un-encrypted msg
         }
         catch(Exception ex) {
-            log.warn("%s: unable to send message down: %s", local_addr, ex.getMessage());
+            log.warn("%s: unable to send message to %s: %s", msg.getDest() == null? "all" : msg.getDest(), local_addr, ex);
             return Processing.PROCESS;
         }
     }

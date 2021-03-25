@@ -171,11 +171,12 @@ public class ViewHandler<R> {
     }
 
     protected boolean _add(R req) {
-        if(req == null || suspended.get()) {
+        if(req == null)
+            return false;
+        if(suspended.get()) {
             log().trace("%s: queue is suspended; request %s is discarded", gms.getLocalAddress(), req);
             return false;
         }
-
         String log=new Date() + ": " + req.toString();
         count.incrementAndGet();
         lock.lock();
@@ -193,11 +194,12 @@ public class ViewHandler<R> {
 
     @SuppressWarnings("unchecked")
     protected boolean _add(R ... reqs) {
-        if(reqs == null || reqs.length == 0 || suspended.get()) {
+        if(reqs == null || reqs.length == 0)
+            return false;
+        if(suspended.get()) {
             log().trace("%s: queue is suspended; requests %s are discarded", gms.getLocalAddress(), Arrays.toString(reqs));
             return false;
         }
-
         count.incrementAndGet();
         lock.lock();
         try {
@@ -216,7 +218,9 @@ public class ViewHandler<R> {
 
 
     protected boolean _add(Collection<R> reqs) {
-        if(reqs == null || reqs.isEmpty() || suspended.get()) {
+        if(reqs == null || reqs.isEmpty())
+            return false;
+        if(suspended.get()) {
             log().trace("%s: queue is suspended; requests %s are discarded", gms.getLocalAddress(), reqs);
             return false;
         }

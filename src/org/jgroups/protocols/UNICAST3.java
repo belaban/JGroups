@@ -24,6 +24,8 @@ import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
+import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
+
 
 /**
  * Reliable unicast protocol using a combination of positive and negative acks. See docs/design/UNICAST3.txt for details.
@@ -80,6 +82,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @Property(description="Max number of messages to ask for in a retransmit request. 0 disables this and uses " +
       "the max bundle size in the transport")
     protected int     max_xmit_req_size;
+
+    @Property(description="If true, a unicast message to self is looped back up on the same thread. Noter that this may " +
+      "cause problems (e.g. deadlocks) in some applications, so make sure that your code can handle this. " +
+      "Issue: https://issues.redhat.com/browse/JGRP-2547")
+    protected boolean loopback;
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
@@ -144,10 +151,10 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected final Predicate<Message>     drop_oob_and_dont_loopback_msgs_filter=msg ->
       msg != null && msg != DUMMY_OOB_MSG
         && (!msg.isFlagSet(Message.Flag.OOB) || msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
-        && !(msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK) && local_addr != null && local_addr.equals(msg.getSrc()));
+        && !(msg.isFlagSet(DONT_LOOPBACK) && local_addr != null && local_addr.equals(msg.getSrc()));
 
     protected static final Predicate<Message> dont_loopback_filter=
-      msg -> msg != null && msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+      msg -> msg != null && msg.isFlagSet(DONT_LOOPBACK);
 
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
 
@@ -622,9 +629,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(msg.getSrc() == null)
             msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
 
+        if(loopback && Objects.equals(local_addr, dst)) // https://issues.redhat.com/browse/JGRP-2547
+            return msg.isFlagSet(DONT_LOOPBACK)? null : up_prot.up(msg);
+
         SenderEntry entry=getSenderEntry(dst);
 
-        boolean dont_loopback_set=msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK)
+        boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK)
           && dst.equals(local_addr);
         short send_conn_id=entry.connId();
         long seqno=entry.sent_msgs_seqno.getAndIncrement();

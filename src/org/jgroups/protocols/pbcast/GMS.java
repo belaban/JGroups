@@ -693,8 +693,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         ack_collector.retainAll(tmp_mbrs);
         merge_ack_collector.retainAll(tmp_mbrs);
 
-        if(new_view instanceof MergeView)
-            merger.forceCancelMerge();
+        if(new_view instanceof MergeView) {
+            // Everybody except the merge leader cancels the merge, otherwise - if UNICAST3.loopback is true - we'd
+            // interrupt our own thread which will fail code that later sends a message before returning!
+            // Note that the merge leader does cancel the merge later, after having installed the MergeView
+            // (in Merger.handleMergeView() in the finally clause)
+            if(!Objects.equals(local_addr, new_view.getCoord()))
+                merger.forceCancelMerge();
+        }
 
         if(stats) {
             num_views++;

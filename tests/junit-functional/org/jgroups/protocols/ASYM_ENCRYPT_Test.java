@@ -249,7 +249,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         Stream.of(a,b,c,d).forEach(ch -> merge_views.put(ch.getAddress(), ch.getView()));
         gms.up(new Event(Event.MERGE, merge_views));
 
-        Util.waitUntilAllChannelsHaveSameView(1000000, 1000, a,b,c,d); // todo: reduce timeout
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b,c,d);
         printSymVersion(a,b,c,d);
     }
 

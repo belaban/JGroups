@@ -328,10 +328,18 @@ public class Merger {
         gms.getUpProtocol().up(install_merge_view_evt);
         gms.getDownProtocol().down(install_merge_view_evt);
 
+        // Change coords to move self to the tail: if UNICAST3.loopback is true, we might be the first member on which
+        // handleMergeView() is invoked, which blocks on reception of all view-acks, delaying view installation in
+        // others. By moving self to the tail, at least the other coords can install the MergeView in parallel
+        List<Address> coords_copy=new ArrayList<>(coords);
+        if(coords_copy.remove(gms.local_addr))
+            coords_copy.add(gms.local_addr);
+
+        log.debug("%s: installing merge view %s in %s", gms.local_addr, combined_merge_data.view.getViewId(), coords_copy);
         long start=System.currentTimeMillis();
-        for(Address coord: coords) {
+        for(Address coord: coords_copy) {
             Message msg=new BytesMessage(coord).setArray(GMS.marshal(view, digest))
-              .putHeader(gms.getId(),new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW).mergeId(merge_id));
+              .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW).mergeId(merge_id));
             gms.getDownProtocol().down(msg);
         }
 
@@ -584,10 +592,8 @@ public class Merger {
             if(combined_merge_data == null)
                 throw new Exception("could not consolidate merge");
 
-            // send the new view/digest to all coords (including myself). On reception, they will
+            // send the new view and digest to all coords (including myself). On reception, they will
             // install the digest and view in all of their subgroup members
-            log.debug("%s: installing merge view %s (%d members) in %d coords",
-                      gms.local_addr, combined_merge_data.view.getViewId(), combined_merge_data.view.size(), coords.keySet().size());
             sendMergeView(coords.keySet(), combined_merge_data, new_merge_id);
         }
 

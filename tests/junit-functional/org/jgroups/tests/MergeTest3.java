@@ -9,7 +9,6 @@ import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MergeId;
 import org.jgroups.util.MutableDigest;
 import org.jgroups.util.Util;
@@ -18,6 +17,9 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.*;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 /**
@@ -29,7 +31,7 @@ import java.util.*;
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class MergeTest3 {
     protected JChannel a,b,c,d,e,f;
-
+    protected JChannel[] channels;
 
 
     @BeforeMethod
@@ -40,22 +42,17 @@ public class MergeTest3 {
         d=createChannel("D");
         e=createChannel("E");
         f=createChannel("F");
+        channels=new JChannel[]{a,b,c,d,e,f};
     }
-
 
 
     @AfterMethod
     void tearDown() throws Exception {
-        for(JChannel ch: new JChannel[]{a,b,c,d,e,f}) {
-            ProtocolStack stack=ch.getProtocolStack();
-            String cluster_name=ch.getClusterName();
-            stack.stopStack(cluster_name);
-            stack.destroy();
-        }
+        Stream.of(channels).forEach(Util::close);
     }
 
 
-    public void testMergeWithMissingMergeResponse() {
+    public void testMergeWithMissingMergeResponse() throws TimeoutException {
         createPartition(a,b,c);
         createPartition(d,e,f);
 
@@ -80,7 +77,7 @@ public class MergeTest3 {
         MergeId busy_merge_id=MergeId.create(a.getAddress());
         setMergeIdIn(busy_first, busy_merge_id);
         setMergeIdIn(busy_second, busy_merge_id);
-        for(JChannel ch: new JChannel[]{a,b,c,d,e,f}) { // excluding faulty member, as it still discards messages
+        for(JChannel ch: channels) { // excluding faulty member, as it still discards messages
             assert ch.getView().size() == 3;
             GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.setJoinTimeout(3000);
@@ -89,74 +86,61 @@ public class MergeTest3 {
         }
 
         System.out.println("Injecting MERGE event into merge leader " + merge_leader.getAddress());
-        Map<Address,View> merge_views=new HashMap<>(6);
-        merge_views.put(first_coord, findChannel(first_coord).getView());
-        merge_views.put(second_coord, findChannel(second_coord).getView());
-
         GMS gms=merge_leader.getProtocolStack().findProtocol(GMS.class);
-        gms.up(new Event(Event.MERGE, merge_views));
-
-        for(int i=0; i < 20; i++) {
+        int i=10;
+        do {
+            Map<Address,View> merge_views=new HashMap<>(6);
+            merge_views.put(first_coord, findChannel(first_coord).getView());
+            merge_views.put(second_coord, findChannel(second_coord).getView());
+            gms.up(new Event(Event.MERGE, merge_views));
             boolean done=true;
             System.out.println();
-            for(JChannel ch: new JChannel[]{a,b,c,d,e,f}) {
+            for(JChannel ch : channels) {
                 System.out.println("==> " + ch.getAddress() + ": " + ch.getView());
                 Address addr=ch.getAddress();
                 if(addr.equals(busy_first) || addr.equals(busy_second)) {
                     if(ch.getView().size() != 3)
                         done=false;
                 }
-                else {
-                    if(ch.getView().size()  != 4)
-                        done=false;
-                }
+                else if(ch.getView().size() != 4)
+                    done=false;
             }
-            
             if(done)
                 break;
-            Util.sleep(1000);
+            Util.sleep(2000);
         }
-        for(JChannel ch: new JChannel[]{a,b,c,d,e,f}) {
+        while(--i >= 0);
+
+        for(JChannel ch: channels) {
             if(ch.getAddress().equals(busy_first) || ch.getAddress().equals(busy_second))
                 assert ch.getView().size() == 3;
             else
                 assert ch.getView().size() == 4 : ch.getAddress() + "'s view: " + ch.getView();
         }
 
-
-
         System.out.println("\n************************ Now merging the entire cluster ****************");
         cancelMerge(busy_first);
         cancelMerge(busy_second);
 
         System.out.println("Injecting MERGE event into merge leader " + merge_leader.getAddress());
-        merge_views=new HashMap<>(6);
-        merge_views.put(merge_leader.getAddress(), merge_leader.getView());
-        merge_views.put(busy_first, findChannel(busy_first).getView());
-        merge_views.put(busy_second, findChannel(busy_second).getView());
-
-        System.out.println("merge event is " + merge_views);
-
-        gms=merge_leader.getProtocolStack().findProtocol(GMS.class);
-        gms.up(new Event(Event.MERGE, merge_views));
-
-        for(int i=0; i < 20; i++) {
-            boolean done=true;
-            System.out.println();
-            for(JChannel ch: new JChannel[]{a,b,c,d,e,f}) {
-                System.out.println("==> " + ch.getAddress() + ": " + ch.getView());
-                if(ch.getView().size()  != 6)
-                    done=false;
-            }
-
-            if(done)
+        Map<Address,View> merge_views=new HashMap<>(6);
+        i=10;
+        do {
+            merge_views=new HashMap<>(6);
+            merge_views.put(merge_leader.getAddress(), merge_leader.getView());
+            merge_views.put(busy_first, findChannel(busy_first).getView());
+            merge_views.put(busy_second, findChannel(busy_second).getView());
+            gms.up(new Event(Event.MERGE, merge_views));
+            if(Stream.of(channels).allMatch(c -> c.getView().size() == 6))
                 break;
-            Util.sleep(1000);
+            Util.sleep(2000);
         }
-        for(JChannel ch: new JChannel[]{a,b,c,d,e,f}) {
-            assert !ch.getAddress().equals(busy_first) && !ch.getAddress().equals(busy_second)
-              || ch.getView().size() == 6 : ch.getAddress() + "'s view: " + ch.getView();
-        }
+        while(--i >= 0);
+
+        System.out.printf("channels:\n%s\n",
+                          Stream.of(channels).map(c -> String.format("%s: %s", c.getAddress(), c.getView()))
+                            .collect(Collectors.joining("\n")));
+        assert Stream.of(channels).allMatch(c -> c.getView().size() == channels.length);
     }
 
     protected static JChannel createChannel(String name) throws Exception {
@@ -167,12 +151,8 @@ public class MergeTest3 {
                                        .logDiscardMessages(false).logNotFoundMessages(false),
                                      new UNICAST3(),
                                      new STABLE().setMaxBytes(50000),
-                                     new GMS().printLocalAddress(false)
-                                       .setJoinTimeout( 1)
-                                       .setLeaveTimeout(100)
-                                       .setMergeTimeout(5000)
-                                       .logViewWarnings(false)
-                                       .setViewAckCollectionTimeout(50)
+                                     new GMS().printLocalAddress(false).setJoinTimeout( 1).setLeaveTimeout(100)
+                                       .setMergeTimeout(5000).logViewWarnings(false).setViewAckCollectionTimeout(50)
                                        .logCollectMessages(false))
           .name(name);
         retval.connect("MergeTest3");
