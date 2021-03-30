@@ -142,7 +142,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected final AtomicInteger          timestamper=new AtomicInteger(0); // timestamping of ACKs / SEND_FIRST-SEQNOs
 
     /** Keep track of when a SEND_FIRST_SEQNO message was sent to a given sender */
-    protected ExpiryCache<Address>         last_sync_sent=null;
+    protected ExpiryCache<Address>         last_sync_sent;
+
+    protected final LongAdder              loopbed_back_msgs=new LongAdder();
 
     protected final MessageCache           msg_cache=new MessageCache();
 
@@ -190,6 +192,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     public String getAvgBatchDeliverySize() {
         return avg_delivery_batch_size != null? avg_delivery_batch_size.toString() : "n/a";
     }
+
+    @ManagedAttribute(description="Number of unicast messages to self looped back up")
+    public long getNumLoopbacks() {return loopbed_back_msgs.sum();}
 
     public int getAckThreshold() {return ack_threshold;}
 
@@ -357,6 +362,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         num_msgs_sent=num_msgs_received=num_acks_sent=num_acks_received=num_xmits=0;
         avg_delivery_batch_size.clear();
         Stream.of(xmit_reqs_received, xmit_reqs_sent, xmit_rsps_sent).forEach(LongAdder::reset);
+        loopbed_back_msgs.reset();
     }
 
 
@@ -629,11 +635,14 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(msg.getSrc() == null)
             msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
 
-        if(loopback && Objects.equals(local_addr, dst)) // https://issues.redhat.com/browse/JGRP-2547
-            return msg.isFlagSet(DONT_LOOPBACK)? null : up_prot.up(msg);
+        if(loopback && Objects.equals(local_addr, dst)) {// https://issues.redhat.com/browse/JGRP-2547
+            if(msg.isFlagSet(DONT_LOOPBACK))
+                return null;
+            loopbed_back_msgs.increment();
+            return up_prot.up(msg);
+        }
 
         SenderEntry entry=getSenderEntry(dst);
-
         boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK)
           && dst.equals(local_addr);
         short send_conn_id=entry.connId();
