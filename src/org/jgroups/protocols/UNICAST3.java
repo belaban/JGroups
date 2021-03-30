@@ -103,6 +103,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Number of retransmit responses sent",type=AttributeType.SCALAR)
     protected final LongAdder  xmit_rsps_sent=new LongAdder();
 
+    @ManagedAttribute(description="Number of unicast messages to self looped back up",type=AttributeType.SCALAR)
+    public long getNumLoopbacks() {return loopbed_back_msgs.sum();}
+
     protected final AverageMinMax avg_delivery_batch_size=new AverageMinMax();
 
     @ManagedAttribute(description="True if sending a message can block at the transport level")
@@ -193,8 +196,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return avg_delivery_batch_size != null? avg_delivery_batch_size.toString() : "n/a";
     }
 
-    @ManagedAttribute(description="Number of unicast messages to self looped back up")
-    public long getNumLoopbacks() {return loopbed_back_msgs.sum();}
 
     public int getAckThreshold() {return ack_threshold;}
 
