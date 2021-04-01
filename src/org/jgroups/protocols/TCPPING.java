@@ -16,6 +16,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.jgroups.Message.Flag.*;
+import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
+
 
 /**
  * The TCPPING protocol defines a static cluster membership. The cluster members are retrieved by
@@ -193,16 +196,17 @@ public class TCPPING extends Discovery {
                 list.stream().filter(phys_addr -> !cluster_members.contains(phys_addr)).forEach(cluster_members::add);
         }
 
+        Buffer data_buf=data != null? marshal(data) : null;
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name).initialDiscovery(initial_discovery);
         for(final PhysicalAddress addr: cluster_members) {
             if(addr.equals(physical_addr)) // no need to send the request to myself
                 continue;
 
             // the message needs to be DONT_BUNDLE, see explanation above
-            final Message msg=new Message(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
+            final Message msg=new Message(addr).setFlag(INTERNAL, DONT_BUNDLE, OOB).setTransientFlag(DONT_LOOPBACK)
               .putHeader(this.id,hdr);
-            if(data != null)
-                msg.setBuffer(marshal(data));
+            if(data_buf != null)
+                msg.setBuffer(data_buf);
 
             if(async_discovery_use_separate_thread_per_request)
                 timer.execute(() -> sendDiscoveryRequest(msg), sends_can_block);

@@ -67,10 +67,6 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         start();
     }
 
-    public TimeScheduler3(Executor thread_pool, ThreadFactory factory) {
-        this(thread_pool, factory, true);
-    }
-
     public TimeScheduler3(Executor thread_pool, ThreadFactory factory, boolean start) {
         timer_thread_factory=factory;
         pool=thread_pool;

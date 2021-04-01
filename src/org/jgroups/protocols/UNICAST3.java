@@ -611,7 +611,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             msg.src(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
 
         SenderEntry entry=getSenderEntry(dst);
-
         boolean dont_loopback_set=msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK)
           && dst.equals(local_addr);
         short send_conn_id=entry.connId();

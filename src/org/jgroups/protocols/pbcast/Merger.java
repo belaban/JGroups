@@ -2,6 +2,7 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.logging.Log;
+import org.jgroups.protocols.RED;
 import org.jgroups.util.*;
 
 import java.util.*;
@@ -9,6 +10,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import static org.jgroups.Message.Flag.INTERNAL;
+import static org.jgroups.Message.Flag.OOB;
+import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 
 /**
  * Handles merging. Called by CoordGmsImpl and ParticipantGmsImpl
@@ -146,7 +151,7 @@ public class Merger {
             gms.castViewChangeAndSendJoinRsps(data.view, data.digest, expected_acks, null, null);
             // if we have flush in stack send ack back to merge coordinator
             if(gms.flushProtocolInStack) { //[JGRP-700] - FLUSH: flushing should span merge
-                Message ack=new Message(data.getSender()).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+                Message ack=new Message(data.getSender()).setFlag(OOB, INTERNAL)
                   .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW_OK));
                 gms.getDownProtocol().down(ack);
             }
@@ -298,7 +303,7 @@ public class Merger {
 
     /** Send back a response containing view and digest to sender */
     protected void sendMergeResponse(Address sender, View view, Digest digest, MergeId merge_id) {
-        Message msg=new Message(sender).setBuffer(GMS.marshal(view, digest)).setFlag(Message.Flag.OOB,Message.Flag.INTERNAL)
+        Message msg=new Message(sender).setBuffer(GMS.marshal(view, digest)).setFlag(OOB, INTERNAL)
           .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP).mergeId(merge_id));
         gms.getDownProtocol().down(msg);
     }
@@ -350,7 +355,7 @@ public class Merger {
     }
 
     protected void sendMergeRejectedResponse(Address sender, MergeId merge_id) {
-        Message msg=new Message(sender).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+        Message msg=new Message(sender).setFlag(OOB, INTERNAL)
           .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP).mergeId(merge_id).mergeRejected(true));
         gms.getDownProtocol().down(msg);
     }
@@ -377,12 +382,12 @@ public class Merger {
             return new MutableDigest(view.getMembersRaw())
               .set((Digest)gms.getDownProtocol().down(new Event(Event.GET_DIGEST, gms.local_addr)));
 
-        Message get_digest_req=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+        Message get_digest_req=new Message().setFlag(OOB, INTERNAL).setTransientFlag(DONT_LOOPBACK)
           .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.GET_DIGEST_REQ).mergeId(merge_id));
 
         long max_wait_time=gms.merge_timeout / 2; // gms.merge_timeout is guaranteed to be > 0, verified in init()
         digest_collector.reset(current_mbrs);
-
+        long start=System.currentTimeMillis();
         gms.getDownProtocol().down(get_digest_req);
 
         // add my own digest first - the get_digest_req needs to be sent first *before* getting our own digest, so
@@ -392,7 +397,7 @@ public class Merger {
         digest_collector.waitForAllResponses(max_wait_time);
         if(log.isTraceEnabled()) {
             if(digest_collector.hasAllResponses())
-                log.trace("%s: fetched all digests for %s", gms.local_addr, current_mbrs);
+                log.trace("%s: fetched all digests for %s in %d ms", gms.local_addr, current_mbrs, System.currentTimeMillis()-start);
             else
                 log.trace("%s: fetched incomplete digests (after timeout of %d) ms for %s",
                           gms.local_addr, max_wait_time, current_mbrs);
@@ -611,7 +616,7 @@ public class Merger {
             for(Map.Entry<Address,Collection<Address>> entry: coords.entrySet()) {
                 Address coord=entry.getKey();
                 Collection<Address> mbrs=entry.getValue();
-                Message msg=new Message(coord).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+                Message msg=new Message(coord).setFlag(OOB, INTERNAL)
                   .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ).mbr(gms.local_addr).mergeId(new_merge_id))
                   .setBuffer(GMS.marshal(mbrs));
                 gms.getDownProtocol().down(msg);

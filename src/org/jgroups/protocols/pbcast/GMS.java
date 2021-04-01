@@ -978,14 +978,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 impl.handleMergeCancelled(hdr.merge_id);
                 break;
 
-            case GmsHeader.GET_DIGEST_REQ:
+            case GmsHeader.GET_DIGEST_REQ: // sent with DONT_LOOPBACK, so no need to drop msg from self
                 // only handle this request if it was sent by the coordinator (or at least a member) of the current cluster
                 if(!members.contains(msg.getSrc()))
                     break;
-
-                // discard my own request:
-                if(msg.getSrc().equals(local_addr))
-                    return null;
 
                 if(hdr.merge_id !=null && !(merger.matchMergeId(hdr.merge_id) || merger.setMergeId(null, hdr.merge_id)))
                     return null;
