@@ -41,7 +41,6 @@ public class MsgStats {
     protected final LongAdder     num_batches_received=new LongAdder();
 
     protected final AtomicInteger num_rejected_msgs=new AtomicInteger(0);
-    protected final AtomicInteger num_threads_spawned=new AtomicInteger(0);
 
 
     @ManagedAttribute(description="Number of messages sent",type=AttributeType.SCALAR)
@@ -119,17 +118,12 @@ public class MsgStats {
     public int      getNumRejectedMsgs()               {return num_rejected_msgs.get();}
     public MsgStats incrNumRejectedMsgs(int d)         {num_rejected_msgs.addAndGet(d); return this;}
 
-    @ManagedAttribute(description="Number of threads spawned as a result of thread pool rejection"
-      ,type=AttributeType.SCALAR)
-    public int      getNumThreadsSpawned()             {return num_threads_spawned.get();}
-    public MsgStats incrNumThreadsSpawned(int d)       {num_threads_spawned.addAndGet(d); return this;}
-
 
     public MsgStats reset() {
         Stream.of(num_msgs_sent, num_msgs_received, num_single_msgs_sent, num_oob_msgs_received,
                   num_internal_msgs_received, num_batches_sent, num_batches_received, num_bytes_sent,num_bytes_received)
           .forEach(LongAdder::reset);
-        Stream.of(num_rejected_msgs,num_threads_spawned).forEach(ai -> ai.set(0));
+        Stream.of(num_rejected_msgs).forEach(ai -> ai.set(0));
         return this;
     }
 
