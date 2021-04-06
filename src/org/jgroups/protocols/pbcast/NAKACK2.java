@@ -1026,7 +1026,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     finally {
                         become_server_queue.remove(msg);
                     }
-                }, true);
+                });
             }
         }
     }

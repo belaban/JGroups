@@ -800,14 +800,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
         // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-377
-        if(oob) {
-            if(added)
-                deliverMessage(msg, sender, seqno);
-
-            // we don't steal work if the message is internal (https://issues.jboss.org/browse/JGRP-1733)
-            if(msg.isFlagSet(Message.Flag.INTERNAL))
-                processInternalMessage(win, sender);
-        }
+        if(oob && added)
+            deliverMessage(msg, sender, seqno);
     }
 
     protected void addQueuedMessages(final Address sender, final ReceiverEntry entry, List<Message> queued_msgs) {
@@ -834,28 +828,15 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         update(entry, 1);
         final Table<Message> win=entry.msgs;
 
-        // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
-        // http://jira.jboss.com/jira/browse/JGRP-377
+        // An OOB message is passed up immediately. Later, when remove() is called, we discard it.
+        // This affects ordering ! JIRA: http://jira.jboss.com/jira/browse/JGRP-377
         if(msg.isFlagSet(Message.Flag.OOB)) {
             msg=win.get(seqno); // we *have* to get a message, because loopback means we didn't add it to win !
             if(msg != null && msg.isFlagSet(Message.Flag.OOB) && msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
                 deliverMessage(msg, sender, seqno);
-
-            // we don't steal work if the message is internal (https://issues.jboss.org/browse/JGRP-1733)
-            if(msg != null && msg.isFlagSet(Message.Flag.INTERNAL)) {
-                processInternalMessage(win, sender);
-                return;
-            }
         }
-        removeAndDeliver(win, sender);
+        removeAndDeliver(win, sender); // there might be more messages to deliver
     }
-
-    protected void processInternalMessage(final Table<Message> win, final Address sender) {
-        // If there are other msgs, tell the regular thread pool to handle them (https://issues.jboss.org/browse/JGRP-1732)
-        if(!win.isEmpty() && win.getAdders().get() == 0) // just a quick&dirty check, can also be incorrect
-            getTransport().submitToThreadPool(() -> removeAndDeliver(win, sender), true);
-    }
-
 
 
     protected void handleBatchReceived(final ReceiverEntry entry, Address sender, List<LongTuple<Message>> msgs, boolean oob) {

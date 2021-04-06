@@ -162,7 +162,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property(description="When an internal message cannot be processed because of a full internal pool, a new thread "
       + "is created to process the message. Setting this value to false disables this, and the message will be " +
-      "discarded (like regular messages)")
+      "discarded (like regular messages)",deprecatedMessage="always false (will be removed)")
+    @Deprecated(since="5.1.6",forRemoval=true)
     protected boolean spawn_thread_on_full_pool;
 
 
@@ -587,10 +588,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /** Factory which is used by the thread pool */
     protected ThreadFactory           thread_factory;
 
-    protected ThreadFactory           internal_thread_factory;
-
-    protected Executor                internal_pool; // only created if thread_pool is enabled, to handle internal msgs
-
     // ================================== Timer thread pool  =========================
     protected TimeScheduler           timer;
 
@@ -755,21 +752,19 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return (T)this;
     }
 
-    public Executor getInternalThreadPool() {return internal_pool;}
+    @Deprecated(since="5.1.6",forRemoval=true)
+    public Executor getInternalThreadPool() {return null;}
 
+    @Deprecated(since="5.1.6",forRemoval=true)
     public <T extends TP> T setInternalThreadPool(Executor thread_pool) {
-        if(this.internal_pool != null)
-            shutdownThreadPool(this.internal_pool);
-        this.internal_pool=thread_pool;
         return (T)this;
     }
 
-    public ThreadFactory getInternalThreadPoolThreadFactory() {return internal_thread_factory;}
+    @Deprecated(since="5.1.6",forRemoval=true)
+    public ThreadFactory getInternalThreadPoolThreadFactory() {return null;}
 
+    @Deprecated(since="5.1.6",forRemoval=true)
     public <T extends TP> T setInternalThreadPoolThreadFactory(ThreadFactory factory) {
-        internal_thread_factory=factory;
-        if(internal_pool instanceof ThreadPoolExecutor)
-            ((ThreadPoolExecutor)internal_pool).setThreadFactory(factory);
         return (T)this;
     }
 
@@ -852,20 +847,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public int getThreadPoolSizeLargest() {
         if(thread_pool instanceof ThreadPoolExecutor)
             return ((ThreadPoolExecutor)thread_pool).getLargestPoolSize();
-        return 0;
-    }
-
-    @ManagedAttribute(description="Current number of threads in the internal thread pool")
-    public int getInternalThreadPoolSize() {
-        if(internal_pool instanceof ThreadPoolExecutor)
-            return ((ThreadPoolExecutor)internal_pool).getPoolSize();
-        return 0;
-    }
-
-    @ManagedAttribute(description="Largest number of threads in the internal thread pool")
-    public int getInternalThreadPoolSizeLargest() {
-        if(internal_pool instanceof ThreadPoolExecutor)
-            return ((ThreadPoolExecutor)internal_pool).getLargestPoolSize();
         return 0;
     }
 
@@ -957,14 +938,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         if(thread_factory == null)
-            //thread_factory=new DefaultThreadFactory("jgroups", false, true);
-          thread_factory=new LazyThreadFactory("jgroups", false, true)
-            .useFibers(use_fibers).log(this.log);
-
-        if(internal_thread_factory == null)
-            internal_thread_factory=new LazyThreadFactory("jgroups-int", false, true)
+            thread_factory=new LazyThreadFactory("jgroups", false, true)
               .useFibers(use_fibers).log(this.log);
-        
+
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
 
@@ -983,18 +959,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(thread_pool == null || (thread_pool instanceof ExecutorService && ((ExecutorService)thread_pool).isShutdown())) {
             if(thread_pool_enabled) {
                 if(use_fibers) {
-                    internal_pool=thread_pool=Util.createFiberThreadPool(); // Executors.newVirtualThreadExecutor();
+                    thread_pool=Util.createFiberThreadPool(); // Executors.newVirtualThreadExecutor();
                 }
                 else {
-                    int num_cores=Runtime.getRuntime().availableProcessors();
-                    int max_internal_size=Math.max(4, num_cores);
-                    log.debug("thread pool min/max/keep-alive: %d/%d/%d, internal pool: %d/%d/%d (%d cores available)",
-                              thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
-                              0, max_internal_size, 30000, num_cores);
+                    log.debug("thread pool min/max/keep-alive (ms): %d/%d/%d",
+                              thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time);
                     thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
                                                  "abort", new SynchronousQueue<>(), thread_factory);
-                    internal_pool=createThreadPool(0, max_internal_size, 30000, "abort",
-                                                   new SynchronousQueue<>(), internal_thread_factory);
                 }
             }
             else // otherwise use the caller's thread to unmarshal the byte buffer into a message
@@ -1021,7 +992,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             up(new Event(Event.CONFIG, m));
 
         logical_addr_cache=new LazyRemovalCache<>(logical_addr_cache_max_size, logical_addr_cache_expiration);
-        
         if(logical_addr_cache_reaper_interval > 0 && (logical_addr_cache_reaper == null || logical_addr_cache_reaper.isDone())) {
             logical_addr_cache_reaper=timer.scheduleWithFixedDelay(new Runnable() {
                 public void run() {
@@ -1085,7 +1055,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         // Stop the thread pools
         shutdownThreadPool(thread_pool);
-        shutdownThreadPool(internal_pool);
     }
 
 
@@ -1611,38 +1580,19 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-    public boolean submitToThreadPool(Runnable task, boolean internal) {
-        if(internal && internal_pool != null)
-            return submitToThreadPool(internal_pool, task, internal, false);
-        return submitToThreadPool(thread_pool, task, internal, true);
-    }
-
-    public boolean submitToThreadPool(Executor pool, Runnable task, boolean internal, boolean forward_to_internal_pool) {
+    public boolean submitToThreadPool(Runnable task) {
         try {
-            pool.execute(task);
+            thread_pool.execute(task);
         }
         catch(RejectedExecutionException ex) {
-            if(!internal) {
-                msg_stats.incrNumRejectedMsgs(1);
-                // https://issues.redhat.com/browse/JGRP-2403
-                if(thread_dumps.incrementAndGet() == thread_dumps_threshold) {
-                    log.fatal("%s: thread pool is full (max=%d, active=%d); " +
-                                "thread dump (dumped once, until thread_dump is reset):\n%s",
-                              local_addr, getThreadPoolMaxThreads(), getThreadPoolSize(), Util.dumpThreads());
-                }
-                return false;
+            msg_stats.incrNumRejectedMsgs(1);
+            // https://issues.redhat.com/browse/JGRP-2403
+            if(thread_dumps.incrementAndGet() == thread_dumps_threshold) {
+                log.fatal("%s: thread pool is full (max=%d, active=%d); " +
+                            "thread dump (dumped once, until thread_dump is reset):\n%s",
+                          local_addr, getThreadPoolMaxThreads(), getThreadPoolSize(), Util.dumpThreads());
             }
-
-            if(forward_to_internal_pool && internal_pool != null)
-                return submitToThreadPool(internal_pool, task, internal, false);
-            else {
-                if(spawn_thread_on_full_pool) {
-                    msg_stats.incrNumThreadsSpawned(1);
-                    return runInNewThread(task);
-                }
-                msg_stats.incrNumRejectedMsgs(1);
-                return false;
-            }
+            return false;
         }
         catch(Throwable t) {
             log.error("failure submitting task to thread pool", t);
@@ -1652,19 +1602,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return true;
     }
 
-
-    protected boolean runInNewThread(Runnable task) {
-        try {
-            Thread thread=thread_factory != null? thread_factory.newThread(task, "jgroups-temp-thread")
-              : new Thread(task, "jgroups-temp-thread");
-            thread.start();
-            return true;
-        }
-        catch(Throwable t) {
-            log.error("failed spawning new thread", t);
-            return false;
-        }
-    }
 
 
     protected boolean versionMatch(short version, Address sender) {
@@ -1833,7 +1770,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     protected void setInAllThreadFactories(String cluster_name, Address local_address, String pattern) {
-        ThreadFactory[] factories= {thread_factory,internal_thread_factory};
+        ThreadFactory[] factories= {thread_factory};
 
         for(ThreadFactory factory: factories) {
             if(pattern != null)

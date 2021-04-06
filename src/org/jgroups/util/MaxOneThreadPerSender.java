@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 
 /**
  * {@link org.jgroups.stack.MessageProcessingPolicy} which processes <em>regular</em> messages and message batches by
- * assigning a max of 1 thread per message from the same sender. So if we have sender A, B, C and D, we'll have no more
+ * assigning a max of 1 thread per message from the same sender. So if we have senders A, B, C and D, we'll have no more
  * than 4 threads handling regular unicasts and 4 threads handling regular multicasts.<p>
  * See <a href="https://issues.jboss.org/browse/JGRP-2143">JGRP-2143</a> for details.
  * @author Bela Ban
@@ -165,7 +165,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             try {
                 submitted_msgs.increment();
                 BatchHandlerLoop handler=new BatchHandlerLoop(batch_creator.apply(16).add(msg), this, loopback);
-                if(!tp.submitToThreadPool(handler, false))
+                if(!tp.submitToThreadPool(handler))
                     setRunning(false);
             }
             catch(Throwable t) {
@@ -177,7 +177,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             try {
                 submitted_batches.increment();
                 BatchHandlerLoop handler=new BatchHandlerLoop(batch_creator.apply(mb.size()).add(mb), this, false);
-                if(!tp.submitToThreadPool(handler, false))
+                if(!tp.submitToThreadPool(handler))
                     setRunning(false);
             }
             catch(Throwable t) {

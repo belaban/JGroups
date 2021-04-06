@@ -27,17 +27,17 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
     }
 
     public void loopback(Message msg, boolean oob, boolean internal) {
-        tp.submitToThreadPool(new SingleLoopbackHandler(msg), internal);
+        tp.submitToThreadPool(new SingleLoopbackHandler(msg));
     }
 
     public void process(Message msg, boolean oob, boolean internal) {
-        tp.submitToThreadPool(new SingleMessageHandler(msg), internal);
+        tp.submitToThreadPool(new SingleMessageHandler(msg));
     }
 
     public void process(MessageBatch batch, boolean oob, boolean internal) {
         if(oob)
             removeAndDispatchNonBundledMessages(batch);
-        tp.submitToThreadPool(new BatchHandler(batch), internal);
+        tp.submitToThreadPool(new BatchHandler(batch));
     }
 
 
@@ -52,11 +52,10 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
         for(Iterator<Message> it=oob_batch.iterator(); it.hasNext();) {
             Message msg=it.next();
             if(msg.isFlagSet(Message.Flag.DONT_BUNDLE) && msg.isFlagSet(Message.Flag.OOB)) {
-                boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
                 it.remove();
                 if(tp.statsEnabled())
                     tp.getMessageStats().incrNumOOBMsgsReceived(1);
-                tp.submitToThreadPool(new SingleMessageHandlerWithClusterName(msg, cname), internal);
+                tp.submitToThreadPool(new SingleMessageHandlerWithClusterName(msg, cname));
             }
         }
     }
