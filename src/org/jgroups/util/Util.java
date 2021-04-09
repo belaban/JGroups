@@ -114,11 +114,13 @@ public class Util {
     public static final boolean     can_bind_to_mcast_addr;
     protected static ResourceBundle resource_bundle;
 
-    // Fibers (project Loom - Java 15)
+    // Fibers (project Loom - Java 16,17)
+    private static final Class<?>             OF_VIRTUAL_CLASS=getOfVirtualClass();  // Java 17
+    private static final MethodHandle         OF_VIRTUAL=getOfVirtualHandle();       // Java 17
     private static final MethodHandles.Lookup LOOKUP=MethodHandles.publicLookup();
-    private static final int                  VIRTUAL=getVirtual();
-    private static final MethodHandle         THREAD_NEW_THREAD=getThreadNewThread();
-    private static final MethodHandle         EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY=getNewVirtualThreadFactory();
+    private static final MethodHandle         CREATE_FIBER=getCreateFiberHandle();
+    private static final MethodHandle         EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY=getNewVirtualThreadFactoryHandle();
+
 
 
     static {
@@ -192,31 +194,48 @@ public class Util {
 
 
     public static boolean fibersAvailable() {
-        return THREAD_NEW_THREAD != null;
+        return CREATE_FIBER != null;
     }
 
-    protected static int getVirtual() {
-        MethodHandle tmp_handle=null;
-        try {
-            tmp_handle=LOOKUP.findStaticGetter(Thread.class, "VIRTUAL", int.class);
-            return (int)tmp_handle.invokeExact();
-        }
-        catch(Throwable t) {
-            return 1;
-        }
-    }
 
-    protected static MethodHandle getThreadNewThread() {
+    protected static MethodHandle getCreateFiberHandle() {
         MethodType type=MethodType.methodType(Thread.class, String.class, int.class, Runnable.class);
         try {
             return LOOKUP.findStatic(Thread.class, "newThread", type);
+        }
+        catch(Exception e) {
+            return getUnstartedHandle();
+        }
+    }
+
+    protected static Class<?> getOfVirtualClass() {
+        try {
+            return Util.loadClass("java.lang.Thread$Builder$OfVirtual", (Class<?>)null);
+        }
+        catch(ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    protected static MethodHandle getOfVirtualHandle() {
+        try {
+            return LOOKUP.findStatic(Thread.class, "ofVirtual", MethodType.methodType(OF_VIRTUAL_CLASS));
         }
         catch(Exception e) {
             return null;
         }
     }
 
-    protected static MethodHandle getNewVirtualThreadFactory() {
+    protected static MethodHandle getUnstartedHandle() {
+        try {
+            return LOOKUP.findVirtual(OF_VIRTUAL_CLASS, "unstarted", MethodType.methodType(Thread.class, Runnable.class));
+        }
+        catch(Exception ex) {
+            return null;
+        }
+    }
+
+    protected static MethodHandle getNewVirtualThreadFactoryHandle() {
         MethodType type=MethodType.methodType(ExecutorService.class);
         try {
             return LOOKUP.findStatic(Executors.class, "newVirtualThreadExecutor", type);
@@ -242,13 +261,22 @@ public class Util {
      * Use of reflection to create fibers. If a JDK < 15/Loom is found, we'll create regular threads.
      */
     public static Thread createFiber(Runnable r, String name) {
-        if(THREAD_NEW_THREAD == null) {
+        if(CREATE_FIBER == null) {
             return new Thread(r, name);
         }
         try {
-            return (Thread)THREAD_NEW_THREAD.invokeExact(name, VIRTUAL, r);
+            return (Thread)CREATE_FIBER.invokeExact(name, 1, r);
         }
         catch(Throwable ex) {
+        }
+
+        try {
+            Object of=OF_VIRTUAL.invoke();
+            Thread t=(Thread)CREATE_FIBER.invokeWithArguments(of, r);
+            t.setName(name);
+            return t;
+        }
+        catch(Throwable t) {
             return new Thread(r, name);
         }
     }
