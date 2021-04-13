@@ -27,9 +27,7 @@ import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
+import java.lang.management.*;
 import java.lang.reflect.*;
 import java.math.BigInteger;
 import java.net.*;
@@ -2440,47 +2438,64 @@ public class Util {
 
 
     public static String dumpThreads() {
-        StringBuilder sb=new StringBuilder();
         ThreadMXBean bean=ManagementFactory.getThreadMXBean();
-        long[] ids=bean.getAllThreadIds();
-        _printThreads(bean,ids,sb);
-        long[] deadlocks=bean.findDeadlockedThreads();
-        if(deadlocks != null && deadlocks.length > 0) {
-            sb.append("deadlocked threads:\n");
-            _printThreads(bean,deadlocks,sb);
-        }
+        ThreadInfo[] threads=bean.dumpAllThreads(true, true);
+        return Stream.of(threads).map(Util::dumpThreadInfo).collect(Collectors.joining("\n"));
+    }
 
-        deadlocks=bean.findMonitorDeadlockedThreads();
-        if(deadlocks != null && deadlocks.length > 0) {
-            sb.append("monitor deadlocked threads:\n");
-            _printThreads(bean,deadlocks,sb);
+
+    private static String dumpThreadInfo(ThreadInfo thread) { // copied from Infinispan
+        StringBuilder sb=new StringBuilder(String.format("\"%s\" #%s prio=0 tid=0x%x nid=NA %s%n", thread.getThreadName(), thread.getThreadId(),
+                                                         thread.getThreadId(), thread.getThreadState().toString().toLowerCase()));
+        sb.append(String.format("   java.lang.Thread.State: %s%n", thread.getThreadState()));
+        LockInfo blockedLock = thread.getLockInfo();
+        StackTraceElement[] s = thread.getStackTrace();
+        MonitorInfo[] monitors = thread.getLockedMonitors();
+        for (int i = 0; i < s.length; i++) {
+            StackTraceElement ste = s[i];
+            sb.append(String.format("\tat %s\n", ste));
+            if (i == 0 && blockedLock != null) {
+                boolean parking = ste.isNativeMethod() && ste.getMethodName().equals("park");
+                sb.append(String.format("\t- %s <0x%x> (a %s)%n", blockedState(thread, blockedLock, parking),
+                                        blockedLock.getIdentityHashCode(), blockedLock.getClassName()));
+            }
+            if (monitors != null) {
+                for (MonitorInfo monitor : monitors) {
+                    if (monitor.getLockedStackDepth() == i) {
+                        sb.append(String.format("\t- locked <0x%x> (a %s)%n", monitor.getIdentityHashCode(), monitor.getClassName()));
+                    }
+                }
+            }
+        }
+        sb.append('\n');
+
+        LockInfo[] synchronizers = thread.getLockedSynchronizers();
+        if (synchronizers != null && synchronizers.length > 0) {
+            sb.append("\n   Locked ownable synchronizers:\n");
+            for (LockInfo synchronizer : synchronizers) {
+                sb.append(String.format("\t- <0x%x> (a %s)%n", synchronizer.getIdentityHashCode(), synchronizer.getClassName()));
+            }
+            sb.append('\n');
         }
         return sb.toString();
     }
 
-    public static String printStackTrace(Thread t) {
-        if(t == null)
-            return "null";
-        return String.format("-- %s:\n%s", t, Stream.of(t.getStackTrace()).map(StackTraceElement::toString)
-          .collect(Collectors.joining("\n")));
-    }
-
-
-    protected static void _printThreads(ThreadMXBean bean,long[] ids,StringBuilder sb) {
-        ThreadInfo[] threads=bean.getThreadInfo(ids,100);
-        for(ThreadInfo info : threads) {
-            if(info == null)
-                continue;
-            sb.append(info.getThreadName()).append(":\n");
-            StackTraceElement[] stack_trace=info.getStackTrace();
-            for(StackTraceElement el : stack_trace) {
-                sb.append("    at ").append(el.getClassName()).append(".").append(el.getMethodName());
-                sb.append("(").append(el.getFileName()).append(":").append(el.getLineNumber()).append(")");
-                sb.append("\n");
+    private static String blockedState(ThreadInfo thread, LockInfo blockedLock, boolean parking) {
+        String state;
+        if (blockedLock != null) {
+            if (thread.getThreadState() == Thread.State.BLOCKED) {
+                state = "waiting to lock";
+            } else if (parking) {
+                state = "parking to wait for";
+            } else {
+                state = "waiting on";
             }
-            sb.append("\n\n");
+        } else {
+            state = null;
         }
+        return state;
     }
+
 
 
     public static boolean interruptAndWaitToDie(Thread t) {
