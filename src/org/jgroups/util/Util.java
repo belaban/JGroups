@@ -440,6 +440,16 @@ public class Util {
         throw new TimeoutException(error_msg);
     }
 
+    public static boolean waitUntilTrue(long timeout, long interval, BooleanSupplier condition) {
+        long target_time=System.currentTimeMillis() + timeout;
+        while(System.currentTimeMillis() <= target_time) {
+            if(condition.getAsBoolean())
+                return true;
+            Util.sleep(interval);
+        }
+        return false;
+    }
+
     public static boolean allChannelsHaveSameView(JChannel... channels) {
         View first=channels[0].getView();
         for(JChannel ch : channels) {

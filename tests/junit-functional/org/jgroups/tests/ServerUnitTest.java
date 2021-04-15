@@ -164,13 +164,20 @@ public class ServerUnitTest {
 
                 for(int i=0; i < NUM; i++)
                     send(data, a, other);
-                log("sent " + NUM + " msgs");
-                r1.waitForCompletion(20000);
+                System.out.printf("\n\n%s sent %d msgs to %s\n", "A", NUM, "B");
+
+                a.flushAll();
+                // now wait until B has received NUM messages from A
+                Util.waitUntilTrue(10000, 100, () -> r2.getNumReceived() >= r2.getNumExpected());
+
+                // this causes pending responses at B to be sent from B to A
+                b.flushAll();
+                Util.waitUntil(10000, 100, () -> r1.getNumReceived() == r1.getNumExpected());
+
                 total_time=r1.stop_time - r1.start_time;
-                log(String.format("r1.expected=%d, r1.received=%d, r2.expected=%d, r2.received=%d, r2.sent=%d, total time=%d (%.2f ms/msg)",
+                System.out.printf("A: expected=%d, received=%d\nB: expected=%d, received=%d, sent=%d\ntotal time=%d (%.2f ms/msg)",
                                   r1.getNumExpected(), r1.getNumReceived(), r1.getNumExpected(), r2.getNumReceived(), r2.num_sent.get(),
-                                  total_time, (double)total_time / r1.getNumReceived()
-                ));
+                                  total_time, (double)total_time / r1.getNumReceived());
 
                 Assert.assertEquals(r1.getNumReceived(), r1.getNumExpected());
             }

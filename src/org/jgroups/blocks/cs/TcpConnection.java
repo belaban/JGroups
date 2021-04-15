@@ -161,7 +161,7 @@ public class TcpConnection extends Connection {
         out.write(data,offset,length);
     }
 
-    protected void flush() {
+    public void flush() {
         try {
             out.flush();
         }

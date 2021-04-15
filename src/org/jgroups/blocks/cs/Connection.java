@@ -20,6 +20,7 @@ public abstract class Connection implements Closeable {
     abstract public Address localAddress();
     abstract public Address peerAddress();
     abstract public boolean isExpired(long millis);
+    abstract public void    flush(); // sends pending data
     abstract public void    connect(Address dest) throws Exception;
     abstract public void    start() throws Exception;
     abstract public void    send(byte[] buf, int offset, int length) throws Exception;

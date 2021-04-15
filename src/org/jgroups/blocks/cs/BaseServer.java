@@ -157,6 +157,19 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         stop();
     }
 
+    public synchronized void flush(Address dest) {
+        if(dest != null) {
+            Connection conn=conns.get(dest);
+            if(conn != null)
+                conn.flush();
+        }
+    }
+
+    public synchronized void flushAll() {
+        for(Connection c: conns.values())
+            c.flush();
+    }
+
 
     /**
      * Called by a {@link Connection} implementation when a message has been received. Note that data might be a

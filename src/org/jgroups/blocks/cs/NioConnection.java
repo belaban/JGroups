@@ -270,6 +270,17 @@ public class NioConnection extends Connection {
         }
     }
 
+    public void flush() {
+        send_lock.lock();
+        try {
+            if(send_buf.remaining() > 0) { // try to flush send buffer if it still has pending data to send
+                try {send();} catch(Throwable e) {}
+            }
+        }
+        finally {
+            send_lock.unlock();
+        }
+    }
 
     public String toString() {
         InetSocketAddress local=null, remote=null;
