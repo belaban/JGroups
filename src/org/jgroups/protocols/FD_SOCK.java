@@ -537,12 +537,13 @@ public class FD_SOCK extends Protocol implements Runnable {
         suspected_mbrs.addAll(suspects);
         List<Address> eligible_mbrs=new ArrayList<>(this.members);
         eligible_mbrs.removeAll(suspected_mbrs);
+        Collection<Address> suspects_copy=new ArrayList<>(suspected_mbrs);
 
-        // Check if we're coord, then send up the stack
-        if(local_addr != null && !eligible_mbrs.isEmpty() && local_addr.equals(eligible_mbrs.get(0))) {
-            log.debug("%s: suspecting %s", local_addr, suspected_mbrs);
-            up_prot.up(new Event(Event.SUSPECT, suspected_mbrs));
-            down_prot.down(new Event(Event.SUSPECT, suspected_mbrs));
+        // Check if we're coord, then send up the stack, make a copy (https://issues.redhat.com/browse/JGRP-2552)
+        if(!suspects_copy.isEmpty() && local_addr != null && !eligible_mbrs.isEmpty() && local_addr.equals(eligible_mbrs.get(0))) {
+            log.debug("%s: suspecting %s", local_addr, suspects_copy);
+            up_prot.up(new Event(Event.SUSPECT, suspects_copy));
+            down_prot.down(new Event(Event.SUSPECT, suspects_copy));
         }
     }
 

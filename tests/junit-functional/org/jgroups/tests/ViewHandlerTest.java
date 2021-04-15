@@ -67,6 +67,16 @@ public class ViewHandlerTest {
         assert list.equals(Arrays.asList(1,3,5,2,4,6));
     }
 
+    public void testAddNullRequest() {
+        List<Integer> list=new ArrayList<>();
+        req_handler=list::addAll;
+        req_matcher=ViewHandlerTest::matches;
+        Stream.of(1,null,3,4,null).forEach(n -> view_handler.add(n));
+        System.out.printf("list: %s\n", list);
+        assert list.size() == 3;
+        assert list.equals(Arrays.asList(1,3,4));
+    }
+
     public void testAdd2() {
         List<Integer> list=new ArrayList<>();
         req_handler=list::addAll;
@@ -77,7 +87,7 @@ public class ViewHandlerTest {
     }
 
 
-    public void testAddList() {
+    public void testAddArray() {
         List<Integer> list=new ArrayList<>();
         req_handler=list::addAll;
         req_matcher=ViewHandlerTest::matches; // either both even or both odd
@@ -85,6 +95,39 @@ public class ViewHandlerTest {
         view_handler.add(numbers);
         System.out.printf("drained: %s\n", list);
         assert list.equals(Arrays.asList(numbers));
+    }
+
+    public void testAddArrayWithNullElements() {
+        List<Integer> list=new ArrayList<>();
+        req_handler=list::addAll;
+        req_matcher=ViewHandlerTest::matches; // either both even or both odd
+        Integer[] numbers={1,2,null,3,4,null};
+        view_handler.add(numbers);
+        System.out.printf("drained: %s\n", list);
+        List<Integer> copy=new ArrayList<>(Arrays.asList(numbers));
+        copy.removeIf(Objects::isNull);
+        assert list.equals(copy);
+    }
+
+    public void testAddList() {
+        List<Integer> list=new ArrayList<>();
+        req_handler=list::addAll;
+        req_matcher=ViewHandlerTest::matches; // either both even or both odd
+        List<Integer> numbers=Arrays.asList(1, 3, 5, 2, 4, 6, 7, 9, 8, 10);
+        view_handler.add(numbers);
+        System.out.printf("drained: %s\n", list);
+        assert list.equals(numbers);
+    }
+
+    public void testAddListWithNullElements() {
+        List<Integer> list=new ArrayList<>();
+        req_handler=list::addAll;
+        req_matcher=ViewHandlerTest::matches; // either both even or both odd
+        List<Integer> numbers=Arrays.asList(1, null, 3, 4, null);
+        view_handler.add(numbers);
+        ArrayList<Integer> copy=new ArrayList<>(numbers);
+        copy.removeIf(Objects::isNull);
+        assert list.equals(copy);
     }
 
     public void testConcurrentAdd() throws Exception {

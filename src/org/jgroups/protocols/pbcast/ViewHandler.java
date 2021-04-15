@@ -177,11 +177,11 @@ public class ViewHandler<R> {
             log().trace("%s: queue is suspended; request %s is discarded", gms.getLocalAddress(), req);
             return false;
         }
-        String log=new Date() + ": " + req.toString();
+        String log=new Date() + ": " + req;
         count.incrementAndGet();
         lock.lock();
         try {
-            if(!requests.contains(req)) {
+            if(!requests.contains(req)) { // non-null check already performed (above)
                 requests.add(req);
                 history.add(log);
             }
@@ -204,9 +204,9 @@ public class ViewHandler<R> {
         lock.lock();
         try {
             for(R req: reqs) {
-                if(!requests.contains(req)) {
+                if(req != null && !requests.contains(req)) {
                     requests.add(req);
-                    history.add(new Date() + ": " + req.toString());
+                    history.add(new Date() + ": " + req);
                 }
             }
             return count.decrementAndGet() == 0 && !processing && setProcessing(true);
@@ -229,9 +229,9 @@ public class ViewHandler<R> {
         lock.lock();
         try {
             for(R req: reqs) {
-                if(!requests.contains(req)) {
+                if(req != null && !requests.contains(req)) {
                     requests.add(req);
-                    history.add(new Date() + ": " + req.toString());
+                    history.add(new Date() + ": " + req);
                 }
             }
             return count.decrementAndGet() == 0 && !processing && setProcessing(true);
