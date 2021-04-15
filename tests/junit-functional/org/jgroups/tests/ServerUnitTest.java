@@ -150,6 +150,7 @@ public class ServerUnitTest {
 
     // @Test(invocationCount=100)
     public void testSendToOtherGetResponse() throws Exception {
+        final byte[] data="hello world".getBytes();
         for(boolean nio : new boolean[]{false, true}) {
             try(BaseServer a=create(nio, 0);
                 BaseServer b=create(nio, 0)) {
@@ -157,7 +158,6 @@ public class ServerUnitTest {
                 Address other=b.localAddress();
                 MyReceiver r1=new MyReceiver(a, NUM, false);
                 MyReceiver r2=new MyReceiver(b, NUM, true); // send response
-                byte[] data="hello world".getBytes();
 
                 a.receiver(r1);
                 b.receiver(r2);
