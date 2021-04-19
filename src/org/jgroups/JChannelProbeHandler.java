@@ -146,6 +146,31 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
             if(key.startsWith("disable-cont")) {
                 map.put(key, enable(2, false));
             }
+
+            // everything else could be an attribute query (without prefix "jmx=") or an operation (without "op=")
+            // https://issues.redhat.com/browse/JGRP-2413
+            String protocol;
+            int index=key.indexOf('.');
+            if(index == -1)
+                protocol=key;
+            else
+                protocol=key.substring(0, index);
+
+            Protocol prot=ch.getProtocolStack().findProtocol(protocol);
+            if(prot != null) {
+                String tmp=key.substring(index+1);
+                int left=tmp.indexOf('['), right=left != -1? tmp.indexOf(']', left) : -1;
+                if(left != -1 && right != -1) { // it is most likely an operation
+                    try {
+                        return handleProbe("op=" + key);
+                    }
+                    catch(Throwable throwable) {
+                        log.error(Util.getMessage("OperationInvocationFailure"), key.substring(index + 1), throwable);
+                    }
+                }
+                else // try JMX
+                    return handleProbe("jmx=" + key);
+            }
         }
         return map;
     }
