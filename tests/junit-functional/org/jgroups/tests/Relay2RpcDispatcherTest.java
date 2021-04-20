@@ -20,6 +20,9 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -116,6 +119,12 @@ public class Relay2RpcDispatcherTest {
         Route route=getRoute(x, LON);
         System.out.println("Route at sfo to lon: " + route);
         assert route != null;
+
+        assertSiteView(a, Arrays.asList(LON, SFO));
+        assert getCurrentSites(b) == null;
+
+        assertSiteView(x, Arrays.asList(LON, SFO));
+        assert getCurrentSites(y) == null;
 
         System.out.println("B: sending message 0 to the site master of SFO");
         Address sm_sfo=new SiteMaster(SFO);
@@ -261,6 +270,19 @@ public class Relay2RpcDispatcherTest {
         return relay.getRoute(site_name);
     }
 
+    protected List<String> getCurrentSites(JChannel channel) {
+       RELAY2 relay=channel.getProtocolStack().findProtocol(RELAY2.class);
+       return relay.getCurrentSites();
+    }
+
+    protected void assertSiteView(JChannel channel, Collection<String> sitesName) {
+       List<String> sites = getCurrentSites(channel);
+       assert sites != null;
+       assert sites.size() == sitesName.size();
+       for (String site : sitesName) {
+          assert sites.contains(site);
+       }
+    }
 
     protected static class MyReceiver extends ReceiverAdapter {
         protected final List<Integer> list=new ArrayList<>(5);

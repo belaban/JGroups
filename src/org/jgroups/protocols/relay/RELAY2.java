@@ -416,6 +416,15 @@ public class RELAY2 extends Protocol {
         return tmp != null? tmp.getRoute(site_name): null;
     }
 
+    /**
+     * @return A {@link List} of sites name that are currently up or {@code null} if this node is not a Site Master (i.e.
+     * {@link #isSiteMaster()} returns false).
+     */
+    public List<String> getCurrentSites() {
+        Relayer rel = relayer;
+        return rel == null ? null : rel.getSiteNames();
+    }
+
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.SET_LOCAL_ADDRESS:
