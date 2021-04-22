@@ -292,15 +292,20 @@ public class Relay2Test {
         log.debug("A: waiting for site SFO to be UNKNOWN");
         waitUntilRoute(SFO, false, 20000, 500, a);
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 100; i++) {
             b.send(new SiteMaster(SFO), "to-sfo".getBytes(StandardCharsets.UTF_8));
         }
 
         log.debug("Sending message from A to B");
-        a.send(b.getAddress(), "to-b-2".getBytes(StandardCharsets.UTF_8));
+        for (int i = 0; i < 100; i++) {
+            a.send(b.getAddress(), ("to-b-" + i).getBytes(StandardCharsets.UTF_8));
+            Thread.sleep(0);
+        }
 
-        Message take = received.take();
-        assert !(take.src() instanceof SiteUUID) : "Address was " + take.src();
+        for (int i = 0; i < 100; i++) {
+            Message take = received.take();
+            assert !(take.src() instanceof SiteUUID) : "Address was " + take.src();
+        }
     }
 
 
