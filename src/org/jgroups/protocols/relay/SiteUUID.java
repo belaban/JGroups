@@ -61,6 +61,18 @@ public class SiteUUID extends ExtendedUUID implements SiteAddress {
         return print(false);
     }
 
+    public int hashCode() {
+        int retval=super.hashCode();
+        byte[] site=get(SITE_NAME);
+        return site != null? Arrays.hashCode(site) + retval : retval;
+    }
+
+    public boolean equals(Object obj) {
+        if(!(obj instanceof SiteUUID))
+            return false;
+        return compareTo((SiteUUID)obj) == 0;
+    }
+
     @Override
     public int compareTo(Address other) {
         if (other instanceof SiteUUID) {
