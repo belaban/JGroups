@@ -1,13 +1,12 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.protocols.relay.RELAY2;
-import org.jgroups.protocols.relay.Route;
-import org.jgroups.protocols.relay.SiteMaster;
-import org.jgroups.protocols.relay.SiteMasterPicker;
+import org.jgroups.protocols.relay.*;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
@@ -15,9 +14,12 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Various RELAY2-related tests
@@ -26,8 +28,11 @@ import java.util.List;
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class Relay2Test {
+    private static final Log log = LogFactory.getLog(Relay2Test.class);
+
     protected JChannel a, b, c;  // members in site "lon"
     protected JChannel x, y, z;  // members in site "sfo
+    protected JChannel m; // the only member in site "pek"
 
     protected static final String      BRIDGE_CLUSTER = "global";
     protected static final String      LON_CLUSTER    = "lon-cluster";
@@ -40,7 +45,7 @@ public class Relay2Test {
     }
 
 
-    @AfterMethod protected void destroy() {Util.close(z,y,x,c,b,a);}
+    @AfterMethod protected void destroy() {Util.close(m,z,y,x,c,b,a);}
 
     /**
      * Test that RELAY2 can be added to an already connected channel.
@@ -255,6 +260,49 @@ public class Relay2Test {
         assert route != null : "route is " + route + " (expected to be UP)";
     }
 
+    public void testSiteUnreachableMessageBreaksSiteUUID() throws Exception {
+        a=createNode(LON, "A", LON_CLUSTER, null);
+        b=createNode(LON, "B", LON_CLUSTER, null);
+        c=createNode(LON, "C", LON_CLUSTER, null);
+        x=createNode(SFO, "X", SFO_CLUSTER, null);
+        waitForBridgeView(2, 20000, 500, a, x);
+
+        BlockingQueue<Message> received = new LinkedBlockingDeque<>();
+        UpHandler h = new UpHandler() {
+            @Override
+            public Object up(Event evt) {
+                switch (evt.getType()) {
+                    case Event.SITE_UNREACHABLE:
+                        log.debug("Site %s is unreachable", (Object) evt.getArg());
+                }
+                return null;
+            }
+
+            @Override
+            public Object up(Message msg) {
+                log.debug("Received %s from %s\n", new String(msg.getBuffer(), StandardCharsets.UTF_8), msg.getSrc());
+                received.add(msg);
+                return null;
+            }
+        };
+        b.setUpHandler(h);
+
+        log.debug("Disconnecting X");
+        x.disconnect();
+        log.debug("A: waiting for site SFO to be UNKNOWN");
+        waitUntilRoute(SFO, false, 20000, 500, a);
+
+        for (int i = 0; i < 10; i++) {
+            b.send(new SiteMaster(SFO), "to-sfo".getBytes(StandardCharsets.UTF_8));
+        }
+
+        log.debug("Sending message from A to B");
+        a.send(b.getAddress(), "to-b-2".getBytes(StandardCharsets.UTF_8));
+
+        Message take = received.take();
+        assert !(take.src() instanceof SiteUUID) : "Address was " + take.src();
+    }
+
 
     /**
      * Cluster A,B,C in LON and X,Y,Z in SFO. A, B, X and Y are site masters (max_site_masters: 2).
@@ -324,8 +372,8 @@ public class Relay2Test {
 
     protected JChannel createNode(String site_name, String node_name, String cluster_name, int num_site_masters,
                                   String sm_picker, Receiver receiver) throws Exception {
-        JChannel ch=new JChannel(new SHARED_LOOPBACK(),
-                                 new SHARED_LOOPBACK_PING(),
+        JChannel ch=new JChannel(new UDP(),
+                                 new LOCAL_PING(),
                                  new MERGE3().setValue("max_interval", 3000).setValue("min_interval", 1000),
                                  new NAKACK2(),
                                  new UNICAST3(),

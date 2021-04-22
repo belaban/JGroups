@@ -74,6 +74,11 @@ public abstract class BaseBundler implements Bundler {
         }
         clearMessages();
         count=0;
+        try {
+            Thread.sleep(10);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @GuardedBy("lock") protected void clearMessages() {
