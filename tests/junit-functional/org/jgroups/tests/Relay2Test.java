@@ -1,23 +1,25 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.protocols.relay.RELAY2;
-import org.jgroups.protocols.relay.Route;
-import org.jgroups.protocols.relay.SiteMaster;
-import org.jgroups.protocols.relay.SiteMasterPicker;
+import org.jgroups.protocols.relay.*;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MyReceiver;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
-import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Various RELAY2-related tests
@@ -26,6 +28,8 @@ import java.util.List;
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class Relay2Test {
+    private static final Log log = LogFactory.getLog(Relay2Test.class);
+
     protected JChannel a, b, c;  // members in site "lon"
     protected JChannel x, y, z;  // members in site "sfo
 
@@ -255,6 +259,52 @@ public class Relay2Test {
         assert route != null : "route is " + route + " (expected to be UP)";
     }
 
+    /** Tests https://issues.redhat.com/browse/JGRP-2554 */
+    public void testSiteUnreachableMessageBreaksSiteUUID() throws Exception {
+        a=createNode(LON, "A", LON_CLUSTER, null);
+        b=createNode(LON, "B", LON_CLUSTER, null);
+        c=createNode(LON, "C", LON_CLUSTER, null);
+        x=createNode(SFO, "X", SFO_CLUSTER, null);
+        waitForBridgeView(2, 20000, 500, a, x);
+
+        BlockingQueue<Message> received = new LinkedBlockingDeque<>();
+        UpHandler h = new UpHandler() {
+            @Override
+            public Object up(Event evt) {
+                if(evt.getType() == Event.SITE_UNREACHABLE)
+                    log.debug("Site %s is unreachable", (Object) evt.getArg());
+                return null;
+            }
+
+            @Override
+            public Object up(Message msg) {
+                log.debug("Received %s from %s\n", new String(msg.getArray(), StandardCharsets.UTF_8), msg.getSrc());
+                received.add(msg);
+                return null;
+            }
+        };
+        b.setUpHandler(h);
+
+        log.debug("Disconnecting X");
+        x.disconnect();
+        log.debug("A: waiting for site SFO to be UNKNOWN");
+        waitUntilRoute(SFO, false, 20000, 500, a);
+
+        for (int i = 0; i < 100; i++)
+            b.send(new SiteMaster(SFO), "to-sfo".getBytes(StandardCharsets.UTF_8));
+
+        log.debug("Sending message from A to B");
+        for (int i = 0; i < 100; i++) {
+            a.send(b.getAddress(), ("to-b-" + i).getBytes(StandardCharsets.UTF_8));
+            Thread.sleep(0);
+        }
+
+        for (int i = 0; i < 100; i++) {
+            Message take = received.take();
+            assert !(take.src() instanceof SiteUUID) : "Address was " + take.src();
+        }
+    }
+
 
     /**
      * Cluster A,B,C in LON and X,Y,Z in SFO. A, B, X and Y are site masters (max_site_masters: 2).
@@ -262,7 +312,8 @@ public class Relay2Test {
      * despite using multiple site masters. JIRA: https://issues.jboss.org/browse/JGRP-2112
      */
     public void testSenderOrderWithMultipleSiteMasters() throws Exception {
-        MyReceiver rx=new MyReceiver(), ry=new MyReceiver(), rz=new MyReceiver();
+        MyReceiver<Object> rx=new MyReceiver<>().rawMsgs(true).verbose(true),
+          ry=new MyReceiver<>().rawMsgs(true).verbose(true), rz=new MyReceiver<>().rawMsgs(true).verbose(true);
         final int NUM=512;
         final String sm_picker_impl=SiteMasterPickerImpl.class.getName();
         a=createNode(LON, "A", LON_CLUSTER, 2, sm_picker_impl, null);
@@ -288,8 +339,8 @@ public class Relay2Test {
 
         boolean running=true;
         for(int i=0; running && i < 10; i++) {
-            for(MyReceiver r: Arrays.asList(rx,ry,rz)) {
-                if(r.getList().size() >= NUM) {
+            for(MyReceiver<Object> r: Arrays.asList(rx,ry,rz)) {
+                if(r.size() >= NUM) {
                     running=false;
                     break;
                 }
@@ -297,9 +348,9 @@ public class Relay2Test {
             Util.sleep(1000);
         }
 
-        System.out.printf("X: size=%d\nY: size=%d\nZ: size=%d\n", rx.getList().size(), ry.getList().size(), rz.getList().size());
-        assert rx.getList().size() == NUM || ry.getList().size() == NUM;
-        assert rz.getList().isEmpty();
+        System.out.printf("X: size=%d\nY: size=%d\nZ: size=%d\n", rx.size(), ry.size(), rz.size());
+        assert rx.size() == NUM || ry.size() == NUM;
+        assert rz.size() == 0;
     }
 
     protected static class SiteMasterPickerImpl implements SiteMasterPicker {
@@ -317,13 +368,13 @@ public class Relay2Test {
     }
 
 
-    protected JChannel createNode(String site_name, String node_name, String cluster_name,
-                                      Receiver receiver) throws Exception {
+    protected static JChannel createNode(String site_name, String node_name, String cluster_name,
+                                         Receiver receiver) throws Exception {
         return createNode(site_name, node_name, cluster_name, 1, null, receiver);
     }
 
-    protected JChannel createNode(String site_name, String node_name, String cluster_name, int num_site_masters,
-                                  String sm_picker, Receiver receiver) throws Exception {
+    protected static JChannel createNode(String site_name, String node_name, String cluster_name, int num_site_masters,
+                                         String sm_picker, Receiver receiver) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
                                  new SHARED_LOOPBACK_PING(),
                                  new MERGE3().setMaxInterval(3000).setMinInterval(1000),
@@ -341,7 +392,7 @@ public class Relay2Test {
 
 
 
-    protected RELAY2 createRELAY2(String site_name) {
+    protected static RELAY2 createRELAY2(String site_name) {
         RELAY2 relay=new RELAY2().site(site_name).enableAddressTagging(false).asyncRelayCreation(false);
 
         RelayConfig.SiteConfig lon_cfg=new RelayConfig.SiteConfig(LON),
@@ -427,19 +478,6 @@ public class Relay2Test {
     protected static Route getRoute(JChannel ch, String site_name) {
         RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
         return relay.getRoute(site_name);
-    }
-
-
-    protected static class MyReceiver implements Receiver {
-        protected final List<Integer> list=new ArrayList<>(512);
-
-        public List<Integer> getList()            {return list;}
-        public void          clear()              {list.clear();}
-
-        public void receive(Message msg) {
-            list.add(msg.getObject());
-            System.out.printf("<-- %s from %s\n", msg.getObject(), msg.getSrc());
-        }
     }
 
 }
