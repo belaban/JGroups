@@ -2753,6 +2753,9 @@ public class Util {
         return true;
     }
 
+    public static <T> String printList(Collection<T> l) {
+        return printListWithDelimiter(l, ",");
+    }
 
     public static <T> String printListWithDelimiter(Collection<T> list,String delimiter) {
         return printListWithDelimiter(list,delimiter,MAX_LIST_PRINT_SIZE,true);
@@ -3006,7 +3009,6 @@ public class Util {
         if(list == null || obj == null)
             return null;
         int size=list.size();
-
         for(int i=0; i < size; i++) {
             T tmp=list.get(i);
             if(Objects.equals(tmp, obj))
@@ -3031,6 +3033,36 @@ public class Util {
         return retval;
     }
 
+    /** Returns the element before el. If el is the first element, returns the last element. Returns null
+     * if array.length < 2 */
+    public static <T> T pickPrevious(T[] array, T el) {
+        if(array == null || el == null || array.length < 2)
+            return null;
+        for(int i=0; i < array.length; i++) {
+            if(Objects.equals(el, array[i])) {
+                int prev_index=i-1;
+                if(prev_index < 0)
+                    prev_index=array.length-1;
+                return array[prev_index];
+            }
+        }
+        return null;
+    }
+
+    public static <T> T pickPrevious(List<T> list, T el) {
+        if(list == null || el == null || list.size() < 2)
+            return null;
+        for(int i=0; i < list.size(); i++) {
+            T tmp=list.get(i);
+            if(Objects.equals(el, tmp)) {
+                int prev_index=i-1;
+                if(prev_index < 0)
+                    prev_index=list.size()-1;
+                return list.get(prev_index);
+            }
+        }
+        return null;
+    }
 
     public static byte[] generateArray(int length) {
         byte[] array=new byte[length];
@@ -3940,7 +3972,7 @@ public class Util {
     }
 
     public static ServerSocket createServerSocket(SocketFactory factory, String service_name, InetAddress bind_addr,
-                                                  int start_port, int end_port, int recv_buf_size) {
+                                                  int start_port, int end_port, int recv_buf_size) throws Exception {
         ServerSocket ret=null;
         try {
             ret=factory.createServerSocket(service_name);
@@ -3951,7 +3983,7 @@ public class Util {
         }
         catch(Exception e) {
             Util.close(ret);
-            return null;
+            throw e; // return null;
         }
     }
 

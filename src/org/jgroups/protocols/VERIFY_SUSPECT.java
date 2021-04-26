@@ -258,10 +258,11 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             return false;
         boolean added=false;
         synchronized(suspects) {
+            long target_time=getCurrentTimeMillis() + timeout;
             for(Address suspected_mbr : list) {
                 boolean found_dupe=suspects.stream().anyMatch(e -> e.suspect.equals(suspected_mbr));
                 if(!found_dupe) {
-                    suspects.add(new Entry(suspected_mbr, getCurrentTimeMillis() + timeout));
+                    suspects.add(new Entry(suspected_mbr, target_time));
                     added=true;
                 }
             }

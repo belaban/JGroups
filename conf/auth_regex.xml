@@ -14,7 +14,7 @@
     <UDP/>
     <PING/>
     <MERGE3/>
-    <FD_SOCK/>
+    <FD_SOCK2/>
     <FD_ALL3 />
     <VERIFY_SUSPECT/>
     <BARRIER />

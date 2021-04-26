@@ -99,7 +99,7 @@ public class STATE_SOCK extends StreamingStateTransfer {
     * --------------------------- Private Methods ------------------------------------------------
     */
 
-    protected StateProviderAcceptor createAcceptor() {
+    protected StateProviderAcceptor createAcceptor() throws Exception {
         StateProviderAcceptor retval=new StateProviderAcceptor(thread_pool,
                                                                Util.createServerSocket(getSocketFactory(),
                                                                                        "jgroups.streaming_state_transfer.srv_sock",
@@ -142,7 +142,7 @@ public class STATE_SOCK extends StreamingStateTransfer {
             Util.close((Socket)resource);
     }
 
-    protected void handleStateReq(Address requester) {
+    protected void handleStateReq(Address requester) throws Exception {
         if(spawner == null || !spawner.isRunning())
             spawner=createAcceptor();
         super.handleStateReq(requester);

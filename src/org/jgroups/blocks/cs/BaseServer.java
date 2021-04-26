@@ -19,6 +19,7 @@ import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class BaseServer implements Closeable, ConnectionListener {
     protected Address                         local_addr; // typically the address of the server socket or channel
     protected final List<ConnectionListener>  conn_listeners=new CopyOnWriteArrayList<>();
-    protected final Map<Address,Connection>   conns=new HashMap<>();
+    protected final Map<Address,Connection>   conns=new ConcurrentHashMap<>();
     protected final Lock                      sock_creation_lock=new ReentrantLock(true); // syncs socket establishment
     protected final ThreadFactory             factory;
     protected SocketFactory                   socket_factory=new DefaultSocketFactory();
@@ -113,12 +114,12 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
 
     @ManagedAttribute(description="Number of connections")
-    public synchronized int getNumConnections() {
+    public int getNumConnections() {
         return conns.size();
     }
 
     @ManagedAttribute(description="Number of currently open connections")
-    public synchronized int getNumOpenConnections() {
+    public int getNumOpenConnections() {
         int retval=0;
         for(Connection conn: conns.values())
             if(conn.isOpen())
@@ -146,8 +147,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         reaper=null;
 
         synchronized(this) {
-            for(Map.Entry<Address,Connection> entry: conns.entrySet())
-                Util.close(entry.getValue());
+            for(Connection c: conns.values())
+                Util.close(c);
             conns.clear();
         }
         conn_listeners.clear();
@@ -347,9 +348,27 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     }
 
     public void closeConnection(Connection conn) {
+        closeConnection(conn, true);
+    }
+
+    public void closeConnection(Connection conn, boolean notify) {
         Util.close(conn);
-        notifyConnectionClosed(conn);
+        if(notify)
+            notifyConnectionClosed(conn);
         removeConnectionIfPresent(conn != null? conn.peerAddress() : null, conn);
+    }
+
+    public boolean closeConnection(Address addr) {
+        return closeConnection(addr, true);
+    }
+
+    public boolean closeConnection(Address addr, boolean notify) {
+        Connection c;
+        if(addr != null && (c=conns.get(addr)) != null) {
+            closeConnection(c, notify);
+            return true;
+        }
+        return false;
     }
 
 
@@ -368,24 +387,24 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     }
 
 
-    public synchronized void addConnectionListener(ConnectionListener cml) {
+    public synchronized BaseServer addConnectionListener(ConnectionListener cml) {
         if(cml != null && !conn_listeners.contains(cml))
             conn_listeners.add(cml);
+        return this;
     }
 
-    public synchronized void removeConnectionListener(ConnectionListener cml) {
+    public synchronized BaseServer removeConnectionListener(ConnectionListener cml) {
         if(cml != null)
             conn_listeners.remove(cml);
+        return this;
     }
     
 
     @ManagedOperation(description="Prints all connections")
     public String printConnections() {
         StringBuilder sb=new StringBuilder("\n");
-        synchronized(this) {
-            for(Map.Entry<Address,Connection> entry: conns.entrySet())
-                sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
-        }
+        for(Map.Entry<Address,Connection> entry: conns.entrySet())
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         return sb.toString();
     }
 
@@ -458,7 +477,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     }
 
 
-    protected void sendToAll(byte[] data, int offset, int length) {
+    public void sendToAll(byte[] data, int offset, int length) {
         for(Map.Entry<Address,Connection> entry: conns.entrySet()) {
             Connection conn=entry.getValue();
             try {
@@ -473,7 +492,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     }
 
 
-    protected void sendToAll(ByteBuffer data) {
+    public void sendToAll(ByteBuffer data) {
         for(Map.Entry<Address,Connection> entry: conns.entrySet()) {
             Connection conn=entry.getValue();
             try {

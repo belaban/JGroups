@@ -57,5 +57,6 @@
     <class id="88"  name="org.jgroups.protocols.EncryptHeader"/>
     <class id="91"  name="org.jgroups.protocols.Frag3Header"/>
     <class id="92"  name="org.jgroups.protocols.DH_KEY_EXCHANGE$DhHeader"/>
+    <class id="93"  name="org.jgroups.protocols.FD_SOCK2$FdHeader"/>
 </magic-number-class-mapping>
 

@@ -45,42 +45,41 @@ public class ProcessingQueue<T> {
 
 
     protected void process() {
-        if(consumer_lock.tryLock()) {
-            try {
-                while(true) {
-                    T element=queue.poll();
-                    if(element != null && handler != null) {
-                        try {
-                            handler.handle(element);
-                        }
-                        catch(Throwable t) {
-                            t.printStackTrace(System.err);
-                        }
-                    }
-
-                    producer_lock.lock();
+        if(!consumer_lock.tryLock())
+            return;
+        try {
+            while(true) {
+                T element=queue.poll();
+                if(element != null && handler != null) {
                     try {
-                        if(count == 0 || count-1 == 0) {
-                            count=0;
-                            consumer_lock.unlock();
-                            return;
-                        }
-                        count--;
+                        handler.handle(element);
                     }
-                    finally {
-                        producer_lock.unlock();
+                    catch(Throwable t) {
+                        t.printStackTrace(System.err);
                     }
                 }
+                producer_lock.lock();
+                try {
+                    if(count == 0 || count-1 == 0) {
+                        count=0;
+                        consumer_lock.unlock();
+                        return;
+                    }
+                    count--;
+                }
+                finally {
+                    producer_lock.unlock();
+                }
             }
-            finally {
-                if(consumer_lock.isHeldByCurrentThread())
-                    consumer_lock.unlock();
-            }
+        }
+        finally {
+            if(consumer_lock.isHeldByCurrentThread())
+                consumer_lock.unlock();
         }
     }
 
 
     public interface Handler<T> {
-        void handle(T element);
+        void handle(T element) throws Exception;
     }
 }

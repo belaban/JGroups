@@ -149,9 +149,6 @@ public class SizeTest {
     public void testFdHeaders() throws Exception {
         IpAddress a1=new IpAddress("127.0.0.1", 5555);
         IpAddress a2=new IpAddress("127.0.0.1", 6666);
-        List<Address> suspects=new ArrayList<>();
-        suspects.add(a1);
-        suspects.add(a2);
 
         FD_SOCK.FdHeader sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE);
         _testSize(sockhdr);
@@ -159,33 +156,36 @@ public class SizeTest {
         sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, new IpAddress("127.0.0.1", 5555));
         _testSize(sockhdr);
 
-        Set<Address> tmp=new HashSet<>();
-        tmp.add(a1);
-        tmp.add(a2);
-        sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT).mbrs(tmp);
-        _testSize(sockhdr);
-
-
-        Map<Address,IpAddress> cache=new HashMap<>();
-        cache.put(a1, a2);
-        cache.put(a2, a1);
+        Set<Address> tmp=Set.of(a1, a2);
         sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT);
         _testSize(sockhdr);
+
+        sockhdr.mbrs(tmp);
+        _testSize(sockhdr);
+
+        FD_SOCK2.FdHeader hdr=new FD_SOCK2.FdHeader(FD_SOCK2.FdHeader.SUSPECT);
+        _testSize(hdr);
+        hdr.mbrs(tmp);
+        _testSize(hdr);
+
+        hdr=new FD_SOCK2.FdHeader(FD_SOCK2.FdHeader.CONNECT_RSP);
+        hdr.serverAddress(a1);
+        _testSize(hdr);
+
+        hdr.cluster("demo");
+        _testSize(hdr);
     }
 
 
 
-    public static void testFdSockHeaders() throws Exception {
+    public void testFdSockHeaders() throws Exception {
         FD_SOCK.FdHeader hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE);
         _testSize(hdr);
 
         hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE, new IpAddress("127.0.0.1", 4567));
         _testSize(hdr);
 
-        Set<Address> set=new HashSet<>();
-        set.add(new IpAddress(3452));
-        set.add(new IpAddress("127.0.0.1", 5000));
-
+        Set<Address> set=Set.of(new IpAddress(3452), new IpAddress("127.0.0.1", 5000));
         hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE).mbrs(set);
         _testSize(hdr);
 
@@ -360,7 +360,7 @@ public class SizeTest {
     }
 
 
-    public static void testMergeView2() throws Exception {
+    public void testMergeView2() throws Exception {
         Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B"), c=Util.createRandomAddress("C"),
           d=Util.createRandomAddress("D"), e=Util.createRandomAddress("E"), f=Util.createRandomAddress("F");
         List<Address> all=Arrays.asList(a,b,c,d,e,f);
@@ -368,18 +368,14 @@ public class SizeTest {
         View v2=View.create(d, 2, d);
         View v3=View.create(e, 3, e,f);
 
-        ArrayList<View> subgroups=new ArrayList<>();
-        subgroups.add(v1);
-        subgroups.add(v2);
-        subgroups.add(v3);
-
+        List<View> subgroups=List.of(v1,v2,v3);
         MergeView view_all=new MergeView(a, 5, all, subgroups);
         System.out.println("MergeView: " + view_all);
         _testSize(view_all);
     }
 
 
-    public static void testMergeView3() throws Exception {
+    public void testMergeView3() throws Exception {
         List<Address> m1, m2 , m3, all;
         List<View> subgroups;
         Address a,b,c,d,e,f;
@@ -392,12 +388,11 @@ public class SizeTest {
         e=new IpAddress(5000);
         f=new IpAddress(6000);
 
-        m1=new ArrayList<>(); m2=new ArrayList<>(); m3=new ArrayList<>(); all=new ArrayList<>();
+        m1=List.of(a,b,c);
+        m2=List.of(d);
+        m3=List.of(e,f);
+        all=List.of(a,b,c,d,e,f);
         subgroups=new ArrayList<>();
-        m1.add(a); m1.add(b); m1.add(c);
-        m2.add(d);
-        m3.add(e); m3.add(f);
-        all.add(a); all.add(b); all.add(c); all.add(d); all.add(e); all.add(f);
 
         v1=new View(a, 1, m1);
         v2=new MergeView(d, 2, m2, new ArrayList<>());
@@ -415,29 +410,19 @@ public class SizeTest {
 
 
 
-    public static void testMergeViewWithMergeViewsAsSubgroups() throws Exception {
+    public void testMergeViewWithMergeViewsAsSubgroups() throws Exception {
         Address[] mbrs=Util.createRandomAddresses(4);
         Address a=mbrs[0], b=mbrs[1], c=mbrs[2], d=mbrs[3];
-        View ab=new MergeView(a, 2, Arrays.asList(a,b), Arrays.asList(View.create(a, 1, a), View.create(b, 1, b)));
-        View cd=new MergeView(c, 2, Arrays.asList(c,d), Arrays.asList(View.create(c, 1, c), View.create(d, 1, d)));
-        MergeView abcd=new MergeView(a, 3, Arrays.asList(mbrs), Arrays.asList(ab, cd));
+        View ab=new MergeView(a, 2, List.of(a,b), Arrays.asList(View.create(a, 1, a), View.create(b, 1, b)));
+        View cd=new MergeView(c, 2, List.of(c,d), Arrays.asList(View.create(c, 1, c), View.create(d, 1, d)));
+        MergeView abcd=new MergeView(a, 3, List.of(mbrs), List.of(ab, cd));
         _testSize(abcd);
     }
 
 
     /** Tests a MergeView whose subgroups are *not* a subset of the members (https://issues.jboss.org/browse/JGRP-1707) */
-    public static void testMergeViewWithNonMatchingSubgroups() throws Exception {
+    public void testMergeViewWithNonMatchingSubgroups() throws Exception {
         Address[] mbrs=Util.createRandomAddresses(6);
-
-        /*Address[] mbrs=new Address[6];
-        mbrs[0]=Util.createRandomAddress("A");
-        mbrs[1]=Util.createRandomAddress("B");
-        mbrs[2]=Util.createRandomAddress("C");
-        mbrs[3]=PayloadUUID.randomUUID("D", "**");
-        mbrs[4]=Util.createRandomAddress("E");
-        mbrs[5]=Util.createRandomAddress("F");*/
-
-
         Address a=mbrs[0],b=mbrs[1],c=mbrs[2],d=mbrs[3],e=mbrs[4],f=mbrs[5];
         List<Address> abc=Arrays.asList(a,b,c);     // A,B,C
         List<Address> def=Arrays.asList(d,e,f);  // D,E,F
@@ -452,13 +437,12 @@ public class SizeTest {
         mv=new MergeView(a, 5, full, subviews);
         tmp_view=(MergeView)_testSize(mv);
         assert mv.deepEquals(tmp_view) : "views don't match: original=" + mv + ", new=" + tmp_view;
-
     }
 
 
 
 
-    public static void testLargeMergeView() throws Exception {
+    public void testLargeMergeView() throws Exception {
         int NUM=100;
         Address[] members=Util.createRandomAddresses(NUM, true);
         Address[] first=Arrays.copyOf(members,NUM / 2);
@@ -471,7 +455,7 @@ public class SizeTest {
     }
 
 
-    public static void testMergeHeader() throws Exception {
+    public void testMergeHeader() throws Exception {
         MERGE3.MergeHeader hdr=new MERGE3.MergeHeader();
         _testSize(hdr);
         ViewId view_id=new ViewId(Util.createRandomAddress("A"), 22);
@@ -509,7 +493,7 @@ public class SizeTest {
         _testSize(rsp);
     }
 
-    public static void testLargeJoinRsp() throws Exception {
+    public void testLargeJoinRsp() throws Exception {
         int NUM=1000;
         Address[] members=new Address[NUM];
         for(int i=0; i < members.length; i++)
@@ -528,24 +512,19 @@ public class SizeTest {
     }
 
 
-    public static void testGmsHeader() throws Exception {
+    public void testGmsHeader() throws Exception {
         Address addr=UUID.randomUUID();
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, addr);
         _testSize(hdr);
 
-        List<Address> members=new ArrayList<>();
-        members.add(addr);
-        members.add(addr);
         hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP);
         _testSize(hdr);
 
-        Collection<Address> mbrs=new ArrayList<>();
-        Collections.addAll(mbrs, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
         hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
         _testSize(hdr);
 
-        Address[]     addresses=Util.createRandomAddresses(20);
-        View          view=View.create(addresses[0], 1, addresses);
+        Address[] addresses=Util.createRandomAddresses(20);
+        View      view=View.create(addresses[0], 1, addresses);
         MutableDigest digest=new MutableDigest(view.getMembersRaw());
         for(int i=0; i < addresses.length; i++) {
             long hd=i + 10000;

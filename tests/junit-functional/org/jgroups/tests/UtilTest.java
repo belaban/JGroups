@@ -1047,6 +1047,80 @@ public class UtilTest {
         assert result.contains(1) && result.contains(2) && result.contains(3);
     }
 
+    public void testPickPrevious() {
+        Integer[] arr={1,2,3,4,5};
+        Map<Integer,Integer> map=Map.of(3, 2, 1, 5, 5, 4);
+        for(Map.Entry<Integer,Integer> e: map.entrySet()) {
+            int num=Util.pickPrevious(arr, e.getKey()), expected=e.getValue();
+            assert num == expected : String.format("input=%d, expected=%d, actual=%d", e.getKey(), num, expected);
+        }
+
+        arr[2]=null;
+        Integer num=Util.pickPrevious(arr, 5);
+        assert num == 4;
+
+        num=Util.pickPrevious(arr, 4);
+        assert num == null;
+
+        arr=null;
+        num=Util.pickPrevious(arr, 4);
+        assert num == null;
+        num=Util.pickPrevious(arr, null);
+        assert num == null;
+
+        arr=new Integer[]{1};
+        num=Util.pickPrevious(arr, 4);
+        assert num == null;
+
+        arr=new Integer[]{2,3,4,5};
+        num=Util.pickPrevious(arr, 1);
+        assert num == null;
+
+        arr=new Integer[]{1,2};
+        num=Util.pickPrevious(arr, 1);
+        assert num == 2;
+        num=Util.pickPrevious(arr, 2);
+        assert num == 1;
+    }
+
+
+    public void testPickPreviousWithList() {
+        List<Integer> arr=List.of(1,2,3,4,5);
+        Map<Integer,Integer> map=Map.of(3, 2, 1, 5, 5, 4);
+        for(Map.Entry<Integer,Integer> e: map.entrySet()) {
+            int num=Util.pickPrevious(arr, e.getKey()), expected=e.getValue();
+            assert num == expected : String.format("input=%d, expected=%d, actual=%d", e.getKey(), num, expected);
+        }
+
+        arr=new ArrayList<>(arr);
+        arr.set(2, null);
+        Integer num=Util.pickPrevious(arr, 5);
+        assert num == 4;
+
+        num=Util.pickPrevious(arr, 4);
+        assert num == null;
+
+        arr=null;
+        num=Util.pickPrevious(arr, 4);
+        assert num == null;
+        num=Util.pickPrevious(arr, null);
+        assert num == null;
+
+        arr=List.of(1);
+        num=Util.pickPrevious(arr, 4);
+        assert num == null;
+
+        arr=List.of(2,3,4,5);
+        num=Util.pickPrevious(arr, 1);
+        assert num == null;
+
+        arr=List.of(1,2);
+        num=Util.pickPrevious(arr, 1);
+        assert num == 2;
+        num=Util.pickPrevious(arr, 2);
+        assert num == 1;
+    }
+
     public void testPickNextWithSingleElementList() {
         List<Integer> list=new ArrayList<>();
         Integer next=Util.pickNext(list, 1);

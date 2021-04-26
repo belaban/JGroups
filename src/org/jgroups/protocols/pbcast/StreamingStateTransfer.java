@@ -387,11 +387,11 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
         state_requesters.retainAll(new_members); // remove non members from list of members requesting state
     }
 
-    public void handle(Address state_requester) {
+    public void handle(Address state_requester) throws Exception {
         handleStateReq(state_requester);
     }
 
-    protected void handleStateReq(Address requester) {
+    protected void handleStateReq(Address requester) throws Exception {
         if(requester == null)
             return;
 

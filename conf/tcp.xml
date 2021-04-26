@@ -24,7 +24,7 @@
              port_range="${jgroups.tcp.port_range:2}"/>
     <MERGE3  min_interval="10000"
              max_interval="30000"/>
-    <FD_SOCK/>
+    <FD_SOCK2/>
     <FD_ALL3 timeout="40000" interval="5000" />
     <VERIFY_SUSPECT timeout="1500"  />
     <BARRIER />

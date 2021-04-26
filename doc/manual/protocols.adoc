@@ -1162,6 +1162,36 @@ nodes immediately, and `FD_ALL` (with a higher timeout) detects hung members or 
 ${FD_SOCK}
 
 
+
+[[FD_SOCK2]]
+==== FD_SOCK2
+FD_SOCK is quite old (from 2001) and has not seen much change since its inception. Its code is complicated / brittle,
+e.g. on startup a member has to find the ping address of its neighbor via an additional round of messages (`WHO_HAS_SOCK`,
+`I_HAVE_SOCK`), and every member maintains a cache of members and their ping addresses
+(including state transfers and updates, `GET_CACHE`, `GET_CHACHE_RSP`).
+
+`FD_SOCK2` is therefore a rewrite of FD_SOCK, 20 years after FD_SOCK was written! :-)
+
+The core component is an NioServer, acting both as a server and a client.
+
+The server listens on a port defined as the bind port (in the transport) plus an offset and a port range. Example: if
+the bind port in the transport is `7800`, then (with `offset=100` and `port_range=5`) the server will try to listen on
+the first free port in range `[7900..7904]`.
+
+The client will determine the address of the member to connect to (ping_dest) and send it a `CONNECT` message. When it
+receives a `CONNECT-RSP` from ping-dest, it considers ping-dest to be healthy.
+
+When the client receives a connectionClosed(ping-dest) callback (emitted by the NioServer), it considers `ping-dest`
+to have crashed and emits a `SUSPECT` event.
+
+On a view change that changes `ping-dest` from `P` to `Q`, `P` will not get suspected, but the connection to it will be
+closed
+
+
+
+${FD_SOCK2}
+
+
 [[FD_HOST]]
 ==== FD_HOST
 

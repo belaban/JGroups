@@ -20,7 +20,7 @@
     <PING />
     <MERGE3 max_interval="30000"
             min_interval="10000"/>
-    <FD_SOCK/>
+    <FD_SOCK2/>
     <FD_ALL3/>
     <VERIFY_SUSPECT timeout="1500"  />
     <pbcast.NAKACK2 xmit_interval="500"/>

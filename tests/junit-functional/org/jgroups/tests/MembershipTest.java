@@ -26,11 +26,11 @@ public class MembershipTest {
 
     @BeforeMethod
     void setUp() {
-        a1=Util.createRandomAddress();
-        a2=Util.createRandomAddress();
+        a1=Util.createRandomAddress("A1");
+        a2=Util.createRandomAddress("A2");
         a3=a2;
-        a4=Util.createRandomAddress();
-        a5=Util.createRandomAddress();
+        a4=Util.createRandomAddress("A4");
+        a5=Util.createRandomAddress("A5");
         m1=new Membership();
     }
 
@@ -113,7 +113,68 @@ public class MembershipTest {
         assert v.size() == 2;
     }
 
+    public void testGetFirst() {
+        Address next=m1.getFirst();
+        assert next == null;
+        next=m1.getFirst();
+        assert next == null;
+        m1.add(a1);
+        next=m1.getFirst();
+        assert next == a1;
+    }
 
+    public void testIsCoord() {
+        boolean coord=m1.isCoord(a1);
+        assert !coord;
+        coord=m1.isCoord(null);
+        assert !coord;
+        m1.add(a1);
+        coord=m1.isCoord(a1);
+        assert coord;
+        coord=m1.isCoord(a2);
+        assert !coord;
+        m1.add(a2);
+        coord=m1.isCoord(a2);
+        assert !coord;
+    }
+
+    public void testGetNext() {
+        Address next=m1.getNext(null);
+        assert next == null;
+        next=m1.getNext(a1);
+        assert next == null;
+        m1.add(a1);
+        next=m1.getNext(null);
+        assert next == null;
+        next=m1.getNext(a2);
+        assert next == null;
+        next=m1.getNext(a1);
+        assert next == null;
+        m1.add(a2);
+        next=m1.getNext(a1);
+        assert next == a2;
+        next=m1.getNext(a2);
+        assert next == a1;
+    }
+
+    public void testGetPrevious() {
+        Address next=m1.getPrevious(null);
+        assert next == null;
+        next=m1.getPrevious(a1);
+        assert next == null;
+        m1.add(a1);
+        next=m1.getPrevious(null);
+        assert next == null;
+        next=m1.getPrevious(a2);
+        assert next == null;
+        next=m1.getPrevious(a1);
+        assert next == null;
+        m1.add(a2);
+        next=m1.getPrevious(a1);
+        assert next == a2;
+        next=m1.getPrevious(a2);
+        assert next == a1;
+    }
 
     public void testSet() {
         v1=Arrays.asList(a1, a2);

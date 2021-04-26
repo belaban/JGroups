@@ -149,7 +149,8 @@ public class NioConnection extends Connection {
             if(!server.deferClientBinding())
                 this.channel.bind(new InetSocketAddress(server.clientBindAddress(), server.clientBindPort()));
             this.key=server.register(channel, SelectionKey.OP_CONNECT | SelectionKey.OP_READ, this);
-            if(Util.connect(channel, destAddr) && channel.finishConnect()) {
+            boolean success=Util.connect(channel, destAddr);
+            if(success || channel.finishConnect()) {
                 clearSelectionKey(SelectionKey.OP_CONNECT);
                 this.connected=channel.isConnected();
             }

@@ -102,7 +102,8 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
             gms.getViewHandler().add(leavingOrSuspectedMembers);
         }
         else
-            log.warn("%s: I'm not the coordinator (or next-in-line); dropping LEAVE request", gms.local_addr);
+            log.warn("%s: I'm not the coordinator (or next-in-line); dropping LEAVE request by %s",
+                     gms.local_addr, leaving_mbrs);
     }
 
 

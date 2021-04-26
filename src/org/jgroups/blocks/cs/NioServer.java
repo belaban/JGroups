@@ -5,10 +5,7 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.*;
 
 import java.net.InetAddress;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 
 /**
  * Server for sending and receiving messages via NIO channels. Uses only a single thread to accept, connect, write and
@@ -64,6 +61,7 @@ public class NioServer extends NioBaseServer {
         local_addr=localAddress(bind_addr, channel.socket().getLocalPort(), external_addr, external_port);
     }
 
+    public ServerSocketChannel getChannel() {return channel;}
 
 
     @Override

@@ -1,0 +1,102 @@
+
+
+FD_SOCK2
+========
+
+Author: Bela Ban
+Date: April 2021
+JIRA: https://issues.redhat.com/browse/JGRP-2521
+
+
+FD_SOCK is quite old (from 2001) and has not seen much change since its inception. Its code is complicated / brittle,
+e.g. on startup a member has to find the ping address of its neighbor via an additional round of messages (WHO_HAS_SOCK,
+I_HAVE_SOCK), and every member maintains a cache of members and their ping addresses
+(including state transfers and updates, GET_CACHE, GET_CHACHE_RSP).
+
+FD_SOCK2 is therefore a rewrite of FD_SOCK, 20 years after FD_SOCK was written! :-)
+
+The core component is an NioServer, acting both as a server and a client.
+
+The server listens on a port defined as the bind port (in the transport) plus an offset and a port range. Example: if
+the bind port in the transport is 7800, then (with offset=100 and port_range=5) the server will try to listen on the
+first free port in range [7900..7904].
+
+The client will determine the address of the member to connect to (ping_dest) and send it a CONNECT message. When it
+receives a CONNECT-RSP from ping-dest, it considers ping-dest to be healthy.
+
+When the client receives a connectionClosed(ping-dest) callback (emitted by the NioServer), it considers ping-dest
+to have crashed and emits a SUSPECT event.
+
+On a view change that changes ping-dest from P to Q, P will not get suspected, but the connection to it will be
+closed
+
+
+Design
+-------
+
+Fields
+------
+* ping-dest: the current neighbor to which we connect
+* offset: the offset from the actual bind port
+* port-range: the range in which to search for free ports ([bind-port+offset..bind-port+offset+port_range]
+* srv: NioServer
+* client-state: connected/disconnected
+
+
+
+On start():
+-----------
+* Create the NioServer and start it
+
+On stop():
+----------
+* Stop the NioServer
+
+
+On viewChanged(v):
+------------------
+* If the view has 2 members or more:
+  * Determine ping-dest (next member in the view)
+  * If ping-dest has changed:
+    * Connect(ping-dest)
+      * On exception: suspect ping-dest
+
+
+
+Connect(ping-dest):
+-------------------
+* dests: IP-address:port tuples in range [ping-dest+offset..ping-dest+offset+port-range]
+* For dest in dests:
+  * Send CONNECT to dest
+    * If exception -> continue
+    * Else
+      * Wait for client-state == CONNECTED
+      * If CONNECTED -> return
+      * Else -> close connection to dest
+* If no valid connection -> throw exception
+
+
+
+On reception of CONNECT:
+------------------------
+* Send CONNECT-RSP(my local-address, my clustername) to sender
+
+
+On reception of CONNECT-RSP(sender,clustername):
+------------------------------------------------
+* If CONNECT-RSP.cluster-name == my cluster-name and CONNECT-RSP.sender == local address:
+  * Set client-state to CONNECTED
+* Else -> log warning
+
+
+
+On connectionClosed(member) callback:
+-------------------------------------
+* Emit suspect(member)
+* Close connection to member
+* Set ping-dest to null, set client-state to DISCONNECTED
+
+
+
+
+

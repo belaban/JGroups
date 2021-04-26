@@ -3,6 +3,7 @@ package org.jgroups.demos;
 import org.jgroups.*;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class Chat implements Receiver {
@@ -50,6 +51,9 @@ public class Chat implements Receiver {
                 }
                 Message msg=new ObjectMessage(null, line);
                 channel.send(msg);
+            }
+            catch(IOException io_ex) {
+                break;
             }
             catch(Exception ex) {
                 ex.printStackTrace();

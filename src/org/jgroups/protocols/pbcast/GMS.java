@@ -831,9 +831,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 int index=0;
                 for(Address mbr: suspects)
                     suspect_reqs[index++]=new Request(Request.SUSPECT, mbr);
-                view_handler.add(suspect_reqs);
                 ack_collector.suspect(suspects);
                 merge_ack_collector.suspect(suspects);
+                view_handler.add(suspect_reqs);
                 return retval;
 
             case Event.UNSUSPECT:

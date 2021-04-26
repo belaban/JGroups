@@ -7,7 +7,7 @@ import org.jgroups.util.Util;
 import java.util.*;
 
 /**
- * Represents a membership of a cluster group. Class Membership is not exposed to clients and is
+ * Represents a membership of a cluster group. Membership is not exposed to clients and is
  * used by JGroups internally. The membership object holds a list of Address objects that are in the
  * same membership. Each unique address can only exist once.
  * 
@@ -40,7 +40,6 @@ public class Membership {
         if(initial_members != null)
             add(initial_members);
     }
-
 
 
 
@@ -208,11 +207,8 @@ public class Membership {
     }
 
 
-
-
     /**
      * Returns a copy of this membership
-     *
      * @return an exact copy of this membership
      */
     public Membership copy() {
@@ -220,30 +216,70 @@ public class Membership {
     }
 
 
-   /**
-    * Returns the number of addresses in this membership
-    * 
-    * @return the number of addresses in this membership
-    */
+   /** Returns the number of addresses in this membership */
     public int size() {
         synchronized(members) {
             return members.size();
         }
     }
 
+    public boolean isEmpty() {
+        return size() == 0;
+    }
+
+
    /**
     * Returns the component at the specified index
     * 
-    * @param index
-    *           - 0..size()-1
-    * @throws ArrayIndexOutOfBoundsException
-    *            - if the index is negative or not less than the current size of this Membership
-    *            object.
+    * @param index 0..size()-1
+    * @throws ArrayIndexOutOfBoundsException If the index is negative or not less than the current size of this object
     */
     public Address elementAt(int index) {
         synchronized(members) {
             return members.get(index);
         }
+    }
+
+    public Address getFirst() {
+        synchronized(members) {
+            return members.isEmpty()? null : members.get(0);
+        }
+    }
+
+    public boolean isCoord(Address mbr) {
+        synchronized(members) {
+            return mbr != null && Objects.equals(mbr, getFirst());
+        }
+    }
+
+    /**
+     * Returns the members to the left of mbr
+     * @param mbr The member whose neighbor to the left should be returned
+     * @return The neighbor to the left, or null if mbr is null, or the size is less than 2.
+     */
+    public Address getPrevious(Address mbr) {
+        if(mbr == null)
+            return null;
+        Address next;
+        synchronized(members) {
+            next=Util.pickPrevious(members, mbr);
+        }
+        return Objects.equals(mbr, next) ? null : next;
+    }
+
+    /**
+     * Returns the members next to mbr.
+     * @param mbr The member whose neighbor to the right should be returned
+     * @return The neighbor to the right, or null if mbr is null, or the size is less than 2.
+     */
+    public Address getNext(Address mbr) {
+        if(mbr == null)
+            return null;
+        Address next;
+        synchronized(members) {
+            next=Util.pickNext(members, mbr);
+        }
+        return Objects.equals(mbr, next) ? null : next;
     }
 
 

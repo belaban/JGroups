@@ -7,7 +7,7 @@
     <PING/>
     <MERGE3/>
     <FD_ALL3 timeout="8000" interval="3000"/>
-    <FD_SOCK/>
+    <FD_SOCK2/>
     <VERIFY_SUSPECT/>
 
     <!-- Symmetric encryption with a keystore -->
