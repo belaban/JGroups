@@ -131,6 +131,9 @@ public class TCP_NIO2 extends BasicTCP {
             server.connExpireTimeout(conn_expire_time).reaperInterval(reaper_interval);
         }
 
+        if(max_length > 0)
+            server.setMaxLength(max_length);
+
         super.start();
     }
     
