@@ -872,13 +872,13 @@ public class ProtocolStack extends Protocol {
      */
     public void startStack() throws Exception {
         if(!stopped) return;
+        stopped=false;
         List<Protocol> protocols=getProtocols();
         Collections.reverse(protocols);
         for(Protocol prot: protocols)
             prot.start();
         TP transport=getTransport();
         transport.registerProbeHandler(props_handler);
-        stopped=false;
     }
 
 

@@ -62,6 +62,14 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     @Property(description="Max time (ms) to wait for a connect attempt",type=AttributeType.TIME)
     protected int                            connect_timeout=1000;
 
+    @Property(description="The lowest port the FD_SOCK server can listen on. Needed when wrapping around, looking " +
+      "for ports. See https://issues.redhat.com/browse/JGRP-2560 for details")
+    protected int                            min_port=1024;
+
+    @Property(description="The highest port the FD_SOCK server can listen on. Needed when wrapping around, looking " +
+      "for ports. See https://issues.redhat.com/browse/JGRP-2560 for details.")
+    protected int                            max_port=0xFFFF+1; // 65536
+
     @ManagedAttribute(description="Number of suspect events emitted")
     protected int                            num_suspect_events;
 
@@ -138,20 +146,21 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
 
     public void start() throws Exception {
         super.start();
-        timer=getTransport().getTimer();
+        TP transport=getTransport();
+        timer=transport.getTimer();
         if(timer == null)
             throw new Exception("timer is null");
-        int bind_port=computeBindPort();
-        ThreadFactory thread_factory=new DefaultThreadFactory("nio", false);
-        srv=new NioServer(thread_factory, new DefaultSocketFactory(), bind_addr, bind_port, bind_port+port_range,
-                          external_addr, external_port, 0);
+        PhysicalAddress addr=transport.getPhysicalAddress();
+        int actual_port=((IpAddress)addr).getPort();
+        int[] bind_ports=computeBindPorts(actual_port);
+        srv=createServer(bind_ports);
         srv.receiver(this).clientBindPort(client_bind_port).usePeerConnections(true).addConnectionListener(this);
         srv.start();
         log.info("server listening on %s", bind_addr != null? srv.getChannel().getLocalAddress() : "*." + getActualBindPort());
     }
 
     public void stop() {
-        srv.stop();
+        Util.close(srv); // calls stop()
         pingable_mbrs.clear();
         suspected_mbrs.clear();
         bcast_task.clear();
@@ -289,6 +298,21 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         }
     }
 
+    protected NioServer createServer(int[] bind_ports) {
+        DefaultSocketFactory socket_factory=new DefaultSocketFactory();
+        ThreadFactory thread_factory=new DefaultThreadFactory("nio", false);
+        for(int bind_port: bind_ports) {
+            try {
+                return new NioServer(thread_factory, socket_factory, bind_addr, bind_port, bind_port,
+                                     external_addr, external_port, 0);
+            }
+            catch(Exception ex) {
+            }
+        }
+        throw new IllegalStateException(String.format("%s: failed to find an available port in ports %s",
+                                                      local_addr, Arrays.toString(bind_ports)));
+    }
+
     protected void closeConnectionToPingDest() {
         if(!ping_dest.connected())
             return;
@@ -404,10 +428,10 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     /** Returns the physical addresses for a in range [a+offset..a+offset+port_range */
     protected List<IpAddress> getPhysicalAddresses(Address a) {
         IpAddress pa=(IpAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, a));
-        int p=pa.getPort() + offset;
         InetAddress addr=pa.getIpAddress();
-        List<Integer> ports=IntStream.range(p, p + port_range).boxed().collect(Collectors.toList());
-        return ports.stream().map(port -> new IpAddress(addr, port)).collect(Collectors.toList());
+        int actual_port=pa.getPort();
+        int[] bind_ports=computeBindPorts(actual_port);
+        return IntStream.of(bind_ports).boxed().map(p -> new IpAddress(addr, p)).collect(Collectors.toList());
     }
 
     public static ByteArray messageToBuffer(Message msg) throws Exception {
@@ -416,11 +440,15 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         return out.getBuffer();
     }
 
-    protected int computeBindPort() {
-        TP transport=getTransport();
-        PhysicalAddress addr=transport.getPhysicalAddress();
-        int actual_port=((IpAddress)addr).getPort();
-        return actual_port + offset;
+    protected int[] computeBindPorts(int actual_port) {
+        int[] bind_ports=new int[port_range];
+        for(int i=0; i < port_range; i++) {
+            int port=(actual_port+offset+i) % max_port;
+            if(port < min_port)
+                port=port+min_port;
+            bind_ports[i]=port;
+        }
+        return bind_ports;
     }
 
 

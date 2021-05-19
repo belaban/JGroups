@@ -1,6 +1,7 @@
 package org.jgroups.demos;
 
 import org.jgroups.*;
+import org.jgroups.util.Util;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -29,16 +30,22 @@ public class Chat implements Receiver {
     }
 
     private void start(String props, String name, boolean nohup) throws Exception {
-        channel=new JChannel(props);
-        if(name != null)
-            channel.name(name);
-        channel.setReceiver(this);
-        channel.connect(CLUSTER);
+        try {
+            channel=new JChannel(props).name(name);
+            channel.setReceiver(this);
+            channel.connect(CLUSTER);
+        }
+        catch(Exception ex) {
+            Util.close(channel);
+            throw ex;
+        }
+
         if(!nohup) {
             eventLoop();
             channel.close();
         }
     }
+
 
     private void eventLoop() {
         BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
@@ -52,7 +59,7 @@ public class Chat implements Receiver {
                 Message msg=new ObjectMessage(null, line);
                 channel.send(msg);
             }
-            catch(IOException io_ex) {
+            catch(IOException | IllegalArgumentException io_ex) {
                 break;
             }
             catch(Exception ex) {
@@ -84,10 +91,13 @@ public class Chat implements Receiver {
             return;
         }
 
-        new Chat().start(props, name, nohup);
+        Chat ch=new Chat();
+        ch.start(props, name, nohup);
     }
 
     protected static void help() {
         System.out.println("Chat [-props XML config] [-name name] [-nohup]");
     }
+
+
 }
