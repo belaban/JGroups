@@ -1,9 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.DISCARD;
-import org.jgroups.protocols.MERGE3;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.ProtocolStack;
@@ -101,6 +99,10 @@ public class MergeTest extends ChannelTestBase {
                 nakack.logDiscardMessages(false);
 
             stack.removeProtocol(MERGE3.class);
+
+            FD_SOCK2 fd_sock=stack.findProtocol(FD_SOCK2.class);
+            if(fd_sock != null)
+                fd_sock.setPortRange(5);
 
             tmp.connect(cluster_name);
             retval[i]=tmp;
