@@ -126,6 +126,9 @@ public class TCP extends BasicTCP {
             srv.connExpireTimeout(conn_expire_time).reaperInterval(reaper_interval);
         }
 
+        if(max_length > 0)
+            srv.setMaxLength(max_length);
+
         // we first start threads in TP (http://jira.jboss.com/jira/browse/JGRP-626)
         super.start();
     }

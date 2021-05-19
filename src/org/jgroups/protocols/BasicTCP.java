@@ -41,6 +41,10 @@ public abstract class BasicTCP extends TP implements Receiver {
     
     @Property(description="Max time to block on reading of peer address")
     protected int         peer_addr_read_timeout=1000; // max time to block on reading of peer address
+
+    @Property(description="The max number of bytes a message can have. If greater, an exception will be " +
+      "thrown. 0 disables this")
+    protected int         max_length;
     
     @Property(description="Should TCP no delay flag be turned on")
     protected boolean     tcp_nodelay=true; // should be true by default as message bundling makes delaying packets moot
@@ -72,13 +76,45 @@ public abstract class BasicTCP extends TP implements Receiver {
         super();        
     }
 
-    public boolean  supportsMulticasting()           {return false;}
-    public long     getReaperInterval()              {return reaper_interval;}
-    public BasicTCP setReaperInterval(long interval) {this.reaper_interval=interval; return this;}
-    public BasicTCP reaperInterval(long interval)    {this.reaper_interval=interval; return this;}
-    public long     getConnExpireTime()              {return conn_expire_time;}
-    public BasicTCP setConnExpireTime(long time)     {this.conn_expire_time=time; return this;}
-    public BasicTCP connExpireTime(long time)        {this.conn_expire_time=time; return this;}
+    public boolean     supportsMulticasting()           {return false;}
+
+    public long        getReaperInterval()              {return reaper_interval;}
+    public BasicTCP    setReaperInterval(long interval) {this.reaper_interval=interval; return this;}
+    public BasicTCP    reaperInterval(long interval)    {this.reaper_interval=interval; return this;}
+
+    public long        getConnExpireTime()              {return conn_expire_time;}
+    public BasicTCP    setConnExpireTime(long time)     {this.conn_expire_time=time; return this;}
+
+    public int         getRecvBufSize()                 {return recv_buf_size;}
+    public BasicTCP    setRecvBufSize(int r)            {this.recv_buf_size=r; return this;}
+
+    public int         getSendBufSize()                 {return send_buf_size;}
+    public BasicTCP    setSendBufSize(int s)            {this.send_buf_size=s; return this;}
+
+    public int         getSockConnTimeout()             {return sock_conn_timeout;}
+    public BasicTCP    setSockConnTimeout(int s)        {this.sock_conn_timeout=s; return this;}
+
+    public int         getMaxLength()                   {return max_length;}
+    public BasicTCP    setMaxLength(int len)            {max_length=len; return this;}
+
+    public int         getPeerAddrReadTimeout()         {return peer_addr_read_timeout;}
+    public BasicTCP    setPeerAddrReadTimeout(int p)    {this.peer_addr_read_timeout=p; return this;}
+
+    public boolean     tcpNodelay()                     {return tcp_nodelay;}
+    public BasicTCP    tcpNodelay(boolean t)            {this.tcp_nodelay=t; return this;}
+
+    public int         getLinger()                      {return linger;}
+    public BasicTCP    setLinger(int l)                 {this.linger=l; return this;}
+
+    public InetAddress getClientBindAddr()              {return client_bind_addr;}
+    public BasicTCP    setClientBindAddr(InetAddress c) {this.client_bind_addr=c; return this;}
+
+    public int         getClientBindPort()              {return client_bind_port;}
+    public BasicTCP    setClientBindPort(int c)         {this.client_bind_port=c; return this;}
+
+    public boolean     deferClientBindAddr()            {return defer_client_bind_addr;}
+    public BasicTCP    deferClientBindAddr(boolean d)   {this.defer_client_bind_addr=d; return this;}
+
 
 
     public void init() throws Exception {
