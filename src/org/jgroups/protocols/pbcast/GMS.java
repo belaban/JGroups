@@ -103,17 +103,13 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     @Property(description="When true, left and joined members are printed in addition to the view")
     protected boolean                   print_view_details=true;
-    /* --------------------------------------------- JMX  ---------------------------------------------- */
 
+    @ManagedAttribute(description="The members of the current view")
+    protected final Membership          members=new Membership();     // real membership
 
+    @ManagedAttribute(description="The number of view installed in this member")
     protected int                       num_views;
-
-    /** Stores the last 20 views */
-    protected BoundedList<String>       prev_views;
-
-
-    /* --------------------------------------------- Fields ------------------------------------------------ */
-
+    protected BoundedList<String>       prev_views;  // History of the last N views
     protected GmsImpl                   impl;
     protected final Lock                impl_lock=new ReentrantLock(); // synchronizes event entry into impl
     protected final Map<String,GmsImpl> impls=new HashMap<>(3);
@@ -122,10 +118,13 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     protected final Leaver              leaver=new Leaver(this); // handles a member leaving the cluster
 
+    @ManagedAttribute(description="The address of this member")
     protected Address                   local_addr;
-    protected final Membership          members=new Membership();     // real membership
 
-    protected final Membership          tmp_members=new Membership(); // base for computing next view
+    protected final Membership          tmp_members=new Membership();      // base for computing next view
+
+    @ManagedAttribute(description="The set of currently suspected members")
+    protected final Membership          suspected_mbrs=new Membership();   // cached suspects for ack_collector
 
     // computes new views and merge views
     protected MembershipChangePolicy    membership_change_policy=new DefaultMembershipPolicy();
@@ -165,6 +164,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public GMS() {
     }
 
+    public Address getLocalAddress()                   {return local_addr;}
     public long    getJoinTimeout()                    {return join_timeout;}
     public GMS     setJoinTimeout(long t)              {join_timeout=t; return this;}
     public long    getLeaveTimeout()                   {return leave_timeout;}
@@ -200,14 +200,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     @ManagedAttribute
     public String getView()                  {return view != null? view.toString() : "null";}
-    @ManagedAttribute
-    public int getNumberOfViews()            {return num_views;}
-    @ManagedAttribute
-    public String getLocalAddress()          {return local_addr != null? local_addr.toString() : "null";}
-    @ManagedAttribute
-    public String getMembers()               {return members.toString();}
-    @ManagedAttribute
-    public int  getNumMembers()              {return members.size();}
 
 
     @ManagedAttribute(description="impl")
@@ -562,7 +554,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         if(new_view instanceof MergeView) // https://issues.jboss.org/browse/JGRP-1484
             view_change_msg.setFlag(Message.Flag.NO_TOTAL_ORDER);
 
-        ack_collector.reset(expected_acks, local_addr); // exclude self, as we'll install the view locally
+        ack_collector.reset(expected_acks, local_addr) // exclude self, as we'll install the view locally
+          .suspect(suspected_mbrs.getMembers()); // exclude cached suspects (https://issues.redhat.com/browse/JGRP-2556)
         long start=System.currentTimeMillis();
         impl.handleViewChange(full_view, digest); // install the view locally first
         log.trace("%s: mcasting view %s", local_addr, new_view);
@@ -666,6 +659,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
                 tmp_members.add(joining);    // add members that haven't yet shown up in the membership
                 tmp_members.remove(leaving); // remove members that haven't yet been removed from the membership
+                suspected_mbrs.retainAll(mbrs);
 
                 // add to prev_members
                 mbrs.stream().filter(addr -> !prev_members.contains(addr)).forEach(addr -> prev_members.add(addr));
@@ -719,9 +713,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     protected Address determineCoordinator() {
-        synchronized(members) {
-            return members.size() > 0? members.elementAt(0) : null;
-        }
+        return members.getFirst();
     }
 
     /** Returns the second-in-line */
@@ -831,12 +823,15 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 int index=0;
                 for(Address mbr: suspects)
                     suspect_reqs[index++]=new Request(Request.SUSPECT, mbr);
-                ack_collector.suspect(suspects);
+                suspected_mbrs.add(suspects);
+                ack_collector.suspect(suspected_mbrs.getMembers());
                 merge_ack_collector.suspect(suspects);
                 view_handler.add(suspect_reqs);
                 return retval;
 
             case Event.UNSUSPECT:
+                Address tmp=evt.getArg();
+                suspected_mbrs.remove(tmp);
                 impl.unsuspect(evt.getArg());
                 return null;                              // discard
 
