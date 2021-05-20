@@ -15,13 +15,10 @@ public class AckCollector {
     /** List of members from whom we haven't received an ACK yet */
     protected final List<Address>     missing_acks;
     protected final Promise<Boolean>  all_acks_received=new Promise<>();
-    protected final List<Address>     suspected_mbrs=new ArrayList<>(5);
-    protected int                     expected_acks;
 
 
     public AckCollector() {
         missing_acks=new ArrayList<>();
-        expected_acks=0;
     }
 
     public AckCollector(Collection<Address> members) {
@@ -36,14 +33,12 @@ public class AckCollector {
 
 
     public synchronized void reset(Collection<Address> members) {
-        suspected_mbrs.clear();
         missing_acks.clear();
         addAll(members);
         all_acks_received.reset();
     }
 
     public synchronized AckCollector reset(Collection<Address> expected_acks, Collection<Address> exclude) {
-        suspected_mbrs.clear();
         missing_acks.clear();
         addAll(expected_acks, exclude);
         all_acks_received.reset();
@@ -51,7 +46,6 @@ public class AckCollector {
     }
 
     public synchronized AckCollector reset(Collection<Address> expected_acks, Address ... exclude) {
-        suspected_mbrs.clear();
         missing_acks.clear();
         addAll(expected_acks, exclude);
         all_acks_received.reset();
@@ -59,9 +53,7 @@ public class AckCollector {
     }
 
     public synchronized void destroy() {
-        suspected_mbrs.clear();
         missing_acks.clear();
-        expected_acks=0;
         all_acks_received.setResult(null);
     }
 
@@ -70,7 +62,7 @@ public class AckCollector {
     }
 
     public synchronized int expectedAcks() {
-        return expected_acks;
+        return missing_acks.size();
     }
 
     public synchronized void ack(Address member) {
@@ -92,27 +84,16 @@ public class AckCollector {
         }
     }
 
-    public synchronized void suspect(Address member) {
-        if(member == null) return;
-        if(!suspected_mbrs.contains(member))
-            suspected_mbrs.add(member);
-        ack(member);
+    public void suspect(Address member) {
+        ack(member); // checks for null member
     }
 
-    public synchronized void suspect(Address ... members) {
-        for(Address member: members) {
-            if(!suspected_mbrs.contains(member))
-                suspected_mbrs.add(member);
-        }
+    public void suspect(Address ... members) {
         ack(members);
     }
 
 
-    public synchronized void suspect(Collection<Address> members) {
-        for(Address member: members) {
-            if(!suspected_mbrs.contains(member))
-                suspected_mbrs.add(member);
-        }
+    public void suspect(Collection<Address> members) {
         ack(members);
     }
 
@@ -120,7 +101,6 @@ public class AckCollector {
         if(members == null) return false;
         boolean retval=false;
         synchronized(this) {
-            suspected_mbrs.retainAll(members);
             if((retval=missing_acks.retainAll(members)) && missing_acks.isEmpty())
                 all_acks_received.setResult(Boolean.TRUE);
         }
@@ -142,16 +122,13 @@ public class AckCollector {
     }
 
     public String toString() {
-        return suspected_mbrs.isEmpty() ? printMissing() : printMissing() + " (suspected: " + printSuspected() + ")";
+        return printMissing();
     }
 
     public synchronized String printMissing() {
         return Util.printListWithDelimiter(missing_acks, ", ");
     }
 
-    public synchronized String printSuspected() {
-        return Util.printListWithDelimiter(suspected_mbrs, ", ");
-    }
 
     protected synchronized void addAll(Address ... members) {
         if(members == null)
@@ -159,31 +136,25 @@ public class AckCollector {
         for(Address member: members)
             if(member != null && !missing_acks.contains(member))
                 missing_acks.add(member);
-        expected_acks=missing_acks.size();
     }
 
     protected synchronized void addAll(Collection<Address> members) {
         if(members == null)
             return;
         members.stream().filter(member -> member != null && !missing_acks.contains(member)).forEach(missing_acks::add);
-        expected_acks=missing_acks.size();
     }
 
     protected synchronized void addAll(Collection<Address> members, Collection<Address> exclude) {
         if(members == null)
             return;
-        members.stream()
-          .filter(member -> member != null && !missing_acks.contains(member) && (exclude != null && !exclude.contains(member)))
+        members.stream().filter(m -> m != null && !missing_acks.contains(m) && (exclude != null && !exclude.contains(m)))
           .forEach(missing_acks::add);
-        expected_acks=missing_acks.size();
     }
 
     protected synchronized void addAll(Collection<Address> members, Address ... exclude) {
         if(members == null)
             return;
-        members.stream()
-          .filter(member -> member != null && !missing_acks.contains(member) && (exclude != null && !Util.contains(member, exclude)))
+        members.stream().filter(m -> m != null && !missing_acks.contains(m) && (exclude != null && !Util.contains(m, exclude)))
           .forEach(missing_acks::add);
-        expected_acks=missing_acks.size();
     }
 }
