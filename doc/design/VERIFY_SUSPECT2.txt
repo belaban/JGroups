@@ -1,0 +1,53 @@
+
+VERIFY_SUSPECT2
+===============
+Author: Bela Ban
+Date:   June 2021
+JIRA:   https://issues.jboss.org/browse/JGRP-2558
+
+
+Issue
+-----
+
+If we suspect members X and Y a few milliseconds apart and add them to VERIFY_SUSPECT, the polling thread will dequeue
+them in 2 separate steps and send them up to GMS to install new views V1 (V0 -X) and V2 (V1 -Y).
+
+The view installation of V1 will run into a timeout (view_ack_collection_timeout), as we won't get an ack from Y. This
+delays view installation triggered by members whichn crashed a few milliseconds apart.
+
+
+Goal
+----
+
+Deliver suspect events for members which crashed almost at the same time, together in a single suspect event. In the
+above example, this would install only a single view (excluding X and Y).
+
+Instead of suspect(X) followed by suspect(Y), we'd have suspect(X,Y).
+
+
+Design
+-------
+
+All suspect events are added as elements to a duplicate-less FIFO queue. Each element consists of the
+suspected member and a timestamp (in ms).
+
+A task T is run every 100 milliseconds (configurable).
+
+T removes all members from the queue that are older than 100ms and passes up a SUSPECT event.
+Consider this example:
+
+queue: [X:1, Y:30, Z:99]
+
+This means that X was added 1 ms after the last execution of T, Z 99 ms after. If we immediately sent a suspect(X,Y,Z)
+up the stack, then the effective waiting time for X would have been 99 ms, but we'd only have waited 1 ms for Z.
+
+This is not good, as the verification time for a suspect might take a few ms (sending of are-you-dead, waiting for
+im-alive response).
+
+At time 100, the elements in the queue are 99, 70 and 1 ms old, respectively. This means that none of the elements
+generate SUSPECT events at time 100. Next time, at time 200, the elements will be 199 (X), 170 (Y) and 101 (Z) ms old,
+therefore a SUSPECT(X,Y,Z) event will be created and sent up the stack.
+
+When a member Y is unsuspected (up(Event.UNSUSPECT), Y is removed from both the queue.
+
+When a new view V is received, we remove all members from the queue which are not in V.

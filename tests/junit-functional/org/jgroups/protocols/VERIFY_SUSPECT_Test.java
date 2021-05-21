@@ -97,7 +97,7 @@ public class VERIFY_SUSPECT_Test {
 
 
     /**
-     * {A,B,C,D,E}: at time T, {B,C} are suspected, then at time T+100 {D,E}. This results in 2 views V2={A,D,E}
+     * {A,B,C,D,E}: at time T, {B,C} are suspected, then at time T+500 {D,E}. This results in 2 views V2={A,D,E}
      * and V3={A}. V2 will run into GMS.view_ack_collection_timeout, as acks from D and E are missing.
      * <br/>
      * Issue: https://issues.redhat.com/browse/JGRP-2556
@@ -109,18 +109,19 @@ public class VERIFY_SUSPECT_Test {
                 channels[i]=new JChannel(Util.getTestStack()).name(Character.toString(('A' + i)));
                 GMS gms=channels[i].getProtocolStack().findProtocol(GMS.class);
                 gms.printLocalAddress(false);
-                if(i == 0) { // only add VERIFY_SUSPECT to A
+                if(i == 0) { // only add VERIFY_SUSPECT2 to A
                     ProtocolStack stack=channels[i].getProtocolStack();
-                    VERIFY_SUSPECT ver=new VERIFY_SUSPECT().setTimeout(1000);
+                    VERIFY_SUSPECT2 ver=new VERIFY_SUSPECT2().setTimeout(1000);
                     stack.insertProtocol(ver, ProtocolStack.Position.ABOVE, Discovery.class);
+                    ver.init();
+                    ver.start();
                     gms=stack.findProtocol(GMS.class);
                     gms.setViewAckCollectionTimeout(VIEW_ACK_COLLECTION_TIMEOUT);
                 }
                 channels[i].connect(VERIFY_SUSPECT_Test.class.getSimpleName());
             }
             Util.waitUntilAllChannelsHaveSameView(10000, 500, channels);
-            System.out.printf("-- Created channels %s\n", Stream.of(channels).map(JChannel::getAddress)
-              .collect(Collectors.toList()));
+            System.out.printf("-- Channels: %s\n", Stream.of(channels).map(JChannel::getAddress).collect(Collectors.toList()));
 
             Address[] addrs=new Address[channels.length];
             for(int i=0; i < channels.length; i++)
@@ -139,7 +140,7 @@ public class VERIFY_SUSPECT_Test {
             TP transport=channels[0].getProtocolStack().getTransport();
             // Inject SUSPECT(B,C) and SUSPECT(D,E) in 2 separate threads, spaced apart by a few ms:
             Suspecter s1=new Suspecter(List.of(addrs[1], addrs[2]), 0, transport),
-              s2=new Suspecter(List.of(addrs[3], addrs[4]), 100, transport);
+              s2=new Suspecter(List.of(addrs[3], addrs[4]), 500, transport);
             s1.setName("suspecter-1");
             s2.setName("suspecter-2");
             long start_time=System.currentTimeMillis();

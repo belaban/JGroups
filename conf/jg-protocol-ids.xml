@@ -61,6 +61,8 @@
     <class id="69" name="org.jgroups.protocols.FRAG4"/>
     <class id="70" name="org.jgroups.protocols.FD_ALL3"/>
     <class id="71" name="org.jgroups.protocols.FD_SOCK2"/>
+    <class id="72" name="org.jgroups.protocols.VERIFY_SUSPECT2"/>
+
 
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->

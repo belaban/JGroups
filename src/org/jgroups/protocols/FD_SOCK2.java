@@ -269,7 +269,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
                     ping_dest.clientState(State.CONNECTED).setConnectResult(true);
                 }
                 else {
-                    log.warn("%s: addresses don't match: my ping-dest=%s, server's address=%s",
+                    log.trace("%s: addresses don't match: my ping-dest=%s, server's address=%s",
                              local_addr, ping_dest.dest(), hdr.srv);
                     ping_dest.setConnectResult(false);
                 }

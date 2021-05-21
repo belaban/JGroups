@@ -62,8 +62,10 @@ public class Membership {
     * returns true then the member will not be added to the membership
     */
     public Membership add(Address new_member) {
+        if(new_member == null)
+            return this;
         synchronized(members) {
-            if(new_member != null && !members.contains(new_member)) {
+            if(!members.contains(new_member)) {
                 members.add(new_member);
             }
         }
@@ -116,6 +118,12 @@ public class Membership {
                 members.removeAll(v);
             }
         }
+        return this;
+    }
+
+    public Membership removeAll(Membership m) {
+        // throw new UnsupportedOperationException("implement!");
+        // todo: implement and provide unit test
         return this;
     }
 

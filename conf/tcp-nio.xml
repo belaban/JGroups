@@ -21,7 +21,7 @@
              max_interval="30000"/>
     <FD_SOCK2/>
     <FD_ALL3 timeout="30000" />
-    <VERIFY_SUSPECT timeout="1500"  />
+    <VERIFY_SUSPECT2 timeout="1500"  />
     <BARRIER />
     <pbcast.NAKACK2 use_mcast_xmit="false"/>
     <UNICAST3 />
