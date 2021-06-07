@@ -560,10 +560,10 @@ There is still a case which can end up with a zombie file that's never removed: 
 it is killed via `kill -9`. In this case, file `A.list` will never get cleaned up and subsequent joiners will ask
 `A` to join, up to `GMS.max_join_attempts` times.
 
-Zombie cleanup can be solved by setting `remove_all_files_on_view_change` to true. In this case, a coordinator
+Zombie cleanup can be solved by setting `remove_all_data_on_view_change` to true. In this case, a coordinator
 removes _all files_ on a view change that has members leaving or changes the coordinator.
 
-NOTE: Setting `remove_old_coords_on_view_change` or `remove_all_files_on_view_change` to true generates more traffic
+NOTE: Setting `remove_old_coords_on_view_change` or `remove_all_data_on_view_change` to true generates more traffic
 to the file system or cloud store. If members are always shut down gracefully, or never killed via `kill -9`, then
 it is recommended to set both attributes to false.
 
