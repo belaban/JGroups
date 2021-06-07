@@ -371,6 +371,13 @@
       <copy todir="${compile.dir}/schema">
           <fileset dir="${conf.dir}" includes="*.xsd"/>
       </copy>
+
+        <copy todir="${compile.dir}/schema">
+            <fileset dir="${compile.dir}/schema">
+                <include name="jgroups*.xsd"/>
+            </fileset>
+            <globmapper from="jgroups*.xsd" to="jgroups.xsd"/>
+        </copy>
     </target>
 
     <target name="clean"
