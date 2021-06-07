@@ -1271,6 +1271,12 @@ The protocol works as follows: it catches SUSPECT events traveling up the stack.
 ${VERIFY_SUSPECT}
 
 
+==== VERIFY_SUSPECT2
+This is a refactored and less complex version of VERIFY_SUSPECT. See https://issues.redhat.com/browse/JGRP-2558 for
+details.
+
+${VERIFY_SUSPECT2}
+
 
 [[ReliableMessageTransmission]]
 
