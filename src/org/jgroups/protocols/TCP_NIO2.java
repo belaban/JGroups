@@ -93,7 +93,7 @@ public class TCP_NIO2 extends BasicTCP {
             }
             catch(ClosedChannelException | CancelledKeyException ignored) {}
             catch(Throwable ex) {
-                log.warn("%s: failed sending message to %s: %s", local_addr, dest, ex);
+                log.trace("%s: failed sending message to %s: %s", local_addr, dest, ex);
             }
         }
     }
