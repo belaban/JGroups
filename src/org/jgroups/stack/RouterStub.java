@@ -9,6 +9,7 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.PingData;
 import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.ByteArrayDataOutputStream;
+import org.jgroups.util.SocketFactory;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -51,25 +52,27 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
      * @param l The {@link org.jgroups.stack.RouterStub.CloseListener}
      */
     public RouterStub(InetAddress bind_addr, int bind_port, InetAddress router_host, int router_port,
-                      boolean use_nio, CloseListener l) {
+                      boolean use_nio, CloseListener l, SocketFactory socketFactory) {
         local=new IpAddress(bind_addr, bind_port);
         this.remote=new IpAddress(router_host, router_port);
         this.use_nio=use_nio;
         this.close_listener=l;
         client=use_nio? new NioClient(bind_addr, bind_port, router_host, router_port)
           : new TcpClient(bind_addr, bind_port, router_host, router_port);
+        if (socketFactory!=null) client.socketFactory(socketFactory);
         client.addConnectionListener(this);
         client.receiver(this);
         client.socketConnectionTimeout(sock_conn_timeout).tcpNodelay(tcp_nodelay);
     }
 
 
-    public RouterStub(IpAddress local, IpAddress remote, boolean use_nio, CloseListener l) {
+    public RouterStub(IpAddress local, IpAddress remote, boolean use_nio, CloseListener l, SocketFactory socketFactory) {
         this.local=local;
         this.remote=remote;
         this.use_nio=use_nio;
         this.close_listener=l;
         client=use_nio? new NioClient(local, remote) : new TcpClient(local, remote);
+        if (socketFactory!=null) client.socketFactory(socketFactory);
         client.receiver(this);
         client.addConnectionListener(this);
         client.socketConnectionTimeout(sock_conn_timeout).tcpNodelay(tcp_nodelay);

@@ -17,10 +17,11 @@
         <dependency org="org.jboss.byteman"        name="byteman-submit"          rev="4.+"/>
         <dependency org="org.apache.logging.log4j" name="log4j-api"               rev="2.+"/>
         <dependency org="org.apache.logging.log4j" name="log4j-core"              rev="2.+"/>
-        <dependency org="org.wildfly.openssl"      name="wildfly-openssl"         rev="1.0.+"/>
         <dependency org="org.slf4j"                name="slf4j-api"               rev="1.7+"/>
         <dependency org="org.testng"               name="testng"                  rev="6.14.+"/>
         <dependency org="com.beust"                name="jcommander"              rev="1.+"/>
+        <dependency org="org.wildfly.security"     name="wildfly-elytron"         rev="1.16.+" />
+        <dependency org="org.wildfly.common"       name="wildfly-common"          rev="1.5.+" />
         <!--dependency org="org.sonatype.nexus.ant"   name="nexus-staging-ant-tasks" rev="1.6.3"/-->
     </dependencies>
 

@@ -6,6 +6,8 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLSocket;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
@@ -99,6 +101,9 @@ public class TcpConnection extends Connection {
             connected=sock.isConnected();
             if(send_local_addr)
                 sendLocalAddress(server.localAddress());
+            else if (sock instanceof SSLSocket) {
+                ((SSLSocket) sock).startHandshake();
+            }
         }
         catch(Exception t) {
             Util.close(this.sock);
@@ -306,7 +311,12 @@ public class TcpConnection extends Connection {
                 ; // regular use case when a peer closes its connection - we don't want to log this as exception
             }
             catch(Exception e) {
-                server.log.warn("failed handling message", e);
+                //noinspection StatementWithEmptyBody
+                if (e instanceof SSLException && e.getMessage().contains("Socket closed")) {
+                    // regular use case when a peer closes its connection - we don't want to log this as exception
+                }
+                else
+                    server.log.warn("failed handling message", e);
             }
             finally {
                 server.notifyConnectionClosed(TcpConnection.this);
