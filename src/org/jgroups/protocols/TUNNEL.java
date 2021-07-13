@@ -164,7 +164,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                     stubManager.destroyStubs();
                 PhysicalAddress physical_addr=getPhysicalAddressFromCache(local);
                 String logical_name=org.jgroups.util.NameCache.get(local);
-                stubManager = new RouterStubManager(this,group,local, logical_name, physical_addr, getReconnectInterval()).useNio(this.use_nio);
+                stubManager = new RouterStubManager(this,group,local, logical_name, physical_addr, getReconnectInterval()).useNio(this.use_nio).socketFactory(getSocketFactory());
                 for(InetSocketAddress gr : gossip_routers) {
                     try {
                         stubManager.createAndRegisterStub(new IpAddress(bind_addr, bind_port), new IpAddress(gr.getAddress(), gr.getPort()))

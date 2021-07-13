@@ -20,6 +20,7 @@ import org.jgroups.stack.ProtocolStack;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
+
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.management.*;
@@ -3188,6 +3189,30 @@ public class Util {
         }
     }
 
+    static ClassLoader[] getClassLoaders(ClassLoader appClassLoader) {
+        return new ClassLoader[]{
+              appClassLoader,   // User defined classes
+              Util.class.getClassLoader(),           // JGroups classes (not always on TCCL [modular env])
+              ClassLoader.getSystemClassLoader(),    // Used when load time instrumentation is in effect
+              Thread.currentThread().getContextClassLoader() //Used by jboss-as stuff
+        };
+    }
+
+    public static InputStream getResourceAsStream(String resourcePath, ClassLoader userClassLoader) {
+        if (resourcePath.startsWith("/")) {
+            resourcePath = resourcePath.substring(1);
+        }
+        InputStream is = null;
+        for (ClassLoader cl : getClassLoaders(userClassLoader)) {
+            if (cl != null) {
+                is = cl.getResourceAsStream(resourcePath);
+                if (is != null) {
+                    break;
+                }
+            }
+        }
+        return is;
+    }
 
     public static InputStream getResourceAsStream(String name,Class clazz) {
         ClassLoader loader;
@@ -3647,13 +3672,9 @@ public class Util {
     }
 
     public static ServerSocket createServerSocket(SocketFactory factory, String service_name, InetAddress bind_addr, int start_port) {
-        ServerSocket ret=null;
         try {
-            ret=factory.createServerSocket(service_name);
-            Util.bind(ret, bind_addr, start_port, start_port+1000, 50);
-            return ret;
-        }
-        catch(Exception e) {
+            return createServerSocket(factory, service_name, bind_addr, start_port, start_port+1000);
+        } catch (Exception e) {
             return null;
         }
     }
@@ -3666,11 +3687,9 @@ public class Util {
 
         while(true) {
             try {
-                if(srv_sock != null);
+                if(srv_sock != null)
                     Util.close(srv_sock);
-                srv_sock=factory.createServerSocket(service_name);
-                InetSocketAddress sock_addr=new InetSocketAddress(bind_addr, start_port);
-                srv_sock.bind(sock_addr);
+                srv_sock=factory.createServerSocket(service_name, start_port, 0, bind_addr);
                 return srv_sock;
             }
             catch(SocketException bind_ex) {

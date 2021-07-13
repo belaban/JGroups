@@ -9,6 +9,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Runner;
+import org.jgroups.util.SslContextFactory;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
@@ -88,6 +89,12 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
       "rogue clients to fetch the secret group key (e.g. via man-in-the-middle attacks)")
     protected boolean         require_client_authentication=true;
 
+    @Property(description="The SSL protocol to use. Defaults to TLSv1.2.")
+    protected String         ssl_protocol="TLSv1.2";
+
+    @Property(description="The SSL security provider. Defaults to null, which will use the default JDK provider.")
+    protected String         ssl_provider=null;
+
     @Property(description="Timeout (in ms) for a socket read. This applies for example to the initial SSL handshake, " +
       "e.g. if the client connects to a non-JGroups service accidentally running on the same port")
     protected int             socket_timeout=1000;
@@ -124,6 +131,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     public SSL_KEY_EXCHANGE setSecretKeyAlgorithm(String a)                {this.secret_key_algorithm=a; return this;}
     public boolean          getRequireClientAuthentication()               {return require_client_authentication;}
     public SSL_KEY_EXCHANGE setRequireClientAuthentication(boolean b)      {this.require_client_authentication=b; return this;}
+    public SSL_KEY_EXCHANGE setSslProtocol(String protocol)                {this.ssl_protocol=protocol; return this;}
     public int              getSocketTimeout()                             {return socket_timeout;}
     public SSL_KEY_EXCHANGE setSocketTimeout(int timeout)                  {this.socket_timeout=timeout; return this;}
     public String           getSessionVerifierClass()                      {return session_verifier_class;}
@@ -400,20 +408,12 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected SSLContext getContext() throws Exception {
         if(this.client_ssl_ctx != null)
             return this.client_ssl_ctx;
-        // Create key manager
-        KeyManagerFactory keyManagerFactory=KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(key_store, keystore_password.toCharArray());
-        KeyManager[] km=keyManagerFactory.getKeyManagers();
-
-        // Create trust manager
-        TrustManagerFactory trustManagerFactory=TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        trustManagerFactory.init(key_store);
-        TrustManager[] tm=trustManagerFactory.getTrustManagers();
-
-        // Initialize SSLContext
-        SSLContext sslContext=SSLContext.getInstance("TLSv1");
-        sslContext.init(km, tm, null);
-        return this.client_ssl_ctx=sslContext;
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory
+              .sslProvider(ssl_provider).sslProtocol(ssl_protocol)
+              .keyStore(key_store).keyStoreFileName(keystore_name).keyStorePassword(keystore_password).keyStoreType(keystore_type)
+              .trustStore(key_store).trustStoreFileName(keystore_name).trustStorePassword(keystore_password).trustStoreType(keystore_type);
+        return this.client_ssl_ctx=sslContextFactory.getContext();
     }
 }
 

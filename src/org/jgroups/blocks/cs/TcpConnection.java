@@ -14,6 +14,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLSocket;
+
 /**
  * Blocking IO (BIO) connection. Starts 1 reader thread for the peer socket and blocks until data is available.
  * Calls {@link TcpServer#receive(Address,byte[],int,int)} when data has been received.
@@ -99,6 +102,9 @@ public class TcpConnection extends Connection {
             connected=sock.isConnected();
             if(send_local_addr)
                 sendLocalAddress(server.localAddress());
+            else if (sock instanceof SSLSocket) {
+                ((SSLSocket) sock).startHandshake();
+            }
         }
         catch(Exception t) {
             Util.close(this.sock);
@@ -306,7 +312,12 @@ public class TcpConnection extends Connection {
                 ; // regular use case when a peer closes its connection - we don't want to log this as exception
             }
             catch(Exception e) {
-                server.log.warn("failed handling message", e);
+                //noinspection StatementWithEmptyBody
+                if (e instanceof SSLException && e.getMessage().contains("Socket closed")) {
+                    // regular use case when a peer closes its connection - we don't want to log this as exception
+                } else {
+                    server.log.warn("failed handling message", e);
+                }
             }
             finally {
                 server.notifyConnectionClosed(TcpConnection.this);
