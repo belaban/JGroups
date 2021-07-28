@@ -119,7 +119,7 @@ public class MPerf implements Receiver {
     protected void startTest() throws Exception {
         results.reset(getSenders());
         send(null, null, MPerfHeader.START_SENDING, Message.Flag.OOB);
-        results.waitForAllResponses(time * 1_000 * 2);
+        results.waitForAllResponses(time * 1_000L * 2);
         displayResults();
     }
 
