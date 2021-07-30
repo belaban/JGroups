@@ -36,7 +36,7 @@ public class XMLSchemaGenerator {
 
     protected static final String PROT_PACKAGE="org.jgroups.protocols";
 
-    protected static final String[] PACKAGES={"", "pbcast", "tom", "relay", "rules", "dns"};
+    protected static final String[] PACKAGES={"", "pbcast", "tom", "relay", "rules", "dns", "kubernetes"};
 
     static {
         System.setProperty("java.awt.headless", "true");
