@@ -114,8 +114,8 @@ public class Util {
 
     // Fibers (project Loom - Java 16,17)
     private static final Class<?>             OF_VIRTUAL_CLASS=getOfVirtualClass();  // Java 17
-    private static final MethodHandle         OF_VIRTUAL=getOfVirtualHandle();       // Java 17
     private static final MethodHandles.Lookup LOOKUP=MethodHandles.publicLookup();
+    private static final MethodHandle         OF_VIRTUAL=getOfVirtualHandle();       // Java 17
     private static final MethodHandle         CREATE_FIBER=getCreateFiberHandle();
     private static final MethodHandle         EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY=getNewVirtualThreadFactoryHandle();
 
