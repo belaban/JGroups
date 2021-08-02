@@ -4,16 +4,16 @@ import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.util.Bits;
-import org.jgroups.util.ResponseCollector;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,17 +44,23 @@ public class MPerf implements Receiver {
     protected final Log                       log=LogFactory.getLog(getClass());
     protected boolean                         looping=true;
     protected final ResponseCollector<Result> results=new ResponseCollector<>();
+    protected ThreadFactory                   thread_factory;
     protected static final short              ID=ClassConfigurator.getProtocolId(MPerf.class);
 
 
 
-    public void start(String props, String name) throws Exception {
+    public void start(String props, String name, boolean use_fibers) throws Exception {
         StringBuilder sb=new StringBuilder();
         sb.append("\n\n----------------------- MPerf -----------------------\n");
         sb.append("Date: ").append(new Date()).append('\n');
         sb.append("Run by: ").append(System.getProperty("user.name")).append("\n");
         sb.append("JGroups version: ").append(Version.description).append('\n');
         System.out.println(sb);
+
+        thread_factory=new DefaultThreadFactory("invoker", false, true)
+          .useFibers(use_fibers);
+        if(use_fibers && Util.fibersAvailable())
+            System.out.println("-- using fibers instead of threads");
 
         channel=new JChannel(props).setName(name).setReceiver(this)
           .connect("mperf");
@@ -294,15 +300,15 @@ public class MPerf implements Receiver {
 
     
     protected Result sendMessages() {
-        final Sender[]       senders=new Sender[num_threads];
+        final Thread[]       senders=new Thread[num_threads];
         final CountDownLatch latch=new CountDownLatch(1);
         final byte[]         payload=new byte[msg_size];
 
         total_received_msgs.reset();
         final AtomicBoolean running=new AtomicBoolean(true);
         for(int i=0; i < num_threads; i++) {
-            senders[i]=new Sender(latch, running, payload);
-            senders[i].setName("sender-" + i);
+            Sender sender=new Sender(latch, running, payload);
+            senders[i]=thread_factory.newThread(sender, "sender-" + i);
             senders[i].start();
         }
         System.out.printf("-- running test for %d seconds with %d sender threads\n", time, num_threads);
@@ -315,7 +321,7 @@ public class MPerf implements Receiver {
             System.out.printf("%d: %s\n", i, printAverage(start));
         }
         running.set(false);
-        for(Sender s: senders) {
+        for(Thread s: senders) {
             try {
                 s.join();
             }
@@ -343,7 +349,7 @@ public class MPerf implements Receiver {
                              msgs, Util.printBytes(msgs * size), time, msgs_sec, Util.printBytes(throughput));
     }
     
-    protected class Sender extends Thread {
+    protected class Sender implements Runnable {
         protected final CountDownLatch latch;
         protected final AtomicBoolean  running;
         protected final byte[]         payload;
@@ -534,7 +540,7 @@ public class MPerf implements Receiver {
 
     public static void main(String[] args) {
         String props=null, name=null;
-        boolean run_event_loop=true;
+        boolean run_event_loop=true, use_fibers=true;
 
         for(int i=0; i < args.length; i++) {
             if("-props".equals(args[i])) {
@@ -549,13 +555,17 @@ public class MPerf implements Receiver {
                 run_event_loop=false;
                 continue;
             }
-            System.out.println("MPerf [-props <stack config>] [-name <logical name>] [-nohup]");
+            if("-use_fibers".equals(args[i])) {
+                use_fibers=Boolean.parseBoolean(args[++i]);
+                continue;
+            }
+            System.out.println("MPerf [-props <stack config>] [-name <logical name>] [-nohup] [-use_fibers true|false]");
             return;
         }
 
         final MPerf test=new MPerf();
         try {
-            test.start(props, name);
+            test.start(props, name, use_fibers);
             if(run_event_loop)
                 test.eventLoop();
             else {
