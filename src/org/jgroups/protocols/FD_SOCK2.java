@@ -300,7 +300,8 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
 
     protected NioServer createServer(int[] bind_ports) {
         DefaultSocketFactory socket_factory=new DefaultSocketFactory();
-        ThreadFactory thread_factory=new DefaultThreadFactory("nio", false);
+        DefaultThreadFactory thread_factory=new DefaultThreadFactory("nio", false);
+        thread_factory.useFibers(getTransport().useFibers());
         for(int bind_port: bind_ports) {
             try {
                 return new NioServer(thread_factory, socket_factory, bind_addr, bind_port, bind_port,
