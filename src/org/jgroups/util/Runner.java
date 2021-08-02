@@ -42,7 +42,8 @@ public class Runner implements Runnable, Closeable {
         if(thread == null || !thread.isAlive()) {
             String name=thread_name != null? thread_name : "runner";
             thread=factory != null? factory.newThread(this, name) : new Thread(this, name);
-            thread.setDaemon(daemon);
+            if(thread.getClass() == Thread.class)
+                thread.setDaemon(daemon);
             running=true;
             thread.start();
         }
