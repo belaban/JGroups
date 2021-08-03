@@ -6,126 +6,124 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.text.NumberFormat;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Tool to measure TCP throughput, similar to iperf
  * @author Bela Ban
  */
 public class JPerf {
-    protected InetAddress local_addr, remote_addr;
-    protected int         local_port, remote_port;
-    protected int         num, size=1000, incr=1000;
-    static  NumberFormat  f;
+    protected int              size=1000;
+    protected static final int STATS_INTERVAL=6000;
 
-    static {
-        f=NumberFormat.getNumberInstance();
-        f.setGroupingUsed(false);
-        f.setMaximumFractionDigits(2);
-    }
-
-
-    private void start(boolean sender, int num, int size, String local_addr, int local_port,
-                       String remote_addr, int remote_port, int receivebuf, int sendbuf) throws IOException {
-        this.num=num;
+    private void start(boolean sender, int size, String bind_addr, String host, int port,
+                       int receivebuf, int sendbuf) throws IOException {
         this.size=size;
-        this.local_addr=InetAddress.getByName(local_addr);
-        this.local_port=local_port;
-        this.remote_addr=InetAddress.getByName(remote_addr);
-        this.remote_port=remote_port;
-
-        incr=num / 10;
 
         if(sender) {
-            System.out.println("-- creating socket to " + this.remote_addr + ":" + this.remote_port);
-            Socket sock=new Socket(this.remote_addr, remote_port);
-            sock.setReceiveBufferSize(receivebuf);
-            sock.setSendBufferSize(sendbuf);
-            DataOutputStream out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
+            System.out.println("-- creating socket to " + host + ":" + port);
+            Socket sock=new Socket(host, port);
+            if(receivebuf > 0)
+                sock.setReceiveBufferSize(receivebuf);
+            if(sendbuf > 0)
+                sock.setSendBufferSize(sendbuf);
+            OutputStream out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream(), 65000));
             byte[] buf=new byte[size];
-            int cnt=1;
-            System.out.println("-- sending " + num + " messages");
-            for(int i=0; i < num; i++) {
+
+            LongAdder sent=new LongAdder();
+            Runnable stats=new Stats(sent, true, size);
+            Thread stats_thread=new Thread(stats, "sender-stats");
+            stats_thread.start();
+            for(;;) {
                 out.write(buf, 0, buf.length);
-                out.flush();
-                if(cnt % incr == 0)
-                    System.out.println("-- sent " + cnt + " messages");
-                cnt++;
+                sent.increment();
             }
         }
         else {
-            ServerSocket srv_sock=new ServerSocket(local_port, 10, this.local_addr);
-            System.out.println("-- waiting for " + num + " messages on " + srv_sock.getLocalSocketAddress());
+            InetAddress bind=InetAddress.getByName(bind_addr);
+            ServerSocket srv_sock=new ServerSocket(port, 1, bind);
+            if(receivebuf > 0)
+                srv_sock.setReceiveBufferSize(receivebuf); // needs to be set before accept, so the client sock has the same recvbuf!
+            System.out.printf("-- listening on %s\n", srv_sock.getLocalSocketAddress());
             Socket client_sock=srv_sock.accept();
-            client_sock.setReceiveBufferSize(receivebuf);
-            client_sock.setSendBufferSize(sendbuf);
-            System.out.println("-- accepted connection from " + client_sock.getRemoteSocketAddress());
+            if(receivebuf > 0)
+                client_sock.setReceiveBufferSize(receivebuf);
+            if(sendbuf > 0)
+                client_sock.setSendBufferSize(sendbuf);
+            System.out.printf("-- accepted connection from %s\n", client_sock.getRemoteSocketAddress());
             DataInputStream in=new DataInputStream(new BufferedInputStream(client_sock.getInputStream()));
             byte[] buf=new byte[size];
-            int counter=0;
-            long received_bytes=0;
-            long start=0;
-            while(counter < num) {
+            LongAdder received=new LongAdder();
+            Runnable stats=new Stats(received, false, size);
+            Thread stats_thread=new Thread(stats, "receiver-stats");
+            stats_thread.start();
+            for(;;) {
                 in.readFully(buf, 0, buf.length);
-                received_bytes+=buf.length;
-                if(start == 0)
-                    start=System.currentTimeMillis();
-                counter++;
-                if(counter % incr == 0)
-                    System.out.println("-- received " + counter);
+                received.increment();
             }
-            long time=System.currentTimeMillis() - start;
-            double msgs_sec=(counter / (time / 1000.0));
-            double throughput=received_bytes / (time / 1000.0);
-            System.out.println(String.format("\nreceived %d messages in %d ms (%.2f msgs/sec), throughput=%s",
-                                             counter, time, msgs_sec, Util.printBytes(throughput)));
         }
     }
 
 
+    protected static class Stats implements Runnable {
+        protected final LongAdder cnt;
+        protected final boolean   sender;
+        protected final int       msg_size;
 
-    static void help() {
-        System.out.println("JPerf [-help] [-sender] [-num <number of msgs] [-size <bytes>] [-local_addr <interface>] [-local_port <port]" +
-                "[-remote_addr <IP addr>] [-remote_port <port>] [-receivebuf <bytes>] [-sendbuf <bytes>]");
+        public Stats(LongAdder cnt, boolean sender, int msg_size) {
+            this.cnt=cnt;
+            this.sender=sender;
+            this.msg_size=msg_size;
+        }
+
+        public void run() {
+            for(;;) {
+                long msgs_before=cnt.sum();
+                Util.sleep(STATS_INTERVAL);
+                long msgs_after=cnt.sumThenReset();
+                if(msgs_after > msgs_before) {
+                    long msgs=msgs_after-msgs_before, bytes=msgs * msg_size;
+                    double msgs_per_sec=msgs / (STATS_INTERVAL / 1000.0), bytes_per_sec=bytes/(STATS_INTERVAL/1000.0);
+                    System.out.printf("-- %s %,.2f msgs/sec %s/sec\n",
+                                      sender? "sent" : "received", msgs_per_sec, Util.printBytes(bytes_per_sec));
+                }
+            }
+        }
     }
 
-    public static void main(String[] args) {
+
+    protected static void help() {
+        System.out.println("JPerf [-help] [-sender] [-size <bytes>] [-bind_addr <interface>] " +
+                             "[-host <IP addr>] [-port <port>] [-receivebuf <bytes>] [-sendbuf <bytes>]");
+    }
+
+    public static void main(String[] args) throws IOException {
         boolean sender=false;
-        int num=100000;
-        String local_addr="127.0.0.1";
-        int local_port=5000;
+        String bind_addr="127.0.0.1";
+        int port=10000;
         int size=1000;
-        int remote_port=10000;
-        int receivebuf=200000, sendbuf=200000;
-        String remote_addr="127.0.0.1";
+        int receivebuf=0, sendbuf=0;
+        String host="127.0.0.1";
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-sender")) {
                 sender=true;
                 continue;
             }
-            if(args[i].equals("-num")) {
-                num=Integer.parseInt(args[++i]);
-                continue;
-            }
             if(args[i].equals("-size")) {
                 size=Integer.parseInt(args[++i]);
                 continue;
             }
-            if(args[i].equals("-local_addr")) {
-                local_addr=args[++i];
+            if(args[i].equals("-bind_addr")) {
+                bind_addr=args[++i];
                 continue;
             }
-            if(args[i].equals("-remote_addr")) {
-                remote_addr=args[++i];
+            if(args[i].equals("-host")) {
+                host=args[++i];
                 continue;
             }
-            if(args[i].equals("-local_port")) {
-                local_port=Integer.parseInt(args[++i]);
-                continue;
-            }
-            if(args[i].equals("-remote_port")) {
-                remote_port=Integer.parseInt(args[++i]);
+            if(args[i].equals("-port")) {
+                port=Integer.parseInt(args[++i]);
                 continue;
             }
             if(args[i].equals("-receivebuf")) {
@@ -139,12 +137,8 @@ public class JPerf {
             help();
             return;
         }
-        try {
-            new JPerf().start(sender, num, size, local_addr, local_port, remote_addr, remote_port, receivebuf, sendbuf);
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
+        JPerf p=new JPerf();
+        p.start(sender, size, bind_addr, host, port, receivebuf, sendbuf);
     }
 
 
