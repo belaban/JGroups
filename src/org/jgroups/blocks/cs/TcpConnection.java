@@ -135,9 +135,9 @@ public class TcpConnection extends Connection {
             Thread.currentThread().interrupt(); // set interrupt flag again
         }
         finally {
+            send_lock.unlock();
             if(writers.decrementAndGet() == 0) // only the last active writer thread calls flush()
                 flush(); // won't throw an exception
-            send_lock.unlock();
         }
     }
 
