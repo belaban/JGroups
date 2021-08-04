@@ -36,12 +36,12 @@ public class TCP extends BasicTCP {
 
     @Property(description="Size of the buffer of the BufferedInputStream in TcpConnection. A read always tries to read " +
       "ahead as much data as possible into the buffer. 0: default size",type=AttributeType.BYTES)
-    protected int buffered_input_stream_size=8192;
+    protected int buffered_input_stream_size=65536;
 
     @Property(description="Size of the buffer of the BufferedOutputStream in TcpConnection. Smaller messages are " +
       " buffered until this size is exceeded or flush() is called. Bigger messages are sent immediately. 0: default size",
       type=AttributeType.BYTES)
-    protected int buffered_output_stream_size=8192;
+    protected int buffered_output_stream_size=65536;
 
     @Property(description="Log a warning (or not) when ServerSocket.accept() throws an exception")
     protected boolean log_accept_error=true; // https://issues.redhat.com/browse/JGRP-2540
