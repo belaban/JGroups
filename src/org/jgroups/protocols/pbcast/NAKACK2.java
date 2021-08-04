@@ -218,6 +218,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     /** Map to store sent and received messages (keyed by sender) */
     protected final ConcurrentMap<Address,Table<Message>> xmit_table=Util.createConcurrentMap();
 
+    /* Optimization: this is the table for my own messages (used in send()) */
+    protected Table<Message>            local_xmit_table;
+
     /** RetransmitTask running every xmit_interval ms */
     protected Future<?>                 xmit_task;
     /** Used by the retransmit task to keep the last retransmitted seqno per sender (https://issues.jboss.org/browse/JGRP-1539) */
@@ -806,16 +809,15 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             return;
         }
 
-        long msg_id;
-        Table<Message> buf=xmit_table.get(local_addr);
-        if(buf == null) // discard message if there is no entry for local_addr
+        Table<Message> buf=local_xmit_table;
+        if(buf == null && (buf=local_xmit_table=xmit_table.get(local_addr)) == null) // discard message if there is no entry for local_addr
             return;
 
         if(msg.getSrc() == null)
             msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
 
         boolean dont_loopback_set=msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK);
-        msg_id=seqno.incrementAndGet();
+        long msg_id=seqno.incrementAndGet();
         long sleep=10;
         do {
             try {
