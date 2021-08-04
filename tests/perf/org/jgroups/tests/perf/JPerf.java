@@ -3,9 +3,7 @@ package org.jgroups.tests.perf;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
@@ -37,9 +35,12 @@ public class JPerf {
         }
         else {
             InetAddress bind=InetAddress.getByName(bind_addr);
-            ServerSocket srv_sock=new ServerSocket(port, 1, bind);
+            SocketAddress saddr=new InetSocketAddress(bind, port);
+            ServerSocket srv_sock=new ServerSocket();
             if(window_size > 0)
-                srv_sock.setReceiveBufferSize(window_size); // needs to be set before accept, so the client sock has the same recvbuf!
+                srv_sock.setReceiveBufferSize(window_size);
+            srv_sock.bind(saddr, 1);
+
             System.out.printf("------------------------------------------------------------\n" +
                                 "Server listening on TCP port %d\n" +
                                 "TCP window size:  %s\n" +
@@ -115,7 +116,7 @@ public class JPerf {
     public static void main(String[] args) throws IOException {
         boolean client=false;
         String bind_addr="127.0.0.1";
-        int port=10000;
+        int port=5001;
         int length=128000;
         int window_size=0, interval=2;
         String host="127.0.0.1";

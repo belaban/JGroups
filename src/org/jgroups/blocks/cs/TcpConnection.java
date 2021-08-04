@@ -169,12 +169,12 @@ public class TcpConnection extends Connection {
         }
     }
 
-    protected BufferedOutputStream createBufferedOutputStream(OutputStream out) {
+    protected OutputStream createBufferedOutputStream(OutputStream out) {
         int size=(server instanceof TcpServer)? ((TcpServer)server).getBufferedOutputStreamSize() : 0;
         return size == 0? new BufferedOutputStream(out) : new BufferedOutputStream(out, size);
     }
 
-    protected BufferedInputStream createBufferedInputStream(InputStream in) {
+    protected InputStream createBufferedInputStream(InputStream in) {
         int size=(server instanceof TcpServer)? ((TcpServer)server).getBufferedInputStreamSize() : 0;
         return size == 0? new BufferedInputStream(in) : new BufferedInputStream(in, size);
     }
