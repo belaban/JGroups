@@ -278,6 +278,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public MessageFactory   getMessageFactory()                 {return msg_factory;}
     public <T extends TP> T setMessageFactory(MessageFactory m) {msg_factory=m; return (T)this;}
     public boolean          useFibers()                         {return use_fibers;}
+    public <T extends TP> T useFibers(boolean b)                {use_fibers=b; return (T)this;}
 
     public InetAddress getBindAddr() {return bind_addr;}
     public <T extends TP> T setBindAddr(InetAddress b) {this.bind_addr=b; return (T)this;}
