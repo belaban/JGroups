@@ -171,7 +171,7 @@ public class ReplicatedHashMapDemo extends Frame implements WindowListener, Acti
                         showMsg("Both key and value have to be present to create a new entry");
                         return;
                     }
-                    Float val=new Float(stock_val);
+                    Float val=Float.parseFloat(stock_val);
                     map.put(stock_name, val);
                     showMsg("Key " + stock_name + " set to " + val);
                     break;
