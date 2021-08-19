@@ -209,8 +209,8 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     }
 
 
-
-    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
+    @Override
+    public void sendToAll(byte[] data, int offset, int length) throws Exception {
         String group=cluster_name != null? cluster_name.toString() : null;
         tunnel_policy.sendToAllMembers(group, local_addr, data, offset, length);
     }
@@ -220,7 +220,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         tunnel_policy.sendToSingleMember(group, dest, local_addr, data, offset, length);
     }
 
-    protected void sendToSingleMember(final Address dest, byte[] buf, int offset, int length) throws Exception {
+    protected void sendTo(final Address dest, byte[] buf, int offset, int length) throws Exception {
         if(dest instanceof PhysicalAddress)
             throw new IllegalArgumentException(String.format("destination %s cannot be a physical address", dest));
         sendUnicast(dest, buf, offset, length);

@@ -137,9 +137,6 @@ public abstract class BasicTCP extends TP implements Receiver {
     }
 
 
-    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
-        sendToMembers(members, data, offset, length);
-    }
 
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
         send(dest, data, offset, length);

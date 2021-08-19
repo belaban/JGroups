@@ -1432,6 +1432,8 @@ public class Util {
         if(type == long.class    || type == Long.class)    return Long.valueOf(arg);
         if(type == float.class   || type == Float.class)   return Float.valueOf(arg);
         if(type == double.class  || type == Double.class)  return Double.valueOf(arg);
+        if(arg == null || arg.equals("null"))
+            return null;
         return arg;
     }
 
@@ -4538,7 +4540,13 @@ public class Util {
     public static List<NetworkInterface> getAllAvailableInterfaces() throws SocketException {
         List<NetworkInterface> retval=new ArrayList<>(10);
         for(Enumeration<NetworkInterface> en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
-            retval.add(en.nextElement());
+            NetworkInterface intf=en.nextElement();
+            retval.add(intf);
+            for(Enumeration<NetworkInterface> subs=intf.getSubInterfaces(); subs.hasMoreElements();) {
+                NetworkInterface sub=subs.nextElement();
+                if(sub != null)
+                    retval.add(sub);
+            }
         }
         return retval;
     }

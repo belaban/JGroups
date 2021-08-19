@@ -58,10 +58,6 @@ public class SimpleTCP extends TP {
                    (l, r) ->{}).toString();
     }
 
-    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
-        // not needed, implemented in down()
-    }
-
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
         // not needed, implemented in down()
     }
@@ -104,7 +100,6 @@ public class SimpleTCP extends TP {
                 addr_table.put(tuple.getVal1(), new InetSocketAddress(val.getIpAddress(), val.getPort()));
                 break;
             case Event.VIEW_CHANGE:
-
                 for(Iterator<Map.Entry<Address,SocketAddress>> it=addr_table.entrySet().iterator(); it.hasNext();) {
                     Map.Entry<Address,SocketAddress> entry=it.next();
                     if(!view.containsMember(entry.getKey())) {
@@ -156,7 +151,6 @@ public class SimpleTCP extends TP {
 
     protected void sendTo(Address dest, byte[] buffer, int offset, int length) throws Exception {
         SocketAddress physical_dest=null;
-
         if(dest instanceof IpAddress) {
             IpAddress ip_addr=(IpAddress)dest;
             physical_dest=new InetSocketAddress(ip_addr.getIpAddress(), ip_addr.getPort());
@@ -188,7 +182,7 @@ public class SimpleTCP extends TP {
         return conn;
     }
 
-    protected boolean addPhysicalAddressToCache(Address logical_addr, PhysicalAddress physical_addr) {
+    public boolean addPhysicalAddressToCache(Address logical_addr, PhysicalAddress physical_addr) {
         IpAddress tmp=(IpAddress)physical_addr;
         addr_table.put(logical_addr, new InetSocketAddress(tmp.getIpAddress(), tmp.getPort()));
         return super.addPhysicalAddressToCache(logical_addr, physical_addr);

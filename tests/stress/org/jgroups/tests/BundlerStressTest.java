@@ -255,10 +255,6 @@ public class BundlerStressTest {
 
         }
 
-        public void sendMulticast(byte[] data, int offset, int length) throws Exception {
-
-        }
-
         public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
 
         }

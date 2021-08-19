@@ -31,7 +31,6 @@ public class NAKACK_REBROADCAST_Test {
         nak.setDownProtocol(interceptor);
         TP transport=new TP() {
             public boolean supportsMulticasting() {return false;}
-            public void sendMulticast(byte[] data, int offset, int length) throws Exception {}
             public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
             public String getInfo() {return null;}
             public Object down(Event evt) {return null;}

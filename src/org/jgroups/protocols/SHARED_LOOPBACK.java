@@ -57,8 +57,8 @@ public class SHARED_LOOPBACK extends TP {
         return sb.toString();
     }
 
-
-    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
+    @Override
+    public void sendToAll(byte[] data, int offset, int length) throws Exception {
         List<SHARED_LOOPBACK> targets;
         synchronized(routing_table) {
             Map<Address,SHARED_LOOPBACK> dests=routing_table.get(this.cluster_name);
@@ -81,10 +81,10 @@ public class SHARED_LOOPBACK extends TP {
     }
 
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
-        sendToSingleMember(dest, data, offset, length);
+        sendTo(dest, data, offset, length);
     }
 
-    protected void sendToSingleMember(Address dest, byte[] buf, int offset, int length) throws Exception {
+    protected void sendTo(Address dest, byte[] buf, int offset, int length) throws Exception {
         SHARED_LOOPBACK target;
         synchronized(routing_table) {
             Map<Address,SHARED_LOOPBACK> dests=routing_table.get(cluster_name);

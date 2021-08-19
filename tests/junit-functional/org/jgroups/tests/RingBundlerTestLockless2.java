@@ -162,12 +162,12 @@ public class RingBundlerTestLockless2 {
             return false;
         }
 
-
-        public void sendMulticast(byte[] data, int offset, int length) throws Exception {
+        @Override
+        public void sendToAll(byte[] data, int offset, int length) throws Exception {
             incrCount(null);
         }
 
-        protected void sendToSingleMember(Address dest, byte[] buf, int offset, int length) throws Exception {
+        protected void sendTo(Address dest, byte[] buf, int offset, int length) throws Exception {
             incrCount(dest);
         }
 
