@@ -33,17 +33,17 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     // List of destinations that the reconnect task needs to create and connect
     protected final Set<Target>                         reconnect_list=new HashSet<>();
 
-    protected final Protocol                            owner;
-    protected final TimeScheduler                       timer;
-    protected final String                              cluster_name;
-    protected final Address                             local_addr;
-    protected final String                              logical_name;
-    protected final PhysicalAddress                     phys_addr;
-    protected final long                                interval;      // reconnect interval (ms)
-    protected boolean                                   use_nio=true;  // whether to use RouterStubTcp or RouterStubNio
-    protected Future<?>                                 reconnector_task;
-    protected final Log                                 log;
-    private SocketFactory socket_factory;
+    protected final Protocol         owner;
+    protected final TimeScheduler    timer;
+    protected final String           cluster_name;
+    protected final Address          local_addr;
+    protected final String           logical_name;
+    protected final PhysicalAddress  phys_addr;
+    protected final long             interval;      // reconnect interval (ms)
+    protected boolean                use_nio=true;  // whether to use RouterStubTcp or RouterStubNio
+    protected Future<?>              reconnector_task;
+    protected final Log              log;
+    private SocketFactory            socket_factory;
 
 
     public RouterStubManager(Protocol owner, String cluster_name, Address local_addr,

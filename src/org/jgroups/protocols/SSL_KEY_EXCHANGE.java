@@ -93,7 +93,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected String         ssl_protocol="TLSv1.2";
 
     @Property(description="The SSL security provider. Defaults to null, which will use the default JDK provider.")
-    protected String         ssl_provider=null;
+    protected String         ssl_provider;
 
     @Property(description="Timeout (in ms) for a socket read. This applies for example to the initial SSL handshake, " +
       "e.g. if the client connects to a non-JGroups service accidentally running on the same port")
