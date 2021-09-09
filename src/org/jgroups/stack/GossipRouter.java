@@ -15,6 +15,7 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.PingData;
 import org.jgroups.util.*;
 
+import javax.net.ssl.*;
 import java.io.DataInput;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -24,14 +25,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-
-import javax.net.ssl.SNIHostName;
-import javax.net.ssl.SNIMatcher;
-import javax.net.ssl.SNIServerName;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLParameters;
-import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.SSLSocket;
 
 /**
  * Router for TCP based group comunication (using layer TCP instead of UDP). Instead of the TCP
@@ -611,8 +604,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         long start=System.currentTimeMillis();
         GossipRouter router;
         String bind_addr=null;
-        boolean jmx=false, suspects=true, dump_msgs=false;
-        Boolean nio=null;
+        boolean jmx=false, suspects=true, dump_msgs=false, nio=false;
 
         for(int i=0; i < args.length; i++) {
             String arg=args[i];
@@ -707,16 +699,9 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
             help();
             return;
         }
-        if (tls_protocol!=null) {
-            if (nio == null || !nio) {
-                nio = false;
-            } else {
-                // Doesn't work yet
-                throw new IllegalArgumentException("Cannot use NIO with TLS");
-            }
-        } else if (nio==null) {
-            nio=true;
-        }
+        if(tls_protocol != null && nio)
+            // Doesn't work yet
+            throw new IllegalArgumentException("Cannot use NIO with TLS");
 
         router=new GossipRouter(bind_addr, port)
           .jmx(jmx).expiryTime(expiry_time)
