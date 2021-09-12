@@ -8,6 +8,7 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
+import org.wildfly.security.auth.callback.AvailableRealmsCallback;
 
 import javax.security.auth.callback.*;
 import javax.security.sasl.AuthorizeCallback;
@@ -164,6 +165,9 @@ public class SASLTest {
                 } else if (callback instanceof RealmCallback) {
                     RealmCallback realmCallback = (RealmCallback) callback;
                     realmCallback.setText(REALM);
+                } else if (callback instanceof AvailableRealmsCallback) {
+                    AvailableRealmsCallback availableRealmsCallback = (AvailableRealmsCallback) callback;
+                    availableRealmsCallback.setRealmNames(REALM);
                 } else {
                     throw new UnsupportedCallbackException(callback);
                 }

@@ -3,6 +3,8 @@ package org.jgroups.auth.sasl;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -119,7 +121,15 @@ public class SimpleAuthorizingCallbackHandler implements CallbackHandler {
                 }
                 responseCallbacks.add(current);
             } else {
-                throw new UnsupportedCallbackException(current);
+                if ("org.wildfly.security.auth.callback.AvailableRealmsCallback".equals(current.getClass().getName())) {
+                    try {
+                        current.getClass().getMethod("setRealmNames", String[].class).invoke(current, new Object[] {new String[] {realm}});
+                    } catch (Exception e) {
+                        throw new UnsupportedCallbackException(current);
+                    }
+                } else {
+                    throw new UnsupportedCallbackException(current);
+                }
             }
         }
 
