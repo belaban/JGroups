@@ -86,8 +86,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     @Property(description="Handles client disconnects: sends SUSPECT message to all other members of that group")
     protected boolean              emit_suspect_events=true;
 
-    @Property(description="Dumps messages (dest/src/length/headers to stdout if enabled")
-    protected boolean              dump_msgs;
+    @Property(description="Dumps messages (dest/src/length/headers) to stdout")
+    protected DumpMessages         dump_msgs;
 
     @Property(description="The max number of bytes a message can have. If greater, an exception will be " +
       "thrown. 0 disables this")
@@ -143,8 +143,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     public GossipRouter  useNio(boolean flag)               {use_nio=flag; return this;}
     public boolean       emitSuspectEvents()                {return emit_suspect_events;}
     public GossipRouter  emitSuspectEvents(boolean flag)    {emit_suspect_events=flag; return this;}
-    public boolean       dumpMessages()                     {return dump_msgs;}
-    public GossipRouter  dumpMessages(boolean flag)         {dump_msgs=flag; return this;}
+    public DumpMessages  dumpMessages()                     {return dump_msgs;}
+    public GossipRouter  dumpMessages(DumpMessages flag)    {dump_msgs=flag; return this;}
     public int           maxLength()                        {return max_length;}
     public GossipRouter  maxLength(int len)                 {max_length=len; if(server != null) server.setMaxLength(len);
                                                              return this;}
@@ -249,7 +249,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                     Address dest=Util.readAddress(in);
                     route(group, dest, buf, offset, length);
 
-                    if(dump_msgs) {
+                    if(dump_msgs == DumpMessages.ALL) {
                         ByteArrayDataInputStream input=new ByteArrayDataInputStream(buf, offset, length);
                         GossipData data=new GossipData();
                         data.readFrom(input);
@@ -289,9 +289,9 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(request.serializedSize());
                         request.writeTo(out);
                         route(request.group, request.addr, out.buffer(), 0, out.position());
+                        if(dump_msgs == DumpMessages.ALL)
+                            dump(request);
                     }
-                    if(dump_msgs)
-                        dump(request);
                 }
                 catch(Throwable t) {
                     log.error(Util.getMessage("FailedReadingRequest"), t);
@@ -319,7 +319,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
             addAddressMapping(sender, group, addr, phys_addr, logical_name);
             if(log.isDebugEnabled())
                 log.debug("added %s (%s) to group %s", logical_name, phys_addr, group);
-            if(dump_msgs)
+            if(dump_msgs == DumpMessages.REGISTRATION || dump_msgs == DumpMessages.ALL)
                 System.out.printf("added %s (%s) to group %s\n", logical_name, phys_addr, group);
         }
     }
@@ -346,14 +346,14 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
             }
         }
 
-        if(dump_msgs || log.isDebugEnabled()) {
+        if(dump_msgs == DumpMessages.ALL || log.isDebugEnabled()) {
             String rsps=rsp.ping_data == null? null
               : rsp.ping_data.stream().map(r -> String.format("%s (%s)", r.getLogicalName(), r.getPhysicalAddr()))
               .collect(Collectors.joining(", "));
             if(rsps != null) {
                 if(log.isDebugEnabled())
                     log.debug("get(%s) -> %s", req.getGroup(), rsps);
-                if(dump_msgs)
+                if(dump_msgs == DumpMessages.ALL)
                     System.out.printf("get(%s) -> %s\n", req.getGroup(), rsps);
             }
         }
@@ -425,7 +425,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         if(e != null) {
             if(log.isDebugEnabled())
                 log.debug("removed %s (%s) from group %s", e.logical_name, e.phys_addr, group);
-            if(dump_msgs)
+            if(dump_msgs == DumpMessages.REGISTRATION || dump_msgs == DumpMessages.ALL)
                 System.out.printf("removed %s (%s) from group %s\n", e.logical_name, e.phys_addr, group);
         }
         if(m.remove(addr) != null && m.isEmpty())
@@ -445,7 +445,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                     log.debug("connection to %s closed", client_addr);
                     if(log.isDebugEnabled())
                         log.debug("removed %s (%s) from group %s", e.logical_name, e.phys_addr, entry.getKey());
-                    if(dump_msgs)
+                    if(dump_msgs == DumpMessages.REGISTRATION || dump_msgs == DumpMessages.ALL)
                         System.out.printf("removed %s (%s) from group %s\n", e.logical_name, e.phys_addr, entry.getKey());
                     if(map.isEmpty())
                         address_mappings.remove(entry.getKey());
@@ -604,7 +604,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         long start=System.currentTimeMillis();
         GossipRouter router;
         String bind_addr=null;
-        boolean jmx=false, suspects=true, dump_msgs=false, nio=false;
+        boolean jmx=false, suspects=true, nio=false;
+        DumpMessages dump_msgs = DumpMessages.NONE;
 
         for(int i=0; i < args.length; i++) {
             String arg=args[i];
@@ -645,7 +646,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                 continue;
             }
             if("-dump_msgs".equals(arg)) {
-                dump_msgs=Boolean.parseBoolean(args[++i]);
+                dump_msgs=DumpMessages.parse(args[++i]);
                 continue;
             }
             if("-max_length".equals(arg)) {
@@ -755,6 +756,23 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         NEED
     }
 
+    enum DumpMessages {
+        NONE,
+        REGISTRATION,
+        ALL;
+
+        static DumpMessages parse(String s) {
+            s = s.trim();
+            if (s.isEmpty() || s.equalsIgnoreCase("false")) {
+                return NONE;
+            } else if (s.equalsIgnoreCase("true")) {
+                return ALL;
+            } else {
+                return valueOf(s.toUpperCase());
+            }
+        }
+    }
+
     static void help() {
         System.out.println();
         System.out.println("GossipRouter [-port <port>] [-bind_addr <address>] [options]");
@@ -786,7 +804,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         System.out.println();
         System.out.println("    -suspect <true|false>   - Whether or not to use send SUSPECT events when a conn is closed");
         System.out.println();
-        System.out.println("    -dump_msgs <true|false> - Dumps all messages to stdout after routing them");
+        System.out.println("    -dump_msgs <option>     - Dumps messages to stdout after routing them. Options:");
+        System.out.println("                              none: does not dump any messages");
+        System.out.println("                              registration: dumps a message when a node is registered or unregistered to a group");
+        System.out.println("                              all: dumps everything");
         System.out.println();
         System.out.println("    -tls_protocol <proto>   - The name of the TLS protocol to use, e.g. TLSv1.2.");
         System.out.println("                              Setting this requires configuring key and trust stores.");
