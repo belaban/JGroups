@@ -250,6 +250,15 @@ public class MPerf implements Receiver {
         }
     }
 
+    public void receive(MessageBatch batch) {
+        for(Message msg: batch) {
+            byte type=((MPerfHeader)msg.getHeader(ID)).type;
+            if(type == MPerfHeader.DATA)
+                total_received_msgs.increment();
+            else
+                receive(msg);
+        }
+    }
 
     /** Returns all members if num_senders <= 0, or the members with rank <= num_senders */
     protected List<Address> getSenders() {
@@ -371,7 +380,7 @@ public class MPerf implements Receiver {
 
             while(running.get()) {
                 try {
-                    Message msg=new ObjectMessage(null, payload).putHeader(ID, new MPerfHeader(MPerfHeader.DATA));
+                    Message msg=new BytesMessage(null, payload).putHeader(ID, new MPerfHeader(MPerfHeader.DATA));
                     if(oob)
                         msg.setFlag(Message.Flag.OOB);
                     channel.send(msg);
