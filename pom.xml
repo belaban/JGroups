@@ -121,12 +121,6 @@
             <version>1.7.31</version>
             <optional>true</optional>
         </dependency>
-        <dependency>
-            <groupId>org.wildfly.openssl</groupId>
-            <artifactId>wildfly-openssl</artifactId>
-            <version>2.1.4.Final</version>
-            <optional>true</optional>
-        </dependency>
 
         <!-- Test dependencies -->
         <dependency>
@@ -139,6 +133,12 @@
             <groupId>org.jboss.byteman</groupId>
             <artifactId>byteman-bmunit</artifactId>
             <version>4.0.17</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly.security</groupId>
+            <artifactId>wildfly-elytron</artifactId>
+            <version>1.16.1.Final</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

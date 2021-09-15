@@ -10,7 +10,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Runner;
-import org.jgroups.util.SSLContextFactory;
+import org.jgroups.util.SslContextFactory;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
@@ -90,6 +90,12 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
       "rogue clients to fetch the secret group key (e.g. via man-in-the-middle attacks)")
     protected boolean         require_client_authentication=true;
 
+    @Property(description="The SSL protocol to use. Defaults to TLSv1.2.")
+    protected String         ssl_protocol=SslContextFactory.getDefaultSslProtocol();
+
+    @Property(description="The SSL security provider. Defaults to null, which will use the default JDK provider.")
+    protected String         ssl_provider;
+
     @Property(description="Timeout (in ms) for a socket read. This applies for example to the initial SSL handshake, " +
       "e.g. if the client connects to a non-JGroups service accidentally running on the same port",type=AttributeType.TIME)
     protected int             socket_timeout=1000;
@@ -99,13 +105,6 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
 
     @Property(description="The argument to the session verifier")
     protected String          session_verifier_arg;
-
-    @Property(description="The SSL protocol")
-    protected String          ssl_protocol= SSLContextFactory.DEFAULT_SSL_PROTOCOL;
-
-    @Property(description="Use Wildfly's OpenSSL impl if available")
-    protected boolean         use_native_if_available;
-
 
     protected SSLContext                   client_ssl_ctx;
     protected SSLContext                   server_ssl_ctx;
@@ -132,6 +131,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     public SSL_KEY_EXCHANGE setSecretKeyAlgorithm(String a)                {this.secret_key_algorithm=a; return this;}
     public boolean          getRequireClientAuthentication()               {return require_client_authentication;}
     public SSL_KEY_EXCHANGE setRequireClientAuthentication(boolean b)      {this.require_client_authentication=b; return this;}
+    public SSL_KEY_EXCHANGE setSslProtocol(String protocol)                {this.ssl_protocol=protocol; return this;}
     public int              getSocketTimeout()                             {return socket_timeout;}
     public SSL_KEY_EXCHANGE setSocketTimeout(int timeout)                  {this.socket_timeout=timeout; return this;}
     public String           getSessionVerifierClass()                      {return session_verifier_class;}
@@ -146,9 +146,6 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     public SSL_KEY_EXCHANGE setClientSSLContext(SSLContext client_ssl_ctx) {this.client_ssl_ctx = client_ssl_ctx; return this;}
     public SSLContext getServerSSLContext()                                {return server_ssl_ctx;}
     public SSL_KEY_EXCHANGE setServerSSLContext(SSLContext server_ssl_ctx) {this.server_ssl_ctx = server_ssl_ctx; return this;}
-    public boolean          useNativeIfAvailable()                         {return use_native_if_available;}
-    public SSL_KEY_EXCHANGE useNativeIfAvailable(boolean b)                {use_native_if_available=b; return this;}
-
 
     public Address getServerLocation() {
         return srv_sock == null? null : new IpAddress(getTransport().getBindAddress(), srv_sock.getLocalPort());
@@ -170,7 +167,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
 
         // Create an SSLContext if one was not already supplied
         if (client_ssl_ctx == null || server_ssl_ctx == null) {
-            SSLContextFactory sslContextFactory = new SSLContextFactory();
+            SslContextFactory sslContextFactory = new SslContextFactory();
             SSLContext sslContext = sslContextFactory
                     .classLoader(this.getClass().getClassLoader())
                     .keyStore(key_store)
@@ -179,7 +176,8 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
                     .keyStorePassword(keystore_password.toCharArray())
                     .trustStoreFileName(keystore_name)
                     .trustStorePassword(keystore_password.toCharArray())
-                    .sslProtocol(ssl_protocol).useNativeIfAvailable(use_native_if_available).getContext();
+                    .sslProtocol(ssl_protocol)
+                    .sslProvider(ssl_provider).getContext();
             if (client_ssl_ctx == null) {
                 client_ssl_ctx = sslContext;
             }
@@ -405,6 +403,18 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         catch(Throwable t) {
             throw new IllegalStateException(String.format("failed connecting to %s: %s", dest, t.getMessage()));
         }
+    }
+
+
+    protected SSLContext getContext() throws Exception {
+        if(this.client_ssl_ctx != null)
+            return this.client_ssl_ctx;
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory
+              .sslProvider(ssl_provider).sslProtocol(ssl_protocol)
+              .keyStore(key_store).keyStoreFileName(keystore_name).keyStorePassword(keystore_password).keyStoreType(keystore_type)
+              .trustStore(key_store).trustStoreFileName(keystore_name).trustStorePassword(keystore_password).trustStoreType(keystore_type);
+        return this.client_ssl_ctx=sslContextFactory.getContext();
     }
 }
 

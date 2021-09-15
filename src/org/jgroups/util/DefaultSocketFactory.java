@@ -1,67 +1,103 @@
 package org.jgroups.util;
 
 import java.io.IOException;
-import java.net.*;
-import java.nio.channels.ServerSocketChannel;
-import java.util.Map;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.util.function.Consumer;
+
+import javax.net.ServerSocketFactory;
+import javax.net.ssl.SSLContext;
 
 /**
  * Default implementation, ignores service names
  * @author Bela Ban
  */
 public class DefaultSocketFactory implements SocketFactory {
+    private final javax.net.SocketFactory socketFactory;
+    private final ServerSocketFactory serverSocketFactory;
+    private Consumer<Socket> socketConfigurator = s -> {};
+    private Consumer<ServerSocket> serverSocketConfigurator = s -> {};
 
-    public Socket createSocket(String service_name) throws IOException {
-        return new Socket();
+    public DefaultSocketFactory() {
+        this(javax.net.SocketFactory.getDefault(), ServerSocketFactory.getDefault());
     }
 
-    public Socket createSocket(String service_name, String host, int port) throws IOException {
-        return new Socket(host, port);
+    public DefaultSocketFactory(SSLContext sslContext) {
+        this.socketFactory = sslContext.getSocketFactory();
+        this.serverSocketFactory = sslContext.getServerSocketFactory();
     }
 
-    public Socket createSocket(String service_name, InetAddress address, int port) throws IOException {
-        return new Socket(address, port);
+    public DefaultSocketFactory(javax.net.SocketFactory socketFactory, ServerSocketFactory serverSocketFactory) {
+        this.socketFactory = socketFactory;
+        this.serverSocketFactory = serverSocketFactory;
     }
 
-    public Socket createSocket(String service_name, String host, int port, InetAddress localAddr, int localPort) throws IOException {
-        return new Socket(host, port, localAddr, localPort);
+    public void setSocketConfigurator(Consumer<Socket> socketConfigurator) {
+        this.socketConfigurator = socketConfigurator;
     }
 
-    public Socket createSocket(String service_name, InetAddress address, int port, InetAddress localAddr, int localPort) throws IOException {
-        return new Socket(address, port, localAddr, localPort);
+    public void setServerSocketConfigurator(Consumer<ServerSocket> serverSocketConfigurator) {
+        this.serverSocketConfigurator = serverSocketConfigurator;
     }
 
-    public ServerSocket createServerSocket(String service_name) throws IOException {
-        return new ServerSocket();
+    private Socket configureSocket(Socket socket) {
+        socketConfigurator.accept(socket);
+        return socket;
     }
 
-    public ServerSocket createServerSocket(String service_name, int port) throws IOException {
-        return new ServerSocket(port);
+    private ServerSocket configureSocket(ServerSocket socket) {
+        serverSocketConfigurator.accept(socket);
+        return socket;
     }
 
-    public ServerSocket createServerSocket(String service_name, int port, int backlog) throws IOException {
-        return new ServerSocket(port, backlog);
+    @Override
+    public Socket createSocket(String s) throws IOException {
+        return configureSocket(socketFactory.createSocket());
     }
 
-    public ServerSocket createServerSocket(String service_name, int port, int backlog, InetAddress bindAddr) throws IOException {
-        return new ServerSocket(port, backlog, bindAddr);
+    @Override
+    public Socket createSocket(String s, String host, int port) throws IOException {
+        return configureSocket(socketFactory.createSocket(host, port));
     }
 
-    @SuppressWarnings("UnusedParameters")
-    public ServerSocketChannel createServerSocketChannel(String service_name) throws IOException {
-        return ServerSocketChannel.open();
+    @Override
+    public Socket createSocket(String s, InetAddress host, int port) throws IOException {
+        return configureSocket(socketFactory.createSocket(host, port));
     }
 
-    public ServerSocketChannel createServerSocketChannel(String service_name, int port) throws IOException {
-        return createServerSocketChannel(service_name).bind(new InetSocketAddress(port));
+    @Override
+    public Socket createSocket(String s, String host, int port, InetAddress localHost, int localPort) throws IOException {
+        return configureSocket(socketFactory.createSocket(host, port, localHost, localPort));
     }
 
-    public ServerSocketChannel createServerSocketChannel(String service_name, int port, int backlog) throws IOException {
-        return createServerSocketChannel(service_name).bind(new InetSocketAddress(port), backlog);
+    @Override
+    public Socket createSocket(String s, InetAddress host, int port, InetAddress localHost, int localPort) throws IOException {
+        return configureSocket(socketFactory.createSocket(host, port, localHost, localPort));
     }
 
-    public ServerSocketChannel createServerSocketChannel(String service_name, int port, int backlog, InetAddress bindAddr) throws IOException {
-        return createServerSocketChannel(service_name).bind(new InetSocketAddress(bindAddr, port), backlog);
+    @Override
+    public ServerSocket createServerSocket(String s) throws IOException {
+        return configureSocket(serverSocketFactory.createServerSocket());
+    }
+
+    @Override
+    public ServerSocket createServerSocket(String s, int port) throws IOException {
+        return configureSocket(serverSocketFactory.createServerSocket(port));
+    }
+
+    @Override
+    public ServerSocket createServerSocket(String s, int port, int backlog) throws IOException {
+        return configureSocket(serverSocketFactory.createServerSocket(port, backlog));
+    }
+
+    @Override
+    public ServerSocket createServerSocket(String s, int port, int backlog, InetAddress bindAddress) throws IOException {
+        return configureSocket(serverSocketFactory.createServerSocket(port, backlog, bindAddress));
     }
 
     public DatagramSocket createDatagramSocket(String service_name) throws SocketException {
@@ -92,17 +128,18 @@ public class DefaultSocketFactory implements SocketFactory {
         return new MulticastSocket(bindaddr);
     }
 
-    public void close(Socket sock) throws IOException {
-        Util.close(sock);
+    @Override
+    public void close(Socket socket) throws IOException {
+        Util.close(socket);
     }
 
-    public void close(ServerSocket sock) throws IOException {
-        Util.close(sock);
+    @Override
+    public void close(ServerSocket serverSocket) throws IOException {
+        Util.close(serverSocket);
     }
 
-    public void close(DatagramSocket sock) {
-        Util.close(sock);
+    @Override
+    public void close(DatagramSocket datagramSocket) {
+        Util.close(datagramSocket);
     }
-
-
 }

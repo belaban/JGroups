@@ -6,6 +6,7 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.util.SocketFactory;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
@@ -32,16 +33,17 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     // List of destinations that the reconnect task needs to create and connect
     protected final Set<Target>                         reconnect_list=new HashSet<>();
 
-    protected final Protocol                            owner;
-    protected final TimeScheduler                       timer;
-    protected final String                              cluster_name;
-    protected final Address                             local_addr;
-    protected final String                              logical_name;
-    protected final PhysicalAddress                     phys_addr;
-    protected final long                                interval;      // reconnect interval (ms)
-    protected boolean                                   use_nio=true;  // whether to use RouterStubTcp or RouterStubNio
-    protected Future<?>                                 reconnector_task;
-    protected final Log                                 log;
+    protected final Protocol         owner;
+    protected final TimeScheduler    timer;
+    protected final String           cluster_name;
+    protected final Address          local_addr;
+    protected final String           logical_name;
+    protected final PhysicalAddress  phys_addr;
+    protected final long             interval;      // reconnect interval (ms)
+    protected boolean                use_nio=true;  // whether to use RouterStubTcp or RouterStubNio
+    protected Future<?>              reconnector_task;
+    protected final Log              log;
+    private SocketFactory            socket_factory;
 
 
     public RouterStubManager(Protocol owner, String cluster_name, Address local_addr,
@@ -90,7 +92,7 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
 
 
     public RouterStub createAndRegisterStub(IpAddress local, IpAddress router_addr) {
-        RouterStub stub=new RouterStub(local, router_addr, use_nio, this);
+        RouterStub stub=new RouterStub(local, router_addr, use_nio, this, socket_factory);
         RouterStub old_stub=unregisterStub(router_addr);
         if(old_stub != null)
             old_stub.destroy();
@@ -173,7 +175,7 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     }
 
     protected boolean reconnect(Target target) {
-        RouterStub stub=new RouterStub(target.bind_addr, target.router_addr, this.use_nio, this).receiver(target.receiver);
+        RouterStub stub=new RouterStub(target.bind_addr, target.router_addr, this.use_nio, this, socket_factory).receiver(target.receiver);
         if(!add(stub))
             return false;
         try {
@@ -249,10 +251,10 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
             reconnector_task.cancel(true);
     }
 
-
-
-
-
+    public RouterStubManager socketFactory(SocketFactory socket_factory) {
+        this.socket_factory=socket_factory;
+        return this;
+    }
 
 
     protected static class Target implements Comparator<Target>, Serializable {

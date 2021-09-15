@@ -16,7 +16,7 @@ public class RouterStubGet implements RouterStub.MembersNotification {
 
     protected void start(String host, int port, String cluster_name, boolean nio) {
         try {
-            stub=new RouterStub(null, 0, InetAddress.getByName(host), port, nio, null);
+            stub=new RouterStub(null, 0, InetAddress.getByName(host), port, nio, null, null);
             stub.connect();
             stub.getMembers(cluster_name, this);
             promise.getResult(5000);
