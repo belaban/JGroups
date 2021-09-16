@@ -39,8 +39,6 @@ public class GMS_MergeTest {
         for(Protocol prot: retval) {
             if(prot instanceof GMS)
                 ((GMS)prot).setJoinTimeout(1000);
-            if(prot instanceof STABLE)
-                ((STABLE)prot).setStabilityDelay(200);
             if(prot instanceof NAKACK2) {
                 ((NAKACK2)prot).logDiscardMessages(false);
                 ((NAKACK2)prot).logNotFoundMessages(false);
