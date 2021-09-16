@@ -26,7 +26,6 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
     protected final MessageTable mcasts=new MessageTable();
     protected final MessageTable ucasts=new MessageTable();
     protected int                max_buffer_size;
-    protected boolean            resize=true;
 
     @ManagedOperation(description="Dumps unicast and multicast tables")
     public String dump() {
@@ -41,7 +40,6 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
     public void init(TP transport) {
         super.init(transport);
         max_buffer_size=tp.getMessageProcessingMaxBufferSize();
-        resize=max_buffer_size == 0;
     }
 
     public void destroy() {
@@ -197,7 +195,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             try {
                 if(!running)
                     return running=true; // the caller can submit a new BatchHandlerLoop task to the thread pool
-                this.batch.add(msg, resize);
+                this.batch.add(msg, max_buffer_size == 0);
                 queued_msgs.increment();
                 return false;
             }
@@ -211,7 +209,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             try {
                 if(!running)
                     return running=true; // the caller can submit a new BatchHandlerLoop task to the thread pool
-                this.batch.add(msg_batch, resize);
+                this.batch.add(msg_batch, max_buffer_size == 0);
                 queued_batches.increment();
                 return false;
             }
