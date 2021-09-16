@@ -48,10 +48,6 @@ public class STABLE extends Protocol {
     @Property(description="Average time to send a STABLE message",type=AttributeType.TIME)
     protected long   desired_avg_gossip=20000;
 
-    @Property(description="Delay before stability message is sent",type=AttributeType.TIME,deprecatedMessage="always 0")
-    @Deprecated(forRemoval=true,since="5.1.6")
-    protected long   stability_delay=0;
-
     /**
      * Total amount of bytes from incoming messages (default = 0 = disabled). When exceeded, a STABLE message will
      * be broadcast and{@code num_bytes_received} reset to 0 . If this is > 0, then ideally {@code stability_delay}
@@ -62,15 +58,7 @@ public class STABLE extends Protocol {
     protected long   max_bytes=2000000;
 
 
-    @Property(description="Wether or not to send the STABLE messages to all members of the cluster, or to the " +
-      "current coordinator only. The latter reduces the number of STABLE messages, but also generates more work " +
-      "on the coordinator",deprecatedMessage="this attribute is always true")
-    @Deprecated(forRemoval=true,since="5.1.6")
-    protected boolean send_stable_msgs_to_coord_only=true;
-
-    
     /* --------------------------------------------- JMX  ---------------------------------------------- */
-
     protected int    num_stable_msgs_sent;
     protected int    num_stable_msgs_received;
     protected int    num_stability_msgs_sent;
@@ -78,8 +66,6 @@ public class STABLE extends Protocol {
 
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
-
-    
     protected Address             local_addr;
     protected volatile View       view;
 
@@ -131,10 +117,6 @@ public class STABLE extends Protocol {
     public STABLE setDesiredAverageGossip(long g) {desired_avg_gossip=g; return this;}
     public long   getMaxBytes()                   {return max_bytes;}
     public STABLE setMaxBytes(long m)             {this.max_bytes=m; return this;}
-    @Deprecated
-    public long   getStabilityDelay()             {return stability_delay;}
-    @Deprecated
-    public STABLE setStabilityDelay(long d)       {stability_delay=d; return this;}
 
     // @ManagedAttribute(name="bytes_received")
     public long getBytes() {return num_bytes_received;}
