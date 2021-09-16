@@ -1,7 +1,6 @@
 
 <protocol-ids>
     <!-- Reserved IDs -->
-    <class id="1"  name="org.jgroups.protocols.FD"/>
     <class id="2"  name="org.jgroups.protocols.FD_SOCK"/>
     <class id="3"  name="org.jgroups.protocols.FRAG"/>
     <class id="4"  name="org.jgroups.protocols.FRAG2"/>

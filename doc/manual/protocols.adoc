@@ -1032,45 +1032,6 @@ simply to notify everyone that a node in the cluster is suspected of having cras
 The SUSPECT message is handled by the GMS protocol of the current coordinator only; all other members ignore it.
         
 
-[[FD]]
-==== FD
-
-Failure detection based on a logical ring and heartbeat messages.
-
-Members form a logical ring; e.g. in view `{A,B,C,D}`, `A` pings `B`, which pings `C`, which pings `D`, which pings `A`.
-'Pinging' means sending a heartbeat.
-
-Each member sends this heartbeat every `timeout` ms to the neighbor to its right. When a member receives a heartbeat, it
-sends back an ack. When the ack is received the timestamp of when a member last heard from its neighbor is reset.
-
-When a member doesn't receive any heartbeat acks from its neighbor for `timeout` * `max_tries` ms,
-that member is declared suspected, and will be excluded by GMS.
-
-This is done by `FD` multicasting a `SUSPECT(P)` message which is handled by the current coordinator by double-checking
-the health of `P` (using `VERIFY_SUSPECT`) and - if `P` still doesn't reply - by excluding `P` from the membership.
-
-Note that setting `msg_counts_as_heartbeat` in `P` to true causes the timestamp of `P` in the pinging member to be
-reset.
-
-===== Example
-
-[source,xml]
-----
-<FD timeout="3000" max_tries="4" />
-----
-* The membership is `{A,B,C,D,E}`.
-* Now C and D crash at the same time
-* B's next heartbeats won't get an ack
-* After roughly 12 seconds (4 * 3 secs), B suspects C
-** B now starts sending heartbeats to D
-* A (the coordinator) handles the `SUSPECT(C)` message from B and uses `VERIFY_SUSPECT` to double-check that C is really dead
-* After `VERIFY_SUSPECT.timeout` ms, A creates a new view `{A,B,D,E}` excluding C
-* After ca. 12 seconds, B sends a `SUSPECT(D)` message to the coordinator, which eventually also excludes `D`
-
-
-
-${FD}
-
 
 
 [[FD_ALL]]
