@@ -794,22 +794,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return (T)this;
     }
 
-    @Deprecated(since="5.1.6",forRemoval=true)
-    public Executor getInternalThreadPool() {return null;}
-
-    @Deprecated(since="5.1.6",forRemoval=true)
-    public <T extends TP> T setInternalThreadPool(Executor thread_pool) {
-        return (T)this;
-    }
-
-    @Deprecated(since="5.1.6",forRemoval=true)
-    public ThreadFactory getInternalThreadPoolThreadFactory() {return null;}
-
-    @Deprecated(since="5.1.6",forRemoval=true)
-    public <T extends TP> T setInternalThreadPoolThreadFactory(ThreadFactory factory) {
-        return (T)this;
-    }
-
     public TimeScheduler getTimer() {return timer;}
 
     /**
