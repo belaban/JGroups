@@ -25,13 +25,7 @@ public class MergeTest extends ChannelTestBase {
 
     @AfterMethod protected void destroy() {
         level("warn", channels);
-        for(JChannel ch: channels)
-            try {
-                Util.shutdown(ch);
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-            }
+        Util.close(channels);
     }
    
     public void testMerging2Members() throws Exception {
@@ -57,14 +51,14 @@ public class MergeTest extends ChannelTestBase {
 
         Address merge_leader=determineLeader(channels, members);
         System.out.println("\n==== injecting merge event into merge leader : " + merge_leader + " ====");
-        for(JChannel ch: channels)
-            ch.getProtocolStack().removeProtocol(DISCARD.class);
         injectMergeEvent(channels, merge_leader, members);
         for(int i=0; i < 40; i++) {
             System.out.print(".");
             if(allChannelsHaveViewOf(channels, members.length))
                 break;
             Util.sleep(1000);
+            if(i > 0 && i % 10 == 0)
+                injectMergeEvent(channels, merge_leader, members);
         }
         System.out.println("\n");
         print(channels);
@@ -121,12 +115,6 @@ public class MergeTest extends ChannelTestBase {
         for(JChannel ch: channels)
             view_id=Math.max(ch.getView().getViewId().getId(), view_id);
         view_id++;
-
-        for(JChannel ch: channels) {
-            DISCARD discard=new DISCARD();
-            discard.discardAll(true);
-            ch.getProtocolStack().insertProtocol(discard, ProtocolStack.Position.ABOVE,TP.class);
-        }
 
         for(JChannel ch: channels) {
             View view=View.create(ch.getAddress(), view_id, ch.getAddress());
