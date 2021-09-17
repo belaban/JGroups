@@ -666,7 +666,7 @@ public class RELAY2 extends Protocol {
                 route((SiteAddress)hdr.final_dest, (SiteAddress)hdr.original_sender, msg);
                 break;
             case Relay2Header.SITE_UNREACHABLE:
-                up_prot.up(new Event(Event.SITE_UNREACHABLE, hdr.final_dest));
+                triggerSiteUnreachableEvent((SiteAddress)hdr.final_dest);
                 break;
             case Relay2Header.HOST_UNREACHABLE:
                 break;
@@ -679,9 +679,10 @@ public class RELAY2 extends Protocol {
 
     /**
      * Routes the message to the target destination, used by a site master (coordinator)
-     * @param dest
+     *
+     * @param dest   the destination site address
      * @param sender the address of the sender
-     * @param msg The message
+     * @param msg    The message
      */
     protected void route(SiteAddress dest, SiteAddress sender, Message msg) {
         String target_site=dest.getSite();
@@ -705,7 +706,7 @@ public class RELAY2 extends Protocol {
                 suppress_log_no_route.log(SuppressLog.Level.error, target_site, suppress_time_no_route_errors, sender, target_site);
             else
                 log.error(Util.getMessage("RelayNoRouteToSite"), local_addr, target_site);
-            sendSiteUnreachableTo(sender, target_site);
+            sendSiteUnreachableTo(msg.getSrc(), target_site);
         }
         else
             route.send(dest,sender,msg);
@@ -733,10 +734,18 @@ public class RELAY2 extends Protocol {
     /**
      * Sends a SITE-UNREACHABLE message to the sender of the message. Because the sender is always local (we're the
      * relayer), no routing needs to be done
+     * @param src The node who is trying to send a message to the {@code target_site}
+     * @param target_site The remote site's name.
      */
-    protected void sendSiteUnreachableTo(Address dest, String target_site) {
-        Message msg=new EmptyMessage(dest).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
-          .setSrc(new SiteUUID((UUID)local_addr, NameCache.get(local_addr), site))
+    protected void sendSiteUnreachableTo(Address src, String target_site) {
+        if (src == null || src.equals(local_addr)) {
+            //short circuit
+            // if src == null, it means the message comes from the top protocol (i.e. the local node)
+            triggerSiteUnreachableEvent(new SiteMaster(target_site));
+            return;
+        }
+        // send message back to the src node.
+        Message msg=new EmptyMessage(src).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .putHeader(id,new Relay2Header(Relay2Header.SITE_UNREACHABLE,new SiteMaster(target_site),null));
         down_prot.down(msg);
     }
@@ -912,6 +921,9 @@ public class RELAY2 extends Protocol {
         return rsps != null? rsps.get(sm) : null;
     }
 
+    private void triggerSiteUnreachableEvent(SiteAddress remoteSite) {
+        up_prot.up(new Event(Event.SITE_UNREACHABLE, remoteSite));
+    }
 
     public static class Relay2Header extends Header {
         public static final byte DATA             = 1;
