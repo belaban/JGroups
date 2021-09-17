@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Various RELAY2-related tests
@@ -260,7 +261,7 @@ public class Relay2Test {
         assert route != null : "route is " + route + " (expected to be UP)";
     }
 
-    /** Tests https://issues.redhat.com/browse/JGRP-2554 */
+    /** Tests https://issues.redhat.com/browse/JGRP-2554 and https://issues.redhat.com/browse/JGRP-2570*/
     public void testSiteUnreachableMessageBreaksSiteUUID() throws Exception {
         a=createNode(LON, "A", LON_CLUSTER, null);
         b=createNode(LON, "B", LON_CLUSTER, null);
@@ -269,11 +270,14 @@ public class Relay2Test {
         waitForBridgeView(2, 20000, 500, a, x);
 
         BlockingQueue<Message> received = new LinkedBlockingDeque<>();
+        AtomicInteger siteUnreachableEvents = new AtomicInteger(0);
         UpHandler h = new UpHandler() {
             @Override
             public Object up(Event evt) {
-                if(evt.getType() == Event.SITE_UNREACHABLE)
+                if(evt.getType() == Event.SITE_UNREACHABLE) {
                     log.debug("Site %s is unreachable", (Object) evt.getArg());
+                    siteUnreachableEvents.incrementAndGet();
+                }
                 return null;
             }
 
@@ -304,6 +308,17 @@ public class Relay2Test {
             Message take = received.take();
             assert !(take.src() instanceof SiteUUID) : "Address was " + take.src();
         }
+        assert siteUnreachableEvents.get() == 100 : "Expecting 100 site unreachable events on node B but got " + siteUnreachableEvents.get();
+
+        siteUnreachableEvents.set(0);
+        assert ((RELAY2) a.getProtocolStack().findProtocol(RELAY2.class)).isSiteMaster();
+        a.setUpHandler(h);
+
+        // check if the site master receives the events
+        for (int i = 0; i < 100; i++)
+            a.send(new SiteMaster(SFO), "to-sfo-from-a".getBytes(StandardCharsets.UTF_8));
+
+        assert siteUnreachableEvents.get() == 100 : "Expecting 100 site unreachable events on node A but got " + siteUnreachableEvents.get();
     }
 
 
