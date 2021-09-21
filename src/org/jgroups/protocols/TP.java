@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
  * </ul>
  * A subclass has to override
  * <ul>
- * <li>{@link #sendMulticast(byte[], int, int)}
  * <li>{@link #sendUnicast(org.jgroups.PhysicalAddress, byte[], int, int)}
  * <li>{@link #init()}
  * <li>{@link #start()}: subclasses <em>must</em> call super.start() <em>after</em> they initialize themselves
