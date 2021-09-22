@@ -105,13 +105,11 @@ public class ByteBufferOutputStream implements DataOutput {
         }
 
         if (utflen > 65535)
-            throw new UTFDataFormatException(
-              "encoded string too long: " + utflen + " bytes");
+            throw new UTFDataFormatException("encoded string too long: " + utflen + " bytes");
 
-        byte[] bytearr=new byte[utflen+2];
+        writeShort(utflen);
 
-        bytearr[count++] = (byte) ((utflen >>> 8) & 0xFF);
-        bytearr[count++] = (byte) ((utflen >>> 0) & 0xFF);
+        byte[] bytearr=new byte[utflen];
 
         int i=0;
         for (i=0; i<strlen; i++) {
@@ -134,7 +132,7 @@ public class ByteBufferOutputStream implements DataOutput {
                 bytearr[count++] = (byte) (0x80 | ((c >>  0) & 0x3F));
             }
         }
-        write(bytearr,0,utflen + 2);
+        write(bytearr,0,utflen);
     }
 
     public String toString() {
