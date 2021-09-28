@@ -10,6 +10,10 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -42,12 +46,22 @@ public class MPerf implements Receiver {
     protected final LongAdder                 total_received_msgs=new LongAdder();
     protected final List<Address>             members=new CopyOnWriteArrayList<>();
     protected final Log                       log=LogFactory.getLog(getClass());
+    protected Path                            out_file_path;
     protected boolean                         looping=true;
     protected final ResponseCollector<Result> results=new ResponseCollector<>();
     protected ThreadFactory                   thread_factory;
     protected static final short              ID=ClassConfigurator.getProtocolId(MPerf.class);
 
+    public MPerf(Path out_file_path) throws IOException {
 
+        if (out_file_path != null) {
+            if (Files.notExists(out_file_path)) {
+                Files.createDirectories(out_file_path.getParent());
+                Files.createFile(out_file_path);
+            }
+            this.out_file_path = out_file_path;
+        }
+    }
 
     public void start(String props, String name, boolean use_fibers) throws Exception {
         StringBuilder sb=new StringBuilder();
@@ -70,6 +84,10 @@ public class MPerf implements Receiver {
         Address coord=channel.getView().getCoord();
         if(coord != null && !local_addr.equals(coord))
             send(coord, null, MPerfHeader.CONFIG_REQ, Message.Flag.RSVP);
+    }
+
+    public void setOutPath(Path out_file_path) {
+        this.out_file_path=out_file_path;
     }
 
 
@@ -130,7 +148,9 @@ public class MPerf implements Receiver {
     }
 
     protected void displayResults() {
-        System.out.println("\nResults:\n");
+        printOutput("\nResults:\n");
+        printOutput("view: " + channel.getView() + " (local address=" + channel.getAddress() + ")");
+        printOutput(printParameters());
         Map<Address,Result> tmp_results=results.getResults();
         for(Map.Entry<Address,Result> entry: tmp_results.entrySet()) {
             Result val=entry.getValue();
@@ -148,16 +168,38 @@ public class MPerf implements Receiver {
             }
         }
         if(num > 0) {
-            System.out.println("\n===============================================================================");
-            System.out.println("\033[1m Average/node:    " + computeStats(total_time / num, total_msgs / num, msg_size));
-            System.out.println("\033[0m Average/cluster: " + computeStats(total_time/num, total_msgs, msg_size));
-            System.out.println("================================================================================\n\n");
+            printOutput("\n===============================================================================");
+            printOutput(" Average/node:    " + computeStats(total_time / num, total_msgs / num, msg_size));
+            printOutput(" Average/cluster: " + computeStats(total_time/num, total_msgs, msg_size));
+            printOutput("================================================================================\n\n");
         }
         else {
-            System.out.println("\n===============================================================================");
-            System.out.println("\033[1m Received no results");
-            System.out.println("\033[0m");
-            System.out.println("================================================================================\n\n");
+            printOutput("\n===============================================================================");
+            printOutput(" Received no results");
+            //printOutput("\033[0m");
+            printOutput("================================================================================\n\n");
+        }
+    }
+
+    protected String printParameters() {
+        StringBuilder sb=new StringBuilder();
+        sb.append("Date: ").append(new Date()).append('\n');
+        sb.append("time=").append(time).append('\n');
+        sb.append("msg_size=").append(msg_size).append('\n');
+        sb.append("num_threads=").append(num_threads).append('\n');
+        sb.append("num_senders=").append(num_senders).append('\n');
+        sb.append("oob=").append(oob).append('\n');
+        return sb.toString();
+    }
+
+    protected void printOutput(String s) {
+        System.out.println(s);
+        if (out_file_path != null && Files.isWritable(out_file_path)) {
+            try {
+                Files.writeString(out_file_path, s + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -547,9 +589,10 @@ public class MPerf implements Receiver {
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         String props=null, name=null;
         boolean run_event_loop=true, use_fibers=true;
+        Path out_file_path=null;
 
         for(int i=0; i < args.length; i++) {
             if("-props".equals(args[i])) {
@@ -560,6 +603,10 @@ public class MPerf implements Receiver {
                 name=args[++i];
                 continue;
             }
+            if("-file".equals(args[i])) {
+                out_file_path = Paths.get(args[++i]);
+                continue;
+            }
             if("-nohup".equals(args[i])) {
                 run_event_loop=false;
                 continue;
@@ -568,11 +615,11 @@ public class MPerf implements Receiver {
                 use_fibers=Boolean.parseBoolean(args[++i]);
                 continue;
             }
-            System.out.println("MPerf [-props <stack config>] [-name <logical name>] [-nohup] [-use_fibers true|false]");
+            System.out.println("MPerf [-props <stack config>] [-name <logical name>] [-nohup] [-use_fibers true|false] [-file <file path>]");
             return;
         }
 
-        final MPerf test=new MPerf();
+        final MPerf test=new MPerf(out_file_path);
         try {
             test.start(props, name, use_fibers);
             if(run_event_loop)
