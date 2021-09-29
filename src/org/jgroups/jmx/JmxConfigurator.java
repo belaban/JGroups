@@ -16,7 +16,9 @@ import java.util.Set;
 
 /**
  * @author Bela Ban, Vladimir Blagojevic
+ * @deprecated JMX support will be removed in 5.3 or 5.4
  */
+@Deprecated(forRemoval=true,since="5.2")
 public final class JmxConfigurator {
     static final Log log = LogFactory.getLog(JmxConfigurator.class);
 
