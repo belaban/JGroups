@@ -63,6 +63,8 @@ public class SeqnoList extends FixedSizeBitSet implements SizeStreamable, Iterab
     /** Removes all seqnos > seqno */
     public void removeHigherThan(long max_seqno) {
         int from=index(max_seqno + 1), to=size-1;
+        if(from < 0)
+            from=0;
         if(from <= to && from >= 0)
             super.clear(from, to);
     }
