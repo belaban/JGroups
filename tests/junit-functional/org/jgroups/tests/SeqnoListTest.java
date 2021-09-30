@@ -76,6 +76,17 @@ public class SeqnoListTest {
     }
 
 
+    public void testRemoveHigherThanWithOffset(){
+        SeqnoList list=new SeqnoList(20, 5);
+        list.add(6,7,9,10,15,20);
+        assert list.size() == 6;
+        list.removeHigherThan(10);
+        assert list.size() == 4;
+        list.removeHigherThan(2);
+        assert list.isEmpty();
+    }
+
+
     public void testIteration() {
         SeqnoList list=new SeqnoList(16).add(1).add(5,10).add(15);
         List<Long> expected=Arrays.asList(1L,5L,6L,7L,8L,9L,10L,15L);
