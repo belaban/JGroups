@@ -1270,8 +1270,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                     missing.removeHigherThan(prev_seqno); // we only retransmit the 'previous batch'
                     if(highest > prev_seqno)
                         xmit_task_map.put(target, highest);
-                    if(!missing.isEmpty())
+                    if(!missing.isEmpty()) {
+                        // remove msgs that are <= highest-delivered (https://issues.redhat.com/browse/JGRP-2574)
+                        long highest_deliverable=win.getHighestDeliverable(), first=missing.getFirst();
+                        if(first < highest_deliverable)
+                            missing.removeLowerThan(highest_deliverable + 1);
                         retransmit(missing, target);
+                    }
                 }
             }
             else if(!xmit_task_map.isEmpty())

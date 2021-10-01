@@ -56,6 +56,33 @@ public class SeqnoListTest {
         assert list.getLast() == 10;
     }
 
+    public void testGetFirst() {
+        SeqnoList l=new SeqnoList(20);
+        assert l.getFirst() == -1;
+        l.add(0);
+        assert l.getFirst() == 0;
+        l.add(5,7);
+        assert l.getFirst() == 0;
+
+        l=new SeqnoList(15).add(3).add(5,10);
+        assert l.getFirst() == 3;
+
+        l=new SeqnoList(20, 5);
+        assert l.getFirst() == -1;
+        l.add(5);
+        assert l.getFirst() == 5;
+        l.removeLowerThan(6);
+        assert l.isEmpty();
+        l.add(6);
+        assert l.getFirst() == 6;
+        assert l.getLast() == 6;
+
+        l=new SeqnoList(100, 5).add(88);
+        assert l.size() == 1;
+        assert l.getFirst() == 88;
+        assert l.getLast() == 88;
+    }
+
 
     public void testRemoveHigherThan() {
         SeqnoList list=new SeqnoList(20).add(1).add(10, 15);
@@ -84,6 +111,48 @@ public class SeqnoListTest {
         assert list.size() == 4;
         list.removeHigherThan(2);
         assert list.isEmpty();
+    }
+
+
+    public void testRemoveLowerThan() {
+        SeqnoList list=new SeqnoList(20);
+        list.add(1,2,3,4,5,6,7,8,9,10);
+        assert list.size() == 10;
+        list.removeLowerThan(0);
+        assert list.size() == 10;
+        list.removeLowerThan(1);
+        assert list.size() == 10;
+        list.removeLowerThan(2);
+        assert list.size() == 9;
+        list.removeLowerThan(20);
+        assert list.isEmpty();
+    }
+
+    public void testRemoveLowerThan2() {
+        SeqnoList list=new SeqnoList(20);
+        list.removeLowerThan(5);
+        list.add(1);
+        assert list.size() == 1;
+        list.removeLowerThan(1);
+        assert list.size() == 1;
+        list.removeLowerThan(5);
+        assert list.isEmpty();
+    }
+
+    public void testRemoveLowerThanWithOffset() {
+        SeqnoList list=new SeqnoList(20, 5);
+        list.removeLowerThan(10);
+        list.removeLowerThan(3);
+        list.add(5);
+        assert list.size() == 1;
+        list.removeLowerThan(5);
+        assert list.size() == 1;
+        list.removeLowerThan(6);
+        assert list.isEmpty();
+
+        list.add(5,6,7);
+        list.removeLowerThan(6);
+        assert list.size() == 2;
     }
 
 

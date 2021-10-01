@@ -61,23 +61,34 @@ public class SeqnoList extends FixedSizeBitSet implements SizeStreamable, Iterab
 
 
     /** Removes all seqnos > seqno */
-    public void removeHigherThan(long max_seqno) {
-        int from=index(max_seqno + 1), to=size-1;
+    public SeqnoList removeHigherThan(long seqno) {
+        int from=index(seqno + 1), to=size-1;
         if(from < 0)
             from=0;
         if(from <= to && from >= 0)
             super.clear(from, to);
+        return this;
+    }
+
+    /** Removes all seqnos < seqno */
+    public SeqnoList removeLowerThan(long seqno) {
+        int to=index(seqno-1);
+        if(to >= 0)
+            super.clear(0, to);
+        return this;
     }
 
 
-
-    /** Returns the last seqno, this should also be the highest seqno in the list as we're supposed to add seqnos
-     * in order
-     * @return
-     */
+    /** Returns the last seqno, this is also the highest seqno in the list as we add seqnos in order */
     public long getLast() {
         int index=previousSetBit(size - 1);
         return index == -1? -1 : seqno(index);
+    }
+
+    /** Returns the first seqno, this is also the lowest seqno in the list as we add seqnos in order */
+    public long getFirst() {
+        int index=nextSetBit(0);
+        return index < 0? -1 : seqno(index);
     }
 
     @Override
