@@ -47,6 +47,10 @@ public class LongMessage extends BaseMessage {
         return LongMessage::new;
     }
 
+    protected Message copyPayload(Message copy) {
+        ((LongMessage)copy).setValue(value);
+        return copy;
+    }
 
     public void writePayload(DataOutput out) throws IOException {
         Bits.writeLongCompressed(value, out);
