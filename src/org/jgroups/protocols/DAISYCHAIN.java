@@ -7,7 +7,6 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -86,11 +85,10 @@ public class DAISYCHAIN extends Protocol {
             transport.loopback(msg, true);
         }
 
-        short hdr_ttl=(short)(view.size()-1);
         // we need to copy the message, as we cannot do a msg.setSrc(next): the next retransmission
         // would use 'next' as destination  !
         Message copy=msg.copy(true, true).setDest(next)
-          .putHeader(getId(), new DaisyHeader(hdr_ttl));
+          .putHeader(getId(), new DaisyHeader(local_addr));
         msgs_sent++;
         if(log.isTraceEnabled())
             log.trace("%s: forwarding multicast message %s (hdrs: %s) to %s", local_addr, msg, msg.getHeaders(), next);
@@ -102,25 +100,24 @@ public class DAISYCHAIN extends Protocol {
         if(hdr == null)
             return up_prot.up(msg);
 
-        // 1. forward the message to the next in line if ttl > 0
-        short ttl=hdr.getTTL();
+        // 1. forward the message to the next, unless next is the original sender
         if(log.isTraceEnabled())
-            log.trace("%s: received message from %s with ttl=%d", local_addr, msg.getSrc(), ttl);
-        if(--ttl > 0) {
-            Message copy=msg.copy(true, true)
-              .setDest(next).putHeader(getId(), new DaisyHeader(ttl));
+            log.trace("%s: received message from %s with original sender=%s", local_addr, msg.getSrc(), hdr.getOriginalSender());
+        if(next != null && !next.equals(hdr.getOriginalSender())) {
+            Message copy=msg.copy(true, true).setSrc(null) // so TP will set src to local_addr
+              .setDest(next).putHeader(getId(), hdr);
             msgs_forwarded++;
             if(log.isTraceEnabled())
-                log.trace("%s: forwarding message to %s with ttl=%d", local_addr, next, ttl);
+                log.trace("%s: forwarding message to %s", local_addr, next);
             down_prot.down(copy);
         }
 
         // 2. Pass up
-        msg.setDest(null);
+        msg.setDest(null).setSrc(hdr.getOriginalSender());
         return up_prot.up(msg);
     }
 
-    public void up(MessageBatch batch) {
+    /*public void up(MessageBatch batch) {
         for(Message msg: batch) {
             DaisyHeader hdr=msg.getHeader(getId());
             if(hdr != null) {
@@ -144,7 +141,7 @@ public class DAISYCHAIN extends Protocol {
 
         if(!batch.isEmpty())
             up_prot.up(batch);
-    }
+    }*/
 
     protected void handleView(View view) {
         this.view=view;
@@ -159,25 +156,27 @@ public class DAISYCHAIN extends Protocol {
 
 
     public static class DaisyHeader extends Header {
-        private short   ttl;
+        protected Address original_sender;
 
         public DaisyHeader() {
         }
 
-        public DaisyHeader(short ttl) {
-            this.ttl=ttl;
+        public DaisyHeader(Address original_sender) {
+            this.original_sender=original_sender;
         }
 
-        public short getMagicId()      {return 69;}
-        public short getTTL()          {return ttl;}
-        public void  setTTL(short ttl) {this.ttl=ttl;}
+        public short       getMagicId()                 {return 69;}
+        public Address     getOriginalSender()          {return original_sender;}
+        public DaisyHeader setOriginalSender(Address s) {this.original_sender=s; return null;}
 
         public Supplier<? extends Header> create() {return DaisyHeader::new;}
 
-        @Override public int  serializedSize()                           {return Global.SHORT_SIZE;}
-        @Override public void writeTo(DataOutput out) throws IOException {out.writeShort(ttl);}
-        @Override public void readFrom(DataInput in) throws IOException  {ttl=in.readShort();}
-        public String         toString()                                 {return "ttl=" + ttl;}
+        @Override public int  serializedSize()                           {return Util.size(original_sender);}
+        @Override public void writeTo(DataOutput out) throws IOException {Util.writeAddress(original_sender, out);}
+        @Override public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+            original_sender=Util.readAddress(in);
+        }
+        public String         toString() {return "original sender=" + original_sender;}
     }
 
 }
