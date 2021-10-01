@@ -105,7 +105,7 @@ public class DAISYCHAIN extends Protocol {
             log.trace("%s: received message from %s with original sender=%s", local_addr, msg.getSrc(), hdr.getOriginalSender());
         if(next != null && !next.equals(hdr.getOriginalSender())) {
             Message copy=msg.copy(true, true).setSrc(null) // so TP will set src to local_addr
-              .setDest(next).putHeader(getId(), hdr);
+              .setDest(next);
             msgs_forwarded++;
             if(log.isTraceEnabled())
                 log.trace("%s: forwarding message to %s", local_addr, next);
