@@ -71,8 +71,8 @@ public abstract class BaseBundler implements Bundler {
                 if(transport.statsEnabled())
                     transport.incrBatchesSent(1);
             }
+            list.clear();
         }
-        clearMessages();
         count=0;
     }
 
