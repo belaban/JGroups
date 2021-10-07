@@ -2,6 +2,7 @@ package org.jgroups.blocks;
 
 
 import org.jgroups.Address;
+import org.jgroups.MergeView;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
@@ -145,20 +146,15 @@ public class GroupRequest<T> extends Request<RspList<T>> {
     }
 
     /**
-     * Any member of 'membership' that is not in the new view is flagged as
-     * SUSPECTED. Any member in the new view that is <em>not</em> in the
-     * membership (ie, the set of responses expected for the current RPC) will
-     * <em>not</em> be added to it. If we did this we might run into the
-     * following problem:
+     * Any member of 'membership' that is not in the new view is flagged as SUSPECTED. Any member in the new view that
+     * is <em>not</em> in the membership (ie, the set of responses expected for the current RPC) will <em>not</em> be
+     * added to it. If we did this we might run into the following problem:
      * <ul>
      * <li>Membership is {A,B}
-     * <li>A sends a synchronous group RPC (which sleeps for 60 secs in the
-     * invocation handler)
+     * <li>A sends a synchronous group RPC (which sleeps for 60 secs in the invocation handler)
      * <li>C joins while A waits for responses from A and B
-     * <li>If this would generate a new view {A,B,C} and if this expanded the
-     * response set to {A,B,C}, A would wait forever on C's response because C
-     * never received the request in the first place, therefore won't send a
-     * response.
+     * <li>If this would generate a new view {A,B,C} and if this expanded the response set to {A,B,C}, A would wait
+     * forever on C's response because C never received the request in the first place, therefore won't send a response.
      * </ul>
      */
     public void viewChange(View view) {
@@ -168,7 +164,18 @@ public class GroupRequest<T> extends Request<RspList<T>> {
         boolean changed=false;
         lock.lock();
         try {
-            for(Map.Entry<Address,Rsp<T>> entry: rsps.entrySet()) {
+            if(view instanceof MergeView) {
+                // we need to set the rsp for member of a subview that doesn't contain local_addr to 'suspected',
+                // unless that rsp has already been received (https://issues.redhat.com/browse/JGRP-2575)
+                for(View v: ((MergeView)view).getSubgroups()) {
+                    if(!v.containsMember(corr.local_addr)) {
+                        for(Address mbr: v.getMembersRaw())
+                            if(setSuspected(mbr))
+                                changed=true;
+                    }
+                }
+            }
+            for(Map.Entry<Address,Rsp<T>> entry : rsps.entrySet()) {
                 Address mbr=entry.getKey();
                 // SiteAddresses are not checked as they might be in a different cluster
                 if(!(mbr instanceof SiteAddress) && !view.containsMember(mbr)) {
@@ -266,6 +273,17 @@ public class GroupRequest<T> extends Request<RspList<T>> {
         }
         return ret.toString();
     }
+
+    protected boolean setSuspected(Address mbr) {
+        Rsp<T> rsp=rsps.get(mbr);
+        if(rsp != null && rsp.setSuspected()) {
+            if(!(rsp.wasReceived() || rsp.wasUnreachable()))
+                num_received++;
+            return true;
+        }
+        return false;
+    }
+
 
     protected RspList<T> doAndComplete(Callable<RspList<T>> supplier) {
         try {

@@ -69,6 +69,16 @@ public class UnicastRequest<T> extends Request<T> {
         if(view == null)
             return;
 
+        if(view instanceof MergeView) {
+            // if target is not in a subview then we need to suspect it (https://issues.redhat.com/browse/JGRP-2575)
+            for(View v: ((MergeView)view).getSubgroups()) {
+                if(v.containsMember(target) && !v.containsMember(corr.local_addr)) {
+                    completeExceptionally(new SuspectedException(target));
+                    corrDone();
+                    return;
+                }
+            }
+        }
         // SiteAddresses are not checked as they might be in a different cluster
         if(!(target instanceof SiteAddress) && !view.containsMember(target) && !isDone()) {
             completeExceptionally(new SuspectedException(target));

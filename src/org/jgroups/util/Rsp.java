@@ -102,7 +102,7 @@ public class Rsp<T> {
     }
 
     public boolean equals(Object obj) {
-        Rsp other=(Rsp)obj;
+        Rsp<T> other=(Rsp<T>)obj;
         return Objects.equals(value, other.value);
     }
 
