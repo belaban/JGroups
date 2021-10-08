@@ -654,11 +654,7 @@ public class JChannel implements Closeable {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
-                View tmp=evt.getArg();
-                if(tmp instanceof MergeView)
-                    view=new View(tmp.getViewId(), tmp.getMembers());
-                else
-                    view=tmp;
+                view=evt.getArg();
 
                 // Bela&Vladimir Oct 27th,2006 (JGroups 2.4): we need to set connected=true because a client can
                 // call channel.getView() in viewAccepted() callback invoked on this thread (see Event.VIEW_CHANGE handling below)
