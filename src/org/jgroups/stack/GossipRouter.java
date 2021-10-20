@@ -107,7 +107,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     protected final Log            log=LogFactory.getLog(this.getClass());
 
     // mapping between groups and <member address> - <physical addr / logical name> pairs
-    protected final ConcurrentMap<String,ConcurrentMap<Address,Entry>> address_mappings=new ConcurrentHashMap<>();
+    protected final Map<String,ConcurrentMap<Address,Entry>> address_mappings=new ConcurrentHashMap<>();
+
+    // to cache output streams for serialization (https://issues.redhat.com/browse/JGRP-2576)
+    protected final Map<Address,ByteArrayDataOutputStream>   output_streams=new ConcurrentHashMap<>();
 
     protected static final BiConsumer<Short,Message> MSG_CONSUMER=(version,msg)
       -> System.out.printf("dst=%s src=%s (%d bytes): hdrs= %s\n", msg.dest(), msg.src(), msg.getLength(), msg.printHeaders());
@@ -304,7 +307,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                     // inefficient: we should transfer bytes from input stream to output stream, but that is not
                     // available natively
                     if((request=readRequest(in, type)) != null) {
-                        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(request.serializedSize());
+                        ByteArrayDataOutputStream out=getOutputStream(request.sender, request.serializedSize());
+                        out.position(0);
                         request.writeTo(out);
                         route(request.group, request.addr, out.buffer(), 0, out.position());
                         if(dump_msgs == DumpMessages.ALL)
@@ -325,6 +329,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                 handleUnregister(in);
                 break;
         }
+    }
+
+    protected ByteArrayDataOutputStream getOutputStream(Address mbr, int size) {
+        return output_streams.computeIfAbsent(mbr, addr -> new ByteArrayDataOutputStream(size));
     }
 
     protected void handleRegister(Address sender, DataInput in) {
@@ -448,6 +456,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         }
         if(m.remove(addr) != null && m.isEmpty())
             address_mappings.remove(group);
+        output_streams.remove(addr);
     }
 
 
@@ -460,6 +469,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                 Entry e=entry2.getValue();
                 if(client_addr.equals(e.client_addr)) {
                     map.remove(entry2.getKey());
+                    output_streams.remove(entry2.getKey());
                     log.debug("connection to %s closed", client_addr);
                     if(log.isDebugEnabled())
                         log.debug("removed %s (%s) from group %s", e.logical_name, e.phys_addr, entry.getKey());
