@@ -79,11 +79,11 @@ public class MergeTest extends ChannelTestBase {
         for(int i=0; i < retval.length; i++) {
             JChannel tmp;
             if(ch == null) {
-                ch=createChannel(true, members.length);
+                ch=createChannel();
                 tmp=ch;
             }
             else {
-                tmp=createChannel(ch);
+                tmp=createChannel();
             }
             tmp.setName(members[i]);
             ProtocolStack stack=tmp.getProtocolStack();
@@ -98,10 +98,12 @@ public class MergeTest extends ChannelTestBase {
             if(fd_sock != null)
                 fd_sock.setPortRange(5);
 
-            tmp.connect(cluster_name);
+            // tmp.connect(cluster_name);
             retval[i]=tmp;
         }
-
+        makeUnique(retval);
+        for(JChannel c: retval)
+            c.connect(cluster_name);
         return retval;
     }
 

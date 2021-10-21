@@ -105,7 +105,9 @@ public class RpcDispatcherAsyncInvocationTest {
 
 
     protected static JChannel createChannel(String name) throws Exception {
-        return new JChannel(new SHARED_LOOPBACK().setThreadPoolMinThreads(10).setThreadPoolMaxThreads(20),
+        SHARED_LOOPBACK sl=new SHARED_LOOPBACK();
+        sl.getThreadPool().setMinThreads(10).setMaxThreads(20);
+        return new JChannel(sl,
                             new SHARED_LOOPBACK_PING(),
                             new NAKACK2(),
                             new UNICAST3(),

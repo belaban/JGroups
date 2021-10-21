@@ -20,7 +20,8 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
 
     @BeforeClass
     protected void setUp() throws Exception {
-        channel=createChannel(true);
+        channel=createChannel();
+        makeUnique(channel);
         disp=new RpcDispatcher(channel, this);
         channel.connect("RpcDispatcherUnicastMethodExceptionTest");
     }
@@ -58,14 +59,14 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
         Object retval=disp.callRemoteMethod(channel.getAddress(), "foo", null, null,
                                             new RequestOptions(ResponseMode.GET_ALL, 5000));
         System.out.println("retval: " + retval);
-        assertNotNull(retval);
+        assert retval != null;
     }
 
 
     public void testMethodReturningException() throws Exception {
         Object retval=disp.callRemoteMethod(channel.getAddress(),"returnException",null,null,RequestOptions.SYNC());
         System.out.println("retval: " + retval);
-        assertNotNull(retval);
+        assert retval != null;
         assert retval instanceof IllegalArgumentException;
     }
 

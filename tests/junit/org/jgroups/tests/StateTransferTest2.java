@@ -33,13 +33,13 @@ public class StateTransferTest2 extends ChannelTestBase {
 
    
     @Test(dataProvider="createChannels")
-    public void testSuccessfulStateTransfer(final Class<?> state_transfer_class) throws Exception {
+    public void testSuccessfulStateTransfer(final Class<? extends Protocol> state_transfer_class) throws Exception {
         try {
             createStateProviderAndRequesterChannels(state_transfer_class);
             StateHandler sh1=new StateHandler("Bela", false, false), sh2=new StateHandler(null, false, false);
             c1.setReceiver(sh1);
             c2.setReceiver(sh2);
-            c2.getState(null, 30000);
+            c2.getState(null, 10000);
             Object state=sh2.getReceivedState();
             System.out.println("state = " + state);
             assert Objects.equals(state, "Bela");
@@ -50,7 +50,7 @@ public class StateTransferTest2 extends ChannelTestBase {
     }
 
     @Test(dataProvider="createChannels")
-    public void testUnsuccessfulStateTransferFailureAtStateProvider(final Class<?> state_transfer_class) throws Exception {
+    public void testUnsuccessfulStateTransferFailureAtStateProvider(final Class<? extends Protocol> state_transfer_class) throws Exception {
         try {
             createStateProviderAndRequesterChannels(state_transfer_class);
             StateHandler sh1=new StateHandler("Bela", true, false), sh2=new StateHandler(null, false, false);
@@ -74,7 +74,7 @@ public class StateTransferTest2 extends ChannelTestBase {
 
 
     @Test(dataProvider="createChannels")
-    public void testUnsuccessfulStateTransferFailureAtStateRequester(final Class<?> state_transfer_class) throws Exception {
+    public void testUnsuccessfulStateTransferFailureAtStateRequester(final Class<? extends Protocol> state_transfer_class) throws Exception {
         createStateProviderAndRequesterChannels(state_transfer_class);
         StateHandler sh1=new StateHandler("Bela", false, false), sh2=new StateHandler(null, false, true);
         c1.setReceiver(sh1);
@@ -92,10 +92,12 @@ public class StateTransferTest2 extends ChannelTestBase {
     }
 
 
-    protected void createStateProviderAndRequesterChannels(Class state_transfer_class) throws Exception {
-        c1=createChannel(true, 2, "Provider");
+    protected void createStateProviderAndRequesterChannels(Class<? extends Protocol> state_transfer_class) throws Exception {
+        c1=createChannel().name("Provider");
         replaceStateTransferProtocolWith(c1, state_transfer_class);
-        c2=createChannel(c1, "Requester");
+        c2=createChannel().name("Requester");
+        replaceStateTransferProtocolWith(c2, state_transfer_class);
+        makeUnique(c1,c2);
         c1.connect("StateTransferTest2");
         c2.connect("StateTransferTest2");
     }

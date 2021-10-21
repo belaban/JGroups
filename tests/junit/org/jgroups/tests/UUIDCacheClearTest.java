@@ -21,13 +21,14 @@ public class UUIDCacheClearTest extends ChannelTestBase {
         MyReceiver r1=new MyReceiver(), r2=new MyReceiver();
 
         try {
-            a=createChannel(true, 2, "A");
+            a=createChannel().name("A");
             a.setReceiver(r1);
-            a.connect("UUIDCacheClearTest");
-            b=createChannel(a, "B");
+            b=createChannel().name("B");
             b.setReceiver(r2);
-            b.connect("UUIDCacheClearTest");
+            makeUnique(a,b);
 
+            a.connect("UUIDCacheClearTest");
+            b.connect("UUIDCacheClearTest");
             Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
 
 

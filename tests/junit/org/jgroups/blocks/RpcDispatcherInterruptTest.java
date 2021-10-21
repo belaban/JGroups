@@ -24,25 +24,27 @@ import java.util.Map;
 @Test(groups=Global.STACK_DEPENDENT)
 public class RpcDispatcherInterruptTest extends ChannelTestBase {
     private RpcDispatcher disp, disp2;
-    private JChannel ch, ch2;
+    private JChannel      a, b;
 
     @BeforeMethod
     void setUp() throws Exception {
-        ch=createChannel(true);
-        modifyStack(ch);
+        a=createChannel().name("A");
+        modifyStack(a);
         ServerObject obj=new ServerObject();
-        disp=new RpcDispatcher(ch, obj);
-        ch.connect("RpcDispatcherInterruptTest");
+        disp=new RpcDispatcher(a, obj);
 
-        ch2=createChannel(ch);
+        b=createChannel().name("B");
         ServerObject obj2=new ServerObject();
-        disp2=new RpcDispatcher(ch2, obj2);
-        ch2.connect("RpcDispatcherInterruptTest");
+        disp2=new RpcDispatcher(b, obj2);
+        makeUnique(a,b);
+
+        a.connect("RpcDispatcherInterruptTest");
+        b.connect("RpcDispatcherInterruptTest");
     }
 
     @AfterMethod
     void tearDown() throws Exception {
-        Util.close(disp2, ch2, disp, ch);
+        Util.close(disp2, b, disp, a);
     }
 
 
@@ -91,12 +93,12 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
         return retval;
     }
 
-    private static void checkResults(RspList rsps, int num, boolean received) {
-        assertEquals("responses: " + rsps, num, rsps.size());        
-        for(Iterator<Map.Entry<Address,Rsp>> it=rsps.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<Address,Rsp> entry=it.next();
-            Rsp rsp=entry.getValue();
-            assertEquals("rsp: " + rsp, rsp.wasReceived(), received);
+    private static void checkResults(RspList<Void> rsps, int num, boolean received) {
+        assert num == rsps.size();
+        for(Iterator<Map.Entry<Address,Rsp<Void>>> it=rsps.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<Address,Rsp<Void>> entry=it.next();
+            Rsp<Void> rsp=entry.getValue();
+            assert rsp.wasReceived() == received;
         }
     }
 

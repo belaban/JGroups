@@ -3,14 +3,12 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.annotations.Experimental;
-import org.jgroups.stack.DiagnosticsHandler;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.util.AverageMinMax;
 import org.jgroups.util.Util;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Bundler implementation which sends message batches (or single messages) as soon as the target destination changes
@@ -23,20 +21,17 @@ import java.util.Map;
  * @since  4.0.4
  */
 @Experimental
-public class AlternatingBundler extends TransferQueueBundler implements DiagnosticsHandler.ProbeHandler {
+public class AlternatingBundler extends TransferQueueBundler {
     protected         Address       target_dest; // the current destination
     protected final   List<Message> target_list=new ArrayList<>(); // msgs for the current dest; flushed on dest change
     protected final   AverageMinMax avg_batch_size=new AverageMinMax();
 
+    @ManagedAttribute(description="Average batch size")
+    public String getAverageBatchSize() {return avg_batch_size.toString();}
 
-    public synchronized void start() {
-        super.start();
-        transport.registerProbeHandler(this);
-    }
-
-    public synchronized void stop() {
-        transport.unregisterProbeHandler(this);
-        super.stop();
+    public void resetStats() {
+        super.resetStats();
+        avg_batch_size.clear();
     }
 
     public void run() {
@@ -46,7 +41,7 @@ public class AlternatingBundler extends TransferQueueBundler implements Diagnost
                 if((msg=queue.take()) == null) // block until first message is available
                     continue;
                 int size=msg.size();
-                if(count + size >= transport.getMaxBundleSize()) {
+                if(count + size >= max_size) {
                     num_sends_because_full_queue++;
                     fill_count.add(count);
                     _sendBundledMessages();
@@ -54,7 +49,7 @@ public class AlternatingBundler extends TransferQueueBundler implements Diagnost
 
                 for(;;) {
                     Address dest=msg.getDest();
-                    if(!Util.match(dest, target_dest) || count + size >= transport.getMaxBundleSize())
+                    if(!Util.match(dest, target_dest) || count + size >= max_size)
                         _sendBundledMessages();
                     _addMessage(msg, size);
                     msg=queue.poll();
@@ -69,39 +64,18 @@ public class AlternatingBundler extends TransferQueueBundler implements Diagnost
         }
     }
 
-    public Map<String,String> handleProbe(String... keys) {
-        Map<String,String> map=new HashMap<>();
-        for(String key: keys) {
-            switch(key) {
-                case "ab.avg_batch_size":
-                    map.put(key, avg_batch_size.toString());
-                    break;
-                case "ab.avg_batch_size.reset":
-                    avg_batch_size.clear();
-                    break;
-            }
-        }
-        return map;
-    }
-
-    public String[] supportedKeys() {
-        return new String[]{"ab.avg_batch_size", "ab.avg_batch_size.reset"};
-    }
-
     protected void _sendBundledMessages() {
         try {
             if(target_list.isEmpty())
                 return;
             output.position(0);
-            if(target_list.size() == 1) {
+            if(target_list.size() == 1)
                 sendSingleMessage(target_list.get(0));
-                // avg_batch_size.add(1);
-            }
             else {
                 avg_batch_size.add(target_list.size());
                 sendMessageList(target_dest, target_list.get(0).getSrc(), target_list);
                 if(transport.statsEnabled())
-                    transport.incrBatchesSent(1);
+                    transport.getMessageStats().incrNumBatchesSent(1);
             }
         }
         finally {

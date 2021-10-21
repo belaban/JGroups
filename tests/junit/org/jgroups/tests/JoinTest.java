@@ -25,8 +25,9 @@ public class JoinTest extends ChannelTestBase {
 
     @BeforeMethod
     void setUp() throws Exception {
-        a=createChannel(true, 2, "A");
-        b=createChannel(a, "B");
+        a=createChannel().name("A");
+        b=createChannel().name("B");
+        makeUnique(a,b);
     }
 
 

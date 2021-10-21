@@ -129,9 +129,9 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
           new FRAG4()};
 
         if(udp) {
-            prot_stack[0]=new UDP()
-              .setMulticastAddress(InetAddress.getByName(mcast_addr)).setMulticastPort(mcast_port)
-              .setDiagnosticsAddr(InetAddress.getByName("224.0.75.75")).diagEnableUdp(true);
+            UDP u=new UDP().setMulticastAddress(InetAddress.getByName(mcast_addr)).setMulticastPort(mcast_port);
+            u.getDiagnosticsHandler().setMcastAddress(InetAddress.getByName("224.0.75.75")).enableUdp(true);
+            prot_stack[0]=u;
             prot_stack[1]=new PING();
         }
         else {
@@ -139,11 +139,13 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
                 InetAddress host=bind_addr == null? InetAddress.getLocalHost() : Util.getAddress(bind_addr, Util.getIpStackType());
                 initial_hosts=String.format("%s[%d]", host.getHostAddress(), bind_port);
             }
-            prot_stack[0]=new TCP().diagEnableUdp(false).diagEnableTcp(true);
+            TCP tcp=new TCP();
+            tcp.getDiagnosticsHandler().enableUdp(false).enableTcp(true);
+            prot_stack[0]=tcp;
             prot_stack[1]=new TCPPING().setInitialHosts2(Util.parseCommaDelimitedHosts(initial_hosts, 2));
         }
 
-        ((TP)prot_stack[0]).setBindAddress(bind_address).setBindPort(bind_port).setDiagnosticsEnabled(true);
+        ((TP)prot_stack[0]).setBindAddress(bind_address).setBindPort(bind_port);
 
         channel=new JChannel(prot_stack).addAddressGenerator(generator).setName(name);
         TP transport=channel.getProtocolStack().getTransport();

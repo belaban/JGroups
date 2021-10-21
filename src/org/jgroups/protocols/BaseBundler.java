@@ -4,6 +4,9 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
 import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
@@ -28,11 +31,28 @@ public abstract class BaseBundler implements Bundler {
     protected ByteArrayDataOutputStream         output;
     protected Log                               log;
 
+    /**
+     * Maximum number of bytes for messages to be queued until they are sent.
+     * This value needs to be smaller than the largest datagram packet size in case of UDP
+     */
+    @Property(name="max_size", type=AttributeType.BYTES,
+      description="Maximum number of bytes for messages to be queued until they are sent")
+    protected int max_size=64000;
+
+    @Property(description="The max number of elements in a bundler if the bundler supports size limitations",
+      type=AttributeType.SCALAR)
+    protected int                               capacity=16384;
+
+
+    public int     getCapacity()       {return capacity;}
+    public Bundler setCapacity(int c)  {this.capacity=c; return this;}
+    public int     getMaxSize()        {return max_size;}
+    public Bundler setMaxSize(int s)   {max_size=s; return this;}
 
     public void init(TP transport) {
         this.transport=transport;
         log=transport.getLog();
-        output=new ByteArrayDataOutputStream(transport.getMaxBundleSize() + MSG_OVERHEAD);
+        output=new ByteArrayDataOutputStream(max_size + MSG_OVERHEAD);
     }
     public void start() {}
     public void stop()  {}
@@ -43,6 +63,7 @@ public abstract class BaseBundler implements Bundler {
     }
 
     /** Returns the total number of messages in the hashmap */
+    @ManagedAttribute(description="The number of unsent messages in the bundler")
     public int size() {
         lock.lock();
         try {
@@ -51,6 +72,11 @@ public abstract class BaseBundler implements Bundler {
         finally {
             lock.unlock();
         }
+    }
+
+    @ManagedAttribute(description="Size of the queue (if available")
+    public int getQueueSize() {
+        return -1;
     }
 
     /**
@@ -69,7 +95,7 @@ public abstract class BaseBundler implements Bundler {
                 Address dst=entry.getKey();
                 sendMessageList(dst, list.get(0).getSrc(), list);
                 if(transport.statsEnabled())
-                    transport.incrBatchesSent(1);
+                    transport.getMessageStats().incrNumBatchesSent(1);
             }
             list.clear();
         }
@@ -87,7 +113,7 @@ public abstract class BaseBundler implements Bundler {
             Util.writeMessage(msg, output, dest == null);
             transport.doSend(output.buffer(), 0, output.position(), dest);
             if(transport.statsEnabled())
-                transport.incrNumSingleMsgsSent(1);
+                transport.getMessageStats().incrNumSingleMsgsSent(1);
         }
         catch(Throwable e) {
             log.trace(Util.getMessage("SendFailure"),

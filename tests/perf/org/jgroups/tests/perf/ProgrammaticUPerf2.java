@@ -102,7 +102,7 @@ public class ProgrammaticUPerf2 implements Receiver {
             };
 
             InetAddress bind_address=Util.getAddress(BIND_ADDR, Util.getIpStackType());
-            InetAddress mcast_addr=Util.getAddress(MCAST_ADDR, Util.getIpStackType());
+            TCP tcp=new TCP().setBindAddress(bind_address).setBindAddress(bind_address).setBindPort(7800);
             Protocol[] prot_stack={
 
 
@@ -114,10 +114,7 @@ public class ProgrammaticUPerf2 implements Receiver {
 
 
               // uncomment if TCP should be used, compile, then native-image
-              new TCP().setBindAddress(bind_address).setBindPort(7800)
-                .setDiagnosticsEnabled(true)
-                .diagEnableUdp(false)
-                .diagEnableTcp(true),
+              tcp,
               new TCPPING().initialHosts(Collections.singletonList(new InetSocketAddress(bind_address, 7800))),
               // new MPING().mcastAddress(mcast_addr).mcastPort(7550),
 
@@ -134,6 +131,7 @@ public class ProgrammaticUPerf2 implements Receiver {
               new MFC(),
               new FRAG2()};
             channel=new JChannel(prot_stack);
+            channel.getProtocolStack().getTransport().getDiagnosticsHandler().enableUdp(false).enableTcp(true);
             disp=new RpcDispatcher(channel, null).setReceiver(r)
               .setMethodInvoker(ProgrammaticUPerf2::invoke);
             h=new NonReflectiveProbeHandler(channel).initialize(channel.getProtocolStack().getProtocols());

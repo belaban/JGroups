@@ -19,7 +19,8 @@ import java.util.List;
 public class ChannelTest extends ChannelTestBase {       
 
     public void testBasicOperations() throws Exception {
-        JChannel a = createChannel(true,1).name("A");
+        JChannel a = createChannel().name("A");
+        makeUnique(a);
         JChannel b=null;
 
         try {
@@ -58,9 +59,11 @@ public class ChannelTest extends ChannelTestBase {
        
             assert a.getClusterName() == null;
        
-            a = createChannel(true,2);
+            a = createChannel().name("A");
+            b = createChannel().name("B");
+            makeUnique(a,b);
+
             a.connect("testBasicOperations");
-            b = createChannel(a);
             b.connect("testBasicOperations");
        
             Util.sleep(1000);
@@ -106,6 +109,7 @@ public class ChannelTest extends ChannelTestBase {
 
     public void testSendOnDisconnectedChannel() throws Exception {
         JChannel ch=createChannel();
+        makeUnique(ch);
         try {
             ch.send(null, "hello world");
             assert false : "sending on a disconnected channel should have failed";
@@ -117,6 +121,7 @@ public class ChannelTest extends ChannelTestBase {
 
     public void testSendOnClosedChannel() throws Exception {
         JChannel ch=createChannel();
+        makeUnique(ch);
         try {
             Util.close(ch);
             ch.send(null, "hello world");
@@ -129,17 +134,17 @@ public class ChannelTest extends ChannelTestBase {
 
 
     public void testViewChange() throws Exception {
-        JChannel ch1 = createChannel(true,2);
+        JChannel ch1 = createChannel();
         ViewChecker checker=new ViewChecker(ch1);
         ch1.setReceiver(checker);
-        ch1.connect("testViewChange");
-
-        JChannel ch2=createChannel(ch1);
+        JChannel ch2=createChannel();
+        makeUnique(ch1,ch2);
         try {
+            ch1.connect("testViewChange");
             ch2.connect("testViewChange");
-            assertTrue(checker.getReason(), checker.isSuccess());
+            assert checker.isSuccess();
             ch2.close();
-            assertTrue(checker.getReason(), checker.isSuccess());
+            assert checker.isSuccess();
         }
         finally {
             Util.close(ch1,ch2);
@@ -147,8 +152,9 @@ public class ChannelTest extends ChannelTestBase {
     }
 
     public void testViewChange2() throws Exception {
-        JChannel a=createChannel(true, 2).name("A");
-        JChannel b=createChannel(a).name("B");
+        JChannel a=createChannel().name("A");
+        JChannel b=createChannel().name("B");
+        makeUnique(a,b);
         a.connect("testViewChange2");
         b.connect("testViewChange2");
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b);
@@ -160,8 +166,9 @@ public class ChannelTest extends ChannelTestBase {
 
 
     public void testIsConnectedOnFirstViewChange() throws Exception {
-        JChannel ch1 = createChannel(true,2);        
-        JChannel ch2=createChannel(ch1);
+        JChannel ch1 = createChannel().name("A");
+        JChannel ch2=createChannel().name("B");
+        makeUnique(ch1,ch2);
         ConnectedChecker tmp=new ConnectedChecker(ch2);
         ch2.setReceiver(tmp);
         try {
@@ -177,8 +184,9 @@ public class ChannelTest extends ChannelTestBase {
 
 
     public void testNoViewIsReceivedAfterDisconnect() throws Exception {
-        JChannel ch1 = createChannel(true,2);        
-        JChannel ch2=createChannel(ch1);
+        JChannel ch1 = createChannel();
+        JChannel ch2=createChannel();
+        makeUnique(ch1,ch2);
         MyViewChecker ra = new MyViewChecker(ch2);
         ch2.setReceiver(ra);
 
@@ -197,8 +205,9 @@ public class ChannelTest extends ChannelTestBase {
 
 
     public void testNoViewIsReceivedAfterClose() throws Exception {
-        JChannel ch1 = createChannel(true,2);        
-        JChannel ch2=createChannel(ch1);
+        JChannel ch1 = createChannel();
+        JChannel ch2=createChannel();
+        makeUnique(ch1,ch2);
         MyViewChecker ra = new MyViewChecker(ch2);
         ch2.setReceiver(ra);
 
@@ -218,7 +227,8 @@ public class ChannelTest extends ChannelTestBase {
 
     @Test(expectedExceptions={NullPointerException.class})
     public void testNullMessage() throws Exception {
-        JChannel ch1 = createChannel(true,2);        
+        JChannel ch1 = createChannel();
+        makeUnique(ch1);
         try{
             ch1.connect("testNullMessage");
             ch1.send(null);
@@ -231,7 +241,8 @@ public class ChannelTest extends ChannelTestBase {
 
     public void testOrdering() throws Exception {
         final int NUM=100;
-        JChannel ch=createChannel(true, 2);
+        JChannel ch=createChannel();
+        makeUnique(ch);
         MyReceiver receiver=new MyReceiver(NUM);
         ch.setReceiver(receiver);
         try {

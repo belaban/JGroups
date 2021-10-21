@@ -3,19 +3,18 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestOptions;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.*;
+import org.jgroups.util.ByteArray;
+import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.net.InetAddress;
 import java.util.Collections;
 
 
@@ -29,24 +28,14 @@ public class MessageDispatcherRSVPTest {
     protected static final int          NUM=2; // number of members
     protected final JChannel[]          channels=new JChannel[NUM];
     protected final MessageDispatcher[] dispatchers=new MessageDispatcher[NUM];
-    protected MyDiagnosticsHandler      handler;
 
 
 
     @BeforeMethod
     void setUp() throws Exception {
-        handler=new MyDiagnosticsHandler(InetAddress.getByName("224.0.75.75"), 7500,
-                                         LogFactory.getLog(DiagnosticsHandler.class),
-                                         new DefaultSocketFactory(),
-                                         new DefaultThreadFactory("", false));
-        handler.start();
-
         System.out.print("Connecting channels: ");
         for(int i=0; i < NUM; i++) {
-            SHARED_LOOPBACK shared_loopback=new SHARED_LOOPBACK();
-            shared_loopback.setDiagnosticsHandler(handler);
-
-            channels[i]=new JChannel(shared_loopback,
+            channels[i]=new JChannel(new SHARED_LOOPBACK(),
                                      new DISCARD(),
                                      new SHARED_LOOPBACK_PING(),
                                      new MERGE3().setMinInterval(1000).setMaxInterval(3000),
@@ -57,6 +46,7 @@ public class MessageDispatcherRSVPTest {
                                        .logViewWarnings(false).setViewAckCollectionTimeout(2000)
                                        .logCollectMessages(false));
             channels[i].setName(String.valueOf((i + 1)));
+            channels[i].getProtocolStack().getTransport().getDiagnosticsHandler().setEnabled(false);
             dispatchers[i]=new MessageDispatcher(channels[i]);
             channels[i].connect("MessageDispatcherRSVPTest");
             System.out.print(i + 1 + " ");
@@ -64,7 +54,7 @@ public class MessageDispatcherRSVPTest {
                 Util.sleep(1000);
         }
         Util.waitUntilAllChannelsHaveSameView(30000, 1000, channels);
-        System.out.println("");
+        System.out.println();
     }
 
     @AfterMethod
@@ -75,7 +65,6 @@ public class MessageDispatcherRSVPTest {
             stack.stopStack(cluster_name);
             stack.destroy();
         }
-        handler.destroy();
     }
 
 
@@ -182,15 +171,5 @@ public class MessageDispatcherRSVPTest {
     }
 
 
-    protected static class MyDiagnosticsHandler extends DiagnosticsHandler {
 
-        protected MyDiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port, Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
-            super(diagnostics_addr,diagnostics_port,log,socket_factory,thread_factory);
-        }
-
-        public void start() throws Exception {super.start();}
-        public void stop() {}
-        public void destroy() {super.stop();}
-    }
 }
-;

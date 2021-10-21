@@ -104,7 +104,7 @@ public final class PropertyConverters {
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope, StackType ip_version) throws Exception {
 
             // get the existing bind address - possibly null
-            InetAddress old_bind_addr=Configurator.getValueFromProtocol((Protocol)obj, "bind_addr");
+            InetAddress old_bind_addr=Configurator.getValueFromObject((Protocol)obj, "bind_addr");
 
             // apply a bind interface constraint
             InetAddress new_bind_addr=Util.validateBindAddressFromInterface(old_bind_addr, propertyValue, ip_version);

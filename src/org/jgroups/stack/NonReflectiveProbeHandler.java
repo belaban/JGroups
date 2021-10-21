@@ -5,7 +5,6 @@ import org.jgroups.JChannelProbeHandler;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.jmx.ResourceDMBean;
 import org.jgroups.util.Util;
 
@@ -71,13 +70,11 @@ public class NonReflectiveProbeHandler extends JChannelProbeHandler {
             };
 
             Util.forAllFieldsAndMethods(prot, FILTER, field_func, method_func);
-            if(prot instanceof AdditionalJmxObjects) {
-                Object[] objects=((AdditionalJmxObjects)prot).getJmxObjects();
-                if(objects != null) {
-                    for(Object obj: objects)
-                        if(obj != null)
-                            Util.forAllFieldsAndMethods(obj, FILTER, field_func, method_func);
-                }
+            List<Object> objects=prot.getComponents();
+            if(objects != null) {
+                for(Object obj: objects)
+                    if(obj != null)
+                        Util.forAllFieldsAndMethods(obj, FILTER, field_func, method_func);
             }
         }
         return this;

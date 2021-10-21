@@ -1,9 +1,14 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
 import org.jgroups.Event;
-import org.jgroups.annotations.*;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
@@ -11,8 +16,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 /**
  * Discards up or down messages based on a percentage; e.g., setting property 'up' to 0.1 causes 10%

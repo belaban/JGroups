@@ -25,6 +25,7 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
     private ServerObject  o1, o2, o3;
     private Address       a1, a2, a3;
     private List<Address> members;
+    static final String   GROUP="RpcDispatcherUnitTest";
 
 
     @BeforeClass
@@ -33,17 +34,18 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
         o2=new ServerObject();
         o3=new ServerObject();
 
-        c1=createChannel(true, 3).setName("A");
-        final String GROUP="RpcDispatcherUnitTest";
+        c1=createChannel().setName("A");
         d1=new RpcDispatcher(c1, o1);
-        c1.connect(GROUP);
 
-        c2=createChannel(c1).setName("B");
+        c2=createChannel().setName("B");
         d2=new RpcDispatcher(c2, o2);
-        c2.connect(GROUP);
 
-        c3=createChannel(c1).setName("C");
+        c3=createChannel().setName("C");
         d3=new RpcDispatcher(c3, o3);
+        makeUnique(c1,c2,c3);
+
+        c1.connect(GROUP);
+        c2.connect(GROUP);
         c3.connect(GROUP);
 
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, c1, c2, c3);

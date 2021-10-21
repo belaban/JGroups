@@ -494,7 +494,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             suppress_log_non_member=new SuppressLog<>(log, "MsgDroppedNak", "SuppressMsg");
 
         // max bundle size (minus overhead) divided by <long size> times bits per long
-        int estimated_max_msgs_in_xmit_req=(transport.getMaxBundleSize() -50) * Global.LONG_SIZE;
+        int estimated_max_msgs_in_xmit_req=(transport.getBundler().getMaxSize() -50) * Global.LONG_SIZE;
         int old_max_xmit_size=max_xmit_req_size;
         if(max_xmit_req_size <= 0)
             max_xmit_req_size=estimated_max_msgs_in_xmit_req;
@@ -1021,7 +1021,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
             TP transport=getTransport();
             for(final Message msg: become_server_queue) {
-                transport.submitToThreadPool(() -> {
+                transport.getThreadPool().execute(() -> {
                     try {
                         up(msg);
                     }

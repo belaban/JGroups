@@ -26,8 +26,8 @@ public final class ResourceManager {
 
         String tmp_addr = SecurityActions.getProperty(Global.INITIAL_MCAST_ADDR,
                                              type == StackType.IPv6? "ff0e::9:9:9" : "228.8.8.8");
-        mcast_port = Short.valueOf(SecurityActions.getProperty(Global.INITIAL_MCAST_PORT, "7000"));
-		tcp_port = Short.valueOf(SecurityActions.getProperty(Global.INITIAL_TCP_PORT, "10000"));
+        mcast_port = Short.parseShort(SecurityActions.getProperty(Global.INITIAL_MCAST_PORT, "7000"));
+		tcp_port = Short.parseShort(SecurityActions.getProperty(Global.INITIAL_TCP_PORT, "10000"));
 		try {
 			InetAddress tmp = InetAddress.getByName(tmp_addr);
 			if (!tmp.isMulticastAddress())
@@ -90,22 +90,13 @@ public final class ResourceManager {
         }
 	}
 
-    protected static int getNextTCPPort(InetAddress bind_addr, int start_port) throws Exception {
+    private static int getNextTCPPort(InetAddress bind_addr, int start_port) throws Exception {
         try(ServerSocket sock=new ServerSocket()) {
             sock.setReuseAddress(false);
             Util.bind(sock, bind_addr, start_port, start_port+100);
             return sock.getLocalPort();
         }
     }
-
-    public static String getUniqueClusterName(String base_name) {
-        return base_name != null ? base_name + "-" + UUID.randomUUID().toString()
-          : UUID.randomUUID().toString();
-	}
-
-	public static String getUniqueClusterName() {
-		return getUniqueClusterName(null);
-	}
 
 	public static void main(String[] args) throws Exception {
 		List<Integer> ports = getNextTcpPorts(InetAddress.getByName("192.168.1.3"), 15);
@@ -132,10 +123,10 @@ public final class ResourceManager {
 
 		IPv4AddressRep(String initial_addr) {
 			StringTokenizer tok = new StringTokenizer(initial_addr, ".", false);
-			a = Short.valueOf(tok.nextToken());
-			b = Short.valueOf(tok.nextToken());
-			c = Short.valueOf(tok.nextToken());
-			d = Short.valueOf(tok.nextToken());
+			a = Short.parseShort(tok.nextToken());
+			b = Short.parseShort(tok.nextToken());
+			c = Short.parseShort(tok.nextToken());
+			d = Short.parseShort(tok.nextToken());
 		}
 
 		public synchronized String nextAddress() {

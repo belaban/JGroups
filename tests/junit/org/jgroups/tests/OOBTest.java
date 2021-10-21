@@ -28,8 +28,9 @@ public class OOBTest extends ChannelTestBase {
 
     @BeforeMethod
     void init() throws Exception {
-        a=createChannel(true, 2, "A");
-        b=createChannel(a, "B");
+        a=createChannel().name("A");
+        b=createChannel().name("B");
+        makeUnique(a,b);
         setThreadPoolSize(a, b);
         setStableGossip(a,b);
         a.connect("OOBTest");
@@ -198,7 +199,6 @@ public class OOBTest extends ChannelTestBase {
         if(stable != null)
             stable.gc();
         Collection<Integer> msgs=receiver.getMsgs();
-
         for(int i=0; i < 20; i++) {
             if(msgs.size() == NUM)
                 break;
@@ -344,11 +344,8 @@ public class OOBTest extends ChannelTestBase {
 
 
     private static void setThreadPoolSize(JChannel... channels) {
-        for(JChannel channel: channels) {
-            TP transport=channel.getProtocolStack().getTransport();
-            transport.setThreadPoolMinThreads(4);
-            transport.setThreadPoolMaxThreads(8);
-        }
+        for(JChannel channel: channels)
+            channel.getProtocolStack().getTransport().getThreadPool().setMinThreads(4).setMaxThreads(10);
     }
 
     private static void setStableGossip(JChannel... channels) {

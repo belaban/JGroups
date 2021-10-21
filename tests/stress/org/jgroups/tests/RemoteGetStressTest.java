@@ -98,8 +98,10 @@ public class RemoteGetStressTest {
     }
 
     protected static JChannel createChannel(String name) throws Exception {
+        SHARED_LOOPBACK sl=new SHARED_LOOPBACK();
+        sl.getThreadPool().setMinThreads(1).setMaxThreads(5);
         Protocol[] protocols={
-          new SHARED_LOOPBACK().setThreadPoolMinThreads(1).setThreadPoolMaxThreads(5),
+          sl,
           new SHARED_LOOPBACK_PING(),
           new NAKACK2(),
           new UNICAST3(),

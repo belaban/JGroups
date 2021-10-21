@@ -9,6 +9,8 @@ import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.*;
 
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -58,6 +60,8 @@ public class TCPPING extends Discovery {
 
     /** https://jira.jboss.org/jira/browse/JGRP-989 */
     protected BoundedList<PhysicalAddress> dynamic_hosts;
+
+    protected StackType stack_type=StackType.Dual;
 
 
 
@@ -125,9 +129,15 @@ public class TCPPING extends Discovery {
 
     public void init() throws Exception {
         super.init();
+
+        InetAddress bind_addr=transport.getBindAddr();
+        if(bind_addr != null)
+            stack_type=bind_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
+
         dynamic_hosts=new BoundedList<>(max_dynamic_hosts);
         if(!initial_hosts_set_programmatically) {
-            boolean all_resolved=Util.parseCommaDelimitedHostsInto(initial_hosts, unresolved_hosts, initial_hosts_str, port_range);
+            boolean all_resolved=Util.parseCommaDelimitedHostsInto(initial_hosts, unresolved_hosts, initial_hosts_str,
+                                                                   port_range, stack_type);
             if(!all_resolved)
                 log.warn("unable to resolve the following hostnames: %s", unresolved_hosts);
         }
@@ -179,7 +189,7 @@ public class TCPPING extends Discovery {
         if(!initial_hosts_set_programmatically) {
             if(!unresolved_hosts.isEmpty()) {
                 unresolved_hosts.clear();
-                if(Util.parseCommaDelimitedHostsInto(initial_hosts, unresolved_hosts, initial_hosts_str, port_range))
+                if(Util.parseCommaDelimitedHostsInto(initial_hosts, unresolved_hosts, initial_hosts_str, port_range, stack_type))
                     log.debug("finally resolved all hosts: %s", initial_hosts);
             }
         }

@@ -97,7 +97,8 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
     }
 
     public void destroy() {
-        stubManager.destroyStubs();
+        if(stubManager != null)
+            stubManager.destroyStubs();
         super.destroy();
     }
 

@@ -232,7 +232,8 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
 
     @GuardedBy("lock")
     protected void stopThreadPool() {
-        thread_pool.shutdown();
+        if(thread_pool != null)
+            thread_pool.shutdown();
     }
 
     public void init() throws Exception {

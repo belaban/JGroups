@@ -197,12 +197,6 @@ public class UDP extends TP {
         return ip_ttl;
     }
 
-    @Override public <T extends TP> T setMaxBundleSize(int size) {
-        if(size > Global.MAX_DATAGRAM_PACKET_SIZE)
-            throw new IllegalArgumentException("max_bundle_size (" + size + ") cannot exceed the max datagram " +
-                                                 "packet size of " + Global.MAX_DATAGRAM_PACKET_SIZE);
-        return super.setMaxBundleSize(size);
-    }
 
     @ManagedAttribute(description="Number of messages dropped when sending because of insufficient buffer space"
       ,type=AttributeType.SCALAR)
@@ -264,7 +258,7 @@ public class UDP extends TP {
     @Override
     public void sendToAll(byte[] data, int offset, int length) throws Exception {
         if(ip_mcast && mcast_addr != null) {
-            if(local_transport != null && hasLocalMembers()) {
+            if(local_transport != null) {
                 try {
                     local_transport.sendToAll(data, offset, length);
                 }
@@ -314,15 +308,14 @@ public class UDP extends TP {
             if(suppress_log_out_of_buffer_space != null)
                 suppress_log_out_of_buffer_space.removeExpired(suppress_time_out_of_buffer_space);
             if(local_transport != null) {
-                boolean loopback_mode=hasLocalMembers();
                 try {
                     // if we have local members, we send the multicast through the local transport, and do *not* need
                     // to receive a copy on the local host
-                    sock.setLoopbackMode(loopback_mode);
-                    mcast_sock.setLoopbackMode(loopback_mode);
+                    sock.setLoopbackMode(true);
+                    mcast_sock.setLoopbackMode(true);
                 }
                 catch(SocketException e) {
-                    log.error("failed setting loopback-mode to " + loopback_mode, e);
+                    log.error("failed enabling loopback-mode to", e);
                 }
             }
         }
@@ -331,9 +324,9 @@ public class UDP extends TP {
 
     public void init() throws Exception {
         super.init();
-        if(max_bundle_size > Global.MAX_DATAGRAM_PACKET_SIZE)
-            throw new IllegalArgumentException("max_bundle_size (" + max_bundle_size + ") cannot exceed the max datagram " +
-                                                 "packet size of " + Global.MAX_DATAGRAM_PACKET_SIZE);
+        if(bundler.getMaxSize() > Global.MAX_DATAGRAM_PACKET_SIZE)
+            throw new IllegalArgumentException("bundler.max_size (" + bundler.getMaxSize() + ") cannot exceed the max " +
+                                                 "datagram packet size of " + Global.MAX_DATAGRAM_PACKET_SIZE);
         if(is_mac && suppress_time_out_of_buffer_space > 0)
             suppress_log_out_of_buffer_space=new SuppressLog<>(log, "FailureSendingToPhysAddr", "SuppressMsg");
     }
@@ -444,7 +437,8 @@ public class UDP extends TP {
             mcast_addr=new IpAddress(mcast_group_addr, mcast_port);
 
             // check that we're not using the same mcast address and port as the diagnostics socket
-            if(enable_diagnostics && diagnostics_addr.equals(mcast_group_addr) && diagnostics_port == mcast_port)
+            if(diag_handler.isEnabled() && diag_handler.getMcastAddress().equals(mcast_group_addr)
+              && diag_handler.getPort() == mcast_port)
                 throw new IllegalArgumentException("diagnostics_addr:diagnostics_port and mcast_addr:mcast_port " +
                                                      "have to be different");
 
@@ -812,14 +806,6 @@ public class UDP extends TP {
                     int len=packet.getLength();
                     if(len > receive_buf.length && log.isErrorEnabled())
                         log.error(Util.getMessage("SizeOfTheReceivedPacket"), len, receive_buf.length, receive_buf.length);
-
-                    if(local_transport != null && hasLocalMembers()) {
-                        InetAddress sender=packet.getAddress();
-                        if(local_addresses.contains(sender)) {
-                            log.trace("[%s] dropping message from local member %s", local_addr, sender);
-                            return;
-                        }
-                    }
                     receive(new IpAddress(packet.getAddress(), packet.getPort()),
                             receive_buf, packet.getOffset(), len);
                 }

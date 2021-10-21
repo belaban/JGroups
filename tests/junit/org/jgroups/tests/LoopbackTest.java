@@ -21,7 +21,7 @@ import java.util.concurrent.TimeoutException;
 public class LoopbackTest extends ChannelTestBase {
     protected JChannel channel;
 
-    @BeforeMethod protected void setUp()    throws Exception {channel=createChannel(true, 1).name("A");}
+    @BeforeMethod protected void setUp()    throws Exception {channel=createChannel().name("A"); makeUnique(channel);}
     @AfterMethod  protected void tearDown() throws Exception {Util.close(channel);}
 
 
@@ -54,7 +54,7 @@ public class LoopbackTest extends ChannelTestBase {
         channel.setReceiver(receiver) ;
         channel.connect("UnicastLoopbackTest") ;
 
-        int largest_thread_pool_size=channel.getProtocolStack().getTransport().getThreadPoolSizeLargest();
+        int largest_thread_pool_size=channel.getProtocolStack().getTransport().getThreadPool().getLargestSize();
         num_msgs_sent_before = getNumMessagesSentViaNetwork(channel) ;
 
         // send NUM messages to dest
@@ -68,7 +68,7 @@ public class LoopbackTest extends ChannelTestBase {
         num_msgs_sent_after = getNumMessagesSentViaNetwork(channel) ;
 
         System.out.printf("\nlargest pool size before: %d after: %d\n", largest_thread_pool_size,
-                          largest_thread_pool_size=channel.getProtocolStack().getTransport().getThreadPoolSizeLargest());
+                          largest_thread_pool_size=channel.getProtocolStack().getTransport().getThreadPool().getLargestSize());
 
         // when sending msgs to self, messages should not touch the network
         System.out.println("num msgs before: " + num_msgs_sent_before + ", num msgs after: " + num_msgs_sent_after);
@@ -99,7 +99,7 @@ public class LoopbackTest extends ChannelTestBase {
         TP transport = ch.getProtocolStack().getTransport();
         if (transport == null)
             throw new Exception("transport layer is not present - check default stack configuration") ;
-        return transport.getNumMessagesSent();
+        return transport.getMessageStats().getNumMsgsSent();
     }
 
 

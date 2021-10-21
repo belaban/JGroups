@@ -97,7 +97,7 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
 
     protected void unparkIfNeeded(int size) {
         long acc_bytes=size > 0? accumulated_bytes.addAndGet(size) : accumulated_bytes.get();
-        boolean size_exceeded=acc_bytes >= transport.getMaxBundleSize() && accumulated_bytes.compareAndSet(acc_bytes, 0);
+        boolean size_exceeded=acc_bytes >= max_size && accumulated_bytes.compareAndSet(acc_bytes, 0);
         boolean no_other_threads=num_threads.decrementAndGet() == 0;
 
         boolean unpark=size_exceeded || no_other_threads;
@@ -156,7 +156,6 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
 
     /** Read and send messages in range [read-index+1 .. write_index-1] */
     protected int sendBundledMessages(final Message[] buf, final int read_index, final int write_index) {
-        int       max_bundle_size=transport.getMaxBundleSize();
         byte[]    cluster_name=transport.cluster_name.chars();
         int       sent_msgs=0;
 
@@ -175,7 +174,7 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
                 // remember the position at which the number of messages (an int) was written, so we can later set the
                 // correct value (when we know the correct number of messages)
                 int size_pos=output.position() - Global.INT_SIZE;
-                int num_msgs=marshalMessagesToSameDestination(dest, buf, i, write_index, max_bundle_size);
+                int num_msgs=marshalMessagesToSameDestination(dest, buf, i, write_index, max_size);
                 sent_msgs+=num_msgs;
                 if(num_msgs > 1) {
                     int current_pos=output.position();
@@ -185,7 +184,7 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
                 }
                 transport.doSend(output.buffer(), 0, output.position(), dest);
                 if(transport.statsEnabled())
-                    transport.incrBatchesSent(num_msgs);
+                    transport.getMessageStats().incrNumBatchesSent(num_msgs);
             }
             catch(Exception ex) {
                 log.error("failed to send message(s)", ex);

@@ -301,13 +301,13 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     protected NioServer createServer(int[] bind_ports) {
         DefaultSocketFactory socket_factory=new DefaultSocketFactory();
         DefaultThreadFactory thread_factory=new DefaultThreadFactory("nio", false);
-        thread_factory.useFibers(getTransport().useFibers());
+        thread_factory.useFibers(getTransport().useVirtualThreads());
         for(int bind_port: bind_ports) {
             try {
                 return new NioServer(thread_factory, socket_factory, bind_addr, bind_port, bind_port,
                                      external_addr, external_port, 0);
             }
-            catch(Exception ex) {
+            catch(Exception ignored) {
             }
         }
         throw new IllegalStateException(String.format("%s: failed to find an available port in ports %s",

@@ -12,7 +12,6 @@ import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.conf.XmlNode;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.TCPPING;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
@@ -56,17 +55,6 @@ public class Configurator {
         return setupProtocolStack(config, stack);
     }
 
-    public Protocol setupProtocolStack(ProtocolStack copySource) throws Exception {
-        List<Protocol> protocols=copySource.copyProtocols(stack);
-        Collections.reverse(protocols);
-        TCPPING ping=copySource.findProtocol(TCPPING.class);
-        if(ping != null) {
-            TCPPING p=(TCPPING)protocols.stream().filter(prot -> prot instanceof TCPPING).findFirst().orElse(null);
-            p.setInitialHosts2(ping.getInitialHosts());
-        }
-        return connectProtocols(protocols);
-    }
-
 
     /**
      * Sets up the protocol stack. Each {@link ProtocolConfiguration} has the protocol name and a map of attribute
@@ -106,7 +94,7 @@ public class Configurator {
         // create an instance of the protocol class and configure it
         Protocol prot=createLayer(stack, config);
         if(init_attrs)
-            Configurator.initializeAttrs(prot, config, Util.getIpStackType());
+            initializeAttrs(prot, config, Util.getIpStackType());
         prot.init();
         return prot;
     }
@@ -216,23 +204,15 @@ public class Configurator {
         if(protocol_name == null)
             return;
 
-        // before processing field and method based props, take dependencies specified by @Property.dependsUpon into account
         Map<String,String> properties=new HashMap<>(config.getProperties());
-        AccessibleObject[] dependencyOrderedFieldsAndMethods=computePropertyDependencies(prot, properties);
-        for(AccessibleObject ordered : dependencyOrderedFieldsAndMethods) {
-            if(ordered instanceof Field)
-                resolveAndAssignField(prot, (Field)ordered, properties, ip_version);
-            else if(ordered instanceof Method)
-                resolveAndInvokePropertyMethod(prot, (Method)ordered, properties, ip_version);
-        }
+        initializeAttrs(prot, properties, ip_version);
 
-        List<Object> additional_objects=prot.getConfigurableObjects();
-        if(additional_objects != null && !additional_objects.isEmpty()) {
-            for(Object obj : additional_objects) {
-                resolveAndAssignFields(obj, properties, ip_version);
-                resolveAndInvokePropertyMethods(obj, properties, ip_version);
-            }
-        }
+        // don't yet initialize attrs of components, but later (after init() has been called); therefore remove all
+        // properties belonging to components
+        Util.forAllComponentTypes(prot.getClass(), (obj, prefix) -> {
+            String key=prefix + ".";
+            properties.keySet().removeIf(s -> s.startsWith(key));
+        });
 
         if(!properties.isEmpty())
             throw new IllegalArgumentException(String.format(Util.getMessage("ConfigurationError"), protocol_name, properties));
@@ -242,6 +222,17 @@ public class Configurator {
         if(subtrees != null) {
             for(XmlNode node : subtrees)
                 prot.parse(node);
+        }
+    }
+
+    public static void initializeAttrs(Object obj, Map<String,String> properties, StackType ip_version) throws Exception {
+        // before processing field and method based props, take dependencies specified by @Property.dependsUpon into account
+        AccessibleObject[] dependencyOrderedFieldsAndMethods=computePropertyDependencies(obj, properties);
+        for(AccessibleObject ordered : dependencyOrderedFieldsAndMethods) {
+            if(ordered instanceof Field)
+                resolveAndAssignField(obj, (Field)ordered, properties, ip_version);
+            else if(ordered instanceof Method)
+                resolveAndInvokePropertyMethod(obj, (Method)ordered, properties, ip_version);
         }
     }
 
@@ -416,7 +407,7 @@ public class Configurator {
                 for(int j=0; j < fields.length; j++) {
                     if(fields[j].isAnnotationPresent(Property.class)) {
                         if(InetAddressInfo.isInetAddressRelated(fields[j])) {
-                            Object value=getValueFromProtocol(protocol, fields[j]);
+                            Object value=getValueFromObject(protocol, fields[j]);
                             if(value instanceof InetAddress)
                                 retval.add((InetAddress)value);
                             else if(value instanceof IpAddress)
@@ -440,7 +431,7 @@ public class Configurator {
                 for(Field f: fields) {
                     if(InetAddress.class.isAssignableFrom(f.getType())) {
                         try {
-                            map.put(p.getName() + "." + f.getName(), getValueFromProtocol(p, f));
+                            map.put(p.getName() + "." + f.getName(), getValueFromObject(p, f));
                         }
                         catch(IllegalAccessException e) {
                             map.put(p.getName() + "." + f.getName(), null);
@@ -470,77 +461,94 @@ public class Configurator {
      */
     public static void setDefaultAddressValues(List<Protocol> protocols, StackType ip_version) throws Exception {
         if(skip_setting_default_values) {
-            log.warn("skipped setting default address values in protocols as skip_setting_default_values=%b",
+            log.trace("skipped setting default address values in protocols as skip_setting_default_values=%b",
                      skip_setting_default_values);
             return;
         }
-        Map<String,String> properties=new HashMap<>(); // dummy properties
+        for(Protocol prot: protocols)
+            setDefaultAddressValues(prot, ip_version);
+    }
+
+
+    protected static void setDefaultAddressValues(Object obj, StackType ip_version) throws Exception {
         InetAddress default_ip_address=Util.getNonLoopbackAddress(ip_version);
         if(default_ip_address == null) {
             log.warn(Util.getMessage("OnlyLoopbackFound"), ip_version);
             default_ip_address=Util.getLoopback(ip_version);
         }
 
-        for(Protocol prot: protocols) {
-            // Process the attributes which are defined via methods first:
-            Method[] methods=Util.getAllDeclaredMethodsWithAnnotations(prot.getClass(), Property.class);
-            for(Method method: methods) {
-                if(isSetPropertyMethod(method, prot.getClass())) {
-                    String propertyName=PropertyHelper.getPropertyName(method);
-                    Object existing_value=getValueFromProtocol(prot, propertyName);
-                    if(existing_value != null || !InetAddressInfo.isInetAddressRelated(method))
-                        continue;
+        // Process the attributes which are defined via methods first
+        setDefaultAddressValuesMethods(obj, ip_version, default_ip_address);
 
-                    Property annotation=method.getAnnotation(Property.class);
-                    String defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
-                    if(defaultValue != null && !defaultValue.isEmpty()) {
-                        Object converted=null;
-                        try {
-                            if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
-                                converted=default_ip_address;
-                            else
-                                converted=PropertyHelper.getConvertedValue(prot, method, properties,
-                                                                           defaultValue, true, ip_version);
-                            method.invoke(prot, converted);
-                        }
-                        catch(Exception e) {
-                            throw new Exception("default could not be assigned for method " + propertyName + " in "
-                                                  + prot.getName() + " with default " + defaultValue, e);
-                        }
-                        log.debug("set attribute %s.%s to default value %s", prot.getName(), propertyName, converted);
-                    }
-                }
-            }
+        // Next process the fields
+        setDefaultAddressValuesFields(obj, ip_version, default_ip_address);
+    }
 
-            // Next process the fields:
-            Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(prot.getClass(), Property.class);
-            for(Field field: fields) {
-                String propertyName=PropertyHelper.getPropertyName(field, properties);
-                Object existing_value=getValueFromProtocol(prot, field);
-                if(existing_value != null || !InetAddressInfo.isInetAddressRelated(field))
+
+    protected static void setDefaultAddressValuesMethods(Object obj, StackType ip_version,
+                                                         InetAddress default_ip_address) throws Exception {
+        Map<String,String> properties=new HashMap<>(); // dummy properties
+        Method[] methods=Util.getAllDeclaredMethodsWithAnnotations(obj.getClass(), Property.class);
+        for(Method method: methods) {
+            if(isSetPropertyMethod(method, obj.getClass())) {
+                String propertyName=PropertyHelper.getPropertyName(method);
+                Object existing_value=getValueFromObject(obj, propertyName);
+                if(existing_value != null || !InetAddressInfo.isInetAddressRelated(method))
                     continue;
 
-                Property annotation=field.getAnnotation(Property.class);
+                Property annotation=method.getAnnotation(Property.class);
                 String defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
                 if(defaultValue != null && !defaultValue.isEmpty()) {
-                    // condition for invoking converter
-                    if(defaultValue != null || !PropertyHelper.usesDefaultConverter(field)) {
-                        Object converted=null;
-                        try {
-                            if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
-                                converted=default_ip_address;
-                            else
-                                converted=PropertyHelper.getConvertedValue(prot, field, properties,
-                                                                           defaultValue, true, ip_version);
-                            if(converted != null)
-                                Util.setField(field, prot, converted);
-                        }
-                        catch(Exception e) {
-                            throw new Exception("default could not be assigned for field " + propertyName + " in "
-                                                  + prot.getName() + " with default value " + defaultValue, e);
-                        }
-                        log.debug("set property " + prot.getName() + "." + propertyName + " to default value " + converted);
+                    Object converted=null;
+                    try {
+                        if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
+                            converted=default_ip_address;
+                        else
+                            converted=PropertyHelper.getConvertedValue(obj, method, properties,
+                                                                       defaultValue, true, ip_version);
+                        method.invoke(obj, converted);
                     }
+                    catch(Exception e) {
+                        throw new Exception("default could not be assigned for method " + propertyName + " in "
+                                              + obj + " with default " + defaultValue, e);
+                    }
+                    log.debug("set attribute %s.%s to default value %s", obj, propertyName, converted);
+                }
+            }
+        }
+    }
+
+
+    protected static void setDefaultAddressValuesFields(Object obj, StackType ip_version,
+                                                        InetAddress default_ip_address) throws Exception {
+        Map<String,String> properties=new HashMap<>(); // dummy properties
+        Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(obj.getClass(), Property.class);
+        for(Field field: fields) {
+            String propertyName=PropertyHelper.getPropertyName(field, properties);
+            Object existing_value=getValueFromObject(obj, field);
+            if(existing_value != null || !InetAddressInfo.isInetAddressRelated(field))
+                continue;
+
+            Property annotation=field.getAnnotation(Property.class);
+            String defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
+            if(defaultValue != null && !defaultValue.isEmpty()) {
+                // condition for invoking converter
+                if(defaultValue != null || !PropertyHelper.usesDefaultConverter(field)) {
+                    Object converted=null;
+                    try {
+                        if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
+                            converted=default_ip_address;
+                        else
+                            converted=PropertyHelper.getConvertedValue(obj, field, properties,
+                                                                       defaultValue, true, ip_version);
+                        if(converted != null)
+                            Util.setField(field, obj, converted);
+                    }
+                    catch(Exception e) {
+                        throw new Exception("default could not be assigned for field " + propertyName + " in "
+                                              + obj + " with default value " + defaultValue, e);
+                    }
+                    log.debug("set property " + obj + "." + propertyName + " to default value " + converted);
                 }
             }
         }
@@ -558,7 +566,7 @@ public class Configurator {
             //traverse class hierarchy and find all annotated fields and add them to the list if annotated
             Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(protocol.getClass(), LocalAddress.class);
             for(int i=0; i < fields.length; i++) {
-                Object val=getValueFromProtocol(protocol, fields[i]);
+                Object val=getValueFromObject(protocol, fields[i]);
                 if(val == null)
                     continue;
                 if(!(val instanceof InetAddress))
@@ -569,18 +577,16 @@ public class Configurator {
     }
 
 
-    public static <T extends Object> T getValueFromProtocol(Protocol protocol, Field field) throws IllegalAccessException {
-        if(protocol == null || field == null) return null;
-        if(!Modifier.isPublic(field.getModifiers()))
-            field.setAccessible(true);
-        return (T)field.get(protocol);
+    public static <T extends Object> T getValueFromObject(Object obj, Field field) throws IllegalAccessException {
+        if(obj == null || field == null) return null;
+        return (T)Util.getField(field, obj);
     }
 
 
-    public static <T extends Object> T getValueFromProtocol(Protocol protocol, String field_name) throws IllegalAccessException {
-        if(protocol == null || field_name == null) return null;
-        Field field=Util.getField(protocol.getClass(), field_name);
-        return field != null? getValueFromProtocol(protocol, field) : null;
+    public static <T extends Object> T getValueFromObject(Object obj, String field_name) throws IllegalAccessException {
+        if(obj == null || field_name == null) return null;
+        Field field=Util.getField(obj.getClass(), field_name);
+        return field != null? getValueFromObject(obj, field) : null;
     }
 
 
@@ -638,7 +644,7 @@ public class Configurator {
     static List<AccessibleObject> orderFieldsAndMethodsByDependency(List<AccessibleObject> unorderedList,
                                                                     Map<String,AccessibleObject> propertiesMap) {
         // Stack to detect cycle in depends relation
-        Stack<AccessibleObject> stack=new Stack<>();
+        Deque<AccessibleObject> stack=new ArrayDeque<>();
         // the result list
         List<AccessibleObject> orderedList=new LinkedList<>();
 
@@ -656,10 +662,10 @@ public class Configurator {
      * DFS of dependency graph formed by Property annotations and dependsUpon parameter
      * This is used to create a list of Properties in dependency order
      */
-    static void addPropertyToDependencyList(List<AccessibleObject> orderedList, Map<String,AccessibleObject> props, Stack<AccessibleObject> stack, AccessibleObject obj) {
+    static void addPropertyToDependencyList(List<AccessibleObject> orderedList, Map<String,AccessibleObject> props, Deque<AccessibleObject> stack, AccessibleObject obj) {
         if(orderedList.contains(obj))
             return;
-        if(stack.search(obj) > 0)
+        if(stack.contains(obj))
             throw new RuntimeException("Deadlock in @Property dependency processing");
         // record the fact that we are processing obj
         stack.push(obj);
@@ -687,11 +693,9 @@ public class Configurator {
             // get the Property annotation
             AccessibleObject ao=objects.get(i);
             Property annotation=ao.getAnnotation(Property.class);
-            if(annotation == null) {
+            if(annotation == null)
                 throw new IllegalArgumentException("@Property annotation is required for checking dependencies;" +
-                                                     " annotation is missing for Field/Method " + ao.toString());
-            }
-
+                                                     " annotation is missing for Field/Method " + ao);
             String dependsClause=annotation.dependsUpon();
             if(dependsClause.trim().isEmpty())
                 continue;
@@ -814,16 +818,10 @@ public class Configurator {
     }
 
 
-    public static boolean isSetPropertyMethod(Method method) {
-        return (method.getName().startsWith("set")
-          && method.getReturnType() == java.lang.Void.TYPE
-          && method.getParameterTypes().length == 1);
-    }
 
     public static boolean isSetPropertyMethod(Method method, Class<?> enclosing_clazz) {
-        return (method.getName().startsWith("set")
-          && (method.getReturnType() == java.lang.Void.TYPE || method.getReturnType().isAssignableFrom(enclosing_clazz))
-          && method.getParameterTypes().length == 1);
+        return (method.getReturnType() == java.lang.Void.TYPE || method.getReturnType().isAssignableFrom(enclosing_clazz))
+          && method.getParameterTypes().length == 1;
     }
 
 

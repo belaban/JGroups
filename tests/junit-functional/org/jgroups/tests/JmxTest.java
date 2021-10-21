@@ -2,10 +2,10 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.JChannel;
+import org.jgroups.annotations.Component;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -62,8 +62,8 @@ public class JmxTest {
 
     public void testGetter() throws Exception {
         assert !attrExists("unknown");
-        check("last_name",   true, "Fechner", "Ban");
-        check("first_name",  true, "Jeannette", "Bela");
+        check("last_name",   true, "Furini", "Ban");
+        check("first_name",  true, "Marco", "Bela");
         check("flag",        true, true, false);
         check("another",     true, false, true);
     }
@@ -190,7 +190,7 @@ public class JmxTest {
         @Property(name="timer.keep_alive_time", description="Timeout")
         protected long keep_alive=5000;
 
-        protected String last_name="Fechner";
+        protected String last_name="Furini";
 
         @ManagedAttribute(description="social security number",name="ssn") // read-only
         private static final long ssn=322649L;
@@ -203,7 +203,7 @@ public class JmxTest {
 
 
     protected static class Child extends Parent {
-        protected String  first_name="Jeannette";
+        protected String  first_name="Marco";
         protected boolean flag=true;
 
         @Property(name="Another")
@@ -232,7 +232,8 @@ public class JmxTest {
         public Child   javaStyleFlag(boolean flag)  {javaStyleFlag=flag; return this;}
     }
 
-    protected static class ProvideAdditionalObjects implements AdditionalJmxObjects {
+    protected static class ProvideAdditionalObjects {
+        @Component
         protected final AdditionalInfo info=new AdditionalInfo();
 
         @ManagedAttribute(description="age",writable=true)

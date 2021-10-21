@@ -7,6 +7,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -20,6 +21,7 @@ import java.util.function.Function;
 public class TimeScheduler3 implements TimeScheduler, Runnable {
     /** Thread pool used to execute the tasks */
     protected Executor                    pool;
+    protected ThreadPool                  thread_pool;
 
     /** DelayQueue with tasks being sorted according to execution times (next execution first) */
     protected final BlockingQueue<Task>   queue=new DelayQueue<>();
@@ -67,9 +69,10 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         start();
     }
 
-    public TimeScheduler3(Executor thread_pool, ThreadFactory factory, boolean start) {
+    public TimeScheduler3(ThreadPool thread_pool, ThreadFactory factory, boolean start) {
         timer_thread_factory=factory;
-        pool=thread_pool;
+        this.thread_pool=Objects.requireNonNull(thread_pool);
+        pool=thread_pool.getThreadPool();
         if(start)
             start();
     }
@@ -242,6 +245,13 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         }
 
         try {
+            if(pool == null) {
+                if((pool=thread_pool.getThreadPool()) == null) {
+                    log.warn("timer: thread pool is null, will use caller's thread to execute task %s", task);
+                    task.run();
+                    return;
+                }
+            }
             pool.execute(task);
         }
         catch(RejectedExecutionException rejected) { // only thrown if rejection policy is "abort"

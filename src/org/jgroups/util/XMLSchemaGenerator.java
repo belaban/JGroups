@@ -6,7 +6,10 @@ import org.jgroups.annotations.XmlAttribute;
 import org.jgroups.annotations.XmlElement;
 import org.jgroups.annotations.XmlInclude;
 import org.jgroups.stack.Protocol;
-import org.w3c.dom.*;
+import org.w3c.dom.DOMImplementation;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -36,7 +39,7 @@ public class XMLSchemaGenerator {
 
     protected static final String PROT_PACKAGE="org.jgroups.protocols";
 
-    protected static final String[] PACKAGES={"", "pbcast", "tom", "relay", "rules", "dns", "kubernetes"};
+    protected static final String[] PACKAGES={"", "pbcast", "relay", "rules", "dns", "kubernetes"};
 
     static {
         System.setProperty("java.awt.headless", "true");
@@ -58,20 +61,20 @@ public class XMLSchemaGenerator {
 
         String version = Version.major + "." + Version.minor;
         File f = new File(outputDir, "jgroups-" + version + ".xsd");
-        try {
-            FileWriter fw = new FileWriter(f, false);
+        try(FileWriter fw = new FileWriter(f, false)) {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             DOMImplementation impl = builder.getDOMImplementation();
             Document xmldoc = impl.createDocument("http://www.w3.org/2001/XMLSchema", "xs:schema", null);
-            xmldoc.getDocumentElement().setAttribute("targetNamespace", "urn:org:jgroups");
-            xmldoc.getDocumentElement().setAttribute("xmlns:tns", "urn:org:jgroups");
-            xmldoc.getDocumentElement().setAttribute("elementFormDefault", "qualified");
-            xmldoc.getDocumentElement().setAttribute("attributeFormDefault", "unqualified");
+            Element doc_el=xmldoc.getDocumentElement();
+            doc_el.setAttribute("targetNamespace", "urn:org:jgroups");
+            doc_el.setAttribute("xmlns:tns", "urn:org:jgroups");
+            doc_el.setAttribute("elementFormDefault", "qualified");
+            doc_el.setAttribute("attributeFormDefault", "unqualified");
 
             Element complexType = xmldoc.createElement("xs:complexType");
             complexType.setAttribute("name", "ConfigType");
-            xmldoc.getDocumentElement().appendChild(complexType);
+            doc_el.appendChild(complexType);
 
             Element allType = xmldoc.createElement("xs:choice");
             allType.setAttribute("maxOccurs", "unbounded");
@@ -81,7 +84,7 @@ public class XMLSchemaGenerator {
             Element xsElement = xmldoc.createElement("xs:element");
             xsElement.setAttribute("name", "config");
             xsElement.setAttribute("type", "tns:ConfigType");
-            xmldoc.getDocumentElement().appendChild(xsElement);
+            doc_el.appendChild(xsElement);
 
             DOMSource domSource = new DOMSource(xmldoc);
             StreamResult streamResult = new StreamResult(fw);
@@ -93,10 +96,21 @@ public class XMLSchemaGenerator {
             serializer.transform(domSource, streamResult);
 
             fw.flush();
-            fw.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static List<Class<?>> getClassesFromPackages(Class<?> cl, String ... packages) throws ClassNotFoundException {
+        List<Class<?>> sortedClasses = new LinkedList<>();
+        for(String suffix: packages) {
+            Package p=Package.getPackage(suffix);
+            String package_name=p != null? suffix : PROT_PACKAGE + (suffix == null || suffix.isEmpty()? "" : "." + suffix);
+            Set<Class<?>> classes=getClasses(cl, package_name);
+            sortedClasses.addAll(classes);
+        }
+        sortedClasses.sort(Comparator.comparing(Class::getCanonicalName));
+        return sortedClasses;
     }
 
     protected static void generateProtocolSchema(Document xmldoc, Element parent, String... suffixes) throws Exception {
@@ -111,8 +125,21 @@ public class XMLSchemaGenerator {
     }
 
 
-    private static Set<Class<?>> getClasses(Class<?> assignableFrom, String packageName)
-      throws ClassNotFoundException {
+    protected static List<Class<?>> findImplementations(List<Class<?>> classes, Class<?> intf) {
+        ArrayList<Class<?>> retval=new ArrayList<>();
+        for(Class<?> cl: classes) {
+            if(cl.isAssignableFrom(intf)) {
+                retval.add(cl);
+            }
+            if(intf.isAssignableFrom(cl))
+                retval.add(cl);
+        }
+
+        return retval;
+    }
+
+
+    public static Set<Class<?>> getClasses(Class<?> assignableFrom, String packageName) throws ClassNotFoundException {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         Set<Class<?>> classes = new HashSet<>();
         String path = packageName.replace('.', '/');
@@ -124,12 +151,10 @@ public class XMLSchemaGenerator {
                     if (file.endsWith(".class")) {
                         String name = packageName + '.' + file.substring(0, file.indexOf(".class"));
                         Class<?> clazz = Class.forName(name);
-
                         int mods=clazz.getModifiers();
                         boolean isConcreteClass=!Modifier.isAbstract(mods);
                         boolean is_public=Modifier.isPublic(mods);
                         boolean generate=is_public && isConcreteClass && !clazz.isAnonymousClass();
-
                         if (assignableFrom.isAssignableFrom(clazz) && generate)
                             classes.add(clazz);
                     }
@@ -164,12 +189,10 @@ public class XMLSchemaGenerator {
     }
 
     private static Element createXMLTree(final Document xmldoc, Class<?> clazz, String pkgname) throws Exception {
-
         Element classElement = xmldoc.createElement("xs:element");
         String elementName = pkgname + "." + clazz.getSimpleName();
-        if(elementName.isEmpty()) {
+        if(elementName.isEmpty())
             throw new IllegalArgumentException("Cannot create empty attribute name for element xs:element, class is " + clazz);
-        }
 
         elementName=elementName.replace(PROT_PACKAGE + ".", "");
 
@@ -191,7 +214,7 @@ public class XMLSchemaGenerator {
             choice.appendChild(tmp);
         }
 
-        Map<String, DelayingElementWriter> sortedElements =new TreeMap<>();
+        Map<String, DelayingElementWriter> sortedElements=new TreeMap<>();
 
         XmlAttribute xml_attr=Util.getAnnotation(clazz, XmlAttribute.class);
         if(xml_attr != null) {
@@ -210,74 +233,37 @@ public class XMLSchemaGenerator {
         }
 
 
-        // iterate fields
-        for (Class<?> clazzInLoop = clazz; clazzInLoop != null; clazzInLoop = clazzInLoop.getSuperclass()) {
-            Field[] fields = clazzInLoop.getDeclaredFields();
-            for (Field field : fields) {
-                if (field.isAnnotationPresent(Property.class)) {
-                    final String property;
-                    final Property r = field.getAnnotation(Property.class);
-                    boolean annotationRedefinesName = !r.name().isEmpty() && r.deprecatedMessage().isEmpty();
-                    if (annotationRedefinesName) {
-                        property = r.name();
-                    } else {
-                        property = field.getName();
-                    }
-                    if(property == null || property.isEmpty()) {
-                        throw new IllegalArgumentException("Cannot create empty attribute name for element xs:attribute, field is " + field);
-                    }
-                    sortedElements.put(property, () -> {
-                        Element attributeElement = xmldoc.createElement("xs:attribute");
-                        attributeElement.setAttribute("name", property);
+        iterateOverAttributes(clazz, sortedElements, xmldoc, complexType, null);
 
-                        // Agreement with Bela Ban on Jan-20-2009 (Go Obama!!!) to treat all types as
-                        // xs:string since we do not know where users are going to use
-                        // replacement tokens in configuration files. Therefore, the type becomes
-                        // indeterminate.
-                        attributeElement.setAttribute("type", "xs:string");
-                        complexType.appendChild(attributeElement);
-
-                        Element annotationElement = xmldoc.createElement("xs:annotation");
-                        attributeElement.appendChild(annotationElement);
-
-                        Element documentationElement = xmldoc.createElement("xs:documentation");
-                        documentationElement.setTextContent(r.description());
-                        annotationElement.appendChild(documentationElement);
-                    });
+        // iterate over the components (fields)
+        Util.forAllComponentTypes(clazz, (cl, prefix) -> {
+            iterateOverAttributes(cl, sortedElements, xmldoc, complexType, prefix);
+            if(cl.isInterface()) { // for example Bundler, let's add attributes from implementations
+                try {
+                    List<Class<?>> classes=getClassesFromPackages(cl, cl.getPackageName());
+                    for(Class<?> c: classes)
+                        iterateOverAttributes(c, sortedElements, xmldoc, complexType, prefix);
+                }
+                catch(ClassNotFoundException e) {
                 }
             }
-        }
+        });
 
-        // iterate methods
-        Method[] methods = clazz.getMethods();
-        for (Method method : methods) {
-            if (method.isAnnotationPresent(Property.class)) {
+        iterateOverMethods(clazz, sortedElements, xmldoc, complexType, null);
 
-                final Property annotation = method.getAnnotation(Property.class);
-                final String name;
-                if (annotation.name().length() < 1) {
-                    name = Util.methodNameToAttributeName(method.getName());
-                } else {
-                    name = annotation.name();
+        // iterate over the components (methods)
+        Util.forAllComponentTypes(clazz, (cl, prefix) -> {
+            iterateOverMethods(cl, sortedElements, xmldoc, complexType, prefix);
+            if(cl.isInterface()) {
+                try {
+                    List<Class<?>> classes=getClassesFromPackages(cl, cl.getPackageName());
+                    for(Class<?> c: classes)
+                        iterateOverMethods(c, sortedElements, xmldoc, complexType, prefix);
                 }
-                sortedElements.put(name, () -> {
-                    Element attributeElement = xmldoc.createElement("xs:attribute");
-                    attributeElement.setAttribute("name", name);
-                    attributeElement.setAttribute("type", "xs:string");
-                    complexType.appendChild(attributeElement);
-
-                    String desc = annotation.description();
-                    if (!desc.isEmpty()) {
-                        Element annotationElement = xmldoc.createElement("xs:annotation");
-                        attributeElement.appendChild(annotationElement);
-
-                        Element documentationElement = xmldoc.createElement("xs:documentation");
-                        documentationElement.setTextContent(annotation.description());
-                        annotationElement.appendChild(documentationElement);
-                    }
-                });
+                catch(ClassNotFoundException e) {
+                }
             }
-        }
+        });
 
         // write out ordered and duplicates weeded out elements
         for (Map.Entry<String, DelayingElementWriter> entry : sortedElements.entrySet()) {
@@ -285,8 +271,68 @@ public class XMLSchemaGenerator {
         }
 
         complexType.appendChild(xmldoc.createElement("xs:anyAttribute"));
-
         return classElement;
+    }
+
+    protected static void iterateOverAttributes(Class<?> clazz, Map<String,DelayingElementWriter> sortedElements,
+                                                Document xmldoc, Element complexType, String prefix) {
+        Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(clazz, Property.class);
+        for (Field field: fields) {
+            final Property r = field.getAnnotation(Property.class);
+            boolean annotationRedefinesName = !r.name().isEmpty() && r.deprecatedMessage().isEmpty();
+            final String attr_name=annotationRedefinesName? r.name() : field.getName();
+            if(attr_name == null || attr_name.isEmpty())
+                throw new IllegalArgumentException("Cannot create empty attribute name for element xs:attribute, field is " + field);
+
+            String tmp_attrname=prefix != null && !prefix.trim().isEmpty()? prefix + "." + attr_name : attr_name;
+            sortedElements.put(tmp_attrname, () -> {
+                Element attributeElement = xmldoc.createElement("xs:attribute");
+                attributeElement.setAttribute("name", tmp_attrname);
+
+                // Agreement with Bela Ban on Jan-20-2009 (Go Obama!!!) to treat all types as xs:string since we do not
+                // know where users are going to use replacement tokens in configuration files. Therefore, the type
+                // becomes indeterminate
+                attributeElement.setAttribute("type", "xs:string");
+                complexType.appendChild(attributeElement);
+
+                Element annotationElement = xmldoc.createElement("xs:annotation");
+                attributeElement.appendChild(annotationElement);
+
+                Element documentationElement = xmldoc.createElement("xs:documentation");
+                documentationElement.setTextContent(r.description());
+                annotationElement.appendChild(documentationElement);
+            });
+        }
+    }
+
+
+    protected static void iterateOverMethods(Class<?> clazz, Map<String,DelayingElementWriter> sortedElements,
+                                             Document xmldoc, Element complexType, String prefix) {
+        Method[] methods = clazz.getMethods();
+        for (Method method : methods) {
+            if (method.isAnnotationPresent(Property.class)) {
+                final Property ann = method.getAnnotation(Property.class);
+                String name=ann.name().length() < 1? Util.methodNameToAttributeName(method.getName()) : ann.name();
+                String tmp_name=prefix != null && !prefix.trim().isEmpty()? prefix + "." + name : name;
+                sortedElements.put(tmp_name, () -> {
+                    Element attributeElement = xmldoc.createElement("xs:attribute");
+
+                    attributeElement.setAttribute("name", tmp_name);
+                    attributeElement.setAttribute("type", "xs:string");
+                    complexType.appendChild(attributeElement);
+
+                    String desc = ann.description();
+                    if (!desc.isEmpty()) {
+                        Element annotationElement = xmldoc.createElement("xs:annotation");
+                        attributeElement.appendChild(annotationElement);
+
+                        Element documentationElement = xmldoc.createElement("xs:documentation");
+                        documentationElement.setTextContent(ann.description());
+                        annotationElement.appendChild(documentationElement);
+                    }
+                });
+            }
+        }
     }
 
     private interface DelayingElementWriter {

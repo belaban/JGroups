@@ -21,10 +21,12 @@ public class RpcDispatcherAnycastServerObject implements Receiver {
         d=new RpcDispatcher(c, this).setReceiver(this);
     }
 
+    public JChannel getChannel() {
+        return c;
+    }
+
     public void doSomething() {
-        // System.out.println("doSomething invoked on " + c.getLocalAddress() + ".  i = " + i);
         i++;
-        // System.out.println("Now i = " + i);
     }
 
     public void callRemote(boolean useAnycast, boolean excludeSelf) throws Exception {

@@ -127,7 +127,11 @@ public class NAKACK2_RetransmissionTest {
 
         public List<Long>         getXmitRequests() {return xmit_requests;}
         public void               clear() {xmit_requests.clear();}
-        public void               init() throws Exception {}
+        public void               init() throws Exception {
+            super.init();
+            diag_handler=createDiagnosticsHandler();
+            bundler=new NoBundler();
+        }
         public boolean            supportsMulticasting() {return true;}
         public void               sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
         public String             getInfo() {return null;}
@@ -150,6 +154,11 @@ public class NAKACK2_RetransmissionTest {
                     e.printStackTrace();
                 }
             }
+            return null;
+        }
+
+        @Override
+        public Object up(Event evt) {
             return null;
         }
     }

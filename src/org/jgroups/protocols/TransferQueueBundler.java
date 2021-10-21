@@ -2,12 +2,11 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.Message;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.util.AverageMinMax;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -20,7 +19,9 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     protected List<Message>          remove_queue;
     protected volatile     Thread    bundler_thread;
     protected volatile boolean       running=true;
+    @ManagedAttribute
     protected int                    num_sends_because_full_queue;
+    @ManagedAttribute
     protected int                    num_sends_because_no_msgs;
     protected final AverageMinMax    fill_count=new AverageMinMax(); // avg number of bytes when a batch is sent
     protected static final String    THREAD_NAME="TQ-Bundler";
@@ -39,20 +40,17 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     }
 
     public Thread               getThread()               {return bundler_thread;}
-    public int                  getBufferSize()           {return queue.size();}
+
+    @ManagedAttribute(description="Size of the queue")
+    public int                  getQueueSize()            {return queue.size();}
+
+    @ManagedAttribute(description="Size of the remove-queue")
     public int                  removeQueueSize()         {return remove_queue.size();}
     public TransferQueueBundler removeQueueSize(int size) {this.remove_queue=new ArrayList<>(size); return this;}
 
-    @Override
-    public Map<String,Object> getStats() {
-        Map<String,Object> retval=super.getStats();
-        if(retval == null)
-            retval=new HashMap<>(3);
-        retval.put("sends_because_full", num_sends_because_full_queue);
-        retval.put("sends_because_no_msgs", num_sends_because_no_msgs);
-        retval.put("avg_fill_count", fill_count);
-        return retval;
-    }
+    @ManagedAttribute(description="Average fill size of the queue")
+    public String               getAverageFillCount() {return fill_count.toString();}
+
 
     @Override
     public void resetStats() {
@@ -62,13 +60,12 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
 
     public void init(TP tp) {
         super.init(tp);
-        if(queue == null)
-            queue=new ArrayBlockingQueue<>(assertPositive(tp.getBundlerCapacity(), "bundler capacity cannot be " + tp.getBundlerCapacity()));
     }
 
     public synchronized void start() {
         if(running)
             stop();
+        queue=new ArrayBlockingQueue<>(assertPositive(capacity, "bundler capacity cannot be " + capacity));
         bundler_thread=transport.getThreadFactory().newThread(this, THREAD_NAME);
         running=true;
         bundler_thread.start();
@@ -87,13 +84,8 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
         drain();
     }
 
-
     public int size() {
-        return super.size() + removeQueueSize() + getBufferSize();
-    }
-
-    public int getQueueSize() {
-        return queue.size();
+        return super.size() + removeQueueSize() + getQueueSize();
     }
 
     public void send(Message msg) throws Exception {
@@ -132,7 +124,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
 
     protected void addAndSendIfSizeExceeded(Message msg) {
         int size=msg.size();
-        if(count + size >= transport.getMaxBundleSize()) {
+        if(count + size >= max_size) {
             num_sends_because_full_queue++;
             fill_count.add(count);
             _sendBundledMessages();
@@ -144,8 +136,10 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     /** Takes all messages from the queue, adds them to the hashmap and then sends all bundled messages */
     protected void drain() {
         Message msg;
-        while((msg=queue.poll()) != null)
-            addAndSendIfSizeExceeded(msg);
+        if(queue != null) {
+            while((msg=queue.poll()) != null)
+                addAndSendIfSizeExceeded(msg);
+        }
         _sendBundledMessages();
     }
 

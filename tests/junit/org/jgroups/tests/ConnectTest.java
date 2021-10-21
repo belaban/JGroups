@@ -29,8 +29,9 @@ public class ConnectTest extends ChannelTestBase {
 
 
     public void testConnectAndDisconnect() throws Exception {
-        channel=createChannel(true);
-        final String GROUP=getUniqueClusterName("ConnectTest");
+        channel=createChannel();
+        makeUnique(channel);
+        final String GROUP=ConnectTest.class.getSimpleName();
         for(int i=0; i < 5; i++) {
             System.out.print("Attempt #" + (i + 1));
             channel.connect(GROUP);
@@ -41,7 +42,8 @@ public class ConnectTest extends ChannelTestBase {
 
 
     public void testDisconnectConnectOne() throws Exception {
-        channel=createChannel(true);
+        channel=createChannel();
+        makeUnique(channel);
         changeProps(channel);
         channel.connect("ConnectTest.testgroup-1");
         channel.disconnect();
@@ -56,16 +58,19 @@ public class ConnectTest extends ChannelTestBase {
      * Tests connect-disconnect-connect sequence for a group with two members
      **/
     public void testDisconnectConnectTwo() throws Exception {
-        coordinator=createChannel(true, 3, "coord");
+        coordinator=createChannel().name("coord");
         changeProps(coordinator);
+
+        channel=createChannel().name("channel");
+        changeProps(channel);
+        makeUnique(coordinator, channel);
+
         coordinator.connect("ConnectTest.testgroup-3");
         print(coordinator, "coord");
         View view=coordinator.getView();
         System.out.println("-- view for coordinator: " + view);
         assert view.size() == 1;
 
-        channel=createChannel(coordinator, "channel");
-        changeProps(channel);
         channel.connect("ConnectTest.testgroup-4");
         print(channel, "channel");
         view=channel.getView();
@@ -76,6 +81,8 @@ public class ConnectTest extends ChannelTestBase {
 
         channel.connect("ConnectTest.testgroup-3");
         print(channel, "channel");
+
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, coordinator, channel);
         view=channel.getView();
         System.out.println("-- view for channel: " + view);
 
@@ -86,9 +93,10 @@ public class ConnectTest extends ChannelTestBase {
 
 
     public void testMultipleConnectsAndDisconnects() throws Exception {
-        coordinator=createChannel(true, 2, "coord");
+        coordinator=createChannel().name("coord");
+        channel=createChannel().name("channel");
+        makeUnique(coordinator,channel);
         coordinator.connect("testMultipleConnectsAndDisconnects");
-        channel=createChannel(coordinator, "channel");
         channel.connect("testMultipleConnectsAndDisconnects");
         Util.waitUntilAllChannelsHaveSameView(10000, 500, coordinator, channel);
         for(int i=1; i <= 50; i++) {
@@ -103,8 +111,9 @@ public class ConnectTest extends ChannelTestBase {
     }
 
     public void testDisconnectConnectedMessageSending() throws Exception {
-        coordinator=createChannel(true, 2).name("A");
-        channel=createChannel(coordinator, "B");
+        coordinator=createChannel().name("A");
+        channel=createChannel().name("B");
+        makeUnique(coordinator,channel);
         coordinator.connect("ConnectTest");
         channel.connect("ConnectTest");
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, coordinator, channel);
@@ -152,13 +161,13 @@ public class ConnectTest extends ChannelTestBase {
      **/
     public void testDisconnectConnectSendTwo() throws Exception {
         final Promise<Message> msgPromise=new Promise<>();
-        coordinator=createChannel(true);
+        coordinator=createChannel();
         changeProps(coordinator);
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
-        coordinator.connect("ConnectTest.testgroup-5");
-
-        channel=createChannel(coordinator);
+        channel=createChannel();
         changeProps(channel);
+        makeUnique(coordinator,channel);
+        coordinator.connect("ConnectTest.testgroup-5");
         channel.connect("ConnectTest.testgroup-6");
         channel.disconnect();
         channel.connect("ConnectTest.testgroup-5");

@@ -4,14 +4,13 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
 import org.jgroups.util.AverageMinMax;
 import org.jgroups.util.DefaultThreadFactory;
 import org.jgroups.util.RingBuffer;
 import org.jgroups.util.Runner;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Bundler implementation which sends message batches (or single messages) as soon as the remove queue is full
@@ -33,31 +32,16 @@ public class RemoveQueueBundler extends BaseBundler {
     protected Runner                runner;
     protected Message[]             remove_queue;
     protected final AverageMinMax   avg_batch_size=new AverageMinMax();
+
+    @Property(name="remove_queue_size",description="The capacity of the remove queue",writable=false)
     protected int                   queue_size=1024;
 
-    @ManagedAttribute(description="Remove queue size")
-    public int rqbRemoveQueueSize() {return remove_queue.length;}
-
-    @ManagedAttribute(description="Sets the size of the remove queue; creates a new remove queue")
-    public void rqbRemoveQueueSize(int size) {
-        if(size == queue_size) return;
-        queue_size=size;
-        remove_queue=new Message[queue_size];
-    }
-
     @ManagedAttribute(description="Average batch length")
-    public String rqbAvgBatchSize() {return avg_batch_size.toString();}
+    public String avgBatchSize() {return avg_batch_size.toString();}
 
     @ManagedAttribute(description="Current number of messages (to be sent) in the ring buffer")
-    public int rqbRingBufferSize() {return rb.size();}
+    public int ringBufferSize() {return rb.size();}
 
-    public Map<String,Object> getStats() {
-        Map<String,Object> map=new HashMap<>();
-        map.put("avg-batch-size",    avg_batch_size.toString());
-        map.put("ring-buffer-size",  rb.size());
-        map.put("remove-queue-size", queue_size);
-        return map;
-    }
 
     public void resetStats() {
         avg_batch_size.clear();
@@ -65,7 +49,7 @@ public class RemoveQueueBundler extends BaseBundler {
 
     public void init(TP transport) {
         super.init(transport);
-        rb=new RingBuffer(Message.class, transport.getBundlerCapacity());
+        rb=new RingBuffer<>(Message.class, capacity);
         remove_queue=new Message[queue_size];
         runner=new Runner(new DefaultThreadFactory("aqb", true, true), "runner", this::run, null);
     }
@@ -96,7 +80,7 @@ public class RemoveQueueBundler extends BaseBundler {
             for(int i=0; i < drained; i++) {
                 Message msg=remove_queue[i];
                 int size=msg.size();
-                if(count + size >= transport.getMaxBundleSize())
+                if(count + size >= max_size)
                     sendBundledMessages();
                 addMessage(msg, msg.size());
             }

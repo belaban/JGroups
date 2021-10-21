@@ -114,7 +114,7 @@ public class NAKACK_RetransmitTest {
     protected static void change(JChannel ... channels) {
         for(JChannel ch: channels) {
             TP transport=ch.getProtocolStack().getTransport();
-            transport.setMaxBundleSize(MAX_BUNDLE_SIZE);
+            transport.getBundler().setMaxSize(MAX_BUNDLE_SIZE);
             NAKACK2 nak=ch.getProtocolStack().findProtocol(NAKACK2.class);
             if(nak == null)
                 throw new IllegalStateException("NAKACK2 not present in the stack");

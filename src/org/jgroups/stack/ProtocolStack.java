@@ -5,11 +5,11 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverter;
 import org.jgroups.conf.ProtocolConfiguration;
-import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.jmx.ResourceDMBean;
 import org.jgroups.logging.Log;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.Ref;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 
@@ -205,53 +205,10 @@ public class ProtocolStack extends Protocol {
     }
 
 
-    public List<Protocol> copyProtocols(ProtocolStack targetStack) throws Exception {
-        List<Protocol> list=getProtocols();
-        List<Protocol> retval=new ArrayList<>(list.size());
-        for(Protocol prot: list) {
-            Protocol new_prot=prot.getClass().getDeclaredConstructor().newInstance();
-            new_prot.setProtocolStack(targetStack);
-            retval.add(new_prot);
-
-            for(Class<?> clazz=prot.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
-
-                // copy all fields marked with @Property
-                Field[] fields=clazz.getDeclaredFields();
-                for(Field field: fields) {
-                    if(field.isAnnotationPresent(Property.class)) {
-                        Object value=Util.getField(field, prot);
-                        Util.setField(field, new_prot, value);
-                    }
-                }
-
-                // copy all setters marked with @Property
-                Method[] methods=clazz.getDeclaredMethods();
-                for(Method method: methods) {
-                    String methodName=method.getName();
-                    if(method.isAnnotationPresent(Property.class) && Configurator.isSetPropertyMethod(method, clazz)) {
-                        Property annotation=method.getAnnotation(Property.class);
-                        List<String> possible_names=new LinkedList<>();
-                        if(annotation.name() != null)
-                            possible_names.add(annotation.name());
-                        possible_names.add(Util.methodNameToAttributeName(methodName));
-                        Field field=Util.findField(prot, possible_names);
-                        if(field != null) {
-                            Object value=Util.getField(field, prot);
-                            Util.setField(field, new_prot, value);
-                        }
-                    }
-                }
-            }
-        }
-        return retval;
-    }
-
-
-
-
     /** Returns the bottom most protocol */
     public TP getTransport() {
-        return (TP)getBottomProtocol();
+        Protocol bottom=getBottomProtocol();
+        return bottom instanceof TP? (TP)bottom : null;
     }
 
 
@@ -282,7 +239,7 @@ public class ProtocolStack extends Protocol {
         catch(Exception e) {
         }
 
-        if(prots ==null)
+        if(prots == null)
             prots=findProtocols(protocol_name);
         if(prots == null || prots.isEmpty())
             return null;
@@ -397,15 +354,7 @@ public class ProtocolStack extends Protocol {
 
     protected static void dumpStats(Object obj, Map<String,Object> map, Log log) {
         ResourceDMBean.dumpStats(obj, map, log); // dumps attrs and operations into tmp
-        if(obj instanceof AdditionalJmxObjects) {
-            Object[] objs=((AdditionalJmxObjects)obj).getJmxObjects();
-            if(objs != null && objs.length > 0) {
-                for(Object o: objs) {
-                    if(o != null)
-                        ResourceDMBean.dumpStats(o, map, log);
-                }
-            }
-        }
+        Util.forAllComponents(obj, (o,prefix) -> ResourceDMBean.dumpStats(o, prefix, map, log));
     }
 
     private String printProtocolSpecAsPlainString(boolean print_props) {
@@ -491,22 +440,9 @@ public class ProtocolStack extends Protocol {
             top_prot.setUpProtocol(this);
             this.setDownProtocol(top_prot);
             bottom_prot=getBottomProtocol();
-            initProtocolStack();
+            initProtocolStack(configs);
         }
     }
-
-
-
-    public void setup(ProtocolStack stack) throws Exception {
-        if(top_prot == null) {
-            top_prot=new Configurator(this).setupProtocolStack(stack);
-            top_prot.setUpProtocol(this);
-            this.setDownProtocol(top_prot);
-            bottom_prot=getBottomProtocol();
-            initProtocolStack();
-        }
-    }
-
 
 
 
@@ -830,7 +766,8 @@ public class ProtocolStack extends Protocol {
         bottom_prot=getBottomProtocol();
 
         StackType ip_version=Util.getIpStackType();
-        InetAddress resolved_addr=Configurator.getValueFromProtocol(bottom_prot, "bind_addr");
+        TP tp=getTransport();
+        InetAddress resolved_addr=tp != null? tp.getBindAddress() : null;
         if(resolved_addr != null)
             ip_version=resolved_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
         else if(ip_version == StackType.Dual)
@@ -839,16 +776,22 @@ public class ProtocolStack extends Protocol {
         initProtocolStack();
     }
 
-    /** Calls @link{{@link Protocol#init()}} in all protocols, from bottom to top */
     public void initProtocolStack() throws Exception {
+        initProtocolStack(null);
+    }
+
+    /** Calls @link{{@link Protocol#init()}} in all protocols, from bottom to top */
+    public void initProtocolStack(List<ProtocolConfiguration> configs) throws Exception {
         List<Protocol> protocols=getProtocols();
         Collections.reverse(protocols);
         try {
-            for(Protocol prot : protocols) {
+            for(int i=0; i < protocols.size(); i++) {
+                Protocol prot=protocols.get(i);
                 if(prot.getProtocolStack() == null)
                     prot.setProtocolStack(this);
                 callAfterCreationHook(prot, prot.afterCreationHook());
                 prot.init();
+                initComponents(prot, configs != null? configs.get(i) : null);
             }
         }
         catch(Exception ex) {
@@ -857,7 +800,74 @@ public class ProtocolStack extends Protocol {
         }
     }
 
+    public static void initComponents(Protocol p, ProtocolConfiguration cfg) throws Exception {
+        // copy the props and weed out properties from non-components
+        Map<String,String> properties=cfg != null? cfg.getProperties() : new HashMap<>();
+        Map<String,String> props=new HashMap<>();
 
+        // first a bit of sanity checking: no duplicate components in p
+        final Map<String,Class<?>> prefixes=new HashMap<>();
+        final Ref<Exception> ex=new Ref<>(null);
+        Util.forAllComponentTypes(p.getClass(), (cl, prefix) -> {
+            if(ex.isSet())
+                return;
+            if(prefix == null || prefix.trim().isEmpty()) {
+                ex.set(new IllegalArgumentException(String.format("component (class=%s) in %s must have a prefix",
+                                                                  cl.getSimpleName(), p.getName())));
+                return;
+            }
+            if(prefixes.containsKey(prefix))
+                ex.set(new IllegalArgumentException(String.format("multiple components (class=%s) in %s have same prefix '%s'",
+                                                                  cl.getSimpleName(), p.getName(), prefix)));
+            else
+                prefixes.put(prefix, cl);
+        });
+        if(ex.isSet())
+            throw ex.get();
+
+        Util.forAllComponentTypes(p.getClass(), (c, prefix) -> {
+            String key=prefix + ".";
+            properties.entrySet().stream().filter(e -> e.getKey().startsWith(key))
+              .forEach(e -> props.put(e.getKey(), e.getValue()));
+        });
+        ex.set(null);
+
+        // StackType ip_version=Util.getIpStackType();
+        InetAddress resolved_addr=p.getTransport() != null? p.getTransport().getBindAddress() : null;
+        final StackType ip_version=resolved_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
+        Util.forAllComponents(p, (comp,prefix) -> {
+            try {
+                if(ex.isSet())
+                    return;
+                Map<String,String> m=new HashMap<>();
+                String key=prefix + ".";
+                props.entrySet().stream().filter(e -> e.getKey().startsWith(key))
+                  .forEach(e -> m.put(e.getKey().substring(prefix.length() + 1), e.getValue()));
+                props.keySet().removeIf(k -> k.startsWith(key));
+                if(!m.isEmpty()) {
+                    Configurator.initializeAttrs(comp, m, ip_version);
+                    if(!m.isEmpty()) {
+                        String fmt="the following properties in %s:%s (%s) are not recognized: %s";
+                        ex.set(new IllegalArgumentException(String.format(fmt, p.getName(), prefix,
+                                                                          comp.getClass().getSimpleName(), m)));
+                    }
+                }
+                Configurator.setDefaultAddressValues(comp, ip_version);
+                if(comp instanceof Lifecycle)
+                    ((Lifecycle)comp).init();
+            }
+            catch(Exception e) {
+                throw new IllegalArgumentException(String.format("failed initializing component %s in protocol %s: %s",
+                                                                 comp.getClass().getSimpleName(), p, e));
+            }
+        });
+        if(ex.isSet())
+            throw ex.get();
+        if(!props.isEmpty()) {
+            String fmt="configuration error: the following component properties in %s are not recognized: %s";
+            throw new IllegalArgumentException(String.format(fmt, p.getName(), props));
+        }
+    }
 
     public void destroy() {
         if(top_prot != null)

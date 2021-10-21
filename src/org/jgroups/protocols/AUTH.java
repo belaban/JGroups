@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
+import org.jgroups.annotations.Component;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.XmlAttribute;
@@ -14,9 +15,6 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Util;
-
-import java.util.LinkedList;
-import java.util.List;
 
 
 /**
@@ -41,6 +39,7 @@ public class AUTH extends Protocol {
     protected static final short    GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
 
     /** Used on the coordinator to authentication joining member requests against */
+    @Component
     protected AuthToken             auth_token;
     protected Address               local_addr;
     protected volatile boolean      authenticate_coord=true;
@@ -66,13 +65,6 @@ public class AUTH extends Protocol {
     public Address   getAddress()                  {return local_addr;}
     public PhysicalAddress getPhysicalAddress()    {return getTransport().getPhysicalAddress();}
 
-
-    public List<Object> getConfigurableObjects() {
-        List<Object> retval=new LinkedList<>();
-        if(auth_token != null)
-            retval.add(auth_token);
-        return retval;
-    }
 
     public void init() throws Exception {
         super.init();

@@ -1,7 +1,10 @@
 package org.jgroups.protocols;
 
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Global;
+import org.jgroups.Message;
+import org.jgroups.annotations.Property;
 import org.jgroups.util.RingBuffer;
 import org.jgroups.util.Runner;
 import org.jgroups.util.Util;
@@ -18,10 +21,11 @@ import java.util.function.BiConsumer;
 public class RingBufferBundler extends BaseBundler {
     protected RingBuffer<Message>         rb;
     protected Runner                      bundler_thread;
+
+    @Property(description="Number of spins before a real lock is acquired")
     protected int                         num_spins=40; // number of times we call Thread.yield before acquiring the lock (0 disables)
     protected static final String         THREAD_NAME="RingBufferBundler";
     protected BiConsumer<Integer,Integer> wait_strategy=SPIN_PARK;
-    protected int                         capacity;
     protected final Runnable              run_function=this::readMessages;
 
     protected static final BiConsumer<Integer,Integer> SPIN=(it,spins) -> {;};
@@ -57,14 +61,17 @@ public class RingBufferBundler extends BaseBundler {
     public int                 getQueueSize()            {return rb.size();}
     public int                 numSpins()                {return num_spins;}
     public RingBufferBundler   numSpins(int n)           {num_spins=n; return this;}
+
+    @Property(description="The wait strategy: spin, yield, park, spin-park, spin-yield",writable=false)
     public String              waitStrategy()            {return print(wait_strategy);}
+    @Property
     public RingBufferBundler   waitStrategy(String st)   {wait_strategy=createWaitStrategy(st, YIELD); return this;}
 
 
     public void init(TP transport) {
         super.init(transport);
         if(rb == null) {
-            rb=new RingBuffer<>(Message.class, assertPositive(transport.getBundlerCapacity(), "bundler capacity cannot be " + transport.getBundlerCapacity()));
+            rb=new RingBuffer<>(Message.class, assertPositive(capacity, "bundler capacity cannot be " + capacity));
             this.capacity=rb.capacity();
         }
         bundler_thread=new Runner(transport.getThreadFactory(), THREAD_NAME, run_function, () -> rb.clear());
@@ -85,7 +92,6 @@ public class RingBufferBundler extends BaseBundler {
 
     /** Read and send messages in range [read-index .. read-index+available_msgs-1] */
     public void sendBundledMessages(final Message[] buf, final int read_index, final int available_msgs) {
-        int       max_bundle_size=transport.getMaxBundleSize();
         byte[]    cluster_name=transport.cluster_name.chars();
         int       start=read_index;
         final int end=index(start + available_msgs-1); // index of the last message to be read
@@ -107,7 +113,7 @@ public class RingBufferBundler extends BaseBundler {
                 // remember the position at which the number of messages (an int) was written, so we can later set the
                 // correct value (when we know the correct number of messages)
                 int size_pos=output.position() - Global.INT_SIZE;
-                int num_msgs=marshalMessagesToSameDestination(dest, buf, start, end, max_bundle_size);
+                int num_msgs=marshalMessagesToSameDestination(dest, buf, start, end, max_size);
                 if(num_msgs > 1) {
                     int current_pos=output.position();
                     output.position(size_pos);
@@ -116,7 +122,7 @@ public class RingBufferBundler extends BaseBundler {
                 }
                 transport.doSend(output.buffer(), 0, output.position(), dest);
                 if(transport.statsEnabled())
-                    transport.incrBatchesSent(num_msgs);
+                    transport.getMessageStats().incrNumBatchesSent(num_msgs);
             }
             catch(Exception ex) {
                 log.error("failed to send message(s) to %s: %s", dest == null? "group" : dest, ex.getMessage());

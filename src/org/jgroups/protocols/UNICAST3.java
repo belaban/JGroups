@@ -382,7 +382,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         // serialized size is 8012 bytes. Therefore, for a serialized size of 64000 bytes, we can retransmit a max of
         // 8 * 64000 = 512'000 seqnos
         // see SeqnoListTest.testSerialization3()
-        int estimated_max_msgs_in_xmit_req=(transport.getMaxBundleSize() -50) * Global.LONG_SIZE;
+        int estimated_max_msgs_in_xmit_req=(transport.getBundler().getMaxSize() -50) * Global.LONG_SIZE;
         int old_max_xmit_size=max_xmit_req_size;
         if(max_xmit_req_size <= 0)
             max_xmit_req_size=estimated_max_msgs_in_xmit_req;

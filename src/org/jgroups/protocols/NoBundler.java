@@ -16,12 +16,18 @@ public class NoBundler implements Bundler {
     protected TP                                       transport;
     protected Log                                      log;
 
-    public int       size()                {return 0;}
+    public int size()       {return 0;}
+    public int getMaxSize() {return 64000;}
 
     public void init(TP transport) {
         this.transport=transport;
         log=transport.getLog();
     }
+
+    public int getQueueSize() {
+        return -1;
+    }
+
     public void start() {}
     public void stop()  {}
 
@@ -37,7 +43,7 @@ public class NoBundler implements Bundler {
         Util.writeMessage(msg, output, dest == null);
         transport.doSend(output.buffer(), 0, output.position(), dest);
         if(transport.statsEnabled())
-            transport.incrNumSingleMsgsSent(1);
+            transport.getMessageStats().incrNumSingleMsgsSent(1);
     }
 
 }

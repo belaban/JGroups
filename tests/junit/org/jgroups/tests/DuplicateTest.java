@@ -177,18 +177,18 @@ public class DuplicateTest extends ChannelTestBase {
 
 
     private void createChannels(boolean copy_multicasts, boolean copy_unicasts, int num_outgoing_copies, int num_incoming_copies) throws Exception {
-        a=createChannel(true, 3, "A");
+        a=createChannel().name("A");
         DUPL dupl=new DUPL(copy_multicasts, copy_unicasts, num_incoming_copies, num_outgoing_copies);
         ProtocolStack stack=a.getProtocolStack();
         stack.insertProtocol(dupl,ProtocolStack.Position.BELOW,NAKACK2.class);
 
-        b=createChannel(a, "B");
-        c=createChannel(a, "C");
+        b=createChannel().name("B");
+        c=createChannel().name("C");
+        makeUnique(a,b,c);
 
         a.connect("DuplicateTest");
         b.connect("DuplicateTest");
         c.connect("DuplicateTest");
-
         Util.waitUntilAllChannelsHaveSameView(20000, 1000, a, b, c);
     }
 

@@ -24,9 +24,10 @@ public class NAKACK_Test extends ChannelTestBase {
 
     @BeforeMethod
     void setUp() throws Exception {
-        c1=createChannel(true, 3);
-        c2=createChannel(c1);
-        c3=createChannel(c1);
+        c1=createChannel();
+        c2=createChannel();
+        c3=createChannel();
+        makeUnique(c1,c2,c3);
     }
 
     @AfterMethod
@@ -42,7 +43,6 @@ public class NAKACK_Test extends ChannelTestBase {
      * @throws Exception
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testOutOfBandMessages() throws Exception {
         NAKACK_Test.MyReceiver receiver1=new NAKACK_Test.MyReceiver();
         NAKACK_Test.MyReceiver receiver2=new NAKACK_Test.MyReceiver();
@@ -93,6 +93,7 @@ public class NAKACK_Test extends ChannelTestBase {
      * in the sequence
      * @param lists
      */
+    @SafeVarargs
     private static void checkOrder(Collection<Long> ... lists) throws Exception {
         for(Collection<Long> list: lists) {
             list.remove(4L);

@@ -3,6 +3,7 @@ package org.jgroups.util;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.protocols.TP;
 
 import java.util.List;
@@ -25,6 +26,9 @@ import java.util.stream.Stream;
 public class MaxOneThreadPerSender extends SubmitToThreadPool {
     protected final MessageTable mcasts=new MessageTable();
     protected final MessageTable ucasts=new MessageTable();
+
+    @Property(description="Max number of messages buffered for consumption of the delivery thread in " +
+      "MaxOneThreadPerSender. 0 creates an unbounded buffer")
     protected int                max_buffer_size;
 
     @ManagedOperation(description="Dumps unicast and multicast tables")
@@ -39,7 +43,6 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
 
     public void init(TP transport) {
         super.init(transport);
-        max_buffer_size=tp.getMessageProcessingMaxBufferSize();
     }
 
     public void destroy() {
@@ -163,7 +166,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             try {
                 submitted_msgs.increment();
                 BatchHandlerLoop handler=new BatchHandlerLoop(batch_creator.apply(16).add(msg), this, loopback);
-                if(!tp.submitToThreadPool(handler))
+                if(!tp.getThreadPool().execute(handler))
                     setRunning(false);
             }
             catch(Throwable t) {
@@ -175,7 +178,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             try {
                 submitted_batches.increment();
                 BatchHandlerLoop handler=new BatchHandlerLoop(batch_creator.apply(mb.size()).add(mb), this, false);
-                if(!tp.submitToThreadPool(handler))
+                if(!tp.getThreadPool().execute(handler))
                     setRunning(false);
             }
             catch(Throwable t) {

@@ -24,12 +24,13 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
 
     @BeforeClass
     protected void setUp() throws Exception {
-        channel=createChannel(true);
+        channel=createChannel();
         disp=new RpcDispatcher(channel, target);
-        channel.connect("RpcDispatcherSerializationTest");
-
-        channel2=createChannel(channel);
+        channel2=createChannel();
         disp2=new RpcDispatcher(channel2, target);
+        makeUnique(channel,channel2);
+
+        channel.connect("RpcDispatcherSerializationTest");
         channel2.connect("RpcDispatcherSerializationTest");
     }
 
@@ -70,28 +71,28 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         for(Iterator<? extends Rsp<?>> it=rsps.values().iterator(); it.hasNext();) {
             Rsp<?> rsp=it.next();
             assert rsp.getValue() == null;
-            assertTrue(rsp.wasReceived());
-            assertFalse(rsp.wasSuspected());
+            assert rsp.wasReceived();
+            assert !rsp.wasSuspected();
         }
 
         rsps=disp.callRemoteMethods(null, new MethodCall(Target.B), new RequestOptions(ResponseMode.GET_ALL, 0));
-        assertEquals(2, rsps.size());
+        assert 2 == rsps.size();
         for(Iterator<? extends Rsp<?>> it=rsps.values().iterator(); it.hasNext();) {
             Rsp<?> rsp=it.next();
-            assertNotNull(rsp.getValue());
-            assertEquals(Boolean.TRUE, rsp.getValue());
-            assertTrue(rsp.wasReceived());
-            assertFalse(rsp.wasSuspected());
+            assert rsp.getValue() != null;
+            assert Boolean.TRUE.equals(rsp.getValue());
+            assert rsp.wasReceived();
+            assert !rsp.wasSuspected();
         }
 
         rsps=disp.callRemoteMethods(null, new MethodCall(Target.C), new RequestOptions(ResponseMode.GET_ALL, 0));
-        assertEquals(2, rsps.size());
+        assert 2 == rsps.size();
         for(Iterator<? extends Rsp<?>> it=rsps.values().iterator(); it.hasNext();) {
             Rsp<?> rsp=it.next();
-            assertNull(rsp.getValue());
-            assertNotNull(rsp.getException());
-            assertTrue(rsp.wasReceived());
-            assertFalse(rsp.wasSuspected());
+            assert rsp.getValue() == null;
+            assert rsp.getException() != null;
+            assert rsp.wasReceived();
+            assert !rsp.wasSuspected();
         }
     }
 

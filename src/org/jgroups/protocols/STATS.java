@@ -1,9 +1,9 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.Component;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
@@ -16,12 +16,13 @@ import java.util.concurrent.ConcurrentMap;
  * @author Bela Ban
  */
 @MBean(description="Protocol which exposes various statistics such as sent messages, number of bytes received etc")
-public class STATS extends Protocol implements AdditionalJmxObjects {
+public class STATS extends Protocol {
     protected static final short   UP=1;
     protected static final short   DOWN=2;
     protected static final Address NULL_DEST=Global.NULL_ADDRESS;
 
     /** Global stats */
+    @Component
     protected final MsgStats mstats=new MsgStats();
 
     /** Maintains stats per target destination */
@@ -39,9 +40,6 @@ public class STATS extends Protocol implements AdditionalJmxObjects {
     }
 
 
-    public Object[] getJmxObjects() {
-        return new Object[]{mstats};
-    }
 
     public Object up(Event evt) {
         if(evt.getType() == Event.VIEW_CHANGE)

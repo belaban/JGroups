@@ -19,6 +19,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Tests correct state transfer while other members continue sending messages to the group
@@ -55,7 +57,7 @@ public class StateTransferTest extends ChannelTestBase {
 
     @Test(dataProvider="createChannels")
     public void testStateTransferFromSelfWithRegularChannel(final Class<? extends Protocol> state_transfer_class) throws Exception {
-        JChannel ch=createChannel(true);
+        JChannel ch=createChannel();
         replaceStateTransferProtocolWith(ch, state_transfer_class);
         ch.connect("StateTransferTest");
         try {
@@ -78,11 +80,15 @@ public class StateTransferTest extends ChannelTestBase {
 
         int from=0, to=MSG_SEND_COUNT;
         for(int i=0;i < apps.length;i++) {
-            if(i == 0)
-                apps[i]=new StateTransferApplication(semaphore, names[i], from, to);
-            else
-                apps[i]=new StateTransferApplication(apps[0].getChannel(), semaphore, names[i], from, to);
+            apps[i]=new StateTransferApplication(semaphore, names[i], from, to);
             replaceStateTransferProtocolWith(apps[i].getChannel(), state_transfer_class);
+        }
+
+        List<JChannel> l=Stream.of(apps).map(StateTransferApplication::getChannel).collect(Collectors.toList());
+        makeUnique(l);
+
+        // connect and send
+        for(int i=0;i < apps.length;i++) {
             threads[i]=new Thread(apps[i], "thread-" + names[i]);
             threads[i].start();
             from+=MSG_SEND_COUNT;
@@ -233,25 +239,16 @@ public class StateTransferTest extends ChannelTestBase {
         protected final JChannel                       channel;
         protected long                                 start_time;
 
+
         public StateTransferApplication(Semaphore semaphore, String name, int from, int to) throws Exception {
             this.from=from;
             this.to=to;
             this.semaphore=semaphore;
             init();
-            channel=createChannel(true, APP_COUNT, name);
+            channel=createChannel().name(name);
             channel.setReceiver(this);
-
         }
         
-        public StateTransferApplication(JChannel copySource, Semaphore semaphore, String name, int from, int to) throws Exception {
-            this.from=from;
-            this.to=to;
-            this.semaphore=semaphore;
-            init();
-            this.channel=createChannel(copySource, name);
-            channel.setReceiver(this);
-
-        }
 
         protected void init() {
             for(String s: names)
@@ -328,7 +325,7 @@ public class StateTransferTest extends ChannelTestBase {
         public void run() {
             boolean acquired=false;
             try {
-                acquired=semaphore.tryAcquire(60000L, TimeUnit.MILLISECONDS);
+                acquired=semaphore.tryAcquire(10L, TimeUnit.SECONDS);
                 if(!acquired)
                     throw new Exception(channel.getAddress() + " cannot acquire semaphore");
                 useChannel();

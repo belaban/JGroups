@@ -5,6 +5,7 @@ package org.jgroups.stack;
 
 import org.jgroups.Event;
 import org.jgroups.JChannel;
+import org.jgroups.Lifecycle;
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
@@ -42,7 +43,7 @@ import java.util.List;
  *
  * @author Bela Ban
  */
-public abstract class Protocol {
+public abstract class Protocol implements Lifecycle {
     protected Protocol         up_prot, down_prot;
     protected ProtocolStack    stack;
     
@@ -122,11 +123,13 @@ public abstract class Protocol {
 
     /**
      * After configuring the protocol itself from the properties defined in the XML config, a protocol might have
-     * additional objects which need to be configured. This callback allows a protocol developer to configure those
-     * other objects. This call is guaranteed to be invoked <em>after</em> the protocol itself has been configured.
+     * additional component objects which need to be configured. This callback allows a protocol developer to configure those
+     * other objects. This call is guaranteed to be invoked <em>after</em> the protocol itself has been configured.<br/>
      * See AUTH for an example.
      */
-    public List<Object> getConfigurableObjects() {return null;}
+    public List<Object> getComponents() {
+        return Util.getComponents(this);
+    }
 
     /** Called by the XML parser when subelements are found in the configuration of a protocol. This allows
      * a protocol to define protocol-specific information and to parse it */
@@ -194,41 +197,35 @@ public abstract class Protocol {
 
 
     /**
-     * Called after instance has been created (null constructor) and before protocol is started.
-     * Properties are already set. Other protocols are not yet connected and events cannot yet be sent.
+     * Called after a protocol has been created and before the protocol is started.
+     * Attributes are already set. Other protocols are not yet connected and events cannot yet be sent.
      * @exception Exception Thrown if protocol cannot be initialized successfully. This will cause the
-     *                      ProtocolStack to fail, so the channel constructor will throw an exception
+     *                      ProtocolStack to fail, so the the channel constructor will throw an exception
      */
-    public void init() throws Exception {
+    @Override public void init() throws Exception {
     }
 
     /**
-     * This method is called on a {@link JChannel#connect(String)}. Starts work.
-     * Protocols are connected and queues are ready to receive events.
-     * Will be called <em>from bottom to top</em>. This call will replace
-     * the <b>START</b> and <b>START_OK</b> events.
+     * This method is called on a {@link JChannel#connect(String)}; starts work. Protocols are connected ready to
+     * receive events.  Will be called <em>from bottom to top</em>.
      * @exception Exception Thrown if protocol cannot be started successfully. This will cause the ProtocolStack
      *                      to fail, so {@link JChannel#connect(String)} will throw an exception
      */
-    public void start() throws Exception {
+    @Override public void start() throws Exception {
     }
 
     /**
-     * This method is called on a {@link JChannel#disconnect()}. Stops work (e.g. by closing multicast socket).
-     * Will be called <em>from top to bottom</em>. This means that at the time of the method invocation the
-     * neighbor protocol below is still working. This method will replace the
-     * <b>STOP</b>, <b>STOP_OK</b>, <b>CLEANUP</b> and <b>CLEANUP_OK</b> events. The ProtocolStack guarantees that
-     * when this method is called all messages in the down queue will have been flushed
+     * Called on a {@link JChannel#disconnect()}; stops work (e.g. by closing multicast socket). Will be called
+     * <em>from top to bottom</em>.
      */
-    public void stop() {
+    @Override public void stop() {
     }
 
 
     /**
-     * This method is called on a {@link JChannel#close()}.
-     * Does some cleanup; after the call the VM will terminate
+     * This method is called on a {@link JChannel#close()}. Does some cleanup; after the call, the VM will terminate
      */
-    public void destroy() {
+    @Override public void destroy() {
     }
 
 
