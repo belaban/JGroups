@@ -7,34 +7,33 @@ import org.jgroups.Global;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.security.SecureRandom;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
 /**
  * Logical address which is unique over space and time. <br/>
  * Copied from java.util.UUID, but unneeded fields from the latter have been removed. UUIDs needs to
  * have a small memory footprint.
- * 
+ *
  * @author Bela Ban
  */
 public class UUID implements Address, Constructable<UUID> {
     protected long   mostSigBits;
     protected long   leastSigBits;
 
-    /** The random number generator used by this class to create random based UUIDs */
-    protected static volatile SecureRandom numberGenerator=null;
-
     protected static final int SIZE=Global.LONG_SIZE * 2;
-
-
 
     public UUID() {
     }
 
-
     public UUID(long mostSigBits, long leastSigBits) {
         this.mostSigBits = mostSigBits;
         this.leastSigBits = leastSigBits;
+    }
+
+    public UUID(java.util.UUID uuid) {
+        this.mostSigBits = uuid.getMostSignificantBits();
+        this.leastSigBits = uuid.getLeastSignificantBits();
     }
 
     /** Private constructor which uses a byte array to construct the new UUID */
@@ -58,11 +57,11 @@ public class UUID implements Address, Constructable<UUID> {
 
     /**
      * Static factory to retrieve a type 4 (pseudo randomly generated) UUID.
-     * The {@code UUID} is generated using a cryptographically strong pseudo random number generator.
+     * The {@code UUID} is generated using a {@link ThreadLocalRandom}.
      * @return  A randomly generated {@code UUID}
      */
     public static UUID randomUUID() {
-        return new UUID(generateRandomBytes(16));
+        return new UUID(generateRandomBytes());
     }
 
 
@@ -222,19 +221,16 @@ public class UUID implements Address, Constructable<UUID> {
         return new UUID(mostSigBits, leastSigBits);
     }
 
-
+    /**
+     * Generate random bytes and adjusts them for a type-4 UUID
+     */
     public static byte[] generateRandomBytes() {
-        return generateRandomBytes(16);
+        byte[] data = new byte[16];
+        ThreadLocalRandom.current().nextBytes(data);
+        data[6] &= 0x0f; /* clear version */
+        data[6] |= 0x40; /* set to version 4 */
+        data[8] &= 0x3f; /* clear variant */
+        data[8] |= 0x80; /* set to IETF variant */
+        return data;
     }
-    public static byte[] generateRandomBytes(int size) {
-        SecureRandom ng=numberGenerator;
-        if(ng == null)
-            numberGenerator=ng=new SecureRandom();
-
-        byte[] randomBytes=new byte[size];
-        ng.nextBytes(randomBytes);
-        return randomBytes;
-    }
-
-
 }
