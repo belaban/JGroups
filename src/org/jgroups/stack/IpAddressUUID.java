@@ -143,7 +143,7 @@ public class IpAddressUUID extends IpAddress {
     }
 
     protected static long[] createUUID() {
-        byte[] data=UUID.generateRandomBytes(12);
+        byte[] data=UUID.generateRandomBytes();
         long msb = 0;
         int lsb = 0;
         for (int i=0; i<8; i++)
