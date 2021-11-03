@@ -1,6 +1,0 @@
-os: linux
-language: java
-#install: ant deps
-#script: ant all-tests
-jdk:
-  - openjdk11
