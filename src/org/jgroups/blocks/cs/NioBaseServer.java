@@ -141,12 +141,14 @@ public abstract class NioBaseServer extends BaseServer {
                                 conn.connected(true);
                             }
                         }
-                        if(key.isReadable())
-                            conn.receive();
-                        if(key.isWritable())
-                            conn.send();
-                        if(key.isAcceptable())
+                        else if(key.isAcceptable())
                             handleAccept(key);
+                        else {
+                            if (key.isReadable())
+                                conn.receive();
+                            if (key.isWritable())
+                                conn.send();
+                        }
                     }
                     catch(Throwable ex) {
                         closeConnection(conn);
