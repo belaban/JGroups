@@ -14,15 +14,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Dynamic tool to measure multicast performance of JGroups; every member sends N messages and we measure how long it
@@ -42,8 +41,10 @@ public class MPerf implements Receiver {
     protected int                             num_threads=100;
     protected int                             num_senders=-1; // <= 0: all
     protected boolean                         oob;
+    protected boolean                         log_local=true; // default: same behavior as before
+    protected boolean                         display_msg_src=false;
     protected long                            start_time; // set on reception of START message
-    protected final LongAdder                 total_received_msgs=new LongAdder();
+    protected MessageCounter                  received_msgs_map=new MessageCounter();
     protected final List<Address>             members=new CopyOnWriteArrayList<>();
     protected final Log                       log=LogFactory.getLog(getClass());
     protected Path                            out_file_path;
@@ -52,8 +53,11 @@ public class MPerf implements Receiver {
     protected ThreadFactory                   thread_factory;
     protected static final short              ID=ClassConfigurator.getProtocolId(MPerf.class);
 
-    public MPerf(Path out_file_path) throws IOException {
+    public MPerf() throws IOException {
+        this(null);
+    }
 
+    public MPerf(Path out_file_path) throws IOException {
         if (out_file_path != null) {
             if (Files.notExists(out_file_path)) {
                 Files.createDirectories(out_file_path.getParent());
@@ -94,13 +98,15 @@ public class MPerf implements Receiver {
     protected void eventLoop() {
         final String INPUT=
           "[1] Start test [2] View [4] Threads (%d) [6] Time (%,ds) [7] Msg size (%s)\n" +
-            "[8] Number of senders (%s) [o] Toggle OOB (%s)\n" +
+            "[8] Number of senders (%s) [o] Toggle OOB (%s) [l] Toggle measure local messages (%s)\n" +
+            "[s] Display message sources (%s)\n" +
             "[x] Exit this [X] Exit all";
 
         while(looping) {
             try {
                 int c=Util.keyPress(String.format(INPUT, num_threads, time, Util.printBytes(msg_size),
-                                              num_senders <= 0? "all" : String.valueOf(num_senders), oob));
+                                              num_senders <= 0? "all" : String.valueOf(num_senders),
+                                              oob, log_local, display_msg_src));
                 switch(c) {
                     case '1':
                         startTest();
@@ -124,6 +130,14 @@ public class MPerf implements Receiver {
                         ConfigChange change=new ConfigChange("oob", !oob);
                         send(null, change, MPerfHeader.CONFIG_CHANGE, Message.Flag.RSVP);
                         break;
+                    case 'l':
+                        ConfigChange log_local_change=new ConfigChange("log_local", !log_local);
+                        send(null, log_local_change, MPerfHeader.CONFIG_CHANGE, Message.Flag.RSVP);
+                        break;
+                    case 's':
+                        ConfigChange display_msg_src_change=new ConfigChange("display_msg_src", !display_msg_src);
+                        send(null, display_msg_src_change, MPerfHeader.CONFIG_CHANGE, Message.Flag.RSVP);
+                        break;
                     case 'x':
                     case -1:
                         looping=false;
@@ -141,7 +155,7 @@ public class MPerf implements Receiver {
     }
 
     protected void startTest() throws Exception {
-        results.reset(getSenders());
+        results.reset(new ArrayList<>(members));
         send(null, null, MPerfHeader.START_SENDING, Message.Flag.OOB);
         results.waitForAllResponses(time * 1_000L * 2);
         displayResults();
@@ -154,8 +168,13 @@ public class MPerf implements Receiver {
         Map<Address,Result> tmp_results=results.getResults();
         for(Map.Entry<Address,Result> entry: tmp_results.entrySet()) {
             Result val=entry.getValue();
-            if(val != null)
-                System.out.println(entry.getKey() + ": " + computeStats(val.time, val.msgs, msg_size));
+            if(val != null) {
+                String resultString = entry.getKey() + ": " + computeStats(val.time, val.msgs, msg_size);
+                if (display_msg_src) {
+                    resultString += printPerSender(val.sources, val.received, msg_size, val.time);
+                }
+                System.out.println(resultString);
+            }
         }
 
         long total_msgs=0, total_time=0, num=0;
@@ -176,7 +195,6 @@ public class MPerf implements Receiver {
         else {
             printOutput("\n===============================================================================");
             printOutput(" Received no results");
-            //printOutput("\033[0m");
             printOutput("================================================================================\n\n");
         }
     }
@@ -189,6 +207,8 @@ public class MPerf implements Receiver {
         sb.append("num_threads=").append(num_threads).append('\n');
         sb.append("num_senders=").append(num_senders).append('\n');
         sb.append("oob=").append(oob).append('\n');
+        sb.append("log_local=").append(log_local).append('\n');
+        sb.append("display_msg_src=").append(display_msg_src).append('\n');
         return sb.toString();
     }
 
@@ -242,20 +262,23 @@ public class MPerf implements Receiver {
 
     public void receive(Message msg) {
         MPerfHeader hdr=msg.getHeader(ID);
+
         switch(hdr.type) {
             case MPerfHeader.DATA:
-                total_received_msgs.increment();
+                if (log_local || !Objects.equals(msg.getSrc(), local_addr)) {
+                    received_msgs_map.addMessage(msg.getSrc());
+                }
                 break;
 
             case MPerfHeader.START_SENDING:
+                boolean isSender = true;
                 if(num_senders > 0) {
                     int my_rank=Util.getRank(members, local_addr);
                     if(my_rank >= 0 && my_rank > num_senders)
-                        break;
+                        isSender = false;
                 }
                 start_time=System.currentTimeMillis();
-                Result r=null;
-                r=sendMessages();
+                Result r=sendMessages(isSender);
                 System.out.println("-- done");
                 sendNoException(msg.getSrc(), r, MPerfHeader.RESULT, Message.Flag.OOB);
                 break;
@@ -288,17 +311,20 @@ public class MPerf implements Receiver {
                 break;
 
             default:
-                System.err.println("Header type " + hdr.type + " not recognized");
+                System.err.println("header type " + hdr.type + " not recognized");
         }
     }
 
     public void receive(MessageBatch batch) {
         for(Message msg: batch) {
             byte type=((MPerfHeader)msg.getHeader(ID)).type;
-            if(type == MPerfHeader.DATA)
-                total_received_msgs.increment();
-            else
+            if(type == MPerfHeader.DATA) {
+                if (log_local || !Objects.equals(msg.getSrc(), local_addr)) {
+                    received_msgs_map.addMessage(msg.getSrc());
+                }
+            } else {
                 receive(msg);
+            }
         }
     }
 
@@ -333,6 +359,7 @@ public class MPerf implements Receiver {
         cfg.addChange("num_threads", num_threads);
         cfg.addChange("num_senders", num_senders);
         cfg.addChange("oob",         oob);
+        cfg.addChange("log_local",   log_local);
         send(sender,cfg,MPerfHeader.CONFIG_RSP);
     }
 
@@ -350,44 +377,55 @@ public class MPerf implements Receiver {
     }
 
     
-    protected Result sendMessages() {
+    protected Result sendMessages(boolean isSender) {
         final Thread[]       senders=new Thread[num_threads];
         final CountDownLatch latch=new CountDownLatch(1);
         final byte[]         payload=new byte[msg_size];
+        final AtomicBoolean running = new AtomicBoolean(true);
 
-        total_received_msgs.reset();
-        final AtomicBoolean running=new AtomicBoolean(true);
-        for(int i=0; i < num_threads; i++) {
-            Sender sender=new Sender(latch, running, payload);
-            senders[i]=thread_factory.newThread(sender, "sender-" + i);
-            senders[i].start();
+        received_msgs_map.reset();
+
+        if (isSender) {
+            for (int i = 0; i < num_threads; i++) {
+                Sender sender = new Sender(latch, running, payload);
+                senders[i] = thread_factory.newThread(sender, "sender-" + i);
+                senders[i].start();
+            }
         }
-        System.out.printf("-- running test for %d seconds with %d sender threads\n", time, num_threads);
-
+        System.out.printf("-- running test for %d seconds with %d sender threads\n", time, isSender ? num_threads : 0);
         long interval=(long)((time * 1000.0) / 10.0);
         long start=System.currentTimeMillis();
         latch.countDown();
         for(int i=1; i <= 10; i++) {
             Util.sleep(interval);
-            System.out.printf("%d: %s\n", i, printAverage(start));
+            System.out.printf("%d: %s\n", i, received_msgs_map.printAverage(start, msg_size, display_msg_src));
         }
         running.set(false);
-        for(Thread s: senders) {
-            try {
-                s.join();
-            }
-            catch(InterruptedException e) {
-                e.printStackTrace();
+        if (isSender) {
+            running.set(false);
+            for (Thread s : senders) {
+                try {
+                    s.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
-        Result result=new Result(System.currentTimeMillis() - start, total_received_msgs.sum());
-        total_received_msgs.reset();
+
+        Map<Address, Long> counts = received_msgs_map.snapshot();
+        Result result=new Result(System.currentTimeMillis() - start, received_msgs_map.totalCount(),
+                counts.keySet().toArray(new Address[0]),
+                Arrays.stream(counts.values().toArray(new Long[0]))
+                .filter(Objects::nonNull)
+                .mapToLong(Long::longValue)
+                .toArray());
+        received_msgs_map.reset();
         return result;
     }
 
     protected String printAverage(long start_time) {
         long diff=System.currentTimeMillis()-start_time;
-        double msgs_per_sec=total_received_msgs.sum() / (diff / 1000.0);
+        double msgs_per_sec=received_msgs_map.totalCount() / (diff / 1000.0);
         double throughput=msgs_per_sec * msg_size;
         return String.format("%,.2f msgs/sec (%s/sec)", msgs_per_sec, Util.printBytes(throughput));
     }
@@ -398,6 +436,21 @@ public class MPerf implements Receiver {
         throughput=(msgs * size) / (time / 1000.0);
         return String.format("%,d msgs, %s received, time=%,d ms, msgs/sec=%,.2f, throughput=%s",
                              msgs, Util.printBytes(msgs * size), time, msgs_sec, Util.printBytes(throughput));
+    }
+
+    protected static String printPerSender(Address[] sender, long[] received, long msg_size, long diff) {
+            if (sender == null || sender.length == 0)
+                return "";
+
+            StringJoiner joiner = new StringJoiner("  ");
+            for (int i = 0; i < sender.length; i++) {
+                double msg_rate = received[i] / (diff / 1000.0);
+                joiner.add(String.format("%s: %,.2f msgs/sec (%s/sec)",
+                        sender[i],
+                        msg_rate,
+                        Util.printBytes(msg_rate * msg_size)));
+            }
+            return String.format("[%s]", joiner);
     }
     
     protected class Sender implements Runnable {
@@ -510,27 +563,52 @@ public class MPerf implements Receiver {
     protected static class Result implements Streamable {
         protected long    time; // time in ms
         protected long    msgs; // number of messages received
+        protected Address[] sources;
+        protected long[] received;
 
         public Result() {
         }
 
-        public Result(long time, long msgs) {
+        public Result(long time, long msgs, Address[] sources, long[] received) {
             this.time=time;
             this.msgs=msgs;
+            this.sources = sources;
+            this.received = received;
         }
 
         public int size() {
-            return Bits.size(time) + Bits.size(msgs);
+            int sources_size = sources == null ? 0 : sources.length * (sources[0].serializedSize() + Global.LONG_SIZE);
+            return Bits.size(time) + Bits.size(msgs) + sources_size;
         }
 
         public void writeTo(DataOutput out) throws IOException {
             Bits.writeLongCompressed(time, out);
             Bits.writeLongCompressed(msgs, out);
+            int sources_length = sources == null ? 0 : sources.length;
+            Bits.writeIntCompressed(sources_length, out);
+            if (sources_length == 0) {
+                return;
+            }
+            for (int i = 0; i < sources.length; i++) {
+                Util.writeAddress(sources[i], out);
+                Bits.writeLongCompressed(received[i], out);
+            }
         }
 
-        public void readFrom(DataInput in) throws IOException {
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
             time=Bits.readLongCompressed(in);
             msgs=Bits.readLongCompressed(in);
+            int sources_length = Bits.readIntCompressed(in);
+            if (sources_length > 0) {
+                sources = new Address[sources_length];
+                received = new long[sources_length];
+                for (int i = 0; i < sources_length; i++) {
+                    sources[i] = Util.readAddress(in);
+                    received[i] = Bits.readLongCompressed(in);
+                }
+            }
+
+
         }
 
         public String toString() {
@@ -585,6 +663,72 @@ public class MPerf implements Receiver {
                 case EXIT:          return "EXIT";
                 default:            return "n/a";
             }
+        }
+    }
+
+    protected static class MessageCounter {
+        protected ConcurrentHashMap<Address,LongAdder> countMap;
+
+        public MessageCounter() {
+            this.countMap = new ConcurrentHashMap<>();
+        }
+
+        public void addMessage(Address source) {
+            LongAdder adder = countMap.get(source);
+            if (adder == null) {
+                adder = new LongAdder();
+                countMap.put(source, adder);
+            }
+            adder.increment();
+            //countMap.computeIfAbsent(source, k -> new LongAdder()).increment();
+        }
+
+        public void addMessage(Address source, long count) {
+            countMap.computeIfAbsent(source, k -> new LongAdder()).add(count);
+        }
+
+        public void reset() {
+            countMap = new ConcurrentHashMap<>();
+        }
+
+        public long totalCount() {
+            long total = 0;
+            for (LongAdder adder : countMap.values()) {
+                total += adder.sum();
+            }
+            return total;
+        }
+
+        public double totalRate(long diff) {
+            return totalCount() / (diff / 1000.0);
+        }
+
+        public Map<Address, Long> snapshot() {
+            return countMap.entrySet().stream()
+                    .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), e.getValue().sum()))
+                    .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), Math::addExact, TreeMap::new));
+        }
+
+        public String printAverage(long start_time, int msg_size, boolean display_msg_src) {
+            Map<Address, Long> snapshot = snapshot();
+            long diff=System.currentTimeMillis()-start_time;
+            double msgs_per_sec=totalCount() / (diff / 1000.0);
+            double throughput=msgs_per_sec * msg_size;
+
+            StringBuilder sb = new StringBuilder();
+            sb.append(String.format("%,.2f msgs/sec (%s/sec)", msgs_per_sec, Util.printBytes(throughput)));
+            if (display_msg_src) {
+                StringJoiner joiner = new StringJoiner("  ");
+                for (Map.Entry<Address, Long> e : snapshot.entrySet()) {
+                    double msg_rate = e.getValue() / (diff / 1000.0);
+                    joiner.add(String.format("%s: %,.2f msgs/sec (%s/sec)",
+                            e.getKey(),
+                            msg_rate,
+                            Util.printBytes(msg_rate * msg_size)));
+                }
+                sb.append(String.format("[%s]", joiner));
+            }
+            return sb.toString();
         }
     }
 
