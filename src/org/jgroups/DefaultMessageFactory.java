@@ -24,6 +24,7 @@ public class DefaultMessageFactory implements MessageFactory {
         creators[Message.LONG_MSG]=LongMessage::new;
         creators[Message.COMPOSITE_MSG]=CompositeMessage::new;
         creators[Message.FRAG_MSG]=FragmentedMessage::new;
+        creators[Message.EARLYBATCH_MSG]=EarlyBatchMessage::new;
     }
 
     public <T extends Message> T create(short type) {

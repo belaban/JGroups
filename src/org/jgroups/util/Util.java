@@ -1561,10 +1561,9 @@ public class Util {
         for(int i=0; i < len; i++) {
             short type=in.readShort();
             Message msg=factory.create(type);
-            msg.readFrom(in);
             msg.setDest(dest);
-            if(msg.getSrc() == null)
-                msg.setSrc(src);
+            msg.setSrc(src);
+            msg.readFrom(in);
             boolean oob=msg.isFlagSet(Message.Flag.OOB);
             boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
             int index=0;
