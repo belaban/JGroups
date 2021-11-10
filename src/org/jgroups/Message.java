@@ -25,7 +25,8 @@ public interface Message extends SizeStreamable, Constructable<Message> {
       OBJ_MSG              = 3,
       LONG_MSG             = 4,
       COMPOSITE_MSG        = 5,
-      FRAG_MSG             = 6;
+      FRAG_MSG             = 6,
+      EARLYBATCH_MSG       = 7;
 
 
 
