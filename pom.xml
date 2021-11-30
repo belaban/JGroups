@@ -132,13 +132,13 @@
         <dependency>
             <groupId>org.jboss.byteman</groupId>
             <artifactId>byteman-bmunit</artifactId>
-            <version>4.0.17</version>
+            <version>4.0.18</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.wildfly.security</groupId>
             <artifactId>wildfly-elytron</artifactId>
-            <version>1.17.2.Final</version>
+            <version>1.18.0.Final</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
