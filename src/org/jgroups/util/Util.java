@@ -1819,7 +1819,7 @@ public class Util {
     public static String readStringFromStdin(String message) throws Exception {
         System.out.print(message);
         System.out.flush();
-        System.in.skip(System.in.available());
+        System.in.skip(available(System.in));
         BufferedReader reader=new BufferedReader(new InputStreamReader(System.in));
         String line=reader.readLine();
         return line != null? line.trim() : null;
@@ -1967,7 +1967,7 @@ public class Util {
 
         try {
             int ret=System.in.read();
-            System.in.skip(System.in.available());
+            System.in.skip(available(System.in));
             return ret;
         }
         catch(IOException e) {
@@ -1975,6 +1975,14 @@ public class Util {
         }
     }
 
+    public static int available(InputStream in) {
+        try {
+            return in.available();
+        }
+        catch(Exception ex) {
+            return 0;
+        }
+    }
 
     public static long micros() {
         return nanoTime() / 1000;
