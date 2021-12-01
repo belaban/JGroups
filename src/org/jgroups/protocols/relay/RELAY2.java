@@ -951,7 +951,9 @@ public class RELAY2 extends Protocol {
         }
         public short getMagicId() {return 80;}
         public Supplier<? extends Header> create() {return Relay2Header::new;}
-
+        public byte    getType()           {return type;}
+        public Address getFinalDest()      {return final_dest;}
+        public Address getOriginalSender() {return original_sender;}
         public Relay2Header setSites(String ... s) {
             sites=s;
             return this;
