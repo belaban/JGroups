@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema attributeFormDefault="qualified" elementFormDefault="qualified"
-           targetNamespace="urn:jgroups:rules:1.0"
+           targetNamespace="urn:jgroups:rules:4.2"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
-  <xs:element name="rules" type="urn:rulesType" xmlns:urn="urn:jgroups:rules:1.0">
+  <xs:element name="rules" type="urn:rulesType" xmlns:urn="urn:jgroups:rules:4.2">
     <xs:annotation>
       <xs:documentation>Sample config file for SUPERVISOR</xs:documentation>
     </xs:annotation>

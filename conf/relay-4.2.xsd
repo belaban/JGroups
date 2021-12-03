@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema
            elementFormDefault="qualified"
-           targetNamespace="urn:jgroups:relay:1.0"
+           targetNamespace="urn:jgroups:relay:4.2"
            xmlns:xs="http://www.w3.org/2001/XMLSchema"
-           xmlns:tns="urn:jgroups:relay:1.0">
+           xmlns:tns="urn:jgroups:relay:4.2">
 
     <xs:complexType name="RelayConfigurationType">
         <xs:sequence>

@@ -8,13 +8,13 @@ import java.lang.annotation.Target;
 /**
  * Used to include other schemas by {@link org.jgroups.util.XMLSchemaGenerator}. Example:
  * <pre>
- *     {@literal @}XmlInclude(schema="relay.xsd",type=Type.IMPORT,namespace="urn:jgroups:relay:1.0",alias="relay")
+ *     {@literal @}XmlInclude(schema="relay-4.2.xsd",type=Type.IMPORT,namespace="urn:jgroups:relay:4.2",alias="relay")
  * </pre>
  * results in the following include in the schema element:
  * <pre>
  *     &lt;xs:schema... xmlns:relay="urn:jgroups:relay:1.0" /&gt;
  *     ...
- *     &lt;xs:import schemaLocation="fork-stacks.xsd" namespace="urn:jgroups:relay:1.0" /&gt;
+ *     &lt;xs:import schemaLocation="fork-stacks-4.2.xsd" namespace="urn:jgroups:relay:4.2" /&gt;
  * </pre>
  * @author Bela Ban
  * @since  3.5
