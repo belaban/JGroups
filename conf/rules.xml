@@ -4,8 +4,8 @@
      Sample config file for SUPERVISOR
  -->
 
-<rules xmlns="urn:jgroups:rules:1.0"
+<rules xmlns="rules-4.2.xsd"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="urn:jgroups:rules:1.0 rules.xsd">
+       xsi:schemaLocation="rules-4.2.xsd rules-4.2.xsd">
     <rule name="rule1" class="org.jgroups.protocols.rules.CheckFDMonitor" interval="1000"/>
 </rules>

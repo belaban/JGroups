@@ -44,7 +44,7 @@ A typical protocol stack configuration using UDP is:
 ----
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups-4.2.xsd">
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
          ucast_recv_buf_size="5M"
@@ -1207,14 +1207,13 @@ The relay_multicasts property determines whether or not multicast messages (with
         
 
 The config property points to an XML file which defines the setup of the sites, e.g.:
-        
-
 
 [source,xml]
 ----
 
-<RelayConfiguration xmlns="urn:jgroups:relay:1.0">
-
+<RelayConfiguration xmlns="urn:jgroups:relay:4.2"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="urn:jgroups:relay:4.2 http://jgroups.org/schema/relay-4.2.xsd">
     <sites>
         <site name="lon">
             <bridges>
@@ -1857,13 +1856,11 @@ An example of a rule is org.jgroups.protocols.rules.CheckFDMonitor: invoked peri
         
 
 All rules to be installed in SUPERVISOR are listed in an XML file, e.g. rules.xml:
-        
-
 
 [source,xml]
 ----
 
-<rules xmlns="urn:jgroups:rules:1.0">
+<rules xmlns="urn:jgroups:rules:4.2">
      <rule name="rule1" class="org.jgroups.protocols.rules.CheckFDMonitorRule"
            interval="1000"/>
 </rules>

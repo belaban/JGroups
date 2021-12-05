@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Parses the fork-stacks.xsd schema. See conf/fork-stacks.xml for an example
+ * Parses the fork-stacks-4.2.xsd schema. See conf/fork-stacks.xml for an example
  * @author Bela Ban
  * @since  3.4
  */
