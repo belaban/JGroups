@@ -227,7 +227,7 @@ public class EARLYBATCH extends Protocol {
 
             int msg_bytes = msg.size();
             if((max_bytes > 0 && total_bytes + msg_bytes > max_bytes) ||
-                    total_bytes + msg_bytes > ebprot.getTransport().getMaxBundleSize()) {
+                    total_bytes + msg_bytes > ebprot.getTransport().getBundler().getMaxSize()) {
                 sendBatch();
             }
 
