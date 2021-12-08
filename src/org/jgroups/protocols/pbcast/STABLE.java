@@ -98,9 +98,9 @@ public class STABLE extends Protocol {
      * When true, don't take part in garbage collection: neither send STABLE messages nor handle STABILITY messages
      */
     @ManagedAttribute
-    protected volatile boolean    suspended=false;
+    protected volatile boolean    suspended;
 
-    protected boolean             initialized=false;
+    protected boolean             initialized;
 
     protected Future<?>           resume_task_future;
     protected final Object        resume_task_mutex=new Object();
