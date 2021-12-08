@@ -315,8 +315,13 @@ public class TcpConnection extends Connection {
                 if (e instanceof SSLException && e.getMessage().contains("Socket closed")) {
                     // regular use case when a peer closes its connection - we don't want to log this as exception
                 }
-                else
-                    server.log.warn("failed handling message", e);
+                else {
+                    if(server.logDetails())
+                        server.log.warn("failed handling message", e);
+                    else
+                        server.log.warn("failed handling message: " + e);
+                }
+
             }
             finally {
                 server.notifyConnectionClosed(TcpConnection.this);

@@ -61,6 +61,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
     @ManagedAttribute(description="When A connects to B, B reuses the same TCP connection to send data to A")
     protected boolean                         use_peer_connections;
+    @ManagedAttribute(description="Log a stack trace when a connection is closed")
+    protected boolean                         log_details=true;
     protected int                             sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
     protected boolean                         tcp_nodelay=false;
     protected int                             linger=-1;
@@ -93,6 +95,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public BaseServer       socketFactory(SocketFactory factory)    {this.socket_factory=factory; return this;}
     public boolean          usePeerConnections()                    {return use_peer_connections;}
     public BaseServer       usePeerConnections(boolean flag)        {this.use_peer_connections=flag; return this;}
+    public boolean          logDetails()                            {return log_details;}
+    public BaseServer       logDetails(boolean l)                   {log_details=l; return this;}
     public int              socketConnectionTimeout()               {return sock_conn_timeout;}
     public BaseServer       socketConnectionTimeout(int timeout)    {this.sock_conn_timeout = timeout; return this;}
     public long             connExpireTime()                        {return conn_expire_time;}

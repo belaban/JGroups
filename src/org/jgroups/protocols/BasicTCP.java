@@ -67,6 +67,9 @@ public abstract class BasicTCP extends TP implements Receiver {
     @Property(description="If true, client sockets will not explicitly bind to bind_addr but will defer to the native socket")
     protected boolean     defer_client_bind_addr;
 
+    @Property(description="Log a stack trace when a connection is closed")
+    protected boolean     log_details=true;
+
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
@@ -113,6 +116,9 @@ public abstract class BasicTCP extends TP implements Receiver {
 
     public boolean     deferClientBindAddr()            {return defer_client_bind_addr;}
     public BasicTCP    deferClientBindAddr(boolean d)   {this.defer_client_bind_addr=d; return this;}
+
+    public boolean     logDetails()                     {return log_details;}
+    public BasicTCP    logDetails(boolean l)            {log_details=l; return this;}
 
 
 

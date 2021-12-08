@@ -105,7 +105,7 @@ public class TCP extends BasicTCP {
           .socketConnectionTimeout(sock_conn_timeout)
           .tcpNodelay(tcp_nodelay).linger(linger)
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
-          .log(this.log);
+          .log(this.log).logDetails(this.log_details);
         srv.setBufferedInputStreamSize(buffered_input_stream_size).setBufferedOutputStreamSize(buffered_output_stream_size)
           .peerAddressReadTimeout(peer_addr_read_timeout)
           .usePeerConnections(true)
