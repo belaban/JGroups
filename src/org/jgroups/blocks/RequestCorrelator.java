@@ -387,7 +387,7 @@ public class RequestCorrelator {
     protected void sendReply(final Message req, final long req_id, Object reply, boolean is_exception) {
         Message rsp=makeReply(req).setFlag(req.getFlags(false), false)
           .setPayload(reply)
-          .clearFlag(Message.Flag.RSVP, Message.Flag.INTERNAL); // JGRP-1940
+          .clearFlag(Message.Flag.RSVP); // JGRP-1940
         sendResponse(rsp, req_id, is_exception);
     }
 

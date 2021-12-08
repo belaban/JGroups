@@ -499,7 +499,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
 
         // 1. Send a SUSPECT message right away; the broadcast task will take some time to send it (sleeps first)
         FdHeader hdr=new FdHeader(FdHeader.SUSPECT).mbrs(suspected_members);
-        Message suspect_msg=new EmptyMessage().setFlag(Message.Flag.INTERNAL).putHeader(this.id, hdr);
+        Message suspect_msg=new EmptyMessage().putHeader(this.id, hdr);
         down_prot.down(suspect_msg);
 
         // 2. Add to broadcast task and start if not running. The task ends when suspected mbrs are removed from mbrship
@@ -516,7 +516,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
 
         // 1. Send a SUSPECT message right away; the broadcast task will take some time to send it (sleeps first)
         FdHeader hdr=new FdHeader(FdHeader.UNSUSPECT).mbrs(Collections.singleton(mbr));
-        Message suspect_msg=new EmptyMessage().setFlag(Message.Flag.INTERNAL).putHeader(this.id, hdr);
+        Message suspect_msg=new EmptyMessage().putHeader(this.id, hdr);
         down_prot.down(suspect_msg);
     }
 
@@ -711,7 +711,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
                 hdr=new FdHeader(FdHeader.SUSPECT).mbrs(new HashSet<>(suspects));
             }
             // mcast SUSPECT to all members
-            Message suspect_msg=new EmptyMessage().setFlag(Message.Flag.INTERNAL).putHeader(id, hdr);
+            Message suspect_msg=new EmptyMessage().putHeader(id, hdr);
             down_prot.down(suspect_msg);
         }
 

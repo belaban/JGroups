@@ -222,7 +222,7 @@ public class ClientGmsImpl extends GmsImpl {
     void sendJoinMessage(Address coord, Address mbr,boolean joinWithTransfer, boolean useFlushIfPresent) {
         byte type=joinWithTransfer? GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER : GMS.GmsHeader.JOIN_REQ;
         GMS.GmsHeader hdr=new GMS.GmsHeader(type, mbr, useFlushIfPresent);
-        Message msg=new BytesMessage(coord).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL).putHeader(gms.getId(), hdr);
+        Message msg=new BytesMessage(coord).setFlag(Message.Flag.OOB).putHeader(gms.getId(), hdr);
         gms.getDownProtocol().down(msg);
     }
 

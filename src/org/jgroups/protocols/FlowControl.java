@@ -389,7 +389,7 @@ public abstract class FlowControl extends Protocol {
         if(log.isTraceEnabled())
             log.trace("sending %d credits to %s", credits, dest);
         Message msg=new LongMessage(dest, credits).putHeader(this.id,getReplenishHeader())
-          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE);
+          .setFlag(Message.Flag.OOB, Message.Flag.DONT_BUNDLE);
         down_prot.down(msg);
         num_credit_responses_sent++;
     }
@@ -404,7 +404,7 @@ public abstract class FlowControl extends Protocol {
         if(log.isTraceEnabled())
             log.trace("sending request for %d credits to %s", credits_needed, dest);
         Message msg=new LongMessage(dest, credits_needed).putHeader(this.id, getCreditRequestHeader())
-          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE);
+          .setFlag(Message.Flag.OOB, Message.Flag.DONT_BUNDLE);
         down_prot.down(msg);
         num_credit_requests_sent++;
     }

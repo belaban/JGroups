@@ -46,7 +46,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.lang.System.in;
 import static java.lang.System.nanoTime;
 import static org.jgroups.protocols.TP.LIST;
 import static org.jgroups.protocols.TP.MULTICAST;
@@ -1484,20 +1483,16 @@ public class Util {
     }
 
     /**
-     * Reads a list of messages into 4 MessageBatches:
+     * Reads a list of messages into 2 MessageBatches:
      * <ol>
      *     <li>regular</li>
      *     <li>OOB</li>
-     *     <li>INTERNAL-OOB (INTERNAL and OOB)</li>
-     *     <li>INTERNAL (INTERNAL)</li>
      * </ol>
-     * @param in
-     * @return an array of 4 MessageBatches in the order above, the first batch is at index 0
-     * @throws Exception
+     * @return an array of 2 MessageBatches in the order above, the first batch is at index 0
      */
     public static MessageBatch[] readMessageBatch(DataInput in, boolean multicast, MessageFactory factory)
       throws IOException, ClassNotFoundException {
-        MessageBatch[] batches=new MessageBatch[4]; // [0]: reg, [1]: OOB, [2]: internal-oob, [3]: internal
+        MessageBatch[] batches=new MessageBatch[2]; // [0]: reg, [1]: OOB
         Address dest=Util.readAddress(in);
         Address src=Util.readAddress(in);
         short length=in.readShort();
@@ -1508,23 +1503,14 @@ public class Util {
         int len=in.readInt();
         for(int i=0; i < len; i++) {
             short type=in.readShort();
-            Message msg=factory.create(type);
-            msg.setDest(dest);
-            msg.setSrc(src);
+            Message msg=factory.create(type).setDest(dest).setSrc(src);
             msg.readFrom(in);
             boolean oob=msg.isFlagSet(Message.Flag.OOB);
-            boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
             int index=0;
             MessageBatch.Mode mode=MessageBatch.Mode.REG;
-            if(oob || internal) {
-                if(oob) {
-                    mode=MessageBatch.Mode.OOB;
-                    index=internal? 2 : 1;
-                }
-                else {
-                    index=3;
-                    mode=MessageBatch.Mode.INTERNAL;
-                }
+            if(oob) {
+                mode=MessageBatch.Mode.OOB;
+                index=1;
             }
             if(batches[index] == null)
                 batches[index]=new MessageBatch(dest, src, cluster_name != null? new AsciiString(cluster_name) : null, multicast, mode, len);
@@ -2333,8 +2319,8 @@ public class Util {
 
     public static <T> Enumeration<T> enumerate(final T[] array, int offset, final int length) {
         return new Enumeration<>() {
-            protected final int end_pos=offset + length;
-            protected int pos=offset;
+            final int end_pos=offset + length;
+            int pos=offset;
 
             public boolean hasMoreElements() {
                 return pos < end_pos;
@@ -2351,8 +2337,8 @@ public class Util {
 
     public static <T,R> Enumeration<R> enumerate(final T[] array, int offset, final int length, Function<T,R> converter) {
         return new Enumeration<>() {
-            protected final int end_pos=offset + length;
-            protected int pos=offset;
+            final int end_pos=offset + length;
+            int pos=offset;
 
             public boolean hasMoreElements() {
                 return pos < end_pos;

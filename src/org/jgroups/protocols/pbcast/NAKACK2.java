@@ -1464,7 +1464,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 dest=random_member;
         }
 
-        Message retransmit_msg=new ObjectMessage(dest, missing_msgs).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+        Message retransmit_msg=new ObjectMessage(dest, missing_msgs).setFlag(Message.Flag.OOB)
           .putHeader(this.id, NakAckHeader2.createXmitRequestHeader(sender));
 
         log.trace("%s --> %s: XMIT_REQ(%s)", local_addr, dest, missing_msgs);
@@ -1575,7 +1575,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             else
                 num_resends++;
             Message msg=new EmptyMessage(null).putHeader(id, NakAckHeader2.createHighestSeqnoHeader(seqno))
-              .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+              .setFlag(Message.Flag.OOB)
               .setFlag(Message.TransientFlag.DONT_LOOPBACK); // we don't need to receive our own broadcast
             down_prot.down(msg);
         }

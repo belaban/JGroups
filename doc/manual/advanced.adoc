@@ -2110,37 +2110,37 @@ like this (edited):
 
 ----
 [belasmac] /Users/bela$ jt ParseMessages -file bela.dump6
-1: [B to 192.168.1.105:7800, 33 bytes, flags=OOB|DONT_BUNDLE|INTERNAL], hdrs: TCPPING: [GET_MBRS_REQ cluster=draw initial_discovery=true], TP: [cluster=draw]
-2: [A to B, 33 bytes, flags=OOB|DONT_BUNDLE|INTERNAL], hdrs: TCPPING: [GET_MBRS_RSP cluster=null initial_discovery=false], TP: [cluster=draw]
-3: [B to A, 0 bytes, flags=OOB|INTERNAL], hdrs: GMS: GmsHeader[JOIN_REQ]: mbr=B, UNICAST3: DATA, seqno=1, first, TP: [cluster=draw]
-4: [A to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_SOCK: I_HAVE_SOCK, mbr=A, sock_addr=192.168.1.105:9000, TP: [cluster=draw]
+1: [B to 192.168.1.105:7800, 33 bytes, flags=OOB|DONT_BUNDLE], hdrs: TCPPING: [GET_MBRS_REQ cluster=draw initial_discovery=true], TP: [cluster=draw]
+2: [A to B, 33 bytes, flags=OOB|DONT_BUNDLE], hdrs: TCPPING: [GET_MBRS_RSP cluster=null initial_discovery=false], TP: [cluster=draw]
+3: [B to A, 0 bytes, flags=OOB], hdrs: GMS: GmsHeader[JOIN_REQ]: mbr=B, UNICAST3: DATA, seqno=1, first, TP: [cluster=draw]
+4: [A to <all>, 0 bytes, hdrs: FD_SOCK: I_HAVE_SOCK, mbr=A, sock_addr=192.168.1.105:9000, TP: [cluster=draw]
 5: batch to B from A (1 messages):
-    1: [33 bytes, flags=OOB|DONT_BUNDLE|INTERNAL], hdrs: TCPPING: [GET_MBRS_RSP cluster=null initial_discovery=false]
+    1: [33 bytes, flags=OOB|DONT_BUNDLE], hdrs: TCPPING: [GET_MBRS_RSP cluster=null initial_discovery=false]
 6: batch to B from A (1 messages):
-    1: [0 bytes, flags=INTERNAL], hdrs: FD_SOCK: WHO_HAS_SOCK, mbr=B
+    1: [0 bytes, hdrs: FD_SOCK: WHO_HAS_SOCK, mbr=B
 7: [A to <all>, 57 bytes], hdrs: GMS: GmsHeader[VIEW], NAKACK2: [MSG, seqno=1], TP: [cluster=draw]
-8: [A to B, 61 bytes, flags=INTERNAL], hdrs: GMS: GmsHeader[JOIN_RSP], UNICAST3: DATA, seqno=1, first, TP: [cluster=draw]
-9: [B to A, 0 bytes, flags=INTERNAL], hdrs: FD_SOCK: I_HAVE_SOCK, mbr=B, sock_addr=192.168.1.105:9001, TP: [cluster=draw]
-10: [B to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_SOCK: I_HAVE_SOCK, mbr=B, sock_addr=192.168.1.105:9001, TP: [cluster=draw]
-11: [B to A, 0 bytes, flags=INTERNAL], hdrs: FD_SOCK: GET_CACHE, TP: [cluster=draw]
-12: [A to B, 54 bytes, flags=INTERNAL], hdrs: FD_SOCK: GET_CACHE_RSP, TP: [cluster=draw]
-13: [B to A, 0 bytes, flags=OOB|INTERNAL], hdrs: GMS: GmsHeader[VIEW_ACK], UNICAST3: DATA, seqno=2, TP: [cluster=draw]
-14: [A to B, 0 bytes, flags=INTERNAL], hdrs: UNICAST3: ACK, seqno=2, ts=1, TP: [cluster=draw]
-15: [B to A, 0 bytes, flags=INTERNAL], hdrs: UNICAST3: ACK, seqno=1, ts=1, TP: [cluster=draw]
-16: [A to <all>, 0 bytes, flags=OOB|INTERNAL], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=1], TP: [cluster=draw]
-17: [A to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
-18: [B to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+8: [A to B, 61 bytes], hdrs: GMS: GmsHeader[JOIN_RSP], UNICAST3: DATA, seqno=1, first, TP: [cluster=draw]
+9: [B to A, 0 bytes], hdrs: FD_SOCK: I_HAVE_SOCK, mbr=B, sock_addr=192.168.1.105:9001, TP: [cluster=draw]
+10: [B to <all>, 0 bytes], hdrs: FD_SOCK: I_HAVE_SOCK, mbr=B, sock_addr=192.168.1.105:9001, TP: [cluster=draw]
+11: [B to A, 0 bytes], hdrs: FD_SOCK: GET_CACHE, TP: [cluster=draw]
+12: [A to B, 54 bytes], hdrs: FD_SOCK: GET_CACHE_RSP, TP: [cluster=draw]
+13: [B to A, 0 bytes, flags=OOB], hdrs: GMS: GmsHeader[VIEW_ACK], UNICAST3: DATA, seqno=2, TP: [cluster=draw]
+14: [A to B, 0 bytes], hdrs: UNICAST3: ACK, seqno=2, ts=1, TP: [cluster=draw]
+15: [B to A, 0 bytes], hdrs: UNICAST3: ACK, seqno=1, ts=1, TP: [cluster=draw]
+16: [A to <all>, 0 bytes, flags=OOB], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=1], TP: [cluster=draw]
+17: [A to <all>, 0 bytes], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+18: [B to <all>, 0 bytes], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
 19: [B to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=1], TP: [cluster=draw]
 ...
 45: [B to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=27], TP: [cluster=draw]
 46: [A to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=2], TP: [cluster=draw]
 ...
 70: [A to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=25], TP: [cluster=draw]
-71: [A to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
-72: [B to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
-73: [A to <all>, 0 bytes, flags=OOB|INTERNAL], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=25], TP: [cluster=draw]
+71: [A to <all>, 0 bytes], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+72: [B to <all>, 0 bytes], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+73: [A to <all>, 0 bytes, flags=OOB], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=25], TP: [cluster=draw]
 74: [B to A, 0 bytes, flags=OOB], hdrs: GMS: GmsHeader[LEAVE_REQ]: mbr=B, UNICAST3: DATA, seqno=3, TP: [cluster=draw]
-75: [A to B, 0 bytes, flags=OOB|NO_RELIABILITY|INTERNAL], hdrs: GMS: GmsHeader[LEAVE_RSP], TP: [cluster=draw]
+75: [A to B, 0 bytes, flags=OOB|NO_RELIABILITY], hdrs: GMS: GmsHeader[LEAVE_RSP], TP: [cluster=draw]
 ----
 
 This shows a typical conversation between A (coordinator) and B: B sends a discovery request, finds A and asks it to join
@@ -2174,9 +2174,9 @@ To parse this file and extract only the data sections, `tshark` can be used:
 1: [21e26d56-2928-7008-1168-0fcf2d2f2b9d to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=118], TP: [cluster=draw]
 ...
 32: [21e26d56-2928-7008-1168-0fcf2d2f2b9d to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=149], TP: [cluster=draw]
-33: [21e26d56-2928-7008-1168-0fcf2d2f2b9d to <all>, 0 bytes, flags=OOB|INTERNAL], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=149], TP: [cluster=draw]
-34: [21e26d56-2928-7008-1168-0fcf2d2f2b9d to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
-35: [89a4b2f9-c15e-d276-88a5-a01f8cbde58a to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+33: [21e26d56-2928-7008-1168-0fcf2d2f2b9d to <all>, 0 bytes, flags=OOB], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=149], TP: [cluster=draw]
+34: [21e26d56-2928-7008-1168-0fcf2d2f2b9d to <all>, 0 bytes], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+35: [89a4b2f9-c15e-d276-88a5-a01f8cbde58a to <all>, 0 bytes], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
 ----
 
 The `-r` options reads packets from the given input file and the `-Tfields -edata` options extract the data portion
@@ -2193,17 +2193,17 @@ In the example below (edited), however, we're piping (options `-U` `-w -`) the c
 ----
 [belasmac] /Users/bela$ sudo tcpdump -n -U -i lo0 -w -  tcp and portrange 7800-7801 |tshark -l -r - -Tfields -edata|jt ParseMessages -tcp
 tcpdump: listening on lo0, link-type NULL (BSD loopback), capture size 262144 bytes
-1: [c0b6a011-16f9-699d-dd8c-68f6cc880ddd to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
-2: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+1: [c0b6a011-16f9-699d-dd8c-68f6cc880ddd to <all>, 0 bytes], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+2: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
 3: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=426], TP: [cluster=draw]
-4: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes, flags=OOB|INTERNAL], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=426], TP: [cluster=draw]
-9: [c0b6a011-16f9-699d-dd8c-68f6cc880ddd to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
-10: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+4: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes, flags=OOB], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=426], TP: [cluster=draw]
+9: [c0b6a011-16f9-699d-dd8c-68f6cc880ddd to <all>, 0 bytes], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+10: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
 11: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=427], TP: [cluster=draw]
-12: [c0b6a011-16f9-699d-dd8c-68f6cc880ddd to 43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c, 44 bytes, flags=OOB|NO_RELIABILITY|INTERNAL], hdrs: STABLE: [STABLE_GOSSIP] view-id= [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c|1], TP: [cluster=draw]
-13: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes, flags=OOB|INTERNAL], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=427], TP: [cluster=draw]
-14: [c0b6a011-16f9-699d-dd8c-68f6cc880ddd to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
-15: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes, flags=INTERNAL], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+12: [c0b6a011-16f9-699d-dd8c-68f6cc880ddd to 43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c, 44 bytes, flags=OOB|NO_RELIABILITY], hdrs: STABLE: [STABLE_GOSSIP] view-id= [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c|1], TP: [cluster=draw]
+13: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes, flags=OOB], hdrs: NAKACK2: [HIGHEST_SEQNO, seqno=427], TP: [cluster=draw]
+14: [c0b6a011-16f9-699d-dd8c-68f6cc880ddd to <all>, 0 bytes], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
+15: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 0 bytes], hdrs: FD_ALL: heartbeat, TP: [cluster=draw]
 16: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=428], TP: [cluster=draw]
 17: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=429], TP: [cluster=draw]
 18: [43c0d32e-a9ee-cb3d-578d-4af5fcd5c72c to <all>, 13 bytes], hdrs: NAKACK2: [MSG, seqno=430], TP: [cluster=draw]

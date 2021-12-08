@@ -620,7 +620,7 @@ public abstract class Discovery extends Protocol {
     protected void sendDiscoveryResponse(Address logical_addr, PhysicalAddress physical_addr,
                                          String logical_name, final Address sender, boolean coord) {
         PingData data=new PingData(logical_addr, is_server, logical_name, physical_addr).coord(coord);
-        Message rsp_msg=new BytesMessage(sender).setFlag(Message.Flag.INTERNAL, Message.Flag.OOB, Message.Flag.DONT_BUNDLE)
+        Message rsp_msg=new BytesMessage(sender).setFlag(Message.Flag.OOB, Message.Flag.DONT_BUNDLE)
           .putHeader(this.id, new PingHeader(PingHeader.GET_MBRS_RSP)).setArray(marshal(data));
 
         if(stagger_timeout > 0) {

@@ -279,7 +279,7 @@ public class RSVP extends Protocol {
         try {
             RsvpHeader hdr=new RsvpHeader(RsvpHeader.RSP,id);
             Message msg=new EmptyMessage(dest) .putHeader(this.id, hdr)
-              .setFlag(Message.Flag.RSVP, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB);
+              .setFlag(Message.Flag.RSVP, Message.Flag.DONT_BUNDLE, Message.Flag.OOB);
 
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": " + hdr.typeToString() + " --> " + dest);

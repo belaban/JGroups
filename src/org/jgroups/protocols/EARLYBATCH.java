@@ -111,12 +111,10 @@ public class EARLYBATCH extends Protocol {
     }
 
     public Object down(Message msg) {
-        if (msg.isFlagSet(Message.Flag.OOB) || msg.isFlagSet(Message.Flag.INTERNAL)) {
+        if (msg.isFlagSet(Message.Flag.OOB))
             return down_prot.down(msg);
-        }
-        if (msg.getSrc() == null) {
+        if (msg.getSrc() == null)
             msg.setSrc(local_addr);
-        }
         // Ignore messages from other senders due to EarlyBatchMessage compression
         if (!Objects.equals(msg.getSrc(), local_addr)) {
             return down_prot.down(msg);

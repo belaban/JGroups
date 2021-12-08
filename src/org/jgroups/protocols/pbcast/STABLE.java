@@ -604,7 +604,7 @@ public class STABLE extends Protocol {
             return;
         }
         log.trace("%s: sending stable msg to %s: %s", local_addr, dest, printDigest(d));
-        final Message msg=new ObjectMessage(dest, d).setFlag(OOB, INTERNAL, NO_RELIABILITY)
+        final Message msg=new ObjectMessage(dest, d).setFlag(OOB, NO_RELIABILITY)
           .putHeader(this.id, new StableHeader(StableHeader.STABLE_GOSSIP, current_view.getViewId()));
         try {
             if(!send_in_background) {
@@ -646,7 +646,7 @@ public class STABLE extends Protocol {
         // https://issues.jboss.org/browse/JGRP-1638: we reverted to sending the STABILITY message *unreliably*,
         // but clear votes *before* sending it
         try {
-            Message msg=new ObjectMessage(null, d).setFlag(OOB, INTERNAL, NO_RELIABILITY).setFlag(DONT_LOOPBACK)
+            Message msg=new ObjectMessage(null, d).setFlag(OOB, NO_RELIABILITY).setFlag(DONT_LOOPBACK)
               .putHeader(id, new StableHeader(StableHeader.STABILITY, view_id));
             log.trace("%s: sending stability msg %s", local_addr, printDigest(d));
             num_stability_msgs_sent++;

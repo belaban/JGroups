@@ -81,7 +81,7 @@ public class MAKE_BATCH extends Protocol {
     }
 
     public Object up(Message msg) {
-        if(msg.isFlagSet(Message.Flag.OOB) && msg.isFlagSet(Message.Flag.INTERNAL))
+        if(msg.isFlagSet(Message.Flag.OOB))
             return up_prot.up(msg);
 
         if((msg.getDest() == null && multicasts) || (msg.getDest() != null && unicasts)) {
@@ -93,7 +93,7 @@ public class MAKE_BATCH extends Protocol {
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
-            if(msg.isFlagSet(Message.Flag.OOB) && msg.isFlagSet(Message.Flag.INTERNAL)) {
+            if(msg.isFlagSet(Message.Flag.OOB)) {
                 up_prot.up(msg);
                 batch.remove(msg);
                 continue;

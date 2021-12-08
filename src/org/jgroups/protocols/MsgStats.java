@@ -34,7 +34,6 @@ public class MsgStats {
     protected final LongAdder     num_mcast_bytes_received=new LongAdder();
 
     protected final LongAdder     num_oob_msgs_received=new LongAdder();
-    protected final LongAdder     num_internal_msgs_received=new LongAdder();
 
     protected final LongAdder     num_single_msgs_sent=new LongAdder();
     protected final LongAdder     num_batches_sent=new LongAdder();
@@ -71,11 +70,6 @@ public class MsgStats {
       ,type=AttributeType.SCALAR)
     public long     getNumOOBMsgsReceived()            {return num_oob_msgs_received.sum();}
     public MsgStats incrNumOOBMsgsReceived(int d)      {num_oob_msgs_received.add(d); return this;}
-
-    @ManagedAttribute(description="Number of internal messages received. This value is included in num_msgs_received."
-      ,type=AttributeType.SCALAR)
-    public long     getNumInternalMsgsReceived()       {return num_internal_msgs_received.sum();}
-    public MsgStats incrNumInternalMsgsReceived(int d) {num_internal_msgs_received.add(d); return this;}
 
     @ManagedAttribute(description="Number of single messages sent",type=AttributeType.SCALAR)
     public long     getNumSingleMsgsSent()             {return num_single_msgs_sent.sum();}
@@ -121,7 +115,7 @@ public class MsgStats {
 
     public MsgStats reset() {
         Stream.of(num_msgs_sent, num_msgs_received, num_single_msgs_sent, num_oob_msgs_received,
-                  num_internal_msgs_received, num_batches_sent, num_batches_received, num_bytes_sent,num_bytes_received)
+                  num_batches_sent, num_batches_received, num_bytes_sent,num_bytes_received)
           .forEach(LongAdder::reset);
         Stream.of(num_rejected_msgs).forEach(ai -> ai.set(0));
         return this;

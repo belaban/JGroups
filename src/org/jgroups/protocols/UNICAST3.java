@@ -734,7 +734,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     /** Sends a retransmit request to the given sender */
     protected void retransmit(SeqnoList missing, Address sender) {
-        Message xmit_msg=new ObjectMessage(sender, missing).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+        Message xmit_msg=new ObjectMessage(sender, missing).setFlag(Message.Flag.OOB)
           .putHeader(id, UnicastHeader3.createXmitReqHeader());
         if(is_trace)
             log.trace("%s --> %s: XMIT_REQ(%s)", local_addr, sender, missing);
@@ -1111,7 +1111,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected void sendAck(Address dst, long seqno, short conn_id) {
         if(!running) // if we are disconnected, then don't send any acks which throw exceptions on shutdown
             return;
-        Message ack=new EmptyMessage(dst).setFlag(Message.Flag.INTERNAL).
+        Message ack=new EmptyMessage(dst).
           putHeader(this.id, UnicastHeader3.createAckHeader(seqno, conn_id, timestamper.incrementAndGet()));
         if(is_trace)
             log.trace("%s --> %s: ACK(#%d)", local_addr, dst, seqno);
@@ -1145,7 +1145,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     public void sendClose(Address dest, short conn_id) {
-        Message msg=new EmptyMessage(dest).setFlag(Message.Flag.INTERNAL).putHeader(id, UnicastHeader3.createCloseHeader(conn_id));
+        Message msg=new EmptyMessage(dest).putHeader(id, UnicastHeader3.createCloseHeader(conn_id));
         log.trace("%s --> %s: CLOSE(conn-id=%d)", local_addr, dest, conn_id);
         down_prot.down(msg);
     }

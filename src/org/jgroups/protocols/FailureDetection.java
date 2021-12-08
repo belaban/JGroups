@@ -344,7 +344,7 @@ public abstract class FailureDetection extends Protocol {
             if(mcast_sent.compareAndSet(true, false))
                 ; // suppress sending of heartbeat
             else {
-                Message heartbeat=new EmptyMessage().setFlag(Message.Flag.INTERNAL).setFlag(Message.TransientFlag.DONT_LOOPBACK)
+                Message heartbeat=new EmptyMessage().setFlag(Message.TransientFlag.DONT_LOOPBACK)
                   .putHeader(id, new HeartbeatHeader());
                 down_prot.down(heartbeat);
                 num_heartbeats_sent++;

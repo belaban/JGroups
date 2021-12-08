@@ -24,7 +24,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static org.jgroups.Message.Flag.INTERNAL;
 import static org.jgroups.Message.Flag.OOB;
 
 
@@ -591,13 +590,12 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     public void sendJoinResponse(JoinRsp rsp, Address dest) {
         Message m=new BytesMessage(dest).putHeader(this.id, new GmsHeader(GmsHeader.JOIN_RSP))
-          .setArray(marshal(rsp)).setFlag(OOB, INTERNAL);
+          .setArray(marshal(rsp)).setFlag(OOB);
         getDownProtocol().down(m);
     }
 
     protected void sendJoinResponse(ByteArray marshalled_rsp, Address dest) {
-        Message m=new BytesMessage(dest, marshalled_rsp).putHeader(this.id, new GmsHeader(GmsHeader.JOIN_RSP))
-          .setFlag(INTERNAL);
+        Message m=new BytesMessage(dest, marshalled_rsp).putHeader(this.id, new GmsHeader(GmsHeader.JOIN_RSP));
         getDownProtocol().down(m);
     }
 
@@ -892,7 +890,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                             log.trace("%s: failed to create view from delta-view; dropping view: %s", local_addr, t.toString());
                         log.trace("%s: sending request for full view to %s", local_addr, msg.getSrc());
                         Message full_view_req=new EmptyMessage(msg.getSrc())
-                          .putHeader(id, new GmsHeader(GmsHeader.GET_CURRENT_VIEW)).setFlag(OOB, INTERNAL);
+                          .putHeader(id, new GmsHeader(GmsHeader.GET_CURRENT_VIEW)).setFlag(OOB);
                         down_prot.down(full_view_req);
                         return null;
                     }
@@ -965,7 +963,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 // fetch only my own digest
                 Digest digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST, local_addr));
                 if(digest != null) {
-                    Message get_digest_rsp=new BytesMessage(msg.getSrc()).setFlag(OOB, INTERNAL)
+                    Message get_digest_rsp=new BytesMessage(msg.getSrc()).setFlag(OOB)
                       .putHeader(this.id, new GmsHeader(GmsHeader.GET_DIGEST_RSP))
                       .setArray(marshal(null, digest));
                     down_prot.down(get_digest_rsp);
@@ -991,7 +989,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 // either my view-id differs from sender's view-id, or sender's view-id is null: send view
                 log.trace("%s: received request for full view from %s, sending view %s", local_addr, msg.getSrc(), view);
                 Message view_msg=new BytesMessage(msg.getSrc()).putHeader(id,new GmsHeader(GmsHeader.VIEW))
-                  .setArray(marshal(view, null)).setFlag(OOB, INTERNAL);
+                  .setArray(marshal(view, null)).setFlag(OOB);
                 down_prot.down(view_msg);
                 break;
 
@@ -1061,7 +1059,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 if(coord != null) {
                     ViewId view_id=view != null? view.getViewId() : null;
                     Message msg=new BytesMessage(coord).putHeader(id, new GmsHeader(GmsHeader.GET_CURRENT_VIEW))
-                      .setArray(marshal(view_id)).setFlag(OOB, INTERNAL);
+                      .setArray(marshal(view_id)).setFlag(OOB);
                     down_prot.down(msg);
                 }
                 return null; // don't pass the event further down
@@ -1094,8 +1092,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
     protected void sendViewAck(Address dest) {
-        Message view_ack=new EmptyMessage(dest).setFlag(OOB, INTERNAL)
-          .putHeader(this.id, new GmsHeader(GmsHeader.VIEW_ACK));
+        Message view_ack=new EmptyMessage(dest).setFlag(OOB).putHeader(this.id, new GmsHeader(GmsHeader.VIEW_ACK));
         down_prot.down(view_ack);
     }
 

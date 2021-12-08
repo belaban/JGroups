@@ -1096,11 +1096,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             passMessageUp(copy, null, false, multicast, false);
             return;
         }
-
         // changed to fix http://jira.jboss.com/jira/browse/JGRP-506
-        boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
-        boolean oob=msg.isFlagSet(Message.Flag.OOB);
-        msg_processing_policy.loopback(msg, oob, internal);
+        msg_processing_policy.loopback(msg, msg.isFlagSet(Message.Flag.OOB));
     }
 
     protected void _send(Message msg, Address dest) {
@@ -1240,12 +1237,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected void handleMessageBatch(DataInput in, boolean multicast, MessageFactory factory) {
         try {
             final MessageBatch[] batches=Util.readMessageBatch(in, multicast, factory);
-            final MessageBatch regular=batches[0], oob=batches[1], internal_oob=batches[2], internal=batches[3];
+            final MessageBatch regular=batches[0], oob=batches[1];
 
-            processBatch(oob,          true,  false);
-            processBatch(regular,      false, false);
-            processBatch(internal_oob, true,  true);
-            processBatch(internal,     false, true);
+            processBatch(oob,    true);
+            processBatch(regular,false);
         }
         catch(Throwable t) {
             log.error(String.format(Util.getMessage("IncomingMsgFailure"), local_addr), t);
@@ -1262,18 +1257,18 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(!multicast && unicastDestMismatch(msg.getDest()))
                 return;
 
-            boolean oob=msg.isFlagSet(Message.Flag.OOB), internal=msg.isFlagSet(Message.Flag.INTERNAL);
-            msg_processing_policy.process(msg, oob, internal);
+            boolean oob=msg.isFlagSet(Message.Flag.OOB);
+            msg_processing_policy.process(msg, oob);
         }
         catch(Throwable t) {
             log.error(String.format(Util.getMessage("IncomingMsgFailure"), local_addr), t);
         }
     }
 
-    protected void processBatch(MessageBatch batch, boolean oob, boolean internal) {
+    protected void processBatch(MessageBatch batch, boolean oob) {
         try {
             if(batch != null && !batch.isEmpty() && !unicastDestMismatch(batch.getDest()))
-                msg_processing_policy.process(batch, oob, internal);
+                msg_processing_policy.process(batch, oob);
         }
         catch(Throwable t) {
             log.error("processing batch failed", t);

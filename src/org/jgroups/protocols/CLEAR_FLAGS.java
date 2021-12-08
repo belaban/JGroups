@@ -12,15 +12,11 @@ import org.jgroups.stack.Protocol;
 public class CLEAR_FLAGS extends Protocol {
     @Property(description="clear OOB flags")
     protected boolean oob=true;
-    @Property(description="Clear internal flags")
-    protected boolean internal=true;
 
     @Override
     public Object down(Message msg) {
         if(oob)
             msg.clearFlag(Message.Flag.OOB);
-        if(internal)
-            msg.clearFlag(Message.Flag.INTERNAL);
         return down_prot.down(msg);
     }
 }

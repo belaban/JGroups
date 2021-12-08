@@ -559,7 +559,7 @@ public class FLUSH extends Protocol {
             log.debug(localAddress + ": returned from FLUSH_RECONCILE, "
                     + " sending RECONCILE_OK to " + requester);
 
-        Message reconcileOk = new EmptyMessage(requester).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+        Message reconcileOk = new EmptyMessage(requester).setFlag(Message.Flag.OOB)
           .putHeader(this.id,new FlushHeader(FlushHeader.FLUSH_RECONCILE_OK));
         down_prot.down(reconcileOk);
     }
@@ -592,7 +592,7 @@ public class FLUSH extends Protocol {
         for (Address flushMember : participants) {
             if(flushMember == null)
                 continue;
-            Message reject = new BytesMessage(flushMember).setSrc(localAddress).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+            Message reject = new BytesMessage(flushMember).setSrc(localAddress).setFlag(Message.Flag.OOB)
               .putHeader(this.id, new FlushHeader(FlushHeader.ABORT_FLUSH, viewId))
               .setArray(marshal(participants, null));
             down_prot.down(reject);

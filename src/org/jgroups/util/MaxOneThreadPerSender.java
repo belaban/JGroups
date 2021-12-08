@@ -50,31 +50,25 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         ucasts.clear();
     }
 
-    public void loopback(Message msg, boolean oob, boolean internal) {
-        if(oob || internal) {
-            super.loopback(msg, oob, internal);
-            return;
-        }
+    public boolean loopback(Message msg, boolean oob) {
+        if(oob)
+            return super.loopback(msg, oob);
         MessageTable table=msg.getDest() == null? mcasts : ucasts;
-        table.process(msg, true);
+        return table.process(msg, true);
     }
 
-    public void process(Message msg, boolean oob, boolean internal) {
-        if(oob || internal) {
-            super.process(msg, oob, internal);
-            return;
-        }
+    public boolean process(Message msg, boolean oob) {
+        if(oob)
+            return super.process(msg, oob);
         MessageTable table=msg.getDest() == null? mcasts : ucasts;
-        table.process(msg, false);
+        return table.process(msg, false);
     }
 
-    public void process(MessageBatch batch, boolean oob, boolean internal) {
-        if(oob || internal) {
-            super.process(batch, oob, internal);
-            return;
-        }
+    public boolean process(MessageBatch batch, boolean oob) {
+        if(oob)
+            return super.process(batch, oob);
         MessageTable table=batch.dest() == null? mcasts : ucasts;
-        table.process(batch);
+        return table.process(batch);
     }
 
     public void viewChange(List<Address> members) {
@@ -103,14 +97,14 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
 
         protected void clear() {map.clear();}
 
-        protected void process(Message msg, boolean loopback) {
+        protected boolean process(Message msg, boolean loopback) {
             Address dest=msg.getDest(), sender=msg.getSrc();
-            get(dest, sender).process(msg, loopback);
+            return get(dest, sender).process(msg, loopback);
         }
 
-        protected void process(MessageBatch batch) {
+        protected boolean process(MessageBatch batch) {
             Address dest=batch.dest(), sender=batch.sender();
-            get(dest, sender).process(batch);
+            return get(dest, sender).process(batch);
         }
 
         protected void viewChange(List<Address> mbrs) {
@@ -147,42 +141,50 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         }
 
 
-        protected void process(Message msg, boolean loopback) {
+        protected boolean process(Message msg, boolean loopback) {
             if(!allowedToSubmitToThreadPool(msg))
-                return;
+                return false;
             // running is true, we didn't queue msg and need to submit a task to the thread pool
-            submit(msg, loopback);
+            return submit(msg, loopback);
         }
 
-        protected void process(MessageBatch batch) {
+        protected boolean process(MessageBatch batch) {
             if(!allowedToSubmitToThreadPool(batch))
-                return;
+                return false;
             // running is true, we didn't queue msg and need to submit a task to the thread pool
-            submit(batch);
+            return submit(batch);
         }
 
-        protected void submit(Message msg, boolean loopback) {
+        protected boolean submit(Message msg, boolean loopback) {
             // running is true, we didn't queue msg and need to submit a task to the thread pool
             try {
                 submitted_msgs.increment();
                 BatchHandlerLoop handler=new BatchHandlerLoop(batch_creator.apply(16).add(msg), this, loopback);
-                if(!tp.getThreadPool().execute(handler))
+                if(!tp.getThreadPool().execute(handler)) {
                     setRunning(false);
+                    return false;
+                }
+                return true;
             }
             catch(Throwable t) {
                 setRunning(false);
+                return false;
             }
         }
 
-        protected void submit(MessageBatch mb) {
+        protected boolean submit(MessageBatch mb) {
             try {
                 submitted_batches.increment();
                 BatchHandlerLoop handler=new BatchHandlerLoop(batch_creator.apply(mb.size()).add(mb), this, false);
-                if(!tp.getThreadPool().execute(handler))
+                if(!tp.getThreadPool().execute(handler)) {
                     setRunning(false);
+                    return false;
+                }
+                return true;
             }
             catch(Throwable t) {
                 setRunning(false);
+                return false;
             }
         }
 

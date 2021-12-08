@@ -340,22 +340,18 @@ public class MessageBatch implements Iterable<Message> {
     }
 
     public Mode determineMode() {
-        int num_oob=0, num_reg=0, num_internal=0;
+        int num_oob=0, num_reg=0;
         for(int i=0; i < index; i++) {
             if(messages[i] == null)
                 continue;
             if(messages[i].isFlagSet(Message.Flag.OOB))
                 num_oob++;
-            else if(messages[i].isFlagSet(Message.Flag.INTERNAL))
-                num_internal++;
             else
                 num_reg++;
         }
-        if(num_internal > 0 && num_oob == 0 && num_reg == 0)
-            return Mode.INTERNAL;
-        if(num_oob > 0 && num_internal == 0 && num_reg == 0)
+        if(num_oob > 0 && num_reg == 0)
             return Mode.OOB;
-        if(num_reg > 0 && num_oob == 0 && num_internal == 0)
+        if(num_reg > 0 && num_oob == 0)
             return Mode.REG;
         return Mode.MIXED;
     }
@@ -433,7 +429,7 @@ public class MessageBatch implements Iterable<Message> {
     }
 
 
-    public enum Mode {OOB, REG, INTERNAL, MIXED}
+    public enum Mode {OOB, REG, MIXED}
 
 
     /** Iterates over <em>non-null</em> elements of a batch, skipping null elements */

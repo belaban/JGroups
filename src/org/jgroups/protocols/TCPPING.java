@@ -208,7 +208,7 @@ public class TCPPING extends Discovery {
                 continue;
 
             // the message needs to be DONT_BUNDLE, see explanation above
-            final Message msg=new BytesMessage(addr).setFlag(INTERNAL, DONT_BUNDLE, OOB).setFlag(DONT_LOOPBACK)
+            final Message msg=new BytesMessage(addr).setFlag(DONT_BUNDLE, OOB).setFlag(DONT_LOOPBACK)
               .putHeader(this.id,hdr);
             if(data_buf != null)
                 msg.setArray(data_buf);

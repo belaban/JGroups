@@ -745,7 +745,7 @@ public class RELAY2 extends Protocol {
             return;
         }
         // send message back to the src node.
-        Message msg=new EmptyMessage(src).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+        Message msg=new EmptyMessage(src).setFlag(Message.Flag.OOB)
           .putHeader(id,new Relay2Header(Relay2Header.SITE_UNREACHABLE,new SiteMaster(target_site),null));
         down_prot.down(msg);
     }
