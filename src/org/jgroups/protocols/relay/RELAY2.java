@@ -525,6 +525,7 @@ public class RELAY2 extends Protocol {
 
     public void up(MessageBatch batch) {
         MessageIterator it=batch.iterator();
+        List<SiteAddress> unreachable_sites=null;
         while(it.hasNext()) {
             Message msg=it.next();
             Relay2Header hdr=msg.getHeader(id);
@@ -546,11 +547,26 @@ public class RELAY2 extends Protocol {
                     continue;
                 }
                 it.remove(); // message is consumed
-                if(dest != null)
-                    handleMessage(hdr, msg);
+                if(dest != null) {
+                    if(hdr.getType() == Relay2Header.SITE_UNREACHABLE) {
+                        SiteAddress site_addr=(SiteAddress)hdr.final_dest;
+                        String site_name=site_addr.getSite();
+                        if(unreachable_sites == null)
+                            unreachable_sites=new ArrayList<>();
+                        boolean contains=unreachable_sites.stream().anyMatch(sa -> sa.getSite().equals(site_name));
+                        if(!contains)
+                            unreachable_sites.add(site_addr);
+                    }
+                    else
+                        handleMessage(hdr, msg);
+                }
                 else
                     deliver(null, hdr.original_sender, msg);
             }
+        }
+        if(unreachable_sites != null) {
+            for(SiteAddress sa: unreachable_sites)
+                triggerSiteUnreachableEvent(sa); // https://issues.redhat.com/browse/JGRP-2586
         }
         if(!batch.isEmpty())
             up_prot.up(batch);
