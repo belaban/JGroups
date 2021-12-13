@@ -51,6 +51,11 @@ public class RELAY2 extends Protocol {
       "will be a site master (and thus join the global cluster",writable=false)
     protected int                                      max_site_masters=1;
 
+    @Property(description="Ratio of members that are site masters, out of range [0..1] (0 disables this). The number " +
+      "of site masters is computes as Math.min(max_site_masters, view.size() * site_masters_ratio). " +
+      "See https://issues.redhat.com/browse/JGRP-2581 for details")
+    protected double                                   site_masters_ratio;
+
     @Property(description="Whether or not we generate our own addresses in which we use can_become_site_master. " +
       "If this property is false, can_become_site_master is ignored")
     protected boolean                                  enable_address_tagging;
@@ -86,6 +91,7 @@ public class RELAY2 extends Protocol {
     protected volatile boolean                         broadcast_route_notifications;
 
     // A list of site masters in this (local) site
+    @ManagedAttribute(description="The current site masters")
     protected volatile List<Address>                   site_masters;
 
     protected SiteMasterPicker                         site_master_picker;
@@ -163,26 +169,29 @@ public class RELAY2 extends Protocol {
     public void incrementRelayed()                     {relayed.increment();}
     public void addToRelayedTime(long delta)           {relayed_time.add(delta);}
 
-    public String getSite() {return site;}
-    public RELAY2 setSite(String s) {this.site=s; return this;}
+    public String  getSite()                              {return site;}
+    public RELAY2  setSite(String s)                      {this.site=s; return this;}
 
-    public String getConfig() {return config;}
-    public RELAY2 setConfig(String c) {this.config=c; return this;}
+    public String  getConfig()                            {return config;}
+    public RELAY2  setConfig(String c)                    {this.config=c; return this;}
 
-    public int getMaxSiteMasters() {return max_site_masters;}
-    public RELAY2 setMaxSiteMasters(int m) {this.max_site_masters=m; return this;}
+    public int     getMaxSiteMasters()                    {return max_site_masters;}
+    public RELAY2  setMaxSiteMasters(int m)               {this.max_site_masters=m; return this;}
 
-    public String getSiteMasterPickerImpl() {return site_master_picker_impl;}
-    public RELAY2 setSiteMasterPickerImpl(String s) {this.site_master_picker_impl=s; return this;}
+    public double  getSiteMastersRatio()                  {return site_masters_ratio;}
+    public RELAY2  setSiteMastersRatio(double r)          {site_masters_ratio=r; return this;}
 
-    public boolean broadcastRouteNotifications() {return broadcast_route_notifications;}
-    public RELAY2 broadcastRouteNotifications(boolean b) {this.broadcast_route_notifications=b; return this;}
+    public String  getSiteMasterPickerImpl()              {return site_master_picker_impl;}
+    public RELAY2  setSiteMasterPickerImpl(String s)      {this.site_master_picker_impl=s; return this;}
 
-    public boolean canForwardLocalCluster() {return can_forward_local_cluster;}
-    public RELAY2 canForwardLocalCluster(boolean c) {this.can_forward_local_cluster=c; return this;}
+    public boolean broadcastRouteNotifications()          {return broadcast_route_notifications;}
+    public RELAY2  broadcastRouteNotifications(boolean b) {this.broadcast_route_notifications=b; return this;}
 
-    public long getTopoWaitTime() {return topo_wait_time;}
-    public RELAY2 setTopoWaitTime(long t) {this.topo_wait_time=t; return this;}
+    public boolean canForwardLocalCluster()               {return can_forward_local_cluster;}
+    public RELAY2  canForwardLocalCluster(boolean c)      {this.can_forward_local_cluster=c; return this;}
+
+    public long    getTopoWaitTime()                      {return topo_wait_time;}
+    public RELAY2  setTopoWaitTime(long t)                {this.topo_wait_time=t; return this;}
 
 
 
@@ -306,6 +315,15 @@ public class RELAY2 extends Protocol {
         if(max_site_masters < 1) {
             log.warn("max_size_masters was " + max_site_masters + ", changed to 1");
             max_site_masters=1;
+        }
+
+        if(site_masters_ratio < 0) {
+            log.warn("%s: changing incorrect site_masters_ratio of %.2f to 0", local_addr, site_masters_ratio);
+            site_masters_ratio=0.0;
+        }
+        else if(site_masters_ratio > 1) {
+            log.warn("%s: changing incorrect site_masters_ratio of %.2f to 1", local_addr, site_masters_ratio);
+            site_masters_ratio=1.0;
         }
 
         if(site_master_picker_impl != null) {
@@ -579,8 +597,12 @@ public class RELAY2 extends Protocol {
     public void handleView(View view) {
         members=view.getMembers(); // First, save the members for routing received messages to local members
 
+        int max_num_site_masters=max_site_masters;
+        if(site_masters_ratio > 0)
+            max_num_site_masters=(int)Math.max(max_site_masters, site_masters_ratio * view.size());
+
         List<Address> old_site_masters=site_masters;
-        List<Address> new_site_masters=determineSiteMasters(view);
+        List<Address> new_site_masters=determineSiteMasters(view, max_num_site_masters);
 
         boolean become_site_master=new_site_masters.contains(local_addr)
           && (old_site_masters == null || !old_site_masters.contains(local_addr));
@@ -860,7 +882,7 @@ public class RELAY2 extends Protocol {
      * members which cannot become site masters (can_become_site_master == false). If no site master can be found,
      * the first member of the view will be returned (even if it has can_become_site_master == false)
      */
-    protected List<Address> determineSiteMasters(View view) {
+    protected List<Address> determineSiteMasters(View view, int max_num_site_masters) {
         List<Address> retval=new ArrayList<>(view.size());
         int selected=0;
 
@@ -868,7 +890,7 @@ public class RELAY2 extends Protocol {
             if(member instanceof ExtendedUUID && !((ExtendedUUID)member).isFlagSet(can_become_site_master_flag))
                 continue;
 
-            if(selected++ < max_site_masters)
+            if(selected++ < max_num_site_masters)
                 retval.add(member);
         }
 
