@@ -20,7 +20,6 @@ import org.jgroups.stack.ProtocolStack;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
-
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.management.*;
@@ -34,10 +33,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-import java.util.function.IntFunction;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -362,6 +358,16 @@ public class Util {
         }
         String error_msg=String.format("Timeout %d kicked in%s", timeout, msg != null? ": " + msg.get() : "");
         throw new TimeoutException(error_msg);
+    }
+
+    public static boolean waitUntilTrue(long timeout, long interval, BooleanSupplier condition) {
+        long target_time=System.currentTimeMillis() + timeout;
+        while(System.currentTimeMillis() <= target_time) {
+            if(condition.getAsBoolean())
+                return true;
+            Util.sleep(interval);
+        }
+        return false;
     }
 
     public static boolean allChannelsHaveSameView(JChannel... channels) {
