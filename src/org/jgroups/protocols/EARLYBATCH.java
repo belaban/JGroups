@@ -47,11 +47,11 @@ public class EARLYBATCH extends Protocol {
 
     public static EarlyBatchHeader   HEADER= new EarlyBatchHeader();
 
-    @ManagedAttribute(description="The maximum number of messages per batch")
-    public static final int          MAXBATCHSIZE = 100;
+    @Property(description="The maximum number of messages per batch")
+    public int                       max_batch_size = 100;
     // EOFException if >60k
-    @ManagedAttribute(description="The maximum number of bytes per batch")
-    public static final int          MAXBATCHBYTES = 50000;
+    @Property(description="The maximum number of bytes per batch")
+    public int                       max_batch_bytes = 50000;
 
 
     protected ConcurrentMap<Address,EarlyBatchBuffer> msgMap = Util.createConcurrentMap();
@@ -64,7 +64,7 @@ public class EARLYBATCH extends Protocol {
 
 
     public void init() throws Exception {
-        msgMap.putIfAbsent(nullAddress, new EarlyBatchBuffer(nullAddress, this, MAXBATCHBYTES));
+        msgMap.putIfAbsent(nullAddress, new EarlyBatchBuffer(nullAddress, this, max_batch_bytes));
     }
 
     public void resetStats() {
@@ -98,7 +98,7 @@ public class EARLYBATCH extends Protocol {
     protected void handleViewChange(List<Address> mbrs) {
         if(mbrs == null) return;
 
-        mbrs.stream().filter(dest -> !msgMap.containsKey(dest)).forEach(dest -> msgMap.putIfAbsent(dest, new EarlyBatchBuffer(dest, this, MAXBATCHBYTES)));
+        mbrs.stream().filter(dest -> !msgMap.containsKey(dest)).forEach(dest -> msgMap.putIfAbsent(dest, new EarlyBatchBuffer(dest, this, max_batch_bytes)));
 
         // remove members that left
         //msgMap.keySet().retainAll(mbrs);
@@ -201,7 +201,7 @@ public class EARLYBATCH extends Protocol {
         msgMap.forEach((k,v) -> v.sendBatch());
     }
 
-    protected static class EarlyBatchBuffer {
+    protected class EarlyBatchBuffer {
         private final Address    dest;
         private Message[]        msgs;
         private int              index;
@@ -212,7 +212,7 @@ public class EARLYBATCH extends Protocol {
 
         protected EarlyBatchBuffer(Address address, EARLYBATCH ebprot, long max_bytes) {
             this.dest=address;
-            this.msgs = new Message[EARLYBATCH.MAXBATCHSIZE];
+            this.msgs = new Message[max_batch_size];
             this.index = 0;
             this.ebprot = ebprot;
             this.max_bytes = max_bytes;
@@ -254,7 +254,7 @@ public class EARLYBATCH extends Protocol {
             EarlyBatchMessage comp = new EarlyBatchMessage(ebdest, ebprot.local_addr, msgs, index);
             comp.putHeader(ebprot.getId(), HEADER);
             comp.setSrc(ebprot.local_addr);
-            msgs = new Message[EARLYBATCH.MAXBATCHSIZE];
+            msgs = new Message[max_batch_bytes];
             index = 0;
             total_bytes = 0;
             // Could send down out of synchronize, but that could make batches hit nakack out of order
