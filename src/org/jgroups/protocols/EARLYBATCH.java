@@ -254,7 +254,7 @@ public class EARLYBATCH extends Protocol {
             EarlyBatchMessage comp = new EarlyBatchMessage(ebdest, ebprot.local_addr, msgs, index);
             comp.putHeader(ebprot.getId(), HEADER);
             comp.setSrc(ebprot.local_addr);
-            msgs = new Message[max_batch_bytes];
+            msgs = new Message[max_batch_size];
             index = 0;
             total_bytes = 0;
             // Could send down out of synchronize, but that could make batches hit nakack out of order
