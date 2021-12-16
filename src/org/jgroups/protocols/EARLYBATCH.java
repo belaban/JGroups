@@ -64,7 +64,7 @@ public class EARLYBATCH extends Protocol {
 
 
     public void init() throws Exception {
-        msgMap.putIfAbsent(nullAddress, new EarlyBatchBuffer(nullAddress, this, max_batch_bytes));
+        msgMap.putIfAbsent(nullAddress, new EarlyBatchBuffer(nullAddress, max_batch_bytes));
     }
 
     public void resetStats() {
@@ -98,7 +98,8 @@ public class EARLYBATCH extends Protocol {
     protected void handleViewChange(List<Address> mbrs) {
         if(mbrs == null) return;
 
-        mbrs.stream().filter(dest -> !msgMap.containsKey(dest)).forEach(dest -> msgMap.putIfAbsent(dest, new EarlyBatchBuffer(dest, this, max_batch_bytes)));
+        mbrs.stream().filter(dest -> !msgMap.containsKey(dest))
+          .forEach(dest -> msgMap.putIfAbsent(dest, new EarlyBatchBuffer(dest, max_batch_bytes)));
 
         // remove members that left
         //msgMap.keySet().retainAll(mbrs);
@@ -205,16 +206,14 @@ public class EARLYBATCH extends Protocol {
         private final Address    dest;
         private Message[]        msgs;
         private int              index;
-        private final EARLYBATCH ebprot;
         private boolean          closed;
         private long             total_bytes;
         private final long       max_bytes;
 
-        protected EarlyBatchBuffer(Address address, EARLYBATCH ebprot, long max_bytes) {
+        protected EarlyBatchBuffer(Address address, long max_bytes) {
             this.dest=address;
             this.msgs = new Message[max_batch_size];
             this.index = 0;
-            this.ebprot = ebprot;
             this.max_bytes = max_bytes;
         }
 
@@ -225,7 +224,7 @@ public class EARLYBATCH extends Protocol {
 
             int msg_bytes = msg.size();
             if((max_bytes > 0 && total_bytes + msg_bytes > max_bytes) ||
-                    total_bytes + msg_bytes > ebprot.getTransport().getBundler().getMaxSize()) {
+                    total_bytes + msg_bytes > getTransport().getBundler().getMaxSize()) {
                 sendBatch();
             }
 
@@ -242,7 +241,7 @@ public class EARLYBATCH extends Protocol {
                 return;
             }
             if (index == 1) {
-                ebprot.getDownProtocol().down(msgs[0]);
+                down_prot.down(msgs[0]);
                 msgs[0] = null;
                 index = 0;
                 total_bytes = 0;
@@ -251,14 +250,14 @@ public class EARLYBATCH extends Protocol {
 
             Address ebdest = dest instanceof NullAddress ? null : dest;
 
-            EarlyBatchMessage comp = new EarlyBatchMessage(ebdest, ebprot.local_addr, msgs, index);
-            comp.putHeader(ebprot.getId(), HEADER);
-            comp.setSrc(ebprot.local_addr);
+            Message comp = new EarlyBatchMessage(ebdest, local_addr, msgs, index)
+              .putHeader(id, HEADER)
+              .setSrc(local_addr);
             msgs = new Message[max_batch_size];
             index = 0;
             total_bytes = 0;
             // Could send down out of synchronize, but that could make batches hit nakack out of order
-            ebprot.getDownProtocol().down(comp);
+            down_prot.down(comp);
         }
 
         protected synchronized void close() {
