@@ -132,10 +132,6 @@ public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> 
 
 
     public void writePayload(DataOutput out) throws IOException {
-//        if(collapse) {
-//            writePayloadAsBytes(out);
-//            return;
-//        }
         out.writeInt(index);
         Util.writeAddress(orig_src, out);
         if(msgs != null) {
@@ -158,24 +154,6 @@ public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> 
                 msgs[i].setDest(dest());
                 msgs[i].setSrc(orig_src);
                 msgs[i].readFrom(in);
-//                msgs[i].setDest(dest());
-//                if(msgs[i].getSrc() == null)
-//                    msgs[i].setSrc(src());
-            }
-        }
-    }
-
-    // Writes all payloads (hasArray() == true) without any sizes in-between
-    protected void writePayloadAsBytes(DataOutput out) throws IOException {
-        int len=getLength();
-        out.writeInt(msgs == null? -1 : len);
-        if(msgs != null) {
-            for(int i=0; i < index; i++) {
-                Message msg=msgs[i];
-                if(msg.hasArray())
-                    out.write(msg.getArray(), msg.getOffset(), msg.getLength());
-                else
-                    msg.writePayload(out);
             }
         }
     }
@@ -192,7 +170,7 @@ public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> 
 
     protected Message ensureSameDest(Message msg) {
         if(!Objects.equals(dest, msg.dest()))
-            throw new IllegalStateException(String.format("message's destination (%s) does not match destination of EarlyBatchMessage (%s)",
+            throw new IllegalStateException(String.format("message dest (%s) does not match dest of EarlyBatchMessage (%s)",
                                                           msg.dest(), dest));
         return msg;
     }
