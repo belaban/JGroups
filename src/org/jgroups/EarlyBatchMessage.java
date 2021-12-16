@@ -29,7 +29,6 @@ import java.util.function.Supplier;
 public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> {
     protected Message[] msgs;
     protected int       index;    // index of the next message to be added
-    protected boolean   collapse; // send as a BytesMessage when true
     protected Address   orig_src;
 
 
@@ -52,7 +51,7 @@ public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> 
 
 
     public Supplier<Message>      create()                          {return EarlyBatchMessage::new;}
-    public short                  getType()                         {return collapse? Message.BYTES_MSG : Message.EARLYBATCH_MSG;}
+    public short                  getType()                         {return Message.EARLYBATCH_MSG;}
     public boolean                hasPayload()                      {return msgs != null && index > 0;}
     public boolean                hasArray()                        {return false;}
     public int                    getNumberOfMessages()             {return index;}
@@ -62,8 +61,6 @@ public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> 
     public EarlyBatchMessage      setArray(ByteArray buf)           {throw new UnsupportedOperationException();}
     public EarlyBatchMessage      setObject(Object obj)             {throw new UnsupportedOperationException();}
     public <T extends Object>  T  getObject()                       {throw new UnsupportedOperationException();}
-    public boolean                collapse()                        {return collapse;}
-    public EarlyBatchMessage      collapse(boolean b)               {collapse=b; return this;}
 
 
 
