@@ -49,10 +49,6 @@ public class EARLYBATCH extends Protocol {
 
     @Property(description="The maximum number of messages per batch")
     public int                       max_batch_size = 100;
-    // EOFException if >60k
-    @Property(description="The maximum number of bytes per batch")
-    public int                       max_batch_bytes = 50000;
-
 
     protected ConcurrentMap<Address,EarlyBatchBuffer> msgMap = Util.createConcurrentMap();
 
@@ -64,7 +60,7 @@ public class EARLYBATCH extends Protocol {
 
 
     public void init() throws Exception {
-        msgMap.putIfAbsent(nullAddress, new EarlyBatchBuffer(nullAddress, max_batch_bytes));
+        msgMap.putIfAbsent(nullAddress, new EarlyBatchBuffer(nullAddress));
     }
 
     public void resetStats() {
@@ -99,7 +95,7 @@ public class EARLYBATCH extends Protocol {
         if(mbrs == null) return;
 
         mbrs.stream().filter(dest -> !msgMap.containsKey(dest))
-          .forEach(dest -> msgMap.putIfAbsent(dest, new EarlyBatchBuffer(dest, max_batch_bytes)));
+          .forEach(dest -> msgMap.putIfAbsent(dest, new EarlyBatchBuffer(dest)));
 
         // remove members that left
         //msgMap.keySet().retainAll(mbrs);
@@ -221,13 +217,11 @@ public class EARLYBATCH extends Protocol {
         private int              index;
         private boolean          closed;
         private long             total_bytes;
-        private final long       max_bytes;
 
-        protected EarlyBatchBuffer(Address address, long max_bytes) {
+        protected EarlyBatchBuffer(Address address) {
             this.dest=address;
             this.msgs = new Message[max_batch_size];
             this.index = 0;
-            this.max_bytes = max_bytes;
         }
 
         protected synchronized boolean addMessage(Message msg) {
@@ -235,9 +229,8 @@ public class EARLYBATCH extends Protocol {
                 return false;
             }
 
-            int msg_bytes = msg.size();
-            if((max_bytes > 0 && total_bytes + msg_bytes > max_bytes) ||
-                    total_bytes + msg_bytes > getTransport().getBundler().getMaxSize()) {
+            int msg_bytes = msg.getLength();
+            if(total_bytes + msg_bytes > getTransport().getBundler().getMaxSize()) {
                 sendBatch();
             }
 
@@ -262,7 +255,6 @@ public class EARLYBATCH extends Protocol {
             }
 
             Address ebdest = dest instanceof NullAddress ? null : dest;
-
             Message comp = new EarlyBatchMessage(ebdest, local_addr, msgs, index)
               .putHeader(id, HEADER)
               .setSrc(local_addr);
