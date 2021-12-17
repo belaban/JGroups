@@ -40,6 +40,7 @@ public class MessageBatch implements Iterable<Message> {
     protected static final     ToIntBiFunction<Message,MessageBatch>  length_visitor=(msg, batch) -> msg != null? msg.getLength() : 0;
     protected static final     ToLongBiFunction<Message,MessageBatch> total_size_visitor=(msg, batch) -> msg != null? msg.size() : 0;
 
+    public MessageBatch() {}
 
     public MessageBatch(int capacity) {
         this.messages=new Message[capacity];
@@ -138,7 +139,7 @@ public class MessageBatch implements Iterable<Message> {
         if(index >= messages.length) {
             if(!resize)
                 return 0;
-            resize();
+            resize(index+INCR);
         }
         messages[index++]=msg;
         return 1;
@@ -162,7 +163,7 @@ public class MessageBatch implements Iterable<Message> {
             throw new IllegalArgumentException("cannot add batch to itself");
         int batch_size=batch.size();
         if(index+batch_size >= messages.length && resize)
-            resize(messages.length + batch_size + 1);
+            resize(index + batch_size + 1);
 
         int cnt=0;
         for(Message msg: batch) {
@@ -172,6 +173,41 @@ public class MessageBatch implements Iterable<Message> {
             cnt++;
         }
         return cnt;
+    }
+
+    /**
+     * Adds message to this batch from a message array
+     * @param msgs  the message array
+     * @param num_msgs the number of messages to add, should be <= msgs.length
+     * @param resize whether or not to resize the batch
+     * @return the number of messages added to this batch
+     */
+    public int add(Message[] msgs, int num_msgs, boolean resize) {
+        if(msgs == null) return 0;
+        if(index+num_msgs >= messages.length && resize)
+            resize(index + num_msgs + 1);
+
+        int cnt=0, num_added=0;
+        for(Message msg: msgs) {
+            if(index >= messages.length || ++num_added > num_msgs)
+                return cnt;
+            messages[index++]=msg;
+            cnt++;
+        }
+        return cnt;
+    }
+
+    public int add(Message[] msgs, boolean resize) {
+        return add(msgs, msgs.length, resize);
+    }
+
+    public MessageBatch set(Address dest, Address sender, Message[] msgs) {
+        this.messages=Objects.requireNonNull(msgs);
+        this.dest=dest;
+        this.sender=sender;
+        index=msgs.length;
+        mode=determineMode();
+        return this;
     }
 
     /**
@@ -275,6 +311,16 @@ public class MessageBatch implements Iterable<Message> {
         index=0;
         return this;
     }
+
+    public MessageBatch resize(int new_capacity) {
+        if(new_capacity <= messages.length)
+            return this;
+        Message[] tmp=new Message[new_capacity];
+        System.arraycopy(messages,0,tmp,0,messages.length);
+        messages=tmp;
+        return this;
+    }
+
 
     public MessageBatch reset() {
         index=0;
@@ -416,17 +462,6 @@ public class MessageBatch implements Iterable<Message> {
         return sb.toString();
     }
 
-    protected void resize() {
-        resize(messages.length + INCR);
-    }
-
-    protected void resize(int new_capacity) {
-        if(new_capacity <= messages.length)
-            return;
-        Message[] tmp=new Message[new_capacity];
-        System.arraycopy(messages,0,tmp,0,messages.length);
-        messages=tmp;
-    }
 
 
     public enum Mode {OOB, REG, MIXED}

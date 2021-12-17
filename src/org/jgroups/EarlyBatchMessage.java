@@ -61,6 +61,7 @@ public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> 
     public EarlyBatchMessage      setArray(ByteArray buf)           {throw new UnsupportedOperationException();}
     public EarlyBatchMessage      setObject(Object obj)             {throw new UnsupportedOperationException();}
     public <T extends Object>  T  getObject()                       {throw new UnsupportedOperationException();}
+    public Message[]              getMessages()                     {return msgs;}
 
 
 
@@ -150,9 +151,7 @@ public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> 
             msgs=new Message[index]; // a bit of additional space should we add byte arrays
             for(int i=0; i < index; i++) {
                 short type=in.readShort();
-                msgs[i]=mf.create(type);
-                msgs[i].setDest(dest());
-                msgs[i].setSrc(orig_src);
+                msgs[i]=mf.create(type).setDest(dest()).setSrc(orig_src);
                 msgs[i].readFrom(in);
             }
         }

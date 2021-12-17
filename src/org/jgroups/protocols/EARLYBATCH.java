@@ -139,28 +139,41 @@ public class EARLYBATCH extends Protocol {
             return up_prot.up(msg);
 
         EarlyBatchMessage comp = (EarlyBatchMessage) msg;
-
-        for(Iterator<Message> it = comp.iterator(); it.hasNext();) {
-            final Message bundledMsg=it.next();
+        for(Message bundledMsg: comp) {
             bundledMsg.setDest(comp.getDest());
             if (bundledMsg.getSrc() == null)
                 bundledMsg.setSrc(comp.getSrc());
-            up_prot.up(bundledMsg);
         }
-        return msg;
+        MessageBatch batch=new MessageBatch();
+        batch.set(comp.getDest(), comp.getSrc(), comp.getMessages());
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+        return null;
     }
 
     public void up(MessageBatch batch) {
-        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
-            Message msg=it.next();
-                try {
-                    up(msg);
+        int len=0;
+
+        for(Message msg: batch)
+            if(msg instanceof EarlyBatchMessage)
+                len+=((EarlyBatchMessage)msg).getNumberOfMessages();
+
+        if(len > 0) {
+            // remove EarlyBatchMessages and add their contents to a new batch
+            MessageBatch mb=new MessageBatch(len+1).setDest(batch.dest()).setSender(batch.getSender());
+            for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+                Message m=it.next();
+                if(m instanceof EarlyBatchMessage) {
+                    EarlyBatchMessage ebm=(EarlyBatchMessage)m;
+                    it.remove();
+                    mb.add(ebm.getMessages(), ebm.getNumberOfMessages(), true);
                 }
-                catch(Throwable t) {
-                    //log.error(Util.getMessage("PassUpFailure"), t);
-                    t.printStackTrace();
-                }
+            }
+            if(!mb.isEmpty())
+                up_prot.up(mb);
         }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
     }
 
     public void start() throws Exception {

@@ -143,7 +143,7 @@ public class MPerf implements Receiver {
                         looping=false;
                         break;
                     case 'X':
-                        send(null,null,MPerfHeader.EXIT);
+                        send(null, null, MPerfHeader.EXIT, Message.Flag.OOB);
                         break;
                 }
             }

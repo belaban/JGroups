@@ -116,6 +116,17 @@ public class MessageBatchTest {
         assert batch.isEmpty();
     }
 
+    public void testCreation() {
+        Message[] msgs=createMessages().toArray(new Message[0]);
+        int len=msgs.length;
+        EarlyBatchMessage ebm=new EarlyBatchMessage(b, msgs[0].getSrc(), msgs, len);
+        assert ebm.getNumberOfMessages() == len;
+
+        ebm=new EarlyBatchMessage(b, msgs[0].getSrc(), null, 0);
+        assert ebm.getNumberOfMessages() == 0;
+        ebm.add(msgs);
+        assert ebm.getNumberOfMessages() == len;
+    }
 
     public void testSet() {
         List<Message> msgs=createMessages();
@@ -124,6 +135,13 @@ public class MessageBatchTest {
         assert get(batch, 5) == msg;
         set(batch, 4,msg);
         assert get(batch, 4) == msg;
+    }
+
+    public void testSet2() {
+        MessageBatch batch=new MessageBatch(3);
+        Message[] msgs=createMessages().toArray(new Message[0]);
+        batch.set(b, null, msgs);
+        assert batch.size() == msgs.length;
     }
 
 
@@ -286,6 +304,17 @@ public class MessageBatchTest {
         assert batch.capacity() == 10;
     }
 
+    public void testResize() {
+        MessageBatch batch=new MessageBatch(3);
+        for(int i=0; i < 3; i++)
+            batch.add(new EmptyMessage(null).setSrc(b));
+        assert batch.capacity() == 3;
+        assert batch.size() == 3;
+        batch.resize(10);
+        assert batch.capacity() == 10;
+        assert batch.size() == 3;
+    }
+
     public void testAdd() {
         MessageBatch batch=new MessageBatch(3);
         List<Message> msgs=createMessages();
@@ -368,6 +397,34 @@ public class MessageBatchTest {
         catch(IllegalArgumentException ex) {
             System.out.printf("caught %s as expected: %s\n", ex.getClass().getSimpleName(), ex.getCause());
         }
+    }
+
+
+    public void testAddArray() {
+        Message[] msgs=createMessages().toArray(new Message[0]);
+        MessageBatch mb=new MessageBatch(3);
+        int added=mb.add(msgs, msgs.length, true);
+        assert added == msgs.length;
+        assert mb.size() == msgs.length;
+        assert mb.capacity() >= msgs.length;
+
+        mb=new MessageBatch(3);
+        added=mb.add(msgs, 0, true);
+        assert added == 0;
+        assert mb.isEmpty();
+
+        mb=new MessageBatch(3);
+        added=mb.add(msgs, 5, true);
+        assert added == 5;
+        assert mb.size() == 5;
+        assert mb.capacity() >= 5;
+
+        mb=new MessageBatch(msgs.length * 3 +1);
+        added=0;
+        for(int i=0; i < 3; i++)
+            added+=mb.add(msgs, true);
+        assert mb.capacity() == msgs.length *3 +1;
+        assert mb.size() == msgs.length * 3;
     }
 
     public void testGetMatchingMessages() {
