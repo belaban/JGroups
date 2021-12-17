@@ -197,6 +197,22 @@ public class MessageBatch implements Iterable<Message> {
         return cnt;
     }
 
+    public int add(Collection<Message> msgs, boolean resize) {
+        if(msgs == null) return 0;
+        int size=msgs.size();
+        if(index+size >= messages.length && resize)
+            resize(index + size + 1);
+
+        int cnt=0;
+        for(Message msg: msgs) {
+            if(index >= messages.length)
+                return cnt;
+            messages[index++]=msg;
+            cnt++;
+        }
+        return cnt;
+    }
+
     public int add(Message[] msgs, boolean resize) {
         return add(msgs, msgs.length, resize);
     }
