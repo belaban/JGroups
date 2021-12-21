@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 
 /**
@@ -43,11 +42,22 @@ public class EARLYBATCH extends Protocol {
     @ManagedAttribute(description="Local address")
     protected volatile Address       local_addr;
 
-    protected final LongAdder        num_msgs_sent=new LongAdder();
-    protected final LongAdder        num_ebs_sent=new LongAdder();
-    protected final LongAdder        num_ebs_sent_due_to_full_queue=new LongAdder();
+    @ManagedAttribute(description="Number of messages sent in EarlyBatchMessages",type=AttributeType.SCALAR)
+    protected long                   num_msgs_sent;
 
-    public static EarlyBatchHeader   HEADER= new EarlyBatchHeader();
+    @ManagedAttribute(description="Number of EarlyBatchMessages sent",type=AttributeType.SCALAR)
+    protected long                   num_ebs_sent;
+
+    @ManagedAttribute(description="Number of EarlyBatchMessages sent because the queue was full",type=AttributeType.SCALAR)
+    protected long                   num_ebs_sent_due_to_full_queue;
+
+    @ManagedAttribute(description="Number of EarlyBatchMessages sent because the max number of messages has been " +
+      "reached (max_batch_size)", type=AttributeType.SCALAR)
+    protected long                   num_ebs_sent_due_to_max_number_of_msgs;
+
+    @ManagedAttribute(description="Number of EarlyBatchMessages sent because the timeout kicked in",
+      type=AttributeType.SCALAR)
+    protected long                   num_ebs_sent_due_to_timeout;
 
     @Property(description="The maximum number of messages per batch")
     public int                       max_batch_size = 100;
@@ -59,20 +69,13 @@ public class EARLYBATCH extends Protocol {
     protected volatile boolean       running;
     protected Future<?>              flush_task;
 
-    @ManagedAttribute(description="Number of messages sent in EarlyBatchMessages",type=AttributeType.SCALAR)
-    public long getNumMsgsSent()         {return num_msgs_sent.sum();}
+    protected static EarlyBatchHeader HEADER= new EarlyBatchHeader();
 
-    @ManagedAttribute(description="Number of EarlyBatchMessages sent",type=AttributeType.SCALAR)
-    public long getNumEarlyBatchesSent() {return num_ebs_sent.sum();}
-
-    @ManagedAttribute(description="Number of EarlyBatchMessages sent because the queue was full",
-      type=AttributeType.SCALAR)
-    public long getNumEarlyBatchesSentDueToFullQueue() {return num_ebs_sent_due_to_full_queue.sum();}
 
     @ManagedAttribute(description="Average number of messages in an EarlyBatchMessage")
-    public double averageEarlyBatchSize() {
-        if(num_ebs_sent.sum() == 0 || num_msgs_sent.sum() == 0) return 0.0;
-        return num_msgs_sent.sum() / (double)num_ebs_sent.sum();
+    public double avgEarlyBatchSize() {
+        if(num_ebs_sent == 0 || num_msgs_sent == 0) return 0.0;
+        return num_msgs_sent / (double)num_ebs_sent;
     }
 
     public void init() throws Exception {
@@ -81,9 +84,11 @@ public class EARLYBATCH extends Protocol {
 
     public void resetStats() {
         super.resetStats();
-        num_msgs_sent.reset();
-        num_ebs_sent.reset();
-        num_ebs_sent_due_to_full_queue.reset();
+        num_msgs_sent=0;
+        num_ebs_sent=0;
+        num_ebs_sent_due_to_full_queue=0;
+        num_ebs_sent_due_to_timeout=0;
+        num_ebs_sent_due_to_max_number_of_msgs=0;
     }
 
     public Object down(Event evt) {
@@ -226,7 +231,7 @@ public class EARLYBATCH extends Protocol {
     }
 
     public void flush() {
-        msgMap.forEach((k,v) -> v.sendBatch());
+        msgMap.forEach((k,v) -> v.sendBatch(true));
     }
 
     protected class EarlyBatchBuffer {
@@ -249,19 +254,20 @@ public class EARLYBATCH extends Protocol {
 
             int msg_bytes = msg.getLength();
             if(total_bytes + msg_bytes > getTransport().getBundler().getMaxSize()) {
-                num_ebs_sent_due_to_full_queue.increment();
-                sendBatch();
+                num_ebs_sent_due_to_full_queue++;
+                sendBatch(false);
             }
 
             msgs[index++] = msg;
             total_bytes += msg_bytes;
             if (index == msgs.length) {
-                sendBatch();
+                num_ebs_sent_due_to_max_number_of_msgs++;
+                sendBatch(false);
             }
             return true;
         }
 
-        protected synchronized void sendBatch() {
+        protected synchronized void sendBatch(boolean due_to_timeout) {
             if (index == 0) {
                 return;
             }
@@ -270,7 +276,7 @@ public class EARLYBATCH extends Protocol {
                 msgs[0] = null;
                 index = 0;
                 total_bytes = 0;
-                num_msgs_sent.increment();
+                num_msgs_sent++;
                 return;
             }
 
@@ -279,9 +285,11 @@ public class EARLYBATCH extends Protocol {
               .putHeader(id, HEADER)
               .setSrc(local_addr);
             msgs = new Message[max_batch_size];
-            num_msgs_sent.add(index);
-            num_ebs_sent.increment();
-            index = 0;
+            num_msgs_sent+=index;
+            num_ebs_sent++;
+            if(due_to_timeout)
+                num_ebs_sent_due_to_timeout++;
+            index=0;
             total_bytes = 0;
             // Could send down out of synchronize, but that could make batches hit nakack out of order
             down_prot.down(comp);
@@ -289,7 +297,7 @@ public class EARLYBATCH extends Protocol {
 
         protected synchronized void close() {
             this.closed = true;
-            sendBatch();
+            sendBatch(false);
         }
     }
 
