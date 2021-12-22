@@ -42,8 +42,8 @@ public class AlternatingBundler extends TransferQueueBundler {
                     continue;
                 int size=msg.size();
                 if(count + size >= max_size) {
-                    num_sends_because_full_queue.increment();
-                    fill_count.add(count);
+                    num_sends_because_full_queue++;
+                    avg_fill_count.add(count);
                     _sendBundledMessages();
                 }
 
