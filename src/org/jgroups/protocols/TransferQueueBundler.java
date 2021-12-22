@@ -116,7 +116,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                 if(count > 0) {
                     num_sends_because_no_msgs++;
                     avg_fill_count.add(count);
-                    _sendBundledMessages();
+                    sendBundledMessages();
                 }
             }
             catch(Throwable t) {
@@ -127,10 +127,10 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
 
     protected void addAndSendIfSizeExceeded(Message msg) {
         int size=msg.size();
-        if(count + size >= max_size) {
+        if(count + size > max_size) {
             num_sends_because_full_queue++;
             avg_fill_count.add(count);
-            _sendBundledMessages();
+            sendBundledMessages();
         }
         _addMessage(msg, size);
     }
@@ -143,20 +143,9 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
             while((msg=queue.poll()) != null)
                 addAndSendIfSizeExceeded(msg);
         }
-        _sendBundledMessages();
+        sendBundledMessages();
     }
 
-
-    // This should not affect perf, as the lock is uncontended most of the time
-    protected void _sendBundledMessages() {
-        lock.lock();
-        try {
-            sendBundledMessages();
-        }
-        finally {
-            lock.unlock();
-        }
-    }
 
     protected void _addMessage(Message msg, int size) {
         lock.lock();
