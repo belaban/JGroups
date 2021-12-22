@@ -37,7 +37,7 @@ public abstract class BaseBundler implements Bundler {
      */
     @Property(name="max_size", type=AttributeType.BYTES,
       description="Maximum number of bytes for messages to be queued until they are sent")
-    protected int max_size=64000;
+    protected int                               max_size=64000;
 
     @Property(description="The max number of elements in a bundler if the bundler supports size limitations",
       type=AttributeType.SCALAR)

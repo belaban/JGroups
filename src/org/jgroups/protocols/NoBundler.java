@@ -6,6 +6,8 @@ import org.jgroups.logging.Log;
 import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 
+import java.util.Objects;
+
 /**
  * Bundler which doesn't bundle :-) Can be used to measure the diff between bundling and non-bundling (e.g. at runtime)
  * This bundler doesn't use a pool of buffers, but creates a new buffer every time a message is sent.
@@ -20,7 +22,7 @@ public class NoBundler implements Bundler {
     public int getMaxSize() {return 64000;}
 
     public void init(TP transport) {
-        this.transport=transport;
+        this.transport=Objects.requireNonNull(transport);
         log=transport.getLog();
     }
 

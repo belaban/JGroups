@@ -706,7 +706,8 @@ public class MPerf implements Receiver {
         public Map<Address, Long> snapshot() {
             return countMap.entrySet().stream()
                     .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), e.getValue().sum()))
-                    .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), Math::addExact, TreeMap::new));
+                    .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue,
+                                              Math::addExact, TreeMap::new));
         }
 
         public String printAverage(long start_time, int msg_size, boolean display_msg_src) {

@@ -1414,12 +1414,6 @@ public class Util {
      * Message:  | presence | leading | flags | [src] | length | [buffer] | size | [Headers*] |
      *
      * </pre>
-     * @param dest
-     * @param src
-     * @param msgs
-     * @param dos
-     * @param multicast
-     * @throws Exception
      */
     public static void writeMessageList(Address dest, Address src, byte[] cluster_name,
                                         List<Message> msgs, DataOutput dos, boolean multicast, short transport_id) throws IOException {
@@ -1427,6 +1421,19 @@ public class Util {
 
         if(msgs != null)
             for(Message msg: msgs) {
+                dos.writeShort(msg.getType());
+                msg.writeToNoAddrs(src, dos, transport_id); // exclude the transport header
+            }
+    }
+
+    public static void writeMessageList(Address dest, Address src, byte[] cluster_name,
+                                        Message[] msgs, int offset, int length, DataOutput dos, boolean multicast,
+                                        short transport_id) throws IOException {
+        writeMessageListHeader(dest, src, cluster_name, length, dos, multicast);
+
+        if(msgs != null)
+            for(int i=0; i < length; i++) {
+                Message msg=msgs[offset+i];
                 dos.writeShort(msg.getType());
                 msg.writeToNoAddrs(src, dos, transport_id); // exclude the transport header
             }

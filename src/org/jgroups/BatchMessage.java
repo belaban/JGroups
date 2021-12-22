@@ -15,18 +15,18 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * A message that contains a batch of messages for use with EARLYBATCH protocol.  This message will wrap several
+ * A message that contains a batch of messages for use with BATCH protocol.  This message will wrap several
  * sequential messages so lower protocol layers only have to process them once.  This increases throughput for cases
  * such as when average message size is small, or there is a heavy processing cost (e.g. SEQUENCER).
  * <br/>
  * Similar to CompositeMessage but with some optimisations made for the specific use case.
  * <br/>
- * This class is unsynchronized; the envisaged use case is that an EarlyBatchMessage is created with a number of messages,
+ * This class is unsynchronized; the envisaged use case is that an BatchMessage is created with a number of messages,
  * or messages are added, but then the instance is not modified anymore and sent.
  * @author Bela Ban, Chris Johnson
  * @since  5.x
  */
-public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> {
+public class BatchMessage extends BaseMessage implements Iterable<Message> {
     protected Message[] msgs;
     protected int       index;    // index of the next message to be added
     protected Address   orig_src;
@@ -34,15 +34,15 @@ public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> 
 
     protected static final MessageFactory mf=new DefaultMessageFactory();
 
-    public EarlyBatchMessage() {
+    public BatchMessage() {
     }
 
 
-    public EarlyBatchMessage(Address dest) {
+    public BatchMessage(Address dest) {
         super(dest);
     }
 
-    public EarlyBatchMessage(Address dest, Address src, Message[] msgs, int index) {
+    public BatchMessage(Address dest, Address src, Message[] msgs, int index) {
         super(dest);
         this.orig_src = src;
         this.msgs = msgs;
@@ -50,16 +50,16 @@ public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> 
     }
 
 
-    public Supplier<Message>      create()                          {return EarlyBatchMessage::new;}
+    public Supplier<Message>      create()                          {return BatchMessage::new;}
     public short                  getType()                         {return Message.EARLYBATCH_MSG;}
     public boolean                hasPayload()                      {return msgs != null && index > 0;}
     public boolean                hasArray()                        {return false;}
     public int                    getNumberOfMessages()             {return index;}
     public int                    getOffset()                       {throw new UnsupportedOperationException();}
     public byte[]                 getArray()                        {throw new UnsupportedOperationException();}
-    public EarlyBatchMessage      setArray(byte[] b, int o, int l)  {throw new UnsupportedOperationException();}
-    public EarlyBatchMessage      setArray(ByteArray buf)           {throw new UnsupportedOperationException();}
-    public EarlyBatchMessage      setObject(Object obj)             {throw new UnsupportedOperationException();}
+    public BatchMessage setArray(byte[] b, int o, int l)  {throw new UnsupportedOperationException();}
+    public BatchMessage setArray(ByteArray buf)           {throw new UnsupportedOperationException();}
+    public BatchMessage setObject(Object obj)             {throw new UnsupportedOperationException();}
     public <T extends Object>  T  getObject()                       {throw new UnsupportedOperationException();}
     public Message[]              getMessages()                     {return msgs;}
 
@@ -74,14 +74,14 @@ public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> 
 
 
     /** Adds the message at the end of the array. Increases the array if needed */
-    public EarlyBatchMessage add(Message msg) {
+    public BatchMessage add(Message msg) {
         ensureSameDest(msg);
         ensureCapacity(index);
         msgs[index++]=Objects.requireNonNull(msg);
         return this;
     }
 
-    public EarlyBatchMessage add(Message ... messages) {
+    public BatchMessage add(Message ... messages) {
         ensureCapacity(index + messages.length);
         for(Message msg: messages) {
             if (msg == null)
@@ -97,9 +97,9 @@ public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> 
     }
 
 
-    /** Create a shallow copy of this {@link EarlyBatchMessage}. */
-    public EarlyBatchMessage copy(boolean copy_payload, boolean copy_headers) {
-        EarlyBatchMessage retval=(EarlyBatchMessage)super.copy(copy_payload, copy_headers);
+    /** Create a shallow copy of this {@link BatchMessage}. */
+    public BatchMessage copy(boolean copy_payload, boolean copy_headers) {
+        BatchMessage retval=(BatchMessage)super.copy(copy_payload, copy_headers);
         if(copy_payload && msgs != null) {
             Message[] copy=new Message[msgs.length];
             for(int i=0; i < msgs.length; i++) {
@@ -128,7 +128,7 @@ public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> 
     }
 
     public Iterator<Message> iterator() {
-        return new EarlyBatchMessageIterator();
+        return new BatchMessageIterator();
     }
 
 
@@ -169,13 +169,13 @@ public class EarlyBatchMessage extends BaseMessage implements Iterable<Message> 
 
     protected Message ensureSameDest(Message msg) {
         if(!Objects.equals(dest, msg.dest()))
-            throw new IllegalStateException(String.format("message dest (%s) does not match dest of EarlyBatchMessage (%s)",
+            throw new IllegalStateException(String.format("message dest (%s) does not match dest of BatchMessage (%s)",
                                                           msg.dest(), dest));
         return msg;
     }
 
 
-    protected class EarlyBatchMessageIterator implements Iterator<Message> {
+    protected class BatchMessageIterator implements Iterator<Message> {
         protected int current_index;
 
         public boolean hasNext() {

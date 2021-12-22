@@ -119,10 +119,10 @@ public class MessageBatchTest {
     public void testCreation() {
         Message[] msgs=createMessages().toArray(new Message[0]);
         int len=msgs.length;
-        EarlyBatchMessage ebm=new EarlyBatchMessage(b, msgs[0].getSrc(), msgs, len);
+        BatchMessage ebm=new BatchMessage(b, msgs[0].getSrc(), msgs, len);
         assert ebm.getNumberOfMessages() == len;
 
-        ebm=new EarlyBatchMessage(b, msgs[0].getSrc(), null, 0);
+        ebm=new BatchMessage(b, msgs[0].getSrc(), null, 0);
         assert ebm.getNumberOfMessages() == 0;
         ebm.add(msgs);
         assert ebm.getNumberOfMessages() == len;
