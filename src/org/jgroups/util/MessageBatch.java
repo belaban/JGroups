@@ -50,7 +50,7 @@ public class MessageBatch implements Iterable<Message> {
         messages=new Message[msgs.size()];
         for(Message msg: msgs)
             messages[index++]=msg;
-        mode=determineMode();
+        determineMode();
     }
 
     public MessageBatch(Address dest, Address sender, AsciiString cluster_name, boolean multicast, Collection<Message> msgs) {
@@ -69,7 +69,7 @@ public class MessageBatch implements Iterable<Message> {
         this.sender=sender;
         this.cluster_name=cluster_name;
         this.multicast=multicast;
-        this.mode=determineMode();
+        determineMode();
     }
 
     public MessageBatch(Address dest, Address sender, AsciiString cluster_name, boolean multicast, Mode mode, int capacity) {
@@ -142,6 +142,7 @@ public class MessageBatch implements Iterable<Message> {
             resize(index+INCR);
         }
         messages[index++]=msg;
+        determineMode(msg);
         return 1;
     }
 
@@ -172,6 +173,7 @@ public class MessageBatch implements Iterable<Message> {
             messages[index++]=msg;
             cnt++;
         }
+        determineMode();
         return cnt;
     }
 
@@ -194,6 +196,7 @@ public class MessageBatch implements Iterable<Message> {
             messages[index++]=msg;
             cnt++;
         }
+        determineMode();
         return cnt;
     }
 
@@ -210,6 +213,7 @@ public class MessageBatch implements Iterable<Message> {
             messages[index++]=msg;
             cnt++;
         }
+        determineMode();
         return cnt;
     }
 
@@ -222,7 +226,7 @@ public class MessageBatch implements Iterable<Message> {
         this.dest=dest;
         this.sender=sender;
         index=msgs.length;
-        mode=determineMode();
+        determineMode();
         return this;
     }
 
@@ -231,7 +235,6 @@ public class MessageBatch implements Iterable<Message> {
      * @param existing_msg The message to be replaced. The message has to be non-null and is found by identity (==)
      *                     comparison
      * @param new_msg The message to replace the existing message with, can be null
-     * @return
      */
     public MessageBatch replace(Message existing_msg, Message new_msg) {
         if(existing_msg == null)
@@ -242,7 +245,7 @@ public class MessageBatch implements Iterable<Message> {
                 break;
             }
         }
-        return this;
+        return determineMode();
     }
 
     /**
@@ -276,6 +279,7 @@ public class MessageBatch implements Iterable<Message> {
                     break;
             }
         }
+        determineMode();
         return matched;
     }
 
@@ -300,6 +304,7 @@ public class MessageBatch implements Iterable<Message> {
         this.index=other_size;
         if(clear)
             other.clear();
+        determineMode();
         return other_size;
     }
 
@@ -401,23 +406,6 @@ public class MessageBatch implements Iterable<Message> {
         return true;
     }
 
-    public Mode determineMode() {
-        int num_oob=0, num_reg=0;
-        for(int i=0; i < index; i++) {
-            if(messages[i] == null)
-                continue;
-            if(messages[i].isFlagSet(Message.Flag.OOB))
-                num_oob++;
-            else
-                num_reg++;
-        }
-        if(num_oob > 0 && num_reg == 0)
-            return Mode.OOB;
-        if(num_reg > 0 && num_oob == 0)
-            return Mode.REG;
-        return Mode.MIXED;
-    }
-
 
     /** Returns the size of the message batch (by calling {@link Message#size()} on all messages) */
     public long totalSize() {
@@ -481,6 +469,36 @@ public class MessageBatch implements Iterable<Message> {
 
 
     public enum Mode {OOB, REG, MIXED}
+
+    protected MessageBatch determineMode() {
+        boolean first=true;
+        for(int i=0; i < index; i++) {
+            if(messages[i] == null)
+                continue;
+            if(first) {
+                mode=messages[i].isFlagSet(Message.Flag.OOB)? Mode.OOB : Mode.REG;
+                first=false;
+                continue;
+            }
+            if(mode == Mode.REG && messages[i].isFlagSet(Message.Flag.OOB)
+              || mode == Mode.OOB && !messages[i].isFlagSet(Message.Flag.OOB))
+                return setMode(Mode.MIXED);
+        }
+        return this;
+    }
+
+    protected MessageBatch determineMode(Message msg) {
+        if(msg == null) return this;
+        if(index <= 1)
+            mode=msg.isFlagSet(Message.Flag.OOB)? Mode.OOB : Mode.REG;
+        else {
+            if(mode == Mode.REG && msg.isFlagSet(Message.Flag.OOB)
+              || mode == Mode.OOB && !msg.isFlagSet(Message.Flag.OOB))
+                return setMode(Mode.MIXED);
+        }
+        return this;
+    }
+
 
 
     /** Iterates over <em>non-null</em> elements of a batch, skipping null elements */

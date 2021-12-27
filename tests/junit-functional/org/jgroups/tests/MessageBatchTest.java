@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
+import org.jgroups.util.AsciiString;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Util;
@@ -723,6 +724,26 @@ public class MessageBatchTest {
         assert batch.size() == 5;
     }
 
+    public void testDetermineMode() {
+        List<Message> l=new ArrayList<>(3);
+        for(int i=0; i < 3; i++)
+            l.add(new EmptyMessage(null).setFlag(Message.Flag.OOB));
+        MessageBatch batch=new MessageBatch(null, null, new AsciiString("cluster"), true, l);
+        assert batch.getMode() == MessageBatch.Mode.OOB;
+        batch.add(new EmptyMessage(null));
+        assert batch.getMode() == MessageBatch.Mode.MIXED;
+
+        batch=new MessageBatch(3);
+        batch.add(new EmptyMessage(null));
+        assert batch.getMode() == MessageBatch.Mode.REG;
+        batch.add(new EmptyMessage(null).setFlag(Message.Flag.OOB));
+        assert batch.getMode() == MessageBatch.Mode.MIXED;
+
+        batch=new MessageBatch(3);
+        l.add(new EmptyMessage(null));
+        batch.add(l, true);
+        assert batch.getMode() == MessageBatch.Mode.MIXED;
+    }
 
     protected static MessageBatch remove(MessageBatch batch, int... indices) {
         Message[] msgs=batch.array();
