@@ -307,7 +307,7 @@ public class BATCH extends Protocol {
         @Override public int              serializedSize()                           {return 0;}
         @Override public void             writeTo(DataOutput out) throws IOException {}
         @Override public void             readFrom(DataInput in) throws IOException  {}
-        public String                     toString()                                 {return "EarlyBatchHeader";}
+        public String                     toString()                                 {return "BatchHeader";}
     }
 
 }

@@ -49,7 +49,7 @@ public class BatchBundler extends NoBundler {
     protected long                   flush_interval=100;
 
     @Property(description="The maximum number of messages per batch")
-    public int                       max_batch_size = 100;
+    public int                       max_batch_size = 1000;
 
     @ManagedAttribute(description="Local address")
     protected volatile Address       local_addr;
