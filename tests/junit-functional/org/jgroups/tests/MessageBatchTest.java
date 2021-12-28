@@ -445,6 +445,23 @@ public class MessageBatchTest {
         assert batch.isEmpty();
     }
 
+    public void testAnyMatch() {
+        List<Message> msgs=createMessages();
+        MessageBatch batch=new MessageBatch(msgs);
+
+        boolean match=batch.anyMatch(m -> m.getHeader(UDP_ID) != null);
+        assert match;
+
+        match=batch.anyMatch(m -> m instanceof ObjectMessage);
+        assert !match;
+
+        match=batch.anyMatch(m -> m.getHeader(FD_ID) != null);
+        assert match;
+
+        match=batch.anyMatch(m -> m.getHeader((short)111) != null);
+        assert !match;
+    }
+
 
     public void testTotalSize() {
         List<Message> msgs=createMessages();

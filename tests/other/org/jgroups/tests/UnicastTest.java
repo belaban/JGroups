@@ -2,12 +2,10 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST3;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
-import javax.management.MBeanServer;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
@@ -32,29 +30,22 @@ public class UnicastTest {
     protected static final byte    DATA  = 2; // | length (int) | data (byte[]) |
 
 
-    public void init(Protocol[] props, long sleep_time, String name) throws Exception {
-        _init(new JChannel(props), sleep_time, name);
-    }
 
     public void init(String props, long sleep_time, String name) throws Exception {
-        _init(new JChannel(props), sleep_time, name);
-    }
-
-    protected void _init(JChannel ch, long sleep_time, String name) throws Exception {
+        channel=new JChannel(props);
         this.sleep_time=sleep_time;
-        channel=ch;
         if(name != null)
             channel.setName(name);
-        channel.connect(getClass().getSimpleName());
         channel.setReceiver(receiver);
+        connect();
+    }
 
-        try {
-            MBeanServer server=Util.getMBeanServer();
-            JmxConfigurator.registerChannel(channel, server, "jgroups-" + name, channel.getClusterName(), true);
-        }
-        catch(Throwable ex) {
-            System.err.println("registering the channel with JMX failed: " + ex);
-        }
+    protected void connect() throws Exception {
+        channel.connect(getClass().getSimpleName());
+    }
+
+    protected void disconnect() {
+        channel.disconnect();
     }
 
 
@@ -63,48 +54,54 @@ public class UnicastTest {
 
         while(true) {
             System.out.print("[1] Send msgs [2] Print view [3] Print conns [5] Trash all conns" +
-                    "\n[6] Set sender threads (" + num_threads + ") [7] Set num msgs (" + num_msgs + ") " +
-                    "[8] Set msg size (" + Util.printBytes(msg_size) + ")" +
-                    "\n[o] Toggle OOB (" + oob + ") [b] Toggle dont_bundle (" + dont_bundle + ")\n[q] Quit\n");
+                               "\n[6] Set sender threads (" + num_threads + ") [7] Set num msgs (" + num_msgs + ") " +
+                               "[8] Set msg size (" + Util.printBytes(msg_size) + ")" +
+                               "\n[o] Toggle OOB (" + oob + ") [b] Toggle dont_bundle (" + dont_bundle + ") " +
+                               "[r] reconnect\n[q] Quit\n");
             System.out.flush();
             c=System.in.read();
             switch(c) {
-            case -1:
-                break;
-            case '1':
-                sendMessages();
-                break;
-            case '2':
-                printView();
-                break;
-            case '3':
-                printConnections();
-                break;
-            case '5':
-                removeAllConnections();
-                break;
-            case '6':
-                setSenderThreads();
-                break;
-            case '7':
-                setNumMessages();
-                break;
-            case '8':
-                setMessageSize();
-                break;
-            case 'o':
-                oob=!oob;
-                System.out.println("oob=" + oob);
-                break;
+                case -1:
+                    break;
+                case '1':
+                    sendMessages();
+                    break;
+                case '2':
+                    printView();
+                    break;
+                case '3':
+                    printConnections();
+                    break;
+                case '5':
+                    removeAllConnections();
+                    break;
+                case '6':
+                    setSenderThreads();
+                    break;
+                case '7':
+                    setNumMessages();
+                    break;
+                case '8':
+                    setMessageSize();
+                    break;
+                case 'o':
+                    oob=!oob;
+                    System.out.println("oob=" + oob);
+                    break;
                 case 'b':
                     dont_bundle=!dont_bundle;
                     System.out.println("dont_bundle = " + dont_bundle);
                     break;
-            case 'q':
-                channel.close();
-                return;
-            default:
-                break;
+                case 'r':
+                    disconnect();
+                    connect();
+                    System.out.printf("reconnected: new view is %s\n", channel.getView());
+                    break;
+                case 'q':
+                    channel.close();
+                    return;
+                default:
+                    break;
             }
         }
     }
@@ -309,8 +306,8 @@ public class UnicastTest {
                         long time=System.currentTimeMillis() - start;
                         double msgs_sec=(current_value.get() / (time / 1000.0));
                         double throughput=total_bytes.get() / (time / 1000.0);
-                        System.out.println(String.format("\nreceived %d messages in %d ms (%.2f msgs/sec), throughput=%s",
-                                                         current_value.get(), time, msgs_sec, Util.printBytes(throughput)));
+                        System.out.printf("\nreceived %d messages in %d ms (%.2f msgs/sec), throughput=%s%n",
+                                          current_value.get(), time, msgs_sec, Util.printBytes(throughput));
                         break;
                     }
                     break;

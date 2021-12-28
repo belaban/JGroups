@@ -311,7 +311,7 @@ public class UNICAST_ConnectionTests {
             }
         }
 
-        public List<Integer> getMessages() { return msgs; }
+        public List<Integer> getMessages() {return msgs;}
         public void          clear()       {msgs.clear();}
         public int           size()        {return msgs.size();}
 

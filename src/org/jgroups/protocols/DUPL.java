@@ -43,32 +43,32 @@ public class DUPL extends Protocol {
         return incoming_copies;
     }
 
-    public void setIncomingCopies(int incoming_copies) {
-        this.incoming_copies=incoming_copies;
+    public DUPL setIncomingCopies(int incoming_copies) {
+        this.incoming_copies=incoming_copies;return this;
     }
 
     public int getOutgoingCopies() {
         return outgoing_copies;
     }
 
-    public void setOutgoingCopies(int outgoing_copies) {
-        this.outgoing_copies=outgoing_copies;
+    public DUPL setOutgoingCopies(int outgoing_copies) {
+        this.outgoing_copies=outgoing_copies;return this;
     }
 
     public boolean isCopyUnicastMsgs() {
         return copy_unicast_msgs;
     }
 
-    public void setCopyUnicastMsgs(boolean copy_unicast_msgs) {
-        this.copy_unicast_msgs=copy_unicast_msgs;
+    public DUPL setCopyUnicastMsgs(boolean copy_unicast_msgs) {
+        this.copy_unicast_msgs=copy_unicast_msgs;return this;
     }
 
     public boolean isCopyMulticastMsgs() {
         return copy_multicast_msgs;
     }
 
-    public void setCopyMulticastMsgs(boolean copy_multicast_msgs) {
-        this.copy_multicast_msgs=copy_multicast_msgs;
+    public DUPL setCopyMulticastMsgs(boolean copy_multicast_msgs) {
+        this.copy_multicast_msgs=copy_multicast_msgs;return this;
     }
 
     public Object down(Message msg) {

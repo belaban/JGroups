@@ -583,7 +583,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
         ByteArray marshalled_jr=marshal(jr);
         for(Address joiner: joiners) {
-            log.trace("%s: sending join-rsp to %s: view=%s (%d mbrs)", local_addr, joiner, jr.getView(), jr.getView().size());
+            log.trace("%s: sending JOIN-RSP to %s: view=%s (%d mbrs)", local_addr, joiner, jr.getView(), jr.getView().size());
             sendJoinResponse(marshalled_jr, joiner);
         }
     }

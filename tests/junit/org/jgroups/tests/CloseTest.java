@@ -161,31 +161,30 @@ public class CloseTest extends ChannelTestBase {
         System.out.println("-- B joining");
         b.connect(GROUP);
         assert b.isConnected();
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
 
         System.out.println("-- B leaving");
         b.disconnect();
         assert b.isOpen() && !b.isConnected();
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a);
 
         System.out.println("-- B joining");
         b.connect(GROUP);
         assert b.isConnected();
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
 
         // Now see what happens if we disaconnect and reconnect A (the current coord)
         System.out.println("-- A leaving");
         a.disconnect();
         assert a.isOpen() && !a.isConnected();
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, b);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, b);
         printViews(b);
 
         System.out.println("-- A joining");
         a.connect(GROUP);
         assert a.isOpen() && a.isConnected();
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
     }
-
 
 
     public void testMultipleConnectsAndDisconnects2() throws Exception {
@@ -194,16 +193,42 @@ public class CloseTest extends ChannelTestBase {
         makeUnique(a,b);
         a.connect("CloseTest");
         b.connect("CloseTest");
-        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
 
         for(int i=1; i <= 10; i++) {
             System.out.print("#" + i + " disconnecting: ");
             b.disconnect();
             System.out.println("OK");
-            Util.waitUntilAllChannelsHaveSameView(10000, 500, a);
+            Util.waitUntilAllChannelsHaveSameView(5000, 500, a);
             b.connect("CloseTest");
-            Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
+            Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
         }
+    }
+
+    public void testAlternatingCoordAndParticipantDisconnects() throws Exception {
+        a=createChannel().name("A");
+        b=createChannel().name("B");
+        makeUnique(a,b);
+        a.connect("CloseTest");
+        b.connect("CloseTest");
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
+
+        for(int i=1; i <= 10; i++) {
+            JChannel ch=i % 2 == 0? a : b;
+            leaveAndRejoin(i, ch);
+        }
+    }
+
+    private static void leaveAndRejoin(int i, JChannel ch, JChannel... channels) throws Exception {
+        System.out.printf("#%d disconnecting %s, view is %s ", i, ch.getName(), ch.getView());
+        ch.disconnect();
+        System.out.println("OK");
+        Util.waitUntil(5000, 500, () -> !ch.isConnected());
+
+        System.out.printf("#%d rejoining %s: ", i, ch.getName());
+        ch.connect("CloseTest");
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, channels);
+        System.out.printf("OK, view is %s\n", ch.getView());
     }
 
 

@@ -156,7 +156,7 @@ public class MessageBatch implements Iterable<Message> {
      * @param batch the batch to add to this batch
      * @param resize when true, this batch will be resized to accommodate the other batch
      * @return the number of messages from the other batch that were added successfully. Will always be batch.size()
-     * unless resize==0: in this case, the number of messages that were added successfully is returned
+     * unless resize is false: in this case, the number of messages that were added successfully is returned
      */
     public int add(final MessageBatch batch, boolean resize) {
         if(batch == null) return 0;
@@ -347,6 +347,16 @@ public class MessageBatch implements Iterable<Message> {
         index=0;
         return this;
     }
+
+    public boolean anyMatch(Predicate<Message> pred) {
+        if(pred == null)
+            return false;
+        for(int i=0; i < index; i++)
+            if(messages[i] != null && pred.test(messages[i]))
+                return true;
+        return false;
+    }
+
 
     /** Removes and returns all messages which have a header with ID == id */
     public Collection<Message> getMatchingMessages(final short id, boolean remove) {

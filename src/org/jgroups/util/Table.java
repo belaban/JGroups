@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -277,6 +278,51 @@ public class Table<T> implements Iterable<T> {
                     it.remove();
             }
             return added;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+
+    public boolean add(MessageBatch batch, Function<T,Long> seqno_getter) {
+        return add(batch, seqno_getter, false, null);
+    }
+
+    /**
+     * Adds all messages from the given batch to the table
+     * @param batch The batch
+     * @param seqno_getter A function to return the sequence number (seqno) of a given Message. Must be non-null. If
+     *                     the function return -1, then the message won't be added
+     * @param remove_from_batch If true, the message is removed <pre>regardless</pre> of whether it was added
+     *                          successfully or not
+     * @param const_value If non-null, this value should be used rather than the values of the list tuples
+     * @return True if at least 1 element was added successfully, false otherwise.
+     */
+    public boolean add(MessageBatch batch, Function<T,Long> seqno_getter, boolean remove_from_batch, T const_value) {
+        if(batch == null || batch.isEmpty())
+            return false;
+        Objects.requireNonNull(seqno_getter);
+        boolean retval=false;
+        // find the highest seqno (unfortunately, the list is not ordered by seqno)
+        long highest_seqno=findHighestSeqno(batch, seqno_getter);
+        lock.lock();
+        try {
+            if(highest_seqno != -1 && computeRow(highest_seqno) >= matrix.length)
+                resize(highest_seqno);
+
+            for(Iterator<?> it=batch.iterator(); it.hasNext();) {
+                T msg=(T)it.next();
+                long seqno=seqno_getter.apply(msg);
+                if(seqno < 0)
+                    continue;
+                T element=const_value != null? const_value : msg;
+                boolean added=_add(seqno, element, false, null);
+                retval|=added;
+                if(!added || remove_from_batch)
+                    it.remove();
+            }
+            return retval;
         }
         finally {
             lock.unlock();
@@ -570,6 +616,19 @@ public class Table<T> implements Iterable<T> {
         return seqno;
     }
 
+    protected static <T> long findHighestSeqno(MessageBatch batch, Function<T,Long> seqno_getter) {
+        long seqno=-1;
+        for(Iterator<?> it=batch.iterator(); it.hasNext();) {
+            T msg=(T)it.next();
+            long val=seqno_getter.apply(msg);
+            if(val < 0)
+                continue;
+            if(val - seqno > 0)
+                seqno=val;
+        }
+        return seqno;
+    }
+
     /** Moves rows down the matrix, by removing purged rows. If resizing to accommodate seqno is still needed, computes
      * a new size. Then either moves existing rows down, or copies them into a new array (if resizing took place).
      * The lock must be held by the caller of resize(). */
@@ -591,7 +650,7 @@ public class Table<T> implements Iterable<T> {
             move(num_rows_to_purge);
         }
 
-        offset+=(num_rows_to_purge * elements_per_row);
+        offset+=((long)num_rows_to_purge * elements_per_row);
     }
 
 
@@ -627,7 +686,7 @@ public class Table<T> implements Iterable<T> {
             T[][] new_matrix=(T[][])new Object[new_size][];
             System.arraycopy(matrix, from, new_matrix, 0, range);
             matrix=new_matrix;
-            offset+=from * elements_per_row;
+            offset+=(long)from * elements_per_row;
             num_compactions++;
         }
     }

@@ -22,7 +22,7 @@ import java.util.List;
  */
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class ConnectTest extends ChannelTestBase {
-    JChannel a, b;
+    protected JChannel a, b;
 
 
     @AfterMethod void tearDown() throws Exception {
@@ -60,10 +60,10 @@ public class ConnectTest extends ChannelTestBase {
      * Tests connect-disconnect-connect sequence for a group with two members
      **/
     public void testDisconnectConnectTwo() throws Exception {
-        a=createChannel().name("coord");
+        a=createChannel().name("A");
         changeProps(a);
 
-        b=createChannel().name("channel");
+        b=createChannel().name("B");
         changeProps(b);
         makeUnique(a, b);
 
@@ -136,15 +136,10 @@ public class ConnectTest extends ChannelTestBase {
         System.out.println("list = " + list);
 
         list.clear();
-        //for(JChannel ch: Arrays.asList(coordinator, channel))
-            //ch.getProtocolStack().findProtocol(UNICAST3.class).setLevel("trace");
         b.disconnect();
-
 
         b.connect("ConnectTest");
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
-
-
 
         for(int i=1; i <= 5; i++) {
             a.send(new BytesMessage(b.getAddress(), i));
