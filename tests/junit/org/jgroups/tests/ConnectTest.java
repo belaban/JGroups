@@ -4,6 +4,7 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.TP;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MyReceiver;
 import org.jgroups.util.NameCache;
@@ -12,6 +13,7 @@ import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -20,37 +22,37 @@ import java.util.List;
  */
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class ConnectTest extends ChannelTestBase {
-    JChannel channel, coordinator;
+    JChannel a, b;
 
 
     @AfterMethod void tearDown() throws Exception {
-        Util.close(channel, coordinator);
+        Util.close(b, a);
     }
 
 
     public void testConnectAndDisconnect() throws Exception {
-        channel=createChannel();
-        makeUnique(channel);
+        b=createChannel();
+        makeUnique(b);
         final String GROUP=ConnectTest.class.getSimpleName();
         for(int i=0; i < 5; i++) {
             System.out.print("Attempt #" + (i + 1));
-            channel.connect(GROUP);
+            b.connect(GROUP);
             System.out.println(": OK");
-            channel.disconnect();
+            b.disconnect();
         }
     }
 
 
     public void testDisconnectConnectOne() throws Exception {
-        channel=createChannel();
-        makeUnique(channel);
-        changeProps(channel);
-        channel.connect("ConnectTest.testgroup-1");
-        channel.disconnect();
-        channel.connect("ConnectTest.testgroup-2");
-        View view=channel.getView();
+        b=createChannel();
+        makeUnique(b);
+        changeProps(b);
+        b.connect("ConnectTest.testgroup-1");
+        b.disconnect();
+        b.connect("ConnectTest.testgroup-2");
+        View view=b.getView();
         assert view.size() == 1;
-        assert view.containsMember(channel.getAddress());
+        assert view.containsMember(b.getAddress());
     }
 
 
@@ -58,72 +60,76 @@ public class ConnectTest extends ChannelTestBase {
      * Tests connect-disconnect-connect sequence for a group with two members
      **/
     public void testDisconnectConnectTwo() throws Exception {
-        coordinator=createChannel().name("coord");
-        changeProps(coordinator);
+        a=createChannel().name("coord");
+        changeProps(a);
 
-        channel=createChannel().name("channel");
-        changeProps(channel);
-        makeUnique(coordinator, channel);
+        b=createChannel().name("channel");
+        changeProps(b);
+        makeUnique(a, b);
 
-        coordinator.connect("ConnectTest.testgroup-3");
-        print(coordinator, "coord");
-        View view=coordinator.getView();
+        a.connect("ConnectTest.testgroup-3");
+        print(a, "coord");
+        View view=a.getView();
         System.out.println("-- view for coordinator: " + view);
         assert view.size() == 1;
 
-        channel.connect("ConnectTest.testgroup-4");
-        print(channel, "channel");
-        view=channel.getView();
+        b.connect("ConnectTest.testgroup-4");
+        print(b, "channel");
+        view=b.getView();
         System.out.println("-- view for channel: " + view);
         assert view.size() == 1;
 
-        channel.disconnect();
+        b.disconnect();
 
-        channel.connect("ConnectTest.testgroup-3");
-        print(channel, "channel");
+        b.connect("ConnectTest.testgroup-3");
+        print(b, "channel");
 
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, coordinator, channel);
-        view=channel.getView();
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
+        view=b.getView();
         System.out.println("-- view for channel: " + view);
 
         assert view.size() == 2;
-        assert view.containsMember(channel.getAddress());
-        assert view.containsMember(coordinator.getAddress());
+        assert view.containsMember(b.getAddress());
+        assert view.containsMember(a.getAddress());
     }
 
 
+    @Test(invocationCount=10)
     public void testMultipleConnectsAndDisconnects() throws Exception {
-        coordinator=createChannel().name("coord");
-        channel=createChannel().name("channel");
-        makeUnique(coordinator,channel);
-        coordinator.connect("testMultipleConnectsAndDisconnects");
-        channel.connect("testMultipleConnectsAndDisconnects");
-        Util.waitUntilAllChannelsHaveSameView(10000, 500, coordinator, channel);
+        a=createChannel().name("A");
+        b=createChannel().name("B");
+        makeUnique(a, b);
+        for(JChannel c: Arrays.asList(a, b))
+            ((GMS)c.getProtocolStack().findProtocol(GMS.class)).printLocalAddress(false);
+        a.connect("testMultipleConnectsAndDisconnects");
+        b.connect("testMultipleConnectsAndDisconnects");
+        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
+
         for(int i=1; i <= 50; i++) {
-            channel.disconnect();
-            Util.waitUntil(10000, 100, () -> coordinator.getView().size() == 1);
-            assert coordinator.getView().size() == 1 : String.format("coord's view is %s\n", coordinator.getView());
-            assert channel.isConnected() == false;
-            channel.connect("testMultipleConnectsAndDisconnects");
-            Util.waitUntilAllChannelsHaveSameView(10000, 500, coordinator, channel);
-            System.out.printf("#%d: %s\n", i, coordinator.getView());
+            b.disconnect();
+            Util.waitUntil(5000, 500, () -> a.getView().size() == 1);
+            assert a.getView().size() == 1 : String.format("coord's view is %s\n", a.getView());
+            assert b.isConnected() == false;
+            b.connect("testMultipleConnectsAndDisconnects");
+            Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
+            System.out.printf("#%d: %s\n", i, a.getView());
         }
     }
 
     public void testDisconnectConnectedMessageSending() throws Exception {
-        coordinator=createChannel().name("A");
-        channel=createChannel().name("B");
-        makeUnique(coordinator,channel);
-        coordinator.connect("ConnectTest");
-        channel.connect("ConnectTest");
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, coordinator, channel);
+        a=createChannel().name("A");
+        b=createChannel().name("B");
+        makeUnique(a, b);
+        a.connect("ConnectTest");
+        b.connect("ConnectTest");
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
 
         MyReceiver<Integer> receiver=new MyReceiver<>();
-        channel.setReceiver(receiver);
+        b.setReceiver(receiver);
 
         for(int i=1; i <= 5; i++) {
-            coordinator.send(new BytesMessage(channel.getAddress(), i));
-            coordinator.send(new BytesMessage(null, i+5));
+            a.send(new BytesMessage(b.getAddress(), i));
+            a.send(new BytesMessage(null, i+5));
         }
         List<Integer> list=receiver.list();
         Util.waitUntilListHasSize(list, 10, 5000, 500);
@@ -132,17 +138,17 @@ public class ConnectTest extends ChannelTestBase {
         list.clear();
         //for(JChannel ch: Arrays.asList(coordinator, channel))
             //ch.getProtocolStack().findProtocol(UNICAST3.class).setLevel("trace");
-        channel.disconnect();
+        b.disconnect();
 
 
-        channel.connect("ConnectTest");
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, coordinator, channel);
+        b.connect("ConnectTest");
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
 
 
 
         for(int i=1; i <= 5; i++) {
-            coordinator.send(new BytesMessage(channel.getAddress(), i));
-            coordinator.send(new BytesMessage(null, i+5));
+            a.send(new BytesMessage(b.getAddress(), i));
+            a.send(new BytesMessage(null, i+5));
         }
         Util.waitUntilListHasSize(list, 10, 5000, 500);
         System.out.println("list = " + list);
@@ -161,17 +167,17 @@ public class ConnectTest extends ChannelTestBase {
      **/
     public void testDisconnectConnectSendTwo() throws Exception {
         final Promise<Message> msgPromise=new Promise<>();
-        coordinator=createChannel();
-        changeProps(coordinator);
-        coordinator.setReceiver(new PromisedMessageListener(msgPromise));
-        channel=createChannel();
-        changeProps(channel);
-        makeUnique(coordinator,channel);
-        coordinator.connect("ConnectTest.testgroup-5");
-        channel.connect("ConnectTest.testgroup-6");
-        channel.disconnect();
-        channel.connect("ConnectTest.testgroup-5");
-        channel.send(new BytesMessage(null, "payload"));
+        a=createChannel();
+        changeProps(a);
+        a.setReceiver(new PromisedMessageListener(msgPromise));
+        b=createChannel();
+        changeProps(b);
+        makeUnique(a, b);
+        a.connect("ConnectTest.testgroup-5");
+        b.connect("ConnectTest.testgroup-6");
+        b.disconnect();
+        b.connect("ConnectTest.testgroup-5");
+        b.send(new BytesMessage(null, "payload"));
         Message msg=msgPromise.getResult(20000);
         assert msg != null;
         assert msg.getObject().equals("payload");
