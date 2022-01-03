@@ -94,7 +94,7 @@ public class ConnectTest extends ChannelTestBase {
     }
 
 
-    @Test(invocationCount=10)
+    // @Test(invocationCount=10)
     public void testMultipleConnectsAndDisconnects() throws Exception {
         a=createChannel().name("A");
         b=createChannel().name("B");
