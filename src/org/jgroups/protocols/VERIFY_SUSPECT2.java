@@ -41,8 +41,6 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
       "(default is false)")
     protected boolean                 use_mcast_rsps;
 
-    protected Address                 local_addr;
-
     protected final Set<Entry>        suspects=new HashSet<>(); // for suspects (no duplicates)
 
     @ManagedAttribute(description="Is the verifying task is running?")
@@ -75,9 +73,6 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
             case Event.VIEW_CHANGE:
                 View v=evt.getArg();
                 synchronized(this) {

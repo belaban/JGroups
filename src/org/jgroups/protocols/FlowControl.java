@@ -80,8 +80,6 @@ public abstract class FlowControl extends Protocol {
      */
     protected final Map<Address,Credit> received=Util.createConcurrentMap();
 
-    protected Address                   local_addr;
-
     /** Whether FlowControl is still running, this is set to false when the protocol terminates (on stop()) */
     protected volatile boolean          running=true;
 
@@ -198,10 +196,6 @@ public abstract class FlowControl extends Protocol {
             
             case Event.VIEW_CHANGE:
                 handleViewChange(((View)evt.getArg()).getMembers());
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt); // this could potentially use the lower protocol's thread which may block

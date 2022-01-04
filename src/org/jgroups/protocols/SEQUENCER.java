@@ -33,7 +33,6 @@ import java.util.function.Supplier;
  */
 @MBean(description="Implementation of total order protocol using a sequencer")
 public class SEQUENCER extends Protocol {
-    protected Address                           local_addr;
     protected volatile Address                  coord;
     protected volatile View                     view;
     @ManagedAttribute
@@ -95,7 +94,6 @@ public class SEQUENCER extends Protocol {
     @ManagedAttribute
     public boolean isCoordinator() {return is_coord;}
     public Address getCoordinator() {return coord;}
-    public Address getLocalAddress() {return local_addr;}
 
     @ManagedAttribute(description="Number of messages in the forward-table")
     public int getForwardTableSize() {return forward_table.size();}
@@ -135,10 +133,6 @@ public class SEQUENCER extends Protocol {
 
             case Event.TMP_VIEW:
                 handleTmpView(evt.getArg());
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);

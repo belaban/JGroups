@@ -83,7 +83,7 @@ public class UNICAST_OOB_Test {
         a.getProtocolStack().insertProtocol(reverse, ProtocolStack.Position.BELOW, UNICAST3.class);
 
         if(use_batches) {
-            MAKE_BATCH mb=new MAKE_BATCH().localAddress(dest).unicasts(true);
+            MAKE_BATCH mb=new MAKE_BATCH().unicasts(true).setAddress(dest);
             a.getProtocolStack().insertProtocol(mb, ProtocolStack.Position.BELOW, UNICAST3.class);
             mb.start();
         }

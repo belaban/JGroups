@@ -2,7 +2,6 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
-import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
@@ -28,8 +27,6 @@ public class SIZE extends Protocol {
     /** Min size in bytes above which msgs should be printed */
     @Property(type=AttributeType.BYTES)
     protected long                min_size;
-
-    protected Address             local_addr;
 
 
     public Object up(Message msg) {
@@ -59,14 +56,6 @@ public class SIZE extends Protocol {
         up_prot.up(batch);
     }
 
-    public Object down(Event evt) {
-        switch(evt.getType()) {
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
-        }
-        return down_prot.down(evt);          // Pass on to the layer below us
-    }
 
     public Object down(Message msg) {
         if(log.isTraceEnabled()) {

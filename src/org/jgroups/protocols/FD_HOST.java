@@ -69,8 +69,6 @@ public class FD_HOST extends Protocol {
     protected volatile boolean                           has_suspected_mbrs;
 
     protected final BoundedList<Tuple<InetAddress,Long>> suspect_history=new BoundedList<>(20);
-
-    protected Address                                    local_addr;
     protected InetAddress                                local_host;
     protected final List<Address>                        members=new ArrayList<>();
 
@@ -180,9 +178,6 @@ public class FD_HOST extends Protocol {
             case Event.VIEW_CHANGE:
                 View view=evt.getArg();
                 handleView(view);
-                break;
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
             case Event.CONNECT:
             case Event.CONNECT_USE_FLUSH:

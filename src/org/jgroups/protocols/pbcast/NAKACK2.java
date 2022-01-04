@@ -147,7 +147,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected final Predicate<Message> no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs=msg ->
       msg != null && msg != DUMMY_OOB_MSG
         && (!msg.isFlagSet(Message.Flag.OOB) || msg.setFlagIfAbsent(OOB_DELIVERED))
-        && !(msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK) && this.local_addr != null && this.local_addr.equals(msg.getSrc()));
+        && !(msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK) && Objects.equals(local_addr, msg.getSrc()));
 
     protected static final Predicate<Message> dont_loopback_filter=msg -> msg != null && msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK);
 
@@ -216,7 +216,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     /* -------------------------------------------------    Fields    ------------------------------------------------------------------------- */
     protected volatile boolean          is_server;
-    protected Address                   local_addr;
     protected volatile List<Address>    members=new ArrayList<>();
     protected volatile View             view;
     private final AtomicLong            seqno=new AtomicLong(0); // current message sequence number (starts with 1)
@@ -586,10 +585,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             case Event.BECOME_SERVER:
                 is_server=true;
                 flushBecomeServerQueue();
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
 
             case Event.DISCONNECT:

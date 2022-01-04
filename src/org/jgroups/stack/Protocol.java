@@ -3,10 +3,8 @@
 package org.jgroups.stack;
 
 
-import org.jgroups.Event;
-import org.jgroups.JChannel;
-import org.jgroups.Lifecycle;
-import org.jgroups.Message;
+import org.jgroups.*;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
@@ -46,7 +44,7 @@ import java.util.List;
 public abstract class Protocol implements Lifecycle {
     protected Protocol         up_prot, down_prot;
     protected ProtocolStack    stack;
-    
+
     @Property(description="Determines whether to collect statistics (and expose them via JMX). Default is true")
     protected boolean          stats=true;
 
@@ -60,6 +58,9 @@ public abstract class Protocol implements Lifecycle {
     @Property(description="Give the protocol a different ID if needed so we can have multiple " +
             "instances of it in the same stack",writable=false)
     protected short            id=ClassConfigurator.getProtocolId(getClass());
+
+    @ManagedAttribute(description="The local address of this member")
+    protected Address          local_addr;
 
     protected final Log        log=LogFactory.getLog(this.getClass());
 
@@ -77,6 +78,10 @@ public abstract class Protocol implements Lifecycle {
     @Property(name="level", description="logger level (see javadocs)")
     public String                  getLevel()                        {return log.getLevel();}
     public <T extends Protocol> T  level(String level)               {return setLevel(level);}
+    public Address                 getAddress()                      {return local_addr;}
+    public Address                 addr()                            {return local_addr;}
+    public <T extends Protocol> T  addr(Address addr)                {this.local_addr=addr; return (T)this;}
+    public <T extends Protocol> T  setAddress(Address addr)          {this.local_addr=addr; return (T)this;}
     public boolean                 isErgonomics()                    {return ergonomics;}
     public <T extends Protocol> T  setErgonomics(boolean ergonomics) {this.ergonomics=ergonomics; return (T)this;}
     public ProtocolStack           getProtocolStack()                {return stack;}
@@ -92,6 +97,7 @@ public abstract class Protocol implements Lifecycle {
     public <T extends Protocol> T  setProtocolStack(ProtocolStack s) {this.stack=s; return (T)this;}
     public String                  afterCreationHook()               {return after_creation_hook;}
     public Log                     getLog()                          {return log;}
+
 
 
     public Object getValue(String name) {

@@ -116,7 +116,6 @@ public class FD_SOCK extends Protocol implements Runnable {
     /** Used to rendezvous on GET_CACHE and GET_CACHE_RSP */
     protected final Promise<Map<Address,IpAddress>> get_cache_promise=new Promise<>();
     protected volatile boolean got_cache_from_coord; // was cache already fetched ?
-    protected Address local_addr; // our own address
     protected ServerSocket srv_sock; // server socket to which another member connects to monitor me
 
     protected ServerSocketHandler srv_sock_handler; // accepts new connections on srv_sock
@@ -144,8 +143,6 @@ public class FD_SOCK extends Protocol implements Runnable {
     public FD_SOCK() {
     }
 
-    @ManagedAttribute(description="Member address")
-    public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
     @ManagedAttribute(description="List of cluster members")
     public String getMembers() {return Util.printListWithDelimiter(members, ",");}
     @ManagedAttribute(description="List of pingable members of a cluster")
@@ -386,10 +383,6 @@ public class FD_SOCK extends Protocol implements Runnable {
             case Event.DISCONNECT:
                 shuttin_down=true;
                 stopServerSocket(true); // graceful close
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
 
             case Event.VIEW_CHANGE:

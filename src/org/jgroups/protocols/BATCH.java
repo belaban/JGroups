@@ -42,9 +42,6 @@ public class BATCH extends Protocol {
     @Property(description="The maximum number of messages per batch")
     public int                       max_batch_size = 100;
 
-    @ManagedAttribute(description="Local address")
-    protected volatile Address       local_addr;
-
     @ManagedAttribute(description="Number of messages sent in BatchMessages",type=AttributeType.SCALAR)
     protected long                   num_msgs_sent;
 
@@ -94,10 +91,6 @@ public class BATCH extends Protocol {
             case Event.VIEW_CHANGE:
                 View v=evt.getArg();
                 handleViewChange(v.getMembers());
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt); // this could potentially use the lower protocol's thread which may block

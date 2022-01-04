@@ -36,7 +36,6 @@ import java.util.function.Supplier;
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer (unicast-unicast-multicast)")
 public class SEQUENCER2 extends Protocol {
-    protected Address                           local_addr;
     protected volatile Address                  coord;
     protected volatile View                     view;
     protected volatile boolean                  is_coord=false;
@@ -72,7 +71,6 @@ public class SEQUENCER2 extends Protocol {
     @ManagedAttribute
     public boolean isCoordinator()   {return is_coord;}
     public Address getCoordinator()  {return coord;}
-    public Address getLocalAddress() {return local_addr;}
 
     @ManagedAttribute(description="Number of messages in the forward-queue")
     public int getFwdQueueSize() {return fwd_queue.size();}
@@ -103,10 +101,6 @@ public class SEQUENCER2 extends Protocol {
 
             case Event.TMP_VIEW:
                 handleTmpView(evt.getArg());
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);

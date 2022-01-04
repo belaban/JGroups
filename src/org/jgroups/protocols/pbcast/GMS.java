@@ -117,9 +117,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     protected final Leaver              leaver=new Leaver(this); // handles a member leaving the cluster
 
-    @ManagedAttribute(description="The address of this member")
-    protected Address                   local_addr;
-
     protected final Membership          tmp_members=new Membership();      // base for computing next view
 
     @ManagedAttribute(description="The set of currently suspected members")
@@ -163,7 +160,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public GMS() {
     }
 
-    public Address getLocalAddress()                   {return local_addr;}
     public long    getJoinTimeout()                    {return join_timeout;}
     public GMS     setJoinTimeout(long t)              {join_timeout=t; return this;}
     public long    getLeaveTimeout()                   {return leave_timeout;}
@@ -1051,9 +1047,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                }
                break;
 
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
             case Event.GET_VIEW_FROM_COORD:
                 Address coord=view != null? view.getCreator() : null;
                 if(coord != null) {

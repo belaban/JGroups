@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentMap;
  * @since  3.4
  */
 public class ForkProtocolStack extends ProtocolStack {
-    protected       Address                        local_addr;
     protected final String                         fork_stack_id;
     protected final ConcurrentMap<String,JChannel> fork_channels=new ConcurrentHashMap<>();
     protected UnknownForkHandler                   unknownForkHandler;
@@ -64,7 +63,8 @@ public class ForkProtocolStack extends ProtocolStack {
         if(Objects.equals(local_addr, addr))
             return;
         this.local_addr=addr;
-        down_prot.down(new Event(Event.SET_LOCAL_ADDRESS, addr));
+        for(Protocol p=down_prot; p != null; p=p.getDownProtocol())
+            p.setAddress(addr);
     }
 
     @Override

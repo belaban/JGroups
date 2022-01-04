@@ -11,7 +11,6 @@ public class Event {
     public static final int CONNECT                            =  2;  // arg = cluster name (string)
     public static final int DISCONNECT                         =  4;  // arg = null (local address)
     public static final int VIEW_CHANGE                        =  6;  // arg = View (or MergeView in case of merge)
-    public static final int SET_LOCAL_ADDRESS                  =  8;  // arg = Address
     public static final int SUSPECT                            =  9;  // arg = Collection<Address> (suspected members)
     public static final int BLOCK                              = 10;  // arg = null (used by FLUSH)
     public static final int FIND_MBRS                          = 11;  // arg = List<Address> (can be null) -> Responses
@@ -100,7 +99,6 @@ public class Event {
             case CONNECT:	             return "CONNECT";
             case DISCONNECT:	         return "DISCONNECT";
             case VIEW_CHANGE:	         return "VIEW_CHANGE";
-            case SET_LOCAL_ADDRESS:	     return "SET_LOCAL_ADDRESS";
             case SUSPECT:                return "SUSPECT";
             case BLOCK:	                 return "BLOCK";
             case FIND_MBRS:              return "FIND_MBRS";

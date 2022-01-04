@@ -190,7 +190,7 @@ public class DiagnosticsHandler extends ReceiverAdapter {
                     output.write(response.getBytes());
                 }
                 catch(IOException e) {
-                    log.error("%s: failed handling TCP probe request: %s", transport.getLocalAddress(), e.getMessage());
+                    log.error("%s: failed handling TCP probe request: %s", transport.getAddress(), e.getMessage());
                 }
             });
         }
@@ -198,7 +198,7 @@ public class DiagnosticsHandler extends ReceiverAdapter {
 
         }
         catch(Throwable t) {
-            log.error("%s: failed processing TCP client request from %s: %s", transport.getLocalAddress(), sender, t);
+            log.error("%s: failed processing TCP client request from %s: %s", transport.getAddress(), sender, t);
         }
     }
 
@@ -263,7 +263,7 @@ public class DiagnosticsHandler extends ReceiverAdapter {
         }
         if(list.isEmpty()) {
             if(transport != null) {
-                Address local_addr=transport.localAddress();
+                Address local_addr=transport.getAddress();
                 String default_rsp=String.format("local_addr=%s\nphysical_addr=%s\nview=%s\ncluster=%s\nversion=%s\n",
                                                  local_addr != null? local_addr : "n/a",
                                                  transport.getLocalPhysicalAddress(),
@@ -301,7 +301,7 @@ public class DiagnosticsHandler extends ReceiverAdapter {
 
     protected String defaultHeaders() {
         if(transport == null) return "";
-        Address local_addr=transport.localAddress();
+        Address local_addr=transport.getAddress();
         View view=transport.view();
         int num_members=view != null? view.size() : 0;
         return String.format("local_addr=%s [ip=%s, version=%s, cluster=%s, %d mbr(s)]\n",

@@ -62,8 +62,6 @@ public class MERGE3 extends Protocol {
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    protected Address                       local_addr;
-
     protected volatile View                 view;
 
     protected TimeScheduler                 timer;
@@ -266,10 +264,6 @@ public class MERGE3 extends Protocol {
                     clearViews();
                 }
                 return ret;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
         }
         return down_prot.down(evt);
     }

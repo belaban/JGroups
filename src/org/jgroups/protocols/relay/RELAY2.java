@@ -103,8 +103,6 @@ public class RELAY2 extends Protocol {
 
     protected TimeScheduler                            timer;
 
-    protected volatile Address                         local_addr;
-
     protected volatile List<Address>                   members=new ArrayList<>(11);
 
     @Property(description="If true, a site master forwards messages received from other sites to randomly chosen " +
@@ -164,7 +162,6 @@ public class RELAY2 extends Protocol {
     public boolean enableAddressTagging()              {return enable_address_tagging;}
     public boolean relayMulticasts()                   {return relay_multicasts;}
     public boolean asyncRelayCreation()                {return async_relay_creation;}
-    public Address getLocalAddress()                   {return local_addr;}
     public TimeScheduler getTimer()                    {return timer;}
     public void incrementRelayed()                     {relayed.increment();}
     public void addToRelayedTime(long delta)           {relayed_time.add(delta);}
@@ -451,9 +448,6 @@ public class RELAY2 extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
             case Event.VIEW_CHANGE:
                 handleView(evt.getArg());
                 break;

@@ -190,14 +190,14 @@ public class TransferQueueBundler2 implements Bundler, Runnable {
                 buf.send(msg.dest(), transport); // resets the buffer
             }
             catch(Exception ex) {
-                log.error("%s: failed sending message: %s", transport.getLocalAddress(), ex);
+                log.error("%s: failed sending message: %s", transport.getAddress(), ex);
             }
         }
         try {
             buf.addMessage(msg, transport);
         }
         catch(Exception ex) {
-            log.error("%s: failed serializing message to buffer: %s", transport.localAddress(), ex);
+            log.error("%s: failed serializing message to buffer: %s", transport.getAddress(), ex);
             buf.reset();
         }
     }
@@ -213,7 +213,7 @@ public class TransferQueueBundler2 implements Bundler, Runnable {
                 buf.send(dest instanceof NullAddress || dest == null? null : dest, transport);
             }
             catch(Exception ex) {
-                log.trace("%s: failed sending message: %s", transport.getLocalAddress(), ex);
+                log.trace("%s: failed sending message: %s", transport.getAddress(), ex);
             }
         }
     }
@@ -266,7 +266,7 @@ public class TransferQueueBundler2 implements Bundler, Runnable {
         private Buffer addMessage(Message msg, TP transport) throws IOException {
             short transport_id=transport.getId();
             if(count == 0) { // write the headers - only once
-                Util.writeMessageListHeader(msg.dest(), transport.localAddress(), transport.getClusterNameAscii().chars(),
+                Util.writeMessageListHeader(msg.dest(), transport.getAddress(), transport.getClusterNameAscii().chars(),
                                             1, out, msg.getDest() == null);
                 length_index=out.position() - Global.INT_SIZE;
             }

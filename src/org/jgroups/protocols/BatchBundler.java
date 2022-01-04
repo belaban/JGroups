@@ -121,7 +121,7 @@ public class BatchBundler extends NoBundler {
         timer=transport.getTimer();
         if(timer == null)
             throw new RuntimeException("timer is null");
-        local_addr=Objects.requireNonNull(transport.localAddress());
+        local_addr=Objects.requireNonNull(transport.getAddress());
         running=true;
         startFlushTask();
     }
@@ -281,7 +281,7 @@ public class BatchBundler extends NoBundler {
                 transport.doSend(output.buffer(), 0, output.position(), dest);
             }
             catch(Throwable e) {
-                log.trace(Util.getMessage("FailureSendingMsgBundle"), transport.localAddress(), e);
+                log.trace(Util.getMessage("FailureSendingMsgBundle"), transport.getAddress(), e);
             }
         }
 

@@ -720,10 +720,10 @@ public class GMS_MergeTest {
             if(name != null && !name.isEmpty())
                 org.jgroups.util.NameCache.add(local_addr, name);
 
-            Event evt=new Event(Event.SET_LOCAL_ADDRESS, local_addr);
-            down(evt);
+            for(Protocol p=prot_stack.getTopProtocol(); p != null; p=p.getDownProtocol())
+                p.setAddress(local_addr);
             if(up_handler != null)
-                up_handler.up(evt);
+                up_handler.setLocalAddress(local_addr);
             return this;
         }
     }

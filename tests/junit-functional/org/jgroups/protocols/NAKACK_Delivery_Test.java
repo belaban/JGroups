@@ -61,8 +61,8 @@ public class NAKACK_Delivery_Test {
         View view=new View(a, 1, members);
 
         // set the local address
-        nak.down(new Event(Event.SET_LOCAL_ADDRESS,a));
-
+        for(Protocol p=nak; p != null; p=p.getDownProtocol())
+            p.setAddress(a);
         // set a dummy digest
         View tmp_view=View.create(a, 1, a,b);
         MutableDigest digest=new MutableDigest(tmp_view.getMembersRaw());

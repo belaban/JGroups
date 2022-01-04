@@ -55,7 +55,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     
     /** network interface to be used to send the ICMP packets */
     protected NetworkInterface        intf;
-    protected Address                 local_addr;
 
     // a list of suspects, ordered by time when a SUSPECT event needs to be sent up
     protected final DelayQueue<Entry> suspects=new DelayQueue<>();
@@ -94,9 +93,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
             case Event.VIEW_CHANGE:
                 View v=evt.getArg();
                 adjustSuspectedMembers(v.getMembers());

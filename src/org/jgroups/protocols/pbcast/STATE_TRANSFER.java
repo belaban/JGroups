@@ -36,7 +36,6 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
     protected final LongAdder                num_state_reqs=new LongAdder();
     protected final LongAdder                num_bytes_sent=new LongAdder();
     protected double                         avg_state_size=0;
-    protected Address                        local_addr;
     protected volatile View                  view;
     protected final List<Address>            members=new ArrayList<>();
 
@@ -200,10 +199,6 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
                 if(config != null && config.containsKey("flush_supported")) {
                     flushProtocolInStack=true;
                 }
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
         }
 

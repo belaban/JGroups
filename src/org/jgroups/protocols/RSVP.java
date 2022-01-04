@@ -53,8 +53,6 @@ public class RSVP extends Protocol {
 
     protected volatile List<Address>           members=new ArrayList<>();
 
-    protected Address                          local_addr;
-
     /** Used to store IDs and their acks */
     protected final ConcurrentMap<Short,Entry> ids=new ConcurrentHashMap<>();
 
@@ -106,10 +104,6 @@ public class RSVP extends Protocol {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
                 handleView(evt.getArg());
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);

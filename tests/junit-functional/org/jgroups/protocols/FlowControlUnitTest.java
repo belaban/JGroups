@@ -320,7 +320,8 @@ public class FlowControlUnitTest {
             View view=ch.getView();
             ufc_nb.handleViewChange(view.getMembers()); // needs to setup received and sent hashmaps
             stack.replaceProtocol(stack.findProtocol(UFC.class), ufc_nb);
-            ufc_nb.down(new Event(Event.SET_LOCAL_ADDRESS, ch.getAddress()));
+            for(Protocol p=ufc_nb; p != null; p=p.getDownProtocol())
+                p.setAddress(ch.getAddress());
             ufc_nb.start();
         }
     }
@@ -336,7 +337,8 @@ public class FlowControlUnitTest {
             stack.replaceProtocol(stack.findProtocol(MFC.class), mfc_nb);
             View view=ch.getView();
             mfc_nb.handleViewChange(view.getMembers()); // needs to setup received and sent hashmaps
-            mfc_nb.down(new Event(Event.SET_LOCAL_ADDRESS, ch.getAddress()));
+            for(Protocol p=mfc_nb; p != null;p=p.getDownProtocol())
+                p.setAddress(ch.getAddress());
             mfc_nb.start();
         }
     }

@@ -60,6 +60,8 @@ public class ConcurrentStartupTest {
             channels[i].setUpHandler(new UpHandler() {
                 boolean first_view_received;
 
+                public UpHandler setLocalAddress(Address a) {return this;}
+
                 public Object up(Message msg) {return null;}
 
                 public Object up(Event evt) {

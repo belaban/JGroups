@@ -174,7 +174,7 @@ public class ThreadPool implements Lifecycle {
             if(thread_dumps.incrementAndGet() == thread_dumps_threshold) {
                 tp.getLog().fatal("%s: thread pool is full (max=%d, active=%d); " +
                             "thread dump (dumped once, until thread_dump is reset):\n%s",
-                                  tp.getLocalAddress(), max_threads, getThreadPoolSize(), Util.dumpThreads());
+                                  tp.getAddress(), max_threads, getThreadPoolSize(), Util.dumpThreads());
             }
             return false;
         }

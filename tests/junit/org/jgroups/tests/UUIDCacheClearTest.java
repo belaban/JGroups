@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -87,7 +88,8 @@ public class UUIDCacheClearTest extends ChannelTestBase {
     private static void clearCache(JChannel ... channels) {
         for(JChannel ch: channels) {
             ch.getProtocolStack().getTransport().clearLogicalAddressCache();
-            ch.down(new Event(Event.SET_LOCAL_ADDRESS, ch.getAddress()));
+            for(Protocol p=ch.getProtocolStack().getTopProtocol(); p != null; p=p.getDownProtocol())
+                p.setAddress(ch.getAddress());
         }
     }
 

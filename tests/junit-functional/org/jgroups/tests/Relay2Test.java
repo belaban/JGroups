@@ -62,7 +62,8 @@ public class Relay2Test {
         // Util.setField(Util.getField(relayToInject.getClass(), "local_addr"), relayToInject, a.getAddress());
 
         a.getProtocolStack().insertProtocolAtTop(relayToInject);
-        relayToInject.down(new Event(Event.SET_LOCAL_ADDRESS, a.getAddress()));
+        for(Protocol p=relayToInject; p != null; p=p.getDownProtocol())
+            p.setAddress(a.getAddress());
         relayToInject.setProtocolStack(a.getProtocolStack());
         relayToInject.configure();
         relayToInject.handleView(a.getView());
@@ -315,6 +316,8 @@ public class Relay2Test {
 
         public BlockingQueue<Message> getReceived()              {return received;}
         public int                    getSiteUnreachableEvents() {return siteUnreachableEvents.get();}
+
+        @Override public UpHandler setLocalAddress(Address a) {return this;}
 
         @Override
         public Object up(Event evt) {

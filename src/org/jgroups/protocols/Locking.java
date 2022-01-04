@@ -52,8 +52,6 @@ abstract public class Locking extends Protocol {
       "See https://issues.jboss.org/browse/JGRP-1886 for details")
     protected boolean                                use_thread_id_for_lock_owner=true;
 
-    protected Address                                local_addr;
-
     protected View                                   view;
 
     // server side locks
@@ -115,11 +113,6 @@ abstract public class Locking extends Protocol {
     public void removeLockListener(LockNotification listener) {
         if(listener != null)
             lock_listeners.remove(listener);
-    }
-
-    @ManagedAttribute
-    public String getAddress() {
-        return local_addr != null? local_addr.toString() : null;
     }
 
     @ManagedAttribute
@@ -223,9 +216,6 @@ abstract public class Locking extends Protocol {
                 }
                 sendSignalConditionRequest(awaitInfo.getName(), awaitInfo.isAll());
                 return null;
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
 
             case Event.VIEW_CHANGE:
                 handleView(evt.getArg());

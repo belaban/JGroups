@@ -41,10 +41,6 @@ public class PDC extends Protocol {
     protected static final String SUFFIX=".node";
     protected File                root_dir;
     protected FilenameFilter      filter;
-    protected Address             local_addr;
-
-
-
 
 
     @ManagedOperation(description="Prints the contents of the address-physical address mappings")
@@ -94,9 +90,6 @@ public class PDC extends Protocol {
                 Address tmp_addr=evt.getArg();
                 if(cache.remove(tmp_addr) != null)
                     removeNodeFromDisk(tmp_addr);
-                break;
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
             case Event.VIEW_CHANGE:
                 List<Address> members=((View)evt.getArg()).getMembers();

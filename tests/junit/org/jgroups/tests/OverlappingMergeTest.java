@@ -3,6 +3,7 @@
 import org.jgroups.*;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.*;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Tuple;
@@ -348,7 +349,8 @@ public class OverlappingMergeTest extends ChannelTestBase {
                 ch.getProtocolStack().insertProtocol(merge_prot, ProtocolStack.Position.ABOVE, Discovery.class);
                 merge_prot.init();
                 merge_prot.start();
-                merge_prot.down(new Event(Event.SET_LOCAL_ADDRESS, ch.getAddress()));
+                for(Protocol p=merge_prot; p != null; p=p.getDownProtocol())
+                    p.setAddress(ch.getAddress());
             }
         }
 

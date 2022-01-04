@@ -28,7 +28,7 @@ public class DISCARD_PAYLOAD extends Protocol {
                     if(payload == seqno) {
                         synchronized(this) {
                             if(num_discards++ < 3) {
-                                System.out.printf("** %s: discarded seqno %d\n", getTransport().getLocalAddress(), payload);
+                                System.out.printf("** %s: discarded seqno %d\n", getTransport().getAddress(), payload);
                                 return null;
                             }
                         }

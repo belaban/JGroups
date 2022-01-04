@@ -130,8 +130,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected volatile List<Address>       members=new ArrayList<>(11);
 
-    protected Address                      local_addr;
-
     protected TimeScheduler                timer; // used for retransmissions
 
     protected volatile boolean             running=false;
@@ -156,7 +154,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected final Predicate<Message>     drop_oob_and_dont_loopback_msgs_filter=msg ->
       msg != null && msg != DUMMY_OOB_MSG
         && (!msg.isFlagSet(Message.Flag.OOB) || msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
-        && !(msg.isFlagSet(DONT_LOOPBACK) && local_addr != null && local_addr.equals(msg.getSrc()));
+        && !(msg.isFlagSet(DONT_LOOPBACK) && Objects.equals(local_addr, msg.getSrc()));
 
     protected static final Predicate<Message> dont_loopback_filter=
       msg -> msg != null && msg.isFlagSet(DONT_LOOPBACK);
@@ -168,10 +166,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             ((Refcountable<Message>)msg).decr();
         return true;
     };
-
-
-    @ManagedAttribute
-    public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
 
     @ManagedAttribute(description="Returns the number of outgoing (send) connections")
     public int getNumSendConnections() {
@@ -611,10 +605,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 }
                 xmit_task_map.keySet().retainAll(new_members);
                 last_sync_sent.removeExpiredElements();
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
         }
 

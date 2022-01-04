@@ -55,7 +55,6 @@ public class BARRIER extends Protocol {
     protected Map<Thread,Object>         in_flight_threads=Util.createConcurrentMap();
     protected volatile Future<?>         barrier_opener_future;
     protected TimeScheduler              timer;
-    protected Address                    local_addr;
 
     // mbrs from which unicasts should be accepted even if BARRIER is closed (PUNCH_HOLE adds, CLOSE_HOLE removes mbrs)
     protected final Set<Address>         holes=new HashSet<>();
@@ -127,9 +126,6 @@ public class BARRIER extends Protocol {
             case Event.OPEN_BARRIER:
                 openBarrier();
                 return null;
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
             case Event.PUNCH_HOLE:
                 Address mbr=evt.getArg();
                 holes.add(mbr);

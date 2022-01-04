@@ -141,16 +141,7 @@ public class MergeTest6 {
 
     /** Drops a received VIEW message (needs to be placed below GMS) */
     protected static class DropView extends Protocol {
-        protected Address local_addr;
         protected boolean first_view_received;
-
-        protected DropView setAddress(Address addr) {this.local_addr=addr; return this;}
-
-        public Object down(Event evt) {
-            if(evt.type() == Event.SET_LOCAL_ADDRESS)
-                local_addr=evt.arg();
-            return down_prot.down(evt);
-        }
 
         public Object up(Message msg) {
             GMS.GmsHeader hdr=msg.getHeader(GMS_ID); View view;

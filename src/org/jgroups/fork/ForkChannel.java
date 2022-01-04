@@ -115,9 +115,8 @@ public class ForkChannel extends JChannel implements ChannelListener {
     @Override public void channelConnected(JChannel channel) {
         copyFields();
         if(local_addr == null) return;
-        Event evt=new Event(Event.SET_LOCAL_ADDRESS, local_addr);
         if(up_handler != null)
-            up_handler.up(evt);
+            up_handler.setLocalAddress(local_addr);
     }
 
     @Override public void channelDisconnected(JChannel channel) {
@@ -257,10 +256,9 @@ public class ForkChannel extends JChannel implements ChannelListener {
 
     protected ForkChannel setLocalAddress(Address local_addr) {
         if(local_addr != null) {
-            Event evt=new Event(Event.SET_LOCAL_ADDRESS, local_addr);
             ((ForkProtocolStack)prot_stack).setLocalAddress(local_addr); // sets the address only in the protocols managed by the fork-prot-stack
             if(up_handler != null)
-                up_handler.up(evt);
+                up_handler.setLocalAddress(local_addr);
         }
         return this;
     }

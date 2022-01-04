@@ -152,7 +152,7 @@ public class OOBTest extends ChannelTestBase {
 
     @Test(invocationCount=5)
     public void testRandomRegularAndOOBMulticasts() throws Exception {
-        DISCARD discard=new DISCARD().setLocalAddress(a.getAddress()).setUpDiscardRate(0.5);
+        DISCARD discard=new DISCARD().setAddress(a.getAddress()).setUpDiscardRate(0.5);
         ProtocolStack stack=a.getProtocolStack();
         stack.insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
         MyReceiver r1=new MyReceiver("A"), r2=new MyReceiver("B");

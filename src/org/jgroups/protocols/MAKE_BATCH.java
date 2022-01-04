@@ -48,10 +48,8 @@ public class MAKE_BATCH extends Protocol {
 
     protected TimeScheduler                     timer;
     protected AsciiString                       cluster_name;
-    protected Address                           local_addr;
     protected Future<?>                         batcher;
 
-    public MAKE_BATCH localAddress(Address a)  {local_addr=a;         return this;}
     public MAKE_BATCH multicasts(boolean flag) {this.multicasts=flag; return this;}
     public MAKE_BATCH unicasts(boolean flag)   {this.unicasts=flag;   return this;}
     public MAKE_BATCH sleepTime(long time)     {this.sleep_time=time; return this;}
@@ -77,9 +75,6 @@ public class MAKE_BATCH extends Protocol {
             case Event.CONNECT_WITH_STATE_TRANSFER:
             case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                 cluster_name=new AsciiString((String)evt.getArg());
-                break;
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);

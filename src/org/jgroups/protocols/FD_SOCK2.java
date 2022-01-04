@@ -85,9 +85,6 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     @ManagedAttribute(description="List of currently suspected members")
     protected final Membership               suspected_mbrs=new Membership();
 
-    @ManagedAttribute(description="The address of this local member")
-    protected Address                        local_addr; // our own address
-
     @ManagedAttribute(description="The cluster we've joined. Set on joining a cluster, null when unconnected")
     protected String                         cluster;
 
@@ -207,10 +204,6 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
 
             case Event.UNSUSPECT:
                 broadcastUnuspectMessage(evt.getArg());
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
 
             case Event.CONNECT:

@@ -565,7 +565,7 @@ public class Util {
      */
     public static void shutdown(JChannel ch) throws Exception {
         DISCARD discard=new DISCARD();
-        discard.setLocalAddress(ch.getAddress());
+        discard.setAddress(ch.getAddress());
         discard.discardAll(true);
         ProtocolStack stack=ch.getProtocolStack();
         TP transport=stack.getTransport();

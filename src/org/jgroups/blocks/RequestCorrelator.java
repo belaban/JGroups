@@ -206,10 +206,6 @@ public class RequestCorrelator {
                 receiveView(evt.getArg());
                 break;
 
-            case Event.SET_LOCAL_ADDRESS:
-                setLocalAddress(evt.getArg());
-                break;
-
             case Event.SITE_UNREACHABLE:
                 SiteMaster site_master=evt.getArg();
                 String site=site_master.getSite();

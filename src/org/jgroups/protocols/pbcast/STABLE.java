@@ -66,8 +66,7 @@ public class STABLE extends Protocol {
 
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
-    protected Address             local_addr;
-    protected volatile View       view;
+    protected volatile View          view;
 
     @GuardedBy("lock")
     protected volatile MutableDigest digest; // keeps track of the highest seqnos from all members
@@ -323,10 +322,6 @@ public class STABLE extends Protocol {
 
             case Event.RESUME_STABLE:
                 resume();
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);

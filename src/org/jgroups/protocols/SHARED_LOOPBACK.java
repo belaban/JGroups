@@ -75,7 +75,7 @@ public class SHARED_LOOPBACK extends TP {
                 target.receive(local_addr, data, offset, length);
             }
             catch(Throwable t) {
-                log.error(Util.getMessage("FailedSendingMessageTo") + target.localAddress(), t);
+                log.error(Util.getMessage("FailedSendingMessageTo") + target.getAddress(), t);
             }
         });
     }
@@ -144,9 +144,6 @@ public class SHARED_LOOPBACK extends TP {
                 break;
             case Event.DISCONNECT:
                 unregister(cluster_name, local_addr);
-                break;
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
             case Event.BECOME_SERVER: // called after client has joined and is fully working group member
                 is_server=true;

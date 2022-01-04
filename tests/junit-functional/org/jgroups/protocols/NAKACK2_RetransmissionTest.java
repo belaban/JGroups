@@ -39,7 +39,8 @@ public class NAKACK2_RetransmissionTest {
         stack.init();
 
         nak.down(new Event(Event.BECOME_SERVER));
-        nak.down(new Event(Event.SET_LOCAL_ADDRESS, A));
+        for(Protocol p=nak; p != null; p=p.getDownProtocol())
+            p.setAddress(A);
         Digest digest=new Digest(view.getMembersRaw(), new long[]{0, 0, 0, 0});
         nak.down(new Event(Event.SET_DIGEST, digest));
     }

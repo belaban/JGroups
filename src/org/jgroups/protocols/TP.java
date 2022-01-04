@@ -361,7 +361,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     /** The address (host and port) of this member */
-    protected Address         local_addr;
     protected PhysicalAddress local_physical_addr;
     protected volatile View   view;
 
@@ -463,9 +462,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return local_addr != null? getName() + "(local address: " + local_addr + ')' : getName();
     }
 
-    @ManagedAttribute(description="The address of the channel")
-    public String          getLocalAddress()      {return local_addr != null? local_addr.toString() : null;}
-    public Address         localAddress()         {return local_addr;}
+    public <T extends Protocol> T setAddress(Address addr) {
+        super.setAddress(addr);
+        registerLocalAddress(addr);
+        return (T)this;
+    }
+
     public PhysicalAddress localPhysicalAddress() {return local_physical_addr;}
     public View            view()                 {return view;}
 
@@ -990,11 +992,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
             case Event.REMOVE_ADDRESS:
                 removeLogicalAddressFromCache(evt.getArg());
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                registerLocalAddress(evt.getArg());
+                local_addr=null;
                 break;
         }
         return null;

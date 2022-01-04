@@ -41,7 +41,6 @@ public class AUTH extends Protocol {
     /** Used on the coordinator to authentication joining member requests against */
     @Component
     protected AuthToken             auth_token;
-    protected Address               local_addr;
     protected volatile boolean      authenticate_coord=true;
 
     public AUTH() {}
@@ -59,11 +58,10 @@ public class AUTH extends Protocol {
         auth_token.setAuth(this);
     }
 
-    public String    getAuthClass()                {return auth_token != null? auth_token.getClass().getName() : null;}
-    public AuthToken getAuthToken()                {return auth_token;}
-    public AUTH      setAuthToken(AuthToken token) {this.auth_token=token; return this;}
-    public Address   getAddress()                  {return local_addr;}
-    public PhysicalAddress getPhysicalAddress()    {return getTransport().getPhysicalAddress();}
+    public String          getAuthClass()                {return auth_token != null? auth_token.getClass().getName() : null;}
+    public AuthToken       getAuthToken()                {return auth_token;}
+    public AUTH            setAuthToken(AuthToken token) {this.auth_token=token; return this;}
+    public PhysicalAddress getPhysicalAddress()          {return getTransport().getPhysicalAddress();}
 
 
     public void init() throws Exception {
@@ -137,20 +135,6 @@ public class AUTH extends Protocol {
 
         if(!batch.isEmpty())
             up_prot.up(batch);
-    }
-
-    /**
-     * An event is to be sent down the stack. The layer may want to examine its type and perform
-     * some action on it, depending on the event's type. If the event is a message MSG, then
-     * the layer may need to add a header to it (or do nothing at all) before sending it down
-     * the stack using {@code down_prot.down()}. In case of a GET_ADDRESS event (which tries to
-     * retrieve the stack's address from one of the bottom layers), the layer may need to send
-     * a new response event back up the stack using {@code up_prot.up()}.
-     */
-    public Object down(Event evt) {
-        if(evt.getType() == Event.SET_LOCAL_ADDRESS)
-            local_addr=evt.getArg();
-        return down_prot.down(evt);
     }
 
 

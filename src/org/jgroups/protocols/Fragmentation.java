@@ -1,7 +1,5 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
@@ -22,12 +20,8 @@ public class Fragmentation extends Protocol {
       type=AttributeType.BYTES)
     protected int                 frag_size=60000;
 
-
     protected LongAdder num_frags_sent=new LongAdder();
-
     protected LongAdder num_frags_received=new LongAdder();
-
-    protected Address   local_addr;
 
 
     public int                         getFragSize()      {return frag_size;}
@@ -43,15 +37,5 @@ public class Fragmentation extends Protocol {
         super.resetStats();
         num_frags_sent.reset();
         num_frags_received.reset();
-    }
-
-
-    @Override public Object down(Event evt) {
-        switch(evt.getType()) {
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
-        }
-        return down_prot.down(evt);  // Pass on to the layer below us
     }
 }

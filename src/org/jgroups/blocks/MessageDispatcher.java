@@ -447,11 +447,6 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
                     receiver.viewAccepted(v);
                 break;
 
-            case Event.SET_LOCAL_ADDRESS:
-                log.trace("setting local_addr (%s) to %s", local_addr, evt.getArg());
-                local_addr=evt.getArg();
-                break;
-
             case Event.BLOCK:
                 if(receiver != null)
                     receiver.block();
@@ -507,6 +502,17 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
             return "MessageDispatcher";
         }
 
+
+        public <T extends Protocol> T setAddress(Address addr) {
+            if(corr != null)
+                corr.setLocalAddress(addr);
+            return (T)this;
+        }
+
+        public UpHandler setLocalAddress(Address a) {
+            setAddress(a);
+            return this;
+        }
 
         /**
          * Called by channel (we registered before) when event is received. This is the UpHandler interface.

@@ -53,8 +53,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     @Property(description="Max number of keys in key_map")
     protected int                           key_map_max_size=20;
 
-    protected volatile Address              local_addr;
-
     protected volatile View                 view;
 
     // Cipher pools used for encryption and decryption. Size is cipher_pool_size
@@ -95,7 +93,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     public String                   asymAlgorithm()                 {return asym_algorithm;}
     public <T extends Encrypt<E>> T asymAlgorithm(String alg)       {this.asym_algorithm=alg; return (T)this;}
     public byte[]                   symVersion()                    {return sym_version;}
-    public <T extends Encrypt<E>> T localAddress(Address addr)      {this.local_addr=addr; return (T)this;}
     public SecureRandom             secureRandom()                  {return this.secure_random;}
     /** Allows callers to replace secure_random with impl of their choice, e.g. for performance reasons. */
     public <T extends Encrypt<E>> T secureRandom(SecureRandom sr)   {this.secure_random = sr; return (T)this;}
@@ -130,10 +127,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
                 Object retval=down_prot.down(evt); // Start keyserver socket in SSL_KEY_EXCHANGE, for instance
                 handleView(evt.getArg());
                 return retval;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
         }
         return down_prot.down(evt);
     }

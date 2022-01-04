@@ -117,7 +117,7 @@ public class RelayDemo implements Receiver {
             return true;
         }
         if(line.equalsIgnoreCase("mbrs")) {
-            System.out.printf("%s: local members: %s\n", relay.getLocalAddress(), relay.members());
+            System.out.printf("%s: local members: %s\n", relay.getAddress(), relay.members());
             return true;
         }
         if(line.equalsIgnoreCase("sites")) {

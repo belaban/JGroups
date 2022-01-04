@@ -58,7 +58,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
     }
 
     public void suspect(Address mbr) {
-        if(mbr.equals(gms.local_addr)) {
+        if(mbr.equals(gms.getAddress())) {
             if(log.isWarnEnabled()) log.warn("I am the coord and I'm suspected -- will probably leave shortly");
             return;
         }        
@@ -85,7 +85,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
         Collection<Address> suspected_mbrs=new LinkedHashSet<>(requests.size());
         Collection<Address> leaving_mbrs=new LinkedHashSet<>(requests.size());
 
-        log.trace("%s: handleMembershipChange(%s)", gms.getLocalAddress(), requests);
+        log.trace("%s: handleMembershipChange(%s)", gms.getAddress(), requests);
         boolean self_leaving=false; // is the coord leaving
         for(Request req: requests) {
             switch(req.type) {
@@ -102,7 +102,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
                     break;
                 case Request.LEAVE:
                     leaving_mbrs.add(req.mbr);
-                    if(Objects.equals(gms.local_addr, req.mbr))
+                    if(Objects.equals(gms.getAddress(), req.mbr))
                         self_leaving=true;
                     break;
                 case Request.SUSPECT:
@@ -111,7 +111,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
             }
         }
 
-        new_mbrs.remove(gms.local_addr); // remove myself - cannot join myself (already joined)
+        new_mbrs.remove(gms.getAddress()); // remove myself - cannot join myself (already joined)
 
         if(gms.getViewId() == null) {
             // we're probably not the coord anymore (we just left ourselves), let someone else do it
@@ -123,7 +123,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
 
         List<Address> current_members=gms.members.getMembers();
         leaving_mbrs.retainAll(current_members); // remove all elements of leaving_mbrs which are not current members
-        if(suspected_mbrs.remove(gms.local_addr))
+        if(suspected_mbrs.remove(gms.getAddress()))
             log.warn("I am the coord and I'm being suspected -- will probably leave shortly");
 
         suspected_mbrs.retainAll(current_members); // remove all elements of suspected_mbrs which are not current members
@@ -132,30 +132,30 @@ public class CoordGmsImpl extends ServerGmsImpl {
         for(Iterator<Address> it=new_mbrs.iterator(); it.hasNext();) {
             Address mbr=it.next();
             if(gms.members.contains(mbr)) { // already joined: return current digest and membership
-                log.trace("%s: %s already present; returning existing view %s", gms.local_addr, mbr, gms.view);
+                log.trace("%s: %s already present; returning existing view %s", gms.getAddress(), mbr, gms.view);
                 Tuple<View,Digest> tuple=gms.getViewAndDigest();
                 if(tuple != null)
                     gms.sendJoinResponse(new JoinRsp(tuple.getVal1(), tuple.getVal2()), mbr);
                 else
-                    log.warn("%s: did not find a digest matching view %s; dropping JOIN-RSP", gms.local_addr, gms.view);
+                    log.warn("%s: did not find a digest matching view %s; dropping JOIN-RSP", gms.getAddress(), gms.view);
                 it.remove(); // remove it anyway, even if we didn't find a digest matching the view (joiner will retry)
             }
         }
 
         if(new_mbrs.isEmpty() && leaving_mbrs.isEmpty() && suspected_mbrs.isEmpty()) {
-            log.trace("%s: found no members to add or remove, will not create new view", gms.local_addr);
+            log.trace("%s: found no members to add or remove, will not create new view", gms.getAddress());
             return;
         }
         
         View new_view=gms.getNextView(new_mbrs, leaving_mbrs, suspected_mbrs);
-        if(new_view.size() == 0 && gms.local_addr != null && gms.local_addr.equals(new_view.getCreator())) {
+        if(new_view.size() == 0 && gms.getAddress() != null && gms.getAddress().equals(new_view.getCreator())) {
             if(self_leaving)
                 gms.initState(); // in case connect() is called again
             return;
         }
 
         log.trace("%s: joiners=%s, suspected=%s, leaving=%s, new view: %s",
-                  gms.local_addr, new_mbrs, suspected_mbrs, leaving_mbrs, new_view);
+                  gms.getAddress(), new_mbrs, suspected_mbrs, leaving_mbrs, new_view);
              
         JoinRsp join_rsp=null;
         boolean hasJoiningMembers=!new_mbrs.isEmpty();
@@ -186,7 +186,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
                     join_rsp=new JoinRsp(new_view, join_digest);
                 else
                     log.warn("%s: digest does not match view (missing seqnos for %s); dropping JOIN-RSP",
-                             gms.local_addr, Arrays.toString(join_digest.getNonSetMembers()));
+                             gms.getAddress(), Arrays.toString(join_digest.getNonSetMembers()));
             }
 
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
@@ -215,7 +215,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
         for(Address address: leaving_members){
             Message msg=new EmptyMessage(address).setFlag(Message.Flag.OOB)
               .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.LEAVE_RSP));
-            log.trace("%s: sending LEAVE response to %s", gms.local_addr, address);
+            log.trace("%s: sending LEAVE response to %s", gms.getAddress(), address);
             gms.getDownProtocol().down(msg);
         }
     }

@@ -19,7 +19,6 @@ import java.util.*;
  * {@code ViewChange} which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.78 $
  */
 public class ClientGmsImpl extends GmsImpl {
     protected final Promise<JoinRsp> join_promise=new Promise<>();
@@ -69,7 +68,7 @@ public class ClientGmsImpl extends GmsImpl {
                 else {
                     Responses tmp=(Responses)gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS, gms.getJoinTimeout()));
                     if(tmp != null) {
-                        responses.add(tmp, gms.local_addr);
+                        responses.add(tmp, gms.getAddress());
                         tmp.done();
                     }
                 }
@@ -81,13 +80,13 @@ public class ClientGmsImpl extends GmsImpl {
                 responses.waitFor(gms.join_timeout);
                 long diff=System.currentTimeMillis() - start;
                 boolean empty;
-                if((empty=responses.isEmpty()) || responses.isCoord(gms.local_addr)) {
-                    log.info("%s: %s: creating cluster as coordinator", gms.local_addr,
+                if((empty=responses.isEmpty()) || responses.isCoord(gms.getAddress())) {
+                    log.info("%s: %s: creating cluster as coordinator", gms.getAddress(),
                              empty? String.format("no members discovered after %d ms", diff) : "I'm the first member");
                     becomeSingletonMember(mbr);
                     return;
                 }
-                log.trace("%s: discovery took %d ms, members: %s", gms.local_addr, diff, responses);
+                log.trace("%s: discovery took %d ms, members: %s", gms.getAddress(), diff, responses);
 
                 List<Address> coords=getCoords(responses);
 
@@ -99,21 +98,21 @@ public class ClientGmsImpl extends GmsImpl {
                 }
                 else {
                     if(coords.size() > 1) {
-                        log.debug("%s: found multiple coords: %s", gms.local_addr, coords);
+                        log.debug("%s: found multiple coords: %s", gms.getAddress(), coords);
                         Collections.shuffle(coords); // so the code below doesn't always pick the same coord
                     }
                     for(Address coord : coords) {
-                        log.debug("%s: sending JOIN(%s) to %s", gms.local_addr, mbr, coord);
+                        log.debug("%s: sending JOIN(%s) to %s", gms.getAddress(), mbr, coord);
                         sendJoinMessage(coord, mbr, joinWithStateTransfer, useFlushIfPresent);
                         if(installViewIfValidJoinRsp(join_promise, true))
                             return;
                         log.warn("%s: JOIN(%s) sent to %s timed out (after %d ms), on try %d",
-                                 gms.local_addr, mbr, coord, gms.join_timeout, join_attempts);
+                                 gms.getAddress(), mbr, coord, gms.join_timeout, join_attempts);
                     }
                 }
 
                 if(gms.max_join_attempts > 0 && ++join_attempts >= gms.max_join_attempts) {
-                    log.warn("%s: too many JOIN attempts (%d): becoming singleton", gms.local_addr, join_attempts);
+                    log.warn("%s: too many JOIN attempts (%d): becoming singleton", gms.getAddress(), join_attempts);
                     becomeSingletonMember(mbr);
                     return;
                 }
@@ -163,7 +162,7 @@ public class ClientGmsImpl extends GmsImpl {
     /** Handles the case where no coord responses were received. Returns true if we became the coord
      * (caller needs to terminate the join() call), or false when the caller needs to continue */
     protected boolean firstOfAllClients(final Address joiner, final Responses rsps) {
-        log.trace("%s: could not determine coordinator from rsps %s", gms.local_addr, rsps);
+        log.trace("%s: could not determine coordinator from rsps %s", gms.getAddress(), rsps);
 
         // so the member to become singleton member (and thus coord) is the first of all clients
         SortedSet<Address> clients=new TreeSet<>();
@@ -171,15 +170,15 @@ public class ClientGmsImpl extends GmsImpl {
         for(PingData response: rsps)
             clients.add(response.getAddress());
 
-        log.trace("%s: nodes to choose new coord from are: %s", gms.local_addr, clients);
+        log.trace("%s: nodes to choose new coord from are: %s", gms.getAddress(), clients);
         Address new_coord=clients.first();
         if(new_coord.equals(joiner)) {
-            log.trace("%s: I'm the FIRST of the nodes, will become coordinator", gms.local_addr);
+            log.trace("%s: I'm the FIRST of the nodes, will become coordinator", gms.getAddress());
             becomeSingletonMember(joiner);
             return true;
         }
         log.trace("%s: I'm not the first of the nodes, waiting for %d ms for another client to become coordinator",
-                  gms.local_addr, gms.all_clients_retry_timeout);
+                  gms.getAddress(), gms.all_clients_retry_timeout);
         Util.sleep(gms.all_clients_retry_timeout);
         return false;
     }
@@ -190,17 +189,17 @@ public class ClientGmsImpl extends GmsImpl {
 
         Digest tmp_digest=rsp.getDigest();
         if(tmp_digest == null || tmp_digest.capacity() == 0) {
-            log.warn("%s: digest is empty: digest=%s", gms.local_addr, rsp.getDigest());
+            log.warn("%s: digest is empty: digest=%s", gms.getAddress(), rsp.getDigest());
             return false;
         }
 
-        if(!tmp_digest.contains(gms.local_addr)) {
-            log.error("%s: digest in JOIN_RSP does not contain myself; join response: %s", gms.local_addr, rsp);
+        if(!tmp_digest.contains(gms.getAddress())) {
+            log.error("%s: digest in JOIN_RSP does not contain myself; join response: %s", gms.getAddress(), rsp);
             return false;
         }
 
         if(rsp.getView() == null) {
-            log.error("%s: JoinRsp has a null view, skipping it", gms.local_addr);
+            log.error("%s: JoinRsp has a null view, skipping it", gms.getAddress());
             return false;
         }
         return true;
@@ -208,8 +207,8 @@ public class ClientGmsImpl extends GmsImpl {
 
 
     private boolean installView(View new_view, Digest digest) {
-        if(!new_view.containsMember(gms.local_addr)) {
-            log.error("%s: I'm not member of %s, will not install view", gms.local_addr, new_view);
+        if(!new_view.containsMember(gms.getAddress())) {
+            log.error("%s: I'm not member of %s, will not install view", gms.getAddress(), new_view);
             return false;
         }
         gms.installView(new_view, digest); // impl will be particant (or coord if singleton)
@@ -255,6 +254,6 @@ public class ClientGmsImpl extends GmsImpl {
         gms.getUpProtocol().up(new Event(Event.BECOME_SERVER));
         gms.getDownProtocol().down(new Event(Event.BECOME_SERVER));
         log.debug("%s: created cluster (first member). My view is %s, impl is %s",
-                  gms.getLocalAddress(), gms.getViewId(), gms.getImpl().getClass().getSimpleName());
+                  gms.getAddress(), gms.getViewId(), gms.getImpl().getClass().getSimpleName());
     }
 }
