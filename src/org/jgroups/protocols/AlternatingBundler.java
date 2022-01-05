@@ -51,7 +51,7 @@ public class AlternatingBundler extends TransferQueueBundler {
                     Address dest=msg.getDest();
                     if(!Util.match(dest, target_dest) || count + size >= max_size)
                         _sendBundledMessages();
-                    _addMessage(msg, size);
+                    addMessage(msg, size);
                     msg=queue.poll();
                     if(msg == null)
                         break;
@@ -85,7 +85,7 @@ public class AlternatingBundler extends TransferQueueBundler {
     }
 
     @Override
-    protected void _addMessage(Message msg, int size) {
+    protected void addMessage(Message msg, int size) {
         target_dest=msg.getDest();
         target_list.add(msg);
         count+=size;

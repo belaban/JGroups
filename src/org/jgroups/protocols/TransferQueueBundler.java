@@ -17,7 +17,7 @@ import java.util.concurrent.BlockingQueue;
  */
 public class TransferQueueBundler extends BaseBundler implements Runnable {
     protected BlockingQueue<Message> queue;
-    protected List<Message>          remove_queue;
+    protected final List<Message>    remove_queue=new ArrayList<>(16);
     protected volatile     Thread    bundler_thread;
     protected volatile boolean       running=true;
     @ManagedAttribute(description="Number of times a message was sent because the queue was full",
@@ -32,12 +32,10 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     protected static final String    THREAD_NAME="TQ-Bundler";
 
     public TransferQueueBundler() {
-        this.remove_queue=new ArrayList<>(16);
     }
 
     protected TransferQueueBundler(BlockingQueue<Message> queue) {
         this.queue=queue;
-        this.remove_queue=new ArrayList<>(16);
     }
 
     public TransferQueueBundler(int capacity) {
@@ -51,7 +49,6 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
 
     @ManagedAttribute(description="Size of the remove-queue")
     public int                  removeQueueSize()         {return remove_queue.size();}
-    public TransferQueueBundler removeQueueSize(int size) {this.remove_queue=new ArrayList<>(size); return this;}
 
 
     @Override
@@ -132,7 +129,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
             avg_fill_count.add(count);
             sendBundledMessages();
         }
-        _addMessage(msg, size);
+        addMessage(msg, size);
     }
 
 
@@ -146,16 +143,6 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
         sendBundledMessages();
     }
 
-
-    protected void _addMessage(Message msg, int size) {
-        lock.lock();
-        try {
-            addMessage(msg, size);
-        }
-        finally {
-            lock.unlock();
-        }
-    }
 
     protected static int assertPositive(int value, String message) {
         if(value <= 0) throw new IllegalArgumentException(message);

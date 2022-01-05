@@ -102,10 +102,6 @@ public abstract class BaseBundler implements Bundler {
         count=0;
     }
 
-    @GuardedBy("lock") protected void clearMessages() {
-        msgs.values().stream().filter(Objects::nonNull).forEach(List::clear);
-    }
-
 
     protected void sendSingleMessage(final Message msg) {
         Address dest=msg.getDest();
