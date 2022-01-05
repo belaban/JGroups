@@ -16,8 +16,8 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -63,7 +63,7 @@ public class BATCH extends Protocol {
     protected TimeScheduler          timer;
     protected volatile boolean       running;
     protected Future<?>              flush_task;
-    protected ConcurrentMap<Address,Buffer> msgMap = Util.createConcurrentMap();
+    protected Map<Address,Buffer>    msgMap = Util.createConcurrentMap();
     protected static BatchHeader     HEADER= new BatchHeader();
 
 
@@ -127,14 +127,11 @@ public class BATCH extends Protocol {
         if (msg.getSrc() == null)
             msg.setSrc(local_addr);
         // Ignore messages from other senders due to BatchMessage compression
-        if (!Objects.equals(msg.getSrc(), local_addr)) {
+        if (!Objects.equals(msg.getSrc(), local_addr))
             return down_prot.down(msg);
-        }
 
         Address dest = msg.dest() == null ? nullAddress : msg.dest();
-        Buffer ebbuffer = msgMap.get(dest);
-        if (ebbuffer == null)
-            ebbuffer=msgMap.computeIfAbsent(dest, k -> new Buffer(dest));
+        Buffer ebbuffer = msgMap.computeIfAbsent(dest, k -> new Buffer(dest));
         boolean add_successful = ebbuffer.addMessage(msg);
 
         if (!add_successful)
@@ -197,12 +194,12 @@ public class BATCH extends Protocol {
         stopFlushTask();
     }
 
-    protected void startFlushTask() {
+    public void startFlushTask() {
         if(flush_task == null || flush_task.isDone())
             flush_task=timer.scheduleWithFixedDelay(new BATCH.FlushTask(), 0, flush_interval, TimeUnit.MILLISECONDS, true);
     }
 
-    protected void stopFlushTask() {
+    public void stopFlushTask() {
         if(flush_task != null) {
             flush_task.cancel(true);
             flush_task=null;
