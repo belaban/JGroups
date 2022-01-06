@@ -9,9 +9,9 @@ import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Credit;
 import org.jgroups.util.MessageBatch;
-import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Util;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -293,7 +293,7 @@ public abstract class FlowControl extends Protocol {
 
     public void up(MessageBatch batch) {
         int length=0;
-        MessageIterator it=batch.iterator();
+        Iterator<Message> it=batch.iterator();
         while(it.hasNext()) {
             Message msg=it.next();
             if(msg.isFlagSet(Message.Flag.NO_FC))

@@ -1,6 +1,9 @@
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Event;
+import org.jgroups.Header;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.ConfiguratorFactory;
@@ -20,10 +23,7 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.AccessControlException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
@@ -138,7 +138,7 @@ public class FORK extends Protocol {
     public void up(MessageBatch batch) {
         // Sort fork messages by fork-stack-id
         Map<String,List<Message>> map=new HashMap<>();
-        MessageIterator it=batch.iterator();
+        Iterator<Message> it=batch.iterator();
         while(it.hasNext()) {
             Message msg=it.next();
             ForkHeader hdr=msg.getHeader(id);

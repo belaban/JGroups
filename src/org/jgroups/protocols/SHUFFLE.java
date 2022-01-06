@@ -142,8 +142,9 @@ public class SHUFFLE extends Protocol {
 
 
     protected static void shuffle(MessageBatch batch) {
-        Message[] msgs=batch.array();
-        Util.shuffle(msgs, 0, batch.index());
+        Message[] msgs=batch.stream().toArray(Message[]::new);
+        Util.shuffle(msgs, 0, msgs.length);
+        batch.array().set(msgs);
     }
 
 

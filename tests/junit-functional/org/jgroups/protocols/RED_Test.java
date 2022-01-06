@@ -29,7 +29,7 @@ public class RED_Test {
     protected RED                  red;
     protected TP                   transport;
     protected static final Address TARGET=Util.createRandomAddress("B");
-    protected static final int     NUM_SENDERS=10, NUM_MSGS=1000, TOT_MSGS=NUM_SENDERS*NUM_MSGS;
+    protected static final int     NUM_SENDERS=10, NUM_MSGS=2000, TOT_MSGS=NUM_SENDERS*NUM_MSGS;
 
     @BeforeMethod protected void setup() throws Exception {
         ch=create("A").connect(RED_Test.class.getSimpleName());

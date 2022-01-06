@@ -5,10 +5,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -142,7 +139,7 @@ public class FRAG2 extends Fragmentation {
     }
 
     public void up(MessageBatch batch) {
-        MessageIterator it=batch.iteratorWithFilter(HAS_FRAG_HEADER);
+        FastArray<Message>.FastIterator it=(FastArray<Message>.FastIterator)batch.iteratorWithFilter(HAS_FRAG_HEADER);
         while(it.hasNext()) {
             Message msg=it.next();
             FragHeader hdr=msg.getHeader(this.id);

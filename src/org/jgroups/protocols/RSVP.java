@@ -207,7 +207,8 @@ public class RSVP extends Protocol {
     public void up(MessageBatch batch) {
         List<Short> response_ids=null;
         Address dest=batch.dest();
-        for(Message msg: batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
             if(!(msg.isFlagSet(Message.Flag.RSVP) || msg.isFlagSet(Message.Flag.RSVP_NB)))
                 continue;
             RsvpHeader hdr=msg.getHeader(id);
@@ -231,7 +232,7 @@ public class RSVP extends Protocol {
                 case RsvpHeader.RSP:
                     if(hdr.type == RsvpHeader.RSP)
                         handleResponse(msg.getSrc(), hdr.id);
-                    batch.remove(msg);
+                    it.remove();
                     break;
             }
         }

@@ -171,7 +171,7 @@ public class BATCH extends Protocol {
                 if(m instanceof BatchMessage) {
                     BatchMessage ebm=(BatchMessage)m;
                     it.remove();
-                    mb.add(ebm.getMessages(), ebm.getNumberOfMessages(), true);
+                    mb.add(ebm.getMessages(), ebm.getNumberOfMessages());
                 }
             }
             if(!mb.isEmpty())

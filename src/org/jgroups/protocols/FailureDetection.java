@@ -181,10 +181,12 @@ public abstract class FailureDetection extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        int matched_msgs=batch.replaceIf(HAS_HEADER, null, true);
-        update(batch.sender(), matched_msgs > 0, false);
-        if(matched_msgs > 0)
-            num_heartbeats_received+=matched_msgs;
+        int old_size=batch.size();
+        batch.removeIf(HAS_HEADER, true);
+        int removed=old_size - batch.size();
+        update(batch.sender(), removed > 0, false);
+        if(removed > 0)
+            num_heartbeats_received+=removed;
         if(has_suspected_mbrs)
             unsuspect(batch.sender());
         if(!batch.isEmpty())

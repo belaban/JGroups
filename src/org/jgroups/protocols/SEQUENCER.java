@@ -12,10 +12,7 @@ import org.jgroups.util.*;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -227,7 +224,7 @@ public class SEQUENCER extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        MessageIterator it=batch.iterator();
+        Iterator<Message> it=batch.iterator();
         while(it.hasNext()) {
             Message msg=it.next();
             if(msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB) || msg.getHeader(id) == null)

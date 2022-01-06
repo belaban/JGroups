@@ -8,6 +8,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Predicate;
 
@@ -47,12 +48,13 @@ public class REVERSE extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        for(Message msg: batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
             if(num_msgs_to_reverse == 0 || filter != null && !filter.test(msg))
                 continue;
             if(queue.add(msg) && queue.size() >= num_msgs_to_reverse)
                 flush();
-            batch.remove(msg);
+            it.remove();
         }
         if(!batch.isEmpty())
             up_prot.up(batch);

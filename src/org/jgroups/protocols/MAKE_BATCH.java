@@ -11,10 +11,7 @@ import org.jgroups.util.AsciiString;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.TimeScheduler;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -92,15 +89,16 @@ public class MAKE_BATCH extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        for(Message msg: batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
             if(msg.isFlagSet(Message.Flag.OOB) && skip_oob) {
                 up_prot.up(msg);
-                batch.remove(msg);
+                it.remove();
                 continue;
             }
             if((msg.dest() == null && multicasts) || (msg.dest() != null && unicasts)) {
                 queue(msg);
-                batch.remove(msg);
+                it.remove();
             }
         }
         if(!batch.isEmpty())

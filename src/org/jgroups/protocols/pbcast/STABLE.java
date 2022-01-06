@@ -12,6 +12,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Future;
@@ -20,7 +21,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
-import static org.jgroups.Message.Flag.*;
+import static org.jgroups.Message.Flag.NO_RELIABILITY;
+import static org.jgroups.Message.Flag.OOB;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 
 
@@ -244,7 +246,7 @@ public class STABLE extends Protocol {
 
     public void up(MessageBatch batch) {
         StableHeader hdr;
-        MessageIterator it=batch.iterator();
+        Iterator<Message> it=batch.iterator();
         while(it.hasNext()) { // remove and handle messages with flow control headers (STABLE_GOSSIP, STABILITY)
             Message msg=it.next();
             if((hdr=msg.getHeader(id)) != null) {

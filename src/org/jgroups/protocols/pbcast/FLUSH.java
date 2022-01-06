@@ -491,7 +491,7 @@ public class FLUSH extends Protocol {
             up_prot.up(batch);
             return;
         }
-        MessageIterator it=batch.iterator();
+        Iterator<Message> it=batch.iterator();
         while(it.hasNext()) {
             Message msg=it.next();
             if(msg.getHeader(id) != null) {

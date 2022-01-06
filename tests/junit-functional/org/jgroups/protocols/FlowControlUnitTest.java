@@ -19,6 +19,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -354,11 +355,12 @@ public class FlowControlUnitTest {
         }
 
         public void up(MessageBatch batch) {
-            for(Message msg: batch) {
+            for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+                Message msg=it.next();
                 FcHeader hdr=getHeader(msg, UFC_ID, UFC_NB_ID, MFC_ID, MFC_NB_ID);
                 if(hdr != null && hdr.type == FcHeader.REPLENISH) {
                     System.out.println("-- dropping credits from " + batch.sender());
-                    batch.remove(msg);
+                    it.remove();
                 }
             }
             if(!batch.isEmpty())

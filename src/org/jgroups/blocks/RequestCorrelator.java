@@ -284,7 +284,8 @@ public class RequestCorrelator {
     }
 
     public void receiveMessageBatch(MessageBatch batch) {
-        for(Message msg : batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
             Header hdr=msg.getHeader(this.corr_id);
             if(hdr == null || hdr.corrId != this.corr_id) // msg was sent by a different request corr in the same stack
                 continue;
@@ -294,7 +295,7 @@ public class RequestCorrelator {
                 Address[] exclusion_list=((MultiDestinationHeader)hdr).exclusion_list;
                 if(local_addr != null && Util.contains(local_addr, exclusion_list)) {
                     log.trace("%s: dropped req from %s as we are in the exclusion list, hdr=%s", local_addr, msg.src(), hdr);
-                    batch.remove(msg);
+                    it.remove();
                     continue; // don't pass this message further up
                 }
             }

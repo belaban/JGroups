@@ -270,6 +270,7 @@ public class ServerTest extends BMNGRunner {
         public void run() {
             try {
                 latch.await();
+                Util.sleep(1000);
                 send(payload, server, dest);
             }
             catch(InterruptedException e) {

@@ -329,7 +329,7 @@ public class View implements Comparable<View>, SizeStreamable, Iterable<Address>
     }
 
     public Iterator<Address> iterator() {
-        return new ArrayIterator(this.members);
+        return new ArrayIterator<>(this.members);
     }
 
 

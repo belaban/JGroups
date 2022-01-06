@@ -5,8 +5,8 @@ import org.jgroups.*;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.util.ByteArray;
+import org.jgroups.util.FastArray;
 import org.jgroups.util.MessageBatch;
-import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Util;
 
 import java.util.*;
@@ -125,7 +125,7 @@ public class FRAG extends Fragmentation {
     }
 
     public void up(MessageBatch batch) {
-        MessageIterator it=batch.iteratorWithFilter(HAS_FRAG_HEADER);
+        FastArray<Message>.FastIterator it=(FastArray<Message>.FastIterator)batch.iteratorWithFilter(HAS_FRAG_HEADER);
         while(it.hasNext()) {
             Message msg=it.next();
             FragHeader hdr=msg.getHeader(this.id);

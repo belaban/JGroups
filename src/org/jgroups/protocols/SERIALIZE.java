@@ -1,13 +1,15 @@
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.BytesMessage;
+import org.jgroups.Message;
+import org.jgroups.MessageFactory;
 import org.jgroups.annotations.MBean;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.ByteArray;
+import org.jgroups.util.FastArray;
 import org.jgroups.util.MessageBatch;
-import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Util;
 
 /**
@@ -64,7 +66,7 @@ public class SERIALIZE extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        MessageIterator it=batch.iterator();
+        FastArray<Message>.FastIterator it=(FastArray<Message>.FastIterator)batch.iterator();
         while(it.hasNext()) {
             Message msg=it.next();
             try {

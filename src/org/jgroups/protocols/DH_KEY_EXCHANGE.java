@@ -5,7 +5,6 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.util.MessageBatch;
-import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
@@ -18,6 +17,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Iterator;
 import java.util.function.Supplier;
 
 /**
@@ -142,7 +142,7 @@ public class DH_KEY_EXCHANGE extends KeyExchange {
 
 
     public void up(MessageBatch batch) {
-        MessageIterator it=batch.iterator();
+        Iterator<Message> it=batch.iterator();
         while(it.hasNext()) {
             Message msg=it.next();
             DhHeader hdr=msg.getHeader(id);

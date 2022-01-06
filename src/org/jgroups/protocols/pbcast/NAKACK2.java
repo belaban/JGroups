@@ -696,7 +696,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             return;
         }
         boolean got_retransmitted_msg=false; // if at least 1 XMIT-RSP was received
-        for(MessageIterator it=mb.iterator(); it.hasNext();) {
+        for(FastArray<Message>.FastIterator it=(FastArray<Message>.FastIterator)mb.iterator(); it.hasNext();) {
             final Message msg=it.next();
             NakAckHeader2 hdr;
             if(msg == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY) || (hdr=msg.getHeader(id)) == null)
@@ -884,7 +884,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         Address        sender=mb.sender();
         Table<Message> buf=xmit_table.get(sender);
         if(buf == null) {  // discard message if there is no entry for sender
-            mb.remove(HAS_HEADER);
+            mb.removeIf(HAS_HEADER, true);
             unknownMember(sender, "batch");
             return;
         }
@@ -909,7 +909,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
         removeAndDeliver(buf, sender, loopback, mb.clusterName()); // at most 1 thread will execute this at any given time
         if(oob || loopback)
-            mb.remove(HAS_HEADER);
+            mb.removeIf(HAS_HEADER, true);
     }
 
 

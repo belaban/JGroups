@@ -14,6 +14,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -156,13 +157,14 @@ public class MergeTest6 {
         }
 
         public void up(MessageBatch batch) {
-            for(Message msg: batch) {
+            for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+                Message msg=it.next();
                 GMS.GmsHeader hdr=msg.getHeader(GMS_ID); View view;
                 if(hdr != null && hdr.getType() == GMS.GmsHeader.VIEW) {
                     view=readView(msg);
                     if(!first_view_received) {
                         first_view_received=true;
-                        batch.remove(msg);
+                        it.remove();
                         System.out.printf("%s: dropped view %s (in message batch)\n", local_addr, view);
                     }
                 }

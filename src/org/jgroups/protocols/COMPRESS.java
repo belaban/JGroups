@@ -7,8 +7,8 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.ByteArray;
+import org.jgroups.util.FastArray;
 import org.jgroups.util.MessageBatch;
-import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -159,7 +159,7 @@ public class COMPRESS extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        MessageIterator it=batch.iterator();
+        FastArray<Message>.FastIterator it=(FastArray<Message>.FastIterator)batch.iterator();
         while(it.hasNext()) {
             Message msg=it.next();
             CompressHeader hdr=msg.getHeader(this.id);

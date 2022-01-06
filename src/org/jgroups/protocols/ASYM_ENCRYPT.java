@@ -158,7 +158,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
     }
 
     public void up(MessageBatch batch) {
-        MessageIterator it=batch.iterator();
+        Iterator<Message> it=batch.iterator();
         while(it.hasNext()) {
             Message msg=it.next();
             if(dropMulticastMessageFromNonMember(msg)) {

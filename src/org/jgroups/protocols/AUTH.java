@@ -13,8 +13,9 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
-import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Util;
+
+import java.util.Iterator;
 
 
 /**
@@ -116,7 +117,7 @@ public class AUTH extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        MessageIterator it=batch.iterator();
+        Iterator<Message> it=batch.iterator();
         while(it.hasNext()) {
             Message msg=it.next();
             // If we have a join or merge request --> authenticate, else pass up

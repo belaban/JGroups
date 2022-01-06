@@ -184,7 +184,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         Cipher cipher=null;
         try {
             cipher=cipherQueue.take();
-            MessageIterator it=batch.iterator();
+            FastArray<Message>.FastIterator it=(FastArray<Message>.FastIterator)batch.iterator();
             while(it.hasNext()) {
                 Message msg=it.next();
                 if(msg.getHeader(id) == null) {

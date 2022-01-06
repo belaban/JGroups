@@ -18,10 +18,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Tests DeltaViews (https://issues.jboss.org/browse/JGRP-2159)
@@ -154,9 +151,10 @@ public class DeltaViewTest {
         }
 
         public void up(MessageBatch batch) {
-            for(Message msg: batch) {
+            for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+                Message msg=it.next();
                 if(isView(msg)) {
-                    batch.remove(msg);
+                    it.remove();
                     checkDone(msg, views);
                 }
             }

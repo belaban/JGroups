@@ -6,6 +6,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -61,11 +62,12 @@ public class DROP extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        for(Message msg: batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
             for(Predicate<Message> pred: up_filters) {
                 if(pred.test(msg)) {
                     dropped(msg, false);
-                    batch.remove(msg);
+                    it.remove();
                     break;
                 }
             }

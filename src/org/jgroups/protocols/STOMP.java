@@ -217,11 +217,12 @@ public class STOMP extends Protocol implements Runnable {
     }
 
     public void up(MessageBatch batch) {
-        for(Message msg: batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
             StompHeader hdr=msg.getHeader(id);
             if(hdr != null || forward_non_client_generated_msgs) {
                 try {
-                    batch.remove(msg);
+                    it.remove();
                     up(msg);
                 }
                 catch(Throwable t) {

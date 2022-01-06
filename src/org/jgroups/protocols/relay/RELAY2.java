@@ -536,7 +536,7 @@ public class RELAY2 extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        MessageIterator it=batch.iterator();
+        Iterator<Message> it=batch.iterator();
         List<SiteAddress> unreachable_sites=null;
         while(it.hasNext()) {
             Message msg=it.next();
