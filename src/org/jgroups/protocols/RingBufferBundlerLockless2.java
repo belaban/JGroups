@@ -187,7 +187,7 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
                     transport.getMessageStats().incrNumBatchesSent(num_msgs);
             }
             catch(Exception ex) {
-                log.error("failed to send message(s)", ex);
+                log.trace("failed to send message(s)", ex);
             }
         }
         return sent_msgs;
@@ -204,12 +204,13 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
         for(int i=start_index; i != end_index; i=increment(i)) {
             Message msg=buf[i];
             if(msg != null && msg != NULL_MSG && Objects.equals(dest, msg.getDest())) {
-                int msg_size=msg.size();
+                int msg_size=msg.size() + Global.SHORT_SIZE;
                 if(bytes + msg_size > max_bundle_size)
                     break;
                 bytes+=msg_size;
                 num_msgs++;
                 buf[i]=NULL_MSG;
+                output.writeShort(msg.getType());
                 msg.writeToNoAddrs(msg.getSrc(), output, transport.getId());
             }
         }
