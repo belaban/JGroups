@@ -62,13 +62,13 @@ public abstract class GmsImpl {
         hdr.merge_rejected=true;
         hdr.merge_id=merge_id;
         msg.putHeader(gms.getId(), hdr);
-        log.debug("%s: merge response=%s", gms.local_addr, hdr);
+        log.debug("%s: merge response=%s", gms.getAddress(), hdr);
         gms.getDownProtocol().down(msg);
     }
 
 
     protected void wrongMethod(String method_name) {
-        log.warn("%s: %s() should not be invoked on an instance of %s", gms.local_addr, method_name, getClass().getName());
+        log.warn("%s: %s() should not be invoked on an instance of %s", gms.getAddress(), method_name, getClass().getName());
     }
 
 

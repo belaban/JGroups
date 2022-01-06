@@ -72,7 +72,7 @@ public class FRAG2 extends Fragmentation {
 
         TP transport=getTransport();
         if(transport != null) {
-            int max_bundle_size=transport.getMaxBundleSize();
+            int max_bundle_size=transport.getBundler().getMaxSize();
             if(frag_size >= max_bundle_size)
                 throw new IllegalArgumentException("frag_size (" + frag_size + ") has to be < TP.max_bundle_size (" +
                                                      max_bundle_size + ")");

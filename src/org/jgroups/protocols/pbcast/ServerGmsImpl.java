@@ -59,7 +59,7 @@ public abstract class ServerGmsImpl extends GmsImpl {
      * @param digest   If view is a MergeView, the digest contains the seqnos of all members and has to be set by GMS
      */
     public void handleViewChange(View view, Digest digest) {
-        if(gms.isLeaving() && !view.containsMember(gms.local_addr))
+        if(gms.isLeaving() && !view.containsMember(gms.getAddress()))
             return;
         View prev_view=gms.view();
         gms.installView(view, digest);

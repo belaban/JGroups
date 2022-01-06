@@ -20,8 +20,9 @@ public class ConcurrentCloseTest extends ChannelTestBase {
     /** 2 channels, both call Channel.close() at exactly the same time */
     public void testConcurrentClose() throws Exception {
         final String GROUP="ConcurrentCloseTest";
-        a=createChannel(true).name("A").setReceiver(new MyReceiver("A")).connect(GROUP);
-        b=createChannel(a).name("B").setReceiver(new MyReceiver("B")).connect(GROUP);
+        a=createChannel().name("A").setReceiver(new MyReceiver("A")).connect(GROUP);
+        b=createChannel().name("B").setReceiver(new MyReceiver("B")).connect(GROUP);
+        makeUnique(a,b);
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b);
 
         CyclicBarrier barrier=new CyclicBarrier(3);
@@ -31,8 +32,8 @@ public class ConcurrentCloseTest extends ChannelTestBase {
         barrier.await(); // starts the closing of the 2 channels
         one.join(10000);
         two.join(10000);
-        assertFalse(one.isAlive());
-        assertFalse(two.isAlive());
+        assert !one.isAlive();
+        assert !two.isAlive();
     }
 
 

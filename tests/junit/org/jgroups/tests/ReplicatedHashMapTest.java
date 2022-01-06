@@ -19,22 +19,23 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Test(groups={Global.STACK_DEPENDENT,Global.EAP_EXCLUDED},singleThreaded=true)
 public class ReplicatedHashMapTest extends ChannelTestBase {
-    private ReplicatedHashMap<String,String> map1;
-    private ReplicatedHashMap<String,String> map2;
-    private ConcurrentHashMap<String,String> wrap=new ConcurrentHashMap<>();
+    private ReplicatedHashMap<String,String>       map1;
+    private ReplicatedHashMap<String,String>       map2;
+    private final ConcurrentHashMap<String,String> wrap=new ConcurrentHashMap<>();
 
     @BeforeClass
     protected void setUp() throws Exception {
-        //channel_conf = "tcp.xml";
-        JChannel c1=createChannel(true, 2);
+        JChannel c1=createChannel();
         this.map1=new ReplicatedHashMap<>(c1);
         map1.setBlockingUpdates(true);
+        JChannel c2=createChannel();
+        this.map2=new ReplicatedHashMap<>(wrap, c2);
+        map2.setBlockingUpdates(true);
+        makeUnique(c1,c2);
+
         c1.connect("ReplicatedHashMapTest");
         this.map1.start(5000);
 
-        JChannel c2=createChannel(c1);
-        this.map2=new ReplicatedHashMap<>(wrap, c2);
-        map2.setBlockingUpdates(true);
         c2.connect("ReplicatedHashMapTest");
         this.map2.start(5000);
     }
@@ -53,10 +54,10 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
 
     public void testEqualsEtc() {
         map1.put("key1", "value1");
-        assertEquals(this.map1, this.map2);
+        assert this.map1.equals(this.map2);
         Assert.assertEquals(this.map1.hashCode(), this.map2.hashCode());
         Assert.assertEquals(this.map1.toString(), this.map2.toString());
-        assertEquals(this.wrap, this.map1);
+        assert this.wrap.equals(this.map1);
     }
 
     public void testSize() {
@@ -73,53 +74,53 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
     }
 
     public void testIsEmpty() {
-        assertTrue(this.map1.isEmpty());
-        assertTrue(this.map2.isEmpty());
+        assert this.map1.isEmpty();
+        assert this.map2.isEmpty();
 
         this.map1.put("key", "value");
 
-        assertFalse(this.map1.isEmpty());
-        assertFalse(this.map2.isEmpty());
+        assert !this.map1.isEmpty();
+        assert !this.map2.isEmpty();
     }
 
     public void testContainsKey() {
-        assertFalse(this.map1.containsKey("key1"));
-        assertFalse(this.map2.containsKey("key1"));
+        assert !this.map1.containsKey("key1");
+        assert !this.map2.containsKey("key1");
         this.map1.put("key1", "value");
-        assertTrue(this.map1.containsKey("key1"));
-        assertTrue(this.map2.containsKey("key1"));
+        assert this.map1.containsKey("key1");
+        assert this.map2.containsKey("key1");
         this.map2.put("key2", "value");
-        assertTrue(this.map1.containsKey("key2"));
-        assertTrue(this.map2.containsKey("key2"));
+        assert this.map1.containsKey("key2");
+        assert this.map2.containsKey("key2");
     }
 
     public void testContainsValue() {
-        assertFalse(this.map1.containsValue("value1"));
-        assertFalse(this.map2.containsValue("value1"));
+        assert !this.map1.containsValue("value1");
+        assert !this.map2.containsValue("value1");
         this.map1.put("key1", "value1");
-        assertTrue(this.map1.containsValue("value1"));
-        assertTrue(this.map2.containsValue("value1"));
+        assert this.map1.containsValue("value1");
+        assert this.map2.containsValue("value1");
         this.map2.put("key2", "value2");
-        assertTrue(this.map1.containsValue("value2"));
-        assertTrue(this.map2.containsValue("value2"));
+        assert this.map1.containsValue("value2");
+        assert this.map2.containsValue("value2");
     }
 
     public void testPutAndGet() {
         assert this.map1.get("key1") == null;
         assert this.map2.get("key1") == null;
         this.map1.put("key1", "value1");
-        assertNotNull(this.map1.get("key1"));
-        assertNotNull(this.map2.get("key1"));
+        assert this.map1.get("key1") != null;
+        assert this.map2.get("key1") != null;
         this.map2.put("key2", "value2");
-        assertNotNull(this.map1.get("key2"));
-        assertNotNull(this.map2.get("key2"));
+        assert this.map1.get("key2") != null;
+        assert this.map2.get("key2") != null;
     }
 
     public void testPutIfAbsent() {
         String retval=map1.putIfAbsent("name", "Bela");
         assert retval == null;
         retval=map1.putIfAbsent("name", "Michelle");
-        assertNotNull(retval);
+        assert retval != null;
         Assert.assertEquals("Bela", retval);
         Assert.assertEquals("Bela", map1.get("name"));
         Assert.assertEquals("Bela", map2.get("name"));
@@ -130,16 +131,16 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         assert this.map2.get("key1") == null;
         this.map1.put("key1", "value1");
         this.map2.put("key2", "value2");
-        assertNotNull(this.map1.get("key1"));
-        assertNotNull(this.map2.get("key1"));
-        assertNotNull(this.map1.get("key2"));
-        assertNotNull(this.map2.get("key2"));
+        assert this.map1.get("key1") != null;
+        assert this.map2.get("key1") != null;
+        assert this.map1.get("key2") != null;
+        assert this.map2.get("key2") != null;
 
         this.map1.remove("key1");
         assert this.map1.get("key1") == null;
         assert this.map2.get("key1") == null;
-        assertNotNull(this.map1.get("key2"));
-        assertNotNull(this.map2.get("key2"));
+        assert this.map1.get("key2") != null;
+        assert this.map2.get("key2") != null;
 
         this.map2.remove("key2");
         assert this.map1.get("key2") == null;
@@ -151,12 +152,12 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         map1.put("id", "322649");
         System.out.println("map1: " + map1);
         boolean removed=map1.remove("id", "322000");
-        assertFalse(removed);
-        assertTrue(map1.containsKey("id"));
+        assert !removed;
+        assert map1.containsKey("id");
         removed=map1.remove("id", "322649");
         System.out.println("map1: " + map1);
-        assertTrue(removed);
-        assertFalse(map1.containsKey("id"));
+        assert removed;
+        assert !map1.containsKey("id");
         Assert.assertEquals(1, map2.size());
     }
 
@@ -171,7 +172,7 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         assert val == null;
         val=map1.replace("id", "322000");
         System.out.println("map1: " + map1);
-        assertNotNull(val);
+        assert val != null;
         Assert.assertEquals("322649", val);
         Assert.assertEquals("322000", map1.get("id"));
         Assert.assertEquals("322000", map2.get("id"));
@@ -182,10 +183,10 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         map1.put("id", "322649");
         System.out.println("map1: " + map1);
         boolean replaced=map1.replace("id", "322000", "1");
-        assertFalse(replaced);
+        assert !replaced;
         Assert.assertEquals("322649", map1.get("id"));
         replaced=map1.replace("id", "322649", "1");
-        assertTrue(replaced);
+        assert replaced;
         Assert.assertEquals("1", map1.get("id"));
     }
 
@@ -204,35 +205,35 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         Assert.assertEquals(4, this.map1.size());
         Assert.assertEquals(4, this.map2.size());
 
-        assertTrue(this.map1.containsKey("key1"));
-        assertTrue(this.map1.containsKey("key2"));
-        assertTrue(this.map1.containsKey("key3"));
-        assertTrue(this.map1.containsKey("key4"));
+        assert this.map1.containsKey("key1");
+        assert this.map1.containsKey("key2");
+        assert this.map1.containsKey("key3");
+        assert this.map1.containsKey("key4");
 
-        assertTrue(this.map2.containsKey("key1"));
-        assertTrue(this.map2.containsKey("key2"));
-        assertTrue(this.map2.containsKey("key3"));
-        assertTrue(this.map2.containsKey("key4"));
+        assert this.map2.containsKey("key1");
+        assert this.map2.containsKey("key2");
+        assert this.map2.containsKey("key3");
+        assert this.map2.containsKey("key4");
     }
 
     public void testClear() {
-        assertTrue(this.map1.isEmpty());
-        assertTrue(this.map2.isEmpty());
+        assert this.map1.isEmpty();
+        assert this.map2.isEmpty();
 
         this.map1.put("key", "value");
-        assertFalse(this.map1.isEmpty());
-        assertFalse(this.map2.isEmpty());
+        assert !this.map1.isEmpty();
+        assert !this.map2.isEmpty();
 
         this.map1.clear();
-        assertTrue(this.map1.isEmpty());
-        assertTrue(this.map2.isEmpty());
+        assert this.map1.isEmpty();
+        assert this.map2.isEmpty();
         this.map2.put("key", "value");
-        assertFalse(this.map1.isEmpty());
-        assertFalse(this.map2.isEmpty());
+        assert !this.map1.isEmpty();
+        assert !this.map2.isEmpty();
 
         this.map2.clear();
-        assertTrue(this.map1.isEmpty());
-        assertTrue(this.map2.isEmpty());
+        assert this.map1.isEmpty();
+        assert this.map2.isEmpty();
     }
 
     public void testKeySet() {
@@ -244,13 +245,13 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         all2.put("key4", "value4");
 
         this.map1.putAll(all1);
-        assertEquals(all1.keySet(), this.map1.keySet());
-        assertEquals(all1.keySet(), this.map2.keySet());
+        assert all1.keySet().equals(this.map1.keySet());
+        assert all1.keySet().equals(this.map2.keySet());
 
         this.map2.putAll(all2);
         all1.putAll(all2);
-        assertEquals(all1.keySet(), this.map1.keySet());
-        assertEquals(all1.keySet(), this.map2.keySet());
+        assert all1.keySet().equals(this.map1.keySet());
+        assert all1.keySet().equals(this.map2.keySet());
     }
 
     public void testKeySet_mutate() {
@@ -262,13 +263,13 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         all2.put("key4", "value4");
 
         this.map1.putAll(all1);
-        assertEquals(all1.keySet(), this.map1.keySet());
-        assertEquals(all1.keySet(), this.map2.keySet());
+        assert all1.keySet().equals(this.map1.keySet());
+        assert all1.keySet().equals(this.map2.keySet());
 
         this.map2.putAll(all2);
 	this.map1.keySet().retainAll(all1.keySet());
-        assertEquals(all1.keySet(), this.map1.keySet());
-        assertEquals(all1.keySet(), this.map2.keySet());
+        assert all1.keySet().equals(this.map1.keySet());
+        assert all1.keySet().equals(this.map2.keySet());
     }
 
     public void testValues() {
@@ -280,13 +281,13 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         all2.put("key4", "value4");
 
         this.map1.putAll(all1);
-        assertTrue(this.map1.values().containsAll(all1.values()));
-        assertTrue(this.map2.values().containsAll(all1.values()));
+        assert this.map1.values().containsAll(all1.values());
+        assert this.map2.values().containsAll(all1.values());
 
         this.map2.putAll(all2);
         all1.putAll(all2);
-        assertTrue(this.map1.values().containsAll(all1.values()));
-        assertTrue(this.map2.values().containsAll(all1.values()));
+        assert this.map1.values().containsAll(all1.values());
+        assert this.map2.values().containsAll(all1.values());
     }
 
 
@@ -296,12 +297,12 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         all1.put("key2", "value2");
 
         this.map1.putAll(all1);
-        assertTrue(this.map1.values().containsAll(all1.values()));
-        assertTrue(this.map2.values().containsAll(all1.values()));
+        assert this.map1.values().containsAll(all1.values());
+        assert this.map2.values().containsAll(all1.values());
 
         this.map2.values().clear();
-        assertTrue(map2.isEmpty());
-        assertTrue(this.map1.isEmpty());
+        assert map2.isEmpty();
+        assert this.map1.isEmpty();
 
     }
 

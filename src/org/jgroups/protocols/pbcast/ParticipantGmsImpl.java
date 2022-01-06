@@ -88,7 +88,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
             return;
 
         if(wouldIBeCoordinator(leaving_mbrs)) {
-            log.debug("%s: members are %s, coord=%s: I'm the new coordinator", gms.local_addr, gms.members, gms.local_addr);
+            log.debug("%s: members are %s, coord=%s: I'm the new coordinator", gms.getAddress(), gms.members, gms.getAddress());
             gms.becomeCoordinator();
             Collection<Request> leavingOrSuspectedMembers=new LinkedHashSet<>();
             leaving_mbrs.forEach(mbr -> leavingOrSuspectedMembers.add(new Request(Request.LEAVE, mbr)));
@@ -103,7 +103,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
         }
         else
             log.warn("%s: I'm not the coordinator (or next-in-line); dropping LEAVE request by %s",
-                     gms.local_addr, leaving_mbrs);
+                     gms.getAddress(), leaving_mbrs);
     }
 
 
@@ -131,7 +131,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
         List<Address> mbrs=gms.computeNewMembership(gms.members.getMembers(), null, leaving_mbrs, suspected_mbrs);
         if(mbrs.isEmpty()) return false;
         Address new_coord=mbrs.get(0);
-        return gms.local_addr.equals(new_coord);
+        return gms.getAddress().equals(new_coord);
     }
 
 

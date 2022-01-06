@@ -62,8 +62,6 @@ public class MERGE3 extends Protocol {
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    protected Address                       local_addr;
-
     protected volatile View                 view;
 
     protected TimeScheduler                 timer;
@@ -266,10 +264,6 @@ public class MERGE3 extends Protocol {
                     clearViews();
                 }
                 return ret;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
         }
         return down_prot.down(evt);
     }
@@ -286,7 +280,7 @@ public class MERGE3 extends Protocol {
                 break;
             case VIEW_REQ:
                 View viewToSend=view;
-                Message view_rsp=new BytesMessage(sender).setFlag(Message.Flag.INTERNAL)
+                Message view_rsp=new BytesMessage(sender)
                   .putHeader(getId(), MergeHeader.createViewResponse()).setArray(marshal(viewToSend));
                 log.trace("%s: sending view rsp: %s", local_addr, viewToSend);
                 down_prot.down(view_rsp);
@@ -395,7 +389,7 @@ public class MERGE3 extends Protocol {
             return;
         }
         MergeHeader hdr=createInfo();
-        Message info=new EmptyMessage(dest).setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr);
+        Message info=new EmptyMessage(dest).putHeader(getId(), hdr);
         down_prot.down(info);
     }
 
@@ -408,8 +402,7 @@ public class MERGE3 extends Protocol {
 
             MergeHeader hdr=createInfo();
             if(transport_supports_multicasting) {
-                Message msg=new EmptyMessage().setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr)
-                  .setFlag(Message.TransientFlag.DONT_LOOPBACK);
+                Message msg=new EmptyMessage().putHeader(getId(), hdr).setFlag(Message.TransientFlag.DONT_LOOPBACK);
                 down_prot.down(msg);
             }
             else
@@ -473,8 +466,7 @@ public class MERGE3 extends Protocol {
                         view_rsps.add(local_addr, view);
                     continue;
                 }
-                Message view_req=new EmptyMessage(target).setFlag(Message.Flag.INTERNAL)
-                  .putHeader(getId(), MergeHeader.createViewRequest());
+                Message view_req=new EmptyMessage(target).putHeader(getId(), MergeHeader.createViewRequest());
                 down_prot.down(view_req);
             }
             view_rsps.waitForAllResponses(check_interval / 10);

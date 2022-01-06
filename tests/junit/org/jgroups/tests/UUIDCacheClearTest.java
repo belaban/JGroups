@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -21,13 +22,14 @@ public class UUIDCacheClearTest extends ChannelTestBase {
         MyReceiver r1=new MyReceiver(), r2=new MyReceiver();
 
         try {
-            a=createChannel(true, 2, "A");
+            a=createChannel().name("A");
             a.setReceiver(r1);
-            a.connect("UUIDCacheClearTest");
-            b=createChannel(a, "B");
+            b=createChannel().name("B");
             b.setReceiver(r2);
-            b.connect("UUIDCacheClearTest");
+            makeUnique(a,b);
 
+            a.connect("UUIDCacheClearTest");
+            b.connect("UUIDCacheClearTest");
             Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
 
 
@@ -86,7 +88,8 @@ public class UUIDCacheClearTest extends ChannelTestBase {
     private static void clearCache(JChannel ... channels) {
         for(JChannel ch: channels) {
             ch.getProtocolStack().getTransport().clearLogicalAddressCache();
-            ch.down(new Event(Event.SET_LOCAL_ADDRESS, ch.getAddress()));
+            for(Protocol p=ch.getProtocolStack().getTopProtocol(); p != null; p=p.getDownProtocol())
+                p.setAddress(ch.getAddress());
         }
     }
 

@@ -55,7 +55,6 @@ public class BARRIER extends Protocol {
     protected Map<Thread,Object>         in_flight_threads=Util.createConcurrentMap();
     protected volatile Future<?>         barrier_opener_future;
     protected TimeScheduler              timer;
-    protected Address                    local_addr;
 
     // mbrs from which unicasts should be accepted even if BARRIER is closed (PUNCH_HOLE adds, CLOSE_HOLE removes mbrs)
     protected final Set<Address>         holes=new HashSet<>();
@@ -127,9 +126,6 @@ public class BARRIER extends Protocol {
             case Event.OPEN_BARRIER:
                 openBarrier();
                 return null;
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
             case Event.PUNCH_HOLE:
                 Address mbr=evt.getArg();
                 holes.add(mbr);
@@ -163,7 +159,7 @@ public class BARRIER extends Protocol {
     public Object up(Message msg) {
         // https://issues.jboss.org/browse/JGRP-1341: let unicast messages pass
         if(msg.isFlagSet(Message.Flag.SKIP_BARRIER) || msg.getDest() != null
-          && ((msg.isFlagSet(Message.Flag.OOB) && msg.isFlagSet(Message.Flag.INTERNAL)) || holes.contains(msg.getSrc())))
+          && ((msg.isFlagSet(Message.Flag.OOB)) || holes.contains(msg.getSrc())))
             return up_prot.up(msg);
 
         if(barrier_closed.get()) {
@@ -184,8 +180,7 @@ public class BARRIER extends Protocol {
     public void up(MessageBatch batch) {
         // let unicast message batches pass
         if(batch.dest() != null
-          && (batch.mode() == MessageBatch.Mode.OOB && batch.mode() == MessageBatch.Mode.INTERNAL)
-          || holes.contains(batch.sender())) {
+          && (batch.mode() == MessageBatch.Mode.OOB) || holes.contains(batch.sender())) {
             up_prot.up(batch);
             return;
         }
@@ -291,8 +286,8 @@ public class BARRIER extends Protocol {
             return;
 
         for(Message msg: queue.values()) {
-            boolean oob=msg.isFlagSet(Message.Flag.OOB), internal=msg.isFlagSet(Message.Flag.INTERNAL);
-            transport.msg_processing_policy.process(msg, oob, internal);
+            boolean oob=msg.isFlagSet(Message.Flag.OOB);
+            transport.msg_processing_policy.process(msg, oob);
         }
         queue.clear();
     }

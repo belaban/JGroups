@@ -10,10 +10,9 @@ import org.jgroups.util.MessageBatch;
  * @author Bela Ban
  */
 public interface UpHandler {
-   
-   /**
-    * Invoked for all channel events except connection management and state transfer.
-    */
+
+    UpHandler setLocalAddress(Address a);
+
     Object up(Event evt);
 
     Object up(Message msg);

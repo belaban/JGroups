@@ -1,5 +1,6 @@
 package org.jgroups.annotations;
 import java.lang.annotation.*;
+
 /**
  * Optional annotation that exposes all public methods in the class hierarchy (excluding Object) as MBean operations.
  * All methods are exposed if and only if exposeAll attribute is true.<br>

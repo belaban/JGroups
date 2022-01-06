@@ -72,7 +72,6 @@ public class STOMP extends Protocol implements Runnable {
     public String getEndpoints() {return endpoints.toString();}
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
-    protected Address                   local_addr;
     protected ServerSocket              srv_sock;
     @ManagedAttribute
     protected String                    endpoint;
@@ -164,9 +163,6 @@ public class STOMP extends Protocol implements Runnable {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
                 handleView(evt.getArg());
-                break;
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);
@@ -501,13 +497,9 @@ public class STOMP extends Protocol implements Runnable {
                     }
                     break;
                 case BEGIN:
-                    break;
                 case COMMIT:
-                    break;
                 case ABORT:
-                    break;
                 case ACK:
-                    break;
                 case DISCONNECT:
                     break;
                 default:

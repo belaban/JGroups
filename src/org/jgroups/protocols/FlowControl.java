@@ -80,8 +80,6 @@ public abstract class FlowControl extends Protocol {
      */
     protected final Map<Address,Credit> received=Util.createConcurrentMap();
 
-    protected Address                   local_addr;
-
     /** Whether FlowControl is still running, this is set to false when the protocol terminates (on stop()) */
     protected volatile boolean          running=true;
 
@@ -198,10 +196,6 @@ public abstract class FlowControl extends Protocol {
             
             case Event.VIEW_CHANGE:
                 handleViewChange(((View)evt.getArg()).getMembers());
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt); // this could potentially use the lower protocol's thread which may block
@@ -389,7 +383,7 @@ public abstract class FlowControl extends Protocol {
         if(log.isTraceEnabled())
             log.trace("sending %d credits to %s", credits, dest);
         Message msg=new LongMessage(dest, credits).putHeader(this.id,getReplenishHeader())
-          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE);
+          .setFlag(Message.Flag.OOB, Message.Flag.DONT_BUNDLE);
         down_prot.down(msg);
         num_credit_responses_sent++;
     }
@@ -404,7 +398,7 @@ public abstract class FlowControl extends Protocol {
         if(log.isTraceEnabled())
             log.trace("sending request for %d credits to %s", credits_needed, dest);
         Message msg=new LongMessage(dest, credits_needed).putHeader(this.id, getCreditRequestHeader())
-          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE);
+          .setFlag(Message.Flag.OOB, Message.Flag.DONT_BUNDLE);
         down_prot.down(msg);
         num_credit_requests_sent++;
     }

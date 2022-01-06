@@ -17,7 +17,7 @@ public class SenderSendsBundler extends BaseBundler {
 
         lock.lock();
         try {
-            if(count + size >= transport.getMaxBundleSize())
+            if(count + size >= max_size)
                 sendBundledMessages();
 
             addMessage(msg, size);

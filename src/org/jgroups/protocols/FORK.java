@@ -64,8 +64,6 @@ public class FORK extends Protocol {
     // mappings between fork-stack-ids and fork-stacks (bottom-most protocol)
     protected final ConcurrentMap<String,Protocol> fork_stacks=new ConcurrentHashMap<>();
 
-    protected Address local_addr;
-
     public FORK setUnknownForkHandler(UnknownForkHandler unknownForkHandler) {
         this.unknownForkHandler = unknownForkHandler;
         fork_stacks.values().forEach(p -> {
@@ -102,15 +100,6 @@ public class FORK extends Protocol {
         super.init();
         if(config != null)
             createForkStacks(config);
-    }
-
-    public Object down(Event evt) {
-        switch(evt.getType()) {
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
-        }
-        return down_prot.down(evt);
     }
 
     public Object up(Event evt) {

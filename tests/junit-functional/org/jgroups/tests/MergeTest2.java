@@ -1,24 +1,16 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.DISCARD;
-import org.jgroups.protocols.SHARED_LOOPBACK;
-import org.jgroups.protocols.SHARED_LOOPBACK_PING;
-import org.jgroups.protocols.UNICAST3;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.*;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.net.InetAddress;
 import java.util.*;
 
 
@@ -29,19 +21,11 @@ import java.util.*;
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class MergeTest2 {
-    protected MyDiagnosticsHandler handler;
     protected JChannel a,b,c,d;
-
 
 
     @BeforeMethod
     void setUp() throws Exception {
-        handler=new MyDiagnosticsHandler(InetAddress.getByName("224.0.75.75"), 7500,
-                                         LogFactory.getLog(DiagnosticsHandler.class),
-                                         new DefaultSocketFactory(),
-                                         new DefaultThreadFactory("", false));
-        handler.start();
-        
         a=createChannel("A");
         b=createChannel("B");
         c=createChannel("C");
@@ -49,24 +33,19 @@ public class MergeTest2 {
     }
 
 
-    protected JChannel createChannel(String name) throws Exception {
-        SHARED_LOOPBACK shared_loopback=new SHARED_LOOPBACK().setDiagnosticsHandler(handler);
-
-        JChannel retval=new JChannel(shared_loopback,
+    protected static JChannel createChannel(String name) throws Exception {
+        JChannel retval=new JChannel(new SHARED_LOOPBACK(),
                                      new DISCARD().discardAll(true),
                                      new SHARED_LOOPBACK_PING(),
                                      new NAKACK2().useMcastXmit(false)
                                        .logDiscardMessages(false).logNotFoundMessages(false),
                                      new UNICAST3(),
                                      new STABLE().setMaxBytes(50000),
-                                     new GMS().printLocalAddress(false)
-                                       .setLeaveTimeout(100)
-                                       .setMergeTimeout(3000)
-                                       .logViewWarnings(false)
-                                       .setViewAckCollectionTimeout(50)
+                                     new GMS().printLocalAddress(false).setJoinTimeout(500).setLeaveTimeout(100)
+                                       .setMergeTimeout(3000).logViewWarnings(false).setViewAckCollectionTimeout(50)
                                        .logCollectMessages(false));
         retval.setName(name);
-        JmxConfigurator.registerChannel(retval, Util.getMBeanServer(), name, retval.getClusterName(), true);
+        retval.getProtocolStack().getTransport().getDiagnosticsHandler().setEnabled(false);
         retval.connect("MergeTest2");
         return retval;
     }
@@ -83,7 +62,6 @@ public class MergeTest2 {
             stack.stopStack(cluster_name);
             stack.destroy();
         }
-        handler.destroy();
     }
 
 
@@ -150,25 +128,6 @@ public class MergeTest2 {
             if(ch.getAddress().equals(leader))
                 return ch;
         return null;
-    }
-
-
-    protected static class MyDiagnosticsHandler extends DiagnosticsHandler {
-
-        protected MyDiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port, Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
-            super(diagnostics_addr,diagnostics_port,log,socket_factory,thread_factory);
-        }
-
-        public void start() throws Exception {
-            super.start();
-        }
-
-        public void stop() {
-        }
-
-        public void destroy() {
-            super.stop();
-        }
     }
 
 

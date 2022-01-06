@@ -130,8 +130,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected volatile List<Address>       members=new ArrayList<>(11);
 
-    protected Address                      local_addr;
-
     protected TimeScheduler                timer; // used for retransmissions
 
     protected volatile boolean             running=false;
@@ -156,7 +154,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected final Predicate<Message>     drop_oob_and_dont_loopback_msgs_filter=msg ->
       msg != null && msg != DUMMY_OOB_MSG
         && (!msg.isFlagSet(Message.Flag.OOB) || msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
-        && !(msg.isFlagSet(DONT_LOOPBACK) && local_addr != null && local_addr.equals(msg.getSrc()));
+        && !(msg.isFlagSet(DONT_LOOPBACK) && Objects.equals(local_addr, msg.getSrc()));
 
     protected static final Predicate<Message> dont_loopback_filter=
       msg -> msg != null && msg.isFlagSet(DONT_LOOPBACK);
@@ -168,10 +166,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             ((Refcountable<Message>)msg).decr();
         return true;
     };
-
-
-    @ManagedAttribute
-    public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
 
     @ManagedAttribute(description="Returns the number of outgoing (send) connections")
     public int getNumSendConnections() {
@@ -382,7 +376,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         // serialized size is 8012 bytes. Therefore, for a serialized size of 64000 bytes, we can retransmit a max of
         // 8 * 64000 = 512'000 seqnos
         // see SeqnoListTest.testSerialization3()
-        int estimated_max_msgs_in_xmit_req=(transport.getMaxBundleSize() -50) * Global.LONG_SIZE;
+        int estimated_max_msgs_in_xmit_req=(transport.getBundler().getMaxSize() -50) * Global.LONG_SIZE;
         int old_max_xmit_size=max_xmit_req_size;
         if(max_xmit_req_size <= 0)
             max_xmit_req_size=estimated_max_msgs_in_xmit_req;
@@ -612,10 +606,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 xmit_task_map.keySet().retainAll(new_members);
                 last_sync_sent.removeExpiredElements();
                 break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
         }
 
         return down_prot.down(evt);          // Pass on to the layer below us
@@ -734,7 +724,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     /** Sends a retransmit request to the given sender */
     protected void retransmit(SeqnoList missing, Address sender) {
-        Message xmit_msg=new ObjectMessage(sender, missing).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+        Message xmit_msg=new ObjectMessage(sender, missing).setFlag(Message.Flag.OOB)
           .putHeader(id, UnicastHeader3.createXmitReqHeader());
         if(is_trace)
             log.trace("%s --> %s: XMIT_REQ(%s)", local_addr, sender, missing);
@@ -1111,7 +1101,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected void sendAck(Address dst, long seqno, short conn_id) {
         if(!running) // if we are disconnected, then don't send any acks which throw exceptions on shutdown
             return;
-        Message ack=new EmptyMessage(dst).setFlag(Message.Flag.INTERNAL).
+        Message ack=new EmptyMessage(dst).
           putHeader(this.id, UnicastHeader3.createAckHeader(seqno, conn_id, timestamper.incrementAndGet()));
         if(is_trace)
             log.trace("%s --> %s: ACK(#%d)", local_addr, dst, seqno);
@@ -1145,7 +1135,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     public void sendClose(Address dest, short conn_id) {
-        Message msg=new EmptyMessage(dest).setFlag(Message.Flag.INTERNAL).putHeader(id, UnicastHeader3.createCloseHeader(conn_id));
+        Message msg=new EmptyMessage(dest).putHeader(id, UnicastHeader3.createCloseHeader(conn_id));
         log.trace("%s --> %s: CLOSE(conn-id=%d)", local_addr, dest, conn_id);
         down_prot.down(msg);
     }

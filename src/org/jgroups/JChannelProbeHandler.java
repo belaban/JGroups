@@ -2,12 +2,12 @@ package org.jgroups;
 
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.blocks.MethodCall;
-import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.jmx.ResourceDMBean;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Ref;
 import org.jgroups.util.Util;
 
 import java.lang.management.ManagementFactory;
@@ -252,7 +252,12 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                 it.remove();
                 String attrname=tmp.substring(0, index);
                 String attrvalue=tmp.substring(index+1);
-                handleAttrWrite(protocol_name, attrname, attrvalue);
+                try {
+                    handleAttrWrite(protocol_name, attrname, attrvalue);
+                }
+                catch(Exception e) {
+                    log.error("failed writing: %s", e.toString());
+                }
             }
         }
         if(!list.isEmpty()) {
@@ -288,11 +293,17 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
         return sb.toString();
     }
 
-    protected static void listAllOperations(StringBuilder sb, Class<? extends Protocol> cl) {
+    protected static void listAllOperations(StringBuilder sb, Class<?> cl) {
         sb.append(cl.getSimpleName()).append(":\n");
         Method[] methods=Util.getAllDeclaredMethodsWithAnnotations(cl, ManagedOperation.class);
         for(Method m: methods)
             sb.append("  ").append(methodToString(m)).append("\n");
+
+        Util.forAllComponentTypes(cl, (clazz, prefix) -> {
+            Method[] meths=Util.getAllDeclaredMethodsWithAnnotations(clazz, ManagedOperation.class);
+            for(Method m: meths)
+                sb.append("  ").append(prefix).append(".").append(methodToString(m)).append("\n");
+        });
     }
 
 
@@ -353,9 +364,34 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                 args[i]=(String)strings[i];
         }
 
-        Method method=findMethod(prot, method_name, args);
-        if(method == null)
+        Ref<Object> target=new Ref<>(prot);
+        Ref<Method> method=new Ref<>(Util.findMethod(prot.getClass(), method_name, args));
+        if(!method.isSet()) {
+            final String[] arguments=args;
+            // check if any of the components in this class (if it has any) has the method
+            Util.forAllComponents(prot, (o,prefix) -> {
+                if(!method.isSet() && method_name.startsWith(prefix + ".")) {
+                    String m=method_name.substring(prefix.length() +1);
+                    try {
+                        Method meth=Util.findMethod(o.getClass(), m, arguments);
+                        if(meth != null) {
+                            method.set(meth);
+                            target.set(o);
+                        }
+                    }
+                    catch(Exception e) {
+                    }
+                }
+            });
+        }
+        if(!method.isSet())
             throw new IllegalArgumentException(String.format("method %s not found in %s", method_name, prot.getName()));
+        Object retval=invoke(method.get(), target.get(), args);
+        if(retval != null)
+            map.put(prot.getName() + "." + method_name, retval.toString());
+    }
+
+    protected static Object invoke(Method method, Object target, String[] args) throws Exception {
         MethodCall call=new MethodCall(method);
         Object[] converted_args=null;
         if(args != null) {
@@ -364,88 +400,92 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
             for(int i=0; i < args.length; i++)
                 converted_args[i]=Util.convert(args[i], types[i]);
         }
-        Object retval=call.invoke(prot, converted_args);
-        if(retval != null)
-            map.put(prot.getName() + "." + method_name, retval.toString());
+        return call.invoke(target, converted_args);
     }
 
     protected Method findMethod(Protocol prot, String method_name, String[] args) throws Exception {
-        Object target=prot;
-        Method method=Util.findMethod(target.getClass(), method_name, args);
-        if(method == null) {
-            if(prot instanceof AdditionalJmxObjects) {
-                for(Object obj: ((AdditionalJmxObjects)prot).getJmxObjects()) {
-                    method=Util.findMethod(obj.getClass(), method_name, args);
-                    if(method != null) {
-                        target=obj;
-                        break;
-                    }
-                }
-            }
-            if(method == null) {
-                log.warn(Util.getMessage("MethodNotFound"), ch.getAddress(), target.getClass().getSimpleName(), method_name);
-                return null;
-            }
-        }
-        return method;
+        return null; // not used atm, but subclass needs to be changed before we can remove this method
     }
 
-    protected void handleAttrWrite(String protocol_name, String attr_name, String attr_value) {
-        Object target=ch.getProtocolStack().findProtocol(protocol_name);
-        Field field=target != null? Util.getField(target.getClass(), attr_name) : null;
-        if(field == null && target instanceof AdditionalJmxObjects) {
-            Object[] objs=((AdditionalJmxObjects)target).getJmxObjects();
-            if(objs != null && objs.length > 0) {
-                for(Object o: objs) {
-                    field=o != null? Util.getField(o.getClass(), attr_name) : null;
-                    if(field != null) {
-                        target=o;
-                        break;
-                    }
+    protected void handleAttrWrite(String protocol_name, String attr_name, String attr_value) throws Exception {
+        final Object target=ch.getProtocolStack().findProtocol(protocol_name);
+        if(target == null) {
+            log.error("protocol %s not found", protocol_name);
+            return;
+        }
+
+        Ref<Exception> ex=new Ref<>(null);
+        // first try attributes at the protocol level
+        try {
+            handleAttrWrite(target, attr_name, attr_value);
+            return;
+        }
+        catch(Exception e) {
+            ex.set(e);
+        }
+
+        // if none are found, try components next
+        Util.forAllComponents(target, (comp,prefix) -> {
+            if(attr_name.startsWith(prefix + ".")) {
+                String actual_attrname=attr_name.substring(prefix.length()+1);
+                try {
+                    handleAttrWrite(comp, actual_attrname, attr_value);
+                    ex.set(null);
+                }
+                catch(Exception e) {
+                    ex.set(e);
                 }
             }
-        }
+        });
+
+        if(ex.isSet())
+            throw ex.get();
+    }
+
+
+    protected static void handleAttrWrite(Object target, String attr_name, String attr_value) {
+
+        // 1. Try to find a field first
+        Exception e1=null, e2=null;
+        Field field=Util.getField(target.getClass(), attr_name);
         if(field != null) {
             Object value=Util.convert(attr_value, field.getType());
             if(value != null) {
-                if(target instanceof Protocol)
-                    ((Protocol)target).setValue(attr_name, value);
-                else
-                    Util.setField(field, target, value);
-            }
-        }
-        else {
-            // try to find a setter for X, e.g. x(type-of-x) or setX(type-of-x)
-            ResourceDMBean.Accessor setter=ResourceDMBean.findSetter(target, attr_name);
-            if(setter == null && target instanceof AdditionalJmxObjects) {
-                Object[] objs=((AdditionalJmxObjects)target).getJmxObjects();
-                if(objs != null && objs.length > 0) {
-                    for(Object o: objs) {
-                        setter=o != null? ResourceDMBean.findSetter(o, attr_name) : null;
-                        if(setter!= null)
-                            break;
-                    }
-                }
-            }
-            if(setter != null) {
                 try {
-                    Class<?> type=setter instanceof ResourceDMBean.FieldAccessor?
-                      ((ResourceDMBean.FieldAccessor)setter).getField().getType() :
-                      setter instanceof ResourceDMBean.MethodAccessor?
-                        ((ResourceDMBean.MethodAccessor)setter).getMethod().getParameterTypes()[0] : null;
-                    Object converted_value=Util.convert(attr_value, type);
-                    setter.invoke(converted_value);
+                    Util.setField(field, target, value);
+                    return;
                 }
-                catch(Exception e) {
-                    log.error("unable to invoke %s() on %s: %s", setter, protocol_name, e);
+                catch(Exception ex) {
+                    e1=ex;
                 }
-            }
-            else {
-                log.warn(Util.getMessage("FieldNotFound"), attr_name, protocol_name);
-                setter=new ResourceDMBean.NoopAccessor();
             }
         }
+
+        // 2. Try to find a setter for X, e.g. x(type-of-x) or setX(type-of-x)
+        ResourceDMBean.Accessor setter=ResourceDMBean.findSetter(target, attr_name);
+        if(setter != null) {
+            try {
+                Class<?> type=setter instanceof ResourceDMBean.FieldAccessor?
+                  ((ResourceDMBean.FieldAccessor)setter).getField().getType() :
+                  setter instanceof ResourceDMBean.MethodAccessor?
+                    ((ResourceDMBean.MethodAccessor)setter).getMethod().getParameterTypes()[0] : null;
+                Object converted_value=Util.convert(attr_value, type);
+                setter.invoke(converted_value);
+                return;
+            }
+            catch(Exception ex) {
+                e2=ex;
+            }
+        }
+
+        // at this point, we could neither find a field (and set it successfully) nor find a setter
+        // (and invoke it successfully)
+
+        String s=String.format("failed setting %s to %s: %s", attr_name, attr_value,
+                               (e1 != null || e2 != null)? e1 + " " + e2 : "field or setter not found");
+        throw new IllegalArgumentException(s);
     }
+
 
     protected static void convert(Map<String,Map<String,Object>> in, Map<String,String> out) {
         if(in != null)

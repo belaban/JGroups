@@ -58,6 +58,6 @@
     <class id="92"  name="org.jgroups.protocols.DH_KEY_EXCHANGE$DhHeader"/>
     <class id="93"  name="org.jgroups.protocols.FD_SOCK2$FdHeader"/>
     <class id="94"  name="org.jgroups.protocols.VERIFY_SUSPECT2$VerifyHeader"/>
-    <class id="95"  name="org.jgroups.protocols.EARLYBATCH$EarlyBatchHeader"/>
+    <class id="95"  name="org.jgroups.protocols.BATCH$BatchHeader"/>
 </magic-number-class-mapping>
 

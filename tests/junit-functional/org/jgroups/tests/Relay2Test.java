@@ -15,6 +15,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -61,7 +62,8 @@ public class Relay2Test {
         // Util.setField(Util.getField(relayToInject.getClass(), "local_addr"), relayToInject, a.getAddress());
 
         a.getProtocolStack().insertProtocolAtTop(relayToInject);
-        relayToInject.down(new Event(Event.SET_LOCAL_ADDRESS, a.getAddress()));
+        for(Protocol p=relayToInject; p != null; p=p.getDownProtocol())
+            p.setAddress(a.getAddress());
         relayToInject.setProtocolStack(a.getProtocolStack());
         relayToInject.configure();
         relayToInject.handleView(a.getView());
@@ -266,58 +268,72 @@ public class Relay2Test {
         b=createNode(LON, "B", LON_CLUSTER, null);
         c=createNode(LON, "C", LON_CLUSTER, null);
         x=createNode(SFO, "X", SFO_CLUSTER, null);
-        waitForBridgeView(2, 20000, 500, a, x);
+        waitForBridgeView(2, 10000, 500, a, x);
 
-        BlockingQueue<Message> received = new LinkedBlockingDeque<>();
-        AtomicInteger siteUnreachableEvents = new AtomicInteger(0);
-        UpHandler h = new UpHandler() {
-            @Override
-            public Object up(Event evt) {
-                if(evt.getType() == Event.SITE_UNREACHABLE) {
-                    log.debug("Site %s is unreachable", (Object) evt.getArg());
-                    siteUnreachableEvents.incrementAndGet();
-                }
-                return null;
-            }
-
-            @Override
-            public Object up(Message msg) {
-                log.debug("Received %s from %s\n", new String(msg.getArray(), StandardCharsets.UTF_8), msg.getSrc());
-                received.add(msg);
-                return null;
-            }
-        };
+        final MyUphandler h=new MyUphandler();
         b.setUpHandler(h);
 
         log.debug("Disconnecting X");
         x.disconnect();
         log.debug("A: waiting for site SFO to be UNKNOWN");
-        waitUntilRoute(SFO, false, 20000, 500, a);
+        waitUntilRoute(SFO, false, 10000, 500, a);
 
         for (int i = 0; i < 100; i++)
             b.send(new SiteMaster(SFO), "to-sfo".getBytes(StandardCharsets.UTF_8));
 
         log.debug("Sending message from A to B");
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 100; i++)
             a.send(b.getAddress(), ("to-b-" + i).getBytes(StandardCharsets.UTF_8));
-            Thread.sleep(0);
-        }
 
         for (int i = 0; i < 100; i++) {
-            Message take = received.take();
+            Message take = h.getReceived().take();
             assert !(take.src() instanceof SiteUUID) : "Address was " + take.src();
         }
-        assert siteUnreachableEvents.get() == 100 : "Expecting 100 site unreachable events on node B but got " + siteUnreachableEvents.get();
+        // https://issues.redhat.com/browse/JGRP-2586
+        Util.waitUntilTrue(10000, 500, () -> h.getSiteUnreachableEvents() > 0);
+        assert h.getSiteUnreachableEvents() > 0 && h.getSiteUnreachableEvents() <= 100
+          : "Expecting <= 100 site unreachable events on node B but got " + h.getSiteUnreachableEvents();
 
-        siteUnreachableEvents.set(0);
+        // drain site-unreachable events received after this point
+        Util.waitUntilTrue(3000, 500, () -> h.getSiteUnreachableEvents() > 10);
+
+        MyUphandler h2=new MyUphandler();
+        b.setUpHandler(h2);
         assert ((RELAY2) a.getProtocolStack().findProtocol(RELAY2.class)).isSiteMaster();
-        a.setUpHandler(h);
+        a.setUpHandler(h2);
 
         // check if the site master receives the events
         for (int i = 0; i < 100; i++)
             a.send(new SiteMaster(SFO), "to-sfo-from-a".getBytes(StandardCharsets.UTF_8));
 
-        assert siteUnreachableEvents.get() == 100 : "Expecting 100 site unreachable events on node A but got " + siteUnreachableEvents.get();
+        assert h2.getSiteUnreachableEvents() == 100
+          : "Expecting 100 site unreachable events on node A but got " + h2.getSiteUnreachableEvents();
+    }
+
+    protected static class MyUphandler implements UpHandler {
+        protected final BlockingQueue<Message> received=new LinkedBlockingDeque<>();
+        protected final AtomicInteger          siteUnreachableEvents=new AtomicInteger(0);
+
+        public BlockingQueue<Message> getReceived()              {return received;}
+        public int                    getSiteUnreachableEvents() {return siteUnreachableEvents.get();}
+
+        @Override public UpHandler setLocalAddress(Address a) {return this;}
+
+        @Override
+        public Object up(Event evt) {
+            if(evt.getType() == Event.SITE_UNREACHABLE) {
+                log.debug("Site %s is unreachable", (Object) evt.getArg());
+                siteUnreachableEvents.incrementAndGet();
+            }
+            return null;
+        }
+
+        @Override
+        public Object up(Message msg) {
+            log.debug("Received %s from %s\n", new String(msg.getArray(), StandardCharsets.UTF_8), msg.getSrc());
+            received.add(msg);
+            return null;
+        }
     }
 
 
@@ -407,7 +423,7 @@ public class Relay2Test {
 
 
 
-    protected static RELAY2 createRELAY2(String site_name) {
+    protected static RELAY2 createRELAY2(String site_name) throws UnknownHostException {
         RELAY2 relay=new RELAY2().site(site_name).enableAddressTagging(false).asyncRelayCreation(false);
 
         RelayConfig.SiteConfig lon_cfg=new RelayConfig.SiteConfig(LON),
@@ -419,10 +435,10 @@ public class Relay2Test {
         return relay;
     }
 
-    protected static Protocol[] createBridgeStack() {
+    protected static Protocol[] createBridgeStack() throws UnknownHostException {
         return new Protocol[] {
           new TCP().setBindAddress(LOOPBACK),
-          new MPING(),
+          new MPING().setMcastAddr(InetAddress.getByName("228.9.9.9")),
           new MERGE3().setMaxInterval(3000).setMinInterval(1000),
           new NAKACK2().useMcastXmit(false),
           new UNICAST3(),

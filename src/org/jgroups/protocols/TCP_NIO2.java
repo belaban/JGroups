@@ -110,7 +110,7 @@ public class TCP_NIO2 extends BasicTCP {
           .socketConnectionTimeout(sock_conn_timeout)
           .tcpNodelay(tcp_nodelay).linger(linger)
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
-          .log(this.log);
+          .log(this.log).logDetails(log_details);
         server.maxSendBuffers(max_send_buffers).usePeerConnections(true);
         server.copyOnPartialWrite(this.copy_on_partial_write).readerIdleTime(this.reader_idle_time);
 

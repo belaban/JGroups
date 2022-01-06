@@ -60,6 +60,8 @@ public class ConcurrentStartupTest {
             channels[i].setUpHandler(new UpHandler() {
                 boolean first_view_received;
 
+                public UpHandler setLocalAddress(Address a) {return this;}
+
                 public Object up(Message msg) {return null;}
 
                 public Object up(Event evt) {
@@ -86,8 +88,9 @@ public class ConcurrentStartupTest {
 
     protected static JChannel create(Class<? extends TP> tp_cl, Class<? extends Discovery> discovery_cl,
                                      String name) throws Exception {
+        TP tp=tp_cl.getDeclaredConstructor().newInstance().setBindAddress(Util.getLoopback());
         Protocol[] protocols={
-          tp_cl.getDeclaredConstructor().newInstance().setBindAddress(Util.getLoopback()),
+          tp,
           discovery_cl.getDeclaredConstructor().newInstance(),
           new NAKACK2(),
           new UNICAST3(),

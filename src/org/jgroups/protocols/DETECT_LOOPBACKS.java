@@ -1,7 +1,5 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
@@ -20,15 +18,7 @@ public class DETECT_LOOPBACKS extends Protocol {
 
     @Property(description="Prints to stdout")
     protected boolean             print_to_stdout=true;
-    protected Address             local_addr;
     protected final AtomicInteger count=new AtomicInteger();
-
-
-    public Object down(Event evt) {
-        if(evt.getType() == Event.SET_LOCAL_ADDRESS)
-            local_addr=evt.getArg();
-        return down_prot.down(evt);
-    }
 
     public Object down(Message msg) {
         if(Objects.equals(local_addr, msg.getDest())) {

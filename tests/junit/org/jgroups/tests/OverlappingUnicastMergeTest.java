@@ -25,15 +25,16 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
     @BeforeMethod
     void start() throws Exception {
         ra=new MyReceiver("A"); rb=new MyReceiver("B"); rc=new MyReceiver("C");
-        a=createChannel(true, 3, "A");
+        a=createChannel().name("A");
         a.setReceiver(ra);
 
-        b=createChannel(a, "B");
+        b=createChannel().name("B");
         b.setReceiver(rb);
 
-        c=createChannel(a, "C");
+        c=createChannel().name("C");
         c.setReceiver(rc);
 
+        makeUnique(a,b,c);
         modifyConfigs(a, b, c);
 
         a.connect("OverlappingUnicastMergeTest");
@@ -41,7 +42,7 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
         c.connect("OverlappingUnicastMergeTest");
 
         View view=c.getView();
-        assertEquals("view is " + view, 3, view.size());
+        assert 3 == view.size();
     }
 
     @AfterMethod
@@ -76,9 +77,9 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
         // Inject view {B,C} into B and C:
         View new_view=View.create(b.getAddress(), 10, b.getAddress(), c.getAddress());
         injectView(new_view, b, c);
-        assertEquals("A's view is " + a.getView(), 3, a.getView().size());
-        assertEquals("B's view is " + b.getView(), 2, b.getView().size());
-        assertEquals("C's view is " + c.getView(), 2, c.getView().size());
+        assert 3 == a.getView().size();
+        assert 2 == b.getView().size();
+        assert 2 == c.getView().size();
         sendAndCheckMessages(5, a, b, c);
     }
 
@@ -157,7 +158,7 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
             List<Message> ucasts=receiver.getUnicasts();
             int ucasts_received=ucasts.size();
             System.out.println("receiver " + receiver + ": ucasts=" + ucasts_received);
-            assertEquals("ucasts for " + receiver + ": " + print(ucasts), num_ucasts, ucasts_received);
+            assert num_ucasts == ucasts_received : "ucasts for " + receiver + ": " + print(ucasts);
         }
     }
 

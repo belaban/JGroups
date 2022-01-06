@@ -19,8 +19,9 @@ public class TransportThreadPoolTest extends ChannelTestBase {
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        c1=createChannel(true, 2, "A");
-        c2=createChannel(c1, "B");
+        c1=createChannel().name("A");
+        c2=createChannel().name("B");
+        makeUnique(c1,c2);
     }
 
     @AfterMethod

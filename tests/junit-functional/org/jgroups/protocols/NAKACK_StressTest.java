@@ -96,7 +96,8 @@ public class NAKACK_StressTest {
         });
 
         nak.setDiscardDeliveredMsgs(true);
-        nak.down(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+        for(Protocol p=nak; p != null; p=p.getDownProtocol())
+            p.setAddress(local_addr);
         nak.down(new Event(Event.BECOME_SERVER));
         View view=View.create(local_addr, 1, local_addr, sender);
         nak.down(new Event(Event.VIEW_CHANGE, view));

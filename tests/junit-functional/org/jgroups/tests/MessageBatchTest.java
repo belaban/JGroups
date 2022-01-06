@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
+import org.jgroups.util.AsciiString;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.MessageIterator;
 import org.jgroups.util.Util;
@@ -116,6 +117,17 @@ public class MessageBatchTest {
         assert batch.isEmpty();
     }
 
+    public void testCreation() {
+        Message[] msgs=createMessages().toArray(new Message[0]);
+        int len=msgs.length;
+        BatchMessage ebm=new BatchMessage(b, msgs[0].getSrc(), msgs, len);
+        assert ebm.getNumberOfMessages() == len;
+
+        ebm=new BatchMessage(b, msgs[0].getSrc(), null, 0);
+        assert ebm.getNumberOfMessages() == 0;
+        ebm.add(msgs);
+        assert ebm.getNumberOfMessages() == len;
+    }
 
     public void testSet() {
         List<Message> msgs=createMessages();
@@ -124,6 +136,13 @@ public class MessageBatchTest {
         assert get(batch, 5) == msg;
         set(batch, 4,msg);
         assert get(batch, 4) == msg;
+    }
+
+    public void testSet2() {
+        MessageBatch batch=new MessageBatch(3);
+        Message[] msgs=createMessages().toArray(new Message[0]);
+        batch.set(b, null, msgs);
+        assert batch.size() == msgs.length;
     }
 
 
@@ -286,6 +305,17 @@ public class MessageBatchTest {
         assert batch.capacity() == 10;
     }
 
+    public void testResize() {
+        MessageBatch batch=new MessageBatch(3);
+        for(int i=0; i < 3; i++)
+            batch.add(new EmptyMessage(null).setSrc(b));
+        assert batch.capacity() == 3;
+        assert batch.size() == 3;
+        batch.resize(10);
+        assert batch.capacity() == 10;
+        assert batch.size() == 3;
+    }
+
     public void testAdd() {
         MessageBatch batch=new MessageBatch(3);
         List<Message> msgs=createMessages();
@@ -370,6 +400,34 @@ public class MessageBatchTest {
         }
     }
 
+
+    public void testAddArray() {
+        Message[] msgs=createMessages().toArray(new Message[0]);
+        MessageBatch mb=new MessageBatch(3);
+        int added=mb.add(msgs, msgs.length, true);
+        assert added == msgs.length;
+        assert mb.size() == msgs.length;
+        assert mb.capacity() >= msgs.length;
+
+        mb=new MessageBatch(3);
+        added=mb.add(msgs, 0, true);
+        assert added == 0;
+        assert mb.isEmpty();
+
+        mb=new MessageBatch(3);
+        added=mb.add(msgs, 5, true);
+        assert added == 5;
+        assert mb.size() == 5;
+        assert mb.capacity() >= 5;
+
+        mb=new MessageBatch(msgs.length * 3 +1);
+        added=0;
+        for(int i=0; i < 3; i++)
+            added+=mb.add(msgs, true);
+        assert mb.capacity() == msgs.length *3 +1;
+        assert mb.size() == msgs.length * 3;
+    }
+
     public void testGetMatchingMessages() {
         List<Message> msgs=createMessages();
         MessageBatch batch=new MessageBatch(msgs);
@@ -385,6 +443,23 @@ public class MessageBatchTest {
         matching=batch.getMatchingMessages(UDP_ID, true);
         assert matching.size() == size;
         assert batch.isEmpty();
+    }
+
+    public void testAnyMatch() {
+        List<Message> msgs=createMessages();
+        MessageBatch batch=new MessageBatch(msgs);
+
+        boolean match=batch.anyMatch(m -> m.getHeader(UDP_ID) != null);
+        assert match;
+
+        match=batch.anyMatch(m -> m instanceof ObjectMessage);
+        assert !match;
+
+        match=batch.anyMatch(m -> m.getHeader(FD_ID) != null);
+        assert match;
+
+        match=batch.anyMatch(m -> m.getHeader((short)111) != null);
+        assert !match;
     }
 
 
@@ -666,6 +741,26 @@ public class MessageBatchTest {
         assert batch.size() == 5;
     }
 
+    public void testDetermineMode() {
+        List<Message> l=new ArrayList<>(3);
+        for(int i=0; i < 3; i++)
+            l.add(new EmptyMessage(null).setFlag(Message.Flag.OOB));
+        MessageBatch batch=new MessageBatch(null, null, new AsciiString("cluster"), true, l);
+        assert batch.getMode() == MessageBatch.Mode.OOB;
+        batch.add(new EmptyMessage(null));
+        assert batch.getMode() == MessageBatch.Mode.MIXED;
+
+        batch=new MessageBatch(3);
+        batch.add(new EmptyMessage(null));
+        assert batch.getMode() == MessageBatch.Mode.REG;
+        batch.add(new EmptyMessage(null).setFlag(Message.Flag.OOB));
+        assert batch.getMode() == MessageBatch.Mode.MIXED;
+
+        batch=new MessageBatch(3);
+        l.add(new EmptyMessage(null));
+        batch.add(l, true);
+        assert batch.getMode() == MessageBatch.Mode.MIXED;
+    }
 
     protected static MessageBatch remove(MessageBatch batch, int... indices) {
         Message[] msgs=batch.array();

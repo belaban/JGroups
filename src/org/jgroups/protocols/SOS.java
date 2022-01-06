@@ -102,7 +102,7 @@ public class SOS extends Protocol {
     protected String getMetadata() {
         TP tp=stack.getTransport();
         return String.format("\nDate: %s, member: %s (%s), version: %s\nview: %s\n",
-                             new Date(), tp.getLocalAddress(), tp.getPhysicalAddress(),
+                             new Date(), tp.getAddress(), tp.getPhysicalAddress(),
                              Version.printVersion(), tp.view());
     }
 
@@ -123,13 +123,13 @@ public class SOS extends Protocol {
                 out.write(dump.getBytes());
             }
             catch(Exception e) {
-                log.error("%s: failed dumping SOS information to %s: %s", getTransport().getLocalAddress(), filename, e);
+                log.error("%s: failed dumping SOS information to %s: %s", getTransport().getAddress(), filename, e);
             }
         }
 
         public String toString() {
             return String.format("%s: %s (%s)", SOS.class.getSimpleName(), getClass().getSimpleName(),
-                                 getTransport().getLocalAddress());
+                                 getTransport().getAddress());
         }
     }
 }

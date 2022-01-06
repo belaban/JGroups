@@ -19,7 +19,6 @@ import java.util.List;
  * @since  4.0.5
  */
 public abstract class KeyExchange extends Protocol {
-    protected Address local_addr;
 
     public List<Integer> requiredUpServices() {
         return Arrays.asList(Event.GET_SECRET_KEY, Event.SET_SECRET_KEY);
@@ -38,9 +37,6 @@ public abstract class KeyExchange extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.type()) {
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.arg();
-                break;
             case Event.VIEW_CHANGE:
                 handleView(evt.arg());
                 break;

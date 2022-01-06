@@ -97,7 +97,6 @@ public abstract class Discovery extends Protocol {
     protected volatile View              view;
     @ManagedAttribute(description="Whether this member is the current coordinator")
     protected volatile boolean           is_coord;
-    protected volatile Address           local_addr;
     protected volatile Address           current_coord;
     protected String                     cluster_name;
     protected TP                         transport;
@@ -422,10 +421,6 @@ public abstract class Discovery extends Protocol {
                 is_server=true;
                 return null;
 
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                return down_prot.down(evt);
-
             case Event.CONNECT:
             case Event.CONNECT_WITH_STATE_TRANSFER:
             case Event.CONNECT_USE_FLUSH:
@@ -620,7 +615,7 @@ public abstract class Discovery extends Protocol {
     protected void sendDiscoveryResponse(Address logical_addr, PhysicalAddress physical_addr,
                                          String logical_name, final Address sender, boolean coord) {
         PingData data=new PingData(logical_addr, is_server, logical_name, physical_addr).coord(coord);
-        Message rsp_msg=new BytesMessage(sender).setFlag(Message.Flag.INTERNAL, Message.Flag.OOB, Message.Flag.DONT_BUNDLE)
+        Message rsp_msg=new BytesMessage(sender).setFlag(Message.Flag.OOB, Message.Flag.DONT_BUNDLE)
           .putHeader(this.id, new PingHeader(PingHeader.GET_MBRS_RSP)).setArray(marshal(data));
 
         if(stagger_timeout > 0) {

@@ -1,9 +1,14 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
 import org.jgroups.Event;
-import org.jgroups.annotations.*;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
@@ -11,8 +16,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 /**
  * Discards up or down messages based on a percentage; e.g., setting property 'up' to 0.1 causes 10%
@@ -29,7 +34,6 @@ public class DISCARD extends Protocol {
 
     @Property(description="If discard_all is true, still sends messages to self")
     protected boolean                   excludeItself=true;   // if true don't discard messages sent/received in this stack
-    protected Address                   localAddress;
 
     @ManagedAttribute(description="Number of dropped down messages",name="dropped_down_messages")
     protected int                       num_down;
@@ -56,17 +60,8 @@ public class DISCARD extends Protocol {
     @Property(name="gui", description="use a GUI or not")
     protected boolean                   use_gui;
 
-
-    public DISCARD localAddress(Address addr) {setLocalAddress(addr); return this;}
-
     @ManagedAttribute(description="The set of ignored members")
     public String getIgnoredMembers() {return ignoredMembers.toString();}
-
-    public Address                      localAddress() {
-        if(localAddress == null)
-            localAddress=(Address)up_prot.up(new Event(Event.GET_LOCAL_ADDRESS));
-        return localAddress;
-    }
 
     public boolean discardAll() {
         return discard_all;
@@ -80,8 +75,8 @@ public class DISCARD extends Protocol {
         return excludeItself;
     }
 
-    public DISCARD setLocalAddress(Address localAddress){
-        this.localAddress =localAddress;
+    public DISCARD setAddress(Address localAddress) {
+        super.setAddress(localAddress);
         if(discard_dialog != null)
             discard_dialog.setTitle(localAddress != null? localAddress.toString() : "n/a");
         return this;
@@ -141,7 +136,7 @@ public class DISCARD extends Protocol {
         if(discard_dialog == null) {
             discard_dialog=new DiscardDialog();
             discard_dialog.init();
-            discard_dialog.setTitle(localAddress() != null? localAddress().toString() : "n/a");
+            discard_dialog.setTitle(local_addr != null? local_addr.toString() : "n/a");
             discard_dialog.handleView(members);
         }
     }
@@ -165,15 +160,6 @@ public class DISCARD extends Protocol {
         super.stop();
         if(discard_dialog != null)
             discard_dialog.dispose();
-    }
-
-    public Object up(Event evt) {
-        if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
-            localAddress=evt.getArg();
-            if(discard_dialog != null)
-                discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
-        }
-        return up_prot.up(evt);
     }
 
     public Object up(Message msg) {
@@ -200,16 +186,10 @@ public class DISCARD extends Protocol {
                 List<Address> mbrs=view.getMembers();
                 members.clear();
                 members.addAll(mbrs);
-//                ignoredMembers.retainAll(mbrs); // remove all non members
                 if(discard_dialog != null)
                     discard_dialog.handleView(mbrs);
                 break;
 
-            case Event.SET_LOCAL_ADDRESS:
-                localAddress=evt.getArg();
-                if(discard_dialog != null)
-                    discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
-                break;
             case Event.GET_PING_DATA:
                 if(discard_all)
                     return null;
@@ -223,7 +203,7 @@ public class DISCARD extends Protocol {
         boolean multicast=dest == null;
 
         if(msg.getSrc() == null)
-            msg.setSrc(localAddress());
+            msg.setSrc(local_addr);
 
         if(discard_all) {
             if(excludeItself) {
@@ -233,7 +213,7 @@ public class DISCARD extends Protocol {
                     return null;
                 }
 
-                if(Objects.equals(dest, localAddress()))
+                if(Objects.equals(dest, local_addr))
                     down_prot.down(msg);
             }
             return null;
@@ -252,7 +232,7 @@ public class DISCARD extends Protocol {
         if(down > 0) {
             double r=Math.random();
             if(r < down) {
-                if(excludeItself && dest != null && dest.equals(localAddress())) {
+                if(excludeItself && dest != null && dest.equals(local_addr)) {
                     if(log.isTraceEnabled()) log.trace("excluding itself");
                 }
                 else {
@@ -267,12 +247,12 @@ public class DISCARD extends Protocol {
 
     /** Checks if a message should be passed up, or not */
     protected boolean shouldDropUpMessage(@SuppressWarnings("UnusedParameters") Message msg, Address sender) {
-        if(discard_all && !sender.equals(localAddress()))
+        if(discard_all && !sender.equals(local_addr))
             return true;
 
         if(ignoredMembers.contains(sender)) {
             if(log.isTraceEnabled())
-                log.trace(localAddress + ": dropping message from " + sender);
+                log.trace(local_addr + ": dropping message from " + sender);
             num_up++;
             return true;
         }
@@ -280,13 +260,13 @@ public class DISCARD extends Protocol {
         if(up > 0) {
             double r=Math.random();
             if(r < up) {
-                if(excludeItself && sender.equals(localAddress())) {
+                if(excludeItself && sender.equals(local_addr)) {
                     if(log.isTraceEnabled())
                         log.trace("excluding myself");
                 }
                 else {
                     if(log.isTraceEnabled())
-                        log.trace(localAddress + ": dropping message from " + sender);
+                        log.trace(local_addr + ": dropping message from " + sender);
                     num_up++;
                     return true;
                 }
@@ -323,7 +303,7 @@ public class DISCARD extends Protocol {
             getContentPane().add(checkboxes);
             pack();
             setVisible(true);
-            setTitle(localAddress() != null? localAddress().toString() : "n/a");
+            setTitle(local_addr != null? local_addr.toString() : "n/a");
         }
 
 

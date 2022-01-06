@@ -3,16 +3,14 @@ package org.jgroups.util;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.protocols.TP;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.IntFunction;
-import java.util.stream.Stream;
 
 /**
  * {@link org.jgroups.stack.MessageProcessingPolicy} which processes <em>regular</em> messages and message batches by
@@ -25,6 +23,9 @@ import java.util.stream.Stream;
 public class MaxOneThreadPerSender extends SubmitToThreadPool {
     protected final MessageTable mcasts=new MessageTable();
     protected final MessageTable ucasts=new MessageTable();
+
+    @Property(description="Max number of messages buffered for consumption of the delivery thread in " +
+      "MaxOneThreadPerSender. 0 creates an unbounded buffer")
     protected int                max_buffer_size;
 
     @ManagedOperation(description="Dumps unicast and multicast tables")
@@ -39,7 +40,6 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
 
     public void init(TP transport) {
         super.init(transport);
-        max_buffer_size=tp.getMessageProcessingMaxBufferSize();
     }
 
     public void destroy() {
@@ -47,31 +47,25 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         ucasts.clear();
     }
 
-    public void loopback(Message msg, boolean oob, boolean internal) {
-        if(oob || internal) {
-            super.loopback(msg, oob, internal);
-            return;
-        }
+    public boolean loopback(Message msg, boolean oob) {
+        if(oob)
+            return super.loopback(msg, oob);
         MessageTable table=msg.getDest() == null? mcasts : ucasts;
-        table.process(msg, true);
+        return table.process(msg, true);
     }
 
-    public void process(Message msg, boolean oob, boolean internal) {
-        if(oob || internal) {
-            super.process(msg, oob, internal);
-            return;
-        }
+    public boolean process(Message msg, boolean oob) {
+        if(oob)
+            return super.process(msg, oob);
         MessageTable table=msg.getDest() == null? mcasts : ucasts;
-        table.process(msg, false);
+        return table.process(msg, false);
     }
 
-    public void process(MessageBatch batch, boolean oob, boolean internal) {
-        if(oob || internal) {
-            super.process(batch, oob, internal);
-            return;
-        }
+    public boolean process(MessageBatch batch, boolean oob) {
+        if(oob)
+            return super.process(batch, oob);
         MessageTable table=batch.dest() == null? mcasts : ucasts;
-        table.process(batch);
+        return table.process(batch);
     }
 
     public void viewChange(List<Address> members) {
@@ -86,31 +80,24 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         public MessageTable() {
         }
 
-        protected Entry get(final Address dest, final Address sender) {
-            Entry entry=map.get(sender);
-            if(entry == null) {
-                IntFunction<MessageBatch> creator_func=cap -> new MessageBatch(cap).dest(dest)
-                  .clusterName(tp.getClusterNameAscii()).sender(sender).multicast(dest == null);
-                Entry tmp=map.putIfAbsent(sender, entry=new Entry(creator_func));
-                if(tmp != null)
-                    entry=tmp;
-            }
-            return entry;
+        protected Entry get(final Address sender, boolean multicast) {
+            return map.computeIfAbsent(sender, s -> new Entry(sender, multicast, tp.getClusterNameAscii()));
         }
 
         protected void clear() {map.clear();}
 
-        protected void process(Message msg, boolean loopback) {
+        protected boolean process(Message msg, boolean loopback) {
             Address dest=msg.getDest(), sender=msg.getSrc();
-            get(dest, sender).process(msg, loopback);
+            return get(sender, dest == null).process(msg, loopback);
         }
 
-        protected void process(MessageBatch batch) {
+        protected boolean process(MessageBatch batch) {
             Address dest=batch.dest(), sender=batch.sender();
-            get(dest, sender).process(batch);
+            return get(sender, dest == null).process(batch);
         }
 
         protected void viewChange(List<Address> mbrs) {
+            // remove all senders that are not in the new view
             map.keySet().retainAll(mbrs);
         }
 
@@ -121,65 +108,82 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
 
 
     protected class Entry {
-        protected final Lock                lock=new ReentrantLock();
-        protected boolean                   running;       // if true, a thread is delivering a message batch to the application
-        protected MessageBatch              batch;         // used to queue messages
-        protected IntFunction<MessageBatch> batch_creator; // creates a batch
+        protected final Lock         lock=new ReentrantLock();
+        protected boolean            running;  // if true, a thread is delivering a message batch to the application
+        protected final boolean      mcast;
+        protected final MessageBatch batch;    // used to queue messages
+        protected final Address      sender;
+        protected final AsciiString  cluster_name;
 
-        protected final LongAdder           submitted_msgs=new LongAdder();
-        protected final LongAdder           submitted_batches=new LongAdder();
-        protected final LongAdder           queued_msgs=new LongAdder();
-        protected final LongAdder           queued_batches=new LongAdder();
+        protected long               submitted_msgs;
+        protected long               submitted_batches;
+        protected long               queued_msgs;
+        protected long               queued_batches;
 
 
-        protected Entry(IntFunction<MessageBatch> creator) {
-            batch_creator=creator;
-            batch=batch_creator.apply(max_buffer_size > 0? max_buffer_size : 16); // initial capacity
+        protected Entry(Address sender, boolean mcast, AsciiString cluster_name) {
+            this.mcast=mcast;
+            this.sender=sender;
+            this.cluster_name=cluster_name;
+            int cap=max_buffer_size > 0? max_buffer_size : 16; // initial capacity
+            batch=new MessageBatch(cap).dest(tp.getAddress()).sender(sender).clusterName(cluster_name).multicast(mcast);
         }
 
 
         public Entry reset() {
-            Stream.of(submitted_msgs, submitted_batches, queued_msgs, queued_batches).forEach(LongAdder::reset);
+            submitted_msgs=submitted_batches=queued_msgs=queued_batches=0;
             return this;
         }
 
 
-        protected void process(Message msg, boolean loopback) {
+        protected boolean process(Message msg, boolean loopback) {
             if(!allowedToSubmitToThreadPool(msg))
-                return;
+                return false;
             // running is true, we didn't queue msg and need to submit a task to the thread pool
-            submit(msg, loopback);
+            return submit(msg, loopback);
         }
 
-        protected void process(MessageBatch batch) {
+        protected boolean process(MessageBatch batch) {
             if(!allowedToSubmitToThreadPool(batch))
-                return;
+                return false;
             // running is true, we didn't queue msg and need to submit a task to the thread pool
-            submit(batch);
+            return submit(batch);
         }
 
-        protected void submit(Message msg, boolean loopback) {
+        protected boolean submit(Message msg, boolean loopback) {
             // running is true, we didn't queue msg and need to submit a task to the thread pool
             try {
-                submitted_msgs.increment();
-                BatchHandlerLoop handler=new BatchHandlerLoop(batch_creator.apply(16).add(msg), this, loopback);
-                if(!tp.submitToThreadPool(handler))
+                submitted_msgs++;
+                MessageBatch mb=new MessageBatch(16).sender(sender).dest(mcast? null : tp.getAddress())
+                  .clusterName(cluster_name).multicast(mcast).add(msg);
+                BatchHandlerLoop handler=new BatchHandlerLoop(mb, this, loopback);
+                if(!tp.getThreadPool().execute(handler)) {
                     setRunning(false);
+                    return false;
+                }
+                return true;
             }
             catch(Throwable t) {
                 setRunning(false);
+                return false;
             }
         }
 
-        protected void submit(MessageBatch mb) {
+        protected boolean submit(MessageBatch batch) {
             try {
-                submitted_batches.increment();
-                BatchHandlerLoop handler=new BatchHandlerLoop(batch_creator.apply(mb.size()).add(mb), this, false);
-                if(!tp.submitToThreadPool(handler))
+                submitted_batches++;
+                MessageBatch mb=new MessageBatch(batch.size()).sender(sender).dest(mcast? null : tp.getAddress())
+                  .clusterName(cluster_name).multicast(mcast).add(batch);
+                BatchHandlerLoop handler=new BatchHandlerLoop(mb, this, false);
+                if(!tp.getThreadPool().execute(handler)) {
                     setRunning(false);
+                    return false;
+                }
+                return true;
             }
             catch(Throwable t) {
                 setRunning(false);
+                return false;
             }
         }
 
@@ -196,7 +200,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
                 if(!running)
                     return running=true; // the caller can submit a new BatchHandlerLoop task to the thread pool
                 this.batch.add(msg, max_buffer_size == 0);
-                queued_msgs.increment();
+                queued_msgs++;
                 return false;
             }
             finally {
@@ -210,7 +214,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
                 if(!running)
                     return running=true; // the caller can submit a new BatchHandlerLoop task to the thread pool
                 this.batch.add(msg_batch, max_buffer_size == 0);
-                queued_batches.increment();
+                queued_batches++;
                 return false;
             }
             finally {
@@ -250,7 +254,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         // unsynchronized on batch but who cares
         public String toString() {
             return String.format("batch size=%d queued msgs=%d queued batches=%d submitted msgs=%d submitted batches=%d",
-                                 batch.size(), queued_msgs.sum(), queued_batches.sum(), submitted_msgs.sum(), submitted_batches.sum());
+                                 batch.size(), queued_msgs, queued_batches, submitted_msgs, submitted_batches);
         }
     }
 

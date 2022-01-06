@@ -32,10 +32,10 @@ public class ProgrammaticChat {
             // prevents setting default values: GraalVM doesn't accept creation of InetAddresses at build time (in the
             // image), so we have to set the default valiues at run time
             Configurator.skipSettingDefaultValues(true);
+            TCP tcp=new TCP().setBindPort(7800);
 
             Protocol[] prot_stack={
-              new TCP().setBindPort(7800)
-                .setDiagnosticsEnabled(true).diagEnableTcp(true).diagEnableUdp(false),
+              tcp,
               new TCPPING(),
               new MPING(),
               new MERGE3(),
@@ -51,6 +51,7 @@ public class ProgrammaticChat {
               new FRAG2()
             };
             ch=new JChannel(prot_stack);
+            ch.getProtocolStack().getTransport().getDiagnosticsHandler().enableTcp(true).enableUdp(false);
 
             Configurator.skipSettingDefaultValues(false);
             h=new NonReflectiveProbeHandler(ch).initialize(ch.getProtocolStack().getProtocols());
@@ -95,8 +96,8 @@ public class ProgrammaticChat {
         InetAddress diag_addr=Util.getAddress("224.0.75.75", Util.getIpStackType());
         InetAddress mping_mcast=Util.getAddress("230.5.6.7", Util.getIpStackType());
         ProtocolStack stack=ch.getProtocolStack();
-        TP transport=stack.getTransport();
-        transport.setBindAddress(ba).setDiagnosticsAddr(diag_addr);
+        TP transport=stack.getTransport().setBindAddress(ba);
+        transport.getDiagnosticsHandler().setMcastAddress(diag_addr);
 
         Discovery discovery=stack.findProtocol(TCPPING.class);
         if(discovery != null)

@@ -164,7 +164,6 @@ public interface Message extends SizeStreamable, Constructable<Message> {
         NO_RELAY,       // bypass relaying (RELAY2)
         RSVP,           // ack of a multicast
         RSVP_NB,        // non blocking RSVP
-        INTERNAL,       // for internal use by JGroups only, don't use!
         SKIP_BARRIER;   // passing messages through a closed BARRIER
     }
 
@@ -384,7 +383,7 @@ Here's an example that sends a heartbeat in `FD_ALL`:
 [source,java]
 ----
 Message heartbeat=new EmptyMessage()
-                   .setFlag(Message.Flag.INTERNAL)
+                   .setFlag(Message.Flag.OOB)
                    .putHeader(id, new HeartbeatHeader());
 ----
 

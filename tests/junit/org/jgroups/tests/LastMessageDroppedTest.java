@@ -30,8 +30,9 @@ public class LastMessageDroppedTest extends ChannelTestBase {
     }
 
     @BeforeMethod void init() throws Exception {
-        a=createChannel(true, 2).name("A");
-        b=createChannel(a).name("B");
+        a=createChannel().name("A");
+        b=createChannel().name("B");
+        makeUnique(a,b);
         changeNAKACK2(a,b);
         // it should take between 0 and 6s to retransmit the last missing msg. if dropped, may have to run multiple times
         changeDesiredGossipTime(3000, a,b);

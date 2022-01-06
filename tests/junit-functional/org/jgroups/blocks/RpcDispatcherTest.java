@@ -384,8 +384,8 @@ public class RpcDispatcherTest {
 
         RspList<Integer> rsps=da.callRemoteMethods(null, "foo", null, null, options);
         System.out.println("responses are:\n" + rsps);
-        Util.assertEquals("there should be three response values", 3, rsps.size());
-        Util.assertEquals("number of responses received should be 3", 0, rsps.numReceived());
+        assert 3 == rsps.size();
+        assert 0 == rsps.numReceived();
     }
 
     /**
@@ -404,8 +404,8 @@ public class RpcDispatcherTest {
 
         RspList<Integer> rsps=da.callRemoteMethods(null, "foo", null, null, options);
         System.out.println("responses are:\n" + rsps);
-        Util.assertEquals("there should be three response values", 3, rsps.size());
-        Util.assertEquals("number of responses received should be 3", 1, rsps.numReceived());
+        assert 3 == rsps.size();
+        assert 1 == rsps.numReceived();
     }
 
 
@@ -613,8 +613,8 @@ public class RpcDispatcherTest {
         assert rsps.size() == 2;
         for(Map.Entry<Address,Rsp<Integer>> entry: rsps.entrySet()) {
             Rsp<Integer> rsp=entry.getValue();
-            Util.assertTrue("response from " + entry.getKey() + " was received", rsp.wasReceived());
-            Util.assertFalse(rsp.wasSuspected());
+            assert rsp.wasReceived();
+            assert !rsp.wasSuspected();
         }
 
         List<Address> mbrs=new ArrayList<>(members);
@@ -627,8 +627,8 @@ public class RpcDispatcherTest {
         assert rsps.size() == 1;
         for(Map.Entry<Address,Rsp<Integer>> entry: rsps.entrySet()) {
             Rsp<Integer> rsp=entry.getValue();
-            Util.assertTrue("response from " + entry.getKey() + " was received", rsp.wasReceived());
-            Util.assertFalse(rsp.wasSuspected());
+            assert rsp.wasReceived();
+            assert !rsp.wasSuspected();
         }
 
         rsps=da.callRemoteMethods(mbrs, "foo", null, null,
@@ -747,7 +747,7 @@ public class RpcDispatcherTest {
 
             prot=ch.getProtocolStack().getTransport();
             if(prot != null)
-                ((TP)prot).setMaxBundleSize(14000);
+                ((TP)prot).getBundler().setMaxSize(14000);
         }
     }
 
@@ -824,7 +824,7 @@ public class RpcDispatcherTest {
             if (obj instanceof java.lang.Throwable) {
                 Throwable t = (Throwable) obj ;
 
-                System.out.println(t.toString() + " exception was raised processing argument from " +
+                System.out.println(t + " exception was raised processing argument from " +
                                      entry.getKey() + " -this is expected") ;
                 continue ;
             }
@@ -857,7 +857,7 @@ public class RpcDispatcherTest {
         final long timeout = LARGE_VALUE_TIMEOUT * 1000 ;
 
         System.out.println("\ntesting unicast call with " + size + " bytes");
-        Util.assertNotNull(dst);
+        assert dst != null;
 
         long startTime = System.currentTimeMillis();
         byte[] val=da.callRemoteMethod(dst, "largeReturnValue", new Object[]{size}, new Class[]{int.class},
@@ -866,11 +866,11 @@ public class RpcDispatcherTest {
         System.out.println("test took: " + (stopTime-startTime) + " ms");
 
         // check value is not null, otherwise fail the test
-        Util.assertNotNull("return value should be non-null", val);
+        assert val != null;
         System.out.println("rsp: " + val.length + " bytes");
         
         // returned value should have requested size
-        Util.assertEquals("return value does not match requested size", size, val.length);
+        assert size == val.length;
     }
 
     /**

@@ -76,8 +76,6 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
     /*
      * --------------------------------------------- Fields ---------------------------------------
      */
-    protected Address             local_addr;
-
     protected volatile Address    state_provider;
 
     @GuardedBy("members")
@@ -176,10 +174,6 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
             case Event.CONFIG:
                 handleConfig(evt.getArg());
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
         }
 

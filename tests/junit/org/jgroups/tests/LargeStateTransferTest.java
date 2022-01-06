@@ -4,7 +4,6 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Receiver;
-import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
@@ -34,9 +33,10 @@ public class LargeStateTransferTest extends ChannelTestBase {
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        provider=createChannel(true, 2, "provider");
+        provider=createChannel().name("provider");
         modifyStack(provider);
-        requester=createChannel(provider, "requester");
+        requester=createChannel().name("requester");
+        makeUnique(provider,requester);
         setThreadPoolSize(provider, requester);
     }
 
@@ -78,18 +78,15 @@ public class LargeStateTransferTest extends ChannelTestBase {
         requester.getState(provider.getAddress(), 20000);
         Integer result=p.getResult(20000);
         long stop=System.currentTimeMillis();
-        assertNotNull(result);
+        assert result != null;
         log("received " + Util.printBytes(result) + " (in " + (stop-start) + "ms)");
         assert result == size : "result=" + result + ", expected=" + size;
     }
 
 
     private static void setThreadPoolSize(JChannel... channels) {
-        for(JChannel channel: channels) {
-            TP transport=channel.getProtocolStack().getTransport();
-            transport.setThreadPoolMinThreads(2);
-            transport.setThreadPoolMaxThreads(8);
-        }
+        for(JChannel channel: channels)
+            channel.getProtocolStack().getTransport().getThreadPool().setMinThreads(2).setMaxThreads(8);
     }
 
 

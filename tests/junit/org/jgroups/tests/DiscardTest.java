@@ -60,10 +60,11 @@ public class DiscardTest extends ChannelTestBase {
     private void _testLosslessReception(boolean discard) throws Exception {
         long start, stop;
 
-        a=createChannel(true).name("A");
+        a=createChannel().name("A");
         a.setReceiver(new MyReceiver(ch1_all_received, NUM_MSGS, "A"));
-        b=createChannel(a).name("B");
+        b=createChannel().name("B");
         b.setReceiver(new MyReceiver(ch2_all_received, NUM_MSGS, "B"));
+        makeUnique(a,b);
 
         a.connect(GROUP);
         b.connect(GROUP);

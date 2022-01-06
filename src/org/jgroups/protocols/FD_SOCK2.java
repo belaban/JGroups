@@ -85,9 +85,6 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     @ManagedAttribute(description="List of currently suspected members")
     protected final Membership               suspected_mbrs=new Membership();
 
-    @ManagedAttribute(description="The address of this local member")
-    protected Address                        local_addr; // our own address
-
     @ManagedAttribute(description="The cluster we've joined. Set on joining a cluster, null when unconnected")
     protected String                         cluster;
 
@@ -209,10 +206,6 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
                 broadcastUnuspectMessage(evt.getArg());
                 break;
 
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
-
             case Event.CONNECT:
             case Event.CONNECT_WITH_STATE_TRANSFER:
             case Event.CONNECT_USE_FLUSH:
@@ -301,13 +294,13 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     protected NioServer createServer(int[] bind_ports) {
         DefaultSocketFactory socket_factory=new DefaultSocketFactory();
         DefaultThreadFactory thread_factory=new DefaultThreadFactory("nio", false);
-        thread_factory.useFibers(getTransport().useFibers());
+        thread_factory.useFibers(getTransport().useVirtualThreads());
         for(int bind_port: bind_ports) {
             try {
                 return new NioServer(thread_factory, socket_factory, bind_addr, bind_port, bind_port,
                                      external_addr, external_port, 0);
             }
-            catch(Exception ex) {
+            catch(Exception ignored) {
             }
         }
         throw new IllegalStateException(String.format("%s: failed to find an available port in ports %s",
@@ -499,7 +492,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
 
         // 1. Send a SUSPECT message right away; the broadcast task will take some time to send it (sleeps first)
         FdHeader hdr=new FdHeader(FdHeader.SUSPECT).mbrs(suspected_members);
-        Message suspect_msg=new EmptyMessage().setFlag(Message.Flag.INTERNAL).putHeader(this.id, hdr);
+        Message suspect_msg=new EmptyMessage().putHeader(this.id, hdr);
         down_prot.down(suspect_msg);
 
         // 2. Add to broadcast task and start if not running. The task ends when suspected mbrs are removed from mbrship
@@ -516,7 +509,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
 
         // 1. Send a SUSPECT message right away; the broadcast task will take some time to send it (sleeps first)
         FdHeader hdr=new FdHeader(FdHeader.UNSUSPECT).mbrs(Collections.singleton(mbr));
-        Message suspect_msg=new EmptyMessage().setFlag(Message.Flag.INTERNAL).putHeader(this.id, hdr);
+        Message suspect_msg=new EmptyMessage().putHeader(this.id, hdr);
         down_prot.down(suspect_msg);
     }
 
@@ -711,7 +704,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
                 hdr=new FdHeader(FdHeader.SUSPECT).mbrs(new HashSet<>(suspects));
             }
             // mcast SUSPECT to all members
-            Message suspect_msg=new EmptyMessage().setFlag(Message.Flag.INTERNAL).putHeader(id, hdr);
+            Message suspect_msg=new EmptyMessage().putHeader(id, hdr);
             down_prot.down(suspect_msg);
         }
 

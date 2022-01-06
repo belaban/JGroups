@@ -60,7 +60,7 @@ public class Average implements Streamable {
     }
 
     public String toString() {
-        return String.valueOf(getAverage());
+        return String.format("%,.2f", avg);
     }
 
     @Override

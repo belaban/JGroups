@@ -21,7 +21,8 @@ public class RpcDispatcherExceptionTest extends ChannelTestBase {
     private final Target target=new Target();
 
     @BeforeClass void setUp() throws Exception {
-        channel=createChannel(true);
+        channel=createChannel();
+        makeUnique(channel);
         disp=new RpcDispatcher(channel, target);
         channel.connect("RpcDispatcherExceptionTest");
     }

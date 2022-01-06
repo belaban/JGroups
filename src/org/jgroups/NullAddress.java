@@ -1,12 +1,10 @@
 package org.jgroups;
 
-import org.jgroups.stack.IpAddress;
-
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-public class NullAddress implements Address{
+public class NullAddress implements Address {
     @Override
     public int compareTo(Address that) {
         if (that instanceof NullAddress) {
@@ -17,12 +15,7 @@ public class NullAddress implements Address{
     }
 
     public boolean equals(Object obj) {
-        if (obj instanceof NullAddress) {
-            return true;
-        } else {
-            return false;
-        }
-
+        return obj instanceof NullAddress;
     }
 
     @Override

@@ -26,18 +26,18 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
         this.log=tp.getLog();
     }
 
-    public void loopback(Message msg, boolean oob, boolean internal) {
-        tp.submitToThreadPool(new SingleLoopbackHandler(msg));
+    public boolean loopback(Message msg, boolean oob) {
+        return tp.getThreadPool().execute(new SingleLoopbackHandler(msg));
     }
 
-    public void process(Message msg, boolean oob, boolean internal) {
-        tp.submitToThreadPool(new SingleMessageHandler(msg));
+    public boolean process(Message msg, boolean oob) {
+        return tp.getThreadPool().execute(new SingleMessageHandler(msg));
     }
 
-    public void process(MessageBatch batch, boolean oob, boolean internal) {
+    public boolean process(MessageBatch batch, boolean oob) {
         if(oob)
             removeAndDispatchNonBundledMessages(batch);
-        tp.submitToThreadPool(new BatchHandler(batch));
+        return tp.getThreadPool().execute(new BatchHandler(batch));
     }
 
 
@@ -55,7 +55,7 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
                 it.remove();
                 if(tp.statsEnabled())
                     tp.getMessageStats().incrNumOOBMsgsReceived(1);
-                tp.submitToThreadPool(new SingleMessageHandlerWithClusterName(msg, cname));
+                tp.getThreadPool().execute(new SingleMessageHandlerWithClusterName(msg, cname));
             }
         }
     }
@@ -87,13 +87,9 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
             try {
                 if(tp.statsEnabled()) {
                     MsgStats msg_stats=tp.getMessageStats();
-                    boolean oob=msg.isFlagSet(Message.Flag.OOB), internal=msg.isFlagSet(Message.Flag.INTERNAL);
-                    if(oob || internal) {
-                        if(oob)
-                            msg_stats.incrNumOOBMsgsReceived(1);
-                        if(internal)
-                            msg_stats.incrNumInternalMsgsReceived(1);
-                    }
+                    boolean oob=msg.isFlagSet(Message.Flag.OOB);
+                    if(oob)
+                        msg_stats.incrNumOOBMsgsReceived(1);
                     else
                         msg_stats.incrNumMsgsReceived(1);
                     msg_stats.incrNumBytesReceived(msg.getLength());
@@ -140,13 +136,9 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
             if(tp.statsEnabled()) {
                 int batch_size=batch.size();
                 MsgStats msg_stats=tp.getMessageStats();
-                boolean oob=batch.getMode() == MessageBatch.Mode.OOB, internal=batch.getMode() == MessageBatch.Mode.INTERNAL;
-                if(oob || internal) {
-                    if(oob)
-                        msg_stats.incrNumOOBMsgsReceived(batch_size);
-                    if(internal)
-                        msg_stats.incrNumInternalMsgsReceived(batch_size);
-                }
+                boolean oob=batch.getMode() == MessageBatch.Mode.OOB;
+                if(oob)
+                    msg_stats.incrNumOOBMsgsReceived(batch_size);
                 else
                     msg_stats.incrNumMsgsReceived(batch_size);
                 msg_stats.incrNumBatchesReceived(1);

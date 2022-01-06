@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.Event;
 import org.jgroups.Global;
+import org.jgroups.annotations.Component;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.conf.ProtocolConfiguration;
@@ -35,10 +36,8 @@ public class ProtocolConfigurationTest {
 									"ip_address_list_method=192.168.0.100[5678],192.168.0.101[2345];port_range=1)" ;
 	static final String configurableObjectsProps="org.jgroups.tests.ProtocolConfigurationTest$CONFIGOBJPROTOCOL(" +
 	                                "config_object_class=org.jgroups.tests.ProtocolConfigurationTest$ConfigurableObject;" +
-	                                "string_property=test)" ;
+	                                "comp1.string_property=test)" ;
 	          
-	List<String> order = new LinkedList<>() ;
-
 	@BeforeMethod
 	void setUp() {
 		stack=new ProtocolStack();
@@ -145,14 +144,16 @@ public class ProtocolConfigurationTest {
 		List<Protocol> protocols = new ArrayList<>() ;
 		
 		// create the layer described by INETADDRESSES
-		protocol = Configurator.createProtocol(configurableObjectsProps, stack) ;
+		protocol = Configurator.createProtocol(configurableObjectsProps, stack);
+		ProtocolConfiguration cfg=new ProtocolConfiguration(configurableObjectsProps);
+		ProtocolStack.initComponents(protocol, cfg);
 		
 		// process the defaults (want this eventually)
 		protocol_configs.add(new ProtocolConfiguration(configurableObjectsProps)) ;
 		protocols.add(protocol) ;
 				
 		// get the value which should have been assigned a default
-		List<Object> configObjs = protocol.getConfigurableObjects() ;
+		List<Object> configObjs = protocol.getComponents() ;
 		assert configObjs.size() == 1 ;
 		Object configObj = configObjs.get(0) ;
 		assert configObj instanceof ConfigurableObject ;  
@@ -209,8 +210,7 @@ public class ProtocolConfigurationTest {
 		}
 	}
 	public static class DEFAULTS extends Protocol {
-		int a ;
-		int b ;
+		int         a, b ;
 		InetAddress c ;
 		
 		@Property(name="a")
@@ -291,20 +291,13 @@ public class ProtocolConfigurationTest {
 	}
 	public static class CONFIGOBJPROTOCOL extends Protocol {
 
-	    private Object configObjInstance=null;
+		@Component(name="comp1")
+	    private Object configObjInstance;
 		
 	    @Property(name="config_object_class")
 	    public void setConfigurableObjectClass(String class_name) throws Exception {
             configObjInstance=Class.forName(class_name).getDeclaredConstructor().newInstance();
 	    }
-	    
-	    public List<Object> getConfigurableObjects() {
-	        List<Object> retval=new LinkedList<>();
-	        if(configObjInstance != null)
-	            retval.add(configObjInstance);
-	        return retval;
-	    }
-		
 
 		// do nothing
 		public Object up(Event evt) {

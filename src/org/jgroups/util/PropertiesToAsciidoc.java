@@ -1,5 +1,6 @@
 package org.jgroups.util;
 
+import org.jgroups.annotations.Component;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
@@ -10,6 +11,7 @@ import javax.xml.transform.TransformerException;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 /**
@@ -24,7 +26,7 @@ import java.util.*;
  * 
  */
 public class PropertiesToAsciidoc {
-
+    protected static final String ROOT_PACKAGE="org.jgroups";
 
     public static void main(String[] args) {
         if (args.length != 2) {
@@ -40,16 +42,17 @@ public class PropertiesToAsciidoc {
         try {
             // first copy protocols.adoc file into protocols.adoc.xml
             File f = new File(temp_file);
-            copy(new FileReader(new File(prot_file)), new FileWriter(f));
+            copy(new FileReader(prot_file), new FileWriter(f));
 
-            Set<Class<Protocol>> classes = Util.findClassesAssignableFrom("org.jgroups.protocols",Protocol.class);
-            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.pbcast",Protocol.class));
-            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.dns",Protocol.class));
-            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.relay",Protocol.class));
-            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.rules",Protocol.class));
+            ClassLoader cl=Thread.currentThread().getContextClassLoader();
+            Set<Class<?>> classes=Util.findClassesAssignableFrom("org.jgroups.protocols",Protocol.class, cl);
+            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.pbcast",Protocol.class, cl));
+            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.dns",Protocol.class, cl));
+            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.relay",Protocol.class, cl));
+            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.rules",Protocol.class, cl));
             Properties props = new Properties();
-            for(Class<Protocol> clazz: classes)
-                convertProtocolToAsciidocTable(props,clazz);
+            for(Class<?> clazz: classes)
+                convertClassToAsciidocTable(props, clazz, null);
 
             try(InputStream in=new FileInputStream(prot_file); OutputStream out=new FileOutputStream(temp_file)) {
                 replaceVariables(in, out, props);
@@ -114,20 +117,55 @@ public class PropertiesToAsciidoc {
     }
 
 
-    private static void convertProtocolToAsciidocTable(Properties props, Class<Protocol> clazz) throws Exception {
-        boolean isUnsupported = clazz.isAnnotationPresent(Unsupported.class);
-        if (isUnsupported)
+    private static void convertClassToAsciidocTable(final Properties props, Class<?> clazz, String prefix) throws Exception {
+        if (clazz.isAnnotationPresent(Unsupported.class))
             return;
 
-        Map<String, String> nameToDescription = new TreeMap<>();
+        final Map<String,String> nameToDescription=new TreeMap<>();
+        getDescriptions(clazz, nameToDescription, prefix, false);
 
+        // do we have more than one property (superclass Protocol has only one property (stats))
+        if (nameToDescription.isEmpty())
+            return;
+
+        List<String[]> rows=new ArrayList<>(nameToDescription.size() +1);
+        rows.add(new String[]{"Name", "Description"});
+        for(Map.Entry<String,String> entry: nameToDescription.entrySet())
+            rows.add(new String[]{entry.getKey(), entry.getValue()});
+
+        String tmp=createAsciidocTable(rows, clazz.getSimpleName(), "[align=\"left\",width=\"90%\",cols=\"2,10\",options=\"header\"]");
+        props.put(clazz.getSimpleName(), tmp);
+    }
+
+    protected static void getDescriptions(Class<?> clazz, final Map<String,String> m, String prefix, boolean print_class)
+      throws IOException, ClassNotFoundException {
         Field[] fields = clazz.getDeclaredFields();
         for (Field field : fields) {
             if (field.isAnnotationPresent(Property.class)) {
                 String property = field.getName();
                 Property annotation = field.getAnnotation(Property.class);
+                String name=annotation.name();
+                if(name != null && !name.trim().isEmpty())
+                    property=name.trim();
                 String desc = annotation.description();
-                nameToDescription.put(property, desc);
+                if(prefix != null && !prefix.isEmpty())
+                    property=prefix + "." + property;
+                if(print_class)
+                    property=String.format("%s (%s)", property, clazz.getSimpleName());
+                m.put(property, desc);
+            }
+
+            // is the field annotated with @Component?
+            if(field.isAnnotationPresent(Component.class)) {
+                Component ann=field.getAnnotation(Component.class);
+                Class<?> type=field.getType();
+                if(type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
+                    Set<Class<?>> implementations=Util.findClassesAssignableFrom(ROOT_PACKAGE, type, Thread.currentThread().getContextClassLoader());
+                    for(Class<?> impl: implementations)
+                        getDescriptions(impl, m, ann.name(), true);
+                }
+                else
+                    getDescriptions(type, m, ann.name(), false);
             }
         }
 
@@ -141,24 +179,15 @@ public class PropertiesToAsciidoc {
                     desc="n/a";
 
                 String name = annotation.name();
-                if (name.length() < 1) {
-                    name = Util.methodNameToAttributeName(method.getName());
-                }
-                nameToDescription.put(name, desc);
+                if(name.length() < 1)
+                    name=Util.methodNameToAttributeName(method.getName());
+                if(prefix != null && !prefix.isEmpty())
+                    name=prefix + "." + name;
+                if(print_class)
+                    name=String.format("%s (%s)", name, clazz.getSimpleName());
+                m.put(name, desc);
             }
         }
-
-        // do we have more than one property (superclass Protocol has only one property (stats))
-        if (nameToDescription.isEmpty())
-            return;
-
-        List<String[]> rows=new ArrayList<>(nameToDescription.size() +1);
-        rows.add(new String[]{"Name", "Description"});
-        for(Map.Entry<String,String> entry: nameToDescription.entrySet())
-            rows.add(new String[]{entry.getKey(), entry.getValue()});
-
-        String tmp=createAsciidocTable(rows, clazz.getSimpleName(), "[align=\"left\",width=\"90%\",cols=\"2,10\",options=\"header\"]");
-        props.put(clazz.getSimpleName(), tmp);
     }
 
     /**

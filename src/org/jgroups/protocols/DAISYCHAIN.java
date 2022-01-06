@@ -32,8 +32,6 @@ public class DAISYCHAIN extends Protocol {
     @Property(description="Loop back multicast messages")
     boolean loopback=true;
 
-    @ManagedAttribute(description="Local address")
-    protected volatile Address       local_addr;
     @ManagedAttribute(description="The member to which all multicasts are forwarded")
     protected volatile Address       next;
     @ManagedAttribute(description="The current view")
@@ -61,10 +59,6 @@ public class DAISYCHAIN extends Protocol {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
                 handleView(evt.getArg());
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
                 break;
         }
         return down_prot.down(evt);

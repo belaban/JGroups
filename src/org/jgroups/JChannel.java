@@ -153,10 +153,10 @@ public class JChannel implements Closeable {
             }
         }
         prot_stack.init();
-
+        prot_stack.getTransport().getDiagnosticsHandler().setEnabled(false);
         StackType ip_version=Util.getIpStackType();
         TP transport=(TP)protocols.get(0);
-        InetAddress resolved_addr=Configurator.getValueFromProtocol(transport, "bind_addr");
+        InetAddress resolved_addr=Configurator.getValueFromObject(transport, "bind_addr");
         if(resolved_addr != null)
             ip_version=resolved_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
         else if(ip_version == StackType.Dual)
@@ -167,16 +167,6 @@ public class JChannel implements Closeable {
         Map<String,String> map=new HashMap<>();
         for(Protocol prot: prots)
             Configurator.resolveAndAssignFields(prot, map, ip_version);
-    }
-
-
-    /**
-     * Creates a channel with the same configuration as the channel passed to this constructor. This is used by
-     * testing code, and should not be used by clients!
-     */
-    public JChannel(JChannel ch) throws Exception {
-        init(ch);
-        discard_own_messages=ch.discard_own_messages;
     }
 
 
@@ -719,15 +709,6 @@ public class JChannel implements Closeable {
             case Event.GET_LOCAL_ADDRESS:
                 return local_addr;
 
-            case Event.SET_LOCAL_ADDRESS:
-                Address tmp_addr=evt.arg();
-                if(tmp_addr != null) {
-                    this.local_addr=tmp_addr;
-                    if(name != null && !name.isEmpty())
-                        NameCache.add(local_addr, name);
-                }
-                break;
-
             default:
                 break;
         }
@@ -919,14 +900,6 @@ public class JChannel implements Closeable {
         return this;
     }
 
-    protected final JChannel init(JChannel ch) throws Exception {
-        if(ch == null)
-            throw new IllegalArgumentException("channel is null");
-        prot_stack=new ProtocolStack(this);
-        prot_stack.setup(ch.getProtocolStack()); // Setup protocol stack (creates protocol, calls init() on them)
-        return this;
-    }
-
 
     /** Initializes all variables. Used after close() or disconnect(), to be ready for new connect() */
     protected JChannel init() {
@@ -967,11 +940,10 @@ public class JChannel implements Closeable {
             log.info("local_addr: %s, name: %s", local_addr, name);
             NameCache.add(local_addr, name);
         }
-
-        Event evt=new Event(Event.SET_LOCAL_ADDRESS, local_addr);
-        down(evt);
+        for(Protocol p=prot_stack.getTopProtocol(); p != null; p=p.getDownProtocol())
+            p.setAddress(local_addr);
         if(up_handler != null)
-            up_handler.up(evt);
+            up_handler.setLocalAddress(local_addr);
         return this;
     }
 

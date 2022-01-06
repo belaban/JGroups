@@ -29,23 +29,23 @@ public interface MessageProcessingPolicy {
      * A message that is looped back can bypass cluster name matching.
      * @param msg the message to be looped back up the stack.
      * @param oob true if the message is an OOB message
-     * @param internal true if the message is internal
+     * @return
      */
-    void loopback(Message msg, boolean oob, boolean internal);
+    boolean loopback(Message msg, boolean oob);
 
     /**
      * Process a message received from the transport
      * @param msg the message
      * @param oob true if the message is an OOB message
-     * @param internal true if the message is internal
+     * @return
      */
-    void process(Message msg, boolean oob, boolean internal);
+    boolean process(Message msg, boolean oob);
 
     /**
      * Process a batch received from the transport
      * @param batch the batch
      * @param oob true if the batch contains only OOB messages
-     * @param internal true if the batch contains only internal messages (or internal and OOB messages)
+     * @return
      */
-    void process(MessageBatch batch, boolean oob, boolean internal);
+    boolean process(MessageBatch batch, boolean oob);
 }

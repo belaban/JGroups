@@ -3,6 +3,7 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.DISCARD_PAYLOAD;
+import org.jgroups.protocols.MAKE_BATCH;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
@@ -19,19 +20,19 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class NAKACK_Test extends ChannelTestBase {
-    JChannel c1, c2, c3;
-
+    protected JChannel a, b, c;
 
     @BeforeMethod
     void setUp() throws Exception {
-        c1=createChannel(true, 3);
-        c2=createChannel(c1);
-        c3=createChannel(c1);
+        a=createChannel().name("A");
+        b=createChannel().name("B");
+        c=createChannel().name("C");
+        makeUnique(a, b, c);
     }
 
     @AfterMethod
     void tearDown() throws Exception {
-        Util.close(c3, c2, c1);
+        Util.close(c, b, a);
     }
 
 
@@ -39,38 +40,34 @@ public class NAKACK_Test extends ChannelTestBase {
      * Tests http://jira.jboss.com/jira/browse/JGRP-379: we send 1, 2, 3, 4(OOB) and 5 to the cluster.
      * Message with seqno 3 is discarded two times, so retransmission will make the receivers receive it *after* 4.
      * Note that OOB messages *destroys* FIFO ordering (or whatever ordering properties are set) !
-     * @throws Exception
      */
-    @Test
-    @SuppressWarnings("unchecked")
     public void testOutOfBandMessages() throws Exception {
         NAKACK_Test.MyReceiver receiver1=new NAKACK_Test.MyReceiver();
         NAKACK_Test.MyReceiver receiver2=new NAKACK_Test.MyReceiver();
         NAKACK_Test.MyReceiver receiver3=new NAKACK_Test.MyReceiver();
-        c1.setReceiver(receiver1);
-        c2.setReceiver(receiver2);
-        c3.setReceiver(receiver3);
+        a.setReceiver(receiver1);
+        b.setReceiver(receiver2);
+        c.setReceiver(receiver3);
 
-        c1.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.Position.BELOW, NAKACK2.class);
+        a.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.Position.BELOW, NAKACK2.class);
 
-        c1.connect("NAKACK_OOB_Test");
-        c2.connect("NAKACK_OOB_Test");
-        c3.connect("NAKACK_OOB_Test");
-
-        assert c3.getView().getMembers().size() == 3 : "view is " + c3.getView() + ", expected view of 3 members";
+        a.connect("NAKACK_Test");
+        b.connect("NAKACK_Test");
+        c.connect("NAKACK_Test");
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a,b,c);
 
         for(int i=1; i <=5; i++) {
-            Message msg=new BytesMessage(null, (long)i);
+            Message msg=new BytesMessage(null, i);
             if(i == 4)
                 msg.setFlag(Message.Flag.OOB);
             System.out.println("-- sending message #" + i);
-            c1.send(msg);
+            a.send(msg);
             Util.sleep(100);
         }
 
-        Collection<Long> seqnos1=receiver1.getSeqnos();
-        Collection<Long> seqnos2=receiver2.getSeqnos();
-        Collection<Long> seqnos3=receiver3.getSeqnos();
+        Collection<Integer> seqnos1=receiver1.getSeqnos();
+        Collection<Integer> seqnos2=receiver2.getSeqnos();
+        Collection<Integer> seqnos3=receiver3.getSeqnos();
 
         // wait until retransmission of seqno #3 happens, so that 4 and 5 are received as well
         long target_time=System.currentTimeMillis() + 20000;
@@ -88,16 +85,37 @@ public class NAKACK_Test extends ChannelTestBase {
         checkOrder(seqnos1, seqnos2, seqnos3);
     }
 
+    public void testOobBatch() throws Exception {
+        NAKACK_Test.MyReceiver receiver2=new NAKACK_Test.MyReceiver();
+        b.setReceiver(receiver2);
+
+        MAKE_BATCH m=new MAKE_BATCH().multicasts(true).unicasts(false).skipOOB(false);
+        b.getProtocolStack().insertProtocol(m, ProtocolStack.Position.BELOW, NAKACK2.class);
+        m.start();
+
+        a.connect("NAKACK_Test");
+        b.connect("NAKACK_Test");
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a,b);
+
+        for(int i=1; i <= 5; i++) {
+            Message msg=new BytesMessage(null, i).setFlag(Message.Flag.OOB);
+            a.send(msg);
+        }
+        Util.waitUntil(5000, 500, () -> receiver2.size() == 5);
+    }
+
+
     /**
      * Checks whether the numbers are in order *after* removing 4: the latter is OOB and can therefore appear anywhere
      * in the sequence
      * @param lists
      */
-    private static void checkOrder(Collection<Long> ... lists) throws Exception {
-        for(Collection<Long> list: lists) {
-            list.remove(4L);
+    @SafeVarargs
+    private static void checkOrder(Collection<Integer> ... lists) throws Exception {
+        for(Collection<Integer> list: lists) {
+            list.remove(4);
             long prev_val=0;
-            for(long val: list) {
+            for(int val: list) {
                 if(val <= prev_val)
                     throw new Exception("elements are not ordered in list: " + list);
                 prev_val=val;
@@ -108,19 +126,18 @@ public class NAKACK_Test extends ChannelTestBase {
 
 
     public static class MyReceiver implements Receiver {
-        /** List<Long> of unicast sequence numbers */
-        Collection<Long> seqnos=new ConcurrentLinkedQueue<>();
+        Collection<Integer> seqnos=new ConcurrentLinkedQueue<>();
 
         public MyReceiver() {
         }
 
-        public Collection<Long> getSeqnos() {
+        public Collection<Integer> getSeqnos() {
             return seqnos;
         }
 
         public void receive(Message msg) {
             if(msg != null) {
-                Long num=msg.getObject();
+                Integer num=msg.getObject();
                 seqnos.add(num);
             }
         }

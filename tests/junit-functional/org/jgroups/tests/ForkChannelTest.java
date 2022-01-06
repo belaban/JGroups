@@ -554,6 +554,8 @@ public class ForkChannelTest {
 
         private final BlockingDeque<Event> queue = new LinkedBlockingDeque<>();
 
+        public UpHandler setLocalAddress(Address a) {return this;}
+
         @Override
         public Object up(Event evt) {
             queue.add(evt);

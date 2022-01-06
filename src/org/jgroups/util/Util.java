@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import org.jgroups.*;
+import org.jgroups.annotations.Component;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.Connection;
@@ -278,59 +279,6 @@ public class Util {
             return new Thread(r, name);
         }
     }
-
-    public static void assertTrue(boolean condition) {
-        assert condition;
-    }
-
-    public static void assertTrue(String message,boolean condition) {
-        if(message != null)
-            assert condition : message;
-        else
-            assert condition;
-    }
-
-    public static void assertFalse(boolean condition) {
-        assertFalse(null,condition);
-    }
-
-    public static void assertFalse(String message,boolean condition) {
-        if(message != null)
-            assert !condition : message;
-        else
-            assert !condition;
-    }
-
-
-    public static void assertEquals(String message,Object val1,Object val2) {
-        if(message != null) {
-            assert val1.equals(val2) : message;
-        }
-        else {
-            assert val1.equals(val2);
-        }
-    }
-
-    public static void assertNotNull(String message,Object val) {
-        if(message != null)
-            assert val != null : message;
-        else
-            assert val != null;
-    }
-
-
-    public static void assertNotNull(Object val) {
-        assertNotNull(null, val);
-    }
-
-
-    public static void assertNull(String message,Object val) {
-        if(message != null)
-            assert val == null : message;
-        else
-            assert val == null;
-    }
-
 
     public static int getNextHigherPowerOfTwo(int num) {
         if(num <= 0) return 1;
@@ -617,7 +565,7 @@ public class Util {
      */
     public static void shutdown(JChannel ch) throws Exception {
         DISCARD discard=new DISCARD();
-        discard.setLocalAddress(ch.getAddress());
+        discard.setAddress(ch.getAddress());
         discard.discardAll(true);
         ProtocolStack stack=ch.getProtocolStack();
         TP transport=stack.getTransport();
@@ -1466,12 +1414,6 @@ public class Util {
      * Message:  | presence | leading | flags | [src] | length | [buffer] | size | [Headers*] |
      *
      * </pre>
-     * @param dest
-     * @param src
-     * @param msgs
-     * @param dos
-     * @param multicast
-     * @throws Exception
      */
     public static void writeMessageList(Address dest, Address src, byte[] cluster_name,
                                         List<Message> msgs, DataOutput dos, boolean multicast, short transport_id) throws IOException {
@@ -1479,6 +1421,19 @@ public class Util {
 
         if(msgs != null)
             for(Message msg: msgs) {
+                dos.writeShort(msg.getType());
+                msg.writeToNoAddrs(src, dos, transport_id); // exclude the transport header
+            }
+    }
+
+    public static void writeMessageList(Address dest, Address src, byte[] cluster_name,
+                                        Message[] msgs, int offset, int length, DataOutput dos, boolean multicast,
+                                        short transport_id) throws IOException {
+        writeMessageListHeader(dest, src, cluster_name, length, dos, multicast);
+
+        if(msgs != null)
+            for(int i=0; i < length; i++) {
+                Message msg=msgs[offset+i];
                 dos.writeShort(msg.getType());
                 msg.writeToNoAddrs(src, dos, transport_id); // exclude the transport header
             }
@@ -1535,20 +1490,16 @@ public class Util {
     }
 
     /**
-     * Reads a list of messages into 4 MessageBatches:
+     * Reads a list of messages into 2 MessageBatches:
      * <ol>
      *     <li>regular</li>
      *     <li>OOB</li>
-     *     <li>INTERNAL-OOB (INTERNAL and OOB)</li>
-     *     <li>INTERNAL (INTERNAL)</li>
      * </ol>
-     * @param in
-     * @return an array of 4 MessageBatches in the order above, the first batch is at index 0
-     * @throws Exception
+     * @return an array of 2 MessageBatches in the order above, the first batch is at index 0
      */
     public static MessageBatch[] readMessageBatch(DataInput in, boolean multicast, MessageFactory factory)
       throws IOException, ClassNotFoundException {
-        MessageBatch[] batches=new MessageBatch[4]; // [0]: reg, [1]: OOB, [2]: internal-oob, [3]: internal
+        MessageBatch[] batches=new MessageBatch[2]; // [0]: reg, [1]: OOB
         Address dest=Util.readAddress(in);
         Address src=Util.readAddress(in);
         short length=in.readShort();
@@ -1559,23 +1510,14 @@ public class Util {
         int len=in.readInt();
         for(int i=0; i < len; i++) {
             short type=in.readShort();
-            Message msg=factory.create(type);
-            msg.setDest(dest);
-            msg.setSrc(src);
+            Message msg=factory.create(type).setDest(dest).setSrc(src);
             msg.readFrom(in);
             boolean oob=msg.isFlagSet(Message.Flag.OOB);
-            boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
             int index=0;
             MessageBatch.Mode mode=MessageBatch.Mode.REG;
-            if(oob || internal) {
-                if(oob) {
-                    mode=MessageBatch.Mode.OOB;
-                    index=internal? 2 : 1;
-                }
-                else {
-                    index=3;
-                    mode=MessageBatch.Mode.INTERNAL;
-                }
+            if(oob) {
+                mode=MessageBatch.Mode.OOB;
+                index=1;
             }
             if(batches[index] == null)
                 batches[index]=new MessageBatch(dest, src, cluster_name != null? new AsciiString(cluster_name) : null, multicast, mode, len);
@@ -2086,7 +2028,7 @@ public class Util {
     public static String readStringFromStdin(String message) throws Exception {
         System.out.print(message);
         System.out.flush();
-        System.in.skip(System.in.available());
+        System.in.skip(available(System.in));
         BufferedReader reader=new BufferedReader(new InputStreamReader(System.in));
         String line=reader.readLine();
         return line != null? line.trim() : null;
@@ -2195,7 +2137,7 @@ public class Util {
 
         try {
             int ret=System.in.read();
-            System.in.skip(System.in.available());
+            System.in.skip(available(System.in));
             return ret;
         }
         catch(IOException e) {
@@ -2203,6 +2145,14 @@ public class Util {
         }
     }
 
+    public static int available(InputStream in) {
+        try {
+            return in.available();
+        }
+        catch(Exception ex) {
+            return 0;
+        }
+    }
 
     public static long micros() {
         return nanoTime() / 1000;
@@ -2376,8 +2326,8 @@ public class Util {
 
     public static <T> Enumeration<T> enumerate(final T[] array, int offset, final int length) {
         return new Enumeration<>() {
-            protected final int end_pos=offset + length;
-            protected int pos=offset;
+            final int end_pos=offset + length;
+            int pos=offset;
 
             public boolean hasMoreElements() {
                 return pos < end_pos;
@@ -2394,8 +2344,8 @@ public class Util {
 
     public static <T,R> Enumeration<R> enumerate(final T[] array, int offset, final int length, Function<T,R> converter) {
         return new Enumeration<>() {
-            protected final int end_pos=offset + length;
-            protected int pos=offset;
+            final int end_pos=offset + length;
+            int pos=offset;
 
             public boolean hasMoreElements() {
                 return pos < end_pos;
@@ -3461,6 +3411,63 @@ public class Util {
         return result;
     }
 
+    /**
+     * Returns the non-null values of all fields of target annotated with @Component
+     */
+    public static List<Object> getComponents(Object target) {
+        if(target == null)
+            return null;
+        Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(target.getClass(), Component.class);
+        if(fields == null || fields.length == 0)
+            return null;
+        List<Object> components=new ArrayList<>(fields.length);
+        for(Field f: fields) {
+            Object comp=Util.getField(f, target);
+            if(comp != null)
+                components.add(comp);
+        }
+        return components;
+    }
+
+    /**
+     * Applies a function to all fields annotated with @Component
+     * @param target The target object
+     * @param func The function accepting the value of the field and the component name (prefix)
+     */
+    public static void forAllComponents(Object target, BiConsumer<Object,String> func) {
+        if(target == null)
+            return;
+        Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(target.getClass(), Component.class);
+        if(fields == null || fields.length == 0)
+            return;
+        for(Field f: fields) {
+            Object comp=Util.getField(f, target);
+            if(comp != null) {
+                Component ann=f.getAnnotation(Component.class);
+                String name=ann.name();
+                if(name == null || name.trim().isEmpty())
+                    name=f.getName();
+                func.accept(comp, name);
+            }
+        }
+    }
+
+    public static void forAllComponentTypes(Class<?> cl, BiConsumer<Class<?>,String> func) {
+        if(cl == null)
+            return;
+        Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(cl, Component.class);
+        if(fields == null || fields.length == 0)
+            return;
+        for(Field f: fields) {
+            Class<?> type=f.getType();
+            Component ann=f.getAnnotation(Component.class);
+            String name=ann.name();
+            if(name == null || name.trim().isEmpty())
+                name=f.getName();
+            func.accept(type, name);
+        }
+    }
+
 
     public static boolean isPrimitiveType(Class<?> type) {
         return type.isPrimitive()
@@ -3524,27 +3531,49 @@ public class Util {
     }
 
 
-    public static <T> Set<Class<T>> findClassesAssignableFrom(String packageName,Class<T> assignableFrom)
+    public static Set<Class<?>> findClassesAssignableFrom(String packageName,Class<?> assignableFrom, ClassLoader cl)
       throws IOException, ClassNotFoundException {
-        ClassLoader loader=Thread.currentThread().getContextClassLoader();
-        Set<Class<T>> classes=new HashSet<>();
         String path=packageName.replace('.','/');
-        URL resource=loader.getResource(path);
-        if(resource != null) {
-            String filePath=resource.getFile();
-            if(filePath != null && new File(filePath).isDirectory()) {
-                for(String file : new File(filePath).list()) {
-                    if(file.endsWith(".class")) {
-                        String name=packageName + '.' + file.substring(0,file.indexOf(".class"));
-                        Class<T> clazz=(Class<T>)Class.forName(name);
-                        if(assignableFrom.isAssignableFrom(clazz))
+        return findClassesAssignableFromPath(path, assignableFrom, cl);
+    }
+
+
+    public static Set<Class<?>> findClassesAssignableFromPath(String packagePath,Class<?> assignableFrom, ClassLoader cl)
+      throws IOException, ClassNotFoundException {
+        Set<Class<?>> classes=new HashSet<>();
+        URL resource=cl.getResource(packagePath);
+        if(resource == null)
+            return classes;
+        String filePath=resource.getFile();
+        if(filePath == null)
+            return classes;
+        File f=new File(filePath);
+        if(f.isDirectory()) {
+            for(String file: f.list()) {
+                File ff=new File(f, file);
+                if(ff.isDirectory()) {
+                    String dirname=packagePath + File.separator + file;
+                    Set<Class<?>> clazzes=findClassesAssignableFromPath(dirname, assignableFrom, cl);
+                    classes.addAll(clazzes);
+                    continue;
+                }
+                if(file.endsWith(".class")) {
+                    String name=packagePath + File.separator + file.substring(0,file.indexOf(".class"));
+                    name=name.replace(File.separator, ".");
+                    try {
+                        Class<?> clazz=Class.forName(name);
+                        if(!assignableFrom.equals(clazz) && assignableFrom.isAssignableFrom(clazz))
                             classes.add(clazz);
+                    }
+                    catch(ClassNotFoundException ignored) {
+
                     }
                 }
             }
         }
         return classes;
     }
+
 
     public static List<Class<?>> findClassesAnnotatedWith(String packageName,Class<? extends Annotation> a) throws IOException, ClassNotFoundException {
         List<Class<?>> classes=new ArrayList<>();
@@ -3720,7 +3749,7 @@ public class Util {
      */
     public static boolean parseCommaDelimitedHostsInto(final Collection<PhysicalAddress> list,
                                                        final Collection<String> unresolved_hosts,
-                                                       String hosts,int port_range) {
+                                                       String hosts,int port_range, StackType stack_type) {
         StringTokenizer tok=hosts != null? new StringTokenizer(hosts,",") : null;
         boolean all_resolved=true;
         while(tok != null && tok.hasMoreTokens()) {
@@ -3732,8 +3761,14 @@ public class Util {
                 InetAddress[] resolvedAddresses=InetAddress.getAllByName(host);
                 for(int i=0; i < resolvedAddresses.length; i++) {
                     for(int p=port; p <= port + port_range; p++) {
-                        IpAddress addr=new IpAddress(resolvedAddresses[i], p);
-                        list.add(addr);
+                        InetAddress inet=resolvedAddresses[i];
+                        boolean add=(inet == null && stack_type==StackType.Dual)
+                          || (inet instanceof Inet6Address && stack_type == StackType.IPv6)
+                          || (inet instanceof Inet4Address && stack_type == StackType.IPv4);
+                        if(add) {
+                            IpAddress addr=new IpAddress(inet, p);
+                            list.add(addr);
+                        }
                     }
                 }
             }

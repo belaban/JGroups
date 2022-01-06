@@ -41,8 +41,6 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
       "(default is false)")
     protected boolean                 use_mcast_rsps;
 
-    protected Address                 local_addr;
-
     protected final Set<Entry>        suspects=new HashSet<>(); // for suspects (no duplicates)
 
     @ManagedAttribute(description="Is the verifying task is running?")
@@ -75,9 +73,6 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
             case Event.VIEW_CHANGE:
                 View v=evt.getArg();
                 synchronized(this) {
@@ -115,7 +110,7 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
                 }
                 Address target=use_mcast_rsps? null : hdr.from;
                 for(int i=0; i < num_msgs; i++) {
-                    Message rsp=new EmptyMessage(target).setFlag(Message.Flag.INTERNAL)
+                    Message rsp=new EmptyMessage(target)
                       .putHeader(this.id, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
                     down_prot.down(rsp);
                 }
@@ -186,7 +181,7 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
         }
         for(Address mbr: mbrs) {
             for(int i=0; i < num_msgs; i++) {
-                Message msg=new EmptyMessage(mbr).setFlag(Message.Flag.INTERNAL)
+                Message msg=new EmptyMessage(mbr)
                   .putHeader(this.id, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
                 down_prot.down(msg);
             }
@@ -232,7 +227,8 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
 
     @GuardedBy("lock")
     protected void stopThreadPool() {
-        thread_pool.shutdown();
+        if(thread_pool != null)
+            thread_pool.shutdown();
     }
 
     public void init() throws Exception {

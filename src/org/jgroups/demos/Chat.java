@@ -52,10 +52,12 @@ public class Chat implements Receiver {
         while(true) {
             try {
                 System.out.print("> "); System.out.flush();
-                String line=in.readLine().toLowerCase();
-                if(line.startsWith("quit") || line.startsWith("exit")) {
+                String line=in.readLine();
+                line=line != null? line.toLowerCase() : null;
+                if(line == null)
+                    continue;
+                if(line.startsWith("quit") || line.startsWith("exit"))
                     break;
-                }
                 Message msg=new ObjectMessage(null, line);
                 channel.send(msg);
             }

@@ -162,7 +162,7 @@ public class UnicastUnitTest {
         Message[] msgs={
           msg(dest),
           msg(dest),
-          msg(dest).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL),
+          msg(dest).setFlag(Message.Flag.OOB),
           msg(dest).setFlag(Message.TransientFlag.DONT_LOOPBACK),
           msg(dest),
           msg(dest).setFlag(Message.TransientFlag.DONT_LOOPBACK),

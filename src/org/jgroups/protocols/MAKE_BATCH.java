@@ -32,6 +32,9 @@ public class MAKE_BATCH extends Protocol {
     @Property(description="handle unicast messages")
     protected boolean unicasts=false;
 
+    @Property(description="Do not add OOB messages to a batch if true")
+    protected boolean skip_oob=true;
+
     @Property(description="Time to sleep (in ms) from the reception of the first message to sending a batch up",
       type=AttributeType.TIME)
     protected long sleep_time=100;
@@ -45,13 +48,13 @@ public class MAKE_BATCH extends Protocol {
 
     protected TimeScheduler                     timer;
     protected AsciiString                       cluster_name;
-    protected Address                           local_addr;
     protected Future<?>                         batcher;
 
-    public MAKE_BATCH localAddress(Address a)  {local_addr=a;         return this;}
     public MAKE_BATCH multicasts(boolean flag) {this.multicasts=flag; return this;}
     public MAKE_BATCH unicasts(boolean flag)   {this.unicasts=flag;   return this;}
     public MAKE_BATCH sleepTime(long time)     {this.sleep_time=time; return this;}
+    public boolean    skipOOB()                {return skip_oob;}
+    public MAKE_BATCH skipOOB(boolean s)       {this.skip_oob=s; return this;}
 
 
     public void start() throws Exception {
@@ -73,15 +76,12 @@ public class MAKE_BATCH extends Protocol {
             case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                 cluster_name=new AsciiString((String)evt.getArg());
                 break;
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
         }
         return down_prot.down(evt);
     }
 
     public Object up(Message msg) {
-        if(msg.isFlagSet(Message.Flag.OOB) && msg.isFlagSet(Message.Flag.INTERNAL))
+        if(msg.isFlagSet(Message.Flag.OOB) && skip_oob)
             return up_prot.up(msg);
 
         if((msg.getDest() == null && multicasts) || (msg.getDest() != null && unicasts)) {
@@ -93,7 +93,7 @@ public class MAKE_BATCH extends Protocol {
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
-            if(msg.isFlagSet(Message.Flag.OOB) && msg.isFlagSet(Message.Flag.INTERNAL)) {
+            if(msg.isFlagSet(Message.Flag.OOB) && skip_oob) {
                 up_prot.up(msg);
                 batch.remove(msg);
                 continue;
@@ -119,18 +119,20 @@ public class MAKE_BATCH extends Protocol {
         list.add(msg);
     }
 
-    public synchronized void startBatcher() {
+    public synchronized MAKE_BATCH startBatcher() {
         if(timer == null)
             timer=getTransport().getTimer();
         if(batcher == null || batcher.isDone())
             batcher=timer.scheduleWithFixedDelay(new Batcher(), sleep_time, sleep_time, TimeUnit.MILLISECONDS);
+        return this;
     }
 
-    protected synchronized void stopBatcher() {
+    protected synchronized MAKE_BATCH stopBatcher() {
         if(batcher != null) {
             batcher.cancel(true);
             batcher=null;
         }
+        return this;
     }
 
     protected class Batcher implements Runnable {

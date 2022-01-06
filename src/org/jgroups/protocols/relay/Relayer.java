@@ -67,7 +67,7 @@ public class Relayer {
     public void start(List<RelayConfig.BridgeConfig> bridge_configs, String bridge_name, final String my_site_id)
       throws Throwable {
         if(done) {
-            log.trace(relay.getLocalAddress() + ": will not start the Relayer as stop() has been called");
+            log.trace(relay.getAddress() + ": will not start the Relayer as stop() has been called");
             return;
         }
         try {
@@ -85,7 +85,7 @@ public class Relayer {
         }
         finally {
             if(done) {
-                log.trace(relay.getLocalAddress() + ": stop() was called while starting the relayer; stopping the relayer now");
+                log.trace(relay.getAddress() + ": stop() was called while starting the relayer; stopping the relayer now");
                 stop();
             }
         }

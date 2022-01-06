@@ -497,8 +497,12 @@ public class NioConnection extends Connection {
                     }
                     catch(Exception ex) {
                         if(!(ex instanceof SocketException || ex instanceof EOFException
-                          || ex instanceof ClosedChannelException))
-                            server.log.warn("failed handling message", ex);
+                          || ex instanceof ClosedChannelException)) {
+                            if(server.logDetails())
+                                server.log.warn("failed handling message", ex);
+                            else
+                                server.log.warn("failed handling message: " + ex);
+                        }
                         server.closeConnection(NioConnection.this);
                         state(State.done);
                         return;

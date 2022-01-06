@@ -77,7 +77,7 @@ public class RED extends Protocol {
         bundler=getTransport().getBundler();
         enabled=bundler != null && bundler.getQueueSize() >= 0;
         if(enabled) {
-            queue_capacity=getTransport().getBundlerCapacity();
+            queue_capacity=getTransport().getBundler().getCapacity();
             min=(long)(queue_capacity * checkRange(min_threshold, 0, 1, "min_threshold"));
             max=(long)(queue_capacity * checkRange(max_threshold, 0, 1, "max_threshold"));
             span=max-min;

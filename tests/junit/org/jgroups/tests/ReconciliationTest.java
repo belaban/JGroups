@@ -243,7 +243,7 @@ public class ReconciliationTest {
     }
 
     private static void insertDISCARD(JChannel ch, Address exclude) throws Exception {
-        DISCARD discard=new DISCARD().localAddress(ch.getAddress());
+        DISCARD discard=new DISCARD().setAddress(ch.getAddress());
         discard.excludeItself(true);
         discard.addIgnoreMember(exclude); // ignore messages from this member
         ch.getProtocolStack().insertProtocol(discard, ProtocolStack.Position.BELOW, NAKACK2.class);

@@ -87,7 +87,7 @@ public class RED_Test {
         JChannel retval=new JChannel(Util.getTestStack()).name(name);
         red=new RED();
         transport=retval.getProtocolStack().getTransport();
-        transport.setBundlerCapacity(1024);
+        ((BaseBundler)transport.getBundler()).setCapacity(1024);
         transport.getProtocolStack().removeProtocol(UNICAST3.class);
         retval.getProtocolStack().insertProtocolInStack(red, transport, ProtocolStack.Position.ABOVE);
         bundler=new DelayBundler();

@@ -1,9 +1,6 @@
 package org.jgroups.jmx;
 
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -63,18 +60,16 @@ public class ResourceDMBean implements DynamicMBean {
         findMethods(instance);
         fixFields(instance);
 
-        if(instance instanceof AdditionalJmxObjects) {
-            Object[] objects=((AdditionalJmxObjects)instance).getJmxObjects();
-            if(objects != null) {
-                for(Object inst: objects) {
-                    if(inst != null) {
-                        if(objs == null)
-                            objs=new ArrayList<>();
-                        objs.add(inst);
-                        findFields(inst);
-                        findMethods(inst);
-                        fixFields(inst);
-                    }
+        List<Object> objects=Util.getComponents(instance);
+        if(objects != null) {
+            for(Object inst: objects) {
+                if(inst != null) {
+                    if(objs == null)
+                        objs=new ArrayList<>();
+                    objs.add(inst);
+                    findFields(inst);
+                    findMethods(inst);
+                    fixFields(inst);
                 }
             }
         }
@@ -163,7 +158,7 @@ public class ResourceDMBean implements DynamicMBean {
 
 
     public static boolean isSetMethod(Method method) {
-        return method.getParameterTypes().length == 1;
+        return method.getParameterCount() == 1;
     }
 
     public static boolean isGetMethod(Method method) {
@@ -177,6 +172,10 @@ public class ResourceDMBean implements DynamicMBean {
 
 
     public static void dumpStats(Object obj, final Map<String,Object> map, Log log) {
+        dumpStats(obj, "", map, log);
+    }
+
+    public static void dumpStats(Object obj, String prefix, final Map<String,Object> map, Log log) {
         BiConsumer<Field,Object> field_func=(f,o) -> {
             String attr_name=null;
             try {
@@ -187,6 +186,8 @@ public class ResourceDMBean implements DynamicMBean {
                     attr_name=attr_name.trim();
                 else
                     attr_name=f.getName();
+                if(prefix != null && !prefix.isEmpty())
+                    attr_name=prefix + "." + attr_name;
                 map.put(attr_name, prettyPrint(value, f));
             }
             catch(Exception e) {
@@ -207,6 +208,8 @@ public class ResourceDMBean implements DynamicMBean {
                     method_name=Util.attributeNameToMethodName(field_name);
                 }
                 String attributeName=Util.methodNameToAttributeName(method_name);
+                if(prefix != null && !prefix.isEmpty())
+                    attributeName=prefix + "." + attributeName;
                 map.put(attributeName, prettyPrint(value, m));
             }
             catch(Exception e) {
@@ -428,7 +431,6 @@ public class ResourceDMBean implements DynamicMBean {
         // Find a field last_name
         if(field != null)
             return new FieldAccessor(field, target);
-
         return null;
     }
 

@@ -25,7 +25,8 @@ public class CloseTest extends ChannelTestBase {
 
 
     public void testDoubleClose() throws Exception {
-        a=createChannel(true, 1, "A");
+        a=createChannel().name("A");
+        makeUnique(a);
         a.connect("CloseTest.testDoubleClose");
         assert a.isOpen();
         assert a.isConnected();
@@ -35,7 +36,8 @@ public class CloseTest extends ChannelTestBase {
     }
 
     public void testCreationAndClose() throws Exception {
-        a=createChannel(true, 1, "A");
+        a=createChannel().name("A");
+        makeUnique(a);
         a.connect("CloseTest.testCreationAndClose");
         assert a.isOpen();
         Util.close(a);
@@ -43,8 +45,9 @@ public class CloseTest extends ChannelTestBase {
     }
 
     public void testCreationAndCoordClose() throws Exception {
-        a=createChannel(true, 2, "A");
-        b=createChannel(a, "B");
+        a=createChannel().name("A");
+        b=createChannel().name("B");
+        makeUnique(a,b);
         a.connect("testCreationAndCoordClose");
         b.connect("testCreationAndCoordClose");
         Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
@@ -56,37 +59,33 @@ public class CloseTest extends ChannelTestBase {
     public void testViewChangeReceptionOnChannelCloseByParticipant() throws Exception {
         List<Address> members;
         MyReceiver    r1=new MyReceiver(), r2=new MyReceiver();
-        Address       a_addr, b_addr;
         final String  GROUP="CloseTest.testViewChangeReceptionOnChannelCloseByParticipant";
 
-        a=createChannel(true, 2, "A");
-        a.setReceiver(r1);
+        a=createChannel().name("A").setReceiver(r1);
+        b=createChannel().name("B").setReceiver(r2);
+        makeUnique(a,b);
         a.connect(GROUP);
-        System.out.println("A: " + r1.getViews());
-
-        b=createChannel(a, "B");
-        b.setReceiver(r2);
-        r1.clearViews();
         b.connect(GROUP);
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
-        a_addr=a.getAddress();
-        b_addr=b.getAddress();
 
         Util.close(b);
         Util.waitUntilAllChannelsHaveSameView(10000, 500, a);
         View v=r1.getViews().get(0);
         members=v.getMembers();
-        System.out.println("-- first view of c1: " + v);
-        Assert.assertEquals(2, members.size());
-        assertTrue(members.contains(a_addr));
-        assertTrue(members.contains(b_addr));
+        System.out.println("-- first view of A: " + v);
+        assert 1 == members.size();
+        assert members.contains(a.getAddress());
 
         v=r1.getViews().get(1);
         members=v.getMembers();
-        System.out.println("-- second view of c1: " + v);
+        System.out.println("-- second view of A: " + v);
+        assert 2 == members.size();
+
+        v=r1.getViews().get(2);
+        members=v.getMembers();
+        System.out.println("-- third view of A: " + v);
         assert 1 == members.size();
-        assert members.contains(a_addr);
-        assert !members.contains(b_addr);
+
     }
 
     public void testViewChangeReceptionOnChannelCloseByCoordinator() throws Exception {
@@ -95,11 +94,10 @@ public class CloseTest extends ChannelTestBase {
         Address       a_addr, b_addr;
 
         final String GROUP="CloseTest.testViewChangeReceptionOnChannelCloseByCoordinator";
-        a=createChannel(true, 2, "A");
-        a.setReceiver(r1);
+        a=createChannel().name("A").setReceiver(r1);
+        b=createChannel().name("B").setReceiver(r2);
+        makeUnique(a,b);
         a.connect(GROUP);
-        b=createChannel(a, "B");
-        b.setReceiver(r2);
         b.connect(GROUP);
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
         a_addr=a.getAddress();
@@ -108,10 +106,9 @@ public class CloseTest extends ChannelTestBase {
         members=v.getMembers();
         assert 2 == members.size();
         assert members.contains(a.getAddress());
-
         r2.clearViews();
         Util.close(b);
-        Util.waitUntilAllChannelsHaveSameView(5000, 500, a);
+        Util.waitUntil(10000, 500, () -> a.getView().size() == 1);
 
         v=r1.getViews().get(r1.getViews().size() -1);
         members=v.getMembers();
@@ -121,8 +118,8 @@ public class CloseTest extends ChannelTestBase {
     }
 
     public void testConnectDisconnectConnectCloseSequence() throws Exception {
-        a=createChannel(true, 1, "A");
-
+        a=createChannel().name("A");
+        makeUnique(a);
         a.connect("CloseTest.testConnectDisconnectConnectCloseSequence-CloseTest");
         System.out.println("view is " + a.getView());
 
@@ -135,27 +132,11 @@ public class CloseTest extends ChannelTestBase {
     }
 
 
-    public void testConnectCloseSequenceWith2Members() throws Exception {
-        a=createChannel(true, 2, "A");
-        final String GROUP="CloseTest.testConnectCloseSequenceWith2Members";
-        a.connect(GROUP);
-
-        b=createChannel(a, "B");
-        b.connect(GROUP);
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
-        System.out.println("view is " + b.getView());
-    }
-
-    public void testCreationAndClose2() throws Exception {
-        a=createChannel(true, 1, "A");
-        a.connect("CloseTest.testCreationAndClose2");
-    }
-
     public void testClosedChannel() throws Exception {
-        a=createChannel(true, 1, "A");
+        a=createChannel().name("A");
+        makeUnique(a);
         a.connect("CloseTest.testClosedChannel");
         Util.close(a);
-        Util.sleep(2000);
         try {
             a.connect("CloseTest.testClosedChannel");
             assert false;
@@ -167,71 +148,94 @@ public class CloseTest extends ChannelTestBase {
    
     public void testMultipleConnectsAndDisconnects() throws Exception {
         final String GROUP="CloseTest.testMultipleConnectsAndDisconnects";
-        a=createChannel(true, 10, "A");
+        a=createChannel().name("A");
         assert a.isOpen() && !a.isConnected();
+        b=createChannel().name("B");
+        assert b.isOpen() && !b.isConnected();
+        makeUnique(a,b);
+
         a.connect(GROUP);
         assert a.isConnected();
         assertView(a, 1);
-        // printViews(a);
 
-        b=createChannel(a, "B");
-        assert b.isOpen() && !b.isConnected();
         System.out.println("-- B joining");
         b.connect(GROUP);
         assert b.isConnected();
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
-        // printViews(a,b);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
 
         System.out.println("-- B leaving");
         b.disconnect();
         assert b.isOpen() && !b.isConnected();
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a);
-        // printViews(a);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a);
 
         System.out.println("-- B joining");
         b.connect(GROUP);
         assert b.isConnected();
-        Util.waitUntilAllChannelsHaveSameView(20000, 1000, a, b);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
 
         // Now see what happens if we disaconnect and reconnect A (the current coord)
         System.out.println("-- A leaving");
         a.disconnect();
         assert a.isOpen() && !a.isConnected();
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, b);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, b);
         printViews(b);
 
         System.out.println("-- A joining");
         a.connect(GROUP);
         assert a.isOpen() && a.isConnected();
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
-        // printViews(a,b);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
     }
 
 
-
     public void testMultipleConnectsAndDisconnects2() throws Exception {
-        int NUM=10;
-        a=createChannel(true, NUM, "A");
+        a=createChannel().name("A");
+        b=createChannel().name("B");
+        makeUnique(a,b);
         a.connect("CloseTest");
-        b=createChannel(a, "B");
         b.connect("CloseTest");
-        Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
 
-        for(int i=1; i <= NUM; i++) {
+        for(int i=1; i <= 10; i++) {
             System.out.print("#" + i + " disconnecting: ");
             b.disconnect();
             System.out.println("OK");
-            Util.waitUntilAllChannelsHaveSameView(10000, 500, a);
+            Util.waitUntilAllChannelsHaveSameView(5000, 500, a);
             b.connect("CloseTest");
-            Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
+            Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
         }
+    }
+
+    public void testAlternatingCoordAndParticipantDisconnects() throws Exception {
+        a=createChannel().name("A");
+        b=createChannel().name("B");
+        makeUnique(a,b);
+        a.connect("CloseTest");
+        b.connect("CloseTest");
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
+
+        for(int i=1; i <= 10; i++) {
+            JChannel ch=i % 2 == 0? a : b;
+            leaveAndRejoin(i, ch);
+        }
+    }
+
+    private static void leaveAndRejoin(int i, JChannel ch, JChannel... channels) throws Exception {
+        System.out.printf("#%d disconnecting %s, view is %s ", i, ch.getName(), ch.getView());
+        ch.disconnect();
+        System.out.println("OK");
+        Util.waitUntil(5000, 500, () -> !ch.isConnected());
+
+        System.out.printf("#%d rejoining %s: ", i, ch.getName());
+        ch.connect("CloseTest");
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, channels);
+        System.out.printf("OK, view is %s\n", ch.getView());
     }
 
 
     private static void assertView(JChannel ch, int num) {
         View view=ch.getView();
         String msg="view=" + view;
-        assertNotNull(view);
+        assert view != null;
         Assert.assertEquals(view.size(), num, msg);
     }
 

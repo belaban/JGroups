@@ -12,15 +12,17 @@ public interface LocalTransport {
     /**
      * Calls after the local transport has been created.
      * @param transport A reference to TP
-     * @param config The configuration, the contents are specific to the local transport
      */
-    LocalTransport init(TP transport, String config) throws Exception;
+    LocalTransport init(TP transport) throws Exception;
     LocalTransport start() throws Exception;
     LocalTransport stop();
     LocalTransport destroy();
     LocalTransport resetStats();
 
     LocalTransport viewChange(View v);
+
+    /** Returns true if addr is a local member, false otherwise */
+    boolean isLocalMember(Address addr);
 
     /**
      * Sends a message to a given local member. The caller should check before whether dest is a local member;

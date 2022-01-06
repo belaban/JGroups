@@ -28,7 +28,6 @@ import java.util.function.Supplier;
 @MBean(description="Measures latency between PERF instances")
 public class PERF extends Protocol {
     protected Average avg;
-    protected Address local_addr;
 
     @Property(description="Number of samples to maintain for rolling average")
     protected int     avg_size=20;
@@ -47,15 +46,6 @@ public class PERF extends Protocol {
     public void resetStats() {
         super.resetStats();
         avg.clear();
-    }
-
-    public Object down(Event evt) {
-        switch(evt.getType()) {
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
-        }
-        return down_prot.down(evt);
     }
 
     public Object down(Message msg) {

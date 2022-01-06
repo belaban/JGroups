@@ -9,7 +9,7 @@ import java.util.NoSuchElementException;
  * @since  3.4
  */
 public class ArrayIterator<T> implements Iterator<T> {
-    protected int       index=0;
+    protected int       index;
     protected final T[] elements;
 
     public ArrayIterator(T[] elements) {
@@ -26,7 +26,4 @@ public class ArrayIterator<T> implements Iterator<T> {
         return elements[index++];
     }
 
-    public void remove() {
-        throw new UnsupportedOperationException();
-    }
 }

@@ -35,8 +35,6 @@ public class COUNTER extends Protocol {
     @Property(description="Number of backup coordinators. Modifications are asynchronously sent to all backup coordinators")
     protected int num_backups=1;
 
-    protected Address local_addr;
-
     /** Set to true during reconciliation process, will cause all requests to be discarded */
     protected boolean discard_requests=false;
 
@@ -116,11 +114,6 @@ public class COUNTER extends Protocol {
 
 
     @ManagedAttribute
-    public String getAddress() {
-        return local_addr != null? local_addr.toString() : null;
-    }
-
-    @ManagedAttribute
     public String getView() {
         return view != null? view.toString() : null;
     }
@@ -165,9 +158,6 @@ public class COUNTER extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=evt.getArg();
-                break;
             case Event.VIEW_CHANGE:
                 handleView(evt.arg());
                 break;

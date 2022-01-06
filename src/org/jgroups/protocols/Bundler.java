@@ -3,14 +3,14 @@ package org.jgroups.protocols;
 import org.jgroups.Message;
 import org.jgroups.View;
 
-import java.util.Map;
-
 /**
  * Pluggable way to collect messages and send them as batches
  * @author Bela Ban
  * @since  4.0
  */
 public interface Bundler {
+
+
     /**
      * Called after creation of the bundler
      * @param transport the transport, for further reference
@@ -31,13 +31,16 @@ public interface Bundler {
      * return the number of elements in the queue, else -1. In the latter case, the queue won't be managed.<br/>
      * This method needs to be fast as it might get called on every message to be sent.
      */
-    default int getQueueSize() {return -1;}
+    int getQueueSize();
 
     /**
-     * Returns stats about the bundler itself.
-     * @return Stats, may be null
+     * If the bundler implementation supports a capacity (e.g. {@link RingBufferBundler}, then return it, else return -1
      */
-    default Map<String,Object> getStats() {return null;}
+    default int getCapacity() {return -1;}
+
+    /** Maximum number of bytes for messages to be queued until they are sent */
+    int             getMaxSize();
+    default Bundler setMaxSize(int s) {return this;}
 
     default void resetStats() {}
 }

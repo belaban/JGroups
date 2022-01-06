@@ -51,8 +51,7 @@ public class PING extends Discovery {
         // address, then the bundler thread blocks until the discovery request has returned. However, we cannot send
         // the discovery *request* until the bundler thread has returned from sending M
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name).initialDiscovery(initial_discovery);
-        Message msg=new BytesMessage(null).putHeader(getId(), hdr)
-          .setFlag(INTERNAL, DONT_BUNDLE, OOB).setFlag(DONT_LOOPBACK);
+        Message msg=new BytesMessage(null).putHeader(getId(), hdr).setFlag(DONT_BUNDLE, OOB).setFlag(DONT_LOOPBACK);
         if(data != null)
             msg.setArray(marshal(data));
         sendMcastDiscoveryRequest(msg);

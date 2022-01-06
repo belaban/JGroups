@@ -20,25 +20,27 @@ import java.util.List;
 @Test(groups=Global.STACK_DEPENDENT)
 public class RpcDispatcherAnycastTest extends ChannelTestBase {
     protected RpcDispatcher disp, disp2, disp3;
-    protected JChannel a, b, c;
+    protected JChannel      a, b, c;
 
     @BeforeMethod
     void setUp() throws Exception {
-        a=createChannel(true, 3).name("A");
+        a=createChannel().name("A");
         ServerObject obj=new ServerObject(null);
         disp=new RpcDispatcher(a, obj);
-        a.connect("RpcDispatcherAnycastTest");
-        obj.setAddress(a.getAddress());
 
-        b=createChannel(a).name("B");
+        b=createChannel().name("B");
         ServerObject obj2=new ServerObject(null);
         disp2=new RpcDispatcher(b, obj2);
-        b.connect("RpcDispatcherAnycastTest");
-        obj2.setAddress(b.getAddress());
 
-        c=createChannel(a).name("C");
+        c=createChannel().name("C");
         ServerObject obj3=new ServerObject(null);
         disp3=new RpcDispatcher(c, obj3);
+        makeUnique(a,b,c);
+
+        a.connect("RpcDispatcherAnycastTest");
+        obj.setAddress(a.getAddress());
+        b.connect("RpcDispatcherAnycastTest");
+        obj2.setAddress(b.getAddress());
         c.connect("RpcDispatcherAnycastTest");
         obj3.setAddress(c.getAddress());
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b, c);

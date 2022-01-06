@@ -66,7 +66,7 @@ public class FRAG3 extends Fragmentation {
             throw new Exception("frag_size=" + old_frag_size + ", new frag_size=" + frag_size + ": new frag_size is invalid");
 
         TP transport=getTransport();
-        int max_bundle_size=transport.getMaxBundleSize();
+        int max_bundle_size=transport.getBundler().getMaxSize();
         if(frag_size >= max_bundle_size)
             throw new IllegalArgumentException("frag_size (" + frag_size + ") has to be < TP.max_bundle_size (" +
                                                  max_bundle_size + ")");

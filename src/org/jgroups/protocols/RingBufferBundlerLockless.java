@@ -89,7 +89,7 @@ public class RingBufferBundlerLockless extends BaseBundler {
         int current_threads=num_threads.decrementAndGet();
         boolean no_other_threads=current_threads == 0;
 
-        boolean unpark=(acc_bytes >= transport.getMaxBundleSize() && accumulated_bytes.compareAndSet(acc_bytes, 0))
+        boolean unpark=(acc_bytes >= max_size && accumulated_bytes.compareAndSet(acc_bytes, 0))
           ||  no_other_threads;
 
         // only 2 threads at a time should do this (1st cond and 2nd cond), so we have to reduce this to
@@ -153,7 +153,6 @@ public class RingBufferBundlerLockless extends BaseBundler {
 
     /** Read and send messages in range [read-index .. read-index+available_msgs-1] */
     protected int sendBundledMessages(final Message[] buf, final int read_index, int available_msgs) {
-        int       max_bundle_size=transport.getMaxBundleSize();
         byte[]    cluster_name=transport.cluster_name.chars();
         int       start=read_index;
         int       sent_msgs=0;
@@ -174,7 +173,7 @@ public class RingBufferBundlerLockless extends BaseBundler {
                 // remember the position at which the number of messages (an int) was written, so we can later set the
                 // correct value (when we know the correct number of messages)
                 int size_pos=output.position() - Global.INT_SIZE;
-                int num_msgs=marshalMessagesToSameDestination(dest, buf, start, available_msgs, max_bundle_size);
+                int num_msgs=marshalMessagesToSameDestination(dest, buf, start, available_msgs, max_size);
                 sent_msgs+=num_msgs;
                 if(num_msgs > 1) {
                     int current_pos=output.position();
@@ -184,7 +183,7 @@ public class RingBufferBundlerLockless extends BaseBundler {
                 }
                 transport.doSend(output.buffer(), 0, output.position(), dest);
                 if(transport.statsEnabled())
-                    transport.incrBatchesSent(num_msgs);
+                    transport.getMessageStats().incrNumBatchesSent(num_msgs);
             }
             catch(Exception ex) {
                 log.error("failed to send message(s)", ex);
