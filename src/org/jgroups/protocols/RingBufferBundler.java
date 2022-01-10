@@ -125,7 +125,7 @@ public class RingBufferBundler extends BaseBundler {
                     transport.getMessageStats().incrNumBatchesSent(num_msgs);
             }
             catch(Exception ex) {
-                log.error("failed to send message(s) to %s: %s", dest == null? "group" : dest, ex.getMessage());
+                log.trace("failed to send message(s) to %s: %s", dest == null? "group" : dest, ex.getMessage());
             }
 
             if(start == end)
@@ -141,12 +141,13 @@ public class RingBufferBundler extends BaseBundler {
         for(;;) {
             Message msg=buf[start_index];
             if(msg != null && Objects.equals(dest, msg.getDest())) {
-                int size=msg.size();
+                int size=msg.size() + Global.SHORT_SIZE;
                 if(bytes + size > max_bundle_size)
                     break;
                 bytes+=size;
                 num_msgs++;
                 buf[start_index]=null;
+                output.writeShort(msg.getType());
                 msg.writeToNoAddrs(msg.getSrc(), output, transport.getId());
             }
             if(start_index == end_index)
