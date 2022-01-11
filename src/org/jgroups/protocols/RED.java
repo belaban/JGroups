@@ -6,6 +6,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
 import java.util.concurrent.atomic.LongAdder;
@@ -112,6 +113,10 @@ public class RED extends Protocol {
             }
         }
         return down_prot.down(msg);
+    }
+
+    public void up(MessageBatch batch) {
+        up_prot.up(batch);
     }
 
     public String toString() {
