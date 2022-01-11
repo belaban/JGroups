@@ -213,7 +213,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
     
     private void sendLeaveResponses(Collection<Address> leaving_members) {
         for(Address address: leaving_members){
-            Message msg=new EmptyMessage(address).setFlag(Message.Flag.OOB)
+            Message msg=new EmptyMessage(address).setFlag(Message.Flag.OOB, Message.Flag.NO_RELIABILITY)
               .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.LEAVE_RSP));
             log.trace("%s: sending LEAVE response to %s", gms.getAddress(), address);
             gms.getDownProtocol().down(msg);
