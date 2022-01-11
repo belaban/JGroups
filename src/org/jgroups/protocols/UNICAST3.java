@@ -565,7 +565,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 Set<Address> non_members=new HashSet<>(send_table.keySet());
                 non_members.addAll(recv_table.keySet());
                 members=new_members;
-                non_members.removeAll(new_members);
+                new_members.forEach(non_members::remove);
                 if(cache != null)
                     cache.removeAll(new_members);
 
@@ -1303,7 +1303,14 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         }
     }
 
+    protected void sendAckFor(Address dest) {
+        ReceiverEntry entry=recv_table.get(dest);
+        Table<Message> win=entry != null? entry.msgs : null;
 
+        // receiver: send ack for received messages if needed
+        if(win != null && entry.sendAck())// sendAck() resets send_ack to false
+            sendAck(dest, win.getHighestDeliverable(), entry.connId());
+    }
 
     protected void update(Entry entry, int num_received) {
         if(conn_expiry_timeout > 0)
@@ -1353,9 +1360,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     protected final class SenderEntry extends Entry {
-        final AtomicLong       sent_msgs_seqno=new AtomicLong(DEFAULT_FIRST_SEQNO);   // seqno for msgs sent by us
-        protected final long[] watermark={0,0}; // the highest acked and highest sent seqno
-        protected int          last_timestamp;  // to prevent out-of-order ACKs from a receiver
+        final AtomicLong sent_msgs_seqno=new AtomicLong(DEFAULT_FIRST_SEQNO);   // seqno for msgs sent by us
+        final long[]     watermark={0,0}; // the highest acked and highest sent seqno
+        int              last_timestamp;  // to prevent out-of-order ACKs from a receiver
 
         public SenderEntry(short send_conn_id) {
             super(send_conn_id, new Table<>(xmit_table_num_rows, xmit_table_msgs_per_row, 0,
@@ -1366,7 +1373,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         SenderEntry watermark(long ha, long hs) {watermark[0]=ha; watermark[1]=hs; return this;}
 
         /** Updates last_timestamp. Returns true of the update was in order (ts > last_timestamp) */
-        protected synchronized boolean updateLastTimestamp(int ts) {
+        private synchronized boolean updateLastTimestamp(int ts) {
             if(last_timestamp == 0) {
                 last_timestamp=ts;
                 return true;
@@ -1389,7 +1396,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     protected final class ReceiverEntry extends Entry {
-        protected volatile boolean  send_ack;
+        private volatile boolean  send_ack;
 
         public ReceiverEntry(Table<Message> received_msgs, short recv_conn_id) {
             super(recv_conn_id, received_msgs);
