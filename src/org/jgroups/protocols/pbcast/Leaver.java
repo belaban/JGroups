@@ -35,51 +35,41 @@ public class Leaver {
      * Sends a LEAVE-REQ to the coordinator. Blocks the caller until a LEAVE-RSP has been received, or no coord is found.
      */
     public void leave() {
-        Address coord, leaving_mbr;
+        Address coord, me=gms.getAddress();
 
         if(!leaving.compareAndSet(false, true)) {
             coord=gms.getCoord();
             if(coord == null) {
-                log.trace("%s: last member in the group (coord); leaving now", gms.getAddress());
-                leave_promise.setResult(gms.getAddress());
+                log.trace("%s: last member in the group (coord); leaving now", me);
+                leave_promise.setResult(me);
             }
             else {
-                log.trace("%s: re-sending LEAVE request to %s", gms.getAddress(), coord);
-                sendLeaveRequest(coord, gms.getAddress());
+                log.trace("%s: re-sending LEAVE request to %s", me, coord);
+                sendLeaveRequest(coord, me);
             }
             return;
         }
 
         try {
-            int leave_attempts=0;
             leave_promise.reset(false);
-            leaving_mbr=Objects.requireNonNull(gms.getAddress());
             coord=gms.getCoord();
             if(coord == null) {
-                log.trace("%s: last member in the group (coord); leaving now", gms.getAddress());
+                log.trace("%s: last member in the group (coord); leaving now", me);
                 return;
             }
-            log.trace("%s: sending LEAVE request to %s", gms.getAddress(), coord);
+            log.trace("%s: sending LEAVE request to %s", me, coord);
             long start=System.currentTimeMillis();
-            sendLeaveRequest(coord, leaving_mbr);
-            while(leaving.get()) {
+            sendLeaveRequest(coord, me);
+            if(leaving.get()) {
                 Address sender=leave_promise.getResult(gms.leave_timeout);
                 long time=System.currentTimeMillis() - start;
                 if(leave_promise.hasResult()) {
                     if(sender != null) {
-                        boolean self=Objects.equals(sender, gms.getAddress());
-                        log.trace("%s: got LEAVE response from %s in %d ms",
-                                  gms.getAddress(), self? " self" : sender, time);
+                        boolean myself=Objects.equals(sender, me);
+                        log.trace("%s: got LEAVE response from %s in %d ms", me, myself? " self" : sender, time);
                     }
                     else
-                        log.trace("%s: timed out waiting for LEAVE response from %s (after %d ms)",
-                                  gms.getAddress(), coord, time);
-                    break;
-                }
-                if(gms.max_leave_attempts > 0 && ++leave_attempts >= gms.max_leave_attempts) {
-                    log.warn("%s: terminating after %d unsuccessful LEAVE attempts (waited %d ms): ",
-                             gms.getAddress(), leave_attempts, time);
-                    break;
+                        log.trace("%s: timed out waiting for LEAVE response from %s (after %d ms)", me, coord, time);
                 }
             }
         }

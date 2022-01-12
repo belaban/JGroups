@@ -9,6 +9,8 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -215,7 +217,7 @@ public class CloseTest extends ChannelTestBase {
 
         for(int i=1; i <= 10; i++) {
             JChannel ch=i % 2 == 0? a : b;
-            leaveAndRejoin(i, ch);
+            leaveAndRejoin(i, ch, a,b);
         }
     }
 
@@ -223,7 +225,15 @@ public class CloseTest extends ChannelTestBase {
         System.out.printf("#%d disconnecting %s, view is %s ", i, ch.getName(), ch.getView());
         ch.disconnect();
         System.out.println("OK");
-        Util.waitUntil(5000, 500, () -> !ch.isConnected());
+
+        BooleanSupplier p=() -> Stream.of(channels)
+          .allMatch(c -> !c.isConnected() || c.isConnected() && c.getView().size() == 1);
+        Supplier<String> message=() -> Stream.of(channels)
+          .map(c -> String.format("%s: connected=%b view=%s", c.getAddress(), c.isConnected(), c.getView()))
+          .collect(Collectors.joining("\n"));
+
+        // one channel must be disconnected and the other must have a view of 1
+        Util.waitUntil(5000, 500, p, message);
 
         System.out.printf("#%d rejoining %s: ", i, ch.getName());
         ch.connect("CloseTest");

@@ -165,7 +165,7 @@ public class DeltaViewTest {
 
         protected synchronized void checkDone(Message msg, List<Message> list) {
             list.add(msg);
-            if((join_rsps.size() >= 2 || views.size() >= 2) && !removed) {
+            if((join_rsps.size() >= 1 || views.size() >= 1) && !removed) {
                 flushMessages();
                 ch.getProtocolStack().removeProtocol(this);
                 removed=true;
@@ -204,16 +204,18 @@ public class DeltaViewTest {
             Message join_rsp_msg=join_rsps.remove(0);
             down_prot.down(join_rsp_msg);
 
-            join_rsp_msg=join_rsps.remove(0);
-            JoinRsp join_rsp=null;
-            try {
-                join_rsp=Util.streamableFromBuffer(JoinRsp::new, join_rsp_msg.getArray(), join_rsp_msg.getOffset(), join_rsp_msg.getLength());
+            if(!join_rsps.isEmpty()) {
+                join_rsp_msg=join_rsps.remove(0);
+                JoinRsp join_rsp=null;
+                try {
+                    join_rsp=Util.streamableFromBuffer(JoinRsp::new, join_rsp_msg.getArray(), join_rsp_msg.getOffset(), join_rsp_msg.getLength());
+                }
+                catch(Exception e) {
+                    throw new RuntimeException(e);
+                }
+                installJoinRspInParticipant(k, join_rsp);
+                join_rsps.clear();
             }
-            catch(Exception e) {
-                throw new RuntimeException(e);
-            }
-            installJoinRspInParticipant(k, join_rsp);
-            join_rsps.clear();
 
             // deliver the views
             for(Message msg: views)

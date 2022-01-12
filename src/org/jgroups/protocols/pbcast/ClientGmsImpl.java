@@ -125,8 +125,6 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
 
-
-
     public void leave() {
         wrongMethod("leave");
     }

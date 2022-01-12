@@ -321,7 +321,6 @@ public class TcpConnection extends Connection {
                     else
                         server.log.warn("failed handling message: " + e);
                 }
-
             }
             finally {
                 server.notifyConnectionClosed(TcpConnection.this);

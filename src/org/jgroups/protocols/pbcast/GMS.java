@@ -50,9 +50,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     /* ------------------------------------------ Properties  ------------------------------------------ */
 
     @Property(description="Join timeout",type=AttributeType.TIME)
-    protected long                      join_timeout=3000;
+    protected long                      join_timeout=2000;
 
-    @Property(description="Number of join attempts before we give up and become a singleton. 0 means 'never give up'.")
+    @Property(description="Number of join attempts before we give up and become a singleton. 0 means 'never give up'")
     protected int                       max_join_attempts=10;
 
     @Property(description="Time (in ms) to wait for another discovery round when all discovery responses were " +
@@ -61,12 +61,13 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     @Property(description="Max time (in ms) to wait for a LEAVE response after a LEAVE req has been sent to the coord",
       type=AttributeType.TIME)
-    protected long                      leave_timeout=2000;
+    protected long                      leave_timeout=1000;
 
     @Property(description="Number of times a LEAVE request is sent to the coordinator (without receiving a LEAVE " +
       "response, before giving up and leaving anyway (failure detection will eventually exclude the left member). " +
-      "A value of 0 means wait forever")
-    protected int                       max_leave_attempts=10;
+      "A value of 0 means wait forever",deprecatedMessage="ignored")
+    @Deprecated
+    protected int                       max_leave_attempts=1;
 
     @Property(description="Timeout (in ms) to complete merge",type=AttributeType.TIME)
     protected long                      merge_timeout=5000; // time to wait for all MERGE_RSPS
@@ -168,8 +169,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public GMS     setMergeTimeout(long t)             {merge_timeout=t; return this;}
     public int     getMaxJoinAttempts()                {return max_join_attempts;}
     public GMS     setMaxJoinAttempts(int t)           {max_join_attempts=t; return this;}
-    public int     getMaxLeaveAttempts()               {return max_leave_attempts;}
-    public GMS     setMaxLeaveAttempts(int t)          {max_leave_attempts=t; return this;}
     public boolean printLocalAddress()                 {return print_local_addr;}
     public GMS     printLocalAddress(boolean p)        {print_local_addr=p; return this;}
     public boolean printPhysicalAddress()              {return print_physical_addrs;}

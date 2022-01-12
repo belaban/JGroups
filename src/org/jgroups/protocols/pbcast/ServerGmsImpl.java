@@ -22,6 +22,7 @@ public abstract class ServerGmsImpl extends GmsImpl {
 
     public void init() throws Exception {
         super.init();
+        gms.getViewHandler().resume();
     }
 
     /**
