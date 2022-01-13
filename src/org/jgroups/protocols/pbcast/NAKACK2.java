@@ -725,7 +725,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 case NakAckHeader2.XMIT_RSP:
                     Message xmitted_msg=msgFromXmitRsp(msg, hdr);
                     if(xmitted_msg != null) {
-                        it.replace(xmitted_msg); // todo: write unit test to check this!
+                        it.replace(xmitted_msg);
                         got_retransmitted_msg=true;
                     }
                     break;
