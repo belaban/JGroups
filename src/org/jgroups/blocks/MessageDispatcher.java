@@ -129,6 +129,8 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
 
     public <X extends MessageDispatcher> X setRequestHandler(RequestHandler rh) {
         req_handler=rh;
+        if(corr != null)
+            corr.setRequestHandler(rh);
         return (X)this;
     }
 
