@@ -8,8 +8,7 @@
 
     <property name="root.dir"              value="${basedir}"/>
     <property name="conf.dir"              value="${root.dir}/conf"/>
-    <property file="${conf.dir}/JGROUPS_VERSION.properties"/> <!-- Defines jgroups.version -->
-    <property name="version"               value="${jgroups.version}"/>
+    <property name="version.file"          value="JGROUPS_VERSION.properties"/>
     <property name="build.properties.file" value="build.properties"/>
     <property file="${build.properties.file}"/>
     <property name="src.dir"               value="${root.dir}/src"/>
@@ -42,6 +41,7 @@
     <property name="asciidoctor-style"     value="./asciidoctor.css"/>
     <property name="ivy.version"           value="2.5.0" />
     <property name="pom.template"          value="${conf.dir}/pom.template.xml"/>
+    <property name="project.pom"            value="${root.dir}/pom.xml"/>
     <property name="manifest"              value="${dist.dir}/MANIFEST.MF"/>
 
 
@@ -277,7 +277,7 @@
             <src path="${perf.dir}"/>
             <src path="${util.dir}"/>
         </javac>
-        <antcall target="copy-conf-dir"/>
+        <set-version/>
     </target>
 
     <target name="copy-conf-dir" description="Copies the relevant files from ./conf to ./classes">
@@ -315,7 +315,7 @@
                includes="org/jgroups/**">
             <exclude name="**/obsolete/**"/>
         </javac>
-        <antcall target="copy-conf-dir"/>
+        <set-version/>
     </target>
 
     <target name="compile-essential-unittests"
@@ -335,9 +335,18 @@
             <src path="${tests.dir}/other"/>
             <exclude name="**/obsolete/**"/>
         </javac>
-        <antcall target="copy-conf-dir"/>
+        <set-version/>
     </target>
 
+
+    <macrodef name="set-version" description="Extracts the version from the POM and sets it as a property">
+        <sequential>
+            <antcall target="write-version"/>
+            <property file="${compile.dir}/${version.file}"/>
+            <property name="version" value="${jgroups.version}"/>
+            <antcall target="copy-conf-dir"/>
+        </sequential>
+    </macrodef>
 
     <target name="copy-configfiles-to-compile-dir"
             description="Copies selected XML config files from the conf dir to the compile dir">
@@ -354,6 +363,7 @@
             <fileset dir="${conf.dir}" includes="*.xml, *.properties, *.cfg">
                 <exclude name="log4j*.xml"/>
                 <exclude name="settings.xml"/>
+                <exclude name="${version.file}"/>
             </fileset>
             <fileset dir="${compile.dir}/schema">
                 <include name="*.xsd"/>
@@ -589,7 +599,20 @@
         <delete dir="${lib.dir}" failonerror="false"/>
     </target>
 
-
+    <target name="write-version">
+        <java classname="org.jgroups.util.WriteVersionTo" fork="false" classpathref="jg.classpath">
+            <arg value="-pom"/>
+            <arg value="${project.pom}"/>
+            <arg value="-input"/>
+            <arg value="${conf.dir}/${version.file}"/>
+            <arg value="-output"/>
+            <arg value="${compile.dir}/${version.file}"/>
+            <arg value="-version"/>
+            <arg value="jgroups.version"/>
+            <arg value="-codename"/>
+            <arg value="jgroups.codename"/>
+        </java>
+    </target>
 
     <target name="version"
             depends="compile"
