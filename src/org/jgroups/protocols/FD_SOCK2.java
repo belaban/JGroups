@@ -178,26 +178,21 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         FdHeader hdr=msg.getHeader(this.id);
         if(hdr == null)
             return up_prot.up(msg);  // message did not originate from FD_SOCK2 layer, just pass up
-
-        switch(hdr.type) {
-            case FdHeader.SUSPECT:
-                if(hdr.mbrs != null) {
-                    log.trace("%s: received SUSPECT message from %s: suspects=%s", local_addr, msg.getSrc(), hdr.mbrs);
-                    suspect(hdr.mbrs);
-                }
-                break;
-
-            case FdHeader.UNSUSPECT:
-                if(hdr.mbrs != null) {
-                    log.trace("%s: received UNSUSPECT message from %s: mbrs=%s", local_addr, msg.getSrc(), hdr.mbrs);
-                    hdr.mbrs.forEach(this::unsuspect);
-                    req_handler.add(new Request(Request.Type.ConnectToNextPingDest, null));
-                }
-                break;
-        }
-        return null;
+        return handle(hdr, msg.getSrc());
     }
 
+    public void up(MessageBatch batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
+            FdHeader hdr=msg.getHeader(id);
+            if(hdr != null) {
+                it.remove();
+                handle(hdr, msg.getSrc());
+            }
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
     public Object down(Event evt) {
         switch(evt.getType()) {
@@ -289,6 +284,26 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
                 req_handler.add(new Request(Request.Type.ConnectToNextPingDest, dest));
             }
         }
+    }
+
+    protected Object handle(FdHeader hdr, Address sender) {
+        switch(hdr.type) {
+            case FdHeader.SUSPECT:
+                if(hdr.mbrs != null) {
+                    log.trace("%s: received SUSPECT message from %s: suspects=%s", local_addr, sender, hdr.mbrs);
+                    suspect(hdr.mbrs);
+                }
+                break;
+
+            case FdHeader.UNSUSPECT:
+                if(hdr.mbrs != null) {
+                    log.trace("%s: received UNSUSPECT message from %s: mbrs=%s", local_addr, sender, hdr.mbrs);
+                    hdr.mbrs.forEach(this::unsuspect);
+                    req_handler.add(new Request(Request.Type.ConnectToNextPingDest, null));
+                }
+                break;
+        }
+        return null;
     }
 
     protected NioServer createServer(int[] bind_ports) {

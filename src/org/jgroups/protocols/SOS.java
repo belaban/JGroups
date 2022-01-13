@@ -8,6 +8,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -79,6 +80,10 @@ public class SOS extends Protocol {
     public void stop() {
         super.stop();
         task.cancel(true);
+    }
+
+    public void up(MessageBatch batch) {
+        up_prot.up(batch);
     }
 
     @ManagedOperation(description="Dumps attributes / invokes operations from given protocols")

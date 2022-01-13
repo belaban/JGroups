@@ -70,20 +70,19 @@ public class STATS extends Protocol {
 
     @ManagedOperation
     public String printStats() {
-        Map.Entry entry;
         Object key, val;
         StringBuilder sb=new StringBuilder();
         sb.append("sent:\n");
-        for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
+        for(Iterator<Map.Entry<Address,MsgStats>> it=sent.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<Address,MsgStats> entry=it.next();
             key=entry.getKey();
             if(key == NULL_DEST) key="<mcast dest>";
             val=entry.getValue();
             sb.append(key).append(": ").append(val).append("\n");
         }
         sb.append("\nreceived:\n");
-        for(Iterator it=received.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
+        for(Iterator<Map.Entry<Address,MsgStats>> it=received.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<Address,MsgStats> entry=it.next();
             key=entry.getKey();
             val=entry.getValue();
             sb.append(key).append(": ").append(val).append("\n");
@@ -94,7 +93,7 @@ public class STATS extends Protocol {
 
     private void handleViewChange(View view) {
         List<Address> members=view.getMembers();
-        Set<Address> tmp=new LinkedHashSet(members);
+        Set<Address> tmp=new LinkedHashSet<>(members);
         tmp.add(null); // for null destination (= mcast)
         sent.keySet().retainAll(tmp);
         received.keySet().retainAll(tmp);

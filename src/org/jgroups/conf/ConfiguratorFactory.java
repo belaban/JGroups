@@ -8,7 +8,6 @@ import org.w3c.dom.Element;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.AccessControlException;
 import java.util.Objects;
 
 /**
@@ -90,7 +89,7 @@ public class ConfiguratorFactory {
         try {
             configStream=new FileInputStream(properties);
         }
-        catch(FileNotFoundException | AccessControlException fnfe) {
+        catch(FileNotFoundException fnfe) {
             // the properties string is likely not a file
         }
 

@@ -1370,8 +1370,8 @@ public class UtilTest {
         JChannel a=null, b=null;
 
         try {
-            a=new JChannel(Util.getTestStack()).name("A").connect("demo");
-            b=new JChannel(Util.getTestStack()).name("B").connect("demo");
+            a=new JChannel(Util.getTestStack()).name("A").connect("testWaitUntilAllChannelsHaveSameView");
+            b=new JChannel(Util.getTestStack()).name("B").connect("testWaitUntilAllChannelsHaveSameView");
             Util.waitUntilAllChannelsHaveSameView(10000, 1000, a,b);
 
             try {

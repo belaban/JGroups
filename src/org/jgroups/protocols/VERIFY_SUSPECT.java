@@ -6,6 +6,7 @@ import org.jgroups.annotations.*;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -129,6 +130,23 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         VerifyHeader hdr=msg.getHeader(this.id);
         if(hdr == null)
             return up_prot.up(msg);
+        return handle(hdr);
+    }
+
+    public void up(MessageBatch batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
+            VerifyHeader hdr=msg.getHeader(id);
+            if(hdr != null) {
+                it.remove();
+                handle(hdr);
+            }
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
+
+    protected Object handle(VerifyHeader hdr) {
         switch(hdr.type) {
             case VerifyHeader.ARE_YOU_DEAD:
                 if(hdr.from == null) {

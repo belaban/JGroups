@@ -196,37 +196,53 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
     public Object up(Message msg) {
         StateHeader hdr=msg.getHeader(this.id);
-        if(hdr != null) {
-            Address sender=msg.getSrc();
-            switch(hdr.type) {
-                case StateHeader.STATE_REQ:
-                    state_requesters.add(msg.getSrc());
-                    break;
-                case StateHeader.STATE_RSP:
-                    handleStateRsp(sender, hdr);
-                    break;
-                case StateHeader.STATE_PART:
-                    handleStateChunk(sender, msg.getArray(), msg.getOffset(), msg.getLength());
-                    break;
-                case StateHeader.STATE_EOF:
-                    log.trace("%s <-- EOF <-- %s", local_addr, sender);
-                    handleEOF(sender);
-                    break;
-                case StateHeader.STATE_EX:
-                    try {
-                        handleException(Util.exceptionFromBuffer(msg.getArray(), msg.getOffset(), msg.getLength()));
-                    }
-                    catch(Throwable t) {
-                        log.error("failed deserializaing state exception", t);
-                    }
-                    break;
-                default:
-                    log.error("%s: type %d not known in StateHeader", local_addr, hdr.type);
-                    break;
-            }
-            return null;
-        }
+        if(hdr != null)
+            return handle(hdr, msg);
         return up_prot.up(msg);
+    }
+
+    public void up(MessageBatch batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
+            StateHeader hdr=msg.getHeader(id);
+            if(hdr != null) {
+                it.remove();
+                handle(hdr, msg);
+            }
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
+
+    protected Object handle(StateHeader hdr, Message msg) {
+        Address sender=msg.getSrc();
+        switch(hdr.type) {
+            case StateHeader.STATE_REQ:
+                state_requesters.add(msg.getSrc());
+                break;
+            case StateHeader.STATE_RSP:
+                handleStateRsp(sender, hdr);
+                break;
+            case StateHeader.STATE_PART:
+                handleStateChunk(sender, msg.getArray(), msg.getOffset(), msg.getLength());
+                break;
+            case StateHeader.STATE_EOF:
+                log.trace("%s <-- EOF <-- %s", local_addr, sender);
+                handleEOF(sender);
+                break;
+            case StateHeader.STATE_EX:
+                try {
+                    handleException(Util.exceptionFromBuffer(msg.getArray(), msg.getOffset(), msg.getLength()));
+                }
+                catch(Throwable t) {
+                    log.error("failed deserializaing state exception", t);
+                }
+                break;
+            default:
+                log.error("%s: type %d not known in StateHeader", local_addr, hdr.type);
+                break;
+        }
+        return null;
     }
 
 

@@ -292,10 +292,29 @@ public abstract class Discovery extends Protocol {
         PingHeader hdr=msg.getHeader(this.id);
         if(hdr == null)
             return up_prot.up(msg);
-
         if(is_leaving)
             return null; // prevents merging back a leaving member (https://issues.jboss.org/browse/JGRP-1336)
+        return handle(hdr, msg);
+    }
 
+    public void up(MessageBatch batch) {
+        if(is_leaving)
+            batch.removeIf(m -> m.getHeader(id) != null, true);
+        else {
+            for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+                Message msg=it.next();
+                PingHeader hdr=msg.getHeader(id);
+                if(hdr != null) {
+                    it.remove();
+                    handle(hdr, msg);
+                }
+            }
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
+
+    protected Object handle(PingHeader hdr, Message msg) {
         PingData data=readPingData(msg.getArray(), msg.getOffset(), msg.getLength());
         Address logical_addr=data != null? data.getAddress() : msg.getSrc();
 
@@ -306,13 +325,11 @@ public abstract class Discovery extends Protocol {
                     log.warn("cluster_name (%s) or cluster_name of header (%s) is null; passing up discovery " +
                                "request from %s, but this should not be the case", cluster_name, hdr.cluster_name, msg.getSrc());
                 }
-                else {
-                    if(!cluster_name.equals(hdr.cluster_name)) {
-                        log.warn("%s: discarding discovery request for cluster '%s' from %s; " +
-                                   "our cluster name is '%s'. Please separate your clusters properly",
-                                 logical_addr, hdr.cluster_name, msg.getSrc(), cluster_name);
-                        return null;
-                    }
+                else if(!cluster_name.equals(hdr.cluster_name)) {
+                    log.warn("%s: discarding discovery request for cluster '%s' from %s; " +
+                               "our cluster name is '%s'. Please separate your clusters properly",
+                             logical_addr, hdr.cluster_name, msg.getSrc(), cluster_name);
+                    return null;
                 }
 
                 // add physical address and logical name of the discovery sender (if available) to the cache
@@ -363,6 +380,7 @@ public abstract class Discovery extends Protocol {
                 return null;
         }
     }
+
 
     /** Calls {@link #findMembers(List, boolean, Responses)} in this protocol and all discovery protocols below */
     protected void callFindMembersInAllDiscoveryProtocols(List<Address> mbrs, boolean initial_discovery, Responses rsps) {

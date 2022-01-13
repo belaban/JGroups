@@ -225,33 +225,16 @@ public class STABLE extends Protocol {
             handleRegularMessage(msg);
             return up_prot.up(msg);
         }
-
-        handleUpEvent(hdr, msg.getSrc(), msg.getObject());
-        return null;  // don't pass STABLE or STABILITY messages up the stack
+        return handle(hdr, msg.getSrc(), msg.getObject()); // don't pass STABLE or STABILITY messages up the stack
     }
-
-    protected void handleUpEvent(StableHeader hdr, Address sender, Digest digest) {
-        switch(hdr.type) {
-            case StableHeader.STABLE_GOSSIP:
-                handleStableMessage(digest, sender, hdr.view_id);
-                break;
-            case StableHeader.STABILITY:
-                handleStabilityMessage(digest, sender, hdr.view_id);
-                break;
-            default:
-                log.error("%s: StableHeader type %s not known", local_addr, hdr.type);
-        }
-    }
-
 
     public void up(MessageBatch batch) {
         StableHeader hdr;
-        Iterator<Message> it=batch.iterator();
-        while(it.hasNext()) { // remove and handle messages with flow control headers (STABLE_GOSSIP, STABILITY)
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) { // remove / handle msgs with headers STABLE_GOSSIP, STABILITY
             Message msg=it.next();
             if((hdr=msg.getHeader(id)) != null) {
                 it.remove();
-                handleUpEvent(hdr, batch.sender(), msg.getObject());
+                handle(hdr, batch.sender(), msg.getObject());
             }
         }
 
@@ -280,6 +263,19 @@ public class STABLE extends Protocol {
             up_prot.up(batch);
     }
 
+    protected Object handle(StableHeader hdr, Address sender, Digest digest) {
+        switch(hdr.type) {
+            case StableHeader.STABLE_GOSSIP:
+                handleStableMessage(digest, sender, hdr.view_id);
+                break;
+            case StableHeader.STABILITY:
+                handleStabilityMessage(digest, sender, hdr.view_id);
+                break;
+            default:
+                log.error("%s: StableHeader type %s not known", local_addr, hdr.type);
+        }
+        return null;
+    }
 
     protected void handleRegularMessage(Message msg) {
         // only if bytes counting is enabled, and only for multicast messages (http://jira.jboss.com/jira/browse/JGRP-233)

@@ -293,8 +293,7 @@ public abstract class FlowControl extends Protocol {
 
     public void up(MessageBatch batch) {
         int length=0;
-        Iterator<Message> it=batch.iterator();
-        while(it.hasNext()) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
             Message msg=it.next();
             if(msg.isFlagSet(Message.Flag.NO_FC))
                 continue;

@@ -268,35 +268,25 @@ public class MERGE3 extends Protocol {
         return down_prot.down(evt);
     }
 
-
     public Object up(Message msg) {
         MergeHeader hdr=msg.getHeader(getId());
         if(hdr == null)
             return up_prot.up(msg);
-        Address sender=msg.getSrc();
-        switch(hdr.type) {
-            case INFO:
-                addInfo(sender, hdr.view_id, hdr.logical_name, hdr.physical_addr);
-                break;
-            case VIEW_REQ:
-                View viewToSend=view;
-                Message view_rsp=new BytesMessage(sender)
-                  .putHeader(getId(), MergeHeader.createViewResponse()).setArray(marshal(viewToSend));
-                log.trace("%s: sending view rsp: %s", local_addr, viewToSend);
-                down_prot.down(view_rsp);
-                break;
-            case VIEW_RSP:
-                View tmp_view=readView(msg.getArray(), msg.getOffset(), msg.getLength());
-                log.trace("%s: received view rsp from %s: %s", local_addr, msg.getSrc(), tmp_view);
-                if(tmp_view != null)
-                    view_rsps.add(sender, tmp_view);
-                break;
-            default:
-                log.error("Type %s not known", hdr.type);
-        }
-        return null;
+        return handle(hdr, msg);
     }
 
+    public void up(MessageBatch batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
+            MergeHeader hdr=msg.getHeader(id);
+            if(hdr != null) {
+                it.remove();
+                handle(hdr, msg);
+            }
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
     public static List<View> detectDifferentViews(Map<Address,View> map) {
         final List<View> ret=new ArrayList<>();
@@ -327,6 +317,31 @@ public class MERGE3 extends Protocol {
             log.error("%s: failed reading View from message: %s", local_addr, ex);
             return null;
         }
+    }
+
+    protected Object handle(MergeHeader hdr, Message msg) {
+        Address sender=msg.getSrc();
+        switch(hdr.type) {
+            case INFO:
+                addInfo(sender, hdr.view_id, hdr.logical_name, hdr.physical_addr);
+                break;
+            case VIEW_REQ:
+                View viewToSend=view;
+                Message view_rsp=new BytesMessage(sender)
+                  .putHeader(getId(), MergeHeader.createViewResponse()).setArray(marshal(viewToSend));
+                log.trace("%s: sending view rsp: %s", local_addr, viewToSend);
+                down_prot.down(view_rsp);
+                break;
+            case VIEW_RSP:
+                View tmp_view=readView(msg.getArray(), msg.getOffset(), msg.getLength());
+                log.trace("%s: received view rsp from %s: %s", local_addr, msg.getSrc(), tmp_view);
+                if(tmp_view != null)
+                    view_rsps.add(sender, tmp_view);
+                break;
+            default:
+                log.error("Type %s not known", hdr.type);
+        }
+        return null;
     }
 
     protected MergeHeader createInfo() {

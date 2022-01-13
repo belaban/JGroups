@@ -22,7 +22,6 @@ import org.jgroups.util.*;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.AccessControlException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -316,7 +315,7 @@ public class FORK extends Protocol {
         try {
             configStream=new FileInputStream(config);
         }
-        catch(FileNotFoundException | AccessControlException fnfe) { // catching ACE fixes http://jira.jboss.com/jira/browse/JGRP-94
+        catch(FileNotFoundException fnfe) { // catching ACE fixes http://jira.jboss.com/jira/browse/JGRP-94
         }
 
         // Check to see if the properties string is a URL.

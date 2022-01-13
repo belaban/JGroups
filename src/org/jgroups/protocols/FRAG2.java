@@ -139,10 +139,12 @@ public class FRAG2 extends Fragmentation {
     }
 
     public void up(MessageBatch batch) {
-        FastArray<Message>.FastIterator it=(FastArray<Message>.FastIterator)batch.iteratorWithFilter(HAS_FRAG_HEADER);
+        FastArray<Message>.FastIterator it=(FastArray<Message>.FastIterator)batch.iterator();
         while(it.hasNext()) {
             Message msg=it.next();
             FragHeader hdr=msg.getHeader(this.id);
+            if(hdr == null)
+                continue;
             Message assembled_msg=unfragment(msg, hdr);
             if(assembled_msg != null) {
                 // the reassembled msg has to be add in the right place (https://issues.jboss.org/browse/JGRP-1648),

@@ -843,159 +843,21 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         GmsHeader hdr=msg.getHeader(this.id);
         if(hdr == null)
             return up_prot.up(msg);
-
-        switch(hdr.type) {
-            case GmsHeader.JOIN_REQ:
-                view_handler.add(new Request(Request.JOIN, hdr.mbr, null, hdr.useFlushIfPresent));
-                break;
-            case GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
-                view_handler.add(new Request(Request.JOIN_WITH_STATE_TRANSFER, hdr.mbr, null, hdr.useFlushIfPresent));
-                break;
-            case GmsHeader.JOIN_RSP:
-                JoinRsp join_rsp=readJoinRsp(msg.getArray(), msg.getOffset(), msg.getLength());
-                if(join_rsp != null)
-                    impl.handleJoinResponse(join_rsp);
-                break;
-            case GmsHeader.LEAVE_REQ:
-                if(hdr.mbr == null)
-                    return null;
-                view_handler.add(new Request(Request.LEAVE, hdr.mbr));
-                break;
-            case GmsHeader.LEAVE_RSP:
-                impl.handleLeaveResponse(msg.getSrc());
-                break;
-            case GmsHeader.VIEW:
-                Tuple<View,Digest> tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
-                if(tuple == null)
-                    return null;
-                View new_view=tuple.getVal1();
-                if(new_view == null)
-                    return null;
-
-                // Discards view with id lower than or equal to our own. Will be installed without check if it is the first view
-                ViewId viewId = this.getViewId();
-                if (viewId != null && new_view.getViewId().compareToIDs(viewId) <= 0)
-                    return null;
-                if(new_view instanceof DeltaView) {
-                    try {
-                        new_view=createViewFromDeltaView(view,(DeltaView)new_view);
-                    }
-                    catch(Throwable t) {
-                        if(view != null)
-                            log.trace("%s: failed to create view from delta-view; dropping view: %s", local_addr, t.toString());
-                        log.trace("%s: sending request for full view to %s", local_addr, msg.getSrc());
-                        Message full_view_req=new EmptyMessage(msg.getSrc())
-                          .putHeader(id, new GmsHeader(GmsHeader.GET_CURRENT_VIEW)).setFlag(OOB);
-                        down_prot.down(full_view_req);
-                        return null;
-                    }
-                }
-                Address coord=msg.getSrc();
-                if(!new_view.containsMember(coord)) {
-                    sendViewAck(coord); // we need to send the ack first, otherwise the connection is removed
-                    impl.handleViewChange(new_view, tuple.getVal2());
-                }
-                else {
-                    impl.handleViewChange(new_view, tuple.getVal2());
-                    sendViewAck(coord); // send VIEW_ACK to sender of view
-                }
-                break;
-
-            case GmsHeader.VIEW_ACK:
-                Address sender=msg.getSrc();
-                ack_collector.ack(sender);
-                return null; // don't pass further up
-
-            case GmsHeader.MERGE_REQ:
-                Collection<? extends Address> mbrs=readMembers(msg.getArray(), msg.getOffset(), msg.getLength());
-                if(mbrs != null)
-                    impl.handleMergeRequest(msg.getSrc(), hdr.merge_id, mbrs);
-                break;
-
-            case GmsHeader.MERGE_RSP:
-                tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
-                if(tuple == null)
-                    return null;
-                MergeData merge_data=new MergeData(msg.getSrc(), tuple.getVal1(), tuple.getVal2(), hdr.merge_rejected);
-                log.trace("%s: got merge response from %s, merge_id=%s, merge data is %s",
-                          local_addr, msg.getSrc(), hdr.merge_id, merge_data);
-                impl.handleMergeResponse(merge_data, hdr.merge_id);
-                break;
-
-            case GmsHeader.INSTALL_MERGE_VIEW:
-                tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
-                if(tuple == null)
-                    return null;
-                impl.handleMergeView(new MergeData(msg.getSrc(), tuple.getVal1(), tuple.getVal2()), hdr.merge_id);
-                break;
-
-            case GmsHeader.INSTALL_DIGEST:
-                tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
-                if(tuple == null)
-                    return null;
-                Digest tmp=tuple.getVal2();
-                down_prot.down(new Event(Event.MERGE_DIGEST, tmp));
-                break;
-
-            case GmsHeader.INSTALL_MERGE_VIEW_OK:
-                //[JGRP-700] - FLUSH: flushing should span merge
-                merge_ack_collector.ack(msg.getSrc());
-                break;
-
-            case GmsHeader.CANCEL_MERGE:
-                //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
-                impl.handleMergeCancelled(hdr.merge_id);
-                break;
-
-            case GmsHeader.GET_DIGEST_REQ: // sent with DONT_LOOPBACK, so no need to drop msg from self
-                // only handle this request if it was sent by the coordinator (or at least a member) of the current cluster
-                if(!members.contains(msg.getSrc()))
-                    break;
-
-                if(hdr.merge_id !=null && !(merger.matchMergeId(hdr.merge_id) || merger.setMergeId(null, hdr.merge_id)))
-                    return null;
-
-                // fetch only my own digest
-                Digest digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST, local_addr));
-                if(digest != null) {
-                    Message get_digest_rsp=new BytesMessage(msg.getSrc()).setFlag(OOB)
-                      .putHeader(this.id, new GmsHeader(GmsHeader.GET_DIGEST_RSP))
-                      .setArray(marshal(null, digest));
-                    down_prot.down(get_digest_rsp);
-                }
-                break;
-
-            case GmsHeader.GET_DIGEST_RSP:
-                tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
-                if(tuple == null)
-                    return null;
-                Digest digest_rsp=tuple.getVal2();
-                impl.handleDigestResponse(msg.getSrc(), digest_rsp);
-                break;
-
-            case GmsHeader.GET_CURRENT_VIEW:
-                ViewId view_id=readViewId(msg.getArray(), msg.getOffset(), msg.getLength());
-                if(view_id != null) {
-                    // check if my view-id differs from view-id:
-                    ViewId my_view_id=this.view != null? this.view.getViewId() : null;
-                    if(my_view_id != null && my_view_id.compareToIDs(view_id) <= 0)
-                        return null; // my view-id doesn't differ from sender's view-id; no need to send view
-                }
-                // either my view-id differs from sender's view-id, or sender's view-id is null: send view
-                log.trace("%s: received request for full view from %s, sending view %s", local_addr, msg.getSrc(), view);
-                Message view_msg=new BytesMessage(msg.getSrc()).putHeader(id,new GmsHeader(GmsHeader.VIEW))
-                  .setArray(marshal(view, null)).setFlag(OOB);
-                down_prot.down(view_msg);
-                break;
-
-            default:
-                log.error(Util.getMessage("GmsHeaderWithType"), hdr.type);
-        }
-        return null;  // don't pass up
+        return handle(hdr, msg);
     }
 
-
-
+    public void up(MessageBatch batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
+            GmsHeader hdr=msg.getHeader(this.id);
+            if(hdr != null) {
+                it.remove();
+                handle(hdr, msg);
+            }
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
     public Object down(Event evt) {
         int type=evt.getType();
@@ -1075,6 +937,151 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     /* ------------------------------- Private Methods --------------------------------- */
+
+    protected Object handle(GmsHeader hdr, Message msg) {
+        switch(hdr.type) {
+            case GmsHeader.JOIN_REQ:
+                view_handler.add(new Request(Request.JOIN, hdr.mbr, null, hdr.useFlushIfPresent));
+                break;
+            case GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
+                view_handler.add(new Request(Request.JOIN_WITH_STATE_TRANSFER, hdr.mbr, null, hdr.useFlushIfPresent));
+                break;
+            case GmsHeader.JOIN_RSP:
+                JoinRsp join_rsp=readJoinRsp(msg.getArray(), msg.getOffset(), msg.getLength());
+                if(join_rsp != null)
+                    impl.handleJoinResponse(join_rsp);
+                break;
+            case GmsHeader.LEAVE_REQ:
+                if(hdr.mbr != null)
+                    view_handler.add(new Request(Request.LEAVE, hdr.mbr));
+                break;
+            case GmsHeader.LEAVE_RSP:
+                impl.handleLeaveResponse(msg.getSrc());
+                break;
+            case GmsHeader.VIEW:
+                Tuple<View,Digest> tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
+                View new_view=tuple != null? tuple.getVal1() : null;
+                if(new_view == null)
+                    return null;
+
+                // Discards view with id lower than or equal to our own. Will be installed without check if it is the first view
+                ViewId viewId=getViewId();
+                if (viewId != null && new_view.getViewId().compareToIDs(viewId) <= 0)
+                    return null;
+                if(new_view instanceof DeltaView) {
+                    try {
+                        new_view=createViewFromDeltaView(view,(DeltaView)new_view);
+                    }
+                    catch(Throwable t) {
+                        if(view != null)
+                            log.trace("%s: failed to create view from delta-view; dropping view: %s", local_addr, t.toString());
+                        log.trace("%s: sending request for full view to %s", local_addr, msg.getSrc());
+                        Message full_view_req=new EmptyMessage(msg.getSrc())
+                          .putHeader(id, new GmsHeader(GmsHeader.GET_CURRENT_VIEW)).setFlag(OOB);
+                        down_prot.down(full_view_req);
+                        return null;
+                    }
+                }
+                Address coord=msg.getSrc();
+                if(!new_view.containsMember(coord)) {
+                    sendViewAck(coord); // we need to send the ack first, otherwise the connection is removed
+                    impl.handleViewChange(new_view, tuple.getVal2());
+                }
+                else {
+                    impl.handleViewChange(new_view, tuple.getVal2());
+                    sendViewAck(coord); // send VIEW_ACK to sender of view
+                }
+                break;
+
+            case GmsHeader.VIEW_ACK:
+                Address sender=msg.getSrc();
+                ack_collector.ack(sender);
+                return null; // don't pass further up
+
+            case GmsHeader.MERGE_REQ:
+                Collection<? extends Address> mbrs=readMembers(msg.getArray(), msg.getOffset(), msg.getLength());
+                if(mbrs != null)
+                    impl.handleMergeRequest(msg.getSrc(), hdr.merge_id, mbrs);
+                break;
+
+            case GmsHeader.MERGE_RSP:
+                tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
+                if(tuple == null)
+                    return null;
+                MergeData merge_data=new MergeData(msg.getSrc(), tuple.getVal1(), tuple.getVal2(), hdr.merge_rejected);
+                log.trace("%s: got merge response from %s, merge_id=%s, merge data is %s",
+                          local_addr, msg.getSrc(), hdr.merge_id, merge_data);
+                impl.handleMergeResponse(merge_data, hdr.merge_id);
+                break;
+
+            case GmsHeader.INSTALL_MERGE_VIEW:
+                tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
+                if(tuple != null)
+                    impl.handleMergeView(new MergeData(msg.getSrc(), tuple.getVal1(), tuple.getVal2()), hdr.merge_id);
+                break;
+
+            case GmsHeader.INSTALL_DIGEST:
+                tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
+                if(tuple == null)
+                    return null;
+                Digest tmp=tuple.getVal2();
+                down_prot.down(new Event(Event.MERGE_DIGEST, tmp));
+                break;
+
+            case GmsHeader.INSTALL_MERGE_VIEW_OK: //[JGRP-700] - FLUSH: flushing should span merge
+                merge_ack_collector.ack(msg.getSrc());
+                break;
+
+            case GmsHeader.CANCEL_MERGE: //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
+                impl.handleMergeCancelled(hdr.merge_id);
+                break;
+
+            case GmsHeader.GET_DIGEST_REQ: // sent with DONT_LOOPBACK, so no need to drop msg from self
+                // only handle this request if it was sent by the coordinator (or at least a member) of the current cluster
+                if(!members.contains(msg.getSrc()))
+                    break;
+
+                if(hdr.merge_id !=null && !(merger.matchMergeId(hdr.merge_id) || merger.setMergeId(null, hdr.merge_id)))
+                    return null;
+
+                // fetch only my own digest
+                Digest digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST, local_addr));
+                if(digest != null) {
+                    Message get_digest_rsp=new BytesMessage(msg.getSrc()).setFlag(OOB)
+                      .putHeader(this.id, new GmsHeader(GmsHeader.GET_DIGEST_RSP))
+                      .setArray(marshal(null, digest));
+                    down_prot.down(get_digest_rsp);
+                }
+                break;
+
+            case GmsHeader.GET_DIGEST_RSP:
+                tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
+                if(tuple == null)
+                    return null;
+                Digest digest_rsp=tuple.getVal2();
+                impl.handleDigestResponse(msg.getSrc(), digest_rsp);
+                break;
+
+            case GmsHeader.GET_CURRENT_VIEW:
+                ViewId view_id=readViewId(msg.getArray(), msg.getOffset(), msg.getLength());
+                if(view_id != null) {
+                    // check if my view-id differs from view-id:
+                    ViewId my_view_id=this.view != null? this.view.getViewId() : null;
+                    if(my_view_id != null && my_view_id.compareToIDs(view_id) <= 0)
+                        return null; // my view-id doesn't differ from sender's view-id; no need to send view
+                }
+                // either my view-id differs from sender's view-id, or sender's view-id is null: send view
+                log.trace("%s: received request for full view from %s, sending view %s", local_addr, msg.getSrc(), view);
+                Message view_msg=new BytesMessage(msg.getSrc()).putHeader(id,new GmsHeader(GmsHeader.VIEW))
+                  .setArray(marshal(view, null)).setFlag(OOB);
+                down_prot.down(view_msg);
+                break;
+
+            default:
+                log.error(Util.getMessage("GmsHeaderWithType"), hdr.type);
+        }
+        return null;  // don't pass up
+    }
 
     protected void initState() {
         becomeClient();

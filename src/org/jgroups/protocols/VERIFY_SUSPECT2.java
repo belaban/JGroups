@@ -9,6 +9,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.DefaultThreadFactory;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -102,31 +103,21 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
         VerifyHeader hdr=msg.getHeader(this.id);
         if(hdr == null)
             return up_prot.up(msg);
-        switch(hdr.type) {
-            case VerifyHeader.ARE_YOU_DEAD:
-                if(hdr.from == null) {
-                    log.error(Util.getMessage("AREYOUDEADHdrFromIsNull"));
-                    return null;
-                }
-                Address target=use_mcast_rsps? null : hdr.from;
-                for(int i=0; i < num_msgs; i++) {
-                    Message rsp=new EmptyMessage(target)
-                      .putHeader(this.id, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
-                    down_prot.down(rsp);
-                }
-                return null;
-            case VerifyHeader.I_AM_NOT_DEAD:
-                if(hdr.from == null) {
-                    log.error(Util.getMessage("IAMNOTDEADHdrFromIsNull"));
-                    return null;
-                }
-                unsuspect(hdr.from);
-                return null;
-        }
-        return null;
+        return handle(hdr);
     }
 
-
+    public void up(MessageBatch batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
+            VerifyHeader hdr=msg.getHeader(id);
+            if(hdr != null) {
+                it.remove();
+                handle(hdr);
+            }
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
     /**
      * Started when a suspected member is added to suspects. Clears the bucket and sends the contents up the stack as
@@ -167,6 +158,31 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
 
 
     /* --------------------------------- Private Methods ----------------------------------- */
+
+    protected Object handle(VerifyHeader hdr) {
+        switch(hdr.type) {
+            case VerifyHeader.ARE_YOU_DEAD:
+                if(hdr.from == null) {
+                    log.error(Util.getMessage("AREYOUDEADHdrFromIsNull"));
+                    return null;
+                }
+                Address target=use_mcast_rsps? null : hdr.from;
+                for(int i=0; i < num_msgs; i++) {
+                    Message rsp=new EmptyMessage(target)
+                      .putHeader(this.id, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
+                    down_prot.down(rsp);
+                }
+                return null;
+            case VerifyHeader.I_AM_NOT_DEAD:
+                if(hdr.from == null) {
+                    log.error(Util.getMessage("IAMNOTDEADHdrFromIsNull"));
+                    return null;
+                }
+                unsuspect(hdr.from);
+                return null;
+        }
+        return null;
+    }
 
 
     /**
