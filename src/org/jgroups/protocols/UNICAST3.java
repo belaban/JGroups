@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -786,7 +787,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(ack_threshold <= 1)
             sendAck(sender, win.getHighestDeliverable(), entry.connId());
         else
-            entry.sendAck(true); // will be sent delayed (on the next xmit_interval)
+            entry.sendAck(); // will be sent delayed (on the next xmit_interval)
 
         // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-377
@@ -843,7 +844,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(batch_size >= ack_threshold)
             sendAck(sender, win.getHighestDeliverable(), entry.connId());
         else
-            entry.sendAck(true);
+            entry.sendAck();
 
         // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
         if(added && oob) {
@@ -1247,7 +1248,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             Table<Message> win=val != null? val.msgs : null;
 
             // receiver: send ack for received messages if needed
-            if(win != null && val.sendAck()) // sendAck() resets send_ack to false
+            if(win != null && val.needToSendAck()) // sendAck() resets send_ack to false
                 sendAck(target, win.getHighestDeliverable(), val.connId());
 
             // receiver: retransmit missing messages (getNumMissing() is fast)
@@ -1309,18 +1310,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             Table<Message> win=val != null? val.msgs : null;
 
             // receiver: send ack for received messages if needed
-            if(win != null && val.sendAck())// sendAck() resets send_ack to false
+            if(win != null && val.needToSendAck())// sendAck() resets send_ack to false
                 sendAck(target, win.getHighestDeliverable(), val.connId());
         }
-    }
-
-    protected void sendAckFor(Address dest) {
-        ReceiverEntry entry=recv_table.get(dest);
-        Table<Message> win=entry != null? entry.msgs : null;
-
-        // receiver: send ack for received messages if needed
-        if(win != null && entry.sendAck())// sendAck() resets send_ack to false
-            sendAck(dest, win.getHighestDeliverable(), entry.connId());
     }
 
     protected void update(Entry entry, int num_received) {
@@ -1407,21 +1399,21 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     protected final class ReceiverEntry extends Entry {
-        private volatile boolean  send_ack;
+        private final AtomicBoolean send_ack=new AtomicBoolean();
 
         public ReceiverEntry(Table<Message> received_msgs, short recv_conn_id) {
             super(recv_conn_id, received_msgs);
         }
 
-        ReceiverEntry  sendAck(boolean flag) {send_ack=flag; return this;}
-        boolean        sendAck()             {boolean retval=send_ack; send_ack=false; return retval;}
+        ReceiverEntry sendAck()       {send_ack.compareAndSet(false, true); return this;}
+        boolean       needToSendAck() {return send_ack.compareAndSet(true, false);}
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
             if(msgs != null)
                 sb.append(msgs).append(", ");
             sb.append("recv_conn_id=" + conn_id).append(" (" + age() / 1000 + " secs old) - " + state);
-            if(send_ack)
+            if(send_ack.get())
                 sb.append(" [ack pending]");
             return sb.toString();
         }
