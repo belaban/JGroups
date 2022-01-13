@@ -4,7 +4,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>bundle</packaging>
     <name>JGroups</name>
-    <version>4.2.19.Final</version>
+    <version>4.2.20.Final-SNAPSHOT</version>
     <url>http://www.jgroups.org</url>
 
     <properties>
@@ -49,7 +49,7 @@
         <connection>scm:git:git://github.com/belaban/JGroups.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/belaban/JGroups.git</developerConnection>
         <url>https://github.com/belaban/JGroups</url>
-      <tag>jgroups-4.2.19.Final</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <issueManagement>
