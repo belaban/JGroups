@@ -2,10 +2,13 @@
 package org.jgroups.blocks;
 
 import org.jgroups.*;
+import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.DROP;
+import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ByteArray;
 import org.jgroups.util.RspList;
 import org.jgroups.util.UUID;
@@ -20,6 +23,8 @@ import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Bela Ban
@@ -210,7 +215,7 @@ public class GroupRequestTest {
     public void testMissingResponseDueToMergeView() throws Exception {
         try(JChannel ch1=create("A"); JChannel ch2=create("B");
             MessageDispatcher md1=new MessageDispatcher(ch1, r -> "from A");
-            MessageDispatcher md2=new MessageDispatcher(ch2, r -> "from B")) {
+            MessageDispatcher ignored=new MessageDispatcher(ch2, r -> "from B")) {
             Util.waitUntilAllChannelsHaveSameView(10000, 500, ch1,ch2);
 
             Address a_addr=ch1.getAddress(), b_addr=ch2.getAddress();
@@ -244,6 +249,66 @@ public class GroupRequestTest {
             assert !rsps.isReceived(b_addr);
             assert rsps.isSuspected(b_addr);
         }
+    }
+
+    /** Tests https://issues.redhat.com/browse/JGRP-2575 scenario submitted by Sergei 2021 Dev 23  */
+    public void testUnicastFailsWithSuspectedException() throws Exception {
+        JChannel ch1=new JChannel(Util.getTestStack()).name("A");
+        JChannel ch2=new JChannel(Util.getTestStack()).name("B");
+        RpcDispatcher d1=new RpcDispatcher(ch1, this), d2=new RpcDispatcher(ch2, this);
+
+        try(ch1; ch2) {
+            for(JChannel ch: Arrays.asList(ch1, ch2)) {
+                ProtocolStack stack=ch.getProtocolStack();
+                DISCARD discard=new DISCARD().discardAll(true);
+                stack.insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
+                // ch.getProtocolStack().getTransport().getDiagnosticsHandler().setEnabled(true);
+            }
+            ch1.connect("testUnicastFailsWithSuspectedException");
+            ch2.connect("testUnicastFailsWithSuspectedException");
+            assert ch1.getView().size() == 1 && ch2.getView().size() == 1;
+            Address ch1_addr=ch1.getAddress(), ch2_addr=ch2.getAddress();
+
+            System.out.println("-- merging A and B");
+            ch1.getProtocolStack().removeProtocol(DISCARD.class);
+            ch2.getProtocolStack().removeProtocol(DISCARD.class);
+
+            List<View> subgroups=Arrays.asList(View.create(ch1_addr, 2, ch1_addr),
+                                               View.create(ch2_addr, 3, ch2_addr));
+            MergeView mv=new MergeView(ch1_addr, 5, Arrays.asList(ch1_addr, ch2_addr), subgroups);
+            for(JChannel ch: Arrays.asList(ch1, ch2))
+                ((GMS)ch.getProtocolStack().findProtocol(GMS.class)).installView(mv);
+
+            Util.waitUntilAllChannelsHaveSameView(60000, 500, ch1, ch2);
+            System.out.printf("%s\n", Stream.of(ch1, ch2).map(c -> String.format("%s: %s", c.getAddress(), c.getView()))
+              .collect(Collectors.joining("\n")));
+
+            System.out.println("-- sending unicast from A to B");
+            Integer rsp=d1.callRemoteMethod(ch2_addr, "multiply", new Object[]{3, 4}, new Class<?>[]{int.class, int.class},
+                                            RequestOptions.SYNC());
+            assert rsp != null && rsp == 12;
+
+            System.out.println("-- sending unicast from B to A");
+            rsp=d2.callRemoteMethod(ch1_addr, "multiply", new Object[]{5, 5}, new Class<?>[]{int.class, int.class},
+                                    RequestOptions.SYNC());
+            assert rsp != null && rsp == 25;
+
+            RspList<Integer> rsps=d1.callRemoteMethods(null, "multiply", new Object[]{3, 4}, new Class<?>[]{int.class, int.class},
+                                                       RequestOptions.SYNC());
+            assert rsps != null && rsps.size() == 2;
+            List<Integer> l=rsps.getResults();
+            assert l.stream().allMatch(n -> n == 12);
+
+            rsps=d2.callRemoteMethods(null, "multiply", new Object[]{3, 4}, new Class<?>[]{int.class, int.class},
+                                      RequestOptions.SYNC());
+            assert rsps != null && rsps.size() == 2;
+            l=rsps.getResults();
+            assert l.stream().allMatch(n -> n == 12);
+        }
+    }
+
+    public int multiply(int n1, int n2) {
+        return n1*n2;
     }
 
 
@@ -469,7 +534,7 @@ public class GroupRequestTest {
                         request.receiveResponse(retval, sender, false);
                     }
                     else if(obj instanceof View)
-                        request.viewChange((View)obj);
+                        request.viewChange((View)obj, false);
                 }
             }
         }

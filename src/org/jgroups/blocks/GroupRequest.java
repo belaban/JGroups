@@ -157,14 +157,14 @@ public class GroupRequest<T> extends Request<RspList<T>> {
      * forever on C's response because C never received the request in the first place, therefore won't send a response.
      * </ul>
      */
-    public void viewChange(View view) {
+    public void viewChange(View view, boolean handle_previous_subgroups) {
         if(view == null || rsps == null || rsps.isEmpty())
             return;
 
         boolean changed=false;
         lock.lock();
         try {
-            if(view instanceof MergeView) {
+            if(view instanceof MergeView && handle_previous_subgroups) {
                 // we need to set the rsp for member of a subview that doesn't contain local_addr to 'suspected',
                 // unless that rsp has already been received (https://issues.redhat.com/browse/JGRP-2575)
                 for(View v: ((MergeView)view).getSubgroups()) {

@@ -52,19 +52,19 @@ public abstract class Request<T> extends CompletableFuture<T> {
         return timeout > 0? waitForCompletion(timeout, TimeUnit.MILLISECONDS) : waitForCompletion();
     }
 
-    public abstract void       sendRequest(Message req) throws Exception;
+    public abstract void sendRequest(Message req) throws Exception;
 
-    public abstract void       receiveResponse(Object response_value, Address sender, boolean is_exception);
+    public abstract void receiveResponse(Object response_value, Address sender, boolean is_exception);
 
-    public abstract void       viewChange(View new_view);
+    public abstract void viewChange(View new_view, boolean handle_previous_subgroups);
 
-    public abstract void       siteUnreachable(String site);
+    public abstract void siteUnreachable(String site);
 
-    public abstract void       transportClosed();
+    public abstract void transportClosed();
 
     /** Blocks until all responses have been received and returns result or throws exception */
-    public abstract T          waitForCompletion(long timeout, TimeUnit unit) throws Exception;
-    public abstract T          waitForCompletion() throws Exception;
+    public abstract T    waitForCompletion(long timeout, TimeUnit unit) throws Exception;
+    public abstract T    waitForCompletion() throws Exception;
 
 
 

@@ -123,7 +123,7 @@ public class UnicastRequestTest {
         UnicastRequest<Long> req=new UnicastRequest<>(corr, a, RequestOptions.SYNC().timeout(5000));
         corr.setRequest(req);
         View new_view=View.create(b, 5, b,c);
-        req.viewChange(new_view);
+        req.viewChange(new_view, false);
 
         try {
             req.execute(new BytesMessage(a, buf), true);
@@ -279,7 +279,7 @@ public class UnicastRequestTest {
                         request.receiveResponse(retval, sender, false);
                     }
                     else if(obj instanceof View)
-                        request.viewChange((View)obj);
+                        request.viewChange((View)obj, false);
                 }
             }
         }
