@@ -145,7 +145,7 @@ public class UnicastRequestTest {
     public void testMissingResponseDueToMergeViewUnicast() throws Exception {
         try(JChannel ch1=create("A"); JChannel ch2=create("B");
             MessageDispatcher md1=new MessageDispatcher(ch1, r -> "from A");
-            MessageDispatcher md2=new MessageDispatcher(ch2, r -> "from B")) {
+            MessageDispatcher ignored=new MessageDispatcher(ch2, r -> "from B")) {
             Util.waitUntilAllChannelsHaveSameView(10000, 500, ch1,ch2);
 
             Address a_addr=ch1.getAddress(), b_addr=ch2.getAddress();
