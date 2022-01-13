@@ -141,7 +141,7 @@ public class RequestCorrelator {
                 log.trace("%s: invoking multicast RPC [req-id=%d]", local_addr, req_id);
             requests.putIfAbsent(req_id, req);
             // make sure no view is received before we add ourself as a view handler (https://issues.jboss.org/browse/JGRP-1428)
-            req.viewChange(view);
+            req.viewChange(view, false);
             if(rpc_stats.extendedStats())
                 req.start_time=System.nanoTime();
         }
@@ -190,7 +190,7 @@ public class RequestCorrelator {
                 log.trace("%s: invoking unicast RPC [req-id=%d] on %s", local_addr, req_id, msg.dest());
             requests.putIfAbsent(req_id, req);
             // make sure no view is received before we add ourself as a view handler (https://issues.jboss.org/browse/JGRP-1428)
-            req.viewChange(view);
+            req.viewChange(view, false);
             if(rpc_stats.extendedStats())
                 req.start_time=System.nanoTime();
         }
@@ -278,7 +278,7 @@ public class RequestCorrelator {
      */
     public void receiveView(View new_view) {
         view=new_view; // move this before the iteration (JGRP-1428)
-        requests.values().stream().filter(Objects::nonNull).forEach(req -> req.viewChange(new_view));
+        requests.values().stream().filter(Objects::nonNull).forEach(req -> req.viewChange(new_view, true));
     }
 
 

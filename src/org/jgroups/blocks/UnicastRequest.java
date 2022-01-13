@@ -66,11 +66,11 @@ public class UnicastRequest<T> extends Request<T> {
      * If the target address is not a member of the new view, we'll mark the response as suspected and unblock
      * the caller of execute()
      */
-    public void viewChange(View view) {
+    public void viewChange(View view, boolean handle_previous_subgroups) {
         if(view == null)
             return;
 
-        if(view instanceof MergeView) {
+        if(view instanceof MergeView && handle_previous_subgroups) {
             // if target is not in a subview then we need to suspect it (https://issues.redhat.com/browse/JGRP-2575)
             for(View v: ((MergeView)view).getSubgroups()) {
                 if(v.containsMember(target) && !v.containsMember(corr.local_addr)) {
