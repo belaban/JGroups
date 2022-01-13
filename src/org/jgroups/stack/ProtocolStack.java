@@ -5,8 +5,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverter;
 import org.jgroups.conf.ProtocolConfiguration;
-import org.jgroups.jmx.ResourceDMBean;
-import org.jgroups.logging.Log;
+import org.jgroups.jmx.ReflectUtils;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Ref;
@@ -219,7 +218,7 @@ public class ProtocolStack extends Protocol {
             if(prot_name == null)
                 continue;
             Map<String,Object> tmp=new TreeMap<>();
-            dumpStats(p, tmp, log);
+            ReflectUtils.dumpStats(p, tmp);
             if(!tmp.isEmpty())
                 retval.put(prot_name, tmp);
         }
@@ -246,7 +245,7 @@ public class ProtocolStack extends Protocol {
         Map<String,Map<String,Object>> retval=new HashMap<>();
         for(Protocol prot: prots) {
             Map<String,Object> tmp=new TreeMap<>();
-            dumpStats(prot, tmp, log);
+            ReflectUtils.dumpStats(prot, tmp);
             if(attrs != null && !attrs.isEmpty()) {
                 // weed out attrs not in list
                 for(Iterator<String> it=tmp.keySet().iterator(); it.hasNext(); ) {
@@ -352,10 +351,6 @@ public class ProtocolStack extends Protocol {
         return printProtocolSpecAsPlainString(false);
     }
 
-    protected static void dumpStats(Object obj, Map<String,Object> map, Log log) {
-        ResourceDMBean.dumpStats(obj, map, log); // dumps attrs and operations into tmp
-        Util.forAllComponents(obj, (o,prefix) -> ResourceDMBean.dumpStats(o, prefix, map, log));
-    }
 
     private String printProtocolSpecAsPlainString(boolean print_props) {
         StringBuilder sb=new StringBuilder();

@@ -171,11 +171,11 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
 
-    public static void dumpStats(Object obj, final Map<String,Object> map, Log log) {
-        dumpStats(obj, "", map, log);
+    public static void dumpStats(Object obj, final Map<String,Object> map) {
+        dumpStats(obj, "", map);
     }
 
-    public static void dumpStats(Object obj, String prefix, final Map<String,Object> map, Log log) {
+    public static void dumpStats(Object obj, String prefix, final Map<String,Object> map) {
         BiConsumer<Field,Object> field_func=(f,o) -> {
             String attr_name=null;
             try {
@@ -191,7 +191,7 @@ public class ResourceDMBean implements DynamicMBean {
                 map.put(attr_name, prettyPrint(value, f));
             }
             catch(Exception e) {
-                log.warn("Could not retrieve value of attribute (field) " + attr_name, e);
+                throw new RuntimeException(String.format("could not read value of attribute \"%s\"", attr_name), e);
             }
         };
         BiConsumer<Method,Object> getter_func=(m,o) -> {
@@ -213,7 +213,7 @@ public class ResourceDMBean implements DynamicMBean {
                 map.put(attributeName, prettyPrint(value, m));
             }
             catch(Exception e) {
-                log.warn("Could not retrieve value of attribute (method) " + method_name,e);
+                throw new RuntimeException(String.format("could not invoke getter method \"%s\"", method_name),e);
             }
         };
         Util.forAllFieldsAndMethods(obj, FILTER, field_func, getter_func);

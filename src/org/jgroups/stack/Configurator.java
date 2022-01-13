@@ -470,7 +470,7 @@ public class Configurator {
     }
 
 
-    protected static void setDefaultAddressValues(Object obj, StackType ip_version) throws Exception {
+    public static void setDefaultAddressValues(Object obj, StackType ip_version) throws Exception {
         InetAddress default_ip_address=Util.getNonLoopbackAddress(ip_version);
         if(default_ip_address == null) {
             log.warn(Util.getMessage("OnlyLoopbackFound"), ip_version);
@@ -530,7 +530,7 @@ public class Configurator {
                 continue;
 
             Property annotation=field.getAnnotation(Property.class);
-            String defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
+            String defaultValue=ip_version == StackType.IPv6? annotation.defaultValueIPv6() : annotation.defaultValueIPv4();
             if(defaultValue != null && !defaultValue.isEmpty()) {
                 // condition for invoking converter
                 if(defaultValue != null || !PropertyHelper.usesDefaultConverter(field)) {
