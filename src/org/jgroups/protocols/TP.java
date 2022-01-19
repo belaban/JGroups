@@ -240,7 +240,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public String           getMsgFactoryClass()         {return msg_factory_class;}
     public <T extends TP> T setMsgFactoryClass(String m) {this.msg_factory_class=m; return (T)this;}
 
-    public String getBundlerType() {return bundler_type;}
+    public String           getBundlerType()         {return bundler_type;}
     public <T extends TP> T setBundlerType(String b) {this.bundler_type=b; return (T)this;}
 
 
@@ -293,8 +293,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /* --------------------------------------------- JMX  ---------------------------------------------- */
     @Component(name="msg_stats")
     protected final MsgStats msg_stats=new MsgStats();
-
-
 
 
     /** The name of the group to which this member is connected. With a shared transport, the channel name is
@@ -665,6 +663,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         fetchLocalAddresses();
     }
 
+    public String defaultHeaders(boolean detailed) {
+        int num_members=view != null? view.size() : 0;
+        String fmt=detailed? "%s (ip=%s)\nview=%s\ncluster=%s\nversion=%s\n"
+          : "%s [ip=%s, %d mbr(s), cluster=%s, version=%s]\n";
+        return String.format(fmt, local_addr != null? local_addr.toString() : "n/a", local_physical_addr,
+                             detailed? view : num_members, cluster_name, Version.description);
+    }
 
     /**
      * Send a unicast to a member. Note that the destination address is a *physical*, not a logical address
@@ -1042,7 +1047,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /* ------------------------------ Private Methods -------------------------------- */
 
   protected DiagnosticsHandler createDiagnosticsHandler() {
-      return new DiagnosticsHandler(log, socket_factory, thread_factory).transport(this);
+      return new DiagnosticsHandler(log, socket_factory, thread_factory)
+        .printHeaders(this::defaultHeaders).sameCluster(this::sameCluster);
   }
 
     protected Bundler createBundler(String type) throws Exception {
@@ -1180,6 +1186,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(batch.multicast() && discard_own_mcast && local_addr != null && local_addr.equals(batch.sender()))
             return;
         up_prot.up(batch);
+    }
+
+    protected boolean sameCluster(String req) {
+        if(!req.startsWith("cluster="))
+            return true;
+        String cluster_name_pattern=req.substring("cluster=".length()).trim();
+        String cname=getClusterName();
+        return cluster_name_pattern == null || Util.patternMatch(cluster_name_pattern, cname);
     }
 
 

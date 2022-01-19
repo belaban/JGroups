@@ -1,14 +1,10 @@
 package org.jgroups.stack;
 
-import org.jgroups.Address;
-import org.jgroups.Version;
-import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.ReceiverAdapter;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.logging.Log;
-import org.jgroups.protocols.TP;
 import org.jgroups.util.Runner;
 import org.jgroups.util.SocketFactory;
 import org.jgroups.util.ThreadFactory;
@@ -20,61 +16,75 @@ import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * @author Bela Ban
  * @since 3.0
  */
 
-public class DiagnosticsHandler extends ReceiverAdapter {
-    public static final String        UDP_THREAD_NAME="UdpDiagHandler";
-    public static final String        TCP_THREAD_NAME="TcpDiagHandler";
+public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
+    public static final String         UDP_THREAD_NAME="UdpDiagHandler";
+    public static final String         TCP_THREAD_NAME="TcpDiagHandler";
 
     @Property(description="Switch to enable diagnostic probing")
-    protected boolean                 enabled=true;
+    protected boolean                  enabled=true;
 
     @Property(description="Use a multicast socket to listen for probe requests (ignored if enable_diagnostics is false)")
-    protected volatile boolean        enable_udp=true;
+    protected volatile boolean         enable_udp=true;
 
     @Property(description="Use a TCP socket to listen for probe requests (ignored if enable_diagnostics is false)")
-    protected volatile boolean        enable_tcp;
+    protected volatile boolean         enable_tcp;
 
     @Property(description="Multicast address for diagnostic probing (UDP MulticastSocket). Used when enable_udp " +
       "is true", defaultValueIPv4="224.0.75.75",defaultValueIPv6="ff0e::0:75:75")
-    protected InetAddress             mcast_addr;
+    protected InetAddress              mcast_addr;
 
     @Property(description="Port for diagnostic probing. Default is 7500")
-    protected int                     port=7500;
+    protected int                      port=7500;
 
     @Property(description="Bind address for diagnostic probing, to bind the TCP socket. Used when enable_tcp is true")
-    protected InetAddress             bind_addr;
+    protected InetAddress              bind_addr;
 
     @Property(description="The number of ports to be probed for an available port (TCP)")
-    protected int                     port_range=50;
+    protected int                      port_range=50;
 
     @Property(description="TTL of the diagnostics multicast socket")
-    protected int                     ttl=8;
+    protected int                      ttl=8;
 
     @Property(converter=PropertyConverters.NetworkInterfaceList.class,
       description="Comma delimited list of interfaces (IP addrs or interface names) that the multicast socket should bind to")
-    protected List<NetworkInterface>  bind_interfaces;
+    protected List<NetworkInterface>   bind_interfaces;
 
     @Property(description="Authorization passcode for diagnostics. If specified every probe query will be authorized")
-    protected String                  passcode;
+    protected String                   passcode;
 
-
-    protected TP                      transport;
-    protected ServerSocket            srv_sock;  // when TCP is used
-    protected Runner                  udp_runner, tcp_runner;
-    protected MulticastSocket         udp_mcast_sock;        // receiving of mcast packets when UDP is used
-    protected DatagramSocket          udp_ucast_sock;        // sending of UDP responses
-    protected final Set<ProbeHandler> handlers=new CopyOnWriteArraySet<>();
-    protected final Log               log;
-    protected final SocketFactory     socket_factory;
-    protected final ThreadFactory     thread_factory;
+    protected ServerSocket             srv_sock;  // when TCP is used
+    protected Runner                   udp_runner, tcp_runner;
+    protected MulticastSocket          udp_mcast_sock;        // receiving of mcast packets when UDP is used
+    protected DatagramSocket           udp_ucast_sock;        // sending of UDP responses
+    protected final Set<ProbeHandler>  handlers=new CopyOnWriteArraySet<>();
+    protected final Log                log;
+    protected final SocketFactory      socket_factory;
+    protected final ThreadFactory      thread_factory;
+    protected Function<Boolean,String> print_headers=b -> "";
+    protected Function<String,Boolean> same_cluster=b -> true;
 
     protected final BiConsumer<SocketAddress,String> udp_response_sender=
       (sender,response) -> sendResponse(udp_ucast_sock, sender, response.getBytes());
+
+    public DiagnosticsHandler printHeaders(Function<Boolean,String> f) {
+        print_headers=Objects.requireNonNull(f);
+        return this;
+    }
+
+    public DiagnosticsHandler sameCluster(Function<String,Boolean> f) {
+        same_cluster=Objects.requireNonNull(f);
+        return this;
+    }
+
+
+
 
     public DiagnosticsHandler(Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
         this.log=log;
@@ -83,26 +93,27 @@ public class DiagnosticsHandler extends ReceiverAdapter {
     }
 
 
-    public boolean            isEnabled()                    {return enabled;}
-    public DiagnosticsHandler setEnabled(boolean f)          {enabled=f; return this;}
-    public TP                 transport()                    {return transport;}
-    public DiagnosticsHandler transport(TP tp)               {transport=tp; return this;}
-    public DiagnosticsHandler setMcastAddress(InetAddress a) {this.mcast_addr=a; return this;}
-    public InetAddress        getMcastAddress()              {return mcast_addr;}
-    public DiagnosticsHandler setBindAddress(InetAddress a)  {this.bind_addr=a; return this;}
-    public InetAddress        getBindAddress()               {return bind_addr;}
-    public boolean            udpEnabled()                   {return enable_udp;}
-    public DiagnosticsHandler enableUdp(boolean f)           {enable_udp=f; if(f) enabled=f; return this;}
-    public boolean            tcpEnabled()                   {return enable_tcp;}
-    public DiagnosticsHandler enableTcp(boolean f)           {enable_tcp=f; if(f) enabled=f; return this;}
-    public int                getPort()                      {return port;}
-    public DiagnosticsHandler setPort(int p)                 {port=p; return this;}
-    public int                getPortRange()                 {return port_range;}
-    public DiagnosticsHandler setPortRange(int r)            {port_range=r; return this;}
-    public int                getTtl()                       {return ttl;}
-    public DiagnosticsHandler setTtl(int d)                  {this.ttl=d; return this;}
-    public String             getPasscode()                  {return passcode;}
-    public DiagnosticsHandler setPasscode(String d)          {this.passcode=d; return this;}
+    public boolean                isEnabled()                                 {return enabled;}
+    public DiagnosticsHandler     setEnabled(boolean f)                       {enabled=f; return this;}
+    public DiagnosticsHandler     setMcastAddress(InetAddress a)              {this.mcast_addr=a; return this;}
+    public InetAddress            getMcastAddress()                           {return mcast_addr;}
+    public DiagnosticsHandler     setBindAddress(InetAddress a)               {this.bind_addr=a; return this;}
+    public InetAddress            getBindAddress()                            {return bind_addr;}
+    public boolean                udpEnabled()                                {return enable_udp;}
+    public DiagnosticsHandler     enableUdp(boolean f)                        {enable_udp=f; if(f) enabled=f; return this;}
+    public boolean                tcpEnabled()                                {return enable_tcp;}
+    public DiagnosticsHandler     enableTcp(boolean f)                        {enable_tcp=f; if(f) enabled=f; return this;}
+    public int                    getPort()                                   {return port;}
+    public DiagnosticsHandler     setPort(int p)                              {port=p; return this;}
+    public int                    getPortRange()                              {return port_range;}
+    public DiagnosticsHandler     setPortRange(int r)                         {port_range=r; return this;}
+    public int                    getTtl()                                    {return ttl;}
+    public DiagnosticsHandler     setTtl(int d)                               {this.ttl=d; return this;}
+    public String                 getPasscode()                               {return passcode;}
+    public DiagnosticsHandler     setPasscode(String d)                       {this.passcode=d; return this;}
+    public List<NetworkInterface> getBindInterfaces()                         {return bind_interfaces;}
+    public DiagnosticsHandler     setBindInterfaces(List<NetworkInterface> l) {this.bind_interfaces=l; return this;}
+
 
     public DiagnosticsHandler setThreadNames() {
         if(udp_runner != null) {
@@ -128,13 +139,15 @@ public class DiagnosticsHandler extends ReceiverAdapter {
 
     public Set<ProbeHandler> getProbeHandlers() {return handlers;}
 
-    public void registerProbeHandler(ProbeHandler handler) {
+    public DiagnosticsHandler registerProbeHandler(ProbeHandler handler) {
         handlers.add(Objects.requireNonNull(handler));
+        return this;
     }
 
-    public void unregisterProbeHandler(ProbeHandler handler) {
+    public DiagnosticsHandler unregisterProbeHandler(ProbeHandler handler) {
         if(handler != null)
             handlers.remove(handler);
+        return this;
     }
 
     public DiagnosticsHandler start() throws Exception {
@@ -147,6 +160,10 @@ public class DiagnosticsHandler extends ReceiverAdapter {
         if(enable_tcp)
             startTCP();
         return this;
+    }
+
+    public void close() throws IOException {
+        stop();
     }
 
     public DiagnosticsHandler stop() {
@@ -190,7 +207,7 @@ public class DiagnosticsHandler extends ReceiverAdapter {
                     output.write(response.getBytes());
                 }
                 catch(IOException e) {
-                    log.error("%s: failed handling TCP probe request: %s", transport.getAddress(), e.getMessage());
+                    log.error("failed handling TCP probe request: %s", e.getMessage());
                 }
             });
         }
@@ -198,7 +215,7 @@ public class DiagnosticsHandler extends ReceiverAdapter {
 
         }
         catch(Throwable t) {
-            log.error("%s: failed processing TCP client request from %s: %s", transport.getAddress(), sender, t);
+            log.error("failed processing TCP client request from %s: %s", sender, t);
         }
     }
 
@@ -254,24 +271,18 @@ public class DiagnosticsHandler extends ReceiverAdapter {
             if(!req.isEmpty()) {
                  // if -cluster=<name>: discard requests that have a cluster name != our own cluster name
                 if(req.startsWith("cluster=")) {
-                    if(!sameCluster(req))
+                    if(!same_cluster.apply(req)) {
+                        log.debug("probe response dropped as cluster %s does not match", req.substring("cluster=".length()));
                         return;
+                    }
                     continue;
                 }
                 list.add(req);
             }
         }
         if(list.isEmpty()) {
-            if(transport != null) {
-                Address local_addr=transport.getAddress();
-                String default_rsp=String.format("local_addr=%s\nphysical_addr=%s\nview=%s\ncluster=%s\nversion=%s\n",
-                                                 local_addr != null? local_addr : "n/a",
-                                                 transport.getLocalPhysicalAddress(),
-                                                 transport.view(),
-                                                 transport.getClusterName(),
-                                                 Version.description);
-                rsp_sender.accept(sender, default_rsp);
-            }
+            String default_rsp=print_headers.apply(true);
+            rsp_sender.accept(sender, default_rsp);
             return;
         }
 
@@ -290,36 +301,14 @@ public class DiagnosticsHandler extends ReceiverAdapter {
             }
             if(map == null || map.isEmpty())
                 continue;
-            StringBuilder info=new StringBuilder(defaultHeaders());
+            String tmp=print_headers.apply(false);
+            StringBuilder info=new StringBuilder(tmp);
             for(Map.Entry<String,String> entry: map.entrySet())
                 info.append(String.format("%s=%s\r\n", entry.getKey(), entry.getValue()));
 
             String diag_rsp=info.toString();
             rsp_sender.accept(sender, diag_rsp);
         }
-    }
-
-    protected String defaultHeaders() {
-        if(transport == null) return "";
-        Address local_addr=transport.getAddress();
-        View view=transport.view();
-        int num_members=view != null? view.size() : 0;
-        return String.format("local_addr=%s [ip=%s, version=%s, cluster=%s, %d mbr(s)]\n",
-                             local_addr != null? local_addr : "n/a", transport.getLocalPhysicalAddress(),
-                             Version.description, transport.getClusterName(), num_members);
-    }
-
-
-    protected boolean sameCluster(String req) {
-        if(!req.startsWith("cluster="))
-            return true;
-        String cluster_name_pattern=req.substring("cluster=".length()).trim();
-        String cname=transport.getClusterName();
-        if(cluster_name_pattern != null && !Util.patternMatch(cluster_name_pattern, cname)) {
-            log.debug("Probe request dropped as cluster name %s does not match pattern %s", cname, cluster_name_pattern);
-            return false;
-        }
-        return true;
     }
 
 
@@ -378,7 +367,6 @@ public class DiagnosticsHandler extends ReceiverAdapter {
     public interface ProbeHandler {
         /**
          * Handles a probe. For each key that is handled, the key and its result should be in the returned map.
-         * @param keys
          * @return Map<String,String>. A map of keys and values. A null return value is permissible.
          */
         Map<String,String> handleProbe(String... keys);

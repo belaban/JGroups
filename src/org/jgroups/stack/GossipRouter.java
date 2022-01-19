@@ -1,16 +1,16 @@
 package org.jgroups.stack;
 
 import org.jgroups.Address;
-import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
-import org.jgroups.annotations.LocalAddress;
+import org.jgroups.Version;
+import org.jgroups.annotations.Component;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.*;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.jmx.ReflectUtils;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.PingData;
@@ -18,7 +18,9 @@ import org.jgroups.util.*;
 
 import javax.net.ssl.*;
 import java.io.DataInput;
+import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -51,13 +53,8 @@ import java.util.stream.Collectors;
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * @since 2.1.1
  */
-public class GossipRouter extends ReceiverAdapter implements ConnectionListener {
-    @LocalAddress
-    @Property(name="bind_addr",
-      description="The bind address which should be used by the GossipRouter. The following special values " +
-        "are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL, NON_LOOPBACK, match-interface, match-host, match-address",
-      defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS,
-      systemProperty={Global.BIND_ADDR},writable=false)
+public class GossipRouter extends ReceiverAdapter implements ConnectionListener, DiagnosticsHandler.ProbeHandler {
+    @ManagedAttribute(description="The bind address which should be used by the GossipRouter.")
     protected InetAddress          bind_addr;
 
     @ManagedAttribute(description="server port on which the GossipRouter accepts client connections", writable=true)
@@ -67,11 +64,11 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
       writable=true,type=AttributeType.TIME)
     protected long                 expiry_time;
 
-    @Property(description="Time (in ms) for setting SO_LINGER on sockets returned from accept(). 0 means do not set SO_LINGER"
+    @ManagedAttribute(description="Time (in ms) for setting SO_LINGER on sockets returned from accept(). 0 means do not set SO_LINGER"
       ,type=AttributeType.TIME)
     protected long                 linger_timeout=2000L;
 
-    @Property(description="Time (in ms) for SO_TIMEOUT on sockets returned from accept(). 0 means don't set SO_TIMEOUT"
+    @ManagedAttribute(description="Time (in ms) for SO_TIMEOUT on sockets returned from accept(). 0 means don't set SO_TIMEOUT"
       ,type=AttributeType.TIME)
     protected long                 sock_read_timeout;
 
@@ -79,32 +76,34 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
 
     protected SocketFactory        socket_factory=new DefaultSocketFactory();
 
-    @Property(description="The max queue size of backlogged connections")
+    @ManagedAttribute(description="The max queue size of backlogged connections")
     protected int                  backlog=1000;
 
-    @Property(description="Initial size of the TCP/NIO receive buffer (in bytes)")
+    @ManagedAttribute(description="Initial size of the TCP/NIO receive buffer (in bytes)")
     protected int                  recv_buf_size;
 
-    @Property(description="Expose GossipRouter via JMX",writable=false)
+    @ManagedAttribute(description="Expose GossipRouter via JMX")
     protected boolean              jmx=true;
 
-    @Property(description="Use non-blocking IO (true) or blocking IO (false). Cannot be changed at runtime",writable=false)
+    @ManagedAttribute(description="Use non-blocking IO (true) or blocking IO (false). Cannot be changed at runtime")
     protected boolean              use_nio;
 
-    @Property(description="Handles client disconnects: sends SUSPECT message to all other members of that group")
+    @ManagedAttribute(description="Handles client disconnects: sends SUSPECT message to all other members of that group")
     protected boolean              emit_suspect_events=true;
 
-    @Property(description="Dumps messages (dest/src/length/headers) to stdout")
+    @ManagedAttribute(description="Dumps messages (dest/src/length/headers) to stdout")
     protected DumpMessages         dump_msgs;
 
-    @Property(description="The max number of bytes a message can have. If greater, an exception will be " +
+    @ManagedAttribute(description="The max number of bytes a message can have. If greater, an exception will be " +
       "thrown. 0 disables this", type=AttributeType.BYTES)
     protected int                  max_length;
-
     protected BaseServer           server;
     protected final AtomicBoolean  running=new AtomicBoolean(false);
     protected Timer                timer;
     protected final Log            log=LogFactory.getLog(this.getClass());
+
+    @Component
+    protected DiagnosticsHandler   diag;
 
     // mapping between groups and <member address> - <physical addr / logical name> pairs
     protected final Map<String,ConcurrentMap<Address,Entry>> address_mappings=new ConcurrentHashMap<>();
@@ -120,6 +119,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         this.port=local_port;
         try {
             this.bind_addr=bind_addr != null? InetAddress.getByName(bind_addr) : null;
+            init();
         }
         catch(UnknownHostException e) {
             log.error("failed setting bind address %s: %s", bind_addr, e);
@@ -129,6 +129,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     public GossipRouter(InetAddress bind_addr, int local_port) {
         this.port=local_port;
         this.bind_addr=bind_addr;
+        init();
     }
 
     public Address       localAddress()                     {return server.localAddress();}
@@ -158,14 +159,25 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     public GossipRouter  emitSuspectEvents(boolean flag)    {emit_suspect_events=flag; return this;}
     public DumpMessages  dumpMessages()                     {return dump_msgs;}
     public GossipRouter  dumpMessages(DumpMessages flag)    {dump_msgs=flag; return this;}
+    public GossipRouter  dumpMessages(boolean d)            {dump_msgs=d? DumpMessages.ALL : DumpMessages.NONE; return this;}
     public int           maxLength()                        {return max_length;}
     public GossipRouter  maxLength(int len)                 {max_length=len; if(server != null) server.setMaxLength(len);
                                                              return this;}
+    public DiagnosticsHandler diagHandler()                 {return diag;}
+
+
+
     @ManagedAttribute(description="operational status", name="running")
     public boolean       running()                          {return running.get();}
 
 
-
+    public GossipRouter init() {
+        diag=new DiagnosticsHandler(log, socket_factory, thread_factory)
+          .registerProbeHandler(this)
+          .printHeaders(b -> String.format("GossipRouter [addr=%s, cluster=GossipRouter, version=%s]\n",
+                                           localAddress(), Version.description));
+        return this;
+    }
 
 
     /**
@@ -181,6 +193,12 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         if(jmx)
             JmxConfigurator.register(this, Util.getMBeanServer(), "jgroups:name=GossipRouter");
 
+        if(diag.isEnabled()) {
+            StackType ip_version=bind_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
+            Configurator.setDefaultAddressValues(diag, ip_version);
+            diag.start();
+        }
+
         server=use_nio? new NioServer(thread_factory, socket_factory, bind_addr, port, port, null, 0, recv_buf_size)
           : new TcpServer(thread_factory, socket_factory, bind_addr, port, port, null, 0, recv_buf_size);
         server.receiver(this).setMaxLength(max_length);
@@ -194,7 +212,6 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     /**
      * Always called before destroy(). Close connections and frees resources.
      */
-    @ManagedOperation(description="Always called before destroy(). Closes connections and frees resources")
     public void stop() {
         if(!running.compareAndSet(true, false))
             return;
@@ -205,7 +222,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
         catch(Exception ex) {
             log.error(Util.getMessage("MBeanDeRegistrationFailed"), ex);
         }
-        Util.close(server);
+        Util.close(diag, server);
         log.debug("router stopped");
     }
 
@@ -217,7 +234,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
 
 
     @ManagedOperation(description="Dumps the address mappings")
-    public String dumpAddresssMappings() {
+    public String dumpAddressMappings() {
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<String,ConcurrentMap<Address,Entry>> entry: address_mappings.entrySet()) {
             String group=entry.getKey();
@@ -329,6 +346,55 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                 handleUnregister(in);
                 break;
         }
+    }
+
+    public Map<String,String> handleProbe(String... keys) {
+        Map<String,String> map=new TreeMap<>();
+        for(String key: keys) {
+            if(key.startsWith("ops")) {
+                map.put(key, ReflectUtils.listOperations(getClass()));
+                continue;
+            }
+            if(key.startsWith("op") || key.startsWith("invoke")) {
+                int index=key.indexOf('=');
+                if(index == -1)
+                    throw new IllegalArgumentException(String.format("\\= not found in operation %s", key));
+                String op=key.substring(index + 1).trim();
+                try {
+                    ReflectUtils.invokeOperation(map, op, this);
+                }
+                catch(Exception ex) {
+                    throw new IllegalArgumentException(String.format("operation %s failed: %s", op, ex));
+                }
+                continue;
+            }
+            if(key.startsWith("jmx")) {
+                int index=key.indexOf('=');
+                String tmp;
+                if(index == -1)
+                    tmp=null;
+                else
+                    tmp=key.substring(index+1);
+                ReflectUtils.handleAttributeAccess(map, tmp, this);
+                continue;
+            }
+            if(key.startsWith("keys")) {
+                StringBuilder sb=new StringBuilder();
+                for(DiagnosticsHandler.ProbeHandler handler : diag.getProbeHandlers()) {
+                    String[] tmp=handler.supportedKeys();
+                    if(tmp != null && tmp.length > 0) {
+                        for(String s : tmp)
+                            sb.append(s).append(" ");
+                    }
+                }
+                map.put(key, sb.toString());
+            }
+        }
+        return map;
+    }
+
+    public String[] supportedKeys() {
+        return new String[]{"ops", "op", "invoke", "keys"};
     }
 
     protected ByteArrayDataOutputStream getOutputStream(Address mbr, int size) {
@@ -653,11 +719,17 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
 
 
     public static void main(String[] args) throws Exception {
-        int port=12001;
-        int backlog=0, recv_buf_size=0, max_length=0;
-        long soLinger=-1;
-        long soTimeout=-1;
-        long expiry_time=60000;
+        int                    port=12001;
+        int                    backlog=0, recv_buf_size=0, max_length=0;
+        long                   soLinger=-1;
+        long                   soTimeout=-1;
+        long                   expiry_time=60000;
+        boolean                diag_enabled=true, diag_enable_udp=true, diag_enable_tcp=false;
+        InetAddress            diag_mcast_addr=null, diag_bind_addr=null;
+        int                    diag_port=7500, diag_port_range=50, diag_ttl=8;
+        List<NetworkInterface> diag_bind_interfaces=null;
+        String                 diag_passcode=null;
+
         String tls_protocol=null;
         String tls_provider=null;
         String tls_keystore_path=null;
@@ -726,6 +798,46 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                 max_length=Integer.parseInt(args[++i]);
                 continue;
             }
+            if("-diag_enabled".equals(arg)) {
+                diag_enabled=Boolean.parseBoolean(args[++i]);
+                continue;
+            }
+            if("-diag_enable_udp".equals(arg)) {
+                diag_enable_udp=Boolean.parseBoolean(args[++i]);
+                continue;
+            }
+            if("-diag_enable_tcp".equals(arg)) {
+                diag_enable_tcp=Boolean.parseBoolean(args[++i]);
+                continue;
+            }
+            if("-diag_mcast_addr".equals(arg)) {
+                diag_mcast_addr=InetAddress.getByName(args[++i]);
+                continue;
+            }
+            if("-diag_bind_addr".equals(arg)) {
+                diag_bind_addr=InetAddress.getByName(args[++i]);
+                continue;
+            }
+            if("-diag_port".equals(arg)) {
+                diag_port=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if("-diag_port_range".equals(arg)) {
+                diag_port_range=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if("-diag_ttl".equals(arg)) {
+                diag_ttl=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if("-diag_bind_interfaces".equals(arg)) {
+                diag_bind_interfaces=Util.parseInterfaceList(args[++i]);
+                continue;
+            }
+            if("-diag_passcode".equals(arg)) {
+                diag_passcode=args[++i];
+                continue;
+            }
             if("-tls_protocol".equals(arg)) {
                 tls_protocol=args[++i];
                 continue;
@@ -787,6 +899,17 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
           .emitSuspectEvents(suspects)
           .dumpMessages(dump_msgs)
           .maxLength(max_length);
+        router.diagHandler().setEnabled(diag_enabled)
+          .enableUdp(diag_enable_udp)
+          .enableTcp(diag_enable_tcp)
+          .setMcastAddress(diag_mcast_addr)
+          .setBindAddress(diag_bind_addr)
+          .setPort(diag_port)
+          .setPortRange(diag_port_range)
+          .setTtl(diag_ttl)
+          .setBindInterfaces(diag_bind_interfaces)
+          .setPasscode(diag_passcode);
+
         if (tls_protocol!=null) {
             SslContextFactory sslContextFactory = new SslContextFactory();
             sslContextFactory
