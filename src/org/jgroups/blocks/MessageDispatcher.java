@@ -506,6 +506,7 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
 
 
         public <T extends Protocol> T setAddress(Address addr) {
+            local_addr=addr;
             if(corr != null)
                 corr.setLocalAddress(addr);
             return (T)this;
