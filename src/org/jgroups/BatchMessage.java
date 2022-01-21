@@ -38,8 +38,9 @@ public class BatchMessage extends BaseMessage implements Iterable<Message> {
     }
 
 
-    public BatchMessage(Address dest) {
+    public BatchMessage(Address dest, int capacity) {
         super(dest);
+        msgs=new Message[capacity];
     }
 
     public BatchMessage(Address dest, Address src, Message[] msgs, int index) {
@@ -50,18 +51,20 @@ public class BatchMessage extends BaseMessage implements Iterable<Message> {
     }
 
 
-    public Supplier<Message>      create()                          {return BatchMessage::new;}
-    public short                  getType()                         {return Message.EARLYBATCH_MSG;}
-    public boolean                hasPayload()                      {return msgs != null && index > 0;}
-    public boolean                hasArray()                        {return false;}
-    public int                    getNumberOfMessages()             {return index;}
-    public int                    getOffset()                       {throw new UnsupportedOperationException();}
-    public byte[]                 getArray()                        {throw new UnsupportedOperationException();}
-    public BatchMessage setArray(byte[] b, int o, int l)  {throw new UnsupportedOperationException();}
-    public BatchMessage setArray(ByteArray buf)           {throw new UnsupportedOperationException();}
-    public BatchMessage setObject(Object obj)             {throw new UnsupportedOperationException();}
-    public <T extends Object>  T  getObject()                       {throw new UnsupportedOperationException();}
-    public Message[]              getMessages()                     {return msgs;}
+    public Supplier<Message>      create()                 {return BatchMessage::new;}
+    public short                  getType()                {return Message.EARLYBATCH_MSG;}
+    public boolean                hasPayload()             {return msgs != null && index > 0;}
+    public boolean                hasArray()               {return false;}
+    public int                    getNumberOfMessages()    {return index;}
+    public int                    getOffset()              {throw new UnsupportedOperationException();}
+    public byte[]                 getArray()               {throw new UnsupportedOperationException();}
+    public BatchMessage setArray(byte[] b, int o, int l)   {throw new UnsupportedOperationException();}
+    public BatchMessage setArray(ByteArray buf)            {throw new UnsupportedOperationException();}
+    public BatchMessage setObject(Object obj)              {throw new UnsupportedOperationException();}
+    public <T extends Object>  T  getObject()              {throw new UnsupportedOperationException();}
+    public Message[]              getMessages()            {return msgs;}
+    public Address                getOrigSender()          {return orig_src;}
+    public BatchMessage           setOrigSender(Address s) {orig_src=s; return this;}
 
 
 
