@@ -229,7 +229,7 @@ public class UnicastRequestTest {
             this.async=async;
             this.responses=responses;
             this.delay=delay;
-            this.transport=new Protocol() {
+            this.down_prot=new Protocol() {
                 public Object down(Event evt) {
                     return null;
                 }

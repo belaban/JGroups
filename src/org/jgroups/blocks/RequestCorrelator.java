@@ -32,7 +32,7 @@ import java.util.function.Supplier;
 public class RequestCorrelator {
 
     /** The protocol layer to use to pass up/down messages. Can be either a Protocol or a Transport */
-    protected Protocol                               transport;
+    protected Protocol                               down_prot;
 
     /** The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>) */
     protected final Map<Long,Request<?>>             requests=Util.createConcurrentMap();
@@ -67,24 +67,15 @@ public class RequestCorrelator {
 
 
     /**
-     * Constructor. Uses transport to send messages. If {@code handler} is not null, all incoming requests will be
-     * dispatched to it (via {@code handle(Message)}).
+     * Constructor. Uses DOWN_PROT to send messages. If {@code handler} is not null, all incoming requests will be
+     * dispatched to it (via {@link #handleRequest(Message, Header)}.
      *
-     * @param corr_id Used to differentiate between different RequestCorrelators (e.g. in different protocol layers).
-     *                Has to be unique if multiple request correlators are used.
-     * @param transport Used to send/pass up requests.
+     * @param down_prot Used to send requests or responses.
      * @param handler Request handler. Method {@code handle(Message)} will be called when a request is received.
+     * @param local_addr The address of this member
      */
-    public RequestCorrelator(short corr_id, Protocol transport, RequestHandler handler, Address local_addr) {
-        this.corr_id=corr_id;
-        this.transport  = transport;
-        this.local_addr = local_addr;
-        request_handler = handler;
-        start();
-    }
-
-    public RequestCorrelator(Protocol transport, RequestHandler handler, Address local_addr) {
-        this.transport  = transport;
+    public RequestCorrelator(Protocol down_prot, RequestHandler handler, Address local_addr) {
+        this.down_prot=down_prot;
         this.local_addr = local_addr;
         request_handler = handler;
         start();
@@ -147,11 +138,11 @@ public class RequestCorrelator {
                 first=false;
                 if(!mbr.equals(local_addr) && copy.isFlagSet(Message.TransientFlag.DONT_LOOPBACK))
                     copy.clearFlag(Message.TransientFlag.DONT_LOOPBACK);
-                transport.down(copy);
+                down_prot.down(copy);
             }
         }
         else
-            transport.down(msg);
+            down_prot.down(msg);
     }
 
 
@@ -176,7 +167,7 @@ public class RequestCorrelator {
         }
         else // async RPC
             rpc_stats.add(RpcStats.Type.UNICAST, dest, false, 0);
-        transport.down(msg);
+        down_prot.down(msg);
     }
 
 
@@ -402,7 +393,7 @@ public class RequestCorrelator {
         rsp.putHeader(corr_id, rsp_hdr);
         if(log.isTraceEnabled())
             log.trace("sending rsp for %d to %s", req_id, rsp.getDest());
-        transport.down(rsp);
+        down_prot.down(rsp);
     }
 
     // .......................................................................
