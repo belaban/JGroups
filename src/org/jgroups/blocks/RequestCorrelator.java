@@ -9,14 +9,16 @@ import org.jgroups.protocols.TP;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
+import org.jgroups.util.Bits;
+import org.jgroups.util.MessageBatch;
+import org.jgroups.util.RpcStats;
+import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
@@ -33,7 +35,7 @@ public class RequestCorrelator {
     protected Protocol                               transport;
 
     /** The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>) */
-    protected final ConcurrentMap<Long,Request<?>>   requests=Util.createConcurrentMap();
+    protected final Map<Long,Request<?>>             requests=Util.createConcurrentMap();
 
     /** To generate unique request IDs */
     protected static final AtomicLong                REQUEST_ID=new AtomicLong(1);

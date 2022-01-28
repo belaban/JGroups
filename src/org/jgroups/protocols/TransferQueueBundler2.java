@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.jgroups.protocols.TP.MSG_OVERHEAD;
@@ -41,6 +42,11 @@ public class TransferQueueBundler2 implements Bundler, Runnable {
     @Property(description="The max number of elements in a bundler if the bundler supports size limitations",
       type=AttributeType.SCALAR)
     protected int                    capacity=16384;
+
+    @Property(description="Time (microseconds) to wait on poll() from the down_queue. A value of <= 0 doesn't wait",
+      type=AttributeType.TIME, unit=TimeUnit.MICROSECONDS)
+    protected long                   poll_timeout=50;
+
 
     protected TP                     transport;
     protected Log                    log;
@@ -154,13 +160,17 @@ public class TransferQueueBundler2 implements Bundler, Runnable {
                 if((msg=queue.take()) == null)
                     continue;
                 addAndSendIfSizeExceeded(msg);
-                while(true) {
+                for(;;) {
                     remove_queue.clear();
                     int num_msgs=queue.drainTo(remove_queue);
-                    if(num_msgs <= 0)
-                        break;
-                    for(int i=0; i < remove_queue.size(); i++) {
-                        msg=remove_queue.get(i);
+                    if(num_msgs > 0) {
+                        for(Message m : remove_queue)
+                            addAndSendIfSizeExceeded(m);
+                    }
+                    else {
+                        msg=queue.poll(poll_timeout, TimeUnit.MICROSECONDS);
+                        if(msg == null)
+                            break;
                         addAndSendIfSizeExceeded(msg);
                     }
                 }
