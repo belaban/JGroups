@@ -293,6 +293,16 @@ public class Util {
         throw new TimeoutException(error_msg);
     }
 
+    public static boolean waitUntilNoX(long timeout, long interval, BooleanSupplier condition) {
+        long target_time=System.currentTimeMillis() + timeout;
+        while(System.currentTimeMillis() <= target_time) {
+            if(condition.getAsBoolean())
+                return true;
+            Util.sleep(interval);
+        }
+        return condition.getAsBoolean();
+    }
+
     public static boolean waitUntilTrue(long timeout, long interval, BooleanSupplier condition) {
         long target_time=System.currentTimeMillis() + timeout;
         while(System.currentTimeMillis() <= target_time) {

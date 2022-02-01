@@ -1,0 +1,125 @@
+
+
+
+
+RULE SendRequest
+CLASS ^org.jgroups.blocks.Request
+HELPER org.jgroups.tests.helpers.RttTestHelper
+METHOD sendRequest
+AT ENTRY
+BIND msg=$1
+IF TRUE
+   DO attachHeader(msg);
+      setSendRequestTime(msg);
+ENDRULE
+
+
+
+RULE SerializeRequest (single message)
+CLASS org.jgroups.protocols.BaseBundler
+HELPER org.jgroups.tests.helpers.RttTestHelper
+METHOD sendSingleMessage
+AT ENTRY
+BIND msg=$1;
+IF TRUE
+   DO setSerializeTime(msg);
+ENDRULE
+
+
+RULE SerializeRequest (message list)
+CLASS org.jgroups.protocols.BaseBundler
+HELPER org.jgroups.tests.helpers.RttTestHelper
+METHOD sendMessageList
+AT ENTRY
+BIND list=$3;
+IF TRUE
+   DO setSerializeTime(list);
+ENDRULE
+
+
+RULE SerializeRequest (loopback)
+CLASS org.jgroups.protocols.TP
+HELPER org.jgroups.tests.helpers.RttTestHelper
+METHOD loopback
+AT ENTRY
+BIND msg=$1, dest=msg.dest();
+IF dest != null # otherwise we'd set serialization time here *and* in sending the message to all members!
+   DO setSerializeTime(msg);
+ENDRULE
+
+
+RULE SerializeRequest (NoBundler)
+CLASS org.jgroups.protocols.NoBundler
+HELPER org.jgroups.tests.helpers.RttTestHelper
+METHOD send
+AT ENTRY
+BIND msg=$1;
+IF TRUE
+   DO setSerializeTime(msg);
+ENDRULE
+
+
+RULE DeserializeRequest (single message)
+INTERFACE org.jgroups.stack.MessageProcessingPolicy
+HELPER org.jgroups.tests.helpers.RttTestHelper
+METHOD process(org.jgroups.Message,boolean)
+AT ENTRY
+BIND msg=$1
+IF TRUE
+   DO setDeserializeTime(msg);
+ENDRULE
+
+RULE DeserializeRequest (message batch)
+INTERFACE org.jgroups.stack.MessageProcessingPolicy
+HELPER org.jgroups.tests.helpers.RttTestHelper
+METHOD process(org.jgroups.util.MessageBatch,boolean)
+AT ENTRY
+BIND batch=$1
+IF TRUE
+    DO setDeserializeTime(batch);
+ENDRULE
+
+## The request is received by the RequestCorrelator, before being handed to the application
+RULE HandleRequest
+CLASS org.jgroups.blocks.RequestCorrelator
+HELPER org.jgroups.tests.helpers.RttTestHelper
+METHOD handleRequest
+AT ENTRY
+BIND msg=$1
+IF TRUE
+   DO setReceiveReqTime(msg);
+ENDRULE
+
+## copy the RttHeader from the request to the response
+RULE MakeReply
+CLASS org.jgroups.blocks.RequestCorrelator
+HELPER org.jgroups.tests.helpers.RttTestHelper
+METHOD makeReply
+AT EXIT
+BIND req=$1,rsp=$!;
+IF TRUE
+   DO copyHeader(req, rsp);
+ENDRULE
+
+## Set when sending a response while processing the request
+RULE SendResponse
+CLASS org.jgroups.blocks.RequestCorrelator
+HELPER org.jgroups.tests.helpers.RttTestHelper
+METHOD sendResponse
+AT ENTRY
+BIND msg=$1;
+IF TRUE
+   DO setSendRspTime(msg);
+ENDRULE
+
+
+## Removes the header of the response message and add it to the RTT stats hashmap
+RULE HandleResponse
+CLASS org.jgroups.blocks.RequestCorrelator
+HELPER org.jgroups.tests.helpers.RttTestHelper
+METHOD handleResponse
+AT EXIT
+BIND msg=$1;
+IF $req != null
+   DO setRspDispatchedTime(msg, $this.rpc_stats);
+ENDRULE

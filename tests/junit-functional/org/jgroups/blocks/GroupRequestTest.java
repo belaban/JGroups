@@ -498,7 +498,7 @@ public class GroupRequestTest {
         }
 
         @Override
-        public <T> void sendRequest(Collection<Address> dest_mbrs, Message msg, Request<T> req, RequestOptions opts) throws Exception {
+        public <T> void sendMulticastRequest(Collection<Address> dest_mbrs, Message msg, Request<T> req, RequestOptions opts) throws Exception {
             send();
         }
 

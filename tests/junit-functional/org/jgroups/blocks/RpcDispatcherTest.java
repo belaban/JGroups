@@ -17,6 +17,7 @@ import org.testng.annotations.Test;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 
 import static org.jgroups.Message.Flag.DONT_BUNDLE;
@@ -673,31 +674,37 @@ public class RpcDispatcherTest {
         // sync mcast with future
         da.callRemoteMethodsWithFuture(null, new MethodCall(meth), RequestOptions.SYNC());
         System.out.println("stats = " + stats);
+        waitUntil(() -> stats.multicasts(true) == 1);
         assert stats.multicasts(true) == 1;
 
         // async mcast with future
         da.callRemoteMethodsWithFuture(null, new MethodCall(meth), RequestOptions.ASYNC());
         System.out.println("stats = " + stats);
+        waitUntil(() -> stats.multicasts(false) == 1);
         assert stats.multicasts(false) == 1;
 
         // sync anycast with future
         da.callRemoteMethodsWithFuture(targets, new MethodCall(meth), RequestOptions.SYNC().anycasting(true));
         System.out.println("stats = " + stats);
+        waitUntil(() -> stats.anycasts(true) == 1);
         assert stats.anycasts(true) == 1;
 
         // async anycast with future
         da.callRemoteMethodsWithFuture(targets, new MethodCall(meth), RequestOptions.ASYNC().anycasting(true));
         System.out.println("stats = " + stats);
+        waitUntil(() -> stats.anycasts(false) == 1);
         assert stats.anycasts(false) == 1;
 
         // sync unicast with future
         da.callRemoteMethodWithFuture(b.getAddress(), new MethodCall(meth), RequestOptions.SYNC());
         System.out.println("stats = " + stats);
+        waitUntil(() -> stats.unicasts(true) == 1);
         assert stats.unicasts(true) == 1;
 
         // async unicast with future
         da.callRemoteMethodWithFuture(b.getAddress(), new MethodCall(meth), RequestOptions.ASYNC());
         System.out.println("stats = " + stats);
+        waitUntil(() -> stats.unicasts(false) == 1);
         assert stats.unicasts(false) == 1;
 
 
@@ -732,7 +739,12 @@ public class RpcDispatcherTest {
         assert stats.unicasts(false) == 2;
     }
 
-
+    protected static void waitUntil(BooleanSupplier condition) throws TimeoutException {
+        long start=System.nanoTime();
+        Util.waitUntilNoX(2000, 100, condition);
+        long time=System.nanoTime() - start;
+        System.out.printf("-- waited for %s\n", Util.printTime(time, TimeUnit.NANOSECONDS));
+    }
 
     protected static void setProps(JChannel... channels) {
         for(JChannel ch: channels) {

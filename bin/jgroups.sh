@@ -8,8 +8,9 @@ then
     echo "JGROUPS_HOME is not set! Setting it to $JGROUPS_HOME"
 fi
 
+export JGROUPS_HOME
 
-LIB=$JGROUPS_HOME/lib
+export LIB=$JGROUPS_HOME/lib
 
 CP=$JGROUPS_HOME/classes:$JGROUPS_HOME/conf
 

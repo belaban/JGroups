@@ -47,7 +47,6 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
     protected volatile Collection<Address>          members=new HashSet<>();
     protected Address                               local_addr;
     protected final Log                             log=LogFactory.getLog(MessageDispatcher.class);
-    protected final RpcStats                        rpc_stats=new RpcStats(false);
     @SuppressWarnings("rawtypes")
     protected static final RspList                  empty_rsplist;
     @SuppressWarnings("rawtypes")
@@ -90,12 +89,7 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
     public boolean           wrapExceptions()             {return wrap_exceptions;}
     public UpHandler         getProtocolAdapter()         {return prot_adapter;}
     public UpHandler         protocolAdapter()            {return prot_adapter;}
-    public RpcStats          getRpcStats()                {return rpc_stats;}
-    public RpcStats          rpcStats()                   {return rpc_stats;}
-    public boolean           getExtendedStats()           {return rpc_stats.extendedStats();}
-    public boolean           extendedStats()              {return rpc_stats.extendedStats();}
-    public <X extends MessageDispatcher> X setExtendedStats(boolean fl) {return extendedStats(fl);}
-    public <X extends MessageDispatcher> X extendedStats(boolean fl)    {rpc_stats.extendedStats(fl); return (X)this;}
+    public RpcStats          rpcStats()                   {return corr.rpc_stats;}
 
     public <X extends MessageDispatcher> X setChannel(JChannel ch) {
         if(ch == null)
@@ -276,30 +270,16 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
             return empty_group_request;
         }
 
-        boolean sync=options.mode() != ResponseMode.GET_NONE;
-        boolean non_blocking=!sync || !block_for_results, anycast=options.anycasting();
-        if(non_blocking)
-            updateStats(real_dests, anycast, sync, 0);
-
-        if(!sync) {
-            corr.sendRequest(real_dests, msg, null, options);
+        if(options.mode() == ResponseMode.GET_NONE) {
+            corr.sendMulticastRequest(real_dests, msg, null, options);
             return null;
         }
 
         GroupRequest<T> req=new GroupRequest<>(corr, real_dests, options);
-        long start=non_blocking || !rpc_stats.extendedStats()? 0 : System.nanoTime();
         req.execute(msg, block_for_results);
-        long time=non_blocking || !rpc_stats.extendedStats()? 0 : System.nanoTime() - start;
-        if(!non_blocking)
-            updateStats(real_dests, anycast, true, time);
         return req;
     }
 
-
-
-    public void done(long req_id) {
-        corr.done(req_id);
-    }
 
 
     /**
@@ -312,32 +292,8 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
      * @throws TimeoutException If the call didn't succeed within the timeout defined in options (if set)
      */
     public <T> T sendMessage(Message msg, RequestOptions opts) throws Exception {
-        Address dest=msg.getDest();
-        if(dest == null)
-            throw new IllegalArgumentException("message destination is null, cannot send message");
-
-        if(opts == null) {
-            log.warn("request options were null, using default of sync");
-            opts=RequestOptions.SYNC();
-        }
-
-        // invoke an async RPC directly and return null, without creating a UnicastRequest instance
-        if(opts.mode() == ResponseMode.GET_NONE) {
-            rpc_stats.add(RpcStats.Type.UNICAST, dest, false, 0);
-            corr.sendUnicastRequest(msg, null, opts);
-            return null;
-        }
-
-        // now it must be a sync RPC
-        UnicastRequest<T> req=new UnicastRequest<>(corr, dest, opts);
-        long start=!rpc_stats.extendedStats()? 0 : System.nanoTime();
-        try {
-            return req.execute(msg, true);
-        }
-        finally {
-            long time=!rpc_stats.extendedStats()? 0 : System.nanoTime() - start;
-            rpc_stats.add(RpcStats.Type.UNICAST, dest, true, time);
-        }
+        UnicastRequest<T> req=_sendMessage(msg, opts);
+        return req != null? req.execute(msg, true) : null;
     }
 
 
@@ -350,24 +306,9 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
      *                   it at the sender. {@link java.util.concurrent.Future#get()} will throw this exception
      */
     public <T> CompletableFuture<T> sendMessageWithFuture(Message msg, RequestOptions opts) throws Exception {
-        Address dest=msg.getDest();
-        if(dest == null)
-            throw new IllegalArgumentException("message destination is null, cannot send message");
-
-        if(opts == null) {
-            log.warn("request options were null, using default of sync");
-            opts=RequestOptions.SYNC();
-        }
-        rpc_stats.add(RpcStats.Type.UNICAST, dest, opts.mode() != ResponseMode.GET_NONE, 0);
-
-        if(opts.mode() == ResponseMode.GET_NONE) {
-            corr.sendUnicastRequest(msg, null, opts);
-            return null;
-        }
-
-        // if we get here, the RPC is synchronous
-        UnicastRequest<T> req=new UnicastRequest<>(corr, dest, opts);
-        req.execute(msg, false);
+        UnicastRequest<T> req=_sendMessage(msg, opts);
+        if(req != null)
+            req.execute(msg, false);
         return req;
     }
 
@@ -401,14 +342,24 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
 
 
 
+    protected <T> UnicastRequest<T> _sendMessage(Message msg, RequestOptions opts) throws Exception {
+        Address dest=msg.getDest();
+        if(dest == null)
+            throw new IllegalArgumentException("message destination is null, cannot send message");
 
+        if(opts == null) {
+            log.warn("request options were null, using default of sync");
+            opts=RequestOptions.SYNC();
+        }
 
-    protected void updateStats(Collection<Address> dests, boolean anycast, boolean sync, long time) {
-        if(anycast)
-            rpc_stats.addAnycast(sync, time, dests);
-        else
-            rpc_stats.add(RpcStats.Type.MULTICAST, null, sync, time);
+        // invoke an async RPC directly and return null, without creating a UnicastRequest instance
+        if(opts.mode() == ResponseMode.GET_NONE) {
+            corr.sendUnicastRequest(msg, null, opts);
+            return null;
+        }
+        return new UnicastRequest<>(corr, dest, opts);
     }
+
 
     protected Object handleUpEvent(Event evt) throws Exception {
         switch(evt.getType()) {

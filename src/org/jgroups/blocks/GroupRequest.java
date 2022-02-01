@@ -300,7 +300,7 @@ public class GroupRequest<T> extends Request<RspList<T>> {
 
     protected void sendRequest(Message msg, final Collection<Address> targetMembers) throws Exception {
         try {
-            corr.sendRequest(targetMembers, msg, options.mode() == ResponseMode.GET_NONE? null : this, options);
+            corr.sendMulticastRequest(targetMembers, msg, options.mode() == ResponseMode.GET_NONE? null : this, options);
         }
         catch(Exception ex) {
             corrDone();

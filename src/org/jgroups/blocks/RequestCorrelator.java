@@ -32,38 +32,38 @@ import java.util.function.Supplier;
 public class RequestCorrelator {
 
     /** The protocol layer to use to pass up/down messages. Can be either a Protocol or a Transport */
-    protected Protocol                               down_prot;
+    protected Protocol                   down_prot;
 
     /** The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>) */
-    protected final Map<Long,Request<?>>             requests=Util.createConcurrentMap();
+    protected final Map<Long,Request<?>> requests=Util.createConcurrentMap();
 
     /** To generate unique request IDs */
-    protected static final AtomicLong                REQUEST_ID=new AtomicLong(1);
+    protected static final AtomicLong    REQUEST_ID=new AtomicLong(1);
 
     /** The handler for the incoming requests. It is called from inside the dispatcher thread */
-    protected RequestHandler                         request_handler;
+    protected RequestHandler             request_handler;
 
     /** makes the instance unique (together with IDs) */
-    protected short                                  corr_id=ClassConfigurator.getProtocolId(this.getClass());
+    protected short                      corr_id=ClassConfigurator.getProtocolId(this.getClass());
 
     /** The address of this group member */
-    protected Address                                local_addr;
+    protected Address                    local_addr;
 
-    protected volatile View                          view;
+    protected volatile View              view;
 
-    protected boolean                                started;
+    protected boolean                    started;
 
     /** Whether or not to use async dispatcher */
-    protected boolean                                async_dispatching;
+    protected boolean                    async_dispatching;
 
     // send exceptions back wrapped in an {@link InvocationTargetException}, or not
-    protected boolean                                wrap_exceptions=false;
+    protected boolean                    wrap_exceptions;
 
-    protected final MyProbeHandler                   probe_handler=new MyProbeHandler();
+    protected final MyProbeHandler       probe_handler=new MyProbeHandler();
 
-    protected final RpcStats                         rpc_stats=new RpcStats(false);
+    protected final RpcStats             rpc_stats=new RpcStats(false);
 
-    protected static final Log                       log=LogFactory.getLog(RequestCorrelator.class);
+    protected static final Log           log=LogFactory.getLog(RequestCorrelator.class);
 
 
     /**
@@ -103,7 +103,7 @@ public class RequestCorrelator {
      * @param req A request (usually the object that invokes this method). Its methods {@code receiveResponse()} and
      *            {@code suspect()} will be invoked when a message has been received or a member is suspected.
      */
-    public <T> void sendRequest(Collection<Address> dest_mbrs, Message msg, Request<T> req, RequestOptions opts) throws Exception {
+    public <T> void sendMulticastRequest(Collection<Address> dest_mbrs, Message msg, Request<T> req, RequestOptions opts) throws Exception {
         // i.   Create the request correlator header and add it to the msg
         // ii.  If a reply is expected (coll != null), add a coresponding entry in the pending requests table
         Header hdr=opts.hasExclusionList()? new MultiDestinationHeader(Header.REQ, 0, this.corr_id, opts.exclusionList())
@@ -112,35 +112,16 @@ public class RequestCorrelator {
         msg.putHeader(this.corr_id, hdr)
           .setFlag(opts.flags(), false).setFlag(opts.transientFlags(), true);
 
-        if(req != null) { // sync
-            long req_id=REQUEST_ID.getAndIncrement();
-            req.requestId(req_id);
-            hdr.requestId(req_id); // set the request-id only for *synchronous RPCs*
-            if(log.isTraceEnabled())
-                log.trace("%s: invoking multicast RPC [req-id=%d]", local_addr, req_id);
-            requests.putIfAbsent(req_id, req);
-            // make sure no view is received before we add ourself as a view handler (https://issues.redhat.com/browse/JGRP-1428)
-            req.viewChange(view, false);
-            if(rpc_stats.extendedStats())
-                req.start_time=System.nanoTime();
-        }
+        if(req != null) // sync
+            addEntry(req, hdr, false);
         else {  // async
-            if(opts != null && opts.anycasting())
+            if(opts.anycasting())
                 rpc_stats.addAnycast(false, 0, dest_mbrs);
             else
                 rpc_stats.add(RpcStats.Type.MULTICAST, null, false, 0);
         }
-
-        if(opts.anycasting()) {
-            boolean first=true;
-            for(Address mbr: dest_mbrs) {
-                Message copy=(first? msg : msg.copy(true, true)).setDest(mbr);
-                first=false;
-                if(!mbr.equals(local_addr) && copy.isFlagSet(Message.TransientFlag.DONT_LOOPBACK))
-                    copy.clearFlag(Message.TransientFlag.DONT_LOOPBACK);
-                down_prot.down(copy);
-            }
-        }
+        if(opts.anycasting())
+            sendAnycastRequest(msg, dest_mbrs);
         else
             down_prot.down(msg);
     }
@@ -153,28 +134,15 @@ public class RequestCorrelator {
         msg.putHeader(this.corr_id, hdr).setFlag(opts.flags(), false)
           .setFlag(opts.transientFlags(), true);
 
-        if(req != null) { // sync RPC
-            long req_id=REQUEST_ID.getAndIncrement();
-            req.requestId(req_id);
-            hdr.requestId(req_id); // set the request-id only for *synchronous RPCs*
-            if(log.isTraceEnabled())
-                log.trace("%s: invoking unicast RPC [req-id=%d] on %s", local_addr, req_id, dest);
-            requests.putIfAbsent(req_id, req);
-            // make sure no view is received before we add ourself as a view handler (https://issues.redhat.com/browse/JGRP-1428)
-            req.viewChange(view, false);
-            if(rpc_stats.extendedStats())
-                req.start_time=System.nanoTime();
-        }
+        if(req != null) // sync RPC
+            addEntry(req, hdr, true);
         else // async RPC
             rpc_stats.add(RpcStats.Type.UNICAST, dest, false, 0);
         down_prot.down(msg);
     }
 
 
-
-    /**
-     * Used to signal that a certain request may be garbage collected as all responses have been received.
-     */
+    /** Used to signal that a certain request may be garbage collected as all responses have been received */
     public void done(long id) {
         removeEntry(id);
     }
@@ -246,6 +214,7 @@ public class RequestCorrelator {
     public void receiveView(View new_view) {
         view=new_view; // move this before the iteration (JGRP-1428)
         requests.values().stream().filter(Objects::nonNull).forEach(req -> req.viewChange(new_view, true));
+        rpc_stats.retainAll(new_view.getMembers());
     }
 
 
@@ -296,11 +265,34 @@ public class RequestCorrelator {
         }
     }
 
+    protected void sendAnycastRequest(Message req, Collection<Address> dest_mbrs) {
+        boolean first=true;
+        for(Address mbr: dest_mbrs) {
+            Message copy=(first? req : req.copy(true, true)).setDest(mbr);
+            first=false;
+            if(!mbr.equals(local_addr) && copy.isFlagSet(Message.TransientFlag.DONT_LOOPBACK))
+                copy.clearFlag(Message.TransientFlag.DONT_LOOPBACK);
+            down_prot.down(copy);
+        }
+    }
 
+    protected <T> void addEntry(Request<T> req, Header hdr, boolean unicast) {
+        long req_id=REQUEST_ID.getAndIncrement();
+        req.requestId(req_id);
+        hdr.requestId(req_id); // set the request-id only for *synchronous RPCs*
+        if(log.isTraceEnabled())
+            log.trace("%s: invoking %s RPC [req-id=%d]", local_addr, unicast? "unicast" : "multicast", req_id);
+        Request<?> existing=requests.putIfAbsent(req_id, req);
+        if(existing == null) {
+            // make sure no view is received before we add ourself as a view handler (https://issues.jboss.org/browse/JGRP-1428)
+            req.viewChange(view, false);
+            if(rpc_stats.extendedStats())
+                req.start_time=System.nanoTime();
+        }
+    }
 
-    // .......................................................................
-    protected RequestCorrelator removeEntry(long id) {
-        Request<?> req=requests.remove(id);
+    protected RequestCorrelator removeEntry(long req_id) {
+        Request<?> req=requests.remove(req_id);
         if(req != null) {
             long time_ns=req.start_time > 0? System.nanoTime() - req.start_time : 0;
             if(req instanceof UnicastRequest)
@@ -318,7 +310,6 @@ public class RequestCorrelator {
     }
 
 
-
     protected void dispatch(final Message msg, final Header hdr) {
         switch(hdr.type) {
             case Header.REQ:
@@ -327,11 +318,7 @@ public class RequestCorrelator {
 
             case Header.RSP:
             case Header.EXC_RSP:
-                Request<?> req=requests.get(hdr.req_id);
-                if(req != null) {
-                    Object retval=msg.getPayload();
-                    req.receiveResponse(retval, msg.getSrc(), hdr.type == Header.EXC_RSP);
-                }
+                handleResponse(msg, hdr);
                 break;
 
             default:
@@ -371,6 +358,14 @@ public class RequestCorrelator {
         }
         if(hdr.rspExpected())
             sendReply(req, hdr.req_id, retval, threw_exception);
+    }
+
+    protected void handleResponse(Message rsp, Header hdr) {
+        Request<?> req=requests.get(hdr.req_id);
+        if(req != null) {
+            Object retval=rsp.getPayload();
+            req.receiveResponse(retval, rsp.getSrc(), hdr.type == Header.EXC_RSP);
+        }
     }
 
 
@@ -572,6 +567,7 @@ public class RequestCorrelator {
                         retval.put("async anycast   RPCs", String.valueOf(rpc_stats.anycasts(false)));
                         break;
                     case "rpcs-reset":
+                    case "rtt-reset":
                         rpc_stats.reset();
                         break;
                     case "rpcs-enable-details":
@@ -584,7 +580,10 @@ public class RequestCorrelator {
                         if(!rpc_stats.extendedStats())
                             retval.put(key, "<details not enabled: use rpcs-enable-details to enable>");
                         else
-                            retval.put(key, rpc_stats.printOrderByDest());
+                            retval.put(key, rpc_stats.printStatsByDest());
+                        break;
+                    case "rtt":
+                        retval.put(key + " (min/avg/max)", rpc_stats.printRTTStatsByDest());
                         break;
                 }
             }
@@ -592,7 +591,8 @@ public class RequestCorrelator {
         }
 
         public String[] supportedKeys() {
-            return new String[]{"requests", "reqtable-info", "rpcs", "rpcs-reset", "rpcs-enable-details", "rpcs-disable-details", "rpcs-details"};
+            return new String[]{"requests", "reqtable-info", "rpcs", "rpcs-reset", "rpcs-enable-details",
+              "rpcs-disable-details", "rpcs-details", "rtt", "rtt-reset"};
         }
     }
 

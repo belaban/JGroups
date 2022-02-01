@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static org.jgroups.util.Util.printTime;
 
 /**
  * Measures min and max in addition to average
@@ -59,6 +62,29 @@ public class AverageMinMax extends Average {
                              stddev, p(50), p(90), p(99), p(99.9), p(99.99), p(99.999), p(100));
     }
 
+    public String toString() {
+        return count == 0? "n/a" : String.format("min/avg/max=%,d/%,.2f/%,d", min, getAverage(), max);
+    }
+
+    public String toString(TimeUnit u) {
+        if(count == 0)
+            return "n/a";
+        return String.format("%s/%s/%s", printTime(min, u), printTime(getAverage(), u), printTime(max, u));
+    }
+
+    public void writeTo(DataOutput out) throws IOException {
+        super.writeTo(out);
+        Bits.writeLongCompressed(min, out);
+        Bits.writeLongCompressed(max, out);
+    }
+
+    public void readFrom(DataInput in) throws IOException {
+        super.readFrom(in);
+        min=Bits.readLongCompressed(in);
+        max=Bits.readLongCompressed(in);
+    }
+
+
     protected long p(double percentile) {
         if(values == null)
             return -1;
@@ -73,22 +99,6 @@ public class AverageMinMax extends Average {
         int size=values.size();
         double variance=values.stream().map(v -> (v - av)*(v - av)).reduce(0.0, Double::sum) / size;
         return Math.sqrt(variance);
-    }
-
-    public String toString() {
-        return count == 0? "n/a" : String.format("min/avg/max=%,d/%,.2f/%,d", min, getAverage(), max);
-    }
-
-    public void writeTo(DataOutput out) throws IOException {
-        super.writeTo(out);
-        Bits.writeLongCompressed(min, out);
-        Bits.writeLongCompressed(max, out);
-    }
-
-    public void readFrom(DataInput in) throws IOException {
-        super.readFrom(in);
-        min=Bits.readLongCompressed(in);
-        max=Bits.readLongCompressed(in);
     }
 
 

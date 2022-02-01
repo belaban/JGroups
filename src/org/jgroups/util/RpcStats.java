@@ -2,13 +2,15 @@ package org.jgroups.util;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
+import org.jgroups.protocols.RTTHeader;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Keeps track of stats for sync and async unicasts and multicasts
@@ -16,13 +18,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since  3.6.8
  */
 public class RpcStats {
-    protected final AtomicInteger                    sync_unicasts=new AtomicInteger(0);
-    protected final AtomicInteger                    async_unicasts=new AtomicInteger(0);
-    protected final AtomicInteger                    sync_multicasts=new AtomicInteger(0);
-    protected final AtomicInteger                    async_multicasts=new AtomicInteger(0);
-    protected final AtomicInteger                    sync_anycasts=new AtomicInteger(0);
-    protected final AtomicInteger                    async_anycasts=new AtomicInteger(0);
-    protected volatile ConcurrentMap<Address,Result> stats;
+    protected final AtomicInteger           sync_unicasts=new AtomicInteger(0);
+    protected final AtomicInteger           async_unicasts=new AtomicInteger(0);
+    protected final AtomicInteger           sync_multicasts=new AtomicInteger(0);
+    protected final AtomicInteger           async_multicasts=new AtomicInteger(0);
+    protected final AtomicInteger           sync_anycasts=new AtomicInteger(0);
+    protected final AtomicInteger           async_anycasts=new AtomicInteger(0);
+    protected volatile Map<Address,Result>  stats;
+    protected volatile Map<Address,RTTStat> rtt_stats;
 
     public enum Type {MULTICAST, UNICAST, ANYCAST}
 
@@ -48,6 +51,8 @@ public class RpcStats {
     public void reset() {
         if(stats != null)
             stats.clear();
+        if(rtt_stats != null)
+            rtt_stats.clear();
         for(AtomicInteger ai: Arrays.asList(sync_unicasts, async_unicasts, sync_multicasts, async_multicasts, sync_anycasts, async_anycasts))
             ai.set(0);
     }
@@ -64,20 +69,43 @@ public class RpcStats {
                 addToResults(dest, sync, time);
     }
 
+    public void addRTTStats(Address sender, RTTHeader hdr) {
+        if(hdr == null)
+            return;
+        if(this.rtt_stats == null)
+            this.rtt_stats=new ConcurrentHashMap<>();
+        Address key=sender == null? Global.NULL_ADDRESS : sender;
+        RTTStat rtt_stat=rtt_stats.computeIfAbsent(key, k -> new RTTStat());
+        rtt_stat.add(hdr);
+    }
+
     public void retainAll(Collection<Address> members) {
-        ConcurrentMap<Address,Result> map;
+        Map<Address,Result> map;
         if(members == null || (map=stats) == null)
             return;
         map.keySet().retainAll(members);
+        if(rtt_stats != null)
+            rtt_stats.keySet().retainAll(members);
     }
 
 
-    public String printOrderByDest() {
+    public String printStatsByDest() {
         if(stats == null) return "(no stats)";
         StringBuilder sb=new StringBuilder("\n");
         for(Map.Entry<Address,Result> entry: stats.entrySet()) {
             Address dst=entry.getKey();
             sb.append(String.format("%s: %s\n", dst == Global.NULL_ADDRESS? "<all>" : dst, entry.getValue()));
+        }
+        return sb.toString();
+    }
+
+
+    public String printRTTStatsByDest() {
+        if(rtt_stats == null) return "(no RTT stats)";
+        StringBuilder sb=new StringBuilder("\n");
+        for(Map.Entry<Address,RTTStat> entry: rtt_stats.entrySet()) {
+            Address dst=entry.getKey();
+            sb.append(String.format("%s:\n%s\n", dst == Global.NULL_ADDRESS? "<all>" : dst, entry.getValue()));
         }
         return sb.toString();
     }
@@ -112,16 +140,12 @@ public class RpcStats {
     }
 
     protected void addToResults(Address dest, boolean sync, long time) {
-        ConcurrentMap<Address,Result> map=stats;
+        Map<Address,Result> map=stats;
         if(map == null)
             return;
-        if(dest == null) dest=Global.NULL_ADDRESS;
-        Result res=map.get(dest);
-        if(res == null) {
-            Result tmp=map.putIfAbsent(dest, res=new Result());
-            if(tmp != null)
-                res=tmp;
-        }
+        if(dest == null)
+            dest=Global.NULL_ADDRESS;
+        Result res=map.computeIfAbsent(dest, k -> new Result());
         res.add(sync, time);
     }
 
@@ -149,6 +173,46 @@ public class RpcStats {
             double min_us=avg.min()/1000.0; // us
             double max_us=avg.max()/1000.0; // us
             return String.format("async: %d, sync: %d, round-trip min/avg/max (us): %.2f / %.2f / %.2f", async, sync, min_us, avg_us, max_us);
+        }
+    }
+
+    protected static class RTTStat {
+        protected final AverageMinMax total_time=new AverageMinMax();  // RTT for a sync request
+        protected final AverageMinMax down_req_time=new AverageMinMax(); // send until the req is serialized
+        protected final AverageMinMax network_req_time=new AverageMinMax(); // serialization of req until deserialization
+        protected final AverageMinMax network_rsp_time=new AverageMinMax(); // serialization of rsp until deserialization
+        protected final AverageMinMax req_up_time=new AverageMinMax(); // deserialization of req until dispatching to app
+        protected final AverageMinMax rsp_up_time=new AverageMinMax(); // deserialization of rsp until after dispatching to app
+        protected final AverageMinMax processing_time=new AverageMinMax(); // time between reception of req and sending of rsp
+
+        protected void add(RTTHeader hdr) {
+            if(hdr == null)
+                return;
+            long tmp;
+            if((tmp=hdr.totalTime()) > 0)
+                total_time.add(tmp);
+            if((tmp=hdr.downRequest()) > 0)
+                down_req_time.add(tmp);
+            if((tmp=hdr.networkRequest()) > 0)
+                network_req_time.add(tmp);
+            if((tmp=hdr.networkResponse()) > 0)
+                network_rsp_time.add(tmp);
+            if((tmp=hdr.upReq()) > 0)
+                req_up_time.add(tmp);
+            if((tmp=hdr.processingTime()) > 0)
+                processing_time.add(tmp);
+            if((tmp=hdr.upRsp()) > 0)
+                rsp_up_time.add(tmp);
+        }
+
+        public String toString() {
+            return String.format("  total: %s\n  down-req: %s\n  network req: %s\n  network rsp: %s\n" +
+                                   "  up-req: %s\n  up-rsp: %s\n  processing time: %s\n",
+                                 total_time.toString(NANOSECONDS),
+                                 down_req_time.toString(NANOSECONDS),
+                                 network_req_time.toString(NANOSECONDS), network_rsp_time.toString(NANOSECONDS),
+                                 req_up_time.toString(NANOSECONDS), rsp_up_time.toString(NANOSECONDS),
+                                 processing_time.toString(NANOSECONDS));
         }
     }
 }
