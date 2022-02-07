@@ -26,7 +26,7 @@ class AddressedDNSResolver extends DefaultDNSResolver {
     }
 
     @Override
-    protected List<Address> resolveAEntries(String dnsQuery) {
+    protected List<Address> resolveAEntries(String dnsQuery, String srcPort) {
         List<Address> addresses = new ArrayList<>();
         try {
             // We are parsing this kind of structure:
@@ -37,7 +37,12 @@ class AddressedDNSResolver extends DefaultDNSResolver {
                 NamingEnumeration<?> namingEnumeration = attributes.get(DNSRecordType.A.toString()).getAll();
                 while (namingEnumeration.hasMoreElements()) {
                     try {
-                        addresses.add(new IpAddress(namingEnumeration.nextElement().toString()));
+                        int p = Integer.parseInt(srcPort);
+                        if (p == 0) {
+                            addresses.add(new IpAddress(namingEnumeration.nextElement().toString()));
+                        } else {
+                            addresses.add(new IpAddress(namingEnumeration.nextElement().toString(), p));
+                        }
                     } catch (Exception e) {
                         log.trace("non critical DNS resolution error", e);
                     }

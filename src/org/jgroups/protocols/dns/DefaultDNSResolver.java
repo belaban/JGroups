@@ -106,7 +106,7 @@ class DefaultDNSResolver implements DNSResolver {
         return resolveAEntries(dnsQuery, "0");
     }
 
-    protected static List<Address> resolveAEntries(String dnsQuery, String srcPort) {
+    protected List<Address> resolveAEntries(String dnsQuery, String srcPort) {
         List<Address> addresses = new ArrayList<>();
         try {
             InetAddress[] inetAddresses = InetAddress.getAllByName(dnsQuery);
