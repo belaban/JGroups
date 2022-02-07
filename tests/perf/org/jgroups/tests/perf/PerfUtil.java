@@ -185,6 +185,8 @@ public class PerfUtil {
         public Config() {
         }
 
+        public Map<String,Object> values() {return values;}
+
         public Config add(String key, Object value) {
             values.put(key, value);
             return this;
