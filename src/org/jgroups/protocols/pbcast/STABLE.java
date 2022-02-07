@@ -201,7 +201,7 @@ public class STABLE extends Protocol {
     protected void suspend(long timeout) {
         if(!suspended) {
             suspended=true;
-            log.debug("suspending message garbage collection");
+            log.debug("%s: suspending message garbage collection", local_addr);
         }
         startResumeTask(timeout); // will not start task if already running
     }
@@ -216,7 +216,7 @@ public class STABLE extends Protocol {
             lock.unlock();
         }
 
-        log.debug("resuming message garbage collection");
+        log.debug("%s: resuming message garbage collection", local_addr);
         stopResumeTask();
     }
     
@@ -284,56 +284,22 @@ public class STABLE extends Protocol {
         }
 
         // only if message counting is on, and only for multicast messages (http://jira.jboss.com/jira/browse/JGRP-233)
-        if(max_bytes > 0 && batch.dest() == null && !batch.isEmpty()) {
-            boolean send_stable_msg=false;
-            received.lock();
-            try {
-                num_bytes_received+=batch.length();
-                if(num_bytes_received >= max_bytes) {
-                    log.trace("max_bytes has been reached (%s, bytes received=%s): triggers stable msg",
-                              max_bytes, num_bytes_received);
-                    num_bytes_received=0;
-                    send_stable_msg=true;
-                }
-            }
-            finally {
-                received.unlock();
-            }
-
-            if(send_stable_msg)
-                sendStableMessage(true);
-        }
+        if(max_bytes > 0 && batch.dest() == null && !batch.isEmpty() && maxBytesExceeded(batch.length()))
+            sendStableMessage(true);
 
         if(!batch.isEmpty())
             up_prot.up(batch);
     }
 
 
-    protected void handleRegularMessage(Message msg) {
-        // only if bytes counting is enabled, and only for multicast messages (http://jira.jboss.com/jira/browse/JGRP-233)
-        if(max_bytes <= 0)
-            return;
-        if(msg.getDest() == null) {
-            boolean send_stable_msg=false;
-            received.lock();
-            try {
-                num_bytes_received+=msg.getLength();
-                if(num_bytes_received >= max_bytes) {
-                    log.trace("max_bytes has been reached (%s, bytes received=%s): triggers stable msg",
-                              max_bytes, num_bytes_received);
-                    num_bytes_received=0;
-                    send_stable_msg=true;
-                }
-            }
-            finally {
-                received.unlock();
-            }
-
-            if(send_stable_msg)
-                sendStableMessage(true);
-        }
+    public Object down(Message msg) {
+        boolean send_stable_msg=max_bytes > 0 && msg.getDest() == null
+          && msg.isTransientFlagSet(DONT_LOOPBACK) && maxBytesExceeded(msg.getLength());
+        Object retval=down_prot.down(msg);
+        if(send_stable_msg)
+            sendStableMessage(true);
+        return retval;
     }
-
 
     public Object down(Event evt) {
         switch(evt.getType()) {
@@ -362,7 +328,42 @@ public class STABLE extends Protocol {
     }
 
 
-    /* --------------------------------------- Private Methods ---------------------------------------- */
+    protected Object handle(StableHeader hdr, Address sender, Digest digest) {
+        switch(hdr.type) {
+            case StableHeader.STABLE_GOSSIP:
+                handleStableMessage(digest, sender, hdr.view_id);
+                break;
+            case StableHeader.STABILITY:
+                handleStabilityMessage(digest, sender, hdr.view_id);
+                break;
+            default:
+                log.error("%s: StableHeader type %s not known", local_addr, hdr.type);
+        }
+        return null;
+    }
+
+    protected void handleRegularMessage(Message msg) {
+        // only if bytes counting is enabled, and only for multicast messages (http://jira.jboss.com/jira/browse/JGRP-233)
+        if(max_bytes > 0 && msg.getDest() == null &&  maxBytesExceeded(msg.getLength()))
+            sendStableMessage(true);
+    }
+
+    protected boolean maxBytesExceeded(int len) {
+        received.lock();
+        try {
+            num_bytes_received+=len;
+            if(num_bytes_received >= max_bytes) {
+                log.trace("%s: max_bytes (%d) has been exceeded; bytes received=%d: triggers stable msg",
+                          local_addr, max_bytes, num_bytes_received);
+                num_bytes_received=0;
+                return true;
+            }
+            return false;
+        }
+        finally {
+            received.unlock();
+        }
+    }
 
 
     protected void handleViewChange(View v) {
@@ -378,7 +379,6 @@ public class STABLE extends Protocol {
             lock.unlock();
         }
     }
-
 
 
 
@@ -493,7 +493,6 @@ public class STABLE extends Protocol {
                 log.debug("%s: resume task started, max_suspend_time=%d", local_addr, max_suspend_time);
             }
         }
-
     }
 
 
@@ -627,7 +626,7 @@ public class STABLE extends Protocol {
         }
         // don't send a STABLE message to self when coord, but instead update the digest directly
         if(is_coord) {
-            log.trace("%s: updating the local figest with a stable message (coordinator): %s", local_addr, d);
+            log.trace("%s: updating the local digest with a stable message (coordinator): %s", local_addr, d);
             num_stable_msgs_sent++;
             handleStableMessage(d, local_addr, current_view.getViewId());
             return;
@@ -683,7 +682,7 @@ public class STABLE extends Protocol {
      */
     protected void sendStabilityMessage(Digest d, final ViewId view_id) {
         if(suspended) {
-            log.debug("STABILITY message will not be sent as suspended=%b", suspended);
+            log.debug("%s: STABILITY message will not be sent as suspended=%b", local_addr, suspended);
             return;
         }
 
@@ -699,7 +698,7 @@ public class STABLE extends Protocol {
             down_prot.down(msg);
         }
         catch(Exception e) {
-            log.warn("failed sending STABILITY message", e);
+            log.warn("%s: failed sending STABILITY message: %s", local_addr, e);
         }
     }
 
@@ -805,8 +804,8 @@ public class STABLE extends Protocol {
     protected class ResumeTask implements Runnable {
         public void run() {
             if(suspended)
-                log.warn("ResumeTask resumed message garbage collection - this should be done by a RESUME_STABLE event; " +
-                           "check why this event was not received (or increase max_suspend_time for large state transfers)");
+                log.warn("%s: ResumeTask resumed message garbage collection - this should be done by a RESUME_STABLE event; " +
+                           "check why this event was not received (or increase max_suspend_time for large state transfers)", local_addr);
             resume();
         }
         public String toString() {return STABLE.class.getSimpleName() + ": ResumeTask";}
