@@ -30,10 +30,10 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
     @Property(description="Switch to enable diagnostic probing")
     protected boolean                  enabled=true;
 
-    @Property(description="Use a multicast socket to listen for probe requests (ignored if enable_diagnostics is false)")
+    @Property(description="Use a multicast socket to listen for probe requests (ignored if diag.enabled is false)")
     protected volatile boolean         enable_udp=true;
 
-    @Property(description="Use a TCP socket to listen for probe requests (ignored if enable_diagnostics is false)")
+    @Property(description="Use a TCP socket to listen for probe requests (ignored if diag.enabled is false)")
     protected volatile boolean         enable_tcp;
 
     @Property(description="Multicast address for diagnostic probing (UDP MulticastSocket). Used when enable_udp " +
