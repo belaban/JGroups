@@ -26,6 +26,7 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
+import static org.jgroups.Message.TransientFlag.OOB_DELIVERED;
 
 
 /**
@@ -157,8 +158,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         && (!msg.isFlagSet(Message.Flag.OOB) || msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
         && !(msg.isFlagSet(DONT_LOOPBACK) && Objects.equals(local_addr, msg.getSrc()));
 
-    protected static final Predicate<Message> dont_loopback_filter=
-      msg -> msg != null && msg.isFlagSet(DONT_LOOPBACK);
+    protected static final Predicate<Message> dont_loopback_filter=m -> m != null
+          && (m.isFlagSet(DONT_LOOPBACK) || m == DUMMY_OOB_MSG || m.isFlagSet(OOB_DELIVERED));
 
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
 

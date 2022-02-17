@@ -589,7 +589,7 @@ public class Table<T> implements Iterable<T> {
             size++;
             if(seqno - hr > 0)
                 hr=seqno;
-            if(remove_filter != null && hd +1 == seqno) {
+            if(remove_filter != null && seqno-hd > 0) {
                 forEach(hd + 1, hr,
                         (seq, msg, r, c) -> {
                             if(msg == null || !remove_filter.test(msg))

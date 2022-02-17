@@ -26,6 +26,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 import static org.jgroups.Message.TransientFlag.OOB_DELIVERED;
 import static org.jgroups.util.MessageBatch.Mode.OOB;
 
@@ -147,9 +148,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected final Predicate<Message> no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs=msg ->
       msg != null && msg != DUMMY_OOB_MSG
         && (!msg.isFlagSet(Message.Flag.OOB) || msg.setFlagIfAbsent(OOB_DELIVERED))
-        && !(msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK) && Objects.equals(local_addr, msg.getSrc()));
+        && !(msg.isFlagSet(DONT_LOOPBACK) && Objects.equals(local_addr, msg.getSrc()));
 
-    protected static final Predicate<Message> dont_loopback_filter=msg -> msg != null && msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+    protected static final Predicate<Message> dont_loopback_filter=m -> m != null
+      && (m.isFlagSet(DONT_LOOPBACK) || m == DUMMY_OOB_MSG || m.isFlagSet(OOB_DELIVERED));
 
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
 
@@ -816,7 +818,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         if(msg.getSrc() == null)
             msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
 
-        boolean dont_loopback_set=msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+        boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK);
         long msg_id=seqno.incrementAndGet();
         long sleep=10;
         do {
@@ -1574,7 +1576,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 num_resends++;
             Message msg=new EmptyMessage(null).putHeader(id, NakAckHeader2.createHighestSeqnoHeader(seqno))
               .setFlag(Message.Flag.OOB)
-              .setFlag(Message.TransientFlag.DONT_LOOPBACK); // we don't need to receive our own broadcast
+              .setFlag(DONT_LOOPBACK); // we don't need to receive our own broadcast
             down_prot.down(msg);
         }
     }
