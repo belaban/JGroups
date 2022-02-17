@@ -23,6 +23,9 @@ import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
+import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
+import static org.jgroups.Message.TransientFlag.OOB_DELIVERED;
+
 
 /**
  * Reliable unicast protocol using a combination of positive and negative acks. See docs/design/UNICAST3.txt for details.
@@ -143,8 +146,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         && (!msg.isFlagSet(Message.Flag.OOB) || msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
         && !(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK) && local_addr != null && local_addr.equals(msg.src()));
 
-    protected static final Predicate<Message> dont_loopback_filter=
-      msg -> msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+    protected static final Predicate<Message> dont_loopback_filter=m -> m != null
+          && (m.isTransientFlagSet(DONT_LOOPBACK) || m == DUMMY_OOB_MSG || m.isTransientFlagSet(OOB_DELIVERED));
 
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
 

@@ -24,6 +24,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
+import static org.jgroups.Message.TransientFlag.OOB_DELIVERED;
 
 /**
  * Negative AcKnowledgement layer (NAKs). Messages are assigned a monotonically
@@ -144,10 +146,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     // Accepts messages which are (1) non-null, (2) no DUMMY_OOB_MSGs and (3) not OOB_DELIVERED
     protected final Predicate<Message> no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs= msg ->
       msg != null && msg != DUMMY_OOB_MSG
-        && (!msg.isFlagSet(Message.Flag.OOB) || msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
-        && !(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK) && this.local_addr != null && this.local_addr.equals(msg.getSrc()));
+        && (!msg.isFlagSet(Message.Flag.OOB) || msg.setTransientFlagIfAbsent(OOB_DELIVERED))
+        && !(msg.isTransientFlagSet(DONT_LOOPBACK) && Objects.equals(this.local_addr, msg.getSrc()));
 
-    protected static final Predicate<Message> dont_loopback_filter=msg -> msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+    protected static final Predicate<Message> dont_loopback_filter=m -> m != null
+      && (m.isTransientFlagSet(DONT_LOOPBACK) || m == DUMMY_OOB_MSG || m.isTransientFlagSet(OOB_DELIVERED));
 
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
 
