@@ -19,6 +19,10 @@ public class Runner implements Runnable, Closeable {
     protected long                join_timeout=100;
 
 
+    public Runner(String name, Runnable function, Runnable stop_function) {
+        this(new DefaultThreadFactory(name, true, true), name, function, stop_function);
+    }
+
     public Runner(ThreadFactory factory, String thread_name, Runnable function, Runnable stop_function) {
         this.factory=factory;
         this.thread_name=thread_name;
