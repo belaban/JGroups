@@ -8,6 +8,10 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.protocols.TP;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -18,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since  5.2
  */
 public class ThreadPool implements Lifecycle {
+    private static final String THREAD_DUMP_PATH = System.getProperty("jgroups.threaddump.path");
     protected Executor            thread_pool;
     protected final TP            tp;
 
@@ -172,9 +177,25 @@ public class ThreadPool implements Lifecycle {
             tp.getMessageStats().incrNumRejectedMsgs(1);
             // https://issues.redhat.com/browse/JGRP-2403
             if(thread_dumps.incrementAndGet() == thread_dumps_threshold) {
-                tp.getLog().fatal("%s: thread pool is full (max=%d, active=%d); " +
-                            "thread dump (dumped once, until thread_dump is reset):\n%s",
-                                  tp.getAddress(), max_threads, getThreadPoolSize(), Util.dumpThreads());
+                String threadDump = Util.dumpThreads();
+                if (THREAD_DUMP_PATH != null) {
+                    File file = new File(THREAD_DUMP_PATH, "jgroups_threaddump_" + System.currentTimeMillis() + ".txt");
+                    try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+                        writer.write(threadDump);
+                        tp.getLog().fatal("%s: thread pool is full (max=%d, active=%d); " +
+                                    "thread dump (dumped once, until thread_dump is reset): %s",
+                              tp.getAddress(), max_threads, getThreadPoolSize(), file.getAbsolutePath());
+                    } catch (IOException e) {
+                        tp.getLog().warn(String.format("Cannot generate the thread dump file %s", file.getAbsolutePath()), e);
+                        tp.getLog().fatal("%s: thread pool is full (max=%d, active=%d); " +
+                                    "thread dump (dumped once, until thread_dump is reset):\n%s",
+                              tp.getAddress(), max_threads, getThreadPoolSize(), threadDump);
+                    }
+                } else {
+                    tp.getLog().fatal("%s: thread pool is full (max=%d, active=%d); " +
+                                "thread dump (dumped once, until thread_dump is reset):\n%s",
+                          tp.getAddress(), max_threads, getThreadPoolSize(), threadDump);
+                }
             }
             return false;
         }
