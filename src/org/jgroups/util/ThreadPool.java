@@ -6,6 +6,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
+import org.jgroups.logging.Log;
 import org.jgroups.protocols.TP;
 
 import java.io.BufferedWriter;
@@ -22,7 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since  5.2
  */
 public class ThreadPool implements Lifecycle {
-    private static final String THREAD_DUMP_PATH = System.getProperty("jgroups.threaddump.path");
     protected Executor            thread_pool;
     protected final TP            tp;
 
@@ -44,6 +44,10 @@ public class ThreadPool implements Lifecycle {
 
     @Property(description="The number of times a thread pool needs to be full before a thread dump is logged")
     protected int                 thread_dumps_threshold=1;
+
+    @Property(description="Path to which the thread dump will be written. Ignored if null",
+      systemProperty="jgroups.threaddump.path")
+    protected String              thread_dump_path;
 
 
 
@@ -177,25 +181,25 @@ public class ThreadPool implements Lifecycle {
             tp.getMessageStats().incrNumRejectedMsgs(1);
             // https://issues.redhat.com/browse/JGRP-2403
             if(thread_dumps.incrementAndGet() == thread_dumps_threshold) {
-                String threadDump = Util.dumpThreads();
-                if (THREAD_DUMP_PATH != null) {
-                    File file = new File(THREAD_DUMP_PATH, "jgroups_threaddump_" + System.currentTimeMillis() + ".txt");
-                    try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-                        writer.write(threadDump);
-                        tp.getLog().fatal("%s: thread pool is full (max=%d, active=%d); " +
-                                    "thread dump (dumped once, until thread_dump is reset): %s",
-                              tp.getAddress(), max_threads, getThreadPoolSize(), file.getAbsolutePath());
-                    } catch (IOException e) {
-                        tp.getLog().warn(String.format("Cannot generate the thread dump file %s", file.getAbsolutePath()), e);
-                        tp.getLog().fatal("%s: thread pool is full (max=%d, active=%d); " +
-                                    "thread dump (dumped once, until thread_dump is reset):\n%s",
-                              tp.getAddress(), max_threads, getThreadPoolSize(), threadDump);
+                String thread_dump=Util.dumpThreads();
+                Log l=tp.getLog();
+                if(thread_dump_path != null) {
+                    File file=new File(thread_dump_path, "jgroups_threaddump_" + System.currentTimeMillis() + ".txt");
+                    try(BufferedWriter writer=new BufferedWriter(new FileWriter(file))) {
+                        writer.write(thread_dump);
+                        l.fatal("%s: thread pool is full (max=%d, active=%d); thread dump (dumped once, until thread_dump is reset): %s",
+                                tp.getAddress(), max_threads, getThreadPoolSize(), file.getAbsolutePath());
                     }
-                } else {
-                    tp.getLog().fatal("%s: thread pool is full (max=%d, active=%d); " +
-                                "thread dump (dumped once, until thread_dump is reset):\n%s",
-                          tp.getAddress(), max_threads, getThreadPoolSize(), threadDump);
+                    catch(IOException e) {
+                        l.warn("%s: cannot generate the thread dump to %s: %s", tp.getAddress(), file.getAbsolutePath(), e);
+                        l.fatal("%s: thread pool is full (max=%d, active=%d); " +
+                                  "thread dump (dumped once, until thread_dump is reset):\n%s",
+                                tp.getAddress(), max_threads, getThreadPoolSize(), thread_dump);
+                    }
                 }
+                else
+                    l.fatal("%s: thread pool is full (max=%d, active=%d); thread dump (dumped once, until thread_dump is reset):\n%s",
+                            tp.getAddress(), max_threads, getThreadPoolSize(), thread_dump);
             }
             return false;
         }
