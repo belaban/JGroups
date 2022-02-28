@@ -10,12 +10,12 @@ import org.jgroups.jmx.AdditionalJmxObjects;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.*;
+import org.jgroups.util.Bits;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.UUID;
 import org.jgroups.util.*;
 
-import java.io.DataInput;
-import java.io.InterruptedIOException;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -234,6 +234,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property(description="The number of times a thread pool needs to be full before a thread dump is logged")
     protected int                 thread_dumps_threshold=1;
+
+    @Property(description="Path to which the thread dump will be written. Ignored if null",
+      systemProperty="jgroups.threaddump.path")
+    protected String              thread_dump_path;
 
     // Incremented when a message is rejected due to a full thread pool. When this value exceeds thread_dumps_threshold,
     // the threads will be dumped at FATAL level, and thread_dumps will be reset to 0
@@ -1536,9 +1540,24 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 msg_stats.incrNumRejectedMsgs(1);
                 // https://issues.redhat.com/browse/JGRP-2403
                 if(thread_dumps.incrementAndGet() == thread_dumps_threshold) {
-                    log.fatal("%s: thread pool is full (max=%d, active=%d); " +
-                                "thread dump (dumped once, until thread_dump is reset):\n%s",
-                              local_addr, getThreadPoolMaxThreads(), getThreadPoolSize(), Util.dumpThreads());
+                    String thread_dump=Util.dumpThreads();
+                    if(thread_dump_path != null) {
+                        File f=new File(thread_dump_path, "jgroups_threaddump_" + System.currentTimeMillis() + ".txt");
+                        try(BufferedWriter writer=new BufferedWriter(new FileWriter(f))) {
+                            writer.write(thread_dump);
+                            log.fatal("%s: thread pool is full (max=%d, active=%d); thread dump (dumped once, until thread_dump is reset): %s",
+                                      local_addr, thread_pool_max_threads, getThreadPoolSize(), f.getAbsolutePath());
+                        }
+                        catch(IOException e) {
+                            log.warn("%s: cannot generate the thread dump to %s: %s", local_addr, f.getAbsolutePath(), e);
+                            log.fatal("%s: thread pool is full (max=%d, active=%d); " +
+                                        "thread dump (dumped once, until thread_dump is reset):\n%s",
+                                      local_addr, thread_pool_max_threads, getThreadPoolSize(), thread_dump);
+                        }
+                    }
+                    else
+                        log.fatal("%s: thread pool is full (max=%d, active=%d); thread dump (dumped once, until thread_dump is reset):\n%s",
+                                  local_addr, thread_pool_max_threads, getThreadPoolSize(), thread_dump);
                 }
                 return false;
             }
