@@ -533,6 +533,9 @@ public class ProtocolStack extends Protocol {
             prot.setDownProtocol(neighbor);
             neighbor.setUpProtocol(prot);
         }
+        Address local_address=getTransport() != null? getTransport().getAddress() : null;
+        if(local_address != null)
+            prot.setAddress(local_address);
     }
 
     private void checkAndSwitchTop(Protocol oldTop, Protocol newTop){
@@ -578,6 +581,9 @@ public class ProtocolStack extends Protocol {
         prot.down_prot=top_prot;
         prot.up_prot=this;
         top_prot=prot;
+        Address local_address=getTransport() != null? getTransport().getAddress() : null;
+        if(local_address != null)
+            prot.setAddress(local_address);
         log.debug("inserted " + prot + " at the top of the stack");
     }
 
