@@ -13,7 +13,6 @@
     <pbcast.STABLE  />
     <FRAG           />
     <AUTH auth_class="org.jgroups.auth.FixedMembershipToken"
-          fixed_members_value="localhost/1025*localhost/1026"
-          fixed_members_seperator="*" />
+          auth_token.fixed_members_value="localhost/1025,localhost/1026"/>
     <pbcast.GMS     />
 </config>
