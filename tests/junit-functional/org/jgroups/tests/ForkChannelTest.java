@@ -1,9 +1,5 @@
 package org.jgroups.tests;
 
-import static org.testng.AssertJUnit.assertEquals;
-import static org.testng.AssertJUnit.assertNotNull;
-import static org.testng.AssertJUnit.assertTrue;
-
 import org.jgroups.*;
 import org.jgroups.blocks.ReplicatedHashMap;
 import org.jgroups.blocks.atomic.Counter;
@@ -30,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
+
+import static org.testng.AssertJUnit.*;
 
 /**
  * Tests {@link org.jgroups.fork.ForkChannel}
@@ -84,11 +82,7 @@ public class ForkChannelTest {
 
         fc1.send(null, "hello");
         List l3=r3.list(), l4=r4.list();
-        for(int i=0; i < 10; i++) {
-            if(!l3.isEmpty() || !l4.isEmpty())
-                break;
-            Util.sleep(1000);
-        }
+        Util.waitUntilTrue(10000, 200, () -> !l3.isEmpty() || !l4.isEmpty());
         assert !l3.isEmpty();
         assert l4.isEmpty();
 
@@ -97,11 +91,7 @@ public class ForkChannelTest {
         Address dest=fc3.getAddress();
 
         fc1.send(dest, "hello2");
-        for(int i=0; i < 10; i++) {
-            if(!l3.isEmpty() || !l4.isEmpty())
-                break;
-            Util.sleep(1000);
-        }
+        Util.waitUntilTrue(10000, 200, () -> !l3.isEmpty() || !l4.isEmpty());
         assert !l3.isEmpty();
         assert l4.isEmpty();
         l3.clear();
@@ -111,15 +101,11 @@ public class ForkChannelTest {
         ucast.setValue("conn_close_timeout", 10000);
 
         Util.close(fc3,fc4,b);
-        Util.sleep(1000);
+        Util.sleep(300);
 
         System.out.printf("---- sending message to non-existing member %s\n", dest);
         fc1.send(dest, "hello3");
-        for(int i=0; i < 10; i++) {
-            if(!l3.isEmpty() || !l4.isEmpty())
-                break;
-            Util.sleep(500);
-        }
+        Util.waitUntilTrue(2000, 100, () -> !l3.isEmpty() || !l4.isEmpty());
         assert l3.isEmpty();
         assert l4.isEmpty();
     }

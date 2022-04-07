@@ -104,6 +104,14 @@ public class FORK extends Protocol {
         switch(evt.getType()) {
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=evt.getArg();
+                for(Protocol prot: fork_stacks.values()) {
+                    if(prot instanceof ForkProtocol) {
+                        ForkProtocol fp=(ForkProtocol)prot;
+                        ProtocolStack st=fp.getProtocolStack();
+                        for(Protocol p: st.getProtocols())
+                            p.down(evt);
+                    }
+                }
                 break;
         }
         return down_prot.down(evt);
