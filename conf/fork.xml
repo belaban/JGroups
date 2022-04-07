@@ -1,0 +1,31 @@
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd"
+>
+    <UDP
+            thread_pool.min_threads="0"
+            thread_pool.max_threads="20"
+            thread_pool.keep_alive_time="30000"/>
+    <PING />
+    <MERGE3 />
+    <FD_SOCK/>
+    <FD_ALL/>
+    <VERIFY_SUSPECT timeout="1500"  />
+    <pbcast.NAKACK2 xmit_interval="500"/>
+    <UNICAST3 xmit_interval="500"/>
+    <pbcast.STABLE />
+    <pbcast.GMS print_local_addr="true" join_timeout="1000"/>
+    <UFC />
+    <MFC />
+    <FRAG2 frag_size="60K" />
+    <FORK>
+        <fork-stacks xmlns="fork" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                     xsi:schemaLocation="fork fork-stacks-4.2.xsd">
+            <fork-stack id="lock">
+                <config>
+                    <CENTRAL_LOCK2/>
+                </config>
+            </fork-stack>
+        </fork-stacks>
+    </FORK>
+</config>

@@ -1,9 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Event;
-import org.jgroups.Header;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.ConfiguratorFactory;
@@ -93,6 +90,20 @@ public class FORK extends Protocol {
         while(prot != null && !(prot instanceof ForkProtocolStack))
             prot=prot.getUpProtocol();
         return prot instanceof ForkProtocolStack? (ForkProtocolStack)prot : null;
+    }
+
+    public <T extends Protocol> T setAddress(Address addr) {
+        super.setAddress(addr);
+
+        for(Protocol prot: fork_stacks.values()) {
+            if(prot instanceof ForkProtocol) {
+                ForkProtocol fp=(ForkProtocol)prot;
+                ProtocolStack st=fp.getProtocolStack();
+                for(Protocol p: st.getProtocols())
+                    p.setAddress(local_addr);
+            }
+        }
+        return (T)this;
     }
 
     public void init() throws Exception {
