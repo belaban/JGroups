@@ -2,6 +2,7 @@ package org.jgroups.auth.sasl;
 
 import javax.security.sasl.SaslClientFactory;
 import javax.security.sasl.SaslServerFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.*;
@@ -89,9 +90,22 @@ public final class SaslUtils {
                     String className=currentProvider.getProperty((String)currentKey);
                     if(className != null && loadedClasses.add(className)) {
                         try {
-                            factories.add(Class.forName(className, true, cl).asSubclass(type).getDeclaredConstructor().newInstance());
+                            int index=((String)currentKey).indexOf(".");
+                            if(index >= 0) {
+                                String service_type=((String)currentKey).substring(0, index);
+                                String algorithm=((String)currentKey).substring(index+1);
+                                Provider.Service svc=currentProvider.getService(service_type, algorithm);
+                                if(svc != null) {
+                                    Object inst=svc.newInstance(null);
+                                    factories.add((T)inst);
+                                }
+                            }
+                            else {
+                                Class<?> clazz=Class.forName(className, true, cl);
+                                factories.add(clazz.asSubclass(type).getDeclaredConstructor().newInstance());
+                            }
                         }
-                        catch(ClassCastException | ReflectiveOperationException e) {
+                        catch(ClassCastException | ReflectiveOperationException | NoSuchAlgorithmException e) {
                         }
                     }
                 });
