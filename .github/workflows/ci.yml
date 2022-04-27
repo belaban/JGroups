@@ -6,13 +6,15 @@ on:
   pull_request:
     branches:
       - '*'
+permissions:
+  contents: read
 jobs:
   ci:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
-        java: [ 11 ]
+        java: [ 11, 17 ]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -28,4 +30,5 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
       - name: Build with Maven
-        run: mvn -B verify -DskipTests
+        # In order to support Windows PowerShell, a space between -D property=true is required.
+        run: mvn -B verify -D maven.test.skip.exec=true
