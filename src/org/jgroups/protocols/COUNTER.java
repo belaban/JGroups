@@ -783,7 +783,10 @@ public class COUNTER extends Protocol {
             long[] result=val.addAndGet(value);
             Response rsp=new ValueResponse(owner, result);
             protocol.sendResponse(sender, rsp);
-            protocol.updateBackups(name, result);
+            if (value != 0) {
+                // value == 0 means it is a counter.get(); no backup update is required.
+                protocol.updateBackups(name, result);
+            }
         }
     }
 
