@@ -13,3 +13,8 @@ updates:
   - dependency-name: org.testng:testng
     versions:
     - ">= 7.a, < 8"
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
