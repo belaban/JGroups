@@ -1,7 +1,10 @@
 package org.jgroups.blocks.atomic;
 
+import java.util.concurrent.CompletionStage;
+
 import org.jgroups.JChannel;
 import org.jgroups.protocols.COUNTER;
+import org.jgroups.util.CompletableFutures;
 
 /**
  * Provides a distributed counter (similar to AtomicLong) which can be atomically updated across a cluster.
@@ -27,12 +30,29 @@ public class CounterService {
      * @param initial_value The initial value of a new counter if there is no existing counter. Ignored
      * if the counter already exists
      * @return The counter implementation
+     * @deprecated since 5.2. Use {@link #getOrCreateSyncCounter(String, long)} instead.
      */
+    @Deprecated
     public Counter getOrCreateCounter(String name, long initial_value) {
         return counter_prot.getOrCreateCounter(name, initial_value);
     }
 
-  
+    public SyncCounter getOrCreateSyncCounter(String name, long initial_value) {
+        return CompletableFutures.join(getOrCreateAsyncCounter(name, initial_value).thenApply(AsyncCounter::sync));
+    }
+
+    /**
+     * Returns an existing counter, or creates a new one if none exists
+     *
+     * @param name          Name of the counter, different counters have to have different names
+     * @param initial_value The initial value of a new counter if there is no existing counter. Ignored
+     *                      if the counter already exists
+     * @return A {@link CompletionStage} which is completed with the counter implementation.
+     */
+    public CompletionStage<AsyncCounter> getOrCreateAsyncCounter(String name, long initial_value) {
+        return counter_prot.getOrCreateAsyncCounter(name, initial_value);
+    }
+
     /**
      * Deletes a counter instance (on the coordinator)
      * @param name The name of the counter. No-op if the counter doesn't exist
