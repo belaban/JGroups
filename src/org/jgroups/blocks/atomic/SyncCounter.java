@@ -42,7 +42,7 @@ public interface SyncCounter {
      *
      * @param expect The expected value of the counter
      * @param update The new value of the counter
-     * @return The current counter's value.
+     * @return The previous value of the counter
      */
     long compareAndSwap(long expect, long update);
 

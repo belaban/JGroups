@@ -38,7 +38,7 @@ public class COUNTER extends Protocol {
     private static final ResponseType[] RESPONSE_TYPES_CACHED = ResponseType.values();
 
     @Property(description="Bypasses message bundling if true")
-    protected boolean bypass_bundling=true;
+    protected boolean bypass_bundling;
 
     @Property(description="Request timeouts (in ms). If the timeout elapses, a TimeoutException will be thrown",
       type=AttributeType.TIME)
@@ -539,7 +539,8 @@ public class COUNTER extends Protocol {
             if(local_addr.equals(coord)) {
                 VersionedValue val=getCounter(name);
                 long[] result=val.addAndGet(delta);
-                updateBackups(name, result);
+                if(delta != 0) // get() calls addAndGet(0): in this case,we don't want replication traffic
+                    updateBackups(name, result);
                 return CompletableFuture.completedFuture(result[0]);
             }
             Owner owner=getOwner();

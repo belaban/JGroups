@@ -2,14 +2,20 @@ package org.jgroups.blocks;
 
 import org.jgroups.Global;
 import org.jgroups.JChannel;
+import org.jgroups.blocks.atomic.AsyncCounter;
 import org.jgroups.blocks.atomic.CounterService;
 import org.jgroups.blocks.atomic.SyncCounter;
 import org.jgroups.protocols.COUNTER;
+import org.jgroups.util.AverageMinMax;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -48,13 +54,60 @@ public class CounterTest {
     }
 
 
-    public void testIncrement() {
+    public void testIncrement() throws TimeoutException {
         ca.incrementAndGet();
         assertValues(1);
         cb.incrementAndGet();
         assertValues(2);
         cc.incrementAndGet();
         assertValues(3);
+    }
+
+    public void testAsyncIncrement() throws TimeoutException {
+        AverageMinMax avg=new AverageMinMax();
+        long[] values=new long[1000];
+
+        long total=System.currentTimeMillis();
+        for(int i=1; i <= 1000; i++) {
+            long start=Util.micros();
+            // async.incrementAndGet().thenApply(v -> values[(int)v.longValue()]=v);
+            long val=cc.incrementAndGet();
+            if(val < 1000)
+                values[(int)val]=val;
+            long time=Util.micros()-start;
+            avg.add(time);
+        }
+        Util.waitUntil(500, 1, () -> IntStream.rangeClosed(1, 999).allMatch(i -> values[i] > 0));
+        long total_time=System.currentTimeMillis()-total;
+        System.out.printf("sync: total time: %d ms, avg: %s us\n", total_time, avg);
+
+        Arrays.fill(values, 0L);
+        cc.set(0);
+        AsyncCounter async=cc.async();
+        avg.clear();
+
+        total=System.currentTimeMillis();
+        for(int i=1; i <= 1000; i++) {
+            long start=Util.micros();
+            async.incrementAndGet().thenAccept(v -> values[(int)v.longValue()]=v);
+            long time=Util.micros()-start;
+            avg.add(time);
+        }
+        Util.waitUntil(500, 1, () -> IntStream.rangeClosed(1, 999).allMatch(i -> values[i] > 0));
+        total_time=System.currentTimeMillis()-total;
+        System.out.printf("async: total time: %d ms, avg: %s us\n", total_time, avg);
+    }
+
+    public void testAsyncIncrement2() throws TimeoutException {
+        AsyncCounter async_c=cc.async();
+        final int NUM=1000;
+        final AtomicInteger val=new AtomicInteger(0);
+        long start=System.currentTimeMillis();
+        for(int i=0; i < NUM; i++)
+            async_c.incrementAndGet().thenAccept(v -> val.set(v.intValue()));
+        Util.waitUntil(1000, 1, () -> val.get() == NUM);
+        long time=System.currentTimeMillis()-start;
+        System.out.printf("val=%d, time=%d ms\n", val.get(), time);
     }
 
     public void testCompareAndSet() {
@@ -79,6 +132,6 @@ public class CounterTest {
     }
 
     protected static JChannel create(String name) throws Exception {
-        return new JChannel(Util.getTestStack(new COUNTER())).name(name);
+        return new JChannel(Util.getTestStack(new COUNTER().setBypassBundling(false))).name(name);
     }
 }
