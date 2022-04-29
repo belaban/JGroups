@@ -596,6 +596,10 @@ public class COUNTER extends Protocol {
         public AsyncCounter async() {
             return counter;
         }
+
+        public String toString() {
+            return counter != null? counter.toString() : null;
+        }
     }
 
     private CompletableFuture<Long> sendRequestToCoordinator(Owner owner, Request request) {
