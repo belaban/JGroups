@@ -70,7 +70,6 @@ public class CounterTest {
         long total=System.currentTimeMillis();
         for(int i=1; i <= 1000; i++) {
             long start=Util.micros();
-            // async.incrementAndGet().thenApply(v -> values[(int)v.longValue()]=v);
             long val=cc.incrementAndGet();
             if(val < 1000)
                 values[(int)val]=val;
@@ -89,12 +88,17 @@ public class CounterTest {
         total=System.currentTimeMillis();
         for(int i=1; i <= 1000; i++) {
             long start=Util.micros();
-            async.incrementAndGet().thenAccept(v -> values[(int)v.longValue()]=v);
-            long time=Util.micros()-start;
-            avg.add(time);
+            async.incrementAndGet()
+              .thenAccept(v -> {
+                  values[(int)v.longValue()]=v;
+                  long time=Util.micros()-start;
+                  synchronized(avg) {
+                      avg.add(time);
+                  }
+              });
         }
-        Util.waitUntil(500, 1, () -> IntStream.rangeClosed(1, 999).allMatch(i -> values[i] > 0));
-        total_time=System.currentTimeMillis()-total;
+        Util.waitUntil(50000, 1, () -> IntStream.rangeClosed(1, 999).allMatch(i -> values[i] > 0));
+        total_time=System.currentTimeMillis() - total;
         System.out.printf("async: total time: %d ms, avg: %s us\n", total_time, avg);
     }
 
