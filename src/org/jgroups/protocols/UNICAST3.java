@@ -1035,7 +1035,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         xmit_reqs_received.add(missing.size());
         Table<Message> win=entry != null? entry.msgs : null;
         if(win != null) {
-            for(long seqno: missing) {
+            for(Long seqno: missing) {
                 Message msg=win.get(seqno);
                 if(msg == null) {
                     if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(sender) && seqno > win.getLow())
