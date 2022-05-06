@@ -1,5 +1,6 @@
 package org.jgroups.util;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
@@ -29,6 +30,7 @@ public class ByteArrayDataOutputStream extends BaseDataOutputStream {
 
     public byte[]                    buffer()                     {return buf;}
     public ByteArray                 getBuffer()                  {return new ByteArray(buf, 0, pos);}
+    public ByteBuffer                byteBuffer()                 {return ByteBuffer.wrap(buf, 0, pos);}
     public int                       capacity()                   {return buf.length;}
     public boolean                   growExponentially()          {return grow_exponentially;}
     public ByteArrayDataOutputStream growExponentially(boolean b) {grow_exponentially=b; return this;}
