@@ -969,7 +969,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             Message msg=buf.get(i);
             if(msg == null) {
                 if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(xmit_requester) && i > buf.getLow())
-                    log.warn(Util.getMessage("MessageNotFound"), local_addr, original_sender, i, buf);
+                    log.warn(Util.getMessage("MessageNotFound"), local_addr, original_sender, i);
                 continue;
             }
             if(is_trace)
