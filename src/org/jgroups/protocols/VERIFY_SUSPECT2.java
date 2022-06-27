@@ -249,7 +249,7 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
 
     public void init() throws Exception {
         super.init();
-        ThreadFactory f=new DefaultThreadFactory("VERIFY_SUSPECT.Runner", true, true);
+        ThreadFactory f=new DefaultThreadFactory(this.getClass().getSimpleName() + ".Runner", true, true);
         thread_pool=new ThreadPoolExecutor(0, 1, // max 1 thread, started each time a suspect is added
                                            0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), f);
     }
