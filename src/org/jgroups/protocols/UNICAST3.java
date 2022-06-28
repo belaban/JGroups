@@ -1070,7 +1070,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 StringBuilder sb=new StringBuilder(local_addr + ": delivering");
                 if(first != null && last != null) {
                     UnicastHeader3 hdr1=first.getHeader(id), hdr2=last.getHeader(id);
-                    sb.append(" #").append(hdr1.seqno).append(" - #").append(hdr2.seqno);
+                    if(hdr1 != null && hdr2 != null)
+                        sb.append(" #").append(hdr1.seqno).append(" - #").append(hdr2.seqno);
                 }
                 sb.append(" (" + batch.size()).append(" messages)");
                 log.trace(sb);
