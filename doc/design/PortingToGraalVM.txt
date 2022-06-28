@@ -4,7 +4,7 @@ Changes in JGroups to make it run natively in GraalVM
 
 Author: Bela Ban
 Date:   March 2019
-JIRA:   https://issues.jboss.org/browse/JGRP-2332
+JIRA:   https://issues.redhat.com/browse/JGRP-2332
 
 The command to create a native image is JGroups/bin/compile.sh org.jgroups.tests.perf.ProgrammaticUPerf2.
 

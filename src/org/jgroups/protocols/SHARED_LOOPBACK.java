@@ -196,7 +196,7 @@ public class SHARED_LOOPBACK extends TP {
             Map<Address,SHARED_LOOPBACK> map=routing_table.computeIfAbsent(cluster, FUNC);
             if(map.isEmpty()) {
                 // the first member will become coord (may be changed by view changes/merges later)
-                // https://issues.jboss.org/browse/JGRP-2395
+                // https://issues.redhat.com/browse/JGRP-2395
                 shared_loopback.coord(true);
             }
             map.putIfAbsent(local_addr, shared_loopback);

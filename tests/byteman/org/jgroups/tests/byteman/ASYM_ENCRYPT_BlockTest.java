@@ -16,7 +16,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /**
- * Tests https://issues.jboss.org/browse/JGRP-2131
+ * Tests https://issues.redhat.com/browse/JGRP-2131
  * @author Bela Ban
  * @since  3.6.12, 4.0.0
  */

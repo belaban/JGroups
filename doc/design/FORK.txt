@@ -3,7 +3,7 @@ Design of FORK
 ==============
 
 Author: Bela Ban, Sanne Grinovero
-JIRA: https://issues.jboss.org/browse/JGRP-1613
+JIRA: https://issues.redhat.com/browse/JGRP-1613
 
 The purpose of FORK is (1) to enable multiple light-weight channels (fork-channels) to piggyback messages on an existing
 channel and (2) to add protocols to an existing channel that are to be used exclusively by the light-weight channel.

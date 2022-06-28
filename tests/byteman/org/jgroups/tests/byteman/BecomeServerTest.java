@@ -14,7 +14,7 @@ import org.testng.annotations.Test;
 
 /**
  * Tests the behavior of queueing messages (in NAKACK{2}) before becoming a server
- * (https://issues.jboss.org/browse/JGRP-1522)
+ * (https://issues.redhat.com/browse/JGRP-1522)
  * @author Bela Ban
  * @since 3.2
  */
@@ -27,7 +27,7 @@ public class BecomeServerTest extends BMNGRunner {
     /**
      * When we flush the server queue and one or more of the delivered messages triggers a response (in the same thread),
      * we need to make sure the channel is connected, or else the JOIN will fail as the exception happens on the same
-     * thread. Note that the suggested fix on JGRP-1522 will solve this. Issue: https://issues.jboss.org/browse/JGRP-1522
+     * thread. Note that the suggested fix on JGRP-1522 will solve this. Issue: https://issues.redhat.com/browse/JGRP-1522
      */
     @BMScript(dir="scripts/BecomeServerTest", value="testSendingOfMsgsOnUnconnectedChannel")
     public void testSendingOfMsgsOnUnconnectedChannel() throws Exception {

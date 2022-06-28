@@ -43,7 +43,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
     /** The coordinator itself wants to leave the group */
     public void leave() {
         ViewHandler<Request> vh=gms.getViewHandler();
-        vh.add(new Request(Request.COORD_LEAVE)); // https://issues.jboss.org/browse/JGRP-2293
+        vh.add(new Request(Request.COORD_LEAVE)); // https://issues.redhat.com/browse/JGRP-2293
         vh.waitUntilComplete();
     }
 
@@ -191,7 +191,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
 
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
 
-            // we don't need to send the digest to existing members: https://issues.jboss.org/browse/JGRP-1317
+            // we don't need to send the digest to existing members: https://issues.redhat.com/browse/JGRP-1317
             gms.castViewChangeAndSendJoinRsps(new_view, null, new_view.getMembers(), new_mbrs, join_rsp);
         }
         finally {

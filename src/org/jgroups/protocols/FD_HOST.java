@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * <p/>
  * This protocol would typically be used when multiple cluster members are running on the same physical box.
  * <p/>
- * JIRA:  https://issues.jboss.org/browse/JGRP-1855
+ * JIRA:  https://issues.redhat.com/browse/JGRP-1855
  * @author  Bela Ban
  * @version 3.5, 3.4.5
  */

@@ -367,7 +367,7 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
                       (state == null? "0" : Util.printBytes(state.length)), stop - start);
             StateTransferResult result=new StateTransferResult(state);
             up_prot.up(new Event(Event.GET_STATE_OK, result));
-            down_prot.down(new Event(Event.GET_VIEW_FROM_COORD)); // https://issues.jboss.org/browse/JGRP-1751
+            down_prot.down(new Event(Event.GET_VIEW_FROM_COORD)); // https://issues.redhat.com/browse/JGRP-1751
         }
         catch(Throwable t) {
             handleException(t);

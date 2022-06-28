@@ -70,7 +70,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
         this.fork_channel_id=fork_channel_id;
 
         FORK fork;
-        // To prevent multiple concurrent FORK creations https://issues.jboss.org/browse/JGRP-1842
+        // To prevent multiple concurrent FORK creations https://issues.redhat.com/browse/JGRP-1842
         synchronized(this.main_channel) {
             fork=getFORK(main_channel, position, neighbor, create_fork_if_absent);
         }

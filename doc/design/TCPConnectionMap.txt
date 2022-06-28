@@ -4,7 +4,7 @@ Design for concurrent connects
 =================================================
 
 Author: Bela Ban
-JIRA:   https://issues.jboss.org/browse/JGRP-1549
+JIRA:   https://issues.redhat.com/browse/JGRP-1549
 
 
 The goal is to avoid initial message loss (and subsequent retransmission) in TCP when 2 members connect to each other at

@@ -420,7 +420,7 @@ public class SizeTest {
     }
 
 
-    /** Tests a MergeView whose subgroups are *not* a subset of the members (https://issues.jboss.org/browse/JGRP-1707) */
+    /** Tests a MergeView whose subgroups are *not* a subset of the members (https://issues.redhat.com/browse/JGRP-1707) */
     public void testMergeViewWithNonMatchingSubgroups() throws Exception {
         Address[] mbrs=Util.createRandomAddresses(6);
         Address a=mbrs[0],b=mbrs[1],c=mbrs[2],d=mbrs[3],e=mbrs[4],f=mbrs[5];

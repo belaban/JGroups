@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Allows an implementation to pick a {@link SiteMaster} or a {@link Route} from a list (if multiple site masters are
  * enabled). An implementation could for example always pick the same site master (or route) for messages from a given
- * sender (sticky site master policy, see https://issues.jboss.org/browse/JGRP-2112).<p/>
+ * sender (sticky site master policy, see https://issues.redhat.com/browse/JGRP-2112).<p/>
  * The default implementation picks a random site master for every message to be relayed, even if they have the same
  * original sender.<p/>
  * If only one site master is configured, then {@link #pickSiteMaster(List,Address)} (List,Address)} or

@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Protocol measuring delivery times. Can be used in the up or down direction
- * JIRA: https://issues.jboss.org/browse/JGRP-2101
+ * JIRA: https://issues.redhat.com/browse/JGRP-2101
  * @author Bela Ban
  * @since  4.0
  */

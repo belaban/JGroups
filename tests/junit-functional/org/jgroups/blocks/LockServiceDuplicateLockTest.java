@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 /**
  * Tests the lock service under partitions: when members in different partitions hold the same lock, after a merge, all
  * but one lock holder will get notified that their locks have been revoked.
- * See https://issues.jboss.org/browse/JGRP-2249 for details.
+ * See https://issues.redhat.com/browse/JGRP-2249 for details.
  * @author Bela Ban
  * @since  4.0.13
  */

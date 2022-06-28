@@ -63,7 +63,7 @@ public class Configurator {
      */
     public static Protocol setupProtocolStack(List<ProtocolConfiguration> protocol_configs, ProtocolStack st) throws Exception {
         List<Protocol> protocols=createProtocolsAndInitializeAttrs(protocol_configs, st);
-        // Fixes NPE with concurrent channel creation when using a shared stack (https://issues.jboss.org/browse/JGRP-1488)
+        // Fixes NPE with concurrent channel creation when using a shared stack (https://issues.redhat.com/browse/JGRP-1488)
         Protocol top_protocol=protocols.get(protocols.size() - 1);
         top_protocol.setUpProtocol(st);
         return connectProtocols(protocols);
@@ -106,7 +106,7 @@ public class Configurator {
             return null;
 
         // Determine how to resolve addresses that are set (e.g.) via symbolic names, by the type of bind_addr in the
-        // transport. The logic below is described in https://issues.jboss.org/browse/JGRP-2343
+        // transport. The logic below is described in https://issues.redhat.com/browse/JGRP-2343
         StackType ip_version=Util.getIpStackType();
         Protocol transport=protocols.get(0);
         if(transport instanceof TP) {

@@ -19,7 +19,7 @@ import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 /**
- * Protocol which implements synchronous messages (https://issues.jboss.org/browse/JGRP-1389). A send of a message M
+ * Protocol which implements synchronous messages (https://issues.redhat.com/browse/JGRP-1389). A send of a message M
  * with flag RSVP set will block until all non-faulty recipients (one for unicasts, N for multicasts) have acked M, or
  * until a timeout kicks in.
  * @author Bela Ban
@@ -125,7 +125,7 @@ public class RSVP extends Protocol {
             ids.put(next_id, entry);
 
             // sync members again - if a view was received after reading members intro Entry, but
-            // before adding Entry to ids (https://issues.jboss.org/browse/JGRP-1503)
+            // before adding Entry to ids (https://issues.redhat.com/browse/JGRP-1503)
             entry.retainAll(members);
 
             // Send the message

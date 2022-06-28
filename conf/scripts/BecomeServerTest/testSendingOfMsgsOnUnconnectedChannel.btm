@@ -1,6 +1,6 @@
 
 
-## Test case for https://issues.jboss.org/browse/JGRP-1522
+## Test case for https://issues.redhat.com/browse/JGRP-1522
 ## - Join A
 ## - Try to join B
 ##   - After the stack is started (so that NAKACK2 can receive messages), but before connect() returns,

@@ -357,7 +357,7 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
                     }
                 }
             }
-            catch(Exception e) { // also catches NPE in getInterfaceAddresses() (https://issues.jboss.org/browse/JGRP-1845)
+            catch(Exception e) { // also catches NPE in getInterfaceAddresses() (https://issues.redhat.com/browse/JGRP-1845)
                 log.warn("failed to join " + group_addr + " on " + i.getName() + ": " + e);
             }
         }

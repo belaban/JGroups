@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 import static org.jgroups.util.Util.shutdown;
 
 /**
- * Tests use cases for {@link ASYM_ENCRYPT} described in https://issues.jboss.org/browse/JGRP-2021.
+ * Tests use cases for {@link ASYM_ENCRYPT} described in https://issues.redhat.com/browse/JGRP-2021.
  * @author Bela Ban
  * @since  4.0
  */
@@ -171,7 +171,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
     /**
      * Tests {A,B,C} with A crashing. B installs a new view with a freshly created secret key SK. However, C won't be
      * able to decrypt the new view as it doesn't have SK.<br/>
-     * https://issues.jboss.org/browse/JGRP-2203
+     * https://issues.redhat.com/browse/JGRP-2203
      */
     public void testCrashOfCoord() throws Exception {
         Address crashed_coord=a.getAddress();

@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * Policy which picks the new coordinator in a merge from the largest subview.
- * JIRA: https://issues.jboss.org/browse/JGRP-1976
+ * JIRA: https://issues.redhat.com/browse/JGRP-1976
  * @author Osamu Nagano
  * @since  3.6.7
  */

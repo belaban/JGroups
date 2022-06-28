@@ -15,7 +15,7 @@ import java.lang.reflect.Field;
 import java.util.Map;
 
 /**
- * Tests a leak in Discovery.ping_responses (https://issues.jboss.org/browse/JGRP-1983)
+ * Tests a leak in Discovery.ping_responses (https://issues.redhat.com/browse/JGRP-1983)
  * @author Bela Ban
  * @since  3.6.7
  */
@@ -41,7 +41,7 @@ public class DiscoveryTest {
     @AfterMethod protected void destroy() {Util.close(d, c, b, a);}
 
 
-    /** Makes sure the leak caused by https://issues.jboss.org/browse/JGRP-1983 is not present anymore */
+    /** Makes sure the leak caused by https://issues.redhat.com/browse/JGRP-1983 is not present anymore */
     public void testLeakFromCoord() throws Exception {
         testLeak(a);
     }

@@ -183,7 +183,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
             }
         }
 
-        // clears the threads list (https://issues.jboss.org/browse/JGRP-1971)
+        // clears the threads list (https://issues.redhat.com/browse/JGRP-1971)
         if(timer_thread_factory instanceof LazyThreadFactory)
             ((LazyThreadFactory)timer_thread_factory).destroy();
     }

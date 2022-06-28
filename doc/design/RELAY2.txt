@@ -3,7 +3,7 @@ RELAY2 - multi-site clustering
 ==============================
 
 Author: Bela Ban
-JIRA:   https://issues.jboss.org/browse/JGRP-1433
+JIRA:   https://issues.redhat.com/browse/JGRP-1433
 
 
 The architecture of RELAY2 is similar to RELAY: relaying between sites is done via a protocol (RELAY2). The biggest

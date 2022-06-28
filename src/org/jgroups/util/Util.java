@@ -3383,7 +3383,7 @@ public class Util {
                 Method[] m = superclass.getDeclaredMethods();
                 Collections.addAll(methods, m);
 
-                // find the default methods of all interfaces (https://issues.jboss.org/browse/JGRP-2247)
+                // find the default methods of all interfaces (https://issues.redhat.com/browse/JGRP-2247)
                 Class<?>[] interfaces=superclass.getInterfaces();
                 if(interfaces != null) {
                     for(Class<?> cl: interfaces) {

@@ -497,7 +497,7 @@ public class BuffersTest {
         assert bufs.limit() == 4;
 
         // copy the buffers which have not yet been written so that we can reuse buffers (not needed if buffers are already copies)
-        bufs.copy(); // https://issues.jboss.org/browse/JGRP-1991
+        bufs.copy(); // https://issues.redhat.com/browse/JGRP-1991
 
         makeSpace(bufs);
         assert bufs.position() == 0;

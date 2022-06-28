@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 
 /**
  * Non-blocking alternative to {@link UFC}.<br/>
- * JIRA: https://issues.jboss.org/browse/JGRP-2172
+ * JIRA: https://issues.redhat.com/browse/JGRP-2172
  * @author Bela Ban
  * @since  4.0.4
  */

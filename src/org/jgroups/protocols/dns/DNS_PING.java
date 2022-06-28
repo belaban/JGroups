@@ -120,7 +120,7 @@ public class DNS_PING extends Discovery {
         DNSResolver.DNSRecordType record_type=DNSResolver.DNSRecordType.valueOf(dns_record_type);
 
         physical_addr = (PhysicalAddress) down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-        // https://issues.jboss.org/browse/JGRP-1670
+        // https://issues.redhat.com/browse/JGRP-1670
         data = new PingData(local_addr, false, NameCache.get(local_addr), physical_addr);
         if (members != null && members.size() <= max_members_in_discovery_request)
             data.mbrs(members);

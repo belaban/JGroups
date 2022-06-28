@@ -371,7 +371,7 @@ public class MergeTest4 {
         }
     }
 
-    /** Tests the scenario described by Karim in https://issues.jboss.org/browse/JGRP-1876 */
+    /** Tests the scenario described by Karim in https://issues.redhat.com/browse/JGRP-1876 */
     public void testJGRP_1876() throws Exception {
         e=createChannel("E", true);
         f=createChannel("F", true);
@@ -427,7 +427,7 @@ public class MergeTest4 {
     }
 
 
-    /** Tests the scenario described by Dan in https://issues.jboss.org/browse/JGRP-1876 */
+    /** Tests the scenario described by Dan in https://issues.redhat.com/browse/JGRP-1876 */
     public void testJGRP_1876_Dan() throws Exception {
         Util.close(d,c,b,a);
         s=createChannel("S", true);
@@ -478,7 +478,7 @@ public class MergeTest4 {
     }
 
 
-    /** Tests the scenario described by Dan in https://issues.jboss.org/browse/JGRP-1876; INFO messages are injected */
+    /** Tests the scenario described by Dan in https://issues.redhat.com/browse/JGRP-1876; INFO messages are injected */
     public void testJGRP_1876_Dan2() throws Exception {
         Util.close(d,c,b,a);
         s=createChannel("S", false);

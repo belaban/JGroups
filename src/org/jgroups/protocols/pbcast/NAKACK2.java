@@ -109,7 +109,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     @Property(description="Size of the queue to hold messages received after creating the channel, but before being " +
       "connected (is_server=false). After becoming the server, the messages in the queue are fed into up() and the " +
-      "queue is cleared. The motivation is to avoid retransmissions (see https://issues.jboss.org/browse/JGRP-1509 " +
+      "queue is cleared. The motivation is to avoid retransmissions (see https://issues.redhat.com/browse/JGRP-1509 " +
       "for details). 0 disables the queue.")
     protected int     become_server_queue_size=50;
 
@@ -230,7 +230,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     /** RetransmitTask running every xmit_interval ms */
     protected Future<?>                 xmit_task;
-    /** Used by the retransmit task to keep the last retransmitted seqno per sender (https://issues.jboss.org/browse/JGRP-1539) */
+    /** Used by the retransmit task to keep the last retransmitted seqno per sender (https://issues.redhat.com/browse/JGRP-1539) */
     protected final Map<Address,Long>   xmit_task_map=new ConcurrentHashMap<>();
 
     protected volatile boolean          leaving=false;

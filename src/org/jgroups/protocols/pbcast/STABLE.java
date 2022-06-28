@@ -620,7 +620,7 @@ public class STABLE extends Protocol {
             return;
         }
 
-        // https://issues.jboss.org/browse/JGRP-1638: we reverted to sending the STABILITY message *unreliably*,
+        // https://issues.redhat.com/browse/JGRP-1638: we reverted to sending the STABILITY message *unreliably*,
         // but clear votes *before* sending it
         try {
             Message msg=new ObjectMessage(null, d).setFlag(OOB, NO_RELIABILITY).setFlag(DONT_LOOPBACK)

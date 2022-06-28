@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * Tests the UNICAST3 protocol for OOB msgs, tests https://issues.redhat.com/browse/JGRP-377 and
- * https://issues.jboss.org/browse/JGRP-2327
+ * https://issues.redhat.com/browse/JGRP-2327
  * @author Bela Ban
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
@@ -51,7 +51,7 @@ public class UNICAST_OOB_Test {
 
     /**
      Tests the case where B sends B1 and B2, but A receives B2 first (discards it) and requests retransmission of B1.
-     JIRA: https://issues.jboss.org/browse/JGRP-2327
+     JIRA: https://issues.redhat.com/browse/JGRP-2327
      */
     public void testSecondMessageReceivedFirstRegular() throws Exception {
         _testSecondMessageReceivedFirst(false, false);

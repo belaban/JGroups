@@ -105,7 +105,7 @@ public class FragTest {
     /**
      * Tests potential ordering violation by sending small, unfragmented messages, followed by a large message
      * which generates 3 fragments, followed by a final small message. Verifies that the message assembled from the
-     * 3 fragments is in the right place and not at the end. JIRA=https://issues.jboss.org/browse/JGRP-1648
+     * 3 fragments is in the right place and not at the end. JIRA=https://issues.redhat.com/browse/JGRP-1648
      */
     public void testMessageOrdering(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
@@ -132,7 +132,7 @@ public class FragTest {
         }
     }
 
-    /* Tests https://issues.jboss.org/browse/JGRP-1973 */
+    /* Tests https://issues.redhat.com/browse/JGRP-1973 */
     public void testFragCorruption(Class<? extends Fragmentation> frag_clazz) throws Exception {
         setup(frag_clazz);
         final String message="this message is supposed to get fragmented by A and defragmented by B";

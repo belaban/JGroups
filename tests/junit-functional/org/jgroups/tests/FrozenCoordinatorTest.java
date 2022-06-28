@@ -25,7 +25,7 @@ import java.util.Arrays;
 
 /**
  * Tests original coordinator not being marked as coord, and firstOfAllClients() failing
- * (https://issues.jboss.org/browse/JGRP-2262)
+ * (https://issues.redhat.com/browse/JGRP-2262)
  * @author Bela Ban
  * @since  4.0.12
  */

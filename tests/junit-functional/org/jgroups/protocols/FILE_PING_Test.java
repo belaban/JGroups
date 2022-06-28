@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Tests partition and merge of {@link FILE_PING} (https://issues.jboss.org/browse/JGRP-2288)
+ * Tests partition and merge of {@link FILE_PING} (https://issues.redhat.com/browse/JGRP-2288)
  * @author Bela Ban
  * @since  4.0.17
  */

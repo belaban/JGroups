@@ -367,7 +367,7 @@ public class TcpConnection extends Connection {
     }
 
     public void close() throws IOException {
-        Util.close(sock); // fix for https://issues.jboss.org/browse/JGRP-2350
+        Util.close(sock); // fix for https://issues.redhat.com/browse/JGRP-2350
         send_lock.lock();
         try {
             if(receiver != null) {

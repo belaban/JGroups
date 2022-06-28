@@ -177,7 +177,7 @@ public abstract class FlowControl extends Protocol {
                        "a fragmentation protocol, due to https://issues.redhat.com/browse/JGRP-590");
         if(frag_size > 0 && frag_size >= min_credits) {
             log.warn("The fragmentation size of the fragmentation protocol is %d, which is greater than min_credits (%d). " +
-                       "This can lead to blockings (https://issues.jboss.org/browse/JGRP-1659)", frag_size, min_credits);
+                       "This can lead to blockings (https://issues.redhat.com/browse/JGRP-1659)", frag_size, min_credits);
         }
         running=true;
     }

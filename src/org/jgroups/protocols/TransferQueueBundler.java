@@ -13,7 +13,7 @@ import java.util.concurrent.BlockingQueue;
 
 /**
  * This bundler adds all (unicast or multicast) messages to a queue until max size has been exceeded, but does send
- * messages immediately when no other messages are available. https://issues.jboss.org/browse/JGRP-1540
+ * messages immediately when no other messages are available. https://issues.redhat.com/browse/JGRP-1540
  */
 public class TransferQueueBundler extends BaseBundler implements Runnable {
     protected BlockingQueue<Message> queue;

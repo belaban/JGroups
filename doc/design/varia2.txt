@@ -19,7 +19,7 @@ This issue is moot; we simply return the digest to the client. Here's the exampl
 - D gets #36 (the view), but discards it as the join response already installed this view
  - D delivers #37
 
-[https://issues.jboss.org/browse/JGRP-1455]
+[https://issues.redhat.com/browse/JGRP-1455]
 *******************************************************************************************************************
 
 The digest returned to clients determines the seqnos they have to

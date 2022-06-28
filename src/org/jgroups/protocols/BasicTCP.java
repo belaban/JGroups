@@ -51,7 +51,7 @@ public abstract class BasicTCP extends TP implements Receiver {
     @Property(description="SO_LINGER in msec. Default of -1 disables it")
     protected int         linger=-1; // SO_LINGER (number of ms, -1 disables it)
 
-    // @Property(description="Sets socket option SO_REUSEADDR (https://issues.jboss.org/browse/JGRP-2009)")
+    // @Property(description="Sets socket option SO_REUSEADDR (https://issues.redhat.com/browse/JGRP-2009)")
     // protected boolean     reuse_addr;
 
     @LocalAddress

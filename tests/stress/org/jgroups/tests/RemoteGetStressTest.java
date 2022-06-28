@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Tests https://issues.jboss.org/browse/JGRP-1675
+ * Tests https://issues.redhat.com/browse/JGRP-1675
  * @author Bela Ban
  * @since  3.5
  */

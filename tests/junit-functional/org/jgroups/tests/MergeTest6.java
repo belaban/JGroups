@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 
 
 /**
- * Tests merging with a dead merge leader https://issues.jboss.org/browse/JGRP-2276:
+ * Tests merging with a dead merge leader https://issues.redhat.com/browse/JGRP-2276:
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class MergeTest6 {

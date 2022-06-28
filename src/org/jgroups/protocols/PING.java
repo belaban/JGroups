@@ -42,7 +42,7 @@ public class PING extends Discovery {
     protected void sendDiscoveryRequest(String cluster_name, List<Address> members_to_find, boolean initial_discovery) throws Exception {
         PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
 
-        // https://issues.jboss.org/browse/JGRP-1670
+        // https://issues.redhat.com/browse/JGRP-1670
         PingData data=new PingData(local_addr, false, NameCache.get(local_addr), physical_addr);
         if(members_to_find != null && members_to_find.size() <= max_members_in_discovery_request)
             data.mbrs(members_to_find);

@@ -1544,7 +1544,7 @@ Contrary to FRAG, FRAG2 does not need to serialize a message in order to break i
 ${FRAG3}
 
 FRAG3 needs only half the memory than FRAG2 to handle fragments and the final full message. See
-https://issues.jboss.org/browse/JGRP-2154 for details.
+https://issues.redhat.com/browse/JGRP-2154 for details.
 
 === Ordering
 
@@ -2003,7 +2003,7 @@ The AuthToken implementations are listed below. Check the javadoc for details.
 ===== Problems with AUTH
 `MD5Token` and `SimpleToken` implementations were removed in 5.0. The problem was that an attacker can find out the
 value of the hashed password (MD5Token) or the plain password (SimpleToken). Once they have it, they can bypass AUTH
-and join (or merge into) a cluster. See https://issues.jboss.org/browse/JGRP-2367 for details.
+and join (or merge into) a cluster. See https://issues.redhat.com/browse/JGRP-2367 for details.
 
 The usefulness of AUTH therefore only lies in filtering out JOIN/MERGE requests from members that are not included in
 a list of IP addresses (`FixedMembershipToken`) or IP addresses / hosts / symbolic names (`RegexMembership`).

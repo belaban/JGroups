@@ -15,7 +15,7 @@ import java.lang.reflect.Method;
 import java.net.InetAddress;
 
 /**
- * Tests false suspicions and UNSUSPECT events (https://issues.jboss.org/browse/JGRP-1922)
+ * Tests false suspicions and UNSUSPECT events (https://issues.redhat.com/browse/JGRP-1922)
  * @author Bela Ban
  * @since  3.6.4
  */

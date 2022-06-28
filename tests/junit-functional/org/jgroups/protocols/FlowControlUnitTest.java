@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.LongAdder;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 
 /**
- * Tests blocking in UFC / MFC (https://issues.jboss.org/browse/JGRP-1665)
+ * Tests blocking in UFC / MFC (https://issues.redhat.com/browse/JGRP-1665)
  * @author Bela Ban
  * @since  3.4
  */

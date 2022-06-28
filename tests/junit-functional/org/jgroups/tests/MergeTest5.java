@@ -22,7 +22,7 @@ import static org.jgroups.util.Util.printViews;
 
 
 /**
- * Tests https://issues.jboss.org/browse/JGRP-2092:
+ * Tests https://issues.redhat.com/browse/JGRP-2092:
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class MergeTest5 {
@@ -39,7 +39,7 @@ public class MergeTest5 {
     @AfterMethod void tearDown() throws Exception {Util.close(a,b,c);}
 
     /**
-     * Tests https://issues.jboss.org/browse/JGRP-2092:
+     * Tests https://issues.redhat.com/browse/JGRP-2092:
      <pre>
      Host A view: B,A,C (where B should be coordinator)
      Host B view: C,A,B (where C should be coordinator)

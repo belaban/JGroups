@@ -16,7 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * {@link org.jgroups.stack.MessageProcessingPolicy} which processes <em>regular</em> messages and message batches by
  * assigning a max of 1 thread per message from the same sender. So if we have senders A, B, C and D, we'll have no more
  * than 4 threads handling regular unicasts and 4 threads handling regular multicasts.<p>
- * See <a href="https://issues.jboss.org/browse/JGRP-2143">JGRP-2143</a> for details.
+ * See <a href="https://issues.redhat.com/browse/JGRP-2143">JGRP-2143</a> for details.
  * @author Bela Ban
  * @since  4.0
  */

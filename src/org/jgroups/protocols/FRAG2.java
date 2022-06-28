@@ -147,7 +147,7 @@ public class FRAG2 extends Fragmentation {
                 continue;
             Message assembled_msg=unfragment(msg, hdr);
             if(assembled_msg != null) {
-                // the reassembled msg has to be add in the right place (https://issues.jboss.org/browse/JGRP-1648),
+                // the reassembled msg has to be add in the right place (https://issues.redhat.com/browse/JGRP-1648),
                 // and cannot be added to the tail of the batch!
                 assembled_msg.setSrc(batch.sender());
                 it.replace(assembled_msg);

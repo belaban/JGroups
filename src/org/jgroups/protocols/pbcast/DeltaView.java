@@ -22,7 +22,7 @@ import java.util.Iterator;
  * a GmsHeader, the header is then marshalled. On the receiving side, the DeltaView is created from the stream, a View
  * is created and the DeltaView discarded again.<p/>
  * Instances of this class are created by {@link CoordGmsImpl#handleMembershipChange(java.util.Collection)}.<p/>
- * JIRA issue: https://issues.jboss.org/browse/JGRP-1354
+ * JIRA issue: https://issues.redhat.com/browse/JGRP-1354
  * @author Bela Ban
  * @since  3.4
  */

@@ -270,7 +270,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
     protected void handleEOF(Address sender) {
         state_provider=null;
-        down_prot.down(new Event(Event.GET_VIEW_FROM_COORD)); // https://issues.jboss.org/browse/JGRP-1751
+        down_prot.down(new Event(Event.GET_VIEW_FROM_COORD)); // https://issues.redhat.com/browse/JGRP-1751
     }
 
     protected void handleException(Throwable exception) {
@@ -297,7 +297,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
         try {
             up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, in));
             up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED, new StateTransferResult()));
-            down_prot.down(new Event(Event.GET_VIEW_FROM_COORD)); // https://issues.jboss.org/browse/JGRP-1751
+            down_prot.down(new Event(Event.GET_VIEW_FROM_COORD)); // https://issues.redhat.com/browse/JGRP-1751
         }
         catch(Throwable t) {
             handleException(t);

@@ -1203,7 +1203,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void receive(Address sender, byte[] data, int offset, int length) {
         if(data == null) return;
 
-        // drop message from self; it has already been looped back up (https://issues.jboss.org/browse/JGRP-1765)
+        // drop message from self; it has already been looped back up (https://issues.redhat.com/browse/JGRP-1765)
         if(Objects.equals(local_physical_addr, sender))
             return;
 
@@ -1229,7 +1229,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void receive(Address sender, DataInput in) throws Exception {
         if(in == null) return;
 
-        // drop message from self; it has already been looped back up (https://issues.jboss.org/browse/JGRP-1765)
+        // drop message from self; it has already been looped back up (https://issues.redhat.com/browse/JGRP-1765)
         if(Objects.equals(local_physical_addr, sender))
             return;
 

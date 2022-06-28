@@ -119,7 +119,7 @@ public class RequestCorrelator {
             if(log.isTraceEnabled())
                 log.trace("%s: invoking multicast RPC [req-id=%d]", local_addr, req_id);
             requests.putIfAbsent(req_id, req);
-            // make sure no view is received before we add ourself as a view handler (https://issues.jboss.org/browse/JGRP-1428)
+            // make sure no view is received before we add ourself as a view handler (https://issues.redhat.com/browse/JGRP-1428)
             req.viewChange(view, false);
             if(rpc_stats.extendedStats())
                 req.start_time=System.nanoTime();
@@ -160,7 +160,7 @@ public class RequestCorrelator {
             if(log.isTraceEnabled())
                 log.trace("%s: invoking unicast RPC [req-id=%d] on %s", local_addr, req_id, dest);
             requests.putIfAbsent(req_id, req);
-            // make sure no view is received before we add ourself as a view handler (https://issues.jboss.org/browse/JGRP-1428)
+            // make sure no view is received before we add ourself as a view handler (https://issues.redhat.com/browse/JGRP-1428)
             req.viewChange(view, false);
             if(rpc_stats.extendedStats())
                 req.start_time=System.nanoTime();

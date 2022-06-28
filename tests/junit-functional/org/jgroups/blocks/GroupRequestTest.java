@@ -142,7 +142,7 @@ public class GroupRequestTest {
     /**
      * Tests reception of 3 null values, which are all rejected by the NonNullFilter. However, isDone() returns true
      * because we received responses for all 3 requests, even though all of them were rejected. If we continued here,
-     * we'd block until we run into the timeout. See https://issues.jboss.org/browse/JGRP-1330 for details.
+     * we'd block until we run into the timeout. See https://issues.redhat.com/browse/JGRP-1330 for details.
      */
     public void testAllNullResponsesWithFilter() {
         dests.add(c);
@@ -173,7 +173,7 @@ public class GroupRequestTest {
 
     /**
      * Verifies that a received *and* suspected flag on a Rsp counts only once, to prevent premature termination of
-     * a blocking RPC. https://issues.jboss.org/browse/JGRP-1505
+     * a blocking RPC. https://issues.redhat.com/browse/JGRP-1505
      */
     public void testResponsesComplete() {
         GroupRequest<Integer> req=new GroupRequest<>(null, Arrays.asList(a,b,c), RequestOptions.SYNC());

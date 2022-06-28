@@ -78,7 +78,7 @@ public class SEQUENCER extends Protocol {
     protected int                               threshold=10;
 
     @Property(description="If true, all messages in the forward-table are sent to the new coord, else thye're " +
-      "dropped (https://issues.jboss.org/browse/JGRP-2268)")
+      "dropped (https://issues.redhat.com/browse/JGRP-2268)")
     protected boolean                           flush_forward_table=true;
 
     @ManagedAttribute protected int  num_acks;
@@ -147,7 +147,7 @@ public class SEQUENCER extends Protocol {
             block();
 
         // A seqno is not used to establish ordering, but only to weed out duplicates; next_seqno doesn't need
-        // to increase monotonically, but only to be unique (https://issues.jboss.org/browse/JGRP-1461) !
+        // to increase monotonically, but only to be unique (https://issues.redhat.com/browse/JGRP-1461) !
         long next_seqno=seqno.incrementAndGet();
         in_flight_sends.incrementAndGet();
         try {
@@ -346,7 +346,7 @@ public class SEQUENCER extends Protocol {
         // - B receives message 4 and broadcasts it
         // ==> C's message 4 is delivered *before* message 3 !
         // ==> By resending 3 until it is received, then resending 4 until it is received, we make sure this won't happen
-        // (see https://issues.jboss.org/browse/JGRP-1449)
+        // (see https://issues.redhat.com/browse/JGRP-1449)
         while(flushing && running && !forward_table.isEmpty()) {
             Map.Entry<Long,Message> entry=forward_table.firstEntry();
             final Long key=entry.getKey();
@@ -545,7 +545,7 @@ public class SEQUENCER extends Protocol {
         if(flusher == null || !flusher.isAlive()) {
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": flushing started");
-            // causes subsequent message sends (broadcasts and forwards) to block (https://issues.jboss.org/browse/JGRP-1495)
+            // causes subsequent message sends (broadcasts and forwards) to block (https://issues.redhat.com/browse/JGRP-1495)
             flushing=true;
             
             flusher=new Flusher(new_coord);

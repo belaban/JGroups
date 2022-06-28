@@ -2,7 +2,7 @@
 Use of encryption and authentication protocols to fend off malicious attacks
 ============================================================================
 Author: Bela Ban, April 2016
-JIRA:   https://issues.jboss.org/browse/JGRP-2021
+JIRA:   https://issues.redhat.com/browse/JGRP-2021
 
 The following discussion refers to the changes made in JGroups 4.0. These have been backported to the 3.6 branch, but
 the syntax looks different. However, the concepts are the same.

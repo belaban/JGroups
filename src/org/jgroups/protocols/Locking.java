@@ -49,7 +49,7 @@ abstract public class Locking extends Protocol {
     protected int                                    lock_striping_size=10;
 
     @Property(description="By default, a lock owner is address:thread-id. If false, we only use the node's address. " +
-      "See https://issues.jboss.org/browse/JGRP-1886 for details")
+      "See https://issues.redhat.com/browse/JGRP-1886 for details")
     protected boolean                                use_thread_id_for_lock_owner=true;
 
     protected View                                   view;

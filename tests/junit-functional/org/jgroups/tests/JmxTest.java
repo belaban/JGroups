@@ -93,7 +93,7 @@ public class JmxTest {
         assert (int)val == 0;
     }
 
-    /** Tests https://issues.jboss.org/browse/JGRP-2393 */
+    /** Tests https://issues.redhat.com/browse/JGRP-2393 */
     public void testDuplicateName() throws Exception {
         try(JChannel ch=new JChannel(Util.getTestStack()).name("A")) {
             JmxConfigurator.registerChannel(ch, server, "domain", "cluster", false);

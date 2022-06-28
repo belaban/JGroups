@@ -142,7 +142,7 @@ public class STATE extends StreamingStateTransfer {
             // we're copying the buffer passed from the state provider here: if a BufferedOutputStream is used, the
             // buffer (b) will always be the same and can be modified after it has been set in the message !
 
-            // Fix for https://issues.jboss.org/browse/JGRP-1598
+            // Fix for https://issues.redhat.com/browse/JGRP-1598
             byte[] data=new byte[len];
             System.arraycopy(b, off, data, 0, len);
             // m.setBuffer(b, off, len);

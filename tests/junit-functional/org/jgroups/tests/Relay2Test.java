@@ -83,7 +83,7 @@ public class Relay2Test {
     
     /**
      * Tests that routes are correctly registered after a partition and a subsequent merge
-     * (https://issues.jboss.org/browse/JGRP-1524)
+     * (https://issues.redhat.com/browse/JGRP-1524)
      */
     public void testMissingRouteAfterMerge() throws Exception {
         a=createNode(LON, "A", LON_CLUSTER, null);
@@ -340,7 +340,7 @@ public class Relay2Test {
     /**
      * Cluster A,B,C in LON and X,Y,Z in SFO. A, B, X and Y are site masters (max_site_masters: 2).
      * Verifies that messages sent by C in the LON site are received in the correct order by all members of the SFO site
-     * despite using multiple site masters. JIRA: https://issues.jboss.org/browse/JGRP-2112
+     * despite using multiple site masters. JIRA: https://issues.redhat.com/browse/JGRP-2112
      */
     public void testSenderOrderWithMultipleSiteMasters() throws Exception {
         MyReceiver<Object> rx=new MyReceiver<>().rawMsgs(true).verbose(true),

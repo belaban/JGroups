@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Stream;
 
-/** Tests https://issues.jboss.org/browse/JGRP-2234 with {@link LockService}
+/** Tests https://issues.redhat.com/browse/JGRP-2234 with {@link LockService}
  * @author Bela Ban
  */
 @Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED},singleThreaded=true,dataProvider="createLockingProtocol")

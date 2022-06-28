@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  * Protocol to discover subgroups; e.g., existing due to a network partition (that healed). Example: group
  * {p,q,r,s,t,u,v,w} is split into 3 subgroups {p,q}, {r,s,t,u} and {v,w}. This protocol will eventually send
  * a MERGE event with the views of each subgroup up the stack: {p,r,v}. <p/>
- * Works as follows (https://issues.jboss.org/browse/JGRP-1387): every member periodically broadcasts its address (UUID),
+ * Works as follows (https://issues.redhat.com/browse/JGRP-1387): every member periodically broadcasts its address (UUID),
  * logical name, physical address and ViewID information. Other members collect this information and see if the ViewIds
  * are different (indication of different subpartitions). If they are, the member with the lowest address (first in the
  * sorted list of collected addresses) sends a MERGE event up the stack, which will be handled by GMS.

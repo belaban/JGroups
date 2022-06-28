@@ -24,7 +24,7 @@ import java.util.function.Predicate;
  * message at its offset and length. When all fragments have been received, the full message is passed up.<br/>
  * Only the first fragment carries the headers and dest and src addresses. When received, its src/dest addresses and
  * the headers will be set in the full message.<br/>
- * For details see https://issues.jboss.org/browse/JGRP-2154
+ * For details see https://issues.redhat.com/browse/JGRP-2154
  * <br/>
  * Requirement: lossless delivery (e.g. NAKACK2 or UNICAST3). No requirement on ordering. Works for both unicast and
  * multicast messages.<br/>
@@ -141,7 +141,7 @@ public class FRAG3 extends Fragmentation {
             Frag3Header hdr=msg.getHeader(this.id);
             Message assembled_msg=unfragment(msg, hdr);
             if(assembled_msg != null) {
-                // the reassembled msg has to be add in the right place (https://issues.jboss.org/browse/JGRP-1648),
+                // the reassembled msg has to be add in the right place (https://issues.redhat.com/browse/JGRP-1648),
                 // and canot be added to the tail of the batch !
                 assembled_msg.setSrc(batch.sender());
                 it.replace(assembled_msg);

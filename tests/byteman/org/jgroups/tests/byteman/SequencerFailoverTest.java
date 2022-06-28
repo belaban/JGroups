@@ -63,7 +63,7 @@ public class SequencerFailoverTest extends BMNGRunner {
     /**
      * Tests that resending of messages in the forward-queue on a view change and sending of new messages at the
      * same time doesn't lead to incorrect ordering (forward-queue messages need to be delivered before new msgs).
-     * https://issues.jboss.org/browse/JGRP-1449
+     * https://issues.redhat.com/browse/JGRP-1449
      */
     @BMScript(dir="scripts/SequencerFailoverTest", value="testResendingVersusNewMessages")
     public void testResendingVersusNewMessages() throws Exception {

@@ -11,7 +11,7 @@ import org.testng.annotations.Test;
 
 /**
  * Tests that unicast messages are not endlessly retransmitted when an ACK is dropped
- * (https://issues.jboss.org/browse/JGRP-1578)
+ * (https://issues.redhat.com/browse/JGRP-1578)
  * @author Bela Ban
  * @since  3.3
  */
