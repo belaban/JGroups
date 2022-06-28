@@ -16,7 +16,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Tests the UNICAST3 protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377 and
+ * Tests the UNICAST3 protocol for OOB msgs, tests https://issues.redhat.com/browse/JGRP-377 and
  * https://issues.jboss.org/browse/JGRP-2327
  * @author Bela Ban
  */

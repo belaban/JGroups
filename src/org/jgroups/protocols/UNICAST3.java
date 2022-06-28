@@ -559,7 +559,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             Table<Message> win=entry.msgs;
             update(entry, len);
 
-            // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
+            // OOB msg is passed up. When removed, we discard it. Affects ordering: https://issues.redhat.com/browse/JGRP-379
             if(batch.mode() == MessageBatch.Mode.OOB) {
                 MessageBatch oob_batch=new MessageBatch(local_addr, batch.sender(), batch.clusterName(), batch.multicast(), MessageBatch.Mode.OOB, len);
                 for(LongTuple<Message> tuple: list) {
@@ -791,7 +791,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             entry.sendAck(); // will be sent delayed (on the next xmit_interval)
 
         // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
-        // http://jira.jboss.com/jira/browse/JGRP-377
+        // https://issues.redhat.com/browse/JGRP-377
         if(oob && added)
             deliverMessage(msg, sender, seqno);
     }
@@ -821,7 +821,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         final Table<Message> win=entry.msgs;
 
         // An OOB message is passed up immediately. Later, when remove() is called, we discard it.
-        // This affects ordering ! JIRA: http://jira.jboss.com/jira/browse/JGRP-377
+        // This affects ordering ! JIRA: https://issues.redhat.com/browse/JGRP-377
         if(msg.isFlagSet(Message.Flag.OOB)) {
             msg=win.get(seqno); // we *have* to get a message, because loopback means we didn't add it to win !
             if(msg != null && msg.isFlagSet(Message.Flag.OOB) && msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
@@ -847,7 +847,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         else
             entry.sendAck();
 
-        // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
+        // OOB msg is passed up. When removed, we discard it. Affects ordering: https://issues.redhat.com/browse/JGRP-379
         if(added && oob) {
             MessageBatch oob_batch=new MessageBatch(local_addr, sender, null, false, MessageBatch.Mode.OOB, msgs.size());
             for(LongTuple<Message> tuple: msgs)
@@ -862,7 +862,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     /**
      * Try to remove as many messages as possible from the table as pass them up.
-     * Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
+     * Prevents concurrent passing up of messages by different threads (https://issues.redhat.com/browse/JGRP-198);
      * lots of threads can come up to this point concurrently, but only 1 is allowed to pass at a time.
      * We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
      * delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered in the
@@ -1016,7 +1016,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(rsp != null) {
             // We need to copy the UnicastHeader and put it back into the message because Message.copy() doesn't copy
             // the headers and therefore we'd modify the original message in the sender retransmission window
-            // (https://jira.jboss.org/jira/browse/JGRP-965)
+            // (https://issues.redhat.com/browse/JGRP-965)
             Message copy=rsp.copy(true, true);
             UnicastHeader3 hdr=copy.getHeader(this.id);
             UnicastHeader3 newhdr=hdr.copy();

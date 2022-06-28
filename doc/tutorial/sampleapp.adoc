@@ -351,6 +351,6 @@ Here are some links for further information about JGroups:
 * SimpleChat code: link:./code/SimpleChat.java[SimpleChat.java]
 * JGroups web site: http://www.jgroups.org[http://www.jgroups.org]
 * Downloads: http://sourceforge.net/projects/javagroups/files/JGroups/[here]
-* JIRA bug tracking: http://jira.jboss.com/jira/browse/JGRP[http://jira.jboss.com/jira/browse/JGRP]
+* JIRA bug tracking: https://issues.redhat.com/browse/JGRP[https://issues.redhat.com/browse/JGRP]
 * Mailing lists: http://sourceforge.net/mail/?group_id=6081[http://sourceforge.net/mail/?group_id=6081]
         

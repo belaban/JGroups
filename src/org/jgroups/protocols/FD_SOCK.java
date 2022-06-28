@@ -586,7 +586,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         if(isPingerThreadRunning()) {
             regular_sock_close=true;
             if (sendTerminationSignal) {
-                sendPingTermination();  // PATCH by Bruce Schuchardt (http://jira.jboss.com/jira/browse/JGRP-246)
+                sendPingTermination();  // PATCH by Bruce Schuchardt (https://issues.redhat.com/browse/JGRP-246)
             }
             teardownPingSocket(); // will wake up the pinger thread. less elegant than Thread.interrupt(), but does the job
         }

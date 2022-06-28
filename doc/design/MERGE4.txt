@@ -3,7 +3,7 @@ MERGE4
 ------
 
 Author: Bela Ban
-JIRA: https://jira.jboss.org/jira/browse/JGRP-937
+JIRA: https://issues.redhat.com/browse/JGRP-937
 
 Goal
 ----

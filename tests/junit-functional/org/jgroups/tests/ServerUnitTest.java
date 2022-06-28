@@ -187,7 +187,7 @@ public class ServerUnitTest {
 
     /**
      * A connects to B and B connects to A at the same time. This test makes sure we only have <em>one</em> connection,
-     * not two, e.g. a spurious connection. Tests http://jira.jboss.com/jira/browse/JGRP-549.<p/>
+     * not two, e.g. a spurious connection. Tests https://issues.redhat.com/browse/JGRP-549.<p/>
      * Turned concurrent test into a simple sequential test. We're going to replace this code with NIO2 soon anyway...
      */
     public void testReuseOfConnection() throws Exception {

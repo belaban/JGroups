@@ -68,7 +68,7 @@ public class Responses implements Iterable<PingData> {
         boolean is_coord_rsp=rsp.isCoord(), changed=false;
         lock.lock();
         try {
-            // https://jira.jboss.org/jira/browse/JGRP-1179
+            // https://issues.redhat.com/browse/JGRP-1179
             int ind=find(rsp);
             if(ind == -1) { // new addition
                 add(rsp);

@@ -588,7 +588,7 @@ public class RpcDispatcherTest {
     
 
     /**
-     * Tests a method call to {A,B,C} where C left *before* the call. http://jira.jboss.com/jira/browse/JGRP-620
+     * Tests a method call to {A,B,C} where C left *before* the call. https://issues.redhat.com/browse/JGRP-620
      */
     public void testMethodInvocationToNonExistingMembers() throws Exception {
         final int timeout = 5 * 1000 ;

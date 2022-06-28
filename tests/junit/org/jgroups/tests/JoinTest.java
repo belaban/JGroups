@@ -97,7 +97,7 @@ public class JoinTest extends ChannelTestBase {
     /**
      * Tests the case where we send a JOIN-REQ, but get back a JOIN-RSP after GMS.join_timeout, so we've already
      * started another discovery. Tests whether the discovery process is cancelled correctly.
-     * http://jira.jboss.com/jira/browse/JGRP-621
+     * https://issues.redhat.com/browse/JGRP-621
      */
     public void testDelayedJoinResponse() throws Exception {
         final long JOIN_TIMEOUT=2000, DELAY_JOIN_REQ=4000;

@@ -174,7 +174,7 @@ public abstract class FlowControl extends Protocol {
         boolean is_udp_transport=getTransport().isMulticastCapable();
         if(is_udp_transport && frag_size <= 0)
             log.warn("No fragmentation protocol was found. When flow control is used, we recommend " +
-                       "a fragmentation protocol, due to http://jira.jboss.com/jira/browse/JGRP-590");
+                       "a fragmentation protocol, due to https://issues.redhat.com/browse/JGRP-590");
         if(frag_size > 0 && frag_size >= min_credits) {
             log.warn("The fragmentation size of the fragmentation protocol is %d, which is greater than min_credits (%d). " +
                        "This can lead to blockings (https://issues.jboss.org/browse/JGRP-1659)", frag_size, min_credits);

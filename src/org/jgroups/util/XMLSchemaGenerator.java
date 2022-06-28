@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Iterates over all concrete Protocol classes and creates XML schema used for validation of configuration files.
  * 
- * https://jira.jboss.org/jira/browse/JGRP-448
+ * https://issues.redhat.com/browse/JGRP-448
  * 
  * @author Vladimir Blagojevic
  * @author Bela Ban

@@ -267,7 +267,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     }
 
     protected Object handleEncryptedMessage(Message msg) throws Exception {
-        // decrypt the message; we need to copy msg as we modify its buffer (http://jira.jboss.com/jira/browse/JGRP-538)
+        // decrypt the message; we need to copy msg as we modify its buffer (https://issues.redhat.com/browse/JGRP-538)
         Message tmpMsg=decrypt(null, msg.copy(true, true)); // need to copy for possible xmits
         return tmpMsg != null? up_prot.up(tmpMsg) : null;
     }

@@ -57,7 +57,7 @@ public class OOBTest extends ChannelTestBase {
 
     /**
      * Tests sending 1, 2 (OOB) and 3, where they are received in the order 1, 3, 2. Message 3 should not get delivered
-     * until message 4 is received (http://jira.jboss.com/jira/browse/JGRP-780)
+     * until message 4 is received (https://issues.redhat.com/browse/JGRP-780)
      */
     public void testRegularAndOOBUnicasts() throws Exception {
         DISCARD discard=new DISCARD();
@@ -184,7 +184,7 @@ public class OOBTest extends ChannelTestBase {
     }
 
     /**
-     * Tests https://jira.jboss.org/jira/browse/JGRP-1079
+     * Tests https://issues.redhat.com/browse/JGRP-1079
      */
     public void testOOBMessageLoss() throws Exception {
         Util.close(b); // we only need 1 channel
@@ -214,7 +214,7 @@ public class OOBTest extends ChannelTestBase {
     }
 
     /**
-     * Tests https://jira.jboss.org/jira/browse/JGRP-1079 for unicast messages
+     * Tests https://issues.redhat.com/browse/JGRP-1079 for unicast messages
      */
     public void testOOBUnicastMessageLoss() throws Exception {
         MyReceiver receiver=new MySleepingReceiver("B", 1000);

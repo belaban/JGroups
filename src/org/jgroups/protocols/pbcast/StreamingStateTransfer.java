@@ -464,7 +464,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
         if(isDigestNeeded()) {
             try {
                 punchHoleFor(provider);
-                closeBarrierAndSuspendStable(); // fix for https://jira.jboss.org/jira/browse/JGRP-1013
+                closeBarrierAndSuspendStable(); // fix for https://issues.redhat.com/browse/JGRP-1013
                 down_prot.down(new Event(Event.OVERWRITE_DIGEST, hdr.getDigest())); // set the digest (e.g. in NAKACK)
             }
             catch(Throwable t) {

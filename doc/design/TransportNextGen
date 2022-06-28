@@ -16,7 +16,7 @@ the connection table functionality of TCP would be largely removed, because this
 This requires JDK 7, because NetworkChannel.open() does not yet exist in prior JDKs. To be more precise, it does exist,
 but only for datagram sockets (DatagramChannel.open()), not for multicast sockets (no MulticastChannel.open()).
 
-Transport NetGen should be combined with the copyless stack (https://jira.jboss.org/jira/browse/JGRP-809). On the
+Transport NetGen should be combined with the copyless stack (https://issues.redhat.com/browse/JGRP-809). On the
 receive side, this is done by passing the selection key to a thread from the thread pool. If the key has an attachment,
 it is the ByteBuffer previously created by a (possibly different) thread to receive the message. The receiver thread
 will then simply call read() (or receive()) on the input NIO channel and - when all bytes have been received (defined

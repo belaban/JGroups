@@ -840,7 +840,7 @@ public class JChannel implements Closeable {
                 successfulFlush=flushInvoker.call();
             }
             catch(Throwable e) {
-                successfulFlush=false; // http://jira.jboss.com/jira/browse/JGRP-759
+                successfulFlush=false; // https://issues.redhat.com/browse/JGRP-759
             }
             if(!successfulFlush)
                 throw new IllegalStateException("Node " + local_addr + " could not flush the cluster for state retrieval");

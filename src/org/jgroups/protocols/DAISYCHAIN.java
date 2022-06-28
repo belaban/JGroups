@@ -21,7 +21,7 @@ import java.util.function.Supplier;
  * members, it needs to send it 9 times. With daisy chaining, it sends it 1 time, and in the next round, can already
  * send another message. This leads to much better throughput, see the ref in the JIRA.<p/>
  * Should be inserted just above MERGE3, in TCP based configurations.
- * JIRA: https://jira.jboss.org/browse/JGRP-1021
+ * JIRA: https://issues.redhat.com/browse/JGRP-1021
  * @author Bela Ban
  * @since 2.11
  */

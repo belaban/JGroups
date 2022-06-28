@@ -16,9 +16,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Tests transfer of large states (http://jira.jboss.com/jira/browse/JGRP-225).
+ * Tests transfer of large states (https://issues.redhat.com/browse/JGRP-225).
  * Note that on Mac OS, FRAG2.frag_size and max_bundling_size in the transport should be less than 16'000 due to
- * http://jira.jboss.com/jira/browse/JGRP-560. As alternative, increase the MTU of the loopback device to a value
+ * https://issues.redhat.com/browse/JGRP-560. As alternative, increase the MTU of the loopback device to a value
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban

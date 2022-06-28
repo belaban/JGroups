@@ -803,7 +803,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      * store a copy of the message, but a reference ! This saves us a lot of memory. However, this also means that a
      * message should not be changed after storing it in the sent-table ! See protocols/DESIGN for details.
      * Made seqno increment and adding to sent_msgs atomic, e.g. seqno won't get incremented if adding to
-     * sent_msgs fails e.g. due to an OOM (see http://jira.jboss.com/jira/browse/JGRP-179). bela Jan 13 2006
+     * sent_msgs fails e.g. due to an OOM (see https://issues.redhat.com/browse/JGRP-179). bela Jan 13 2006
      */
     protected void send(Message msg) {
         if(!running) {
@@ -836,7 +836,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
         while(running);
 
-        // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
+        // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) https://issues.redhat.com/browse/JGRP-300
         if(is_trace)
             log.trace("%s --> [all]: #%d", local_addr, msg_id);
         down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
@@ -868,7 +868,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         // removal. Else insert the real message
         boolean added=loopback || buf.add(hdr.seqno, msg.isFlagSet(Message.Flag.OOB)? DUMMY_OOB_MSG : msg);
 
-        // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
+        // OOB msg is passed up. When removed, we discard it. Affects ordering: https://issues.redhat.com/browse/JGRP-379
         if(added && msg.isFlagSet(Message.Flag.OOB)) {
             if(loopback) { // sent by self
                 msg=buf.get(hdr.seqno); // we *have* to get a message, because loopback means we didn't add it to win !
@@ -895,7 +895,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         boolean loopback=local_addr.equals(sender), oob=mb.mode() == OOB;
         boolean added=loopback || buf.add(mb, SEQNO_GETTER, !oob, oob? DUMMY_OOB_MSG : null);
 
-        // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
+        // OOB msg is passed up. When removed, we discard it. Affects ordering: https://issues.redhat.com/browse/JGRP-379
         if(added && oob) {
             Address dest=mb.dest();
             MessageBatch oob_batch=loopback? new MessageBatch(dest, sender, null, dest == null, OOB, size) : mb;
@@ -916,7 +916,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
 
     /** Efficient way of checking whether another thread is already processing messages from sender. If that's the case,
-     *  we return immediately and let the existing thread process our message (https://jira.jboss.org/jira/browse/JGRP-829).
+     *  we return immediately and let the existing thread process our message (https://issues.redhat.com/browse/JGRP-829).
      *  Benefit: fewer threads blocked on the same lock, these threads can be returned to the thread pool
      */
     protected void removeAndDeliver(Table<Message> buf, Address sender, boolean loopback, AsciiString cluster_name) {
@@ -1301,7 +1301,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     /**
      * For all members of the digest, adjust the retransmit buffers in xmit_table. If no entry
      * exists, create one with the initial seqno set to the seqno of the member in the digest. If the member already
-     * exists, and is not the local address, replace it with the new entry (http://jira.jboss.com/jira/browse/JGRP-699)
+     * exists, and is not the local address, replace it with the new entry (https://issues.redhat.com/browse/JGRP-699)
      * if the digest's seqno is greater than the seqno in the window.
      */
     protected void mergeDigest(Digest digest) {
@@ -1329,7 +1329,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             Table<Message> buf=xmit_table.get(member);
             if(buf != null) {
                 if(local_addr.equals(member)) {
-                    // Adjust the highest_delivered seqno (to send msgs again): https://jira.jboss.org/browse/JGRP-1251
+                    // Adjust the highest_delivered seqno (to send msgs again): https://issues.redhat.com/browse/JGRP-1251
                     buf.setHighestDelivered(highest_delivered_seqno);
                     continue; // don't destroy my own window
                 }
@@ -1370,7 +1370,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             Table<Message> buf=xmit_table.get(member);
             if(buf != null) {
                 // We only reset the window if its seqno is lower than the seqno shipped with the digest. Also, we
-                // don't reset our own window (https://jira.jboss.org/jira/browse/JGRP-948, comment 20/Apr/09 03:39 AM)
+                // don't reset our own window (https://issues.redhat.com/browse/JGRP-948, comment 20/Apr/09 03:39 AM)
                 if(!merge
                         || (Objects.equals(local_addr, member))                  // never overwrite our own entry
                         || buf.getHighestDelivered() >= highest_delivered_seqno) // my seqno is >= digest's seqno for sender
@@ -1378,7 +1378,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
                 xmit_table.remove(member);
                 // to get here, merge must be false !
-                if(member.equals(local_addr)) { // Adjust the seqno: https://jira.jboss.org/browse/JGRP-1251
+                if(member.equals(local_addr)) { // Adjust the seqno: https://issues.redhat.com/browse/JGRP-1251
                     seqno.set(highest_delivered_seqno);
                     set_own_seqno=true;
                 }

@@ -4,7 +4,7 @@ Separation of merges from view handling
 =======================================
 
 Author: Bela Ban
-JIRA: https://jira.jboss.org/jira/browse/JGRP-1009
+JIRA: https://issues.redhat.com/browse/JGRP-1009
 
 Goal:
 -----

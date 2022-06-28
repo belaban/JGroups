@@ -5,9 +5,9 @@ Concurrent stack
 
 Author: Bela Ban
 JIRAs:
-http://jira.jboss.com/jira/browse/JGRP-180 (harden stack)
-http://jira.jboss.com/jira/browse/JGRP-181 (concurrent stack)
-http://jira.jboss.com/jira/browse/JGRP-205 (out-of-band messages)
+https://issues.redhat.com/browse/JGRP-180 (harden stack)
+https://issues.redhat.com/browse/JGRP-181 (concurrent stack)
+https://issues.redhat.com/browse/JGRP-205 (out-of-band messages)
 
 
 Concurrent stack

@@ -7,7 +7,7 @@
 Concurrent initial connection establishment in ConnectionTable
 ==============================================================
 
-[JIRA: http://jira.jboss.com/jira/browse/JGRP-549]
+[JIRA: https://issues.redhat.com/browse/JGRP-549]
 
 If we have members A and B, and they don't yet have connections to each other, and start sending messages to each other
 at the exact same time, then we run into the following scenario:

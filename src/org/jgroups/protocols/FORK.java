@@ -326,7 +326,7 @@ public class FORK extends Protocol {
         try {
             configStream=new FileInputStream(config);
         }
-        catch(FileNotFoundException fnfe) { // catching ACE fixes http://jira.jboss.com/jira/browse/JGRP-94
+        catch(FileNotFoundException fnfe) { // catching ACE fixes https://issues.redhat.com/browse/JGRP-94
         }
 
         // Check to see if the properties string is a URL.

@@ -670,8 +670,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             }
         }
 
-        // - Changed order of passing view up and down (http://jira.jboss.com/jira/browse/JGRP-347)
-        // - Changed it back (bela Sept 4 2007): http://jira.jboss.com/jira/browse/JGRP-564
+        // - Changed order of passing view up and down (https://issues.redhat.com/browse/JGRP-347)
+        // - Changed it back (bela Sept 4 2007): https://issues.redhat.com/browse/JGRP-564
         // - Moved sending up view_event out of the synchronized block (bela Nov 2011)
         down_prot.down(view_event); // needed e.g. by failure detector or UDP
         up_prot.up(view_event);

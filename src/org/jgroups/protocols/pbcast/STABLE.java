@@ -238,7 +238,7 @@ public class STABLE extends Protocol {
             }
         }
 
-        // only if message counting is on, and only for multicast messages (http://jira.jboss.com/jira/browse/JGRP-233)
+        // only if message counting is on, and only for multicast messages (https://issues.redhat.com/browse/JGRP-233)
         if(max_bytes > 0 && batch.dest() == null && !batch.isEmpty() && maxBytesExceeded(batch.length()))
             sendStableMessage(true);
 
@@ -292,7 +292,7 @@ public class STABLE extends Protocol {
     }
 
     protected void handleRegularMessage(Message msg) {
-        // only if bytes counting is enabled, and only for multicast messages (http://jira.jboss.com/jira/browse/JGRP-233)
+        // only if bytes counting is enabled, and only for multicast messages (https://issues.redhat.com/browse/JGRP-233)
         if(max_bytes > 0 && msg.getDest() == null &&  maxBytesExceeded(msg.getLength()))
             sendStableMessage(true);
     }
@@ -600,7 +600,7 @@ public class STABLE extends Protocol {
                 }
             };
 
-            // Run in a separate thread so we don't potentially block (http://jira.jboss.com/jira/browse/JGRP-532)
+            // Run in a separate thread so we don't potentially block (https://issues.redhat.com/browse/JGRP-532)
             timer.execute(r, getTransport() instanceof TCP);
         }
         catch(Throwable t) {

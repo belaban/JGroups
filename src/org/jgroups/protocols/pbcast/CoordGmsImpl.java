@@ -162,7 +162,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
         try {            
             boolean successfulFlush =!useFlushIfPresent || !gms.flushProtocolInStack || gms.startFlush(new_view);
             if(!successfulFlush && hasJoiningMembers) {
-                // Don't send a join response if the flush fails (http://jira.jboss.org/jira/browse/JGRP-759)
+                // Don't send a join response if the flush fails (https://issues.redhat.com/browse/JGRP-759)
                 // The joiner should block until the previous FLUSH completed
                 sendLeaveResponses(leaving_mbrs); // we still have to send potential leave responses
                 // but let the joining client timeout and send another join request

@@ -1,4 +1,4 @@
-Implementation of JChannel.connect() with state transfer - http://jira.jboss.com/jira/browse/JGRP-236
+Implementation of JChannel.connect() with state transfer - https://issues.redhat.com/browse/JGRP-236
 -----------------------------------------------
 
 There are essentially three major different implementations possibilites for new JChannel.connect with state 

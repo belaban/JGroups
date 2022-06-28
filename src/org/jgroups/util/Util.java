@@ -4225,7 +4225,7 @@ public class Util {
         else
             bind_addr=getAddress(bind_intf, AddressScope.NON_LOOPBACK, ip_version);
 
-        //http://jira.jboss.org/jira/browse/JGRP-739
+        //https://issues.redhat.com/browse/JGRP-739
         //check all bind_address against NetworkInterface.getByInetAddress() to see if it exists on the machine
         //in some Linux setups NetworkInterface.getByInetAddress(InetAddress.getLocalHost()) returns null, so skip
         //the check in that case

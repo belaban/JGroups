@@ -367,7 +367,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected final Set<Address> members=new CopyOnWriteArraySet<>();
 
 
-    //http://jira.jboss.org/jira/browse/JGRP-849
+    //https://issues.redhat.com/browse/JGRP-849
     protected final ReentrantLock connectLock = new ReentrantLock();
     
 
@@ -913,7 +913,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     members.clear();
                     members.addAll(v.getMembers());
 
-                    // fix for https://jira.jboss.org/jira/browse/JGRP-918
+                    // fix for https://issues.redhat.com/browse/JGRP-918
                     logical_addr_cache.retainAll(members);
                     fetchLocalAddresses();
 
@@ -1100,7 +1100,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             passMessageUp(copy, null, false, multicast, false);
             return;
         }
-        // changed to fix http://jira.jboss.com/jira/browse/JGRP-506
+        // changed to fix https://issues.redhat.com/browse/JGRP-506
         msg_processing_policy.loopback(msg, msg.isFlagSet(Message.Flag.OOB));
     }
 

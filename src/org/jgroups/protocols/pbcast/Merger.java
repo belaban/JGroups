@@ -178,7 +178,7 @@ public class Merger {
 
     /**
      * Removes all members from a given view which don't have us in their view
-     * (https://jira.jboss.org/browse/JGRP-1061). Example:
+     * (https://issues.redhat.com/browse/JGRP-1061). Example:
      * <pre>
      * A: AB
      * B: AB
@@ -501,7 +501,7 @@ public class Merger {
             subviews.addAll(views.values());
 
             // now remove all members which don't have us in their view, so RPCs won't block (e.g. FLUSH)
-            // https://jira.jboss.org/browse/JGRP-1061
+            // https://issues.redhat.com/browse/JGRP-1061
             sanitizeViews(views);
 
             Map<Address,Collection<Address>> tmp_coords=determineMergeCoords(views);

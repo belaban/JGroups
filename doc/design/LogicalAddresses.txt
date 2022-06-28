@@ -4,7 +4,7 @@ Logical addresses
 =================
 
 Author:  Bela Ban
-JIRA:    https://jira.jboss.org/jira/browse/JGRP-129
+JIRA:    https://issues.redhat.com/browse/JGRP-129
 
 The address chosen by each node is essentially the IP address and port of the receiver socket. However, for the
 following reasons, this is not good enough:

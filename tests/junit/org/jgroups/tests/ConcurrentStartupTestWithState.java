@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Tests concurrent startup and message sending directly after joining. See doc/design/ConcurrentStartupTest.txt
  * for details. This will only work 100% correctly with FLUSH support.<br/>
- * [1] http://jira.jboss.com/jira/browse/JGRP-236
+ * [1] https://issues.redhat.com/browse/JGRP-236
  * @author bela
  */
 

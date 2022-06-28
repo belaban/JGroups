@@ -58,7 +58,7 @@ public class TCPPING extends Discovery {
 
     protected Collection<PhysicalAddress>  initial_hosts=new HashSet<>();
 
-    /** https://jira.jboss.org/jira/browse/JGRP-989 */
+    /** https://issues.redhat.com/browse/JGRP-989 */
     protected BoundedList<PhysicalAddress> dynamic_hosts;
 
     protected StackType stack_type=StackType.Dual;
