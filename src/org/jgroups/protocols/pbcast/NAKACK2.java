@@ -1005,6 +1005,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 log.trace(sb);
             }
             up_prot.up(batch);
+            batch.clear();
         }
         catch(Throwable t) {
             log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
