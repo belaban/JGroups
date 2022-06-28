@@ -385,7 +385,7 @@
                 <plugin>
                     <groupId>org.sonatype.plugins</groupId>
                     <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>1.6.8</version> <!-- 1.6.9 and 1.6.10 are completely broken!! -->
+                    <version>1.6.13</version> <!-- 1.6.9 and 1.6.10 are completely broken!! -->
                     <!-- Perhaps try 1.6.12? -->
                 </plugin>
                 <plugin>
