@@ -32,7 +32,6 @@ public class Draw implements Receiver, ActionListener, ChannelListener {
     private DrawPanel              panel=null;
     private JButton                clear_button, leave_button;
     private final Random           random=new Random(System.currentTimeMillis());
-    private final Font             default_font=new Font("Helvetica",Font.PLAIN,12);
     private final Color            draw_color=selectColor();
     private static final Color     background_color=Color.white;
     boolean                        no_channel=false;
@@ -198,10 +197,8 @@ public class Draw implements Receiver, ActionListener, ChannelListener {
         sub_panel=new JPanel();
         mainFrame.getContentPane().add("Center", panel);
         clear_button=new JButton("Clear");
-        clear_button.setFont(default_font);
         clear_button.addActionListener(this);
         leave_button=new JButton("Leave");
-        leave_button.setFont(default_font);
         leave_button.addActionListener(this);
         sub_panel.add("South", clear_button);
         sub_panel.add("South", leave_button);
