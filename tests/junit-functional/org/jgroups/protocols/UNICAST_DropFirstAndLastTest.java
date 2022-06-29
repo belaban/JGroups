@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Tests UNICAST2. Created to test the last-message-dropped problem, see https://issues.jboss.org/browse/JGRP-1548.
+ * Tests UNICAST2. Created to test the last-message-dropped problem, see https://issues.redhat.com/browse/JGRP-1548.
  * @author Bela Ban
  * @since  3.3
  */
@@ -47,7 +47,7 @@ public class UNICAST_DropFirstAndLastTest {
 
     /**
      * A sends unicast messages 1-5 to B, but we drop message 5. The code in
-     * https://issues.jboss.org/browse/JGRP-1548 now needs to make sure message 5 is retransmitted to B
+     * https://issues.redhat.com/browse/JGRP-1548 now needs to make sure message 5 is retransmitted to B
      * within a short time period, and we don't have to rely on the stable task to kick in.
      */
     @Test(dataProvider="configProvider")
@@ -69,7 +69,7 @@ public class UNICAST_DropFirstAndLastTest {
 
     /**
      * A sends unicast message 1 to B, but we drop message 1. The code in
-     * https://issues.jboss.org/browse/JGRP-1563 now needs to make sure message 1 is retransmitted to B
+     * https://issues.redhat.com/browse/JGRP-1563 now needs to make sure message 1 is retransmitted to B
      * within a short time period, and we don't have to rely on the stable task to kick in.
      */
     @Test(dataProvider="configProvider")

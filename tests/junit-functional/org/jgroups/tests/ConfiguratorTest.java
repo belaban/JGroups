@@ -131,7 +131,7 @@ public class ConfiguratorTest {
 
 
 
-    /** Tests that vars are substituted correctly when creating a channel programmatically (https://issues.jboss.org/browse/JGRP-1908) */
+    /** Tests that vars are substituted correctly when creating a channel programmatically (https://issues.redhat.com/browse/JGRP-1908) */
     public void testProgrammaticCreationAndVariableSubstitution() throws Exception {
         try {
             System.setProperty("person.name", "Bela");

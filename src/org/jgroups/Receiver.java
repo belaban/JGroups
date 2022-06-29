@@ -64,7 +64,7 @@ public interface Receiver {
      * Note that during new view installation we provide guarantee that unblock invocation strictly
      * follows view installation at some node A belonging to that view. However, some other message
      * M may squeeze in between view and unblock callbacks.<br/>
-     * For more details see https://jira.jboss.org/jira/browse/JGRP-986
+     * For more details see https://issues.redhat.com/browse/JGRP-986
      */
     default void unblock() {}
 

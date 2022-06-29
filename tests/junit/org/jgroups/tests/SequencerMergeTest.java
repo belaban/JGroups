@@ -41,7 +41,7 @@ public class SequencerMergeTest {
 
     /**
      * Tests a merge between {A} and {B,C,D}, plus a concurrent multicast.
-     * https://issues.jboss.org/browse/JGRP-1468
+     * https://issues.redhat.com/browse/JGRP-1468
      */
     public void testMergeAndSendOrdering() throws Exception {
         // Create subgroup {A}:
@@ -129,7 +129,7 @@ public class SequencerMergeTest {
 
     /**
      * Tests a merge between {D,A} and {B,C,D}.
-     * https://issues.jboss.org/browse/JGRP-1484
+     * https://issues.redhat.com/browse/JGRP-1484
      */
     public void testMergeWithParticipant() throws Exception {
         a=create("A", false);

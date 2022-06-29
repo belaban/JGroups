@@ -5,7 +5,7 @@ CENTRAL_LOCK2
 
 Author: Bela Ban
 Date: July 2018
-JIRA: https://issues.jboss.org/browse/JGRP-2249
+JIRA: https://issues.redhat.com/browse/JGRP-2249
 
 
 Overview

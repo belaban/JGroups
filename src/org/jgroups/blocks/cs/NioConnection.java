@@ -196,7 +196,7 @@ public class NioConnection extends Connection {
                 updateLastAccessed();
             if(!success) {
                 if(copy_on_partial_write)
-                    send_buf.copy(); // copy data on partial write as subsequent writes might corrupt data (https://issues.jboss.org/browse/JGRP-1991)
+                    send_buf.copy(); // copy data on partial write as subsequent writes might corrupt data (https://issues.redhat.com/browse/JGRP-1991)
                 partial_writes++;
             }
         }
@@ -226,7 +226,7 @@ public class NioConnection extends Connection {
                 updateLastAccessed();
             if(!success) {
                 if(copy_on_partial_write)
-                    send_buf.copy(); // copy data on partial write as subsequent writes might corrupt data (https://issues.jboss.org/browse/JGRP-1991)
+                    send_buf.copy(); // copy data on partial write as subsequent writes might corrupt data (https://issues.redhat.com/browse/JGRP-1991)
                 partial_writes++;
             }
         }

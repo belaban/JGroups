@@ -141,8 +141,8 @@ Retransmission task (reaping)
 References
 ----------
 
-[1] https://issues.jboss.org/browse/JGRP-1563
-[2] https://issues.jboss.org/browse/JGRP-1548
-[3] https://issues.jboss.org/browse/JGRP-1577
-[4] https://issues.jboss.org/browse/JGRP-1586
+[1] https://issues.redhat.com/browse/JGRP-1563
+[2] https://issues.redhat.com/browse/JGRP-1548
+[3] https://issues.redhat.com/browse/JGRP-1577
+[4] https://issues.redhat.com/browse/JGRP-1586
 

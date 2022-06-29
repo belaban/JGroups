@@ -16,8 +16,8 @@ addresses, but only returns logical addresses (UUIDs) [1].
 In TUNNEL, RouterStubs are conceptually associated with a single channel, and cannot process traffic from multiple
 channels on top of a shared transport.
 
-[1] https://jira.jboss.org/jira/browse/JGRP-1005
-[2] https://jira.jboss.org/jira/browse/JGRP-924
+[1] https://issues.redhat.com/browse/JGRP-1005
+[2] https://issues.redhat.com/browse/JGRP-924
 
 
 Design overview

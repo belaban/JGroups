@@ -131,7 +131,7 @@ public class TCP extends BasicTCP {
         if(max_length > 0)
             srv.setMaxLength(max_length);
 
-        // we first start threads in TP (http://jira.jboss.com/jira/browse/JGRP-626)
+        // we first start threads in TP (https://issues.redhat.com/browse/JGRP-626)
         super.start();
     }
     

@@ -270,7 +270,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
     protected void handleEOF(Address sender) {
         state_provider=null;
-        down_prot.down(new Event(Event.GET_VIEW_FROM_COORD)); // https://issues.jboss.org/browse/JGRP-1751
+        down_prot.down(new Event(Event.GET_VIEW_FROM_COORD)); // https://issues.redhat.com/browse/JGRP-1751
     }
 
     protected void handleException(Throwable exception) {
@@ -297,7 +297,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
         try {
             up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, in));
             up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED, new StateTransferResult()));
-            down_prot.down(new Event(Event.GET_VIEW_FROM_COORD)); // https://issues.jboss.org/browse/JGRP-1751
+            down_prot.down(new Event(Event.GET_VIEW_FROM_COORD)); // https://issues.redhat.com/browse/JGRP-1751
         }
         catch(Throwable t) {
             handleException(t);
@@ -464,7 +464,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
         if(isDigestNeeded()) {
             try {
                 punchHoleFor(provider);
-                closeBarrierAndSuspendStable(); // fix for https://jira.jboss.org/jira/browse/JGRP-1013
+                closeBarrierAndSuspendStable(); // fix for https://issues.redhat.com/browse/JGRP-1013
                 down_prot.down(new Event(Event.OVERWRITE_DIGEST, hdr.getDigest())); // set the digest (e.g. in NAKACK)
             }
             catch(Throwable t) {

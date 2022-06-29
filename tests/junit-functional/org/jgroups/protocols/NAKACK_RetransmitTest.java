@@ -19,7 +19,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Tests large retransmissions (https://issues.jboss.org/browse/JGRP-1868). Multicast equivalent to
+ * Tests large retransmissions (https://issues.redhat.com/browse/JGRP-1868). Multicast equivalent to
  * {@link org.jgroups.protocols.UNICAST_RetransmitTest}
  * @author Bela Ban
  * @since  3.6
@@ -67,7 +67,7 @@ public class NAKACK_RetransmitTest {
      * TP.max_bundle_size, leading to endless retransmissions. With JGRP-1868 resolved, the receiver should get
      * all messages.
      * <p/>
-     * https://issues.jboss.org/browse/JGRP-1868
+     * https://issues.redhat.com/browse/JGRP-1868
      */
     public void testLargeRetransmission() throws Exception {
         a.setReceiver(new MyReceiver());

@@ -30,7 +30,7 @@ ossiejnr    = Chris Mills (chris.mills@jboss.com)
 
 ***********
 THIS FILE IS NOT UPDATED ANYMORE AS OF MAY 2 2006, I SWITCHED TO JIRA FOR THE ROADMAP AND HISTORY.
-http://jira.jboss.com/jira/browse/JGRP
+https://issues.redhat.com/browse/JGRP
 ***********
 
 
@@ -44,11 +44,11 @@ Version 2.3
   Previously it returned the exception as an object, now the exception will be thrown.
   Callers of these methods have to change their code, so this is an incompatible change. However,
   these calls are not used in JBossCache and JBoss Clustering.
-  (http://jira.jboss.com/jira/browse/JGRP-154)
+  (https://issues.redhat.com/browse/JGRP-154)
   (bela Feb 16 2006)
 
 - Added encryption of entire message to ENCRYPT
-  (http://jira.jboss.com/jira/browse/JGRP-190)
+  (https://issues.redhat.com/browse/JGRP-190)
   (bela Feb 9 2006)
 
 - Converted Word prog guide to docbook (./doc/progguide). Done by gdvieira@ic.unicamp.br
@@ -57,11 +57,11 @@ Version 2.3
 - Created global JGroups thread group (all threads belong to it)
   (bela Jan 19 2006)
 
-- Added AUTH protocol, samle configs and documentation. http://jira.jboss.com/jira/browse/JGRP-164
+- Added AUTH protocol, samle configs and documentation. https://issues.redhat.com/browse/JGRP-164
   (ossiejnr Jan 12 2006)
 
 - Fix in ReplicatedHashtable where state transfer notification is not emitted
-  (http://jira.jboss.com/jira/browse/JGRP-175)
+  (https://issues.redhat.com/browse/JGRP-175)
   (David Forget Jan 5 2006)
 
 - init() is now called after all protocols have been created
@@ -69,7 +69,7 @@ Version 2.3
 
 - Fixed bug where srv_sock_bind_addr could be different from transport's bind_addr.
   This could cause incorrect suspect messages.
-  (http://jira.jboss.com/jira/browse/JGRP-173)
+  (https://issues.redhat.com/browse/JGRP-173)
   (bela Jan 3 2006)
 
 - Added total order SEQUENCER protocol. See doc/SEQUENCER.txt for details
@@ -86,19 +86,19 @@ Version 2.2.9.1
   (bela Dec 29 2005)
 
 - Fixed bug "binding to same interface twice fails"
-  (http://jira.jboss.com/jira/browse/JGRP-167)
+  (https://issues.redhat.com/browse/JGRP-167)
   (bela Dec 23 2005)
 
 - Fixed merge bug occurring when members are joining during a merge
-  (http://jira.jboss.com/jira/browse/JGRP-139)
+  (https://issues.redhat.com/browse/JGRP-139)
   (bela Dec 23 2005)
 
 - Fixed ENCRYPT bug where down messages were queued unnecessarily
-  (JIRA: http://jira.jboss.com/jira/browse/JGRP-166)
+  (JIRA: https://issues.redhat.com/browse/JGRP-166)
   (bela Dec 21 2005)
 
 - Replaced Vector for members and pingable_members in FD with CopyOnWriteArrayList.
-  Fixes  (http://jira.jboss.com/jira/browse/JGRP-161)
+  Fixes  (https://issues.redhat.com/browse/JGRP-161)
   (bela Dec 16 2005)
 
 
@@ -158,14 +158,14 @@ Version 2.2.9
   original sender of the message. This eases the burden on senders in large groups
   (bela May 25 2005)
 
-- Fixed http://jira.jboss.com/jira/browse/JGRP-79 (problems with nulling src addresses on
+- Fixed https://issues.redhat.com/browse/JGRP-79 (problems with nulling src addresses on
   loopback adapter in Windows). See JGroups/docs/NullingSrcAddresses.txt for details.
   (bela May 19 2005)
 
-- Fixed problem with PingWaiter/PingSender in applets (http://jira.jboss.com/jira/browse/JGRP-86)
+- Fixed problem with PingWaiter/PingSender in applets (https://issues.redhat.com/browse/JGRP-86)
   (bela Ma 19 2005)
 
-- Fixed STATE_TRANSFER stuck in Channel.queue bug (http://jira.jboss.com/jira/browse/JGRP-80)
+- Fixed STATE_TRANSFER stuck in Channel.queue bug (https://issues.redhat.com/browse/JGRP-80)
   (bela May 10 2005)
 
 - Added support for multiple locked locks to the DistributedLockManager.
@@ -187,11 +187,11 @@ Version 2.2.8
   (bela April 25 2005)
 
 - UDP: fixed incorrect marshalling of IpAddresses with additional_data
-  (http://jira.jboss.com/jira/browse/JGRP-63)
+  (https://issues.redhat.com/browse/JGRP-63)
   (bela April 23 2005)
 
 - Replaced getClass().getClassLoader() with Thread.currentThread().getContextClassLoader().
-  JIRA issue http://jira.jboss.com/jira/browse/JGRP-34
+  JIRA issue https://issues.redhat.com/browse/JGRP-34
   (bela April 23 2005)
 
 - UDP: synchronization around message marshalling and sending, non-sync could lead to intermingled
@@ -219,7 +219,7 @@ Version 2.2.8
   JDK 1.4 and higher
   (bela April 1 2005)
 
-- Fixed stopping outgoing packet handler (http://jira.jboss.com/jira/browse/JGRP-49)
+- Fixed stopping outgoing packet handler (https://issues.redhat.com/browse/JGRP-49)
   [fix by Steve Nicolai]
   (bela April 1 2005)
 

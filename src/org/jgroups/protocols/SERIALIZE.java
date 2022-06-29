@@ -19,7 +19,7 @@ import org.jgroups.util.Util;
  * To be used with {@link ASYM_ENCRYPT} or {@link SYM_ENCRYPT} when the entire message (including the headers) needs to
  * be encrypted. Can be used as a replacement for the deprecated attribute encrypt_entire_message in the above encryption
  * protocols.<br/>
- * See https://issues.jboss.org/browse/JGRP-2273 for details.
+ * See https://issues.redhat.com/browse/JGRP-2273 for details.
  * @author Bela Ban
  * @since  4.0.12
  */

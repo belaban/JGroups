@@ -3,7 +3,7 @@ UNICAST3: syncing a receiver with a sender
 ==========================================
 Author: Bela Ban
 Date:   Sept 2014
-JIRA:   https://issues.jboss.org/browse/JGRP-1875
+JIRA:   https://issues.redhat.com/browse/JGRP-1875
 
 
 Issue
@@ -17,9 +17,9 @@ When the network heals, and B receives messages from A again, the SEND-FIRST-SEQ
 asking A for the lowest seqno and for retransmission of missing messages.
 
 There are 2 deficiencies with SEND-FIRST-SEQNO:
-- It generates a lot of traffic (see https://issues.jboss.org/browse/JGRP-1874 for details)
+- It generates a lot of traffic (see https://issues.redhat.com/browse/JGRP-1874 for details)
 - A delayed ACK message sent by B to A can cause A to purge messages that haven't yet been seen by B
-  (see https://issues.jboss.org/browse/JGRP-1873 and https://issues.jboss.org/browse/JGRP-1875)
+  (see https://issues.redhat.com/browse/JGRP-1873 and https://issues.redhat.com/browse/JGRP-1875)
 
 The goals are therefore:
 #1 Reduce traffic needed by a receiver to sync its receive window (JGRP-1874)

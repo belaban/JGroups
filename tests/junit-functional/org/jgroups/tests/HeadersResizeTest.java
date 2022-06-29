@@ -16,7 +16,7 @@ import java.util.List;
 import static org.jgroups.Message.Flag.OOB;
 
 /**
- * Tests unnecessary resizing of headers (https://issues.jboss.org/browse/JGRP-2120)
+ * Tests unnecessary resizing of headers (https://issues.redhat.com/browse/JGRP-2120)
  * @author Bela Ban
  * @since  4.0
  */

@@ -3,7 +3,7 @@ New merging algorithm
 =====================
 
 Author: Bela Ban
-JIRAs: https://jira.jboss.org/jira/browse/JGRP-948, https://jira.jboss.org/jira/browse/JGRP-940
+JIRAs: https://issues.redhat.com/browse/JGRP-948, https://issues.redhat.com/browse/JGRP-940
 
 Goal
 ----

@@ -477,7 +477,7 @@ public class FLUSH extends Protocol {
                 }
                 return null; // do not pass FLUSH msg up
             } else {
-                // http://jira.jboss.com/jira/browse/JGRP-575: for processing of application messages after we join,
+                // https://issues.redhat.com/browse/JGRP-575: for processing of application messages after we join,
                 // lets wait for STOP_FLUSH to complete before we start allowing message up
                 if (msg.getDest() != null)
                     return up_prot.up(msg); // allow unicasts to pass, virtual synchrony only applies to multicasts

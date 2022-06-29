@@ -3,7 +3,7 @@ FLUSH protocol for default stack
 ================================
 
 Author: Bela Ban
-See http://jira.jboss.com/jira/browse/JGRP-82
+See https://issues.redhat.com/browse/JGRP-82
 
 Overview
 --------
@@ -117,7 +117,7 @@ This algorithm also works for a number of JOIN and LEAVE requests (view bundling
 
 FLUSH with join & state transfer
 --------------------------------
-http://jira.jboss.com/jira/browse/JGRP-236 (DONE)
+https://issues.redhat.com/browse/JGRP-236 (DONE)
 
 Needs description (TODO)
 

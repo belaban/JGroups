@@ -59,7 +59,7 @@ public abstract class BaseBundler implements Bundler {
     public void send(Message msg) throws Exception {}
 
     public void viewChange(View view) {
-        // code removed (https://issues.jboss.org/browse/JGRP-2324)
+        // code removed (https://issues.redhat.com/browse/JGRP-2324)
     }
 
     /** Returns the total number of messages in the hashmap */

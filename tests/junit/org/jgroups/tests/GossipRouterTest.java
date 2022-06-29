@@ -44,7 +44,7 @@ public class GossipRouterTest {
     }
 
     /**
-     * Tests the following scenario (http://jira.jboss.com/jira/browse/JGRP-682):
+     * Tests the following scenario (https://issues.redhat.com/browse/JGRP-682):
      * - First node is started with tunnel.xml, cannot connect
      * - Second node is started *with* GossipRouter
      * - Now first node should be able to connect and first and second node should be able to merge into a group

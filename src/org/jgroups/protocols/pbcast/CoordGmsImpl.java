@@ -43,7 +43,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
     /** The coordinator itself wants to leave the group */
     public void leave() {
         ViewHandler<Request> vh=gms.getViewHandler();
-        vh.add(new Request(Request.COORD_LEAVE)); // https://issues.jboss.org/browse/JGRP-2293
+        vh.add(new Request(Request.COORD_LEAVE)); // https://issues.redhat.com/browse/JGRP-2293
         vh.waitUntilComplete();
     }
 
@@ -162,7 +162,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
         try {            
             boolean successfulFlush =!useFlushIfPresent || !gms.flushProtocolInStack || gms.startFlush(new_view);
             if(!successfulFlush && hasJoiningMembers) {
-                // Don't send a join response if the flush fails (http://jira.jboss.org/jira/browse/JGRP-759)
+                // Don't send a join response if the flush fails (https://issues.redhat.com/browse/JGRP-759)
                 // The joiner should block until the previous FLUSH completed
                 sendLeaveResponses(leaving_mbrs); // we still have to send potential leave responses
                 // but let the joining client timeout and send another join request
@@ -191,7 +191,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
 
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
 
-            // we don't need to send the digest to existing members: https://issues.jboss.org/browse/JGRP-1317
+            // we don't need to send the digest to existing members: https://issues.redhat.com/browse/JGRP-1317
             gms.castViewChangeAndSendJoinRsps(new_view, null, new_view.getMembers(), new_mbrs, join_rsp);
         }
         finally {

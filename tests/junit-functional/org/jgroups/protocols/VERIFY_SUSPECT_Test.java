@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Tests https://issues.jboss.org/browse/JGRP-1429
+ * Tests https://issues.redhat.com/browse/JGRP-1429
  * @author Bela Ban
  * @since 3.1
  */

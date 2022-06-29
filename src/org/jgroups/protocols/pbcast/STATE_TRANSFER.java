@@ -255,7 +255,7 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
             // this handles the case where a coord dies during a state transfer; prevents clients from hanging forever
             // Note this only takes a coordinator crash into account, a getState(target, timeout), where target is not
             // null is not handled ! (Usually we get the state from the coordinator)
-            // http://jira.jboss.com/jira/browse/JGRP-148
+            // https://issues.redhat.com/browse/JGRP-148
             if(waiting_for_state_response && old_coord != null && !members.contains(old_coord))
                 send_up_exception=true;
         }
@@ -357,7 +357,7 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
         try {
             if(isDigestNeeded()) {
                 punchHoleFor(sender);
-                closeBarrierAndSuspendStable(); // fix for https://jira.jboss.org/jira/browse/JGRP-1013
+                closeBarrierAndSuspendStable(); // fix for https://issues.redhat.com/browse/JGRP-1013
                 if(digest != null)
                     down_prot.down(new Event(Event.OVERWRITE_DIGEST, digest)); // set the digest (e.g. in NAKACK)
             }
@@ -367,7 +367,7 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
                       (state == null? "0" : Util.printBytes(state.length)), stop - start);
             StateTransferResult result=new StateTransferResult(state);
             up_prot.up(new Event(Event.GET_STATE_OK, result));
-            down_prot.down(new Event(Event.GET_VIEW_FROM_COORD)); // https://issues.jboss.org/browse/JGRP-1751
+            down_prot.down(new Event(Event.GET_VIEW_FROM_COORD)); // https://issues.redhat.com/browse/JGRP-1751
         }
         catch(Throwable t) {
             handleException(t);

@@ -73,7 +73,7 @@ public class ClientGmsImpl extends GmsImpl {
                     }
                 }
 
-                // Sept 2008 (bela): return if we got a belated JoinRsp (https://jira.jboss.org/jira/browse/JGRP-687)
+                // Sept 2008 (bela): return if we got a belated JoinRsp (https://issues.redhat.com/browse/JGRP-687)
                 if(installViewIfValidJoinRsp(join_promise, false))
                     return;
 

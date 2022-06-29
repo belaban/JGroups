@@ -1522,7 +1522,7 @@ public class TableTest {
     }
 
     // Tests purge(40) followed by purge(20) - the second purge() should be ignored
-    // https://issues.jboss.org/browse/JGRP-1872
+    // https://issues.redhat.com/browse/JGRP-1872
     public void testPurgeLower() {
         Table<Integer> table=new Table<>(3, 10, 0);
         for(int i=1; i <= 30; i++)

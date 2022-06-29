@@ -13,7 +13,7 @@ In order to transfer application state to a joining member of a group we current
 into memory and send it to a joining member. Major limitation of this approach is that the state transfer that 
 is very large (>1Gb) would likely result in OutOfMemoryException. In order to alleviate this problem a new state 
 transfer methodology, based on a streaming state transfer, will be introduced in JGroups 2.4 
-(see http://jira.jboss.com/jira/browse/JGRP-89)
+(see https://issues.redhat.com/browse/JGRP-89)
 
 New streaming state transfer supports both partial and full state transfer.
 

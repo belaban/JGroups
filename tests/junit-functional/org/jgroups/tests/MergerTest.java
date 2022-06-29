@@ -166,7 +166,7 @@ public class MergerTest {
      * B: ACB
      * C: ACB
      * D: BACD
-     * Test case is https://issues.jboss.org/browse/JGRP-1451
+     * Test case is https://issues.redhat.com/browse/JGRP-1451
      */
     public void testOverlappingMerge4() {
         Map<Address,View> map=new HashMap<>();

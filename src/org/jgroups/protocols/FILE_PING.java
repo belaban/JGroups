@@ -53,7 +53,7 @@ public class FILE_PING extends Discovery {
     protected long    info_writer_sleep_time=10000;
 
     @Property(description="When a non-initial discovery is run, and InfoWriter is not running, write the data to " +
-      "disk (if true). JIRA: https://issues.jboss.org/browse/JGRP-2288")
+      "disk (if true). JIRA: https://issues.redhat.com/browse/JGRP-2288")
     protected boolean write_data_on_find;
 
     @Property(description = "If set, a shutdown hook is registered with the JVM to remove the local address "

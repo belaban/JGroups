@@ -5,7 +5,7 @@ import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 
 /**
- * Tests use cases for {@link ASYM_ENCRYPT} described in https://issues.jboss.org/browse/JGRP-2021.
+ * Tests use cases for {@link ASYM_ENCRYPT} described in https://issues.redhat.com/browse/JGRP-2021.
  * @author Bela Ban
  * @since  4.0
  */

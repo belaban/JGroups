@@ -16,7 +16,7 @@ import java.util.List;
  * Messages are removed from the main queue one by one and processed as follows:<br/>
  * A B B C C A causes the following sends: A -> {CC} -> {BB} -> A<br/>
  * Note that <em>null</em> is also a valid destination (send-to-all).<br/>
- * JIRA: https://issues.jboss.org/browse/JGRP-2171
+ * JIRA: https://issues.redhat.com/browse/JGRP-2171
  * @author Bela Ban
  * @since  4.0.4
  */

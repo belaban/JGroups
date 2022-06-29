@@ -27,7 +27,7 @@ import java.util.stream.Stream;
  * This protocol requires less traffic than {@link CENTRAL_LOCK} (each request also has to be sent to the backup(s)),
  * but introduces communication between the new coord and all members (and thus a small pause) on coord change.
  * <br/>
- * The JIRA issue is https://issues.jboss.org/browse/JGRP-2249.
+ * The JIRA issue is https://issues.redhat.com/browse/JGRP-2249.
  * @author Bela Ban
  * @since  4.0.13
  * @see Locking

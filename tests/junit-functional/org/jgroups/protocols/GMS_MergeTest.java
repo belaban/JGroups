@@ -270,7 +270,7 @@ public class GMS_MergeTest {
      * <li>B: {B, C}
      * <li>C: {B, C}
      * </ol>
-     * JIRA: https://jira.jboss.org/jira/browse/JGRP-1031
+     * JIRA: https://issues.redhat.com/browse/JGRP-1031
      * @throws Exception
      */
     static void _testMergeAsymmetricPartitions(boolean use_flush_props, String cluster_name) throws Exception {
@@ -378,7 +378,7 @@ public class GMS_MergeTest {
      * <li>A: {A,B}
      * <li>B: {B}
      * </ol>
-     * JIRA: https://jira.jboss.org/jira/browse/JGRP-1031
+     * JIRA: https://issues.redhat.com/browse/JGRP-1031
      */
     static void _testMergeAsymmetricPartitions2(boolean use_flush_props, String cluster_name) throws Exception {
         JChannel[] channels=null;

@@ -224,7 +224,7 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
             udp_ucast_sock=socket_factory.createDatagramSocket("jgroups.tp.diag.udp_ucast_sock");
 
         if(udp_mcast_sock == null || udp_mcast_sock.isClosed()) {
-            // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
+            // https://issues.redhat.com/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
             // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
 
             // If possible, the MulticastSocket(SocketAddress) ctor is used which binds to diagnostics_addr:diagnostics_port.
@@ -357,7 +357,7 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
                     }
                 }
             }
-            catch(Exception e) { // also catches NPE in getInterfaceAddresses() (https://issues.jboss.org/browse/JGRP-1845)
+            catch(Exception e) { // also catches NPE in getInterfaceAddresses() (https://issues.redhat.com/browse/JGRP-1845)
                 log.warn("failed to join " + group_addr + " on " + i.getName() + ": " + e);
             }
         }

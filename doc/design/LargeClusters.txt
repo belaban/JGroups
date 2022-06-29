@@ -4,7 +4,7 @@ Considerations for large clusters
 =================================
 
 Author: Bela Ban
-JIRA: https://jira.jboss.org/browse/JGRP-100
+JIRA: https://issues.redhat.com/browse/JGRP-100
 
 
 Discovery
@@ -27,7 +27,7 @@ With ergonomics [1], we could for example set bucket sizes for CCHMs dynamically
 
 
 
-[1] https://jira.jboss.org/jira/browse/JGRP-1037
+[1] https://issues.redhat.com/browse/JGRP-1037
 
 
 Misc

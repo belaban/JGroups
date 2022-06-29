@@ -1,6 +1,6 @@
 
 
-## Send unicast message to joiner *before* JOIN-RSP (https://issues.jboss.org/browse/JGRP-2131)
+## Send unicast message to joiner *before* JOIN-RSP (https://issues.redhat.com/browse/JGRP-2131)
 RULE InjectAdditionalUnicast
 CLASS GMS
 METHOD sendJoinResponse

@@ -13,7 +13,7 @@ import java.util.function.Consumer;
  * Non-blocking credit for a unicast destination.<br/>
  * Instead of blocking when insufficient credits are available for sending a message, this class <em>queues</em> the
  * message and sends it at a later time when enough credits have been received to send it.<br/>
- * JIRA: https://issues.jboss.org/browse/JGRP-2172
+ * JIRA: https://issues.redhat.com/browse/JGRP-2172
  * @author Bela Ban
  * @since  4.0.4
  */

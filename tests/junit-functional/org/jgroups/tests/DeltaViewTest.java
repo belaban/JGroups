@@ -21,7 +21,7 @@ import org.testng.annotations.Test;
 import java.util.*;
 
 /**
- * Tests DeltaViews (https://issues.jboss.org/browse/JGRP-2159)
+ * Tests DeltaViews (https://issues.redhat.com/browse/JGRP-2159)
  * @author Bela Ban
  * @since  4.0.1
  */

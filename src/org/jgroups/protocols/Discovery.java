@@ -81,7 +81,7 @@ public abstract class Discovery extends Protocol {
     protected int                        max_rank_to_reply;
 
     @Property(description="The number of times a discovery process is executed when finding initial members " +
-      "(https://issues.jboss.org/browse/JGRP-2317)")
+      "(https://issues.redhat.com/browse/JGRP-2317)")
     protected int                        num_discovery_runs=1;
 
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
@@ -293,7 +293,7 @@ public abstract class Discovery extends Protocol {
         if(hdr == null)
             return up_prot.up(msg);
         if(is_leaving)
-            return null; // prevents merging back a leaving member (https://issues.jboss.org/browse/JGRP-1336)
+            return null; // prevents merging back a leaving member (https://issues.redhat.com/browse/JGRP-1336)
         return handle(hdr, msg);
     }
 

@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Tests the behavior of receiving a unicast message before being connected and sending a response which will
- * throw an exception as the channel is not connected yet (https://issues.jboss.org/browse/JGRP-1545).
+ * throw an exception as the channel is not connected yet (https://issues.redhat.com/browse/JGRP-1545).
  * @author Bela Ban
  * @since 3.3
  */
@@ -51,7 +51,7 @@ public class MessageBeforeConnectedTest extends BMNGRunner {
     /**
      * When we connect to a channel, but before the state is changed to 'connected', we send a message which will
      * trigger an exception.
-     * Issue: https://issues.jboss.org/browse/JGRP-1545
+     * Issue: https://issues.redhat.com/browse/JGRP-1545
      */
     @BMScript(dir="scripts/MessageBeforeConnectedTest", value="testSendingOfMsgsOnUnconnectedChannel")
     public void testSendingOfMsgsOnUnconnectedChannel() throws Throwable {

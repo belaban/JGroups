@@ -194,7 +194,7 @@ public abstract class EncryptTest {
     /**
      * Tests the scenario where the non-member R captures a message from some cluster member in {A,B,C}, then
      * increments the NAKACK2 seqno and resends that message. The message must not be received by {A,B,C};
-     * it should be discarded. see https://issues.jboss.org/browse/JGRP-2273
+     * it should be discarded. see https://issues.redhat.com/browse/JGRP-2273
      */
     public void testCapturingOfMessageByNonMemberAndResending() throws Exception {
 

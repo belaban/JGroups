@@ -355,7 +355,7 @@ public abstract class FailureDetection extends Protocol {
 
         public void run() {
             synchronized(this) {
-                retainKeys(members); // remove all non-members (// https://issues.jboss.org/browse/JGRP-2387)
+                retainKeys(members); // remove all non-members (// https://issues.redhat.com/browse/JGRP-2387)
             }
             List<Address> suspects=new LinkedList<>();
             for(Iterator<? extends Map.Entry<Address,?>> it=getTimestamps().entrySet().iterator(); it.hasNext();) {

@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tests large retransmissions (https://issues.jboss.org/browse/JGRP-1868)
+ * Tests large retransmissions (https://issues.redhat.com/browse/JGRP-1868)
  * @author Bela Ban
  * @since  3.6
  */
@@ -42,7 +42,7 @@ public class UNICAST_RetransmitTest {
      * TP.max_bundle_size, leading to endless retransmissions. With JGRP-1868 resolved, the receiver should get
      * all messages.
      * <p/>
-     * https://issues.jboss.org/browse/JGRP-1868
+     * https://issues.redhat.com/browse/JGRP-1868
      */
     public void testLargeRetransmission() throws Exception {
         MyReceiver receiver=new MyReceiver();

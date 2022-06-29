@@ -13,7 +13,7 @@ import org.testng.annotations.Test;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Tests setting of digest NAKACK.down(SET_DIGEST), JIRA issue is https://jira.jboss.org/jira/browse/JGRP-1060
+ * Tests setting of digest NAKACK.down(SET_DIGEST), JIRA issue is https://issues.redhat.com/browse/JGRP-1060
  * @author Bela Ban
  */
 @Test(groups=Global.FUNCTIONAL)
@@ -71,7 +71,7 @@ public class NAKACK_SET_DIGEST_Test {
         nak.down(new Event(Event.SET_DIGEST, d1));
         digest=(Digest)nak.down(Event.GET_DIGEST_EVT);
         System.out.println("digest = " + digest);
-        assert digest.capacity() == 3; // https://jira.jboss.org/jira/browse/JGRP-1060
+        assert digest.capacity() == 3; // https://issues.redhat.com/browse/JGRP-1060
         assert digest.containsAll(a, b, c);
     }
 

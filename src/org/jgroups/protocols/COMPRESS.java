@@ -190,7 +190,7 @@ public class COMPRESS extends Protocol {
                 inflater.setInput(compressed_payload, msg.getOffset(), msg.getLength());
                 try {
                     inflater.inflate(uncompressed_payload);
-                    // we need to copy: https://jira.jboss.org/jira/browse/JGRP-867
+                    // we need to copy: https://issues.redhat.com/browse/JGRP-867
                     if(needs_deserialization) {
                         return messageFromByteArray(uncompressed_payload, msg_factory);
                     }

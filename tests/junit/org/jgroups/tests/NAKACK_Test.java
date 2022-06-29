@@ -15,7 +15,7 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Tests the NAKACK protocol for OOB and regular msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
+ * Tests the NAKACK protocol for OOB and regular msgs, tests https://issues.redhat.com/browse/JGRP-379
  * @author Bela Ban
  */
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
@@ -37,7 +37,7 @@ public class NAKACK_Test extends ChannelTestBase {
 
 
     /**
-     * Tests http://jira.jboss.com/jira/browse/JGRP-379: we send 1, 2, 3, 4(OOB) and 5 to the cluster.
+     * Tests https://issues.redhat.com/browse/JGRP-379: we send 1, 2, 3, 4(OOB) and 5 to the cluster.
      * Message with seqno 3 is discarded two times, so retransmission will make the receivers receive it *after* 4.
      * Note that OOB messages *destroys* FIFO ordering (or whatever ordering properties are set) !
      */

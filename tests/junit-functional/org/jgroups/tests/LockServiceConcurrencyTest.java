@@ -55,7 +55,7 @@ public class LockServiceConcurrencyTest {
         Util.close(b,a);
     }
 
-    /** Tests JIRA https://issues.jboss.org/browse/JGRP-1679 */
+    /** Tests JIRA https://issues.redhat.com/browse/JGRP-1679 */
     // @Test(invocationCount=100,dataProvider="createLockingProtocol")
     public void testConcurrentClientLocks(Class<? extends Locking> locking_class) throws Exception {
         init(locking_class);

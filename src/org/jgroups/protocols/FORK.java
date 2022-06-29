@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
 /**
- * The FORK protocol; multiplexes messages to different forks in a stack (https://issues.jboss.org/browse/JGRP-1613).
+ * The FORK protocol; multiplexes messages to different forks in a stack (https://issues.redhat.com/browse/JGRP-1613).
  * See doc/design/FORK.txt for details
  * @author Bela Ban
  * @since  3.4
@@ -326,7 +326,7 @@ public class FORK extends Protocol {
         try {
             configStream=new FileInputStream(config);
         }
-        catch(FileNotFoundException fnfe) { // catching ACE fixes http://jira.jboss.com/jira/browse/JGRP-94
+        catch(FileNotFoundException fnfe) { // catching ACE fixes https://issues.redhat.com/browse/JGRP-94
         }
 
         // Check to see if the properties string is a URL.

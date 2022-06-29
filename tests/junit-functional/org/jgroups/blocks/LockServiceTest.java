@@ -287,7 +287,7 @@ public class LockServiceTest {
         assert num_acquired == 1 : "expected 1 but got " + num_acquired;
     }
 
-    /** Tests locking by T1 and unlocking by T2 (https://issues.jboss.org/browse/JGRP-1886) */
+    /** Tests locking by T1 and unlocking by T2 (https://issues.redhat.com/browse/JGRP-1886) */
     public void testLockUnlockByDiffentThreads(Class<? extends Locking> locking_class) throws Exception {
         init(locking_class);
         CyclicBarrier barrier=null;

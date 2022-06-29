@@ -2,7 +2,7 @@
 Optimizations for cloud based discovery stores
 ==============================================
 Author: Bela Ban, 2014
-JIRA: https://issues.jboss.org/browse/JGRP-1841
+JIRA: https://issues.redhat.com/browse/JGRP-1841
 
 Goals
 -----

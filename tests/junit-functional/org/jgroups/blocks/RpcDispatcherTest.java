@@ -466,7 +466,7 @@ public class RpcDispatcherTest {
 
     /**
      * Invoke a call which sleeps for 5s 5 times. Since the sleep should be done in parallel (OOB msgs), all 5 futures
-     * should be done in roughly 5s. JIRA: https://issues.jboss.org/browse/JGRP-2039
+     * should be done in roughly 5s. JIRA: https://issues.redhat.com/browse/JGRP-2039
      */
     public void testMultipleFutures() throws Exception {
         _testMultipleUnicastFuturesToDest(null); // send to all
@@ -483,7 +483,7 @@ public class RpcDispatcherTest {
 
     /**
      * Invoke a call which sleeps for 5s 5 times. Since the sleep should be done in parallel (OOB msgs), all 5 futures
-     * should be done in roughly 5s. JIRA: https://issues.jboss.org/browse/JGRP-2039
+     * should be done in roughly 5s. JIRA: https://issues.redhat.com/browse/JGRP-2039
      */
     protected void _testMultipleUnicastFuturesToDest(Address dest) throws Exception {
         final int                   NUM_CALLS=5, MAX_SLEEP=8000; // should be done in ~5s, make it 8s to be safe
@@ -588,7 +588,7 @@ public class RpcDispatcherTest {
     
 
     /**
-     * Tests a method call to {A,B,C} where C left *before* the call. http://jira.jboss.com/jira/browse/JGRP-620
+     * Tests a method call to {A,B,C} where C left *before* the call. https://issues.redhat.com/browse/JGRP-620
      */
     public void testMethodInvocationToNonExistingMembers() throws Exception {
         final int timeout = 5 * 1000 ;

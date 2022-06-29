@@ -46,7 +46,7 @@ public class FlushTest {
         checkEventStateTransferSequence(receivers[0]);
     }
 
-    /** Tests issue #1 in http://jira.jboss.com/jira/browse/JGRP-335 */
+    /** Tests issue #1 in https://issues.redhat.com/browse/JGRP-335 */
     public void testJoinFollowedByUnicast() throws Exception {
         JChannel a=null, b=null;
         try {
@@ -70,7 +70,7 @@ public class FlushTest {
     }
 
     /**
-     * Tests issue #2 in http://jira.jboss.com/jira/browse/JGRP-335
+     * Tests issue #2 in https://issues.redhat.com/browse/JGRP-335
      */
     public void testStateTransferFollowedByUnicast() throws Exception {
         JChannel a=null, b=null;
@@ -223,7 +223,7 @@ public class FlushTest {
     }
 
     /**
-     * Tests http://jira.jboss.com/jira/browse/JGRP-661
+     * Tests https://issues.redhat.com/browse/JGRP-661
      */
     public void testPartialFlush() throws Exception {
         JChannel a=null, b=null;

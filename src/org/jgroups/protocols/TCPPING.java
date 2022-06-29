@@ -58,7 +58,7 @@ public class TCPPING extends Discovery {
 
     protected Collection<PhysicalAddress>  initial_hosts=new HashSet<>();
 
-    /** https://jira.jboss.org/jira/browse/JGRP-989 */
+    /** https://issues.redhat.com/browse/JGRP-989 */
     protected BoundedList<PhysicalAddress> dynamic_hosts;
 
     protected StackType stack_type=StackType.Dual;
@@ -174,7 +174,7 @@ public class TCPPING extends Discovery {
     public void findMembers(List<Address> members, boolean initial_discovery, Responses responses) {
         PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
 
-        // https://issues.jboss.org/browse/JGRP-1670
+        // https://issues.redhat.com/browse/JGRP-1670
         PingData data=new PingData(local_addr, false, NameCache.get(local_addr), physical_addr);
         if(members != null && members.size() <= max_members_in_discovery_request)
             data.mbrs(members);

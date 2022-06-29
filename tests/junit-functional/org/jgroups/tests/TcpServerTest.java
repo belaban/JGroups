@@ -13,7 +13,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * Tests https://issues.jboss.org/browse/JGRP-2350
+ * Tests https://issues.redhat.com/browse/JGRP-2350
  * @author Bela Ban
  * @since  4.1.1
  */

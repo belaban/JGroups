@@ -134,7 +134,7 @@ public class MPING extends PING implements Runnable {
     public void start() throws Exception {
         if(bind_addr == null)
             bind_addr=getTransport().getBindAddr();
-        if(Util.can_bind_to_mcast_addr) // https://jira.jboss.org/jira/browse/JGRP-836 - prevent cross talking on Linux
+        if(Util.can_bind_to_mcast_addr) // https://issues.redhat.com/browse/JGRP-836 - prevent cross talking on Linux
             mcast_receive_sock=Util.createMulticastSocket(getSocketFactory(), "jgroups.mping.mcast_sock", mcast_addr, mcast_port, log);
         else
             mcast_receive_sock=getSocketFactory().createMulticastSocket("jgroups.mping.mcast_sock", mcast_port);

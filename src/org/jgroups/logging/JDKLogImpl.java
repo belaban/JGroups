@@ -20,7 +20,7 @@ public class JDKLogImpl implements Log {
     }
 
     public JDKLogImpl(Class<?> clazz) {
-        logger=Logger.getLogger(clazz.getName()); // fix for https://jira.jboss.org/browse/JGRP-1224
+        logger=Logger.getLogger(clazz.getName()); // fix for https://issues.redhat.com/browse/JGRP-1224
     }
 
 

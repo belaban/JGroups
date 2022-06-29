@@ -424,7 +424,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
                 tmp=conns.remove(address);
             }
         }
-        if(tmp != null) { // Moved conn close outside of sync block (https://issues.jboss.org/browse/JGRP-2053)
+        if(tmp != null) { // Moved conn close outside of sync block (https://issues.redhat.com/browse/JGRP-2053)
             log.trace("%s: removed connection to %s", local_addr, address);
             Util.close(tmp);
         }

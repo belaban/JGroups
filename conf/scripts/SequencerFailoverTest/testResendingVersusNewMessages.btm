@@ -1,5 +1,5 @@
 
-## Test case for https://issues.jboss.org/browse/JGRP-1449 (SEQUENCER):
+## Test case for https://issues.redhat.com/browse/JGRP-1449 (SEQUENCER):
 ## - When a coord A fails, we resend messages in the forward-queue that we haven't yet received
 ## - If, at the same time, new messages are sent, the old messages in the forward-queue might be received
 ##   *after* the new ones. JGRP-1449 is supposed to fix that. The fix is that sending of new messages on a view

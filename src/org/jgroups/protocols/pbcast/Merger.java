@@ -178,7 +178,7 @@ public class Merger {
 
     /**
      * Removes all members from a given view which don't have us in their view
-     * (https://jira.jboss.org/browse/JGRP-1061). Example:
+     * (https://issues.redhat.com/browse/JGRP-1061). Example:
      * <pre>
      * A: AB
      * B: AB
@@ -226,7 +226,7 @@ public class Merger {
         // we need the merge *coordinators* not merge participants because not everyone can lead a merge !
         Collection<Address> coords=Util.determineActualMergeCoords(views);
         if(coords.isEmpty())
-            coords=Util.determineMergeCoords(views); // https://issues.jboss.org/browse/JGRP-2092
+            coords=Util.determineMergeCoords(views); // https://issues.redhat.com/browse/JGRP-2092
         if(coords.isEmpty()) {
             log.error("%s: unable to determine merge leader from %s; not starting a merge", gms.getAddress(), views);
             return null;
@@ -236,7 +236,7 @@ public class Merger {
 
     /**
      * Needs to return a map of all subview coordinators and their views (as a collection of members). The merge policy
-     * is defined in https://issues.jboss.org/browse/JGRP-1910
+     * is defined in https://issues.redhat.com/browse/JGRP-1910
      */
     protected static Map<Address,Collection<Address>> determineMergeCoords(Map<Address,View> views) {
            Map<Address,Collection<Address>> retval=new HashMap<>();
@@ -290,7 +290,7 @@ public class Merger {
         if(gms.flushProtocolInStack && !gms.startFlush(view)) // if flush is in stack, let this coord flush its subcluster
             throw new Exception("flush failed");
 
-        // we still need to fetch digests from all members, and not just return our own digest (https://issues.jboss.org/browse/JGRP-948)
+        // we still need to fetch digests from all members, and not just return our own digest (https://issues.redhat.com/browse/JGRP-948)
         Digest digest=fetchDigestsFromAllMembersInSubPartition(view, merge_id);
         if(digest == null || digest.capacity() == 0)
             throw new Exception("failed fetching digests from subpartition members; dropping merge response");
@@ -501,7 +501,7 @@ public class Merger {
             subviews.addAll(views.values());
 
             // now remove all members which don't have us in their view, so RPCs won't block (e.g. FLUSH)
-            // https://jira.jboss.org/browse/JGRP-1061
+            // https://issues.redhat.com/browse/JGRP-1061
             sanitizeViews(views);
 
             Map<Address,Collection<Address>> tmp_coords=determineMergeCoords(views);

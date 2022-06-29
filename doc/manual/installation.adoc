@@ -263,7 +263,7 @@ You should be able to type in the mcast window and see the output in all other i
 in the sender. If this still fails, consult a system administrator to help you setup IP multicast correctly. If you
 _are_ the system administrator, look for another job :-)
 
-Other means of getting help: there is a public forum on http://jira.jboss.com/jira/browse/JGRP[JIRA]
+Other means of getting help: there is a public forum on https://issues.redhat.com/browse/JGRP[JIRA]
 for questions. Also consider subscribing to the javagroups-users mailing list to discuss such and other problems.
 
 
@@ -286,7 +286,7 @@ To force use of IPv6, start your JVM with `-Djava.net.preferIPv6Addresses=true`.
 === I have discovered a bug!
 
 If you think that you discovered a bug, submit a bug report on
-http://jira.jboss.com/jira/browse/JGRP[JIRA] or send email to the jgroups-users mailing list if you're unsure about it.
+https://issues.redhat.com/browse/JGRP[JIRA] or send email to the jgroups-users mailing list if you're unsure about it.
 Please include the following information:
         
 - [x] Version of JGroups (java org.jgroups.Version)

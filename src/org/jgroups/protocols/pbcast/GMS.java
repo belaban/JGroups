@@ -79,7 +79,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected boolean                   print_physical_addrs=true;
 
     @Property(description="If true, then GMS is allowed to send VIEW messages with delta views, otherwise " +
-      "it always sends full views. See https://issues.jboss.org/browse/JGRP-1354 for details.")
+      "it always sends full views. See https://issues.redhat.com/browse/JGRP-1354 for details.")
     protected boolean                   use_delta_views=true;
 
     @Property(description="Max number of old members to keep in history. Default is 50")
@@ -545,7 +545,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
         Message view_change_msg=new BytesMessage().putHeader(this.id, new GmsHeader(GmsHeader.VIEW))
           .setArray(marshal(new_view, digest)).setFlag(Message.TransientFlag.DONT_LOOPBACK);
-        if(new_view instanceof MergeView) // https://issues.jboss.org/browse/JGRP-1484
+        if(new_view instanceof MergeView) // https://issues.redhat.com/browse/JGRP-1484
             view_change_msg.setFlag(Message.Flag.NO_TOTAL_ORDER);
 
         ack_collector.reset(expected_acks, local_addr) // exclude self, as we'll install the view locally
@@ -670,8 +670,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             }
         }
 
-        // - Changed order of passing view up and down (http://jira.jboss.com/jira/browse/JGRP-347)
-        // - Changed it back (bela Sept 4 2007): http://jira.jboss.com/jira/browse/JGRP-564
+        // - Changed order of passing view up and down (https://issues.redhat.com/browse/JGRP-347)
+        // - Changed it back (bela Sept 4 2007): https://issues.redhat.com/browse/JGRP-564
         // - Moved sending up view_event out of the synchronized block (bela Nov 2011)
         down_prot.down(view_event); // needed e.g. by failure detector or UDP
         up_prot.up(view_event);

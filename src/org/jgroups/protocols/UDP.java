@@ -279,7 +279,7 @@ public class UDP extends TP {
 
     protected void _send(InetAddress dest, int port, byte[] data, int offset, int length) throws Exception {
         DatagramPacket packet=new DatagramPacket(data, offset, length, dest, port);
-        // using the datagram socket to send multicasts or unicasts (https://issues.jboss.org/browse/JGRP-1765)
+        // using the datagram socket to send multicasts or unicasts (https://issues.redhat.com/browse/JGRP-1765)
         if(sock != null) {
             try {
                 sock.send(packet);
@@ -419,7 +419,7 @@ public class UDP extends TP {
 
         // 3. Create socket for receiving IP multicast packets
         if(ip_mcast) {
-            // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
+            // https://issues.redhat.com/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
             // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
 
             // If possible, the MulticastSocket(SocketAddress) ctor is used which binds to mcast_addr:mcast_port.

@@ -23,7 +23,7 @@ import java.util.function.Supplier;
 /**
  *
  * Design: ./doc/design/RELAY2.txt and at https://github.com/belaban/JGroups/blob/master/doc/design/RELAY2.txt.<p/>
- * JIRA: https://issues.jboss.org/browse/JGRP-1433
+ * JIRA: https://issues.redhat.com/browse/JGRP-1433
  * @author Bela Ban
  * @since 3.2
  */
@@ -338,7 +338,7 @@ public class RELAY2 extends Protocol {
 
         if(!site_config.getForwards().isEmpty())
             log.warn(local_addr + ": forwarding routes are currently not supported and will be ignored. This will change " +
-                       "with hierarchical routing (https://issues.jboss.org/browse/JGRP-1506)");
+                       "with hierarchical routing (https://issues.redhat.com/browse/JGRP-1506)");
 
         if(enable_address_tagging) {
             JChannel ch=getProtocolStack().getChannel();
@@ -659,7 +659,7 @@ public class RELAY2 extends Protocol {
             Message copy=copy(msg).setDest(null).setSrc(null).putHeader(id, hdr);
             down_prot.down(copy); // multicast locally
 
-            // Don't forward: https://issues.jboss.org/browse/JGRP-1519
+            // Don't forward: https://issues.redhat.com/browse/JGRP-1519
             // sendToBridges(msg.getSrc(), buf, from_site, site_id);  // forward to all bridges except self and from
         }
     }

@@ -114,7 +114,7 @@ public class MergeView extends View {
         for(View v: subgroups) {
             int index=get(v.getCreator());
             out.writeShort(index);
-            // if we don't find the member, write the addres (https://issues.jboss.org/browse/JGRP-1707)
+            // if we don't find the member, write the addres (https://issues.redhat.com/browse/JGRP-1707)
             if(index < 0)
                 Util.writeAddress(v.getCreator(), out);
 

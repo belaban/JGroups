@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 
 /**
  * Tests unilateral closings of UNICAST connections. The test scenarios are described in doc/design/UNICAST2.txt.
- * Some of the tests may fail occasionally until https://issues.jboss.org/browse/JGRP-1594 is fixed
+ * Some of the tests may fail occasionally until https://issues.redhat.com/browse/JGRP-1594 is fixed
  * @author Bela Ban
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
@@ -155,7 +155,7 @@ public class UNICAST_ConnectionTests {
         sendAndCheck(a, b_addr, 10, r2);
     }
 
-    /** Tests concurrent reception of multiple messages with a different conn_id (https://issues.jboss.org/browse/JGRP-1347) */
+    /** Tests concurrent reception of multiple messages with a different conn_id (https://issues.redhat.com/browse/JGRP-1347) */
     @Test(dataProvider="configProvider")
     public void testMultipleConcurrentResets(Class<? extends UNICAST3> unicast) throws Exception {
         setup(unicast);

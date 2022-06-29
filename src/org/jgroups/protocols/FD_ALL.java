@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
  * Failure detection based on simple heartbeat protocol. Every member periodically multicasts a heartbeat.
  * Every member also maintains a table of all members (minus itself). When data or a heartbeat from P is received,
  * we reset the timestamp for P to the current time. Periodically, we check for expired members, and suspect those.</p>
- * Reduced number of messages exchanged on suspect event: https://jira.jboss.org/browse/JGRP-1241
+ * Reduced number of messages exchanged on suspect event: https://issues.redhat.com/browse/JGRP-1241
  * 
  * @author Bela Ban
  */

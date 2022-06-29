@@ -22,7 +22,7 @@ import java.util.List;
  * and the size of the remove queue is fixed. TransferQueueBundler increases the size of the remove queue
  * dynamically, which leads to higher latency if the remove queue grows too much.
  * <br/>
- * JIRA: https://issues.jboss.org/browse/JGRP-2171
+ * JIRA: https://issues.redhat.com/browse/JGRP-2171
  * @author Bela Ban
  * @since  4.0.4
  */

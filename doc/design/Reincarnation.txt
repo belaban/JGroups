@@ -4,7 +4,7 @@ Problems with reincarnation
 ===========================
 
 Author:  Bela Ban
-JIRA:    http://jira.jboss.com/jira/browse/JGRP-130
+JIRA:    https://issues.redhat.com/browse/JGRP-130
 
 The identity of a JGroups member is always the IP address and a port. The port is usually chosen by the OS, unless
 bind_port is set (not set by default).
@@ -42,5 +42,5 @@ don't reuse previous addresses
 
 C: Use logical addresses, such as java.rmi.VMID or java.rmi.server.UID, which are unique over time for a given host.
 Then, it doesn't matter what ports we use because the ports are not used to determine a member's identity.
-The JIRA task for logical addresses is http://jira.jboss.com/jira/browse/JGRP-129.
+The JIRA task for logical addresses is https://issues.redhat.com/browse/JGRP-129.
 

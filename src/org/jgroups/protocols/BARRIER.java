@@ -157,7 +157,7 @@ public class BARRIER extends Protocol {
     }
 
     public Object up(Message msg) {
-        // https://issues.jboss.org/browse/JGRP-1341: let unicast messages pass
+        // https://issues.redhat.com/browse/JGRP-1341: let unicast messages pass
         if(msg.isFlagSet(Message.Flag.SKIP_BARRIER) || msg.getDest() != null
           && ((msg.isFlagSet(Message.Flag.OOB)) || holes.contains(msg.getSrc())))
             return up_prot.up(msg);
