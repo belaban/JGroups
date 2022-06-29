@@ -63,14 +63,13 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
     @Override
     public void start() throws Exception {
         if(running.compareAndSet(false, true)) {
-            super.start();
-            conn=createConnection(remote_addr);
-            addConnectionListener(this);
-            conn.connect(remote_addr, false);
-            local_addr=conn.localAddress();
-            if(use_peer_connections)
-                conn.sendLocalAddress(local_addr);
-            conn.start(); // starts the receiver thread
+            try {
+                doStart();
+            }
+            catch(Exception ex) {
+                stop();
+                throw ex;
+            }
         }
     }
 
@@ -118,5 +117,16 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
         if(conn == null || !conn.isConnected())
             return String.format("%s -> %s [not connected]", localAddress(), remoteAddress());
         return String.format("%s", conn);
+    }
+
+    protected void doStart() throws Exception {
+        super.start();
+        conn=createConnection(remote_addr);
+        addConnectionListener(this);
+        conn.connect(remote_addr, false);
+        local_addr=conn.localAddress();
+        if(use_peer_connections)
+            conn.sendLocalAddress(local_addr);
+        conn.start(); // starts the receiver thread
     }
 }

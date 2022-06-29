@@ -111,8 +111,10 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
             stubManager.destroyStubs();
             PhysicalAddress physical_addr = (PhysicalAddress) down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
             stubManager = new RouterStubManager(this, cluster_name, local_addr, NameCache.get(local_addr), physical_addr, reconnect_interval).useNio(this.use_nio);
-            for (InetSocketAddress host : initial_hosts) {
-                RouterStub stub=stubManager.createAndRegisterStub(new IpAddress(bind_addr, 0), new IpAddress(host.getAddress(), host.getPort()));
+            for (InetSocketAddress host: initial_hosts) {
+                InetSocketAddress target=host.isUnresolved()? new InetSocketAddress(host.getHostString(), host.getPort())
+                  : new InetSocketAddress(host.getAddress(), host.getPort());
+                RouterStub stub=stubManager.createAndRegisterStub(new InetSocketAddress(bind_addr, 0), target);
                 stub.socketConnectionTimeout(sock_conn_timeout);
             }
             stubManager.connectStubs();
@@ -188,14 +190,14 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
         InetSocketAddress isa = new InetSocketAddress(hostname, port);
         initial_hosts.add(isa);
 
-        stubManager.createAndRegisterStub(null, new IpAddress(isa.getAddress(), isa.getPort()));
+        stubManager.createAndRegisterStub(null, new InetSocketAddress(isa.getAddress(), isa.getPort()));
         stubManager.connectStubs(); // tries to connect all unconnected stubs
     }
 
     @ManagedOperation
     public boolean removeInitialHost(String hostname, int port) {
         InetSocketAddress isa = new InetSocketAddress(hostname, port);
-        stubManager.unregisterStub(new IpAddress(isa.getAddress(), isa.getPort()));
+        stubManager.unregisterStub(new InetSocketAddress(isa.getAddress(), isa.getPort()));
         return initial_hosts.remove(isa);
     }
 

@@ -14,6 +14,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.*;
 
 
@@ -27,11 +28,13 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     public interface CloseListener       {void closed(RouterStub stub);}
 
     protected BaseServer                                  client;
-    protected final IpAddress                             local;  // bind address
-    protected final IpAddress                             remote; // address of remote GossipRouter
+    protected IpAddress                                   local;     // bind address
+    protected IpAddress                                   remote;    // address of remote GossipRouter
+    protected InetSocketAddress                           remote_sa; // address of remote GosipRouter, not resolved yet
     protected final boolean                               use_nio;
-    protected StubReceiver                                receiver; // external consumer of data, e.g. TUNNEL
+    protected StubReceiver                                receiver;  // external consumer of data, e.g. TUNNEL
     protected CloseListener                               close_listener;
+    protected SocketFactory                               socket_factory;
     protected static final Log                            log=LogFactory.getLog(RouterStub.class);
 
     // max number of ms to wait for socket establishment to GossipRouter
@@ -43,67 +46,38 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
 
 
     /**
-     * Creates a stub to a remote GossipRouter
-     * @param bind_addr The local address to bind to. If null, one will be picked
-     * @param bind_port The local port. If 0, a random port will be used
-     * @param router_host The address of the remote {@link GossipRouter}
-     * @param router_port The port on which the remote GossipRouter is listening
-     * @param use_nio Whether to use blocking or non-blocking IO
-     * @param l The {@link org.jgroups.stack.RouterStub.CloseListener}
+     * Creates a stub to a remote_sa {@link GossipRouter}.
+     * @param local_sa The local_sa bind address and port
+     * @param remote_sa The address:port of the GossipRouter
+     * @param use_nio Whether to use ({@link org.jgroups.protocols.TCP_NIO2}) or {@link org.jgroups.protocols.TCP}
+     * @param l The {@link CloseListener}
+     * @param sf The {@link SocketFactory} to use to create the client socket
      */
-    public RouterStub(InetAddress bind_addr, int bind_port, InetAddress router_host, int router_port,
-                      boolean use_nio, CloseListener l, SocketFactory socketFactory) {
-        local=new IpAddress(bind_addr, bind_port);
-        this.remote=new IpAddress(router_host, router_port);
+    public RouterStub(InetSocketAddress local_sa, InetSocketAddress remote_sa, boolean use_nio, CloseListener l, SocketFactory sf) {
+        this.local=local_sa != null? new IpAddress(local_sa.getAddress(), local_sa.getPort())
+          : new IpAddress((InetAddress)null,0);
+        this.remote_sa=Objects.requireNonNull(remote_sa);
         this.use_nio=use_nio;
         this.close_listener=l;
-        client=use_nio? new NioClient(bind_addr, bind_port, router_host, router_port)
-          : new TcpClient(bind_addr, bind_port, router_host, router_port);
-        if (socketFactory!=null) client.socketFactory(socketFactory);
-        client.addConnectionListener(this);
-        client.receiver(this);
-        client.socketConnectionTimeout(sock_conn_timeout).tcpNodelay(tcp_nodelay);
+        this.socket_factory=sf;
+        if(resolveRemoteAddress()) // sets remote
+            client=createClient(sf);
     }
 
 
-    public RouterStub(IpAddress local, IpAddress remote, boolean use_nio, CloseListener l, SocketFactory socketFactory) {
-        this.local=local;
-        this.remote=remote;
-        this.use_nio=use_nio;
-        this.close_listener=l;
-        client=use_nio? new NioClient(local, remote) : new TcpClient(local, remote);
-        if (socketFactory!=null) client.socketFactory(socketFactory);
-        client.receiver(this);
-        client.addConnectionListener(this);
-        client.socketConnectionTimeout(sock_conn_timeout).tcpNodelay(tcp_nodelay);
-    }
-
-
-    public IpAddress           local()                                  {return local;}
-    public IpAddress           remote()                                 {return remote;}
-    public RouterStub          receiver(StubReceiver r)                 {receiver=r; return this;}
-    public StubReceiver        receiver()                               {return receiver;}
-    public boolean             tcpNoDelay()                             {return tcp_nodelay;}
-    public RouterStub          tcpNoDelay(boolean tcp_nodelay)          {this.tcp_nodelay=tcp_nodelay; return this;}
-    public CloseListener       connectionListener()                     {return close_listener;}
-    public RouterStub          connectionListener(CloseListener l)      {this.close_listener=l; return this;}
-    public int                 socketConnectionTimeout()                {return sock_conn_timeout;}
-    public RouterStub          socketConnectionTimeout(int timeout)     {this.sock_conn_timeout=timeout; return this;}
-    public boolean             useNio()                                 {return use_nio;}
-    public IpAddress           gossipRouterAddress()                    {return remote;}
-    public boolean             isConnected()                            {return client != null && ((Client)client).isConnected();}
-
-
-    public RouterStub set(String attr, Object val) {
-        switch(attr) {
-            case "tcp_nodelay":
-                tcpNoDelay((Boolean)val);
-                break;
-            default:
-                throw new IllegalArgumentException("Attribute " + attr + " unknown");
-        }
-        return this;
-    }
+    public IpAddress     local()                              {return local;}
+    public IpAddress     remote()                             {return remote;}
+    public RouterStub    receiver(StubReceiver r)             {receiver=r; return this;}
+    public StubReceiver  receiver()                           {return receiver;}
+    public boolean       tcpNoDelay()                         {return tcp_nodelay;}
+    public RouterStub    tcpNoDelay(boolean tcp_nodelay)      {this.tcp_nodelay=tcp_nodelay; return this;}
+    public CloseListener connectionListener()                 {return close_listener;}
+    public RouterStub    connectionListener(CloseListener l)  {this.close_listener=l; return this;}
+    public int           socketConnectionTimeout()            {return sock_conn_timeout;}
+    public RouterStub    socketConnectionTimeout(int timeout) {this.sock_conn_timeout=timeout; return this;}
+    public boolean       useNio()                             {return use_nio;}
+    public IpAddress     gossipRouterAddress()                {return remote;}
+    public boolean       isConnected()                        {return client != null && ((Client)client).isConnected();}
 
 
 
@@ -135,12 +109,20 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
 
     @GuardedBy("lock")
     protected void _doConnect() throws Exception {
-        client.start();
+        if(client != null)
+            client.start();
+        else {
+            if(resolveRemoteAddress() && (client=createClient(this.socket_factory)) != null)
+                client.start();
+            else
+                throw new IllegalStateException("client could not be created as remote address has not yet been resolved");
+        }
     }
 
 
     public void disconnect(String group, Address addr) throws Exception {
-        writeRequest(new GossipData(GossipType.UNREGISTER, group, addr));
+        if(isConnected())
+            writeRequest(new GossipData(GossipType.UNREGISTER, group, addr));
     }
 
     public void destroy() {
@@ -247,9 +229,30 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     }
 
     public String toString() {
-        return String.format("RouterStub[localsocket=%s, router_host=%s]", client.localAddress(), remote);
+        return String.format("RouterStub[local=%s, router_host=%s]", client != null? client.localAddress() : "n/a", remote);
     }
 
+    /** Creates remote from remote_sa. If the latter is unresolved, tries to resolve it one more time (e.g. via DNS) */
+    protected boolean resolveRemoteAddress() {
+        if(this.remote != null)
+            return true;
+        if(this.remote_sa.isUnresolved()) {
+            this.remote_sa=new InetSocketAddress(remote_sa.getHostString(), remote_sa.getPort());
+            if(this.remote_sa.isUnresolved())
+                return false;
+        }
+        this.remote=new IpAddress(remote_sa.getAddress(), remote_sa.getPort());
+        return true;
+    }
+
+    protected BaseServer createClient(SocketFactory sf) {
+        BaseServer cl=use_nio? new NioClient(local, remote) : new TcpClient(local, remote);
+        if(sf != null) cl.socketFactory(sf);
+        cl.receiver(this);
+        cl.addConnectionListener(this);
+        cl.socketConnectionTimeout(sock_conn_timeout).tcpNodelay(tcp_nodelay);
+        return cl;
+    }
 
     protected synchronized void writeRequest(GossipData req) throws Exception {
         int size=req.serializedSize();

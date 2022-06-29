@@ -3781,8 +3781,8 @@ public class Util {
     }
 
     /**
-     * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of
-     * InetSocketAddress
+     * Input is "daddy[8880],sindhu[8880],camille[5555]. Returns a list of InetSocketAddress. If a hostname doesn't
+     * resolve, then we'll use the hostname to create an address: new InetSocketAddress(host, port)
      */
     public static List<InetSocketAddress> parseCommaDelimitedHosts2(String hosts,int port_range) throws UnknownHostException {
 
@@ -3796,10 +3796,24 @@ public class Util {
             String host=t.substring(0,t.indexOf('['));
             host=host.trim();
             int port=Integer.parseInt(t.substring(t.indexOf('[') + 1,t.indexOf(']')));
-            InetAddress[] resolvedAddresses=InetAddress.getAllByName(host);
-            for(int i=0; i < resolvedAddresses.length; i++) {
+
+            InetAddress[] resolvedAddresses=null;
+            try {
+                resolvedAddresses=InetAddress.getAllByName(host);
+            }
+            catch(Exception ex) {
+            }
+            if(resolvedAddresses != null) {
+                for(int i=0; i < resolvedAddresses.length; i++) {
+                    for(int p=port; p <= port + port_range; p++) {
+                        addr=new InetSocketAddress(resolvedAddresses[i],p);
+                        retval.add(addr);
+                    }
+                }
+            }
+            else {
                 for(int p=port; p <= port + port_range; p++) {
-                    addr=new InetSocketAddress(resolvedAddresses[i], p);
+                    addr=new InetSocketAddress(host,p);
                     retval.add(addr);
                 }
             }

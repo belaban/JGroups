@@ -170,10 +170,12 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                 PhysicalAddress physical_addr=getPhysicalAddressFromCache(local);
                 String logical_name=org.jgroups.util.NameCache.get(local);
                 stubManager = new RouterStubManager(this,group,local, logical_name, physical_addr, getReconnectInterval()).useNio(this.use_nio).socketFactory(getSocketFactory());
-                for(InetSocketAddress gr : gossip_routers) {
+                for(InetSocketAddress gr: gossip_routers) {
                     try {
-                        stubManager.createAndRegisterStub(new IpAddress(bind_addr, bind_port), new IpAddress(gr.getAddress(), gr.getPort()))
-                          .receiver(this).set("tcp_nodelay", tcp_nodelay);
+                        InetSocketAddress target=gr.isUnresolved()? new InetSocketAddress(gr.getHostString(), gr.getPort())
+                          : new InetSocketAddress(gr.getAddress(), gr.getPort());
+                        stubManager.createAndRegisterStub(new InetSocketAddress(bind_addr, bind_port), target)
+                          .receiver(this).tcpNoDelay(tcp_nodelay);
                     }
                     catch(Throwable t) {
                         log.error("%s: failed creating stub to %s: %s", local, bind_addr + ":" + bind_port, t);

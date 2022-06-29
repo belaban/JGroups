@@ -1,10 +1,12 @@
 package org.jgroups.tests;
 
 import org.jgroups.protocols.PingData;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.util.Promise;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.List;
 
 /**
@@ -16,7 +18,8 @@ public class RouterStubGet implements RouterStub.MembersNotification {
 
     protected void start(String host, int port, String cluster_name, boolean nio) {
         try {
-            stub=new RouterStub(null, 0, InetAddress.getByName(host), port, nio, null, null);
+            InetSocketAddress local=new InetSocketAddress((InetAddress)null,0), remote=new InetSocketAddress(host,port);
+            stub=new RouterStub(local, remote, nio, null, null);
             stub.connect();
             stub.getMembers(cluster_name, this);
             promise.getResult(5000);
