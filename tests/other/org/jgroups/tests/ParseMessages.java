@@ -29,7 +29,7 @@ public class ParseMessages {
         Util.parse(new ByteArrayInputStream(buf, offset, length), msg_consumer, batch_consumer, tcp);
     }
 
-    public static void parse(InputStream in, BiConsumer<Short,Message> msg_consumer,
+    public void parse(InputStream in, BiConsumer<Short,Message> msg_consumer,
                              BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) throws FileNotFoundException {
         Util.parse(in, msg_consumer, batch_consumer, tcp);
     }
@@ -38,7 +38,7 @@ public class ParseMessages {
     public static void main(String[] args) throws Exception {
         String file=null;
         boolean print_vers=false, binary_to_ascii=true, parse_discovery_responses=true, tcp=false;
-
+        ParseMessages instance = null;
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-file")) {
                 file=args[++i];
@@ -66,6 +66,10 @@ public class ParseMessages {
             }
             if("-show-views".equalsIgnoreCase(args[i])) {
                 show_views=Boolean.parseBoolean(args[++i]);
+                continue;
+            }
+            if("-instance".equalsIgnoreCase(args[i])) {
+                instance = (ParseMessages) Class.forName(args[++i]).newInstance();
                 continue;
             }
             help();
@@ -117,9 +121,21 @@ public class ParseMessages {
             }
         };
         InputStream in=file != null? new FileInputStream(file) : System.in;
-        if(binary_to_ascii)
-            in=new BinaryToAsciiInputStream(in);
+        if (instance == null) {
+            instance = new ParseMessages();
+        }
+        instance.run(in, binary_to_ascii, tcp, msg_consumer, batch_consumer);
+    }
+
+    protected void run(InputStream in, boolean binary_to_ascii, boolean tcp, BiConsumer<Short,Message> msg_consumer, BiConsumer<Short,MessageBatch> batch_consumer) throws FileNotFoundException {
+        if(binary_to_ascii) {
+            in = createInputStream(in);
+        }
         parse(in, msg_consumer, batch_consumer, tcp);
+    }
+
+    protected InputStream createInputStream(InputStream in) {
+        return new BinaryToAsciiInputStream(in);
     }
 
     protected static void parseDiscoveryResponse(Message msg) throws IOException, ClassNotFoundException {
