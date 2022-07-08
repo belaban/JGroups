@@ -85,6 +85,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
       "the max bundle size in the transport")
     protected int     max_xmit_req_size;
 
+    @Property(description="The max size of a message batch when delivering messages. 0 is unbounded")
+    protected int max_batch_size;
+
     @Property(description="If true, a unicast message to self is looped back up on the same thread. Noter that this may " +
       "cause problems (e.g. deadlocks) in some applications, so make sure that your code can handle this. " +
       "Issue: https://issues.redhat.com/browse/JGRP-2547")
@@ -879,7 +882,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         do {
             try {
                 batch.reset(); // sets index to 0: important as batch delivery may not remove messages from batch!
-                win.removeMany(true, 0, drop_oob_and_dont_loopback_msgs_filter,
+                win.removeMany(true, max_batch_size, drop_oob_and_dont_loopback_msgs_filter,
                                batch_creator, BATCH_ACCUMULATOR);
             }
             catch(Throwable t) {
