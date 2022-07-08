@@ -81,6 +81,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
       "the max bundle size in the transport")
     protected int     max_xmit_req_size;
 
+    @Property(description="The max size of a message batch when delivering messages. 0 is unbounded")
+    protected int max_batch_size;
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
@@ -875,7 +877,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         do {
             try {
                 batch.reset(); // sets index to 0: important as batch delivery may not remove messages from batch!
-                win.removeMany(true, 0, drop_oob_and_dont_loopback_msgs_filter,
+                win.removeMany(true, max_batch_size, drop_oob_and_dont_loopback_msgs_filter,
                                batch_creator, BATCH_ACCUMULATOR);
             }
             catch(Throwable t) {

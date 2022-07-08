@@ -121,6 +121,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
       "the max bundle size in the transport")
     protected int     max_xmit_req_size;
 
+    @Property(description="The max size of a message batch when delivering messages. 0 is unbounded")
+    protected int max_batch_size;
+
     @Property(description="If enabled, multicasts the highest sent seqno every xmit_interval ms. This is skipped if " +
       "a regular message has been multicast, and the task aquiesces if the highest sent seqno hasn't changed for " +
       "resend_last_seqno_max_times times. Used to speed up retransmission of dropped last messages (JGRP-1904)")
@@ -874,7 +877,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             try {
                 batch.reset();
                 // Don't include DUMMY and OOB_DELIVERED messages in the removed set
-                buf.removeMany(remove_msgs, 0, no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs,
+                buf.removeMany(remove_msgs, max_batch_size, no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs,
                                batch_creator, BATCH_ACCUMULATOR);
             }
             catch(Throwable t) {
