@@ -42,18 +42,14 @@ public class LazyThreadFactory extends DefaultThreadFactory {
 
 
     public void setAddress(String address) {
-        boolean changed=false;
-        if(!Util.match(this.address, address))
-            changed=true;
+        boolean changed=!Util.match(this.address, address);
         super.setAddress(address);
         if(changed)
             renameThreads();
     }
 
     public void setClusterName(String cluster_name) {
-        boolean changed=false;
-        if(!Util.match(this.clusterName, cluster_name))
-            changed=true;
+        boolean changed=!Util.match(this.clusterName, cluster_name);
         super.setClusterName(cluster_name);
         if(changed)
             renameThreads();
@@ -66,12 +62,7 @@ public class LazyThreadFactory extends DefaultThreadFactory {
     }
 
     public void removeTerminatedThreads() {
-        for(Iterator<WeakReference<Thread>> it=threads.iterator(); it.hasNext();) {
-            WeakReference<Thread> ref=it.next();
-            Thread thread=ref.get();
-            if(thread == null || thread.getState() == Thread.State.TERMINATED)
-                it.remove();
-        }
+        threads.removeIf(t -> t == null || t.get() == null || t.get().getState() == Thread.State.TERMINATED);
     }
 
     public String dumpThreads() {
