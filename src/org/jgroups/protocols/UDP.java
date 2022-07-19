@@ -513,6 +513,9 @@ public class UDP extends TP {
             if(s != null && addr != null) {
                 intf=NetworkInterface.getByInetAddress(addr);
                 s.setNetworkInterface(intf);
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("multicast_socket on %s", intf.getName()));
+                }
             }
         }
         catch(Throwable ex) {
