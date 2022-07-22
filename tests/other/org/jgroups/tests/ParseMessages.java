@@ -38,7 +38,7 @@ public class ParseMessages {
     public static void main(String[] args) throws Exception {
         String file=null;
         boolean print_vers=false, binary_to_ascii=true, parse_discovery_responses=true, tcp=false;
-        ParseMessages instance = null;
+        String instance = null;
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-file")) {
                 file=args[++i];
@@ -69,38 +69,26 @@ public class ParseMessages {
                 continue;
             }
             if("-instance".equalsIgnoreCase(args[i])) {
-                instance = (ParseMessages) Class.forName(args[++i]).newInstance();
+                instance = args[++i];
                 continue;
             }
             help();
             return;
         }
+        InnerParseMessages inner = new InnerParseMessages(print_vers, binary_to_ascii, parse_discovery_responses, instance);
+        inner.parse(inner.createInputStream(file != null? new FileInputStream(file) : System.in), inner.msg_consumer, inner.batch_consumer, tcp);
+    }
 
-        final boolean print_version=print_vers, parse=parse_discovery_responses;
-        final AtomicInteger cnt=new AtomicInteger(1);
-        BiConsumer<Short,Message> msg_consumer=(version,msg) -> {
-            if(parse) {
-                try {
-                    parseDiscoveryResponse(msg);
-                }
-                catch(Exception e) {
-                    System.err.printf("failed parsing discovery response from %s: %s\n", msg.src(), e);
-                }
-            }
-            View view=show_views? getView(msg) : null;
-            System.out.printf("%d:%s %s, hdrs: %s %s\n", cnt.getAndIncrement(),
-                              print_version? String.format(" [%s]", Version.print(version)) : "", msg, msg.printHeaders(),
-                              view == null? "" : "(view: " + view + ")");
-        };
-
-        BiConsumer<Short,MessageBatch> batch_consumer=(version,batch) -> {
-            System.out.printf("%d:%s batch to %s from %s (%d messages):\n",
-                              cnt.getAndIncrement(),
-                              print_version? String.format(" [%s]", Version.print(version)) : "",
-                              batch.dest() != null? batch.dest() : "<all>", batch.sender(),
-                              batch.size());
-            int index=1;
-            for(Message msg: batch) {
+    static class InnerParseMessages {
+        private final boolean binary_to_ascii;
+        final BiConsumer<Short,Message> msg_consumer;
+        final BiConsumer<Short,MessageBatch> batch_consumer;
+        private final ParseMessages parseMessages;
+        public InnerParseMessages(boolean print_vers, boolean binary_to_ascii, boolean parse_discovery_responses, String instance) throws Exception {
+            this.binary_to_ascii = binary_to_ascii;
+            final boolean print_version=print_vers, parse=parse_discovery_responses;
+            final AtomicInteger cnt=new AtomicInteger(1);
+            this.msg_consumer=(version,msg) -> {
                 if(parse) {
                     try {
                         parseDiscoveryResponse(msg);
@@ -111,27 +99,54 @@ public class ParseMessages {
                 }
                 View view=show_views? getView(msg) : null;
                 System.out.printf("%d:%s %s, hdrs: %s %s\n", cnt.getAndIncrement(),
-                                  print_version? String.format(" [%s]", Version.print(version)) : "", msg, msg.printHeaders(),
-                                  view == null? "" : "(view: " + view + ")");
-                System.out.printf("    %d: [%d bytes%s], hdrs: %s %s\n",
-                                  index++, msg.getLength(),
-                                  msg.getFlags() > 0? ", flags=" + Util.flagsToString(msg.getFlags()) : "",
-                                  msg.printHeaders(),
-                                  view == null? "" : "(view: " + view + ")");
-            }
-        };
-        InputStream in=file != null? new FileInputStream(file) : System.in;
-        if (instance == null) {
-            instance = new ParseMessages();
-        }
-        instance.run(in, binary_to_ascii, tcp, msg_consumer, batch_consumer);
-    }
+                      print_version? String.format(" [%s]", Version.print(version)) : "", msg, msg.printHeaders(),
+                      view == null? "" : "(view: " + view + ")");
+            };
 
-    protected void run(InputStream in, boolean binary_to_ascii, boolean tcp, BiConsumer<Short,Message> msg_consumer, BiConsumer<Short,MessageBatch> batch_consumer) throws FileNotFoundException {
-        if(binary_to_ascii) {
-            in = createInputStream(in);
+            this.batch_consumer=(version,batch) -> {
+                System.out.printf("%d:%s batch to %s from %s (%d messages):\n",
+                      cnt.getAndIncrement(),
+                      print_version? String.format(" [%s]", Version.print(version)) : "",
+                      batch.dest() != null? batch.dest() : "<all>", batch.sender(),
+                      batch.size());
+                int index=1;
+                for(Message msg: batch) {
+                    if(parse) {
+                        try {
+                            parseDiscoveryResponse(msg);
+                        }
+                        catch(Exception e) {
+                            System.err.printf("failed parsing discovery response from %s: %s\n", msg.src(), e);
+                        }
+                    }
+                    View view=show_views? getView(msg) : null;
+                    System.out.printf("%d:%s %s, hdrs: %s %s\n", cnt.getAndIncrement(),
+                          print_version? String.format(" [%s]", Version.print(version)) : "", msg, msg.printHeaders(),
+                          view == null? "" : "(view: " + view + ")");
+                    System.out.printf("    %d: [%d bytes%s], hdrs: %s %s\n",
+                          index++, msg.getLength(),
+                          msg.getFlags() > 0? ", flags=" + Util.flagsToString(msg.getFlags()) : "",
+                          msg.printHeaders(),
+                          view == null? "" : "(view: " + view + ")");
+                }
+            };
+            if (instance == null) {
+                parseMessages = new ParseMessages();
+            } else {
+                parseMessages = (ParseMessages) Class.forName(instance).newInstance();
+            }
         }
-        parse(in, msg_consumer, batch_consumer, tcp);
+        public InputStream createInputStream(InputStream in) {
+            if(binary_to_ascii) {
+                return parseMessages.createInputStream(in);
+            } else {
+                return in;
+            }
+        }
+        public void parse(InputStream input, BiConsumer<Short,Message> msg_consumer,
+                          BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) throws FileNotFoundException {
+            parseMessages.parse(input, msg_consumer, batch_consumer, tcp);
+        }
     }
 
     protected InputStream createInputStream(InputStream in) {
