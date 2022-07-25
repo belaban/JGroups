@@ -13,9 +13,9 @@
     <UNICAST3 />
     <pbcast.STABLE />
     <AUTH auth_class="org.jgroups.auth.Krb5Token"
-          client_principal_name="martin"
-          client_password="Password99"
-          service_principal_name="cluster1" />
+          auth_token.client_principal_name="martin"
+          auth_token.client_password="Password99"
+          auth_token.service_principal_name="cluster1" />
     <pbcast.GMS />
     <UFC />
     <MFC />

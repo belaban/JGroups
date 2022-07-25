@@ -69,14 +69,17 @@ public class AUTH extends Protocol {
         super.init();
         if(auth_token == null)
             throw new IllegalStateException("no authentication mechanism configured");
-        if(auth_token instanceof X509Token) {
-            X509Token tmp=(X509Token)auth_token;
-            tmp.setCertificate();
-        }
+
         auth_token.init();
     }
 
     public void start() throws Exception {
+        if(auth_token instanceof X509Token) {
+            log.debug("X509Token detected. Initializing certificates");
+            X509Token tmp=(X509Token)auth_token;
+            tmp.setCertificate();
+        }
+
         super.start();
         if(auth_token != null)
             auth_token.start();
