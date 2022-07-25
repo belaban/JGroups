@@ -12,10 +12,10 @@
     <pbcast.STABLE/>
     <FRAG2/>
     <AUTH auth_class="org.jgroups.auth.X509Token"
-        auth_value="chris"
-        keystore_path="/home/bela/JGroups/keystore/defaultStore.keystore"
-        keystore_password="changeit"
-        cert_alias="test"
-        cipher_type="RSA"/>
+        auth_token.auth_value="chris"
+        auth_token.keystore_path="/home/bela/JGroups/keystore/defaultStore.keystore"
+        auth_token.keystore_password="changeit"
+        auth_token.cert_alias="test"
+        auth_token.cipher_type="RSA"/>
     <pbcast.GMS/>
 </config>
