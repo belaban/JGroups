@@ -16,9 +16,9 @@
         <!-- nexus-staging-maven-plugin -->
         <autoReleaseAfterClose>true</autoReleaseAfterClose>
         <nexus.server.id>jboss-releases-repository</nexus.server.id>
-        <nexus.server.url>https://repository.dev.jboss.org/nexus</nexus.server.url>
+        <nexus.server.url>https://repository.jboss.org/nexus</nexus.server.url>
         <nexus.snapshot.server.id>jboss-snapshots-repository</nexus.snapshot.server.id>
-        <nexus.snapshot.server.url>https://repository.dev.jboss.org/nexus/content/repositories/snapshots/</nexus.snapshot.server.url>
+        <nexus.snapshot.server.url>https://repository.jboss.org/nexus/content/repositories/snapshots/</nexus.snapshot.server.url>
         <insecure.repositories>ERROR</insecure.repositories>
         <log4j2.version>2.18.0</log4j2.version>
     </properties>
@@ -74,7 +74,7 @@
         <repository>
             <id>jboss-public-repository-group</id>
             <name>JBoss Public Maven Repository Group</name>
-            <url>https://repository.dev.jboss.org/nexus/content/groups/public/</url>
+            <url>https://repository.jboss.org/nexus/content/groups/public/</url>
             <layout>default</layout>
             <releases>
                 <enabled>true</enabled>
@@ -88,7 +88,7 @@
         <repository>
             <id>jboss-snapshots-repository</id>
             <name>JBoss Nexus snapshots repository</name>
-            <url>https://repository.dev.jboss.org/nexus/content/repositories/snapshots/</url>
+            <url>https://repository.jboss.org/nexus/content/repositories/snapshots/</url>
             <layout>default</layout>
             <releases>
                 <enabled>false</enabled>
