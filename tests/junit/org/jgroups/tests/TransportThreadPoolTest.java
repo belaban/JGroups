@@ -14,56 +14,61 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 
 /**
  * @author Bela Ban
  */
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class TransportThreadPoolTest extends ChannelTestBase {
-    JChannel c1, c2;
+    JChannel a, b;
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        c1=createChannel().name("A");
-        c2=createChannel().name("B");
-        makeUnique(c1,c2);
+        a=createChannel().name("A");
+        b=createChannel().name("B");
+        makeUnique(a, b);
     }
 
     @AfterMethod
     protected void tearDown() throws Exception {
-        Util.close(c2, c1);
+        Util.close(b, a);
     }
 
 
     @Test
     public void testThreadPoolReplacement() throws Exception {
         MyReceiver r1=new MyReceiver(), r2=new MyReceiver();
-        c1.setReceiver(r1);
-        c2.setReceiver(r2);
+        a.setReceiver(r1);
+        b.setReceiver(r2);
         
-        c1.connect("TransportThreadPoolTest");
-        c2.connect("TransportThreadPoolTest");
+        a.connect("TransportThreadPoolTest");
+        b.connect("TransportThreadPoolTest");
         
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, c1, c2);
+        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
 
-        TP transport=c1.getProtocolStack().getTransport();
+        // wait until the existing thread pools have no active tasks:
+        Util.waitUntilTrue(2000, 100,
+                           () -> Stream.of(a, b).map(c -> c.getProtocolStack().getTransport().getThreadPool())
+                             .allMatch(p -> p.getThreadPoolSizeActive() == 0));
+        TP transport=a.getProtocolStack().getTransport();
         ExecutorService thread_pool=Executors.newFixedThreadPool(2);
         transport.setThreadPool(thread_pool);
 
-        transport=c2.getProtocolStack().getTransport();
+        transport=b.getProtocolStack().getTransport();
         thread_pool=Executors.newFixedThreadPool(2);
         transport.setThreadPool(thread_pool);
 
         Collection<String> l1=r1.getMsgs(), l2=r2.getMsgs();
-        c1.send(null, "hello world");
-        c2.send(null, "bela");
-        c1.send(null, "message 3");
-        c2.send(null, "message 4");
+        a.send(null, "A.m1");
+        b.send(null, "B.m1");
+        a.send(null, "A.m2");
+        b.send(null, "B.m2");
 
         Util.waitUntil(10000, 100, () -> l1.size() == 4 && l2.size() == 4,
-                       () -> String.format("r1: %s, r2: %s", print(l1), print(l2)));
+                       () -> String.format("A: %s, B: %s", print(l1), print(l2)));
 
-        System.out.println("messages c1: " + print(r1.getMsgs()) + "\nmessages c2: " + print(r2.getMsgs()));
+        System.out.println("messages A: " + print(r1.getMsgs()) + "\nmessages B: " + print(r2.getMsgs()));
         assert r1.getMsgs().size() == 4;
         assert r2.getMsgs().size() == 4;
     }

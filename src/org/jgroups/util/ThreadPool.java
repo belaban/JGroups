@@ -210,6 +210,9 @@ public class ThreadPool implements Lifecycle {
         }
     }
 
+    public String toString() {
+        return thread_pool != null? thread_pool.toString() : "n/a";
+    }
 
     protected static ExecutorService createThreadPool(int min_threads, int max_threads, long keep_alive_time,
                                                       String rejection_policy,
