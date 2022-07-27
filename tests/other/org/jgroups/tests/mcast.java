@@ -119,7 +119,7 @@ public class mcast {
                 switch(ip_version) {
                     case IPv4:
                     case Dual:
-                        mcast_addr=InetAddress.getByName("232.5.5.5");
+                        mcast_addr=InetAddress.getByName("239.5.5.5");
                         break;
                     case IPv6:
                         mcast_addr=InetAddress.getByName("ff0e::8:8:8");

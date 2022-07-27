@@ -7,7 +7,7 @@ import java.util.Enumeration;
 
 
 /**
- Listens on 224.0.1.105:23364 for mod-cluster advertizements from httpd daemons and prints them to stdout
+ Listens on 239.0.1.105:23364 for mod-cluster advertizements from httpd daemons and prints them to stdout
  @author Bela Ban
  @version $Revision: 1.1 $
  */
@@ -50,7 +50,7 @@ public class ModClusterAdvertizeListener {
                 return;
             }
             if(mcast_addr == null)
-                mcast_addr=InetAddress.getByName("224.0.1.105");
+                mcast_addr=InetAddress.getByName("239.0.1.105");
         }
         catch(Exception ex) {
             System.err.println(ex);

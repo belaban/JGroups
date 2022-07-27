@@ -84,10 +84,10 @@ You should again see 2 instances of Draw which form a cluster. If this is not th
 have to add a multicast route to the loopback device (this requires superuser or admin privileges):
         
 ----
-route add -net 224.0.0.0 netmask 240.0.0.0 dev lo
+route add -net 239.0.0.0 netmask 240.0.0.0 dev lo
 ----
 
-This means that all traffic directed to the 224.0.0.0 network will be sent to the loopback interface,
+This means that all traffic directed to the 239.0.0.0 network will be sent to the loopback interface,
 which means it doesn't need any network to be running.
         
 Typical home networks have a gateway/firewall with 2 NICs: the first (`eth0`) is connected to the outside

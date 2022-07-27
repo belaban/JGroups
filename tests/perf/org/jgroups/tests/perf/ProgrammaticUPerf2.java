@@ -37,7 +37,7 @@ public class ProgrammaticUPerf2 implements Receiver {
     private static final JChannel         channel;
     private static final RpcDispatcher    disp;
     private static final String           BIND_ADDR="site_local";
-    private static final String           MCAST_ADDR="232.5.5.5";
+    private static final String           MCAST_ADDR="239.5.5.5";
     private static Address                local_addr=null;
     protected static final List<Address>  members=new ArrayList<>();
     protected static volatile View        view=null;

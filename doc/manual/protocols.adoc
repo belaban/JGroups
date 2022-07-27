@@ -98,7 +98,7 @@ address chosen will be:
 | jgroups.name_cache.max_age | The max age (in milliseconds) a mapping between address and logical name is kept in the
                                NameCache. Not that elements are only evicted if there's not enough room.
 | jgroups.ipmcast.prefix | Needed if an IPv4 multicast address is used in an IPv6 system. The prefix (default: `ff0e::`)
-                           will prefix the IPv4 multicast address, e.g. `232.5.5.5` -> `ff0e::232.5.5.5`
+                           will prefix the IPv4 multicast address, e.g. `239.5.5.5` -> `ff0e::239.5.5.5`
 | jgroups.use.jdk_logger | If true, the JDK logger (`java.util.logging.Logger`) will be used
 | jgroups.log_class | The fully qualified name of a class implementing a logger to be used. See <<Logging>> for details.
 | jgroups.msg.default_headers | System prop for defining the default number of headers in a Message (default: 4).

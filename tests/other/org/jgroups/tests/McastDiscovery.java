@@ -308,7 +308,7 @@ public class McastDiscovery {
 
     public static void main(String[] args) {
         int ttl = 32;                  // ttl to use for IP mcast packets
-        String mcast_addr = "228.8.8.8";  // multicast address to use
+        String mcast_addr = "239.8.8.8";  // multicast address to use
         int mcast_port = 5000;         // port to use for mcast socket
         long interval = 2000;           // time between mcast requests
 

@@ -25,7 +25,7 @@ public final class ResourceManager {
         StackType type=Util.getIpStackType();
 
         String tmp_addr = SecurityActions.getProperty(Global.INITIAL_MCAST_ADDR,
-                                             type == StackType.IPv6? "ff0e::9:9:9" : "228.8.8.8");
+                                             type == StackType.IPv6? "ff0e::9:9:9" : "239.8.8.8");
         mcast_port = Short.parseShort(SecurityActions.getProperty(Global.INITIAL_MCAST_PORT, "7000"));
 		tcp_port = Short.parseShort(SecurityActions.getProperty(Global.INITIAL_TCP_PORT, "10000"));
 		try {
@@ -47,7 +47,7 @@ public final class ResourceManager {
 	}
 
 	/**
-	 * Returns the next available multicast address, e.g. "228.1.2.3". This
+	 * Returns the next available multicast address, e.g. "239.1.2.3". This
 	 * class is a JVM singleton
 	 * 
 	 * @return

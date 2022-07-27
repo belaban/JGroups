@@ -130,7 +130,7 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
 
         if(udp) {
             UDP u=new UDP().setMulticastAddress(InetAddress.getByName(mcast_addr)).setMulticastPort(mcast_port);
-            u.getDiagnosticsHandler().setMcastAddress(InetAddress.getByName("224.0.75.75")).enableUdp(true);
+            u.getDiagnosticsHandler().setMcastAddress(InetAddress.getByName("239.0.75.75")).enableUdp(true);
             prot_stack[0]=u;
             prot_stack[1]=new PING();
         }
@@ -631,7 +631,7 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
 
 
     public static void main(String[] args) throws Exception {
-        String  name=null, bind_addr=null, mcast_addr="232.4.5.6";
+        String  name=null, bind_addr=null, mcast_addr="239.4.5.6";
         boolean run_event_loop=true;
         AddressGenerator addr_generator=null;
         int port=7800, mcast_port=45566;

@@ -47,7 +47,7 @@ public class McastReceiverTest {
                 return;
             }
             if(mcast_addr == null)
-                mcast_addr=InetAddress.getByName("224.0.0.150");
+                mcast_addr=InetAddress.getByName("239.0.0.150");
         }
         catch(Exception ex) {
             System.err.println(ex);

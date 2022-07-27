@@ -93,7 +93,7 @@ public class ProgrammaticChat {
 
         InetAddress ba=bind_addr == null? Util.getAddress("site_local", Util.getIpStackType())
           : InetAddress.getByName(bind_addr);
-        InetAddress diag_addr=Util.getAddress("224.0.75.75", Util.getIpStackType());
+        InetAddress diag_addr=Util.getAddress("239.0.75.75", Util.getIpStackType());
         InetAddress mping_mcast=Util.getAddress("230.5.6.7", Util.getIpStackType());
         ProtocolStack stack=ch.getProtocolStack();
         TP transport=stack.getTransport().setBindAddress(ba);

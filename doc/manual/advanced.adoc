@@ -1786,7 +1786,7 @@ NOTE: Probe by default uses IP multicasting to send probe requests to all cluste
       sends the request to all members individually.
 
 The way probe works is that every stack has an additional multicast socket that by default listens
-            on 224.0.75.75:7500 for diagnostics requests from probe. The configuration is located in the transport
+            on 239.0.75.75:7500 for diagnostics requests from probe. The configuration is located in the transport
             protocol (e.g. UDP), and consists of the following properties:
         
 
@@ -1803,7 +1803,7 @@ The way probe works is that every stack has an additional multicast socket that 
 |diag_enable_tcp|Use a TCP socket to listen for probe requests (ignored if `enable_diagnostics` is false)
 
 |diagnostics_addr| The multicast address which the MulticastSocket should join. The default is
-                   `224.0.75.75` for IPv4 and `ff0e::0:75:75` for IPv6.
+                   `239.0.75.75` for IPv4 and `ff0e::0:75:75` for IPv6.
 
 |diagnostics_bind_addr|Bind address for diagnostic probing. Used when diag_enable_tcp is true")
 
@@ -1824,7 +1824,7 @@ To get information about the cluster members running in the local network, we ca
 
 [belasmac] /Users/bela$ probe.sh
 
--- sending probe on /224.0.75.75:7500
+-- sending probe on /239.0.75.75:7500
 
 
 #1 (100 bytes):
@@ -1868,7 +1868,7 @@ However, we can also JMX information from a specific protocol, e.g. FRAG2 (sligh
 
 [linux]/home/bela$ probe.sh  jmx=FRAG2
 
--- send probe on /224.0.75.75:7500
+-- send probe on /239.0.75.75:7500
 
 
 #1 (318 bytes):
@@ -1911,7 +1911,7 @@ We can also get information about specific properties in a given protocol:
 
 [belasmac] /Users/bela$ probe.sh  jmx=NAKACK2.xmit
 
--- sending probe on /224.0.75.75:7500
+-- sending probe on /239.0.75.75:7500
 
 
 #1 (597 bytes):
@@ -1938,7 +1938,7 @@ all cluster members. We can also pass a list of attributes:
 ----
 [belasmac] /Users/bela$ probe.sh jmx=NAKACK2.xmit,num
 
--- sending probe on /224.0.75.75:7500
+-- sending probe on /239.0.75.75:7500
 
 
 #1 (646 bytes):
@@ -1994,7 +1994,7 @@ To get RPC stats, `rpcs` and `rpcs-details` can be used:
 ----
 [belasmac] /Users/bela/JGroups$ probe.sh rpcs rpcs-details
 
--- sending probe on /224.0.75.75:7500
+-- sending probe on /239.0.75.75:7500
 #1 (481 bytes):
 local_addr=C [ip=127.0.0.1:55535, version=3.6.8-SNAPSHOT, cluster=uperf, 4 mbr(s)]
 uperf: sync  multicast RPCs=0
@@ -2094,7 +2094,7 @@ binding to the loopback (127.0.0.1) device and ports starting from 7800, the fol
 <config>
     <UDP
          bind_addr="127.0.0.1" bind_port="7800"
-         mcast_addr="228.2.2.2"
+         mcast_addr="239.2.2.2"
          mcast_port="${jgroups.udp.mcast_port:45588}">
     ...
 </config>
