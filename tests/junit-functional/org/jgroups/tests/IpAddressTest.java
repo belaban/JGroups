@@ -42,7 +42,7 @@ public class IpAddressTest {
             e=new IpAddress("127.0.0.1", 5555);
             f=new IpAddress("www.ibm.com", 80);
             g=new IpAddress("www.ibm.com", 8080);
-            h=new IpAddress("224.0.0.1", 5555);
+            h=new IpAddress("239.0.0.1", 5555);
         }
         c=b;
     }

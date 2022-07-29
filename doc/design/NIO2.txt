@@ -12,8 +12,8 @@ Gathering writes and scattering reads are not supported in DatagramChannel
   support for gathering writes and scattering reads
 
 - UPDATE: gathering writes can be supported by simply connecting to the multicast address, e.g.
-  DatagramChannel.connect(new InetAddress.getByName("232.5.5.5"));
-  - On the receiver side, we cannot connect to 232.5.5.5, as the senders' address will be the individual IP addresses
+  DatagramChannel.connect(new InetAddress.getByName("239.5.5.5"));
+  - On the receiver side, we cannot connect to 239.5.5.5, as the senders' address will be the individual IP addresses
     - May not an issue as we may not have to do scattering reads on the receiver side...
   - This doesn't work for sending and receiving *unicasts*, as we'll need to able to send / receive unicasts
     to / from different destinations using the same datagram socket

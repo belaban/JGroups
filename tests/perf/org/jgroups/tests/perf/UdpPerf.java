@@ -45,7 +45,7 @@ public class UdpPerf {
         System.out.println(sb);
 
         mcast_sock=new MulticastSocket(7500);
-        sock_addr=new InetSocketAddress(InetAddress.getByName("232.5.5.5"), 7500);
+        sock_addr=new InetSocketAddress(InetAddress.getByName("239.5.5.5"), 7500);
         mcast_sock.joinGroup(sock_addr, null);
         mcast_sock.setReceiveBufferSize(10 * 1000 * 1000);
         mcast_sock.setSendBufferSize(5 * 1000 * 1000);

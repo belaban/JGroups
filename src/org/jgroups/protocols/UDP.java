@@ -29,7 +29,7 @@ import java.util.Map;
  * <p>
  * The following properties are read by the UDP protocol:
  * <ul>
- * <li> param mcast_addr - the multicast address to use; default is 228.8.8.8.
+ * <li> param mcast_addr - the multicast address to use; default is 239.8.8.8.
  * <li> param mcast_port - (int) the port that the multicast is sent on; default
  * is 7600
  * <li> param ip_mcast - (boolean) flag whether to use IP multicast; default is
@@ -68,7 +68,7 @@ public class UDP extends TP {
     protected static final String MCAST_NAME="mcast-receiver";
 
     @Property(name="mcast_addr", description="The multicast address used for sending and receiving packets",
-              defaultValueIPv4="228.8.8.8", defaultValueIPv6="ff0e::8:8:8",
+              defaultValueIPv4="239.8.8.8", defaultValueIPv6="ff0e::8:8:8",
               systemProperty=Global.UDP_MCAST_ADDR,writable=false)
     protected InetAddress mcast_group_addr;
 

@@ -215,11 +215,11 @@ Sometimes there isn't a network connection (e.g. DSL modem is down), or we want 
 For this the loopback interface (typically lo) can be configured, e.g.
 
 ....
-route add -net 224.0.0.0 netmask 240.0.0.0 dev lo
+route add -net 239.0.0.0 netmask 240.0.0.0 dev lo
 ....
 
-This means that all traffic directed to the `224.0.0.0` network will be sent to the loopback interface, which means it
-doesn't need any network to be running. Note that the `224.0.0.0` network is a placeholder for all multicast addresses
+This means that all traffic directed to the `239.0.0.0` network will be sent to the loopback interface, which means it
+doesn't need any network to be running. Note that the `239.0.0.0` network is a placeholder for all multicast addresses
 in most UNIX implementations: it will catch _all_ multicast traffic.
 
 The above instructions may also work for Windows systems, but this hasn't

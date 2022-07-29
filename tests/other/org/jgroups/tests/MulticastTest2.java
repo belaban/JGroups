@@ -18,7 +18,7 @@ public class MulticastTest2 {
 
     static {
         try {
-            MCAST_ADDR=InetAddress.getByName("228.8.8.8");
+            MCAST_ADDR=InetAddress.getByName("239.8.8.8");
             BIND_ADDR=InetAddress.getLocalHost();
         }
         catch(UnknownHostException e) {
