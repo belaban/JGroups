@@ -139,7 +139,7 @@
         <dependency>
             <groupId>org.wildfly.security</groupId>
             <artifactId>wildfly-elytron</artifactId>
-            <version>1.19.0.Final</version>
+            <version>1.20.0.Final</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
