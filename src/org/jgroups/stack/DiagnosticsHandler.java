@@ -37,7 +37,7 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
     protected volatile boolean         enable_tcp;
 
     @Property(description="Multicast address for diagnostic probing (UDP MulticastSocket). Used when enable_udp " +
-      "is true", defaultValueIPv4="239.0.75.75",defaultValueIPv6="ff0e::0:75:75")
+      "is true", defaultValueIPv4="224.0.75.75",defaultValueIPv6="ff0e::0:75:75")
     protected InetAddress              mcast_addr;
 
     @Property(description="Port for diagnostic probing. Default is 7500")

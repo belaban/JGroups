@@ -19,7 +19,7 @@ public final class Global {
     public static final int MAX_DATAGRAM_PACKET_SIZE=1 << 16;
     public static final Address NULL_ADDRESS=new UUID(0,0);
 
-    public static final String DEFAULT_DIAG_ADDR="239.0.75.75";
+    public static final String DEFAULT_DIAG_ADDR="224.0.75.75";
     public static final String DEFAULT_DIAG_ADDR_IPv6="ff0e::0:75:75";
 
     public static final String IPv4="java.net.preferIPv4Stack";

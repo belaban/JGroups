@@ -130,7 +130,7 @@ public class ProgrammaticUPerf implements Receiver, MethodInvoker {
 
         if(udp) {
             UDP u=new UDP().setMulticastAddress(InetAddress.getByName(mcast_addr)).setMulticastPort(mcast_port);
-            u.getDiagnosticsHandler().setMcastAddress(InetAddress.getByName("239.0.75.75")).enableUdp(true);
+            u.getDiagnosticsHandler().setMcastAddress(InetAddress.getByName("224.0.75.75")).enableUdp(true);
             prot_stack[0]=u;
             prot_stack[1]=new PING();
         }
