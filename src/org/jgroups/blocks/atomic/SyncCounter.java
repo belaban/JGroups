@@ -1,5 +1,9 @@
 package org.jgroups.blocks.atomic;
 
+import org.jgroups.annotations.Experimental;
+import org.jgroups.util.LongSizeStreamable;
+import org.jgroups.util.Streamable;
+
 /**
  * A synchronous counter interface
  *
@@ -72,6 +76,25 @@ public interface SyncCounter {
      * @return the updated value
      */
     long addAndGet(long delta);
+
+    /**
+     * Atomically updates the counter's value.
+     * <p>
+     * Both {@link CounterFunction} and return value must implement {@link Streamable} to be sent over the network. The function should not block thread since it can cause deadlocks neither invoke any operation over the {@link SyncCounter}.
+     * <p>
+     * The {@link CounterView} is a copy of the counter's value and the last {@link CounterView#set(long)} will be applied to the counter.
+     *
+     * @param updateFunction The update {@link CounterFunction}.
+     * @param <T>            The return value type.
+     * @return The function's return value.
+     * @see CounterFunction
+     * @see CounterView
+     * @see LongSizeStreamable
+     */
+    @Experimental
+    default <T extends Streamable> T update(CounterFunction<T> updateFunction) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return an asynchronous wrapper around this instance.

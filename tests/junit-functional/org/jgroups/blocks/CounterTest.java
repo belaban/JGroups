@@ -3,20 +3,31 @@ package org.jgroups.blocks;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.atomic.AsyncCounter;
+import org.jgroups.blocks.atomic.CounterFunction;
 import org.jgroups.blocks.atomic.CounterService;
+import org.jgroups.blocks.atomic.CounterView;
 import org.jgroups.blocks.atomic.SyncCounter;
 import org.jgroups.protocols.COUNTER;
 import org.jgroups.util.AverageMinMax;
+import org.jgroups.util.LongSizeStreamable;
+import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertFalse;
+import static org.testng.AssertJUnit.assertTrue;
 
 /**
  * Tests {@link org.jgroups.blocks.atomic.SyncCounter} and {@link org.jgroups.blocks.atomic.AsyncCounter}
@@ -54,7 +65,7 @@ public class CounterTest {
     }
 
 
-    public void testIncrement() throws TimeoutException {
+    public void testIncrement() {
         ca.incrementAndGet();
         assertValues(1);
         cb.incrementAndGet();
@@ -130,6 +141,38 @@ public class CounterTest {
         assert previous_value == 5 && cb.get() == 10;
     }
 
+    public void testIncrementUsingFunction() {
+        assertEquals(1, ca.incrementAndGet());
+        assertEquals(1, cb.update(new GetAndAddFunction(1)).getAsLong());
+        assertEquals(2, cc.update(new GetAndAddFunction(5)).getAsLong());
+        assertValues(7);
+    }
+
+    public void testComplexFunction() {
+        assertEquals(0, ca.get());
+        AddWithLimitResult res = cb.update(new AddWithLimitFunction(2, 10));
+        assertEquals(2, res.result);
+        assertFalse(res.limitReached);
+        assertValues(2);
+
+        res = cc.update(new AddWithLimitFunction(8, 10));
+        assertEquals(10, res.result);
+        assertFalse(res.limitReached);
+        assertValues(10);
+
+        res = cc.update(new AddWithLimitFunction(1, 10));
+        assertEquals(10, res.result);
+        assertTrue(res.limitReached);
+        assertValues(10);
+
+        ca.set(0);
+        assertValues(0);
+
+        res = cb.update(new AddWithLimitFunction(20, 10));
+        assertEquals(10, res.result);
+        assertTrue(res.limitReached);
+        assertValues(10);
+    }
 
     protected void assertValues(int expected_val) {
         assert Stream.of(ca,cb,cc).allMatch(c -> c.get() == expected_val);
@@ -137,5 +180,117 @@ public class CounterTest {
 
     protected static JChannel create(String name) throws Exception {
         return new JChannel(Util.getTestStack(new COUNTER().setBypassBundling(false))).name(name);
+    }
+
+    public static class GetAndAddFunction implements CounterFunction<LongSizeStreamable>, SizeStreamable {
+
+        long delta;
+
+        // for unmarshalling
+        @SuppressWarnings("unused")
+        public GetAndAddFunction() {}
+
+        public GetAndAddFunction(long delta) {
+            this.delta = delta;
+        }
+
+        @Override
+        public LongSizeStreamable apply(CounterView counterView) {
+            long ret = counterView.get();
+            counterView.set(ret + delta);
+            return new LongSizeStreamable(ret);
+        }
+
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
+            out.writeLong(delta);
+        }
+
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+            delta = in.readLong();
+        }
+
+        @Override
+        public int serializedSize() {
+            return Long.BYTES;
+        }
+    }
+
+    public static class AddWithLimitFunction implements CounterFunction<AddWithLimitResult>, SizeStreamable {
+
+        long delta;
+        long limit;
+
+        // for unmarshalling
+        @SuppressWarnings("unused")
+        public AddWithLimitFunction() {
+        }
+
+        public AddWithLimitFunction(long delta, long limit) {
+            this.delta = delta;
+            this.limit = limit;
+        }
+
+        @Override
+        public AddWithLimitResult apply(CounterView counterView) {
+            long newValue = counterView.get() + delta;
+            if (newValue > limit) {
+                counterView.set(limit);
+                return new AddWithLimitResult(limit, true);
+            } else {
+                counterView.set(newValue);
+                return new AddWithLimitResult(newValue, false);
+            }
+        }
+
+        @Override
+        public int serializedSize() {
+            return Long.BYTES * 2;
+        }
+
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
+            out.writeLong(delta);
+            out.writeLong(limit);
+        }
+
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+            delta = in.readLong();
+            limit = in.readLong();
+        }
+    }
+
+    public static class AddWithLimitResult implements SizeStreamable {
+
+        long result;
+        boolean limitReached;
+
+        // for unmarshalling
+        @SuppressWarnings("unused")
+        public AddWithLimitResult() {}
+
+        public AddWithLimitResult(long result, boolean limitReached) {
+            this.result = result;
+            this.limitReached = limitReached;
+        }
+
+        @Override
+        public int serializedSize() {
+            return Long.BYTES + 1;
+        }
+
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
+            out.writeLong(result);
+            out.writeBoolean(limitReached);
+        }
+
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+            result = in.readLong();
+            limitReached = in.readBoolean();
+        }
     }
 }
