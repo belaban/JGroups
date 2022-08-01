@@ -1,0 +1,45 @@
+package org.jgroups.util.jdkspecific;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import org.jgroups.logging.Log;
+import org.jgroups.util.ShutdownRejectedExecutionHandler;
+import org.jgroups.util.ThreadFactory;
+import org.jgroups.util.Util;
+
+public class ThreadCreator {
+
+   public static boolean hasVirtualThreads() {
+      return false;
+   }
+
+   public static Thread createThread(Runnable target, String name, boolean createDaemons, boolean useVirtualThreads) {
+      if (useVirtualThreads) {
+         throw new UnsupportedOperationException("Cannot use virtual threads with this JDK");
+      } else {
+         Thread t = new Thread(target, name);
+         t.setDaemon(createDaemons);
+         return t;
+      }
+   }
+
+   public static ExecutorService createThreadPool(int min_threads, int max_threads, long keep_alive_time,
+                                                  String rejection_policy,
+                                                  BlockingQueue<Runnable> queue, final ThreadFactory factory,
+                                                  boolean useVirtualThreads, Log log) {
+      if (useVirtualThreads) {
+         throw new UnsupportedOperationException("Cannot use virtual threads with this JDK");
+      } else {
+         ThreadPoolExecutor pool = new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS,
+               queue, factory);
+         RejectedExecutionHandler handler = Util.parseRejectionPolicy(rejection_policy);
+         pool.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
+         log.debug("thread pool min/max/keep-alive (ms): %d/%d/%d", min_threads, max_threads, keep_alive_time);
+         return pool;
+      }
+   }
+}

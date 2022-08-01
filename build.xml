@@ -13,6 +13,7 @@
     <property name="build.properties.file" value="build.properties"/>
     <property file="${build.properties.file}"/>
     <property name="src.dir"               value="${root.dir}/src"/>
+    <property name="src-19.dir"            value="${root.dir}/mr/19/src"/>
     <property name="tests.dir"             value="${root.dir}/tests"/>
     <property name="other.dir"             value="${tests.dir}/other"/>
     <property name="junit.dir"             value="${tests.dir}/junit"/>
@@ -42,6 +43,10 @@
     <property name="ivy.version"           value="2.5.0" />
     <property name="project.pom"            value="${root.dir}/pom.xml"/>
     <property name="manifest"              value="${dist.dir}/MANIFEST.MF"/>
+    <condition property="jdk-19">
+        <javaversion atleast="19"/>
+    </condition>
+
 
 
 	<!-- 5 minutes per test suite timeout -->
@@ -145,9 +150,8 @@
     	<copy file="${build.properties.file}.template" tofile="${build.properties.file}" overwrite="false"/>
     </target>
 
-
-    <target name="compile" depends="prepare" description="Compiles all Java files">
-        <javac destdir="${compile.dir}" source="11" target="11"
+    <target name="compile-11" depends="prepare" description="Compiles all Java files">
+        <javac destdir="${compile.dir}" release="11"
                classpathref="jg.classpath" includeantruntime="false" debug="on"
                includes="org/jgroups/**">
             <src path="${src.dir}"/>
@@ -159,6 +163,19 @@
             <src path="${perf.dir}"/>
             <src path="${util.dir}"/>
         </javac>
+    </target>
+
+    <target name="compile-19" depends="prepare" description="Compiles all Java files that require JDK 19" if="jdk-19">
+        <mkdir dir="${compile.dir}/META-INF/versions/19"/>
+        <javac destdir="${compile.dir}/META-INF/versions/19" release="19"
+               classpathref="jg.classpath" includeantruntime="false" debug="on"
+               includes="org/jgroups/**">
+             <compilerarg value="--enable-preview"/>
+             <src path="${src-19.dir}"/>
+        </javac>
+    </target>
+
+    <target name="compile" depends="prepare,compile-11,compile-19" description="Compiles all Java files">
         <set-version/>
     </target>
 
@@ -240,6 +257,7 @@
             <attribute name="Implementation-Title" value="${ant.project.name}"/>
             <attribute name="Implementation-Version" value="${version}, built ${TODAY}"/>
             <attribute name="Implementation-Vendor" value="JBoss, a division of Red Hat"/>
+            <attribute name="Multi-Release" value="true"/>
         </manifest>
     </target>
 
@@ -417,7 +435,7 @@
     </target>
 
     <target name="write-version">
-        <java classname="org.jgroups.util.WriteVersionTo" fork="false" classpathref="jg.classpath">
+        <java classname="org.jgroups.util.WriteVersionTo" fork="true" classpathref="jg.classpath">
             <arg value="-pom"/>
             <arg value="${project.pom}"/>
             <arg value="-input"/>

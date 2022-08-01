@@ -17,6 +17,7 @@ import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.jdkspecific.ThreadCreator;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -25,9 +26,6 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import java.io.*;
 import java.lang.annotation.Annotation;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.management.*;
 import java.lang.reflect.*;
 import java.math.BigInteger;
@@ -113,15 +111,6 @@ public class Util {
     public static final boolean     can_bind_to_mcast_addr;
     protected static ResourceBundle resource_bundle;
 
-    // Fibers (project Loom - Java 16,17)
-    private static final Class<?>             OF_VIRTUAL_CLASS=getOfVirtualClass();  // Java 17
-    private static final MethodHandles.Lookup LOOKUP=MethodHandles.publicLookup();
-    private static final MethodHandle         OF_VIRTUAL=getOfVirtualHandle();       // Java 17
-    private static final MethodHandle         CREATE_FIBER=getCreateFiberHandle();
-    private static final MethodHandle         EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY=getNewVirtualThreadFactoryHandle();
-
-
-
     static {
         String tmp;
         resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Util.class.getClassLoader());
@@ -193,91 +182,7 @@ public class Util {
 
 
     public static boolean fibersAvailable() {
-        return CREATE_FIBER != null;
-    }
-
-
-    protected static MethodHandle getCreateFiberHandle() {
-        MethodType type=MethodType.methodType(Thread.class, String.class, int.class, Runnable.class);
-        try {
-            return LOOKUP.findStatic(Thread.class, "newThread", type);
-        }
-        catch(Exception e) {
-            return getUnstartedHandle();
-        }
-    }
-
-    protected static Class<?> getOfVirtualClass() {
-        try {
-            return Util.loadClass("java.lang.Thread$Builder$OfVirtual", (Class<?>)null);
-        }
-        catch(ClassNotFoundException e) {
-            return null;
-        }
-    }
-
-    protected static MethodHandle getOfVirtualHandle() {
-        try {
-            return LOOKUP.findStatic(Thread.class, "ofVirtual", MethodType.methodType(OF_VIRTUAL_CLASS));
-        }
-        catch(Exception e) {
-            return null;
-        }
-    }
-
-    protected static MethodHandle getUnstartedHandle() {
-        try {
-            return LOOKUP.findVirtual(OF_VIRTUAL_CLASS, "unstarted", MethodType.methodType(Thread.class, Runnable.class));
-        }
-        catch(Exception ex) {
-            return null;
-        }
-    }
-
-    protected static MethodHandle getNewVirtualThreadFactoryHandle() {
-        MethodType type=MethodType.methodType(ExecutorService.class);
-        try {
-            return LOOKUP.findStatic(Executors.class, "newVirtualThreadExecutor", type);
-        }
-        catch(Exception e) {
-            return null;
-        }
-    }
-
-
-    public static ExecutorService createFiberThreadPool() {
-        if(EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY == null)
-            throw new IllegalStateException("failed to create fiber thread pool (factory is null)");
-        try {
-            return (ExecutorService)EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY.invokeExact();
-        }
-        catch(Throwable t) {
-            throw new IllegalStateException(String.format("failed to create fiber thread pool: %s", t));
-        }
-    }
-
-    /**
-     * Use of reflection to create fibers. If a JDK < 15/Loom is found, we'll create regular threads.
-     */
-    public static Thread createFiber(Runnable r, String name) {
-        if(CREATE_FIBER == null) {
-            return new Thread(r, name);
-        }
-        try {
-            return (Thread)CREATE_FIBER.invokeExact(name, 1, r);
-        }
-        catch(Throwable ex) {
-        }
-
-        try {
-            Object of=OF_VIRTUAL.invoke();
-            Thread t=(Thread)CREATE_FIBER.invokeWithArguments(of, r);
-            t.setName(name);
-            return t;
-        }
-        catch(Throwable t) {
-            return new Thread(r, name);
-        }
+        return ThreadCreator.hasVirtualThreads();
     }
 
     public static int getNextHigherPowerOfTwo(int num) {

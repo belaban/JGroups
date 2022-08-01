@@ -8,6 +8,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
 import org.jgroups.protocols.TP;
+import org.jgroups.util.jdkspecific.ThreadCreator;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -146,13 +147,8 @@ public class ThreadPool implements Lifecycle {
     @Override
     public void init() throws Exception {
         if(enabled) {
-            if(tp.useVirtualThreads())
-                thread_pool=Util.createFiberThreadPool(); // Executors.newVirtualThreadExecutor();
-            else {
-                tp.getLog().debug("thread pool min/max/keep-alive (ms): %d/%d/%d", min_threads, max_threads, keep_alive_time);
-                thread_pool=createThreadPool(min_threads, max_threads, keep_alive_time,
-                                             "abort", new SynchronousQueue<>(), tp.getThreadFactory());
-            }
+            thread_pool=ThreadCreator.createThreadPool(min_threads, max_threads, keep_alive_time,
+                  "abort", new SynchronousQueue<>(), tp.getThreadFactory(), tp.useVirtualThreads(), tp.getLog());
         }
         else // otherwise use the caller's thread to unmarshal the byte buffer into a message
             thread_pool=new DirectExecutor();
