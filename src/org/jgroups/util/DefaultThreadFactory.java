@@ -72,7 +72,7 @@ public class DefaultThreadFactory implements ThreadFactory {
 
     protected Thread newThread(Runnable r, String name, String addr, String cluster_name) {
         String thread_name=getNewThreadName(name, addr, cluster_name);
-        return ThreadCreator.createThread(r, name, createDaemons, use_fibers);
+        return ThreadCreator.createThread(r, thread_name, createDaemons, use_fibers);
     }
 
     public void renameThread(String base_name, Thread thread) {
