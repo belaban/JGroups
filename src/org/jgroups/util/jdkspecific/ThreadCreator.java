@@ -1,15 +1,11 @@
 package org.jgroups.util.jdkspecific;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
 import org.jgroups.logging.Log;
 import org.jgroups.util.ShutdownRejectedExecutionHandler;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
+
+import java.util.concurrent.*;
 
 public class ThreadCreator {
 

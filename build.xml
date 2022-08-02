@@ -182,11 +182,11 @@
     <target name="compile-plus-essential-unittests" depends="prepare"
             description="Compiles sources plus selected tests (e.g. perftests) shipped with JGroups">
         <javac srcdir="${src.dir}" destdir="${compile.dir}"
-               source="11" target="11" classpathref="jg.classpath"
+               release="11" classpathref="jg.classpath"
                includeantruntime="false" debug="on"
                includes="org/jgroups/**">
         </javac>
-        <javac destdir="${compile.dir}" source="11" target="11"
+        <javac destdir="${compile.dir}" release="11"
                classpathref="jg.classpath" includeantruntime="false" debug="on"
                includes="org/jgroups/tests/**">
             <src path="${tests.dir}/perf"/>
@@ -234,18 +234,11 @@
         <copy file="${doc.dir}/README" tofile="${dist.dir}/README" overwrite="true"/>
     </target>
 
-    <target name="bla">
-        <mkdir dir="${dist.dir}"/>
-        <jar destfile="${dist.dir}/bla.jar"
-             basedir="${compile.dir}"
-             manifest="${dist.dir}/MANIFEST.MF"
-             includes="org/jgroups/**"
-             />
-    </target>
 
     <target name="jgroups.jar" description="Creates the jgroups.jar (includes everything)"
-            depends="compile-plus-essential-unittests,make-schema,make-keystore-no-compile,create-manifest,copy-conf-dir">
+            depends="compile-plus-essential-unittests,compile-19,make-schema,make-keystore-no-compile,create-manifest,copy-conf-dir">
         <mkdir dir="${dist.dir}"/>
+        <mkdir dir="${compile.dir}/META-INF"/>
         <jar destfile="${dist.dir}/jgroups-${version}.jar" basedir="${compile.dir}" manifest="${dist.dir}/MANIFEST.MF">
             <fileset dir="${compile.dir}" includes="*.xml, *.properties, *.cfg, *.jks">
                 <exclude name="log4j*.xml"/>
