@@ -2,9 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
-import org.jgroups.blocks.atomic.AsyncCounter;
-import org.jgroups.blocks.atomic.Counter;
-import org.jgroups.blocks.atomic.SyncCounter;
+import org.jgroups.blocks.atomic.*;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Bits;
@@ -71,7 +69,7 @@ public class COUNTER extends Protocol {
     protected final Map<String, VersionedValue> counters = Util.createConcurrentMap(20);
 
     // (client side) pending requests
-    protected final Map<Owner, RequestCompletableFuture> pending_requests = Util.createConcurrentMap(20);
+    protected final Map<Owner, RequestCompletableFuture<?>> pending_requests = Util.createConcurrentMap(20);
 
     protected static final byte REQUEST  = 1;
     protected static final byte RESPONSE = 2;
@@ -126,6 +124,12 @@ public class COUNTER extends Protocol {
             Request create() {
                 return new ResendPendingRequests();
             }
+        },
+        UPDATE_FUNCTION {
+            @Override
+            Request create() {
+                return new UpdateFunctionRequest<>();
+            }
         };
 
         abstract Request create();
@@ -134,24 +138,30 @@ public class COUNTER extends Protocol {
     protected enum ResponseType {
         VALUE {
             @Override
-            Response create() {
+            Response<Long> create() {
                 return new ValueResponse();
             }
         },
         EXCEPTION{
             @Override
-            Response create() {
+            Response<Void> create() {
                 return new ExceptionResponse();
             }
         },
         RECONCILE {
             @Override
-            Response create() {
+            Response<Void> create() {
                 return new ReconcileResponse();
+            }
+        },
+        UPDATE_FUNCTION {
+            @Override
+            Response<?> create() {
+                return new UpdateFunctionResponse<>();
             }
         };
 
-        abstract Response create();
+        abstract Response<?> create();
     }
 
     public boolean getBypassBundling() {
@@ -245,7 +255,7 @@ public class COUNTER extends Protocol {
                     req.execute(this, msg.getSrc());
                     break;
                 case RESPONSE:
-                    Response rsp = responseFromDataInput(in);
+                    Response<?> rsp = responseFromDataInput(in);
                     if (log.isTraceEnabled())
                         log.trace("[" + local_addr + "] <-- [" + msg.getSrc() + "] " + rsp);
                     handleResponse(rsp, msg.getSrc());
@@ -299,7 +309,7 @@ public class COUNTER extends Protocol {
     @ManagedOperation(description="Dumps all pending requests")
     public String dumpPendingRequests() {
         StringBuilder sb=new StringBuilder();
-        for(RequestCompletableFuture cf: pending_requests.values()) {
+        for(RequestCompletableFuture<?> cf: pending_requests.values()) {
             Request tmp=cf.getRequest();
             sb.append(tmp).append('(').append(tmp.getClass().getCanonicalName()).append(") ");
         }
@@ -370,7 +380,7 @@ public class COUNTER extends Protocol {
     }
 
 
-    protected void sendResponse(Address dest, Response rsp) {
+    protected void sendResponse(Address dest, Response<?> rsp) {
         try {
             ByteArray buffer=responseToBuffer(rsp);
             logSending(dest, rsp);
@@ -399,22 +409,22 @@ public class COUNTER extends Protocol {
     }
 
     protected void sendCounterNotFoundExceptionResponse(Address dest, Owner owner, String counter_name) {
-        Response rsp=new ExceptionResponse(owner, "counter \"" + counter_name + "\" not found");
+        Response<?> rsp=new ExceptionResponse(owner, "counter \"" + counter_name + "\" not found");
         sendResponse(dest, rsp);
     }
 
-    private long updateCounter(ResponseData responseData) {
+    private <T> T updateCounter(ResponseData<T> responseData) {
         if(!coord.equals(local_addr)) {
             counters.compute(responseData.counterName, responseData);
         }
-        return responseData.value;
+        return responseData.returnValue;
     }
 
     protected static ByteArray requestToBuffer(Request req) throws Exception {
         return streamableToBuffer(REQUEST,(byte)req.getRequestType().ordinal(), req);
     }
 
-    protected static ByteArray responseToBuffer(Response rsp) throws Exception {
+    protected static ByteArray responseToBuffer(Response<?> rsp) throws Exception {
         return streamableToBuffer(RESPONSE,(byte)rsp.getResponseType().ordinal(), rsp);
     }
 
@@ -433,8 +443,8 @@ public class COUNTER extends Protocol {
         return retval;
     }
 
-    protected static Response responseFromDataInput(DataInput in) throws Exception {
-        Response retval=RESPONSE_TYPES_CACHED[in.readByte()].create();
+    protected static Response<?> responseFromDataInput(DataInput in) throws Exception {
+        Response<?> retval=RESPONSE_TYPES_CACHED[in.readByte()].create();
         retval.readFrom(in);
         return retval;
     }
@@ -549,6 +559,25 @@ public class COUNTER extends Protocol {
         }
 
         @Override
+        public <T extends Streamable> CompletionStage<T> update(CounterFunction<T> updateFunction) {
+            if(local_addr.equals(coord)) {
+                try {
+                    VersionedValue val = getCounter(name);
+                    UpdateResult<T> res = val.update(updateFunction);
+                    if (res.updated) {
+                        updateBackups(name, res.snapshot);
+                    }
+                    return CompletableFuture.completedFuture(res.result);
+                } catch (Throwable t) {
+                    return CompletableFuture.failedFuture(t);
+                }
+            }
+            Owner owner = getOwner();
+            UpdateFunctionRequest<T> req = new UpdateFunctionRequest<>(owner, name, updateFunction);
+            return sendRequestToCoordinator(owner, req);
+        }
+
+        @Override
         public SyncCounter sync() {
             return sync;
         }
@@ -594,6 +623,11 @@ public class COUNTER extends Protocol {
         }
 
         @Override
+        public <T extends Streamable> T update(CounterFunction<T> updateFunction) {
+            return CompletableFutures.join(counter.update(updateFunction));
+        }
+
+        @Override
         public AsyncCounter async() {
             return counter;
         }
@@ -603,8 +637,8 @@ public class COUNTER extends Protocol {
         }
     }
 
-    private CompletableFuture<Long> sendRequestToCoordinator(Owner owner, Request request) {
-        RequestCompletableFuture cf = new RequestCompletableFuture(request);
+    private <T> CompletableFuture<T> sendRequestToCoordinator(Owner owner, Request request) {
+        RequestCompletableFuture<T> cf = new RequestCompletableFuture<>(request);
         pending_requests.put(owner, cf);
         sendRequest(coord, request);
         return cf.orTimeout(timeout, TimeUnit.MILLISECONDS).thenApply(this::updateCounter);
@@ -679,7 +713,7 @@ public class COUNTER extends Protocol {
 
         @Override
         public void execute(COUNTER protocol, Address sender) {
-            for(RequestCompletableFuture cf : protocol.pending_requests.values()) {
+            for(RequestCompletableFuture<?> cf : protocol.pending_requests.values()) {
                 Request request=cf.getRequest();
                 protocol.traceResending(request);
                 protocol.sendRequest(protocol.coord, request);
@@ -727,7 +761,7 @@ public class COUNTER extends Protocol {
             if(val == null)
                 val=new_val;
             long[] result = val.snapshot();
-            Response rsp=new ValueResponse(owner, result);
+            Response<Long> rsp=new ValueResponse(owner, result);
             protocol.sendResponse(sender,rsp);
             protocol.updateBackups(name, result);
         }
@@ -782,7 +816,7 @@ public class COUNTER extends Protocol {
                 return;
             }
             long[] result=val.addAndGet(value);
-            Response rsp=new ValueResponse(owner, result);
+            Response<Long> rsp=new ValueResponse(owner, result);
             protocol.sendResponse(sender, rsp);
             if (value != 0) {
                 // value == 0 means it is a counter.get(); no backup update is required.
@@ -832,7 +866,7 @@ public class COUNTER extends Protocol {
                 return;
             }
             long[] result=val.set(value);
-            Response rsp=new ValueResponse(owner, result);
+            Response<Long> rsp=new ValueResponse(owner, result);
             protocol.sendResponse(sender, rsp);
             protocol.updateBackups(name, result);
         }
@@ -881,7 +915,7 @@ public class COUNTER extends Protocol {
                 return;
             }
             long[] result=val.compareAndSwap(expected, update);
-            Response rsp=new ValueResponse(owner, result);
+            Response<Long> rsp=new ValueResponse(owner, result);
             protocol.sendResponse(sender, rsp);
             protocol.updateBackups(name, val.snapshot());
         }
@@ -955,7 +989,7 @@ public class COUNTER extends Protocol {
                 index++;
             }
 
-            Response rsp=new ReconcileResponse(names, values, versions);
+            Response<Void> rsp=new ReconcileResponse(names, values, versions);
             protocol.sendResponse(sender, rsp);
         }
     }
@@ -1016,7 +1050,53 @@ public class COUNTER extends Protocol {
         }
     }
 
-    private static abstract class Response implements Streamable {
+    private static class UpdateFunctionRequest<T extends Streamable> extends SimpleRequest {
+
+        CounterFunction<T> updateFunction;
+
+        UpdateFunctionRequest() {}
+
+        UpdateFunctionRequest(Owner owner, String name, CounterFunction<T> updateFunction) {
+            super(owner, name);
+            this.updateFunction = updateFunction;
+        }
+
+        @Override
+        public RequestType getRequestType() {
+            return RequestType.UPDATE_FUNCTION;
+        }
+
+        @Override
+        public void execute(COUNTER protocol, Address sender) {
+            if(protocol.skipRequest())
+                return;
+            VersionedValue val=protocol.counters.get(name);
+            if(val == null) {
+                protocol.sendCounterNotFoundExceptionResponse(sender, owner, name);
+                return;
+            }
+            UpdateResult<T> result = val.update(updateFunction);
+            Response<T> rsp= new UpdateFunctionResponse<>(owner, result);
+            protocol.sendResponse(sender, rsp);
+            if (result.updated) {
+                protocol.updateBackups(name, result.snapshot);
+            }
+        }
+
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
+            super.writeTo(out);
+            Util.writeGenericStreamable(updateFunction, out);
+        }
+
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+            super.readFrom(in);
+            updateFunction = Util.readGenericStreamable(in);
+        }
+    }
+
+    private static abstract class Response<T> implements Streamable {
 
         private Owner owner;
 
@@ -1028,7 +1108,7 @@ public class COUNTER extends Protocol {
 
         abstract ResponseType getResponseType();
 
-        abstract void complete(RequestCompletableFuture completableFuture);
+        abstract void complete(RequestCompletableFuture<T> completableFuture);
 
         final Owner getOwner() {
             return owner;
@@ -1047,7 +1127,7 @@ public class COUNTER extends Protocol {
     }
 
 
-    protected static class ValueResponse extends Response {
+    protected static class ValueResponse extends Response<Long> {
         protected long result;
         protected long version;
 
@@ -1085,13 +1165,13 @@ public class COUNTER extends Protocol {
         }
 
         @Override
-        void complete(RequestCompletableFuture cf) {
-            cf.requestCompleted(result, version);
+        void complete(RequestCompletableFuture<Long> cf) {
+            cf.requestCompleted(result, version, result);
         }
     }
 
 
-    protected static class ExceptionResponse extends Response {
+    protected static class ExceptionResponse extends Response<Void> {
         protected String error_message;
 
         protected ExceptionResponse() {}
@@ -1121,12 +1201,12 @@ public class COUNTER extends Protocol {
         }
 
         @Override
-        void complete(RequestCompletableFuture cf) {
+        void complete(RequestCompletableFuture<Void> cf) {
             cf.requestFailed(error_message);
         }
     }
 
-    protected static class ReconcileResponse extends Response {
+    protected static class ReconcileResponse extends Response<Void> {
         protected String[] names;
         protected long[]   values;
         protected long[]   versions;
@@ -1163,11 +1243,58 @@ public class COUNTER extends Protocol {
         }
 
         @Override
-        void complete(RequestCompletableFuture cf) {
+        void complete(RequestCompletableFuture<Void> cf) {
             //no-op
         }
     }
 
+    private static class UpdateFunctionResponse<T extends Streamable> extends Response<T> {
+
+        private long value;
+        private long version;
+        private T response;
+
+        UpdateFunctionResponse() {}
+
+        UpdateFunctionResponse(Owner owner, UpdateResult<T> result) {
+            super(owner);
+            this.value = result.snapshot[0];
+            this.version = result.snapshot[1];
+            this.response = result.result;
+        }
+
+        @Override
+        public ResponseType getResponseType() {
+            return ResponseType.UPDATE_FUNCTION;
+        }
+
+        @Override
+        void complete(RequestCompletableFuture<T> completableFuture) {
+            completableFuture.requestCompleted(value, version, response);
+        }
+
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+            super.readFrom(in);
+            response = Util.readGenericStreamable(in);
+        }
+
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
+            super.writeTo(out);
+            Util.writeGenericStreamable(response, out);
+        }
+
+        @Override
+        public String toString() {
+            return "UpdateFunctionResponse{" +
+                    "response=" + response +
+                    ", value=" + value +
+                    ", version=" + version +
+                    ", owner=" + getOwner() +
+                    '}';
+        }
+    }
 
 
     public static class CounterHeader extends Header {
@@ -1225,9 +1352,54 @@ public class COUNTER extends Protocol {
             return new long[] {value, version};
         }
 
+        synchronized <T extends Streamable> UpdateResult<T> update(CounterFunction<T> updateFunction) {
+            // copy the value to a new instance
+            // if the function escapes the CounterView, it is working over a copy and does not change the original counter
+            CounterViewImpl view = new CounterViewImpl(value);
+            T res = updateFunction.apply(view);
+            boolean updated = false;
+            if (value != view.value) {
+                value = view.value;
+                ++version;
+                updated = true;
+            }
+            return new UpdateResult<>(updated, res, new long[] {value, version});
+        }
+
         public String toString() {return value + " (version=" + version + ")";}
     }
 
+    private static class CounterViewImpl implements CounterView {
+
+        private long value;
+
+        private CounterViewImpl(long value) {
+            this.value = value;
+        }
+
+        @Override
+        public long get() {
+            return value;
+        }
+
+        @Override
+        public void set(long value) {
+            this.value = value;
+        }
+    }
+
+    private static class UpdateResult<T extends Streamable> {
+
+        final boolean updated;
+        final T result;
+        final long[] snapshot;
+
+        private UpdateResult(boolean updated, T result, long[] snapshot) {
+            this.updated = updated;
+            this.result = result;
+            this.snapshot = snapshot;
+        }
+    }
 
     protected class ReconciliationTask implements Runnable {
         protected ResponseCollector<ReconcileResponse> responses;
@@ -1303,9 +1475,9 @@ public class COUNTER extends Protocol {
         }
     }
 
-    private static class RequestCompletableFuture extends CompletableFuture<ResponseData> {
+    private static class RequestCompletableFuture<T> extends CompletableFuture<ResponseData<T>> {
 
-        private final Request request;
+        final Request request;
 
         private RequestCompletableFuture(Request request) {
             this.request = request;
@@ -1315,8 +1487,8 @@ public class COUNTER extends Protocol {
             return request;
         }
 
-        void requestCompleted(long value, long version) {
-            this.complete(new ResponseData(request.getCounterName(), value, version));
+        void requestCompleted(long value, long version, T returnValue) {
+            this.complete(new ResponseData<>(request.getCounterName(), value, version, returnValue));
         }
 
         void requestFailed(String errorMessage) {
@@ -1324,15 +1496,17 @@ public class COUNTER extends Protocol {
         }
     }
 
-    private static class ResponseData implements BiFunction<String, VersionedValue, VersionedValue> {
+    private static class ResponseData<T> implements BiFunction<String, VersionedValue, VersionedValue> {
         private final String counterName;
         private final long value;
         private final long version;
+        private final T returnValue;
 
-        private ResponseData(String counterName, long value, long version) {
+        private ResponseData(String counterName, long value, long version, T returnValue) {
             this.counterName = counterName;
             this.value = value;
             this.version = version;
+            this.returnValue = returnValue;
         }
 
         /**

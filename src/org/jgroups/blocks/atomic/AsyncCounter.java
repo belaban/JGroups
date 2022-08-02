@@ -1,5 +1,9 @@
 package org.jgroups.blocks.atomic;
 
+import org.jgroups.annotations.Experimental;
+import org.jgroups.util.LongSizeStreamable;
+import org.jgroups.util.Streamable;
+
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -77,6 +81,26 @@ public interface AsyncCounter {
      * @return A {@link CompletionStage} that is completed with the updated counter's value.
      */
     CompletionStage<Long> addAndGet(long delta);
+
+    /**
+     * Atomically updates the counter's value.
+     * <p>
+     * Both {@link CounterFunction} and return value must implement {@link Streamable} to be sent over the network.
+     * The function should not block thread since it can cause deadlocks neither invoke any operation over the {@link AsyncCounter}.
+     * <p>
+     * The {@link CounterView} is a copy of the counter's value and the last {@link CounterView#set(long)} will be applied to the counter.
+     *
+     * @param updateFunction The update {@link CounterFunction}.
+     * @param <T>            The return value type.
+     * @return The {@link CompletionStage} which will be completed with the {@link CounterFunction} return value.
+     * @see CounterFunction
+     * @see CounterView
+     * @see LongSizeStreamable
+     */
+    @Experimental
+    default <T extends Streamable> CompletionStage<T> update(CounterFunction<T> updateFunction) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return a synchronous wrapper around this instance.
