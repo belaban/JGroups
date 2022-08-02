@@ -234,11 +234,19 @@
         <copy file="${doc.dir}/README" tofile="${dist.dir}/README" overwrite="true"/>
     </target>
 
+    <target name="bla">
+        <mkdir dir="${dist.dir}"/>
+        <jar destfile="${dist.dir}/bla.jar"
+             basedir="${compile.dir}"
+             manifest="${dist.dir}/MANIFEST.MF"
+             includes="org/jgroups/**"
+             />
+    </target>
+
     <target name="jgroups.jar" description="Creates the jgroups.jar (includes everything)"
             depends="compile-plus-essential-unittests,make-schema,make-keystore-no-compile,create-manifest,copy-conf-dir">
         <mkdir dir="${dist.dir}"/>
-        <jar destfile="${dist.dir}/jgroups-${version}.jar" basedir="${compile.dir}" manifest="${dist.dir}/MANIFEST.MF"
-             includes="org/jgroups/**">
+        <jar destfile="${dist.dir}/jgroups-${version}.jar" basedir="${compile.dir}" manifest="${dist.dir}/MANIFEST.MF">
             <fileset dir="${compile.dir}" includes="*.xml, *.properties, *.cfg, *.jks">
                 <exclude name="log4j*.xml"/>
                 <exclude name="settings.xml"/>
@@ -246,6 +254,10 @@
             <fileset dir="${compile.dir}/schema">
                 <include name="*.xsd"/>
             </fileset>
+
+            <fileset dir="${compile.dir}/META-INF"
+                     includes="org/jgroups/**"
+            />
         </jar>
     </target>
 
@@ -267,8 +279,8 @@
         <mkdir dir="${dist.dir}"/>
         <jar jarfile="${dist.dir}/jgroups-${version}-sources.jar"
              basedir="${src.dir}"
-             manifest="${dist.dir}/MANIFEST.MF"
-             includes="org/jgroups/**">
+             manifest="${dist.dir}/MANIFEST.MF">
+            <fileset dir="${src-19.dir}"/>
         </jar>
     </target>
 
