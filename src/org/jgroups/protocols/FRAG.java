@@ -193,6 +193,7 @@ public class FRAG extends Fragmentation {
             for(int i=0; i < num_frags; i++) {
                 Message frag_msg=new BytesMessage(dest, fragments[i]).setSrc(src)
                   .setFlag(msg.getFlags(true), true)
+                  .setFlag(msg.getFlags(false), false)
                   .putHeader(this.id, new FragHeader(frag_id, i, num_frags));
                 down_prot.down(frag_msg);
             }

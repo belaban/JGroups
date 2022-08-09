@@ -220,7 +220,9 @@ public class FRAG2 extends Fragmentation {
                 // don't copy the buffer, only src, dest and headers. Only copy the headers one time !
                 Message frag_msg=null;
                 if(serialize)
-                    frag_msg=new BytesMessage(msg.getDest()).setFlag(msg.getFlags(true), true);
+                    frag_msg=new BytesMessage(msg.getDest())
+                      .setFlag(msg.getFlags(true), true)
+                      .setFlag(msg.getFlags(false), false);
                 else
                     frag_msg=msg.copy(false, i == 0);
 
