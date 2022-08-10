@@ -88,7 +88,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
 
         protected boolean process(Message msg, boolean loopback) {
             Address dest=msg.getDest(), sender=msg.getSrc();
-            return get(sender, dest == null).process(msg, loopback);
+            return sender != null && get(sender, dest == null).process(msg, loopback);
         }
 
         protected boolean process(MessageBatch batch) {
