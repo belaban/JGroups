@@ -119,7 +119,7 @@ public class FixedSizeBitSet {
      */
     public void clear(int from, int to) {
         if(from < 0 || to < 0 || to < from || to >= size)
-            throw new IndexOutOfBoundsException("from=" + from + ", to=" + to);
+            return;
 
         int startWordIndex = wordIndex(from);
         int endWordIndex = wordIndex(to);
