@@ -35,7 +35,9 @@ import java.util.concurrent.locks.Lock;
  * times; after a lock has been released, future calls to unlock() have no effect.
  * @author Bela Ban
  * @since 2.12
+ * @deprecated See http://belaban.blogspot.com/2020/11/i-hate-distributed-locks.html.
  */
+@Deprecated
 public class LockService {
     protected JChannel ch;
     protected Locking  lock_prot;

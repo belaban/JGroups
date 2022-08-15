@@ -38,7 +38,9 @@ import java.util.stream.Collectors;
  * @since 2.12
  * @see CENTRAL_LOCK
  * @see CENTRAL_LOCK2
+ * @deprecated See http://belaban.blogspot.com/2020/11/i-hate-distributed-locks.html.
  */
+@Deprecated
 @MBean(description="Based class for locking functionality")
 abstract public class Locking extends Protocol {
 

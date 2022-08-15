@@ -26,7 +26,9 @@ import java.util.*;
  * @author Bela Ban
  * @since 2.12
  * @see Locking
+ * @deprecated See http://belaban.blogspot.com/2020/11/i-hate-distributed-locks.html.
  */
+@Deprecated
 public class CENTRAL_LOCK extends Locking implements LockNotification {
 
     @Property(description="Number of backups to the coordinator. Server locks get replicated to these nodes as well")

@@ -32,7 +32,9 @@ import java.util.stream.Stream;
  * @since  4.0.13
  * @see Locking
  * @see CENTRAL_LOCK
+ * @deprecated See http://belaban.blogspot.com/2020/11/i-hate-distributed-locks.html.
  */
+@Deprecated
 public class CENTRAL_LOCK2 extends Locking {
     @Property(description="Max time (im ms) to wait for lock info responses from members in a lock reconciliation phase",
     type=AttributeType.TIME)
