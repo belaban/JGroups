@@ -159,14 +159,19 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                 int left=tmp.indexOf('['), right=left != -1? tmp.indexOf(']', left) : -1;
                 if(left != -1 && right != -1) { // it is most likely an operation
                     try {
-                        return handleProbe("op=" + key);
+                        Map<String,String> m=handleProbe("op=" + key);
+                        if(m != null && !m.isEmpty())
+                            map.putAll(m);
                     }
                     catch(Throwable throwable) {
                         log.error(Util.getMessage("OperationInvocationFailure"), key.substring(index + 1), throwable);
                     }
                 }
-                else // try JMX
-                    return handleProbe("jmx=" + key);
+                else {// try JMX
+                    Map<String,String> m=handleProbe("jmx=" + key);
+                    if(m != null && !m.isEmpty())
+                        map.putAll(m);
+                }
             }
         }
         return map;
