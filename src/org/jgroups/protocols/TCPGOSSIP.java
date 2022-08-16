@@ -6,7 +6,6 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.stack.RouterStubManager;
 import org.jgroups.util.NameCache;
@@ -83,7 +82,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
 
     public void init() throws Exception {
         super.init();
-        stubManager = RouterStubManager.emptyGossipClientStubManager(this).useNio(this.use_nio);
+        stubManager=RouterStubManager.emptyGossipClientStubManager(log, timer).useNio(this.use_nio);
         // we cannot use TCPGOSSIP together with TUNNEL (https://issues.redhat.com/browse/JGRP-1101)
         TP tp=getTransport();
         if(tp instanceof TUNNEL)
@@ -110,7 +109,8 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
             log.trace("registering " + local_addr + " under " + cluster_name + " with GossipRouter");
             stubManager.destroyStubs();
             PhysicalAddress physical_addr = (PhysicalAddress) down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-            stubManager = new RouterStubManager(this, cluster_name, local_addr, NameCache.get(local_addr), physical_addr, reconnect_interval).useNio(this.use_nio);
+            stubManager=new RouterStubManager(log, timer, cluster_name, local_addr, NameCache.get(local_addr), physical_addr, reconnect_interval)
+              .useNio(this.use_nio);
             for (InetSocketAddress host: initial_hosts) {
                 InetSocketAddress target=host.isUnresolved()? new InetSocketAddress(host.getHostString(), host.getPort())
                   : new InetSocketAddress(host.getAddress(), host.getPort());

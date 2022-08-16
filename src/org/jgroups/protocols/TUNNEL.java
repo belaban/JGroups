@@ -140,7 +140,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         if(gossip_routers.isEmpty())
             throw new IllegalStateException("gossip_router_hosts needs to contain at least one address of a GossipRouter");
         log.debug("gossip routers are %s", gossip_routers);
-        stubManager=RouterStubManager.emptyGossipClientStubManager(this).useNio(this.use_nio);
+        stubManager=RouterStubManager.emptyGossipClientStubManager(log, timer).useNio(this.use_nio);
         sock=getSocketFactory().createDatagramSocket("jgroups.tunnel.ucast_sock", bind_port, bind_addr);
     }
     
@@ -169,7 +169,8 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                     stubManager.destroyStubs();
                 PhysicalAddress physical_addr=getPhysicalAddressFromCache(local);
                 String logical_name=org.jgroups.util.NameCache.get(local);
-                stubManager = new RouterStubManager(this,group,local, logical_name, physical_addr, getReconnectInterval()).useNio(this.use_nio).socketFactory(getSocketFactory());
+                stubManager=new RouterStubManager(log,timer,group,local, logical_name, physical_addr, reconnect_interval)
+                  .useNio(this.use_nio).socketFactory(getSocketFactory());
                 for(InetSocketAddress gr: gossip_routers) {
                     try {
                         InetSocketAddress target=gr.isUnresolved()? new InetSocketAddress(gr.getHostString(), gr.getPort())

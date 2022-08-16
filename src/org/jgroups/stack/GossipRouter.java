@@ -166,9 +166,18 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     public DiagnosticsHandler diagHandler()                 {return diag;}
 
 
-
     @ManagedAttribute(description="operational status", name="running")
-    public boolean       running()                          {return running.get();}
+    public boolean running() {return running.get();}
+
+    @ManagedAttribute(description="The number of different clusters registered")
+    public int numRegisteredClusters() {
+        return address_mappings.size();
+    }
+
+    @ManagedAttribute(description="The number of registered client (all clusters)")
+    public int numRegisteredClients() {
+        return (int)address_mappings.values().stream().mapToLong(s -> s.keySet().size()).sum();
+    }
 
 
     public GossipRouter init() {
