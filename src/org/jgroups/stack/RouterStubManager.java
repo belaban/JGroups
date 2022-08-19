@@ -195,7 +195,7 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
                 if(!stub.isConnected()) {
                     try {
                         stub.connect(this.cluster_name, this.local_addr, this.logical_name, this.phys_addr);
-                        log.debug("%s: re-established connection to %s successfully for group %s",
+                        log.debug("%s: re-established connection to GossipRouter %s (group: %s)",
                                   local_addr, stub.remote(), this.cluster_name);
                     }
                     catch(Exception ex) {
@@ -211,6 +211,8 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     @Override
     public void closed(RouterStub stub) {
         try {
+            if(log.isDebugEnabled())
+                log.debug("%s: GossipRouter %s closed connection; starting reconnector task", local_addr, stub.remote());
             stub.destroy();
         }
         catch(Exception ignored) {
@@ -279,18 +281,25 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
         forEach(st -> {
             long timeout=System.currentTimeMillis() - st.lastHeartbeat();
             if(timeout > heartbeat_timeout) {
-                log.debug("closing connection to GossipRouter as no heartbeat has been received for %d ms; stub: %s",
-                          timeout, st);
+                log.debug("%s: closed connection to GossipRouter %s as no heartbeat has been received for %s",
+                          local_addr, st.remote(),
+                          Util.printTime(timeout, TimeUnit.MILLISECONDS), st);
                 st.destroy();
             }
         });
-        if(connectedStubs() == 0)
+        if(disconnectedStubs())
             startReconnector();
     }
 
     // unsynchronized
     protected int connectedStubs() {
         return (int)stubs.stream().filter(RouterStub::isConnected).count();
+    }
+
+    public boolean disconnectedStubs() {
+        synchronized(stubs) {
+            return stubs.stream().anyMatch(st -> !st.isConnected());
+        }
     }
 
 }
