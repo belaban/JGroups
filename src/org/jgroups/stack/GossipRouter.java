@@ -307,6 +307,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
                 }
                 break;
 
+            case HEARTBEAT:
+                handleHeartbeat(sender);
+                break;
+
             case GET_MBRS:
                 in=new ByteArrayDataInputStream(buf);
                 handleGetMembersRequest(sender, in);
@@ -345,6 +349,11 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
                     log.error(Util.getMessage("FailedReadingRequest"), t);
                     return;
                 }
+                break;
+
+            case HEARTBEAT:
+                request=readRequest(in, type);
+                handleHeartbeat(sender);
                 break;
 
             case GET_MBRS:
@@ -410,6 +419,18 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         return output_streams.computeIfAbsent(mbr, addr -> new ByteArrayDataOutputStream(size));
     }
 
+    protected void handleHeartbeat(Address sender) {
+        GossipData rsp=new GossipData(GossipType.HEARTBEAT);
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(rsp.serializedSize());
+        try {
+            rsp.writeTo(out);
+            server.send(sender, out.buffer(), 0, out.position());
+        }
+        catch(Exception ex) {
+            log.error("failed sending %s to %s: %s", GossipType.HEARTBEAT, sender, ex);
+        }
+    }
+
     protected void handleRegister(Address sender, DataInput in) {
         GossipData req=readRequest(in, GossipType.REGISTER);
         if(req != null) {
@@ -465,7 +486,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
             server.send(sender, out.buffer(), 0, out.position());
         }
         catch(Exception ex) {
-            log.error("failed sending %d to %s: %s", GossipType.GET_MBRS_RSP, sender, ex);
+            log.error("failed sending %s to %s: %s", GossipType.GET_MBRS_RSP, sender, ex);
         }
     }
 

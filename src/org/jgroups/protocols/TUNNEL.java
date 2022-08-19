@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
@@ -60,6 +61,14 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     @Property(description="A comma-separated list of GossipRouter hosts, e.g. HostA[12001],HostB[12001]")
     protected String  gossip_router_hosts;
 
+    @Property(description="Sends a heartbeat to the GossipRouter every heartbeat_interval ms (0 disables this",
+      type=AttributeType.TIME)
+    protected long    heartbeat_interval;
+
+    @Property(description="Max time (ms) with no received message or heartbeat after which the connection to a " +
+      "GossipRouter is closed. Ignored when heartbeat_interval is 0.", type=AttributeType.TIME)
+    protected long    heartbeat_timeout;
+
     /* ------------------------------------------ Fields ----------------------------------------------------- */
 
     protected final List<InetSocketAddress> gossip_routers=new ArrayList<>();
@@ -94,6 +103,21 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
             hosts=hosts.substring(1, hosts.length() - 1);
         gossip_router_hosts=hosts; //.addAll(Util.parseCommaDelimitedHosts2(hosts, port_range));
         return this;
+    }
+
+    @ManagedAttribute(description="Is the reconnector task running?")
+    public boolean isReconnectorTaskRunning() {
+        return stubManager != null && stubManager.reconnectorRunning();
+    }
+
+    @ManagedAttribute(description="Is the heartbeat task running?")
+    public boolean isHeartbeatTaskRunning() {
+        return stubManager != null && stubManager.heartbeaterRunning();
+    }
+
+    @ManagedAttribute(description="Is the timeout check task running?")
+    public boolean isTimeoutCheckTaskRunning() {
+        return stubManager != null && stubManager.timeouterRunning();
     }
 
     @ManagedOperation(description="Prints all stubs and the reconnect list")
@@ -170,7 +194,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                 PhysicalAddress physical_addr=getPhysicalAddressFromCache(local);
                 String logical_name=org.jgroups.util.NameCache.get(local);
                 stubManager=new RouterStubManager(log,timer,group,local, logical_name, physical_addr, reconnect_interval)
-                  .useNio(this.use_nio).socketFactory(getSocketFactory());
+                  .useNio(this.use_nio).socketFactory(getSocketFactory()).heartbeat(heartbeat_interval, heartbeat_timeout);
                 for(InetSocketAddress gr: gossip_routers) {
                     try {
                         InetSocketAddress target=gr.isUnresolved()? new InetSocketAddress(gr.getHostString(), gr.getPort())

@@ -16,6 +16,7 @@ import java.io.DataInput;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -40,6 +41,10 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     // max number of ms to wait for socket establishment to GossipRouter
     protected int                                         sock_conn_timeout=3000;
     protected boolean                                     tcp_nodelay=true;
+
+    protected boolean                                     handle_heartbeats;
+    // timestamp of last heartbeat (or message from GossipRouter)
+    protected volatile long                               last_heartbeat;
 
     // map to correlate GET_MBRS requests and responses
     protected final Map<String,List<MembersNotification>> get_members_map=new HashMap<>();
@@ -78,6 +83,9 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     public boolean       useNio()                             {return use_nio;}
     public IpAddress     gossipRouterAddress()                {return remote;}
     public boolean       isConnected()                        {return client != null && ((Client)client).isConnected();}
+    public RouterStub    handleHeartbeats(boolean f)          {handle_heartbeats=f; return this;}
+    public boolean       handleHeartbeats()                   {return handle_heartbeats;}
+    public long          lastHeartbeat()                      {return last_heartbeat;}
 
 
 
@@ -95,6 +103,8 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
         synchronized(this) {
             _doConnect();
         }
+        if(handle_heartbeats)
+            last_heartbeat=System.currentTimeMillis();
         try {
             writeRequest(new GossipData(GossipType.REGISTER, group, addr, logical_name, phys_addr));
         }
@@ -177,6 +187,8 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
         try {
             data.readFrom(in);
             switch(data.getType()) {
+                case HEARTBEAT:
+                    break;
                 case MESSAGE:
                 case SUSPECT:
                     if(receiver != null)
@@ -186,6 +198,8 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
                     notifyResponse(data.getGroup(), data.getPingData());
                     break;
             }
+            if(handle_heartbeats)
+                last_heartbeat=System.currentTimeMillis();
         }
         catch(Exception ex) {
             log.error(Util.getMessage("FailedReadingData"), ex);
@@ -196,6 +210,8 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
         GossipData data=new GossipData();
         data.readFrom(in);
         switch(data.getType()) {
+            case HEARTBEAT:
+                break;
             case MESSAGE:
             case SUSPECT:
                 if(receiver != null)
@@ -205,6 +221,8 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
                 notifyResponse(data.getGroup(), data.getPingData());
                 break;
         }
+        if(handle_heartbeats)
+            last_heartbeat=System.currentTimeMillis();
     }
 
     @Override
@@ -229,7 +247,10 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     }
 
     public String toString() {
-        return String.format("RouterStub[local=%s, router_host=%s]", client != null? client.localAddress() : "n/a", remote);
+        return String.format("RouterStub[local=%s, router_host=%s %s] - age: %s",
+                             client != null? client.localAddress() : "n/a", remote,
+                             isConnected()? "connected" : "disconnected",
+                             Util.printTime(System.currentTimeMillis()-last_heartbeat, TimeUnit.MILLISECONDS));
     }
 
     /** Creates remote from remote_sa. If the latter is unresolved, tries to resolve it one more time (e.g. via DNS) */
@@ -254,7 +275,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
         return cl;
     }
 
-    protected synchronized void writeRequest(GossipData req) throws Exception {
+    public synchronized void writeRequest(GossipData req) throws Exception {
         int size=req.serializedSize();
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(size+5);
         req.writeTo(out);

@@ -31,10 +31,17 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     protected final String           logical_name;
     protected final PhysicalAddress  phys_addr;
     protected final long             reconnect_interval; // reconnect interval (ms)
-    protected boolean                use_nio=true;       // whether to use RouterStubTcp or RouterStubNio
-    protected Future<?>              reconnector_task;
+    protected boolean                use_nio=true;       // whether to use TcpClient or NioClient
+    protected Future<?>              reconnector_task, heartbeat_task, timeout_checker_task;
     protected final Log              log;
-    private SocketFactory            socket_factory;
+    protected SocketFactory          socket_factory;
+    // Sends a heartbeat to the GossipRouter every heartbeat_interval ms (0 disables this)
+    protected long                   heartbeat_interval;
+    // Max time (ms) with no received message or heartbeat after which the connection to a GossipRouter is closed.
+    // Ignored when heartbeat_interval is 0.
+    protected long                   heartbeat_timeout;
+    protected final Runnable         send_heartbeat=this::sendHeartbeat;
+    protected final Runnable         check_timeouts=this::checkTimeouts;
 
 
     public RouterStubManager(Log log, TimeScheduler timer, String cluster_name, Address local_addr,
@@ -54,6 +61,9 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     
 
     public RouterStubManager useNio(boolean flag) {use_nio=flag; return this;}
+    public boolean           reconnectorRunning() {return reconnector_task != null && !reconnector_task.isDone();}
+    public boolean           heartbeaterRunning() {return heartbeat_task != null && !heartbeat_task.isDone();}
+    public boolean           timeouterRunning()   {return timeout_checker_task != null && !timeout_checker_task.isDone();}
 
 
     public RouterStubManager socketFactory(SocketFactory socket_factory) {
@@ -61,9 +71,30 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
         return this;
     }
 
+    public RouterStubManager heartbeat(long heartbeat_interval, long heartbeat_timeout) {
+        if(heartbeat_interval <= 0) {
+            // disable heartbeating
+            stopHeartbeatTask();
+            stopTimeoutChecker();
+            stubs.forEach(s -> s.handleHeartbeats(false));
+            this.heartbeat_interval=0;
+            return this;
+        }
+        if(heartbeat_interval >= heartbeat_timeout)
+            throw new IllegalArgumentException(String.format("heartbeat_interval (%d) must be < than heartbeat_timeout (%d)",
+                                                             heartbeat_interval, heartbeat_timeout));
+        // enable heartbeating
+        this.heartbeat_interval=heartbeat_interval;
+        this.heartbeat_timeout=heartbeat_timeout;
+        stubs.forEach(s -> s.handleHeartbeats(true));
+        startHeartbeatTask();
+        startTimeoutChecker();
+        return this;
+    }
+
+
     /**
-     * Applies action to all RouterStubs that are connected
-     * @param action
+     * Applies action to all connected RouterStubs
      */
     public void forEach(Consumer<RouterStub> action) {
         synchronized(stubs) {
@@ -83,7 +114,8 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
 
 
     public RouterStub createAndRegisterStub(InetSocketAddress local, InetSocketAddress router_addr) {
-        RouterStub stub=new RouterStub(local, router_addr, use_nio, this, socket_factory);
+        RouterStub stub=new RouterStub(local, router_addr, use_nio, this, socket_factory)
+          .handleHeartbeats(heartbeat_interval > 0);
         synchronized(stubs) {
             this.stubs.add(stub);
         }
@@ -124,7 +156,7 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     public void disconnectStubs() {
         stopReconnector();
         synchronized(stubs) {
-            for(RouterStub stub : stubs) {
+            for(RouterStub stub: stubs) {
                 try {
                     stub.disconnect(cluster_name, local_addr);
                 }
@@ -132,7 +164,6 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
                 }
             }
         }
-        stopReconnector();
     }
     
     public void destroyStubs() {
@@ -199,6 +230,27 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
             reconnector_task.cancel(true);
     }
 
+    protected synchronized void startHeartbeatTask() {
+        if(heartbeat_task == null || heartbeat_task.isDone())
+            heartbeat_task=timer.scheduleWithFixedDelay(this.send_heartbeat, heartbeat_interval, heartbeat_interval, TimeUnit.MILLISECONDS);
+    }
+
+    protected synchronized void stopHeartbeatTask() {
+        stopTimeoutChecker();
+        if(heartbeat_task != null)
+            heartbeat_task.cancel(true);
+    }
+
+    protected synchronized void startTimeoutChecker() {
+        if(timeout_checker_task == null || timeout_checker_task.isDone())
+            timeout_checker_task=timer.scheduleWithFixedDelay(this.check_timeouts, heartbeat_timeout, heartbeat_timeout, TimeUnit.MILLISECONDS);
+    }
+
+    protected synchronized void stopTimeoutChecker() {
+        if(timeout_checker_task != null)
+            timeout_checker_task.cancel(true);
+    }
+
     protected RouterStub findRandomConnectedStub() {
         RouterStub stub=null;
         synchronized(stubs) {
@@ -209,6 +261,31 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
             }
             return stub;
         }
+    }
+
+    protected void sendHeartbeat() {
+        GossipData hb=new GossipData(GossipType.HEARTBEAT);
+        forEach(s -> {
+            try {
+                s.writeRequest(hb);
+            }
+            catch(Exception ex) {
+                log.error("failed sending heartbeat", ex);
+            }
+        });
+    }
+
+    protected void checkTimeouts() {
+        forEach(st -> {
+            long timeout=System.currentTimeMillis() - st.lastHeartbeat();
+            if(timeout > heartbeat_timeout) {
+                log.debug("closing connection to GossipRouter as no heartbeat has been received for %d ms; stub: %s",
+                          timeout, st);
+                st.destroy();
+            }
+        });
+        if(connectedStubs() == 0)
+            startReconnector();
     }
 
     // unsynchronized
