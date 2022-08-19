@@ -42,7 +42,7 @@ public class MPING extends PING implements Runnable {
     protected int                    ip_ttl=8;
 
     @Property(description="Multicast address to be used for discovery", name="mcast_addr", systemProperty=Global.MPING_MCAST_ADDR,
-              defaultValueIPv4="230.5.6.7", defaultValueIPv6="ff0e::5:6:7")
+              defaultValueIPv4="232.5.6.7", defaultValueIPv6="ff0e::5:6:7")
     protected InetAddress            mcast_addr;
 
 
