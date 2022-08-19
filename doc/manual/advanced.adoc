@@ -371,27 +371,27 @@ Note that the GossipRouter should be started before any of the members.
 ==== TUNNEL
 
 Firewalls are usually placed at the connection to the internet. They shield local networks from outside
-                attacks by screening incoming traffic and rejecting connection attempts to host inside the firewalls by
-                outside machines. Most firewall systems allow hosts inside the firewall to connect to hosts outside it
-                (outgoing traffic), however, incoming traffic is most often disabled entirely.
+attacks by screening incoming traffic and rejecting connection attempts to host inside the firewalls by
+outside machines. Most firewall systems allow hosts inside the firewall to connect to hosts outside it
+(outgoing traffic), however, incoming traffic is most often disabled entirely.
             
 
 _Tunnels_ are host protocols which encapsulate other protocols by multiplexing them
-                at one end and demultiplexing them at the other end. Any protocol can be tunneled by a tunnel protocol.
+at one end and demultiplexing them at the other end. Any protocol can be tunneled by a tunnel protocol.
             
 
 The most restrictive setups of firewalls usually disable _all_ incoming traffic, and
-                only enable a few selected ports for outgoing traffic. In the solution below, it is
-                assumed that one TCP port is enabled for outgoing connections to the GossipRouter.
+only enable a few selected ports for outgoing traffic. In the solution below, it is
+assumed that one TCP port is enabled for outgoing connections to the GossipRouter.
             
 
 JGroups has a mechanism that allows a programmer to tunnel a firewall. The solution involves a
-                GossipRouter, which has to be outside of the firewall, so other members (possibly also behind firewalls)
-                can access it.
+GossipRouter, which has to be outside of the firewall, so other members (possibly also behind firewalls)
+can access it.
             
 
 The solution works as follows. A channel inside a firewall has to use protocol TUNNEL instead of UDP or
-                TCP as transport. The recommended discovery protocol is PING. Here's a configuration:
+TCP as transport. The recommended discovery protocol is PING. Here's a configuration:
             
 
 
@@ -404,26 +404,26 @@ The solution works as follows. A channel inside a firewall has to use protocol T
 ----
 
 TUNNEL uses a GossipRouter (outside the firewall) running on HostA at port
-                +12001+ for tunneling. Note that it is not recommended to use TCPGOSSIP for discovery if
-                TUNNEL is used (use PING instead). TUNNEL accepts one or multiple GossipRouters tor tunneling;
-                they can be listed as a comma delimited list of host[port] elements specified in property
-                gossip_router_hosts.
+`12001` for tunneling. Note that it is not recommended to use TCPGOSSIP for discovery if
+TUNNEL is used (use PING instead). TUNNEL accepts one or multiple GossipRouters tor tunneling;
+they can be listed as a comma delimited list of `host[port]` elements specified in property
+`gossip_router_hosts`.
             
 
 TUNNEL establishes a TCP connection to the _GossipRouter_
-                process (outside the firewall) that accepts messages from members and passes them on to other
-                members. This connection is initiated by the host inside the firewall and persists as long as the channel
-                is connected to a group. A GossipRouter will use the _same connection_
-                to send incoming messages to the channel that initiated the connection. This is perfectly legal, as TCP
-                connections are fully duplex. Note that, if GossipRouter tried to establish its own TCP connection to the
-                channel behind the firewall, it would fail. But it is okay to reuse the existing TCP connection,
-                established by the channel.
+process (outside the firewall) that accepts messages from members and passes them on to other
+members. This connection is initiated by the host inside the firewall and persists as long as the channel
+is connected to a group. A GossipRouter will use the _same connection_
+to send incoming messages to the channel that initiated the connection. This is perfectly legal, as TCP
+connections are fully duplex. Note that, if GossipRouter tried to establish its own TCP connection to the
+channel behind the firewall, it would fail. But it is okay to reuse the existing TCP connection,
+established by the channel.
             
 
 Note that TUNNEL has to be given the hostname and port of the GossipRouter process.
-                This example assumes a GossipRouter is running on HostA at port++12001++.
-                TUNNEL accepts one or multiple router hosts as a comma delimited list of host[port] elements specified in
-                property gossip_router_hosts.
+This example assumes a GossipRouter is running on HostA at port++12001++.
+TUNNEL accepts one or multiple router hosts as a comma delimited list of host[port] elements specified in
+property gossip_router_hosts.
             
 
 Any time a message has to be sent, TUNNEL forwards the message to GossipRouter, which distributes it to
@@ -436,19 +436,19 @@ NOTE: To do so, GossipRouter maintains a mapping between cluster names and membe
 
 
 A GossipRouter is not a single point of failure. In a setup with multiple gossip routers, the routers do
-                not communicate among themselves, and a single point of failure is avoided by having each channel simply
-                connect to multiple available routers. In case one or more routers go down, the cluster members are still
-                able to exchange messages through any of the remaining available router instances, if there are any.
+not communicate among themselves, and a single point of failure is avoided by having each channel simply
+connect to multiple available routers. In case one or more routers go down, the cluster members are still
+able to exchange messages through any of the remaining available router instances, if there are any.
             
 
 For each send invocation, a channel goes through a list of available connections to routers and attempts
-                to send the message on each connection until it succeeds. If a message can not be sent on any of the
-                connections, an exception is raised. The default policy for connection selection is random. However, we
-                provide an plug-in interface for other policies as well.
+to send the message on each connection until it succeeds. If a message can not be sent on any of the
+connections, an exception is raised. The default policy for connection selection is random. However, we
+provide an plug-in interface for other policies as well.
             
 
 The GossipRouter configuration is static and is not updated for the lifetime of the channel. A list of
-                available routers has to be provided in the channel's configuration file.
+available routers has to be provided in the channel's configuration file.
             
 
 To tunnel a firewall using JGroups, the following steps have to be taken:
@@ -494,6 +494,20 @@ connection might use up resources in the host system (e.g. in the GossipRouter),
 problems, second, this scheme is inappropriate when only a few channels are located behind firewalls, and
 the vast majority can indeed use IP multicast to communicate, and finally, it is not always possible to
 enable outgoing traffic on 2 ports in a firewall, e.g. when a user does not 'own' the firewall.
+
+==== Health checks
+A TUNNEL detects *crashes* of GosspRouters quickly: when the TCP connection to a GossipRouter is closed, TUNNEL
+will add the crashed GossipRouter to a reconnect list, and periodically (`reconnect_interval`) try to
+re-establish a connection.
+
+However, when a GossipRouter *hangs*, e.g. due to a blocked port in the firewall, or due to a failed switch, then
+the TCP connection will not be closed and traffic will continue to be sent to that router. This can potentially
+even block the client on a full TCP send-window.
+
+To be able to close connections to unresponding GossipRouters, a health check has been added to TUNNEL. It can be
+activated by setting `heartbeat_interval` (ms) to a positive value (`0` disables health checking). This means that
+TUNNEL sends a heartbeat to each GossipRouter it is connected to. When no response has been received for
+`heartbeat_timeout` ms, then the connection to that GossipRouter will be closed.
             
 
 

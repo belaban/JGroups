@@ -61,7 +61,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     @Property(description="A comma-separated list of GossipRouter hosts, e.g. HostA[12001],HostB[12001]")
     protected String  gossip_router_hosts;
 
-    @Property(description="Sends a heartbeat to the GossipRouter every heartbeat_interval ms (0 disables this",
+    @Property(description="Sends a heartbeat to the GossipRouter every heartbeat_interval ms (0 disables this)",
       type=AttributeType.TIME)
     protected long    heartbeat_interval;
 
