@@ -170,7 +170,7 @@
         <javac destdir="${compile.dir}/META-INF/versions/19" release="19"
                classpathref="jg.classpath" includeantruntime="false" debug="on"
                includes="org/jgroups/**">
-             <compilerarg value="--enable-preview"/>
+             <compilerarg line="--enable-preview --release 19"/>
              <src path="${src-19.dir}"/>
         </javac>
     </target>
