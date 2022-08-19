@@ -7,6 +7,7 @@ import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
 import java.io.*;
 import java.net.*;
@@ -313,7 +314,10 @@ public class TcpConnection extends Connection {
             catch(Exception e) {
                 //noinspection StatementWithEmptyBody
                 if (e instanceof SSLException && e.getMessage().contains("Socket closed")) {
-                    // regular use case when a peer closes its connection - we don't want to log this as exception
+                    ; // regular use case when a peer closes its connection - we don't want to log this as exception
+                }
+                else if (e instanceof SSLHandshakeException && e.getCause() instanceof EOFException) {
+                    ; // Ignore SSL handshakes closed early (usually liveness probes)
                 }
                 else {
                     if(server.logDetails())
