@@ -8,11 +8,18 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.Provider;
+import java.security.Security;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
@@ -23,34 +30,17 @@ import org.jgroups.logging.LogFactory;
  * SslContextFactory.
  *
  * @author Tristan Tarrant
+ * @since 5.3
  */
 public class SslContextFactory {
    private static final Log log = LogFactory.getLog(SslContextFactory.class);
-   private static final String DEFAULT_KEYSTORE_TYPE = "JKS";
-   private static final String DEFAULT_SSL_PROTOCOL = "TLSv1.2";
+   private static final String DEFAULT_KEYSTORE_TYPE = "PKCS12";
+   public static final String DEFAULT_SSL_PROTOCOL = "TLS";
    private static final String CLASSPATH_RESOURCE = "classpath:";
-   private static final String DEFAULT_SSL_PROVIDER;
-
-   static {
-      String sslProvider = null;
-      try {
-         Class<?> openSslProvider = Util.loadClass("org.wildfly.openssl.OpenSSLProvider", SslContextFactory.class);
-         Class<?> openSsl = Util.loadClass("org.wildfly.openssl.SSL", SslContextFactory.class);
-         if (openSslProvider != null && openSsl != null) {
-            openSslProvider.getMethod("register").invoke(null);
-            openSsl.getMethod("getInstance").invoke(null);
-            sslProvider = "openssl";
-            log.debug("Using OpenSSL");
-         }
-      } catch (Throwable e) {
-      }
-      DEFAULT_SSL_PROVIDER = sslProvider;
-   }
-
+   private static final ConcurrentHashMap<ClassLoader, Provider[]> PER_CLASSLOADER_PROVIDERS = new ConcurrentHashMap<>(2);
    private KeyStore keyStore;
    private String keyStoreFileName;
    private char[] keyStorePassword;
-   private char[] keyStoreCertificatePassword;
    private String keyStoreType = DEFAULT_KEYSTORE_TYPE;
    private String keyAlias;
    private KeyStore trustStore;
@@ -58,9 +48,8 @@ public class SslContextFactory {
    private char[] trustStorePassword;
    private String trustStoreType = DEFAULT_KEYSTORE_TYPE;
    private String sslProtocol = DEFAULT_SSL_PROTOCOL;
-   private String sslProvider = DEFAULT_SSL_PROVIDER;
-   private boolean useNativeIfAvailable = true;
    private ClassLoader classLoader;
+   private String providerName;
 
    public SslContextFactory() {
    }
@@ -87,18 +76,6 @@ public class SslContextFactory {
       return this;
    }
 
-   public SslContextFactory keyStoreCertificatePassword(char[] keyStoreCertificatePassword) {
-      this.keyStoreCertificatePassword = keyStoreCertificatePassword;
-      return this;
-   }
-
-   public SslContextFactory keyStoreCertificatePassword(String keyStoreCertificatePassword) {
-      if (keyStoreCertificatePassword != null) {
-         this.keyStoreCertificatePassword = keyStoreCertificatePassword.toCharArray();
-      }
-      return this;
-   }
-
    public SslContextFactory keyStoreType(String keyStoreType) {
       if (keyStoreType != null) {
          this.keyStoreType = keyStoreType;
@@ -121,15 +98,12 @@ public class SslContextFactory {
       return this;
    }
 
-   public SslContextFactory trustStorePassword(char[] trustStorePassword) {
-      this.trustStorePassword = trustStorePassword;
-      return this;
+   public SslContextFactory trustStorePassword(String trustStorePassword) {
+      return trustStorePassword(trustStorePassword != null ? trustStorePassword.toCharArray() : null);
    }
 
-   public SslContextFactory trustStorePassword(String trustStorePassword) {
-      if (trustStorePassword != null) {
-         this.trustStorePassword = trustStorePassword.toCharArray();
-      }
+   public SslContextFactory trustStorePassword(char[] trustStorePassword) {
+      this.trustStorePassword = trustStorePassword;
       return this;
    }
 
@@ -147,9 +121,9 @@ public class SslContextFactory {
       return this;
    }
 
-   public SslContextFactory sslProvider(String sslProvider) {
-      if (sslProvider != null) {
-         this.sslProvider = sslProvider;
+   public SslContextFactory provider(String provider) {
+      if (provider != null) {
+         this.providerName = provider;
       }
       return this;
    }
@@ -172,8 +146,12 @@ public class SslContextFactory {
             trustManagers = tmf.getTrustManagers();
          }
          SSLContext sslContext;
-         if (sslProvider != null) {
-            sslContext = SSLContext.getInstance(sslProtocol, sslProvider);
+         if (providerName != null) {
+            Provider provider = findProvider(providerName, SSLContext.class.getSimpleName(), sslProtocol);
+            if (provider == null) {
+               throw new IllegalArgumentException("No such provider " + providerName);
+            }
+            sslContext = SSLContext.getInstance(sslProtocol, provider);
          } else {
             sslContext = SSLContext.getInstance(sslProtocol);
          }
@@ -185,51 +163,47 @@ public class SslContextFactory {
    }
 
    public KeyManagerFactory getKeyManagerFactory() throws IOException, GeneralSecurityException {
+      Provider provider;
       if (keyStore == null) {
-         keyStore = KeyStore.getInstance(keyStoreType != null ? keyStoreType : DEFAULT_KEYSTORE_TYPE);
+         String type = keyStoreType != null ? keyStoreType : DEFAULT_KEYSTORE_TYPE;
+         provider = findProvider(this.providerName, KeyStore.class.getSimpleName(), type);
+         keyStore = provider != null ? KeyStore.getInstance(type, provider) : KeyStore.getInstance(type);
          loadKeyStore(keyStore, keyStoreFileName, keyStorePassword, classLoader);
+      } else {
+         provider = keyStore.getProvider();
       }
-      char[] keyPassword = keyStoreCertificatePassword == null ? keyStorePassword : keyStoreCertificatePassword;
       if (keyAlias != null) {
          if (keyStore.containsAlias(keyAlias) && keyStore.isKeyEntry(keyAlias)) {
-            KeyStore.PasswordProtection passParam = new KeyStore.PasswordProtection(keyPassword);
+            KeyStore.PasswordProtection passParam = new KeyStore.PasswordProtection(keyStorePassword);
             KeyStore.Entry entry = keyStore.getEntry(keyAlias, passParam);
             // Recreate the keystore with just one key
-            keyStore = KeyStore.getInstance(keyStoreType != null ? keyStoreType : DEFAULT_KEYSTORE_TYPE);
-            keyStore.load(null);
+            keyStore = provider != null ? KeyStore.getInstance(keyStoreType, provider) : KeyStore.getInstance(keyStoreType);
+            keyStore.load(null, null);
             keyStore.setEntry(keyAlias, entry, passParam);
          } else {
-            throw new RuntimeException("No alias '" + keyAlias +"' in key store '" + keyStoreFileName+ "'");
+            throw new RuntimeException("No alias '" + keyAlias + "' in key store '" + keyStoreFileName + "'");
          }
       }
-      KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-      kmf.init(keyStore, keyPassword);
+      String algorithm = KeyManagerFactory.getDefaultAlgorithm();
+      provider = findProvider(this.providerName, KeyManagerFactory.class.getSimpleName(), algorithm);
+      KeyManagerFactory kmf = provider != null ? KeyManagerFactory.getInstance(algorithm, provider) : KeyManagerFactory.getInstance(algorithm);
+      kmf.init(keyStore, keyStorePassword);
       return kmf;
    }
 
    public TrustManagerFactory getTrustManagerFactory() throws IOException, GeneralSecurityException {
+      Provider provider;
       if (trustStore == null) {
-         trustStore = KeyStore.getInstance(trustStoreType != null ? trustStoreType : DEFAULT_KEYSTORE_TYPE);
+         String type = trustStoreType != null ? trustStoreType : DEFAULT_KEYSTORE_TYPE;
+         provider = findProvider(this.providerName, KeyStore.class.getSimpleName(), type);
+         trustStore = provider != null ? KeyStore.getInstance(type, provider) : KeyStore.getInstance(type);
          loadKeyStore(trustStore, trustStoreFileName, trustStorePassword, classLoader);
       }
-      TrustManagerFactory tmf = TrustManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+      String algorithm = KeyManagerFactory.getDefaultAlgorithm();
+      provider = findProvider(this.providerName, TrustManagerFactory.class.getSimpleName(), algorithm);
+      TrustManagerFactory tmf = provider != null ? TrustManagerFactory.getInstance(algorithm, provider) : TrustManagerFactory.getInstance(algorithm);
       tmf.init(trustStore);
       return tmf;
-   }
-
-   public static String getSslProvider() {
-      return DEFAULT_SSL_PROVIDER;
-   }
-
-   public static String getDefaultSslProtocol() {
-      return DEFAULT_SSL_PROTOCOL;
-   }
-
-   public static SSLEngine getEngine(SSLContext sslContext, boolean useClientMode, boolean needClientAuth) {
-      SSLEngine sslEngine = sslContext.createSSLEngine();
-      sslEngine.setUseClientMode(useClientMode);
-      sslEngine.setNeedClientAuth(needClientAuth);
-      return sslEngine;
    }
 
    private static void loadKeyStore(KeyStore ks, String keyStoreFileName, char[] keyStorePassword, ClassLoader classLoader) throws IOException, GeneralSecurityException {
@@ -239,7 +213,7 @@ public class SslContextFactory {
             String fileName = keyStoreFileName.substring(keyStoreFileName.indexOf(":") + 1);
             is = Util.getResourceAsStream(fileName, classLoader);
             if (is == null) {
-               throw new IllegalArgumentException("Cannot find `" + keyStoreFileName +"`");
+               throw new IllegalArgumentException("Cannot find `" + keyStoreFileName + "`");
             }
          } else if (Files.exists(Paths.get(keyStoreFileName))) {
             is = new BufferedInputStream(new FileInputStream(keyStoreFileName));
@@ -250,5 +224,42 @@ public class SslContextFactory {
       } finally {
          Util.close(is);
       }
+   }
+
+   public static Provider findProvider(String providerName, String serviceType, String algorithm) {
+      Provider[] providers = discoverSecurityProviders(Thread.currentThread().getContextClassLoader());
+      for (Provider provider : providers) {
+         if (providerName == null || providerName.equals(provider.getName())) {
+            Provider.Service providerService = provider.getService(serviceType, algorithm);
+            if (providerService != null) {
+               return provider;
+            }
+         }
+      }
+      return null;
+   }
+
+   public static Provider[] discoverSecurityProviders(ClassLoader classLoader) {
+      return PER_CLASSLOADER_PROVIDERS.computeIfAbsent(classLoader, cl -> {
+               // We need to keep them sorted by insertion order, since we want system providers first
+               Map<Class<? extends Provider>, Provider> providers = new LinkedHashMap<>();
+               for (Provider provider : Security.getProviders()) {
+                  providers.put(provider.getClass(), provider);
+               }
+               Iterator<Provider> loader = ServiceLoader.load(Provider.class, classLoader).iterator();
+               for (; ; ) {
+                  try {
+                     if (!loader.hasNext()) {
+                        return providers.values().toArray(new Provider[0]);
+                     } else {
+                        Provider provider = loader.next();
+                        providers.putIfAbsent(provider.getClass(), provider);
+                     }
+                  } catch (ServiceConfigurationError ignored) {
+                     // explicitly ignored
+                  }
+               }
+            }
+      );
    }
 }
