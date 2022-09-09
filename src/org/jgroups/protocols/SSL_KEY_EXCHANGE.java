@@ -90,8 +90,8 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
       "rogue clients to fetch the secret group key (e.g. via man-in-the-middle attacks)")
     protected boolean         require_client_authentication=true;
 
-    @Property(description="The SSL protocol to use. Defaults to TLSv1.2.")
-    protected String         ssl_protocol=SslContextFactory.getDefaultSslProtocol();
+    @Property(description="The SSL protocol to use. Defaults to TLS")
+    protected String         ssl_protocol=SslContextFactory.DEFAULT_SSL_PROTOCOL;
 
     @Property(description="The SSL security provider. Defaults to null, which will use the default JDK provider.")
     protected String         ssl_provider;
@@ -111,6 +111,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected SSLServerSocket              srv_sock;
     protected Runner                       srv_sock_handler;
     protected KeyStore                     key_store;
+    protected KeyStore                     trust_store;
     protected View                         view;
     protected SessionVerifier              session_verifier;
 
@@ -140,6 +141,8 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     public SSL_KEY_EXCHANGE setSessionVerifierArg(String arg)              {this.session_verifier_arg=arg; return this;}
     public KeyStore         getKeystore()                                  {return key_store;}
     public SSL_KEY_EXCHANGE setKeystore(KeyStore ks)                       {this.key_store=ks; return this;}
+    public KeyStore         getTruststore()                                {return trust_store;}
+    public SSL_KEY_EXCHANGE setTruststore(KeyStore ks)                       {this.trust_store=ks; return this;}
     public SessionVerifier  getSessionVerifier()                           {return session_verifier;}
     public SSL_KEY_EXCHANGE setSessionVerifier(SessionVerifier s)          {this.session_verifier=s; return this;}
     public SSLContext getClientSSLContext()                                {return client_ssl_ctx;}
@@ -174,10 +177,11 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
                     .keyStoreType(keystore_type)
                     .keyStoreFileName(keystore_name)
                     .keyStorePassword(keystore_password.toCharArray())
+                    .trustStore(trust_store)
                     .trustStoreFileName(keystore_name)
                     .trustStorePassword(keystore_password.toCharArray())
                     .sslProtocol(ssl_protocol)
-                    .sslProvider(ssl_provider).getContext();
+                    .provider(ssl_provider).getContext();
             if (client_ssl_ctx == null) {
                 client_ssl_ctx = sslContext;
             }
@@ -403,18 +407,6 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         catch(Throwable t) {
             throw new IllegalStateException(String.format("failed connecting to %s: %s", dest, t.getMessage()));
         }
-    }
-
-
-    protected SSLContext getContext() throws Exception {
-        if(this.client_ssl_ctx != null)
-            return this.client_ssl_ctx;
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory
-              .sslProvider(ssl_provider).sslProtocol(ssl_protocol)
-              .keyStore(key_store).keyStoreFileName(keystore_name).keyStorePassword(keystore_password).keyStoreType(keystore_type)
-              .trustStore(key_store).trustStoreFileName(keystore_name).trustStorePassword(keystore_password).trustStoreType(keystore_type);
-        return this.client_ssl_ctx=sslContextFactory.getContext();
     }
 }
 
