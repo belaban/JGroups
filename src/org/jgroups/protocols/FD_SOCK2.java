@@ -394,7 +394,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         for(IpAddress d: dests) {
             if(connectTo(d, new_ping_dest)) {
                 long time=System.currentTimeMillis() - start;
-                ping_dest.dest(new_ping_dest).destPhysical(d);
+                ping_dest.dest(new_ping_dest).destPhysical(d).clientState(State.CONNECTED);
                 log.debug("%s: connected successfully to %s (%s) in %d ms", local_addr, ping_dest.dest(), d, time);
 
                 // Close the connection to the previous ping_dest if it was *not* our neighbor to the left:
