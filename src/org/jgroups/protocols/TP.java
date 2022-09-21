@@ -417,6 +417,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected Future<?> logical_addr_cache_reaper;
 
+    /** The average number of messages in a received {@link MessageBatch} */
     protected final AverageMinMax avg_batch_size=new AverageMinMax();
 
     protected static final LazyRemovalCache.Printable<Address,LazyRemovalCache.Entry<PhysicalAddress>> print_function=
