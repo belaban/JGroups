@@ -50,8 +50,8 @@ public class TcpConnection extends Connection {
         if(s == null)
             throw new IllegalArgumentException("Invalid parameter s=" + s);
         setSocketParameters(s);
-        this.out=new DataOutputStream(createBufferedOutputStream(s.getOutputStream()));
-        this.in=new DataInputStream(createBufferedInputStream(s.getInputStream()));
+        this.out=createDataOutputStream(s.getOutputStream());
+        this.in=createDataInputStream(s.getInputStream());
         this.connected=sock.isConnected();
         this.peer_addr=server.usePeerConnections()? readPeerAddress(s)
           : new IpAddress((InetSocketAddress)s.getRemoteSocketAddress());
@@ -97,8 +97,8 @@ public class TcpConnection extends Connection {
             Util.connect(this.sock, destAddr, server.sock_conn_timeout);
             if(this.sock.getLocalSocketAddress() != null && this.sock.getLocalSocketAddress().equals(destAddr))
                 throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
-            this.out=new DataOutputStream(createBufferedOutputStream(sock.getOutputStream()));
-            this.in=new DataInputStream(createBufferedInputStream(sock.getInputStream()));
+            this.out=createDataOutputStream(sock.getOutputStream());
+            this.in=createDataInputStream(sock.getInputStream());
             connected=sock.isConnected();
             if(send_local_addr)
                 sendLocalAddress(server.localAddress());
@@ -175,14 +175,14 @@ public class TcpConnection extends Connection {
         }
     }
 
-    protected OutputStream createBufferedOutputStream(OutputStream out) {
+    protected DataOutputStream createDataOutputStream(OutputStream out) {
         int size=(server instanceof TcpServer)? ((TcpServer)server).getBufferedOutputStreamSize() : 0;
-        return size == 0? new BufferedOutputStream(out) : new BufferedOutputStream(out, size);
+        return size == 0? new DataOutputStream(out) : new DataOutputStream(new BufferedOutputStream(out, size));
     }
 
-    protected InputStream createBufferedInputStream(InputStream in) {
+    protected DataInputStream createDataInputStream(InputStream in) {
         int size=(server instanceof TcpServer)? ((TcpServer)server).getBufferedInputStreamSize() : 0;
-        return size == 0? new BufferedInputStream(in) : new BufferedInputStream(in, size);
+        return size == 0? new DataInputStream(in) : new DataInputStream(new BufferedInputStream(in, size));
     }
 
     protected void setSocketParameters(Socket client_sock) throws SocketException {

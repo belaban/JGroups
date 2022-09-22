@@ -86,7 +86,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected int     max_xmit_req_size;
 
     @Property(description="The max size of a message batch when delivering messages. 0 is unbounded")
-    protected int max_batch_size;
+    protected int     max_batch_size;
 
     @Property(description="If true, a unicast message to self is looped back up on the same thread. Noter that this may " +
       "cause problems (e.g. deadlocks) in some applications, so make sure that your code can handle this. " +
@@ -111,6 +111,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Number of unicast messages to self looped back up",type=AttributeType.SCALAR)
     public long getNumLoopbacks() {return loopbed_back_msgs.sum();}
 
+    @ManagedAttribute(description="Average batch size of messages delivered to the application")
     protected final AverageMinMax avg_delivery_batch_size=new AverageMinMax();
 
     @ManagedAttribute(description="True if sending a message can block at the transport level")
@@ -189,12 +190,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     @ManagedAttribute(description="Next seqno issued by the timestamper")
     public int getTimestamper() {return timestamper.get();}
-
-    @ManagedAttribute(description="Average batch size of messages removed from the table and delivered to the application")
-    public String getAvgBatchDeliverySize() {
-        return avg_delivery_batch_size != null? avg_delivery_batch_size.toString() : "n/a";
-    }
-
 
     public int getAckThreshold() {return ack_threshold;}
 
@@ -890,8 +885,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             }
             if(!batch.isEmpty()) {
                 // batch is guaranteed to NOT contain any OOB messages as the drop_oob_msgs_filter above removed them
-                if(stats)
-                    avg_delivery_batch_size.add(batch.size());
                 deliverBatch(batch); // catches Throwable
             }
         }
@@ -1079,6 +1072,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 sb.append(" (" + batch.size()).append(" messages)");
                 log.trace(sb);
             }
+            if(stats)
+                avg_delivery_batch_size.add(batch.size());
             up_prot.up(batch);
         }
         catch(Throwable t) {

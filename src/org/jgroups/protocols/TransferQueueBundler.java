@@ -53,6 +53,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
 
     @Override
     public void resetStats() {
+        super.resetStats();
         num_sends_because_full_queue=0;
         num_sends_because_no_msgs=0;
         avg_fill_count.clear();
@@ -140,7 +141,8 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
             while((msg=queue.poll()) != null)
                 addAndSendIfSizeExceeded(msg);
         }
-        sendBundledMessages();
+        if(!msgs.isEmpty())
+            sendBundledMessages();
     }
 
 

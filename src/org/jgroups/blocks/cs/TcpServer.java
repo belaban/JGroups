@@ -16,8 +16,8 @@ import java.net.SocketException;
 public class TcpServer extends TcpBaseServer {
     protected ServerSocket srv_sock;
     protected Thread       acceptor;
-    protected int          buffered_inputstream_size;
-    protected int          buffered_outputstream_size;
+    protected int          buffered_inputstream_size=8192;
+    protected int          buffered_outputstream_size=8192;
     protected boolean      log_accept_error=true;
 
 

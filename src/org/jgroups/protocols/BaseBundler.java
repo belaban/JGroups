@@ -8,10 +8,15 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
+import org.jgroups.util.AverageMinMax;
 import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static org.jgroups.protocols.TP.MSG_OVERHEAD;
@@ -43,6 +48,10 @@ public abstract class BaseBundler implements Bundler {
       type=AttributeType.SCALAR)
     protected int                               capacity=16384;
 
+    @ManagedAttribute(description="Time (us) to send the bundled messages")
+    protected final AverageMinMax               avg_send_time=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
+
+
 
     public int     getCapacity()       {return capacity;}
     public Bundler setCapacity(int c)  {this.capacity=c; return this;}
@@ -54,6 +63,11 @@ public abstract class BaseBundler implements Bundler {
         log=transport.getLog();
         output=new ByteArrayDataOutputStream(max_size + MSG_OVERHEAD);
     }
+
+    public void resetStats() {
+        avg_send_time.clear();
+    }
+
     public void start() {}
     public void stop()  {}
     public void send(Message msg) throws Exception {}
@@ -84,6 +98,7 @@ public abstract class BaseBundler implements Bundler {
      * The map will be cleared when done.
      */
     @GuardedBy("lock") protected void sendBundledMessages() {
+        long start=System.nanoTime();
         for(Map.Entry<Address,List<Message>> entry: msgs.entrySet()) {
             List<Message> list=entry.getValue();
             if(list.isEmpty())
@@ -100,6 +115,8 @@ public abstract class BaseBundler implements Bundler {
             list.clear();
         }
         count=0;
+        long time_us=(System.nanoTime()-start) / 1_000;
+        avg_send_time.add(time_us);
     }
 
 

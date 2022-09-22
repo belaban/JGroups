@@ -3,6 +3,7 @@ package org.jgroups.util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Maintains an approximation of an average of values. Done by keeping track of the number of samples, and computing
@@ -12,8 +13,9 @@ import java.io.IOException;
  * @since  3.4
  */
 public class Average implements Streamable {
-    protected double avg;
-    protected long   count;
+    protected double   avg;
+    protected long     count;
+    protected TimeUnit unit;
 
 
     public <T extends Average> T add(long num) {
@@ -49,10 +51,13 @@ public class Average implements Streamable {
     }
 
 
-    public double getAverage() {return avg;}
-    public double average()    {return avg;}
-    public long   getCount()   {return count;}
-    public long   count()      {return count;}
+    public double                getAverage()     {return avg;}
+    public double                average()        {return avg;}
+    public long                  getCount()       {return count;}
+    public long                  count()          {return count;}
+    public TimeUnit              unit()           {return unit;}
+    public <T extends Average> T unit(TimeUnit u) {this.unit=u; return (T)this;}
+
 
     public void clear() {
         avg=0.0;
@@ -60,7 +65,7 @@ public class Average implements Streamable {
     }
 
     public String toString() {
-        return String.format("%,.2f", avg);
+        return String.format("%,.2f %s", avg, unit == null? "" : Util.suffix(unit));
     }
 
     @Override

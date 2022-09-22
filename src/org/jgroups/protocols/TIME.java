@@ -4,7 +4,6 @@ import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
-import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.AverageMinMax;
 import org.jgroups.util.MessageBatch;
@@ -20,26 +19,19 @@ import java.util.concurrent.TimeUnit;
  */
 @MBean(description="Measures message delivery times")
 public class TIME extends Protocol {
-    protected final AverageMinMax up_delivery=new AverageMinMax(), down_delivery=new AverageMinMax();
+    @ManagedAttribute(description="Average delivery time (in microseconds). This is computed as the average " +
+      "delivery time for single messages, plus the delivery time for batches up the stack, until the call returns")
+    protected final AverageMinMax up_delivery=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
+
+    @ManagedAttribute(description="Average down delivery time (in microseconds). This is computed as the average " +
+      "delivery time for sending a messages down, until the call returns")
+    protected final AverageMinMax down_delivery=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
 
     @Property(description="Enables or disables measuring times in the up direction")
     protected boolean up=true;
 
     @Property(description="Enables or disables measuring times in the down direction")
     protected boolean down;
-
-    @ManagedAttribute(description="Average down delivery time (in microseconds). This is computed as the average " +
-      "delivery time for sending a messages down, until the call returns",type=AttributeType.TIME,unit=TimeUnit.MICROSECONDS)
-    public double getAvgDownDeliveryTime() {
-        return down_delivery.average();
-    }
-
-    @ManagedAttribute(description="Average delivery time (in microseconds). This is computed as the average " +
-      "delivery time for single messages, plus the delivery time for batches up the stack, until the call returns",
-      type=AttributeType.TIME,unit=TimeUnit.MICROSECONDS)
-    public double getAvgUpDeliveryTime() {
-        return up_delivery.average();
-    }
 
 
     public void resetStats() {
