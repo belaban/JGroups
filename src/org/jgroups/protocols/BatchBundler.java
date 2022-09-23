@@ -235,7 +235,7 @@ public class BatchBundler extends NoBundler {
             }
 
             int msg_bytes = msg.getLength();
-            if(total_bytes + msg_bytes > transport.getBundler().getMaxSize()) {
+            if(total_bytes + msg_bytes > max_size) {
                 num_ebs_sent_due_to_full_queue++;
                 sendBatch(false);
             }
