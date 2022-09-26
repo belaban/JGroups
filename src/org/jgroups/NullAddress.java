@@ -32,4 +32,8 @@ public class NullAddress implements Address {
     public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
 
     }
+
+    public String toString() {
+        return "null";
+    }
 }
