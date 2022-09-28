@@ -132,6 +132,8 @@ public class ClassConfigurator {
                 throw new IllegalStateException(e);
             }
         }
+        if (id < 0 || id > MAX_MAGIC_VALUE)
+            throw new IllegalArgumentException("Received an invalid magic number " + id + ". Ensure that you are using compatible stacks in your cluster.");
         Supplier<?> supplier=magicMap[id];
         if(supplier == null)
             throw new ClassNotFoundException("Class for magic number " + id + " cannot be found");
