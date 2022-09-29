@@ -385,7 +385,7 @@ public class FastArrayTest {
     public void testIterationWithFilter() {
         FastArray<Integer> fa=create(10);
         List<Integer> l=new ArrayList<>(5);
-        for(Iterator<Integer> it=fa.iteratorWithFilter(i -> i %2 == 0); it.hasNext();) {
+        for(Iterator<Integer> it=fa.iterator(i -> i %2 == 0); it.hasNext();) {
             Integer el=it.next();
             l.add(el);
         }
@@ -431,7 +431,7 @@ public class FastArrayTest {
         IntStream.rangeClosed(0,9).filter(i -> i != 3 && i != 4 && i != 5).forEach(fa::remove);
         assert fa.size() == 3;
         int count=0;
-        FastArray<Integer>.FastIterator it=fa.iteratorWithFilter(el -> el < 3 || el > 5);
+        FastArray<Integer>.FastIterator it=fa.iterator(el -> el < 3 || el > 5);
         while(it.hasNext()) {
             Integer el=it.next();
             System.out.println("el = " + el);
@@ -445,7 +445,7 @@ public class FastArrayTest {
         IntStream.rangeClosed(0,9).filter(i -> i != 3 && i != 4 && i != 5).forEach(fa::remove);
         assert fa.size() == 3;
         count=0;
-        it=fa.iteratorWithFilter(el -> el != 4);
+        it=fa.iterator(el -> el != 4);
         while(it.hasNext()) {
             Integer el=it.next();
             System.out.println("el = " + el);

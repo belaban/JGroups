@@ -157,7 +157,7 @@ public abstract class Protocol implements Lifecycle {
     }
 
 
-    protected TP getTransport() {
+    public TP getTransport() {
         Protocol retval=this;
         while(retval != null && retval.down_prot != null) {
             retval=retval.down_prot;

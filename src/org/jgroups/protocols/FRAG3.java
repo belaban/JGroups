@@ -135,7 +135,7 @@ public class FRAG3 extends Fragmentation {
     }
 
     public void up(MessageBatch batch) {
-        FastArray<Message>.FastIterator it=(FastArray<Message>.FastIterator)batch.iteratorWithFilter(HAS_FRAG_HEADER);
+        FastArray<Message>.FastIterator it=(FastArray<Message>.FastIterator)batch.iterator(HAS_FRAG_HEADER);
         while(it.hasNext()) {
             Message msg=it.next();
             Frag3Header hdr=msg.getHeader(this.id);

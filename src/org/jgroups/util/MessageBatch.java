@@ -33,6 +33,9 @@ public class MessageBatch implements Iterable<Message> {
     /** Whether this message batch contains only OOB messages, or only regular messages */
     protected Mode               mode=Mode.REG;
 
+    /** For benchmarking; may get removed without notice */
+    protected long               timestamp; // ns
+
 
     public MessageBatch() {}
 
@@ -85,6 +88,8 @@ public class MessageBatch implements Iterable<Message> {
     public MessageBatch setMode(Mode mode)               {this.mode=mode; return this;}
     public MessageBatch mode(Mode mode)                  {this.mode=mode; return this;}
     public int          capacity()                       {return messages.capacity();}
+    public long         timestamp()                      {return timestamp;}
+    public MessageBatch timestamp(long ts)               {timestamp=ts; return this;}
 
 
     /** Returns the underlying message array. This is only intended for testing ! */
@@ -251,15 +256,18 @@ public class MessageBatch implements Iterable<Message> {
     }
 
     /** Iterates over all non-null message which match filter */
-    public Iterator<Message> iteratorWithFilter(Predicate<Message> filter) {
-        return messages.iteratorWithFilter(filter);
+    public Iterator<Message> iterator(Predicate<Message> filter) {
+        return messages.iterator(filter);
     }
 
     public Stream<Message> stream() {
-        Spliterator<Message> sp=Spliterators.spliterator(iterator(), size(), 0);
-        return StreamSupport.stream(sp, false);
+        return stream(null);
     }
 
+    public Stream<Message> stream(Predicate<Message> p) {
+        Spliterator<Message> sp=Spliterators.spliterator(iterator(p), size(), 0);
+        return StreamSupport.stream(sp, false);
+    }
 
     public String toString() {
         StringBuilder sb=new StringBuilder();

@@ -120,8 +120,9 @@ public class RED extends Protocol {
     }
 
     public String toString() {
-        return String.format("enabled=%b, queue capacity=%d, min=%d, max=%d, avg-queue-size=%.2f, " +
-                               "total=%d dropped=%d (%d%%)", enabled, queue_capacity, min, max, avg_queue_size,
+        return String.format("%s: enabled=%b, queue capacity=%d, min=%d, max=%d, avg-queue-size=%.2f, " +
+                               "total=%d dropped=%d (%d%%)", RED.class.getSimpleName(),
+                             enabled, queue_capacity, min, max, avg_queue_size,
                              total_msgs.sum(), dropped_msgs.sum(), (int)(getDropRate()*100.0));
     }
 

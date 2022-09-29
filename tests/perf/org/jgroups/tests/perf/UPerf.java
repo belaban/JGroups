@@ -355,8 +355,10 @@ public class UPerf implements Receiver {
                     case 'X':
                         try {
                             RequestOptions options=new RequestOptions(ResponseMode.GET_NONE, 0)
-                              .flags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
+                              .flags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC)
+                                .transientFlags(Message.TransientFlag.DONT_LOOPBACK);
                             disp.callRemoteMethods(null, new MethodCall(QUIT_ALL), options);
+                            quitAll();
                             break;
                         }
                         catch(Throwable t) {
@@ -391,7 +393,7 @@ public class UPerf implements Receiver {
 
         long total_reqs=0, total_time=0;
         AverageMinMax avg_gets=null, avg_puts=null;
-        long time_to_wait=(long)(time * 1000 * 1.1); // add 10% more
+        long time_to_wait=(long)(time * 1000 * 1.2); // add 20% more
         results_coll.waitForAllResponses(time_to_wait);
         Map<Address,Results> results=results_coll.getResults();
 

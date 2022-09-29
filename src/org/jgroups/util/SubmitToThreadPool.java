@@ -20,6 +20,8 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
     protected short tp_id;
     protected Log   log;
 
+    protected TP getTransport() {return tp;}
+
     public void init(TP transport) {
         this.tp=transport;
         this.tp_id=tp.getId();

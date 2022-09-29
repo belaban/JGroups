@@ -61,6 +61,7 @@
     <class id="95"  name="org.jgroups.protocols.BATCH$BatchHeader"/>
     <class id="96"  name="org.jgroups.protocols.BATCH2$Batch2Header"/>
     <class id="97"  name="org.jgroups.protocols.RTTHeader"/>
+    <class id="98"  name="org.jgroups.protocols.ProtPerfHeader"/>
 
 </magic-number-class-mapping>
 

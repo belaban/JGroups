@@ -202,7 +202,7 @@ public class FastArray<T> implements Iterable<T> {
     public FastArray<T> replaceIf(Predicate<T> filter, T new_el, boolean replace_all) {
         if(filter == null)
             return this;
-        for(FastIterator it=iteratorWithFilter(filter); it.hasNext();) {
+        for(FastIterator it=iterator(filter); it.hasNext();) {
             it.next();
             it.replace(new_el);
             if(!replace_all)
@@ -226,7 +226,7 @@ public class FastArray<T> implements Iterable<T> {
     }
 
     /** Iterates over all non-null elements which match filter */
-    public FastIterator iteratorWithFilter(Predicate<T> filter) {
+    public FastIterator iterator(Predicate<T> filter) {
         return new FastIterator(filter);
     }
 

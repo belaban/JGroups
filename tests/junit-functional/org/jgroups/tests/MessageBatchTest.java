@@ -607,7 +607,7 @@ public class MessageBatchTest {
         MessageBatch batch=new MessageBatch(msgs);
         int count=0;
 
-        Iterator<Message> it=batch.iteratorWithFilter(m -> m.getHeader(PING_ID) != null);
+        Iterator<Message> it=batch.iterator(m -> m.getHeader(PING_ID) != null);
         while(it.hasNext()) {
             it.next();
             count++;
@@ -615,7 +615,7 @@ public class MessageBatchTest {
         assert count == 1;
 
         count=0;
-        it=batch.iteratorWithFilter(m -> m.getHeader(UNICAST3_ID) != null);
+        it=batch.iterator(m -> m.getHeader(UNICAST3_ID) != null);
         while(it.hasNext()) {
             it.next();
             count++;
