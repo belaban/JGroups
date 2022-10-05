@@ -4,7 +4,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>jar</packaging>
     <name>JGroups</name>
-    <version>5.2.7.Final</version>
+    <version>5.2.7.Final-SNAPSHOT</version>
     <description>Reliable cluster communication toolkit</description>
     <url>http://www.jgroups.org</url>
 
@@ -46,7 +46,7 @@
         <connection>scm:git:git://github.com/belaban/JGroups.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/belaban/JGroups.git</developerConnection>
         <url>https://github.com/belaban/JGroups</url>
-        <tag>jgroups-5.2.7.Final</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
