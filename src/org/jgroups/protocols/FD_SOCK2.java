@@ -313,7 +313,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         for(int bind_port: bind_ports) {
             try {
                 return new NioServer(thread_factory, socket_factory, bind_addr, bind_port, bind_port,
-                                     external_addr, external_port, 0);
+                                     external_addr, external_port, 0, "jgroups.nio.server.fd_sock");
             }
             catch(Exception ignored) {
             }

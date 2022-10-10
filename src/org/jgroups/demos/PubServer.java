@@ -30,9 +30,11 @@ public class PubServer implements Receiver {
     protected void start(InetAddress bind_addr, int port, boolean nio, int recv_buf_size) throws Exception {
         server=nio?
           new NioServer(new DefaultThreadFactory("pubsrv", false), new DefaultSocketFactory(),
-                        bind_addr, port, port+50, null, 0, recv_buf_size)
+                        bind_addr, port, port+50, null, 0, recv_buf_size,
+                        "jgroups.nio.pubserver")
           : new TcpServer(new DefaultThreadFactory("pubsrv", false), new DefaultSocketFactory(),
-                          bind_addr, port, port+50, null, 0, recv_buf_size);
+                          bind_addr, port, port+50, null, 0, recv_buf_size,
+                          "jgroups.tcp.pubserver");
         server.receiver(this);
         server.start();
         JmxConfigurator.register(server, Util.getMBeanServer(), "pub:name=pub-server");

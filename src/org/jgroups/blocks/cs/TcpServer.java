@@ -43,6 +43,14 @@ public class TcpServer extends TcpBaseServer {
 
 
 
+    public TcpServer(ThreadFactory thread_factory, SocketFactory socket_factory,
+                     InetAddress bind_addr, int srv_port, int end_port,
+                     InetAddress external_addr, int external_port, int recv_buf_size) throws Exception {
+        this(thread_factory, socket_factory, bind_addr, srv_port, end_port, external_addr, external_port,
+             recv_buf_size, "jgroups.tcp.server");
+    }
+
+
     /**
      * Creates an instance of {@link TcpServer} that creates a server socket and listens for connections
      * Needs to be started next.
@@ -55,13 +63,15 @@ public class TcpServer extends TcpBaseServer {
      * @param external_addr The external address in case of NAT. Ignored if null.
      * @param external_port The external port on the NA. If 0, srv_port is used.
      * @param recv_buf_size The size of the initial TCP receive window (in bytes)
+     * @param service_name The name of the service
      * @throws Exception Thrown if the creation failed
      */
     public TcpServer(ThreadFactory thread_factory, SocketFactory socket_factory,
                      InetAddress bind_addr, int srv_port, int end_port,
-                     InetAddress external_addr, int external_port, int recv_buf_size) throws Exception {
+                     InetAddress external_addr, int external_port, int recv_buf_size,
+                     String service_name) throws Exception {
         super(thread_factory, socket_factory, recv_buf_size);
-        this.srv_sock=Util.createServerSocket(this.socket_factory, "jgroups.tcp.server", bind_addr,
+        this.srv_sock=Util.createServerSocket(this.socket_factory, service_name, bind_addr,
                                               srv_port, end_port, recv_buf_size);
         acceptor=factory.newThread(new Acceptor(),"TcpServer.Acceptor[" + srv_sock.getLocalPort() + "]");
         local_addr=localAddress(bind_addr, srv_sock.getLocalPort(), external_addr, external_port);

@@ -208,8 +208,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
             diag.start();
         }
 
-        server=use_nio? new NioServer(thread_factory, socket_factory, bind_addr, port, port, null, 0, recv_buf_size)
-          : new TcpServer(thread_factory, socket_factory, bind_addr, port, port, null, 0, recv_buf_size);
+        server=use_nio? new NioServer(thread_factory, socket_factory, bind_addr, port, port, null, 0,
+                                      recv_buf_size, "jgroups.nio.gossiprouter")
+          : new TcpServer(thread_factory, socket_factory, bind_addr, port, port, null, 0,
+                          recv_buf_size, "jgroups.tcp.gossiprouter");
         server.receiver(this).setMaxLength(max_length);
         server.start();
         server.addConnectionListener(this);

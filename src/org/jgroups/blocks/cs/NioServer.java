@@ -35,6 +35,12 @@ public class NioServer extends NioBaseServer {
 
 
 
+    public NioServer(ThreadFactory thread_factory, SocketFactory socket_factory, InetAddress bind_addr, int srv_port, int end_port,
+                     InetAddress external_addr, int external_port, int recv_buf_size) throws Exception {
+        this(thread_factory, socket_factory, bind_addr, srv_port, end_port, external_addr, external_port, recv_buf_size,
+             "jgroups.nio.server");
+    }
+
     /**
      * Creates an instance of {@link NioServer} that opens a server channel and listens for connections.
      * Needs to be started next.
@@ -47,12 +53,13 @@ public class NioServer extends NioBaseServer {
      * @param external_addr The external address in case of NAT. Ignored if null.
      * @param external_port The external port on the NA. If 0, srv_port is used.
      * @param recv_buf_size The size of the initial TCP receive window (in bytes)
+     * @param service_name The name of the service
      * @throws Exception Thrown if the creation failed
      */
     public NioServer(ThreadFactory thread_factory, SocketFactory socket_factory, InetAddress bind_addr, int srv_port, int end_port,
-                     InetAddress external_addr, int external_port, int recv_buf_size) throws Exception {
+                     InetAddress external_addr, int external_port, int recv_buf_size, String service_name) throws Exception {
         super(thread_factory, socket_factory, recv_buf_size);
-        channel=Util.createServerSocketChannel(this.socket_factory, "jgroups.nio.server", bind_addr,
+        channel=Util.createServerSocketChannel(this.socket_factory, service_name, bind_addr,
                                                srv_port, end_port, recv_buf_size);
         channel.configureBlocking(false);
         selector=Selector.open();
@@ -60,6 +67,7 @@ public class NioServer extends NioBaseServer {
         channel.register(selector, SelectionKey.OP_ACCEPT, null);
         local_addr=localAddress(bind_addr, channel.socket().getLocalPort(), external_addr, external_port);
     }
+
 
     public ServerSocketChannel getChannel() {return channel;}
 
