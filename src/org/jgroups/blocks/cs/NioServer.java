@@ -116,6 +116,12 @@ public class NioServer extends NioBaseServer {
             // Util.close(selector); // closing the selector also stops the acceptor thread
             // socket_factory.close(channel);
             selector.wakeup();
+            try {
+                // Wait for server channel to close (via acceptorDone())
+                acceptor.join((conn_expire_time > 0) ? conn_expire_time : sock_conn_timeout);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
