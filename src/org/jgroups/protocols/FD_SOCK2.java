@@ -450,8 +450,8 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     }
 
     protected int[] computeBindPorts(int actual_port) {
-        int[] bind_ports=new int[port_range];
-        for(int i=0; i < port_range; i++) {
+        int[] bind_ports=new int[port_range+1];
+        for(int i=0; i <= port_range; i++) {
             int port=(actual_port+offset+i) % max_port;
             if(port < min_port)
                 port=port+min_port;
