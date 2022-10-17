@@ -132,6 +132,9 @@ public class ClassConfigurator {
                 throw new IllegalStateException(e);
             }
         }
+        if(id < 0 || id > MAX_MAGIC_VALUE)
+            throw new IllegalArgumentException(String.format("invalid magic number %d; needs to be in range [0..%d]",
+                                                             id, MAX_MAGIC_VALUE));
         Supplier<?> supplier=magicMap[id];
         if(supplier == null)
             throw new ClassNotFoundException("Class for magic number " + id + " cannot be found");
