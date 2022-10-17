@@ -486,9 +486,9 @@
     </build>
     <profiles>
         <profile>
-            <id>jdk-19</id>
+            <id>jdk-20</id>
             <activation>
-                <jdk>[19,)</jdk>
+                <jdk>[20,)</jdk>
             </activation>
             <build>
                 <plugins>
@@ -498,15 +498,15 @@
                         <version>3.10.1</version>
                         <executions>
                             <execution>
-                                <id>jdk-19</id>
+                                <id>jdk-20</id>
                                 <phase>compile</phase>
                                 <goals>
                                     <goal>compile</goal>
                                 </goals>
                                 <configuration>
-                                    <release>19</release>
+                                    <release>20</release>
                                     <buildDirectory>${project.build.directory}</buildDirectory>
-                                    <compileSourceRoots>${project.basedir}/mr/19/src</compileSourceRoots>
+                                    <compileSourceRoots>${project.basedir}/mr/20/src</compileSourceRoots>
                                     <multiReleaseOutput>true</multiReleaseOutput>
                                     <enablePreview>true</enablePreview>
                                 </configuration>
