@@ -128,6 +128,9 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     public int         getPortRange()                    {return port_range;}
     public FD_SOCK2    setPortRange(int p)               {this.port_range=p; return this;}
 
+    public int         getOffset()                       {return offset;}
+    public FD_SOCK2    setOffset(int o)                  {this.offset=o; return this;}
+
     @ManagedAttribute(description="Actual port the server is listening on")
     public int getActualBindPort() {
         Address addr=srv != null? srv.localAddress() : null;
