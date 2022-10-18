@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -43,7 +44,6 @@ public class MPerf implements Receiver {
     protected boolean                         oob;
     protected boolean                         log_local=true; // default: same behavior as before
     protected boolean                         display_msg_src=false;
-    protected long                            start_time; // set on reception of START message
     protected MessageCounter                  received_msgs_map=new MessageCounter();
     protected final List<Address>             members=new CopyOnWriteArrayList<>();
     protected final Log                       log=LogFactory.getLog(getClass());
@@ -277,10 +277,12 @@ public class MPerf implements Receiver {
                     if(my_rank >= 0 && my_rank > num_senders)
                         isSender = false;
                 }
-                start_time=System.currentTimeMillis();
-                Result r=sendMessages(isSender);
-                System.out.println("-- done");
-                sendNoException(msg.getSrc(), r, MPerfHeader.RESULT, Message.Flag.OOB);
+                final boolean is_sender=isSender;
+                CompletableFuture.supplyAsync(() -> {
+                    Result r=sendMessages(is_sender);
+                    System.out.println("-- done");
+                    return r;
+                }).thenAccept(r -> sendNoException(msg.src(), r, MPerfHeader.RESULT, Message.Flag.OOB));
                 break;
 
             case MPerfHeader.RESULT:
@@ -381,7 +383,7 @@ public class MPerf implements Receiver {
         final Thread[]       senders=new Thread[num_threads];
         final CountDownLatch latch=new CountDownLatch(1);
         final byte[]         payload=new byte[msg_size];
-        final AtomicBoolean running = new AtomicBoolean(true);
+        final AtomicBoolean  running=new AtomicBoolean(true);
 
         received_msgs_map.reset();
 
