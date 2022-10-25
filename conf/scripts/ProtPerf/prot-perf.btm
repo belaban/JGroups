@@ -25,7 +25,7 @@
 
 RULE DiagnosticHandler creation
 CLASS ^TP
-HELPER org.jgroups.tests.helpers.ProtPerfHelper
+HELPER org.jgroups.util.ProtPerfHelper
 METHOD handleConnect()
 AT ENTRY
 BIND tp=$this, diag=tp.getDiagnosticsHandler();
@@ -37,7 +37,7 @@ ENDRULE
 ## If they're is an up_prot, compute the time for it from the header, then set the current time in the header
 RULE down(Message) entry
 CLASS ^org.jgroups.stack.Protocol
-HELPER org.jgroups.tests.helpers.ProtPerfHelper
+HELPER org.jgroups.util.ProtPerfHelper
 METHOD down(Message)
 COMPILE
 AT ENTRY
@@ -50,7 +50,7 @@ ENDRULE
 
 RULE down(Message) exit
 CLASS ^TP
-HELPER org.jgroups.tests.helpers.ProtPerfHelper
+HELPER org.jgroups.util.ProtPerfHelper
 METHOD down(Message)
 COMPILE
 AT EXIT
@@ -62,7 +62,7 @@ ENDRULE
 
 RULE up(Message)
 CLASS ^org.jgroups.stack.Protocol
-HELPER org.jgroups.tests.helpers.ProtPerfHelper
+HELPER org.jgroups.util.ProtPerfHelper
 METHOD up(Message)
 COMPILE
 AT ENTRY
@@ -74,7 +74,7 @@ ENDRULE
 
 RULE up(MessageBatch)
 CLASS ^org.jgroups.stack.Protocol
-HELPER org.jgroups.tests.helpers.ProtPerfHelper
+HELPER org.jgroups.util.ProtPerfHelper
 METHOD up(MessageBatch)
 COMPILE
 AT ENTRY
@@ -86,7 +86,7 @@ ENDRULE
 
 RULE ProtocolStack.up(Message)
 CLASS org.jgroups.stack.ProtocolStack
-HELPER org.jgroups.tests.helpers.ProtPerfHelper
+HELPER org.jgroups.util.ProtPerfHelper
 METHOD up(Message)
 COMPILE
 AT EXIT
@@ -98,7 +98,7 @@ ENDRULE
 
 RULE ProtocolStack.up(MessageBatch)
 CLASS org.jgroups.stack.ProtocolStack
-HELPER org.jgroups.tests.helpers.ProtPerfHelper
+HELPER org.jgroups.util.ProtPerfHelper
 METHOD up(MessageBatch)
 COMPILE
 AT EXIT
@@ -110,7 +110,7 @@ ENDRULE
 
 RULE loopback
 CLASS ^TP
-HELPER org.jgroups.tests.helpers.ProtPerfHelper
+HELPER org.jgroups.util.ProtPerfHelper
 METHOD loopback(Message,boolean)
 COMPILE
 AT ENTRY
@@ -121,7 +121,7 @@ ENDRULE
 
 RULE TP: set up-time for a single message
 CLASS ^SubmitToThreadPool
-HELPER org.jgroups.tests.helpers.ProtPerfHelper
+HELPER org.jgroups.util.ProtPerfHelper
 METHOD process(Message,boolean)
 COMPILE
 AT ENTRY
@@ -132,7 +132,7 @@ ENDRULE
 
 RULE TP: set up-time for a message batch
 CLASS ^SubmitToThreadPool
-HELPER org.jgroups.tests.helpers.ProtPerfHelper
+HELPER org.jgroups.util.ProtPerfHelper
 METHOD process(MessageBatch,boolean)
 COMPILE
 AT ENTRY
@@ -146,7 +146,7 @@ ENDRULE
 # the timestamp is 0. Setting the timestamp allows for accurate recording of the time for a given transport
 RULE Set MessageBatch.timestamp on batch creation
 CLASS MessageBatch
-HELPER org.jgroups.tests.helpers.ProtPerfHelper
+HELPER org.jgroups.util.ProtPerfHelper
 COMPILE
 METHOD <init>
 AT EXIT
@@ -158,7 +158,7 @@ ENDRULE
 
 RULE MaxOneSenderPerThread - reset batch.timestamp after each run()
 CLASS SubmitToThreadPool$BatchHandler
-HELPER org.jgroups.tests.helpers.ProtPerfHelper
+HELPER org.jgroups.util.ProtPerfHelper
 COMPILE
 METHOD run
 AT ENTRY

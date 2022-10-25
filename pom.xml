@@ -133,8 +133,8 @@
         <dependency>
             <groupId>org.jboss.byteman</groupId>
             <artifactId>byteman-bmunit</artifactId>
-            <version>4.0.19</version>
-            <scope>test</scope>
+            <version>4.0.20</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.wildfly.security</groupId>
@@ -161,6 +161,12 @@
                 </excludes>
             </resource>
             <resource>
+                <directory>conf/scripts/ProtPerf</directory>
+                <includes>
+                    <include>*.btm</include>
+                </includes>
+            </resource>
+            <resource>
                 <directory>${project.build.directory}/schema</directory>
                 <includes>
                     <include>*.xsd</include>
@@ -169,7 +175,6 @@
             <resource>
                <directory>${project.basedir}</directory>
                <includes>
-                  <include>INSTALL.html</include>
                   <include>LICENSE</include>
                   <include>README</include>
                </includes>

@@ -1,4 +1,4 @@
-package org.jgroups.tests.helpers;
+package org.jgroups.util;
 
 import org.jboss.byteman.rule.Rule;
 import org.jboss.byteman.rule.helper.Helper;
@@ -7,9 +7,6 @@ import org.jgroups.protocols.ProtPerfHeader;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.AverageMinMax;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.Util;
 
 import java.util.HashMap;
 import java.util.List;
