@@ -96,7 +96,6 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     protected final BoundedList<String>      suspect_history=new BoundedList<>(20);
 
 
-
     public FD_SOCK2() {
     }
 
@@ -310,12 +309,9 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     }
 
     protected NioServer createServer(int[] bind_ports) {
-        DefaultSocketFactory socket_factory=new DefaultSocketFactory();
-        DefaultThreadFactory thread_factory=new DefaultThreadFactory("nio", false);
-        thread_factory.useFibers(getTransport().useVirtualThreads());
         for(int bind_port: bind_ports) {
             try {
-                return new NioServer(thread_factory, socket_factory, bind_addr, bind_port, bind_port,
+                return new NioServer(getThreadFactory(), getSocketFactory(), bind_addr, bind_port, bind_port,
                                      external_addr, external_port, 0, "jgroups.nio.server.fd_sock");
             }
             catch(Exception ignored) {
