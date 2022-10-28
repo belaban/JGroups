@@ -341,7 +341,7 @@ public class NioConnection extends Connection {
         client_sock.setKeepAlive(true);
         client_sock.setTcpNoDelay(server.tcpNodelay());
         try { // todo: remove try-catch clause one https://github.com/oracle/graal/issues/1087 has been fixed
-            if(server.linger() > 0)
+            if(server.linger() >= 0)
                 client_sock.setSoLinger(true, server.linger());
             else
                 client_sock.setSoLinger(false, -1);
