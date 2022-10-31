@@ -70,6 +70,9 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
       "for ports. See https://issues.redhat.com/browse/JGRP-2560 for details.")
     protected int                            max_port=0xFFFF+1; // 65536
 
+    @Property(description="SO_LINGER in seconds. Default of -1 disables it")
+    protected int                            linger=-1; // SO_LINGER (number of seconds, -1 disables it)
+
     @ManagedAttribute(description="Number of suspect events emitted")
     protected int                            num_suspect_events;
 
@@ -130,6 +133,9 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     public int         getOffset()                       {return offset;}
     public FD_SOCK2    setOffset(int o)                  {this.offset=o; return this;}
 
+    public int         getLinger()                       {return linger;}
+    public FD_SOCK2    setLinger(int l)                  {this.linger=l; return this;}
+
     @ManagedAttribute(description="Actual port the server is listening on")
     public int getActualBindPort() {
         Address addr=srv != null? srv.localAddress() : null;
@@ -153,7 +159,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         int actual_port=((IpAddress)addr).getPort();
         int[] bind_ports=computeBindPorts(actual_port);
         srv=createServer(bind_ports);
-        srv.receiver(this).clientBindPort(client_bind_port).usePeerConnections(true).addConnectionListener(this);
+        srv.receiver(this).clientBindPort(client_bind_port).usePeerConnections(true).addConnectionListener(this).linger(linger);
         srv.start();
         log.info("server listening on %s", bind_addr != null? srv.getChannel().getLocalAddress() : "*." + getActualBindPort());
     }
