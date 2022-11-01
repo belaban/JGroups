@@ -261,12 +261,16 @@ public class MessageBatch implements Iterable<Message> {
     }
 
     public Stream<Message> stream() {
-        return stream(null);
+        return stream(null, false);
     }
 
     public Stream<Message> stream(Predicate<Message> p) {
+        return stream(p, false);
+    }
+
+    public Stream<Message> stream(Predicate<Message> p, boolean parallel) {
         Spliterator<Message> sp=Spliterators.spliterator(iterator(p), size(), 0);
-        return StreamSupport.stream(sp, false);
+        return StreamSupport.stream(sp, parallel);
     }
 
     public String toString() {
