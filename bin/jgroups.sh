@@ -9,10 +9,15 @@ then
 fi
 
 export JGROUPS_HOME
-
 export LIB=$JGROUPS_HOME/lib
 
 CP=$JGROUPS_HOME/classes:$JGROUPS_HOME/conf
+
+
+## prepend classes/META-INF/versions/VER to $CP
+for i in $JGROUPS_HOME/classes/META-INF/versions/*;
+    do CP=$i:$CP
+done
 
 # If this is a bin dist, JARs are in the $JG directory.
 if [ ! -d $LIB ]; then
@@ -48,6 +53,7 @@ JMX="-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxr
 #java -Xrunhprof:cpu=samples,monitor=y,interval=5,lineno=y,thread=y -classpath $CP $LOG $JG_FLAGS $FLAGS $JMX  $*
 
 #DEBUG="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5000"
+PREVIEW=--enable-preview
 
-java -cp $CP $DEBUG $LOG $GC $JG_FLAGS $FLAGS $JMX $JMC  $*
+java -cp $CP $PREVIEW $DEBUG $LOG $GC $JG_FLAGS $FLAGS $JMX $JMC  $*
 
