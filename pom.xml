@@ -351,9 +351,6 @@
                             <!--classpathPrefix>libs/</classpathPrefix-->
                             <mainClass>org.jgroups.Version</mainClass>
                         </manifest>
-                        <manifestEntries>
-                            <Multi-Release>true</Multi-Release>
-                        </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
@@ -491,9 +488,39 @@
     </build>
     <profiles>
         <profile>
+            <id>jdk-19</id>
+            <activation>
+                <jdk>19</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>3.10.1</version>
+                        <executions>
+                            <execution>
+                                <id>jdk-19</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>compile</goal>
+                                </goals>
+                                <configuration>
+                                    <release>19</release>
+                                    <buildDirectory>${project.build.directory}</buildDirectory>
+                                    <compileSourceRoots>${project.basedir}/jdk/19/src</compileSourceRoots>
+                                    <enablePreview>true</enablePreview>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>jdk-20</id>
             <activation>
-                <jdk>[20,)</jdk>
+                <jdk>20</jdk>
             </activation>
             <build>
                 <plugins>
@@ -511,8 +538,7 @@
                                 <configuration>
                                     <release>20</release>
                                     <buildDirectory>${project.build.directory}</buildDirectory>
-                                    <compileSourceRoots>${project.basedir}/mr/20/src</compileSourceRoots>
-                                    <multiReleaseOutput>true</multiReleaseOutput>
+                                    <compileSourceRoots>${project.basedir}/jdk/19/src</compileSourceRoots>
                                     <enablePreview>true</enablePreview>
                                 </configuration>
                             </execution>

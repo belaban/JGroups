@@ -8,7 +8,6 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
 import org.jgroups.protocols.TP;
-import org.jgroups.util.jdkspecific.ThreadCreator;
 
 import java.io.BufferedWriter;
 import java.io.File;

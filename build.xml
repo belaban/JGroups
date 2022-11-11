@@ -13,7 +13,7 @@
     <property name="build.properties.file" value="build.properties"/>
     <property file="${build.properties.file}"/>
     <property name="src.dir"               value="${root.dir}/src"/>
-    <property name="src-20.dir"            value="${root.dir}/mr/20/src"/>
+    <property name="src-19.dir"            value="${root.dir}/jdk/19/src"/>
     <property name="tests.dir"             value="${root.dir}/tests"/>
     <property name="other.dir"             value="${tests.dir}/other"/>
     <property name="junit.dir"             value="${tests.dir}/junit"/>
@@ -43,8 +43,11 @@
     <property name="ivy.version"           value="2.5.0" />
     <property name="project.pom"            value="${root.dir}/pom.xml"/>
     <property name="manifest"              value="${dist.dir}/MANIFEST.MF"/>
+    <condition property="jdk-19">
+        <javaversion exactly="19"/>
+    </condition>
     <condition property="jdk-20">
-        <javaversion atleast="20"/>
+        <javaversion exactly="20"/>
     </condition>
 
 
@@ -165,17 +168,27 @@
         </javac>
     </target>
 
-    <target name="compile-20" depends="prepare" description="Compiles all Java files that require JDK 20" if="jdk-20">
-        <mkdir dir="${compile.dir}/META-INF/versions/20"/>
-        <javac destdir="${compile.dir}/META-INF/versions/20" release="20"
+    <target name="compile-19" depends="prepare" description="Compiles all Java files that require JDK 19" if="jdk-19">
+        <mkdir dir="${compile.dir}"/>
+        <javac destdir="${compile.dir}" release="19"
                classpathref="jg.classpath" includeantruntime="false" debug="on"
                includes="org/jgroups/**">
-             <compilerarg line="--enable-preview --release 20"/>
-             <src path="${src-20.dir}"/>
+             <compilerarg line="--enable-preview --release 19"/>
+             <src path="${src-19.dir}"/>
         </javac>
     </target>
 
-    <target name="compile" depends="prepare,compile-11,compile-20" description="Compiles all Java files">
+    <target name="compile-20" depends="prepare" description="Compiles all Java files that require JDK 20" if="jdk-20">
+        <mkdir dir="${compile.dir}"/>
+        <javac destdir="${compile.dir}" release="20"
+               classpathref="jg.classpath" includeantruntime="false" debug="on"
+               includes="org/jgroups/**">
+            <compilerarg line="--enable-preview --release 20"/>
+            <src path="${src-19.dir}"/>
+        </javac>
+    </target>
+
+    <target name="compile" depends="prepare,compile-11,compile-19,compile-20" description="Compiles all Java files">
         <set-version/>
     </target>
 
@@ -219,6 +232,7 @@
         <copy todir="${compile.dir}/">
             <fileset dir="${conf.dir}" includes="*.properties, *.xml">
                 <include name="scripts/**"/>
+                <include name="META-INF/services/**"/>
                 <exclude name="log4j*.xml"/>
                 <exclude name="settings.xml"/>
             </fileset>
@@ -236,7 +250,7 @@
 
 
     <target name="jgroups.jar" description="Creates the jgroups.jar (includes everything)"
-            depends="compile-plus-essential-unittests,compile-20,make-schema,make-keystore-no-compile,create-manifest,copy-conf-dir">
+            depends="compile-plus-essential-unittests,compile-19,compile-20,make-schema,make-keystore-no-compile,create-manifest,copy-conf-dir">
         <mkdir dir="${dist.dir}"/>
         <mkdir dir="${compile.dir}/META-INF"/>
         <jar destfile="${dist.dir}/jgroups-${version}.jar" basedir="${compile.dir}" manifest="${dist.dir}/MANIFEST.MF">
@@ -273,7 +287,7 @@
         <jar jarfile="${dist.dir}/jgroups-${version}-sources.jar"
              basedir="${src.dir}"
              manifest="${dist.dir}/MANIFEST.MF">
-            <fileset dir="${src-20.dir}"/>
+            <fileset dir="${src-19.dir}"/>
         </jar>
     </target>
 
