@@ -215,6 +215,7 @@ public class MPING extends PING implements Runnable {
         MulticastSocket retval=getSocketFactory().createMulticastSocket(service_name, null); // causes *no* binding !
         if(bind_addr != null)
             setInterface(bind_addr, retval);
+        retval.setTimeToLive(ip_ttl);
         retval.setReuseAddress(false); // so we get a conflict if binding to the same port and increment the port
         retval.bind(new InetSocketAddress(bind_addr, port));
         return retval;
