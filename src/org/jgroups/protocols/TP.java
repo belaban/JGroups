@@ -132,8 +132,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="The fully qualified name of a class implementing LocalTransport")
     protected String  local_transport_class;
 
-    @Property(description="If true, create virtual threads (Loom, if available), otherwise create native threads")
-    protected boolean use_virtual_threads;
+    @Property(description="If true, create virtual threads, otherwise create native threads")
+    protected boolean use_virtual_threads=true;
 
     @Property(description="Thread naming pattern for threads in this channel. Valid values are \"pcl\": " +
       "\"p\": includes the thread name, e.g. \"Incoming thread-1\", \"UDP ucast receiver\", " +
@@ -692,7 +692,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         this.id=ClassConfigurator.getProtocolId(TP.class);
 
         if(use_virtual_threads && !Util.fibersAvailable()) {
-            log.warn("use_virtual_threads was set to false, as virtual threads are not available in this Java version");
+            log.debug("use_virtual_threads was set to false, as virtual threads are not available in this Java version");
             use_virtual_threads=false;
         }
 

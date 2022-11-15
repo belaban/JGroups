@@ -1,7 +1,6 @@
 package org.jgroups.util;
 
 import org.jgroups.logging.Log;
-import org.jgroups.util.jdkspecific.ThreadCreator;
 
 /**
  * Thread factory mainly responsible for naming of threads. Can be replaced by
