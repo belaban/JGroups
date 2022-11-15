@@ -13,12 +13,6 @@ export LIB=$JGROUPS_HOME/lib
 
 CP=$JGROUPS_HOME/classes:$JGROUPS_HOME/conf
 
-
-## prepend classes/META-INF/versions/VER to $CP
-for i in $JGROUPS_HOME/classes/META-INF/versions/*;
-    do CP=$i:$CP
-done
-
 # If this is a bin dist, JARs are in the $JG directory.
 if [ ! -d $LIB ]; then
     LIB=$JGROUPS_HOME
