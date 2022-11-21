@@ -666,10 +666,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public String defaultHeaders(boolean detailed) {
         int num_members=view != null? view.size() : 0;
-        String fmt=detailed? "%s (ip=%s)\nview=%s\ncluster=%s\nversion=%s\n"
-          : "%s [ip=%s, %d mbr(s), cluster=%s, version=%s]\n";
+        String fmt=detailed? "%s (ip=%s)\nview=%s\ncluster=%s\nversion=%s %s\n"
+          : "%s [ip=%s, %d mbr(s), cluster=%s, version=%s %s]\n";
         return String.format(fmt, local_addr != null? local_addr.toString() : "n/a", local_physical_addr,
-                             detailed? view : num_members, cluster_name, Version.description);
+                             detailed? view : num_members, cluster_name, Version.description,
+                             Util.JAVA_VERSION.isEmpty()? "" : String.format("(java %s)", Util.JAVA_VERSION));
     }
 
     /**

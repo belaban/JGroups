@@ -91,6 +91,8 @@ public class Util {
     protected static int         CCHM_CONCURRENCY_LEVEL=16;
     public static final int      DEFAULT_HEADERS;
 
+    public static final String   JAVA_VERSION;
+
     /**
      * The max size of an address list, used in View or Digest when toString() is called. Limiting this
      * reduces the amount of log data
@@ -177,6 +179,8 @@ public class Util {
         catch(Throwable t) {
             throw new IllegalArgumentException(String.format("property %s has an incorrect value", Global.DEFAULT_HEADERS), t);
         }
+
+        JAVA_VERSION=System.getProperty("java.vm.version", "");
     }
 
 
@@ -4390,7 +4394,7 @@ public class Util {
                             if(matcher.matches()) {
                                 if((addr instanceof Inet4Address && (ip_version == StackType.IPv4 || ip_version == StackType.Dual)) ||
                                   (addr instanceof Inet6Address && ip_version == StackType.IPv6))
-                                return addr;
+                                    return addr;
                                 if(first == null)
                                     first=addr;
                             }
@@ -4749,7 +4753,7 @@ public class Util {
 
         // Pattern p=Pattern.compile("[A-Z]+");
         Matcher m=METHOD_NAME_TO_ATTR_NAME_PATTERN.matcher(name);
-        StringBuffer sb=new StringBuffer(); // todo: switch to StringBuilder when the JDK version is >= 9
+        StringBuilder sb=new StringBuilder();
         while(m.find()) {
             int start=m.start(), end=m.end();
             String str=name.substring(start,end).toLowerCase();
@@ -4790,7 +4794,7 @@ public class Util {
         if(attr_name.contains("_")) {
             // Pattern p=Pattern.compile("_.");
             Matcher m=ATTR_NAME_TO_METHOD_NAME_PATTERN.matcher(attr_name);
-            StringBuffer sb=new StringBuffer(); // todo: switch to StringBuilder when the JDK version is >= 9
+            StringBuilder sb=new StringBuilder();
             while(m.find()) {
                 m.appendReplacement(sb,attr_name.substring(m.end() - 1,m.end()).toUpperCase());
             }
