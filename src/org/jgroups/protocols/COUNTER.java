@@ -173,6 +173,15 @@ public class COUNTER extends Protocol {
         return this;
     }
 
+    public int getNumberOfBackups() {
+        return num_backups;
+    }
+
+    public COUNTER setNumberOfBackups(int num_backups) {
+        this.num_backups = num_backups;
+        return this;
+    }
+
     @ManagedAttribute
     public String getView() {
         return view != null? view.toString() : null;
