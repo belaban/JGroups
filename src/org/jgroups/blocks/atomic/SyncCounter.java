@@ -11,9 +11,7 @@ import org.jgroups.util.Streamable;
  * @author Pedro Ruivo
  * @since 5.2
  */
-public interface SyncCounter {
-
-    String getName();
+public interface SyncCounter extends BaseCounter {
 
     /**
      * Gets the current value of the counter
@@ -96,9 +94,8 @@ public interface SyncCounter {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * @return an asynchronous wrapper around this instance.
-     */
-    AsyncCounter async();
-
+    @Override
+    default SyncCounter sync() {
+        return this;
+    }
 }
