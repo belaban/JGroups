@@ -12,12 +12,7 @@ import java.util.concurrent.CompletionStage;
  * @author Pedro Ruivo
  * @since 5.2
  */
-public interface AsyncCounter {
-
-    /**
-     * @return The counter's name.
-     */
-    String getName();
+public interface AsyncCounter extends BaseCounter {
 
     /**
      * Gets the current value of the counter.
@@ -102,9 +97,8 @@ public interface AsyncCounter {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * @return a synchronous wrapper around this instance.
-     */
-    SyncCounter sync();
-
+    @Override
+    default AsyncCounter async() {
+        return this;
+    }
 }
