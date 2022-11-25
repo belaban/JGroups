@@ -49,6 +49,13 @@ public class ThreadPool implements Lifecycle {
       systemProperty="jgroups.threaddump.path")
     protected String              thread_dump_path;
 
+    @Property(description="Increases max_threads by the view size + delta if enabled " +
+      "(https://issues.redhat.com/browse/JGRP-2655)")
+    protected boolean             increase_max_size_dynamically=true;
+
+    @Property(description="Added to the view size when the pool is increased dynamically")
+    protected int                 delta=10;
+
 
 
 
@@ -113,6 +120,12 @@ public class ThreadPool implements Lifecycle {
         this.thread_dumps_threshold=t;
         return this;
     }
+
+    public boolean    getIncreaseMaxSizeDynamically()          {return increase_max_size_dynamically;}
+    public ThreadPool setIncreaseMaxSizeDynamically(boolean b) {increase_max_size_dynamically=b; return this;}
+
+    public int        getDelta() {return delta;}
+    public ThreadPool setDelta(int d) {delta=d; return this;}
 
     @ManagedAttribute(description="Number of thread dumps")
     public int getNumberOfThreadDumps() {return thread_dumps.get();}

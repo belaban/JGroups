@@ -936,6 +936,17 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
                 if(local_transport != null)
                     local_transport.viewChange(this.view);
+
+                // Increase thread pool size when view.size() > max_threads (https://issues.redhat.com/browse/JGRP-2655)
+                if(ergonomics && thread_pool.getIncreaseMaxSizeDynamically()) {
+                    int size=view.size();
+                    if(size >= thread_pool.getMaxThreads()) {
+                        int new_size=size+thread_pool.getDelta();
+                        log.warn("%s: view size=%d, thread_pool.max-threads=%d: increasing max-threads to %d",
+                                 local_addr, size, thread_pool.getMaxThreads(), new_size);
+                        thread_pool.setMaxThreads(new_size);
+                    }
+                }
                 break;
 
             case Event.CONNECT:
