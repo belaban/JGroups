@@ -133,7 +133,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected String  local_transport_class;
 
     @Property(description="If true, create virtual threads, otherwise create native threads")
-    protected boolean use_virtual_threads=true;
+    protected boolean use_virtual_threads;
 
     @Property(description="Thread naming pattern for threads in this channel. Valid values are \"pcl\": " +
       "\"p\": includes the thread name, e.g. \"Incoming thread-1\", \"UDP ucast receiver\", " +
