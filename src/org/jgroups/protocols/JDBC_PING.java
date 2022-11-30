@@ -262,12 +262,7 @@ public class JDBC_PING extends FILE_PING {
                         "To suppress this message, set initialize_sql to an empty value. Cause: %s", e.getMessage());
         }
         finally {
-            try {
-                connection.close();
-            }
-            catch(SQLException e) {
-                log.error(Util.getMessage("ErrorClosingConnection"), e);
-            }
+            closeConnection(connection);
         }
     }
 
