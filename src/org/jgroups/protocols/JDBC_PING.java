@@ -111,12 +111,10 @@ public class JDBC_PING extends FILE_PING {
         attemptSchemaInitialization();
     }
 
-
     protected void write(List<PingData> list, String clustername) {
         for(PingData data: list)
             writeToDB(data, clustername, true);
     }
-
 
     // It's possible that multiple threads in the same cluster node invoke this concurrently;
     // Since delete and insert operations are not atomic
@@ -148,18 +146,16 @@ public class JDBC_PING extends FILE_PING {
         }
     }
 
-
     protected boolean contains(String cluster_name, Address addr) {
         final String addressAsString = addressAsString(addr);
-        try(Connection conn=getConnection()) {
-            try (PreparedStatement ps=conn.prepareStatement(contains_sql)) {
+        try(Connection connection = getConnection()) {
+            try (PreparedStatement ps = connection.prepareStatement(contains_sql)) {
                 ps.setString(1, cluster_name);
                 ps.setString(2, addressAsString);
-                try (ResultSet resultSet=ps.executeQuery()) {
+                try (ResultSet resultSet = ps.executeQuery()) {
                 	if(!resultSet.next())
                 		return false;
-                	int count=resultSet.getInt("RECORDCOUNT");
-                	return count > 0;
+                	return resultSet.getInt("RECORDCOUNT") > 0;
                 }
             }
         }
@@ -195,7 +191,7 @@ public class JDBC_PING extends FILE_PING {
         }
     }
 
-	protected static final PreparedStatement prepareStatement(final Connection connection, final String sql, final int resultSetType,
+	protected static PreparedStatement prepareStatement(final Connection connection, final String sql, final int resultSetType,
 		final int resultSetConcurrency) throws SQLException {
 		try {
 			return connection.prepareStatement(sql, resultSetType, resultSetConcurrency);
@@ -210,13 +206,14 @@ public class JDBC_PING extends FILE_PING {
 	}
 
     protected void readAll(Connection connection, List<Address> members, String clustername, Responses rsps) throws SQLException {
-        try (PreparedStatement ps=prepareStatement(connection, select_all_pingdata_sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE)) {
+        try (PreparedStatement ps = prepareStatement(connection, select_all_pingdata_sql, ResultSet.TYPE_FORWARD_ONLY,
+                ResultSet.CONCUR_UPDATABLE)) {
             ps.setString(1, clustername);
             if(log.isTraceEnabled())
                 log.trace("%s: SQL for reading: %s", local_addr, ps);
-            try (ResultSet resultSet=ps.executeQuery()) {
+            try (ResultSet resultSet = ps.executeQuery()) {
 	            while(resultSet.next()) {
-	                byte[] bytes=resultSet.getBytes(1);
+	                byte[] bytes = resultSet.getBytes(1);
 	                try {
 	                    PingData data=deserialize(bytes);
                         reads++;
@@ -227,7 +224,7 @@ public class JDBC_PING extends FILE_PING {
 	                        addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
 	                }
 	                catch(Exception e) {
-	                    int row=resultSet.getRow();
+	                    int row = resultSet.getRow();
 	                    log.error("%s: failed deserializing row %d: %s; removing it from the table", local_addr, row, e);
 	                    try {
 	                        resultSet.deleteRow();
@@ -241,33 +238,26 @@ public class JDBC_PING extends FILE_PING {
         }
     }
 
-
     protected void attemptSchemaInitialization() {
         if(stringIsEmpty(initialize_sql)) {
             log.debug("Table creation step skipped: initialize_sql property is missing");
             return;
         }
-        Connection connection=getConnection();
-        if(connection == null)
-            return;
-
-        try(PreparedStatement ps=connection.prepareStatement(initialize_sql)) {
-            if(log.isTraceEnabled())
-                log.trace("SQL for initializing schema: %s", ps);
-            ps.execute();
-            log.debug("Table created for JDBC_PING Discovery Protocol");
-        }
-        catch(SQLException e) {
-            log.debug("Could not execute initialize_sql statement; not necessarily an error, we always attempt to create the schema. " +
-                        "To suppress this message, set initialize_sql to an empty value. Cause: %s", e.getMessage());
-        }
-        finally {
-            try {
-                connection.close();
-            }
-            catch(SQLException e) {
-                log.error(Util.getMessage("ErrorClosingConnection"), e);
-            }
+        final Connection connection = getConnection();
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(initialize_sql)) {
+                if (log.isTraceEnabled())
+                    log.trace("SQL for initializing schema: %s", ps);
+                ps.execute();
+                log.debug("Table created for JDBC_PING Discovery Protocol");
+            } catch (SQLException e) {
+                log.debug(
+                        "Could not execute initialize_sql statement; not necessarily an error, we always attempt to create the schema. "
+                                +
+                                "To suppress this message, set initialize_sql to an empty value. Cause: %s",
+                        e.getMessage());
+            } finally {
+                closeConnection(connection); }
         }
     }
 
@@ -306,8 +296,6 @@ public class JDBC_PING extends FILE_PING {
             }
         }
     }
-
-
 
     protected synchronized void insert(Connection connection, PingData data, String clustername, String address) throws SQLException {
         final byte[] serializedPingData = serializeWithoutView(data);
@@ -349,11 +337,9 @@ public class JDBC_PING extends FILE_PING {
     }
 
     protected void clearTable(String clustername) {
-        final Connection conn = getConnection();
-        if (conn != null)
-        {
-            try (PreparedStatement ps = conn.prepareStatement(clear_sql))
-            {
+        final Connection connection = getConnection();
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement(clear_sql)) {
                 // check presence of cluster_name parameter for backwards compatibility
                 if (clear_sql.indexOf('?') >= 0)
                     ps.setString(1, clustername);
@@ -363,15 +349,10 @@ public class JDBC_PING extends FILE_PING {
                     log.trace("%s: SQL for clearing the table: %s", local_addr, ps);
                 ps.execute();
                 log.debug("%s: cleared table for cluster %s", local_addr, clustername);
-            }
-            catch (SQLException e)
-            {
-                log.error(Util.getMessage("ErrorClearingTable"), e);
-            }
-            finally
-            {
-                closeConnection(conn);
-            }
+            } catch (SQLException e) {
+                log.error(Util.getMessage("ErrorClearingTable"), e); }
+            finally {
+                closeConnection(connection); }
         }
     }
     
@@ -446,7 +427,6 @@ public class JDBC_PING extends FILE_PING {
         return !stringIsEmpty(value);
     }
 
-
     public static void main(String[] args) throws ClassNotFoundException {
         String driver="org.hsqldb.jdbcDriver";
         String user="SA";
@@ -506,7 +486,5 @@ public class JDBC_PING extends FILE_PING {
         catch(SQLException e) {
             e.printStackTrace();
         }
-
     }
-
 }
