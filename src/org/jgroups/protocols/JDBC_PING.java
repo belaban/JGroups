@@ -350,20 +350,29 @@ public class JDBC_PING extends FILE_PING {
 
 
     protected void clearTable(String clustername) {
-        try(Connection conn=getConnection();
-            PreparedStatement ps=conn.prepareStatement(clear_sql)) {
-            // check presence of cluster_name parameter for backwards compatibility
-            if (clear_sql.indexOf('?') >= 0)
-                ps.setString(1, clustername);
-            else
-                log.debug("Please update your clear_sql to include cluster_name parameter.");
-            if(log.isTraceEnabled())
-                log.trace("%s: SQL for clearing the table: %s", local_addr, ps);
-            ps.execute();
-            log.debug("%s: cleared table for cluster %s", local_addr, clustername);
+        try(Connection conn=getConnection()) {
+            if(conn != null) {
+                try(PreparedStatement ps=conn.prepareStatement(clear_sql)) {
+                    // check presence of cluster_name parameter for backwards compatibility
+                    if(clear_sql.indexOf('?') >= 0)
+                        ps.setString(1, clustername);
+                    else
+                        log.debug("Please update your clear_sql to include cluster_name parameter.");
+                    if(log.isTraceEnabled())
+                        log.trace("%s: SQL for clearing the table: %s", local_addr, ps);
+                    ps.execute();
+                    log.debug("%s: cleared table for cluster %s", local_addr, clustername);
+                }
+                catch(SQLException e1) {
+                    log.error(Util.getMessage("ErrorClearingTable"), e1);
+                }
+                finally {
+                    closeConnection(conn);
+                }
+            }
         }
-        catch(SQLException e) {
-            log.error(Util.getMessage("ErrorClearingTable"), e);
+        catch(SQLException e2) {
+            log.error(Util.getMessage("ErrorClearingTable"), e2);
         }
     }
 
