@@ -5,31 +5,25 @@ import org.jgroups.Global;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.Objects;
 
 /**
  * Wraps an object and its serialized form.
  * @author Bela Ban
  * @since  5.0.0
  */
-public class ObjectWrapper implements SizeStreamable {
-    protected Object    obj;
+public class ObjectWrapperSerializable extends ObjectWrapperPrimitive {
     protected ByteArray serialized; // serialized version of obj (cached)
 
-    public ObjectWrapper() {
+    public ObjectWrapperSerializable() {
         // only used for deserialization
     }
 
-    public ObjectWrapper(Object obj) {
-        this.obj=Objects.requireNonNull(obj);
+    public ObjectWrapperSerializable(Object obj) {
+        super(obj);
     }
 
-    public <T extends Object> T getObject() {
-        return (T)obj;
-    }
-
-    public synchronized ObjectWrapper setObject(Object obj) {
-        this.obj=obj;
+    public synchronized ObjectWrapperSerializable setObject(Object obj) {
+        super.setObject(obj);
         this.serialized=null;
         return this;
     }
@@ -50,7 +44,7 @@ public class ObjectWrapper implements SizeStreamable {
     }
 
     public String toString() {
-        return String.format("obj: %s %s", obj, serialized != null? "(" + serialized.getLength() + " bytes)" : "");
+        return String.format("%s%s", obj, serialized != null? "( " + serialized.getLength() + " bytes)" : "");
     }
 
     public int serializedSize() {

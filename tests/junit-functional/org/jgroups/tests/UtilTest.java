@@ -578,6 +578,18 @@ public class UtilTest {
         marshalString(Short.MAX_VALUE + 100000);
     }
 
+    public void testPrimitiveToStream() throws IOException {
+        for(Object obj: Arrays.asList(null, 123, true, "hello")) {
+            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(16);
+            Util.primitiveToStream(obj, out);
+            ByteArray buf=out.getBuffer();
+            try(ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf.getArray(), 0, buf.getLength())) {
+                Object obj2=Util.primitiveFromStream(in);
+                assert obj == obj2 || obj.equals(obj2);
+            }
+        }
+    }
+
 
     public void testExceptionToStream() throws Exception {
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512, true);

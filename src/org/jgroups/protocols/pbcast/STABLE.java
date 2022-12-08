@@ -581,7 +581,8 @@ public class STABLE extends Protocol {
             return;
         }
         log.trace("%s: sending stable msg to %s: %s", local_addr, dest, printDigest(d));
-        final Message msg=new ObjectMessage(dest, d).setFlag(OOB, NO_RELIABILITY)
+        final ObjectMessage msg=new ObjectMessage(dest, d);
+        msg.setFlag(OOB, NO_RELIABILITY)
           .putHeader(this.id, new StableHeader(StableHeader.STABLE_GOSSIP, current_view.getViewId()));
         try {
             if(!send_in_background) {

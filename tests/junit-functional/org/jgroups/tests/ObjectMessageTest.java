@@ -30,7 +30,7 @@ public class ObjectMessageTest extends MessageTestBase {
     }
 
     public void testConstructor2() {
-        Message msg=new ObjectMessage();
+        Message msg=new ObjectMessage(null, null);
         assert msg.getType() == Message.OBJ_MSG;
         assert !msg.hasArray();
         assert msg.getLength() == 0;
@@ -82,6 +82,17 @@ public class ObjectMessageTest extends MessageTestBase {
         Message msg2=unmarshal(ObjectMessage.class, buf);
         byte[] tmp=msg2.getObject();
         assert new String(tmp).equals("hello world");
+        assert msg.isFlagSet(Message.Flag.SERIALIZED);
+    }
+
+    public void testObject6() {
+        Person p=new Person(50, "Bela");
+        Message msg=new ObjectMessage(null, p);
+        assert !msg.isFlagSet(Message.Flag.SERIALIZED);
+        msg=new ObjectMessage();
+        assert !msg.isFlagSet(Message.Flag.SERIALIZED);
+        msg=new ObjectMessage(null, 123);
+        assert msg.isFlagSet(Message.Flag.SERIALIZED);
     }
 
     public void testMarshalling() throws Exception {
@@ -102,7 +113,7 @@ public class ObjectMessageTest extends MessageTestBase {
     }
 
     public void testSetNullObject() throws Exception {
-        Message msg=new ObjectMessage(null, null);
+        Message msg=new ObjectMessage(null);
         _testSize(msg);
         byte[] buf=marshal(msg);
         Message msg2=unmarshal(ObjectMessage.class, buf);
@@ -120,10 +131,14 @@ public class ObjectMessageTest extends MessageTestBase {
     }
 
     public void testSetObject() {
-        Message msg=new ObjectMessage(null, new Person(53, "Bela"));
+        ObjectMessage msg=new ObjectMessage(null, new Person(53, "Bela"));
         assert msg.getObject() != null;
-        msg.setObject(new Person(15, "Nicole"));
+        Person nicole=new Person(15, "Nicole");
+        msg.setObject(nicole);
         Person p=msg.getObject();
+        assert p.age == 15 && p.name.equals("Nicole");
+        msg.setSizeStreamable(nicole);
+        p=msg.getObject();
         assert p.age == 15 && p.name.equals("Nicole");
         msg.setObject(null);
         assert msg.getObject() == null;
@@ -174,6 +189,7 @@ public class ObjectMessageTest extends MessageTestBase {
     }
 
     protected static JChannel create(String name) throws Exception {
+        //noinspection resource
         return new JChannel(Util.getTestStack()).setName(name);
     }
 

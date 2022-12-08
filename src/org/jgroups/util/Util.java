@@ -802,11 +802,29 @@ public class Util {
             return Global.BYTE_SIZE;
         if(obj instanceof SizeStreamable)
             return Global.BYTE_SIZE + Util.size((SizeStreamable)obj);
+        return sizePrimitive(obj);
+    }
+
+    public static int size(SizeStreamable s) {
+        int retval=Global.BYTE_SIZE;
+        if(s == null)
+            return retval;
+        retval+=Global.SHORT_SIZE; // magic number
+        short magic_number=ClassConfigurator.getMagicNumber(s.getClass());
+        if(magic_number == -1)
+            retval+=Bits.sizeUTF(s.getClass().getName());
+        return retval + s.serializedSize();
+    }
+
+    public static int sizePrimitive(Object obj) {
+        if(obj == null)
+            return 1; // TYPE_NULL
         Byte type=obj instanceof Class<?>? TYPES.get(obj) : TYPES.get(obj.getClass());
         if(obj instanceof Class<?>) {
             if(type != null)
                 return Global.BYTE_SIZE *2;
         }
+
         int retval=Global.BYTE_SIZE;
         switch(type) {
             case TYPE_BOOLEAN: case TYPE_BOOLEAN_OBJ:
@@ -836,33 +854,23 @@ public class Util {
         }
     }
 
-    public static void objectToStream(Object obj, DataOutput out) throws IOException {
+    public static void writeTypeStreamable(Streamable obj, DataOutput out) throws IOException {
+        out.writeByte(TYPE_STREAMABLE);
+        Util.writeGenericStreamable(obj, out);
+    }
+
+    public static void primitiveToStream(Object obj, DataOutput out) throws IOException {
         if(obj == null) {
             out.write(TYPE_NULL);
             return;
         }
-        if(obj instanceof Streamable) {
-            out.writeByte(TYPE_STREAMABLE);
-            writeGenericStreamable((Streamable)obj,out);
+        Byte type=obj instanceof Class<?>? TYPES.get(obj) : TYPES.get(obj.getClass());
+        if(obj instanceof Class<?>) {
+            out.writeByte(TYPE_CLASS);
+            out.writeByte(type);
             return;
         }
-        Byte type=obj instanceof Class<?>? TYPES.get(obj) : TYPES.get(obj.getClass());
-        if(type == null) {
-            out.write(TYPE_SERIALIZABLE);
-            try(ObjectOutputStream tmp=new ObjectOutputStream(out instanceof ByteArrayDataOutputStream?
-                                                                new OutputStreamAdapter((ByteArrayDataOutputStream)out) :
-                                                                (OutputStream)out)) {
-                tmp.writeObject(obj);
-                return;
-            }
-        }
-        if(obj instanceof Class<?>) {
-            if(type != null) {
-                out.writeByte(TYPE_CLASS);
-                out.writeByte(type);
-                return;
-            }
-        }
+
         out.writeByte(type);
         switch(type) {
             case TYPE_BOOLEAN: case TYPE_BOOLEAN_OBJ:
@@ -902,23 +910,17 @@ public class Util {
         }
     }
 
-    public static <T extends Object> T objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
-        return objectFromStream(in, null);
-    }
-
-    public static <T extends Object> T objectFromStream(DataInput in, ClassLoader loader) throws IOException, ClassNotFoundException {
+    public static <T> T primitiveFromStream(DataInput in) throws IOException {
         if(in == null) return null;
         byte b=in.readByte();
+        return primitiveFromStream(in, b);
+    }
 
-        switch(b) {
-            case TYPE_NULL:       return null;
-            case TYPE_STREAMABLE: return readGenericStreamable(in, loader);
-            case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
-                InputStream is=in instanceof ByteArrayDataInputStream?
-                  new org.jgroups.util.InputStreamAdapter((ByteArrayDataInputStream)in) : (InputStream)in;
-                try(ObjectInputStream tmp=new ObjectInputStreamWithClassloader(is, loader)) {
-                    return (T)tmp.readObject();
-                }
+    public static <T> T primitiveFromStream(DataInput in, byte type) throws IOException {
+        if(in == null) return null;
+        switch(type) {
+            case TYPE_NULL:
+                return null;
             case TYPE_BOOLEAN: case TYPE_BOOLEAN_OBJ: return (T)(Boolean)in.readBoolean();
             case TYPE_BYTE:    case TYPE_BYTE_OBJ:    return (T)(Byte)in.readByte();
             case TYPE_CHAR:    case TYPE_CHAR_OBJ:    return (T)(Character)in.readChar();
@@ -935,9 +937,53 @@ public class Util {
             case TYPE_CLASS:
                 return (T)CLASS_TYPES.get(in.readByte());
             default:
-                throw new IllegalArgumentException("type " + b + " is invalid");
+                throw new IllegalArgumentException("type " + type + " is invalid");
         }
     }
+
+    public static void objectToStream(Object obj, DataOutput out) throws IOException {
+        if(obj == null) {
+            out.write(TYPE_NULL);
+            return;
+        }
+        if(obj instanceof Streamable) {
+            writeTypeStreamable((Streamable) obj, out);
+            return;
+        }
+        Byte type=obj instanceof Class<?>? TYPES.get(obj) : TYPES.get(obj.getClass());
+        if(type == null) {
+            out.write(TYPE_SERIALIZABLE);
+            try(ObjectOutputStream tmp=new ObjectOutputStream(out instanceof ByteArrayDataOutputStream?
+                                                                new OutputStreamAdapter((ByteArrayDataOutputStream)out) :
+                                                                (OutputStream)out)) {
+                tmp.writeObject(obj);
+                return;
+            }
+        }
+        primitiveToStream(obj, out);
+    }
+
+    public static <T extends Object> T objectFromStream(DataInput in) throws IOException, ClassNotFoundException {
+        return objectFromStream(in, null);
+    }
+
+    public static <T extends Object> T objectFromStream(DataInput in, ClassLoader loader) throws IOException, ClassNotFoundException {
+        if(in == null) return null;
+        byte b=in.readByte();
+
+        switch(b) {
+            case TYPE_STREAMABLE:
+                return readGenericStreamable(in, loader);
+            case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
+                InputStream is=in instanceof ByteArrayDataInputStream?
+                  new org.jgroups.util.InputStreamAdapter((ByteArrayDataInputStream)in) : (InputStream)in;
+                try(ObjectInputStream tmp=new ObjectInputStreamWithClassloader(is, loader)) {
+                    return (T)tmp.readObject();
+                }
+        }
+        return primitiveFromStream(in, b);
+    }
+
 
     public static <T extends Streamable> T streamableFromByteBuffer(Class<? extends Streamable> cl,byte[] buffer)
       throws Exception {
@@ -1766,31 +1812,17 @@ public class Util {
         return retval;
     }
 
-    public static int size(SizeStreamable s) {
-        int retval=Global.BYTE_SIZE;
-        if(s == null)
-            return retval;
-        retval+=Global.SHORT_SIZE; // magic number
-        short magic_number=ClassConfigurator.getMagicNumber(s.getClass());
-        if(magic_number == -1)
-            retval+=Bits.sizeUTF(s.getClass().getName());
-        return retval + s.serializedSize();
-    }
 
     public static void writeGenericStreamable(Streamable obj, DataOutput out) throws IOException {
-        short magic_number;
-        String classname;
-
         if(obj == null) {
             out.write(0);
             return;
         }
-
         out.write(1);
-        magic_number=ClassConfigurator.getMagicNumber(obj.getClass());
+        short magic_number=ClassConfigurator.getMagicNumber(obj.getClass());
         out.writeShort(magic_number);
         if(magic_number == -1) {
-            classname=obj.getClass().getName();
+            String classname=obj.getClass().getName();
             out.writeUTF(classname);
         }
         obj.writeTo(out); // write the contents
@@ -1817,7 +1849,33 @@ public class Util {
             clazz=ClassConfigurator.get(classname, loader);
             try {
                 retval=(T)clazz.getDeclaredConstructor().newInstance();
-            } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
+            }
+            catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        retval.readFrom(in);
+        return retval;
+    }
+
+
+    public static SizeStreamable readSizeStreamable(DataInput in, ClassLoader loader) throws IOException, ClassNotFoundException {
+        int b=in.readByte();
+        if(b == 0)
+            return null;
+
+        SizeStreamable retval=null;
+        short magic_number=in.readShort();
+        if(magic_number != -1) {
+            retval=ClassConfigurator.create(magic_number);
+        }
+        else {
+            String classname=in.readUTF();
+            Class<SizeStreamable> clazz=(Class<SizeStreamable>)ClassConfigurator.get(classname, loader);
+            try {
+                retval=clazz.getDeclaredConstructor().newInstance();
+            }
+            catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
                 throw new IllegalStateException(e);
             }
         }
@@ -1825,6 +1883,7 @@ public class Util {
         retval.readFrom(in);
         return retval;
     }
+
 
 
     public static <T extends Streamable> void write(T[] array, DataOutput out) throws IOException {
@@ -3401,7 +3460,7 @@ public class Util {
     }
 
     public static boolean isPrimitiveType(Object obj) {
-        return (obj instanceof Class<?>? TYPES.get(obj) : TYPES.get(obj.getClass())) != null;
+        return obj == null || (obj instanceof Class<?>? TYPES.get(obj) : TYPES.get(obj.getClass())) != null;
     }
 
     public static Method findMethod(Object target,List<String> possible_names,Class<?>... parameter_types) {

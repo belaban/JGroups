@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
-import org.jgroups.util.ObjectWrapper;
+import org.jgroups.util.ObjectWrapperSerializable;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * Tests {@link org.jgroups.util.ObjectWrapper}
+ * Tests {@link ObjectWrapperSerializable}
  * @author Bela Ban
  * @since  5.0.0
  */
@@ -32,19 +32,19 @@ public class ObjectWrapperTest {
     }
 
     public void testConstructor() {
-        ObjectWrapper o=new ObjectWrapper(HELLO);
+        ObjectWrapperSerializable o=new ObjectWrapperSerializable(HELLO);
         assert o.getObject().equals(HELLO);
     }
 
     public void testConstructor2() {
-        ObjectWrapper o=new ObjectWrapper(HELLO_SER);
+        ObjectWrapperSerializable o=new ObjectWrapperSerializable(HELLO_SER);
         byte[] arr=o.getObject();
         assert Arrays.equals(arr, HELLO_SER);
     }
 
 
     public void testSetObject() {
-        ObjectWrapper o=new ObjectWrapper(HELLO);
+        ObjectWrapperSerializable o=new ObjectWrapperSerializable(HELLO);
         o.getLength();
         o.setObject(WORLD);
         String s=o.getObject();
@@ -54,10 +54,10 @@ public class ObjectWrapperTest {
     }
 
     public void testSerialization() throws Exception {
-        ObjectWrapper o=new ObjectWrapper(HELLO);
+        ObjectWrapperSerializable o=new ObjectWrapperSerializable(HELLO);
         byte[] buf=Util.streamableToByteBuffer(o);
 
-        ObjectWrapper o2=Util.streamableFromByteBuffer(ObjectWrapper::new, buf);
+        ObjectWrapperSerializable o2=Util.streamableFromByteBuffer(ObjectWrapperSerializable::new, buf);
         assert o.getObject().equals(o2.getObject());
     }
 }
