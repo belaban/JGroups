@@ -78,6 +78,8 @@
     <class id="523" name="org.jgroups.protocols.raft.CLIENT"      external="true"/>
     <class id="530" name="org.jgroups.protocols.azure.AZURE_PING" external="true"/>
 
+    <class id="550" name="org.jgroups.protocols.OPEN_TELEMETRY"   external="true"/>
+
     <!-- User-defined protocols should use IDs >= 1024 -->
 
 </protocol-ids>
