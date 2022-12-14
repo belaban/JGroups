@@ -6,6 +6,7 @@ import org.jgroups.Global;
 import org.jgroups.View;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.IpAddress;
@@ -20,6 +21,8 @@ import javax.net.ssl.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.security.KeyStore;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 
@@ -56,6 +59,58 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         void verify(SSLSession session) throws SecurityException;
     }
 
+    /**
+     * Helper class that knows how and when to reload the SSLContext.
+     */
+    protected class SSLContextReloader {
+
+        private SSLContext ssl_ctx;
+        private SslContextFactory factory;
+
+        private Duration reloadThreshold;
+        private Instant lastReloadTime;
+
+        public SSLContextReloader(long d) {
+                reloadThreshold = Duration.ofMillis(d);
+        }
+
+        public void reload() {
+            reload(false);
+        }
+
+        public void reload(boolean forceReload) {
+            // If we don't have a factory it means that the SSLContext was
+            // provided from outside the SSL_KEY_EXCHANGE class. In that case,
+            // responsibility of reloading the SSLContext resides elsewhere.
+            // If factory exists, the SSLContext was created by that factory,
+            // thus it can be reloaded.
+            if (factory == null) {
+                return;
+            }
+
+            Instant now = Instant.now();
+            if (!forceReload) {
+                if (Duration.between(lastReloadTime, now).compareTo(reloadThreshold) < 0) {
+                    return;
+                }
+            }
+
+            factory.initializeContext(ssl_ctx);
+            lastReloadTime = now;
+        }
+
+        public SSLContextReloader setContext(SSLContext ssl_ctx) {
+            this.ssl_ctx = ssl_ctx;
+            lastReloadTime = Instant.now();
+            return this;
+        }
+
+        public SSLContextReloader setFactory(SslContextFactory factory) {
+            this.factory = factory;
+            return this;
+        }
+    }
+
 
     @LocalAddress
     @Property(description="Bind address for the server or client socket. " +
@@ -67,7 +122,6 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
       "will be probed, up to port+port_range. Used by the key server (server) to create an SSLServerSocket and " +
       "by clients to connect to the key server.")
     protected int             port=2157;
-
 
     @Property(description="The port range to probe")
     protected int             port_range=5;
@@ -82,6 +136,19 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     @Property(description="Password to access the keystore",exposeAsManagedAttribute=false)
     protected String          keystore_password="changeit";
 
+    @Property(description="Location of the truststore. Defaults to null, which will use the keystore as a truststore.")
+    protected String          truststore_name;
+
+    @Property(description="The type of the truststore. " +
+      "Types are listed in http://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html")
+    protected String          truststore_type="PKCS12";
+
+    @Property(description="Password to access the truststore",exposeAsManagedAttribute=false)
+    protected String          truststore_password="changeit";
+
+    @Property(description="Minimum time (in ms) before reloading the keystore and truststore from disk.")
+    protected long            reload_threshold=60000;
+
     @Property(description="The type of secret key to be sent up the stack (converted from DH). " +
       "Should be the same as the algorithm part of ASYM_ENCRYPT.sym_algorithm if ASYM_ENCRYPT is used")
     protected String          secret_key_algorithm="AES";
@@ -91,10 +158,10 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected boolean         require_client_authentication=true;
 
     @Property(description="The SSL protocol to use. Defaults to TLS")
-    protected String         ssl_protocol=SslContextFactory.DEFAULT_SSL_PROTOCOL;
+    protected String          ssl_protocol=SslContextFactory.DEFAULT_SSL_PROTOCOL;
 
     @Property(description="The SSL security provider. Defaults to null, which will use the default JDK provider.")
-    protected String         ssl_provider;
+    protected String          ssl_provider;
 
     @Property(description="Timeout (in ms) for a socket read. This applies for example to the initial SSL handshake, " +
       "e.g. if the client connects to a non-JGroups service accidentally running on the same port",type=AttributeType.TIME)
@@ -108,6 +175,8 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
 
     protected SSLContext                   client_ssl_ctx;
     protected SSLContext                   server_ssl_ctx;
+    protected SSLContextReloader           client_ssl_ctx_reloader;
+    protected SSLContextReloader           server_ssl_ctx_reloader;
     protected SSLServerSocket              srv_sock;
     protected Runner                       srv_sock_handler;
     protected KeyStore                     key_store;
@@ -128,6 +197,12 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     public SSL_KEY_EXCHANGE setKeystoreType(String type)                   {this.keystore_type=type; return this;}
     public String           getKeystorePassword()                          {return keystore_password;}
     public SSL_KEY_EXCHANGE setKeystorePassword(String pwd)                {this.keystore_password=pwd; return this;}
+    public String           getTruststoreName()                            {return truststore_name;}
+    public SSL_KEY_EXCHANGE setTruststoreName(String name)                 {this.truststore_name=name; return this;}
+    public String           getTruststoreType()                            {return truststore_type;}
+    public SSL_KEY_EXCHANGE setTruststoreType(String type)                 {this.truststore_type=type; return this;}
+    public String           getTruststorePassword()                        {return truststore_password;}
+    public SSL_KEY_EXCHANGE setTruststorePassword(String pwd)              {this.truststore_password=pwd; return this;}
     public String           getSecretKeyAlgorithm()                        {return secret_key_algorithm;}
     public SSL_KEY_EXCHANGE setSecretKeyAlgorithm(String a)                {this.secret_key_algorithm=a; return this;}
     public boolean          getRequireClientAuthentication()               {return require_client_authentication;}
@@ -142,13 +217,14 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     public KeyStore         getKeystore()                                  {return key_store;}
     public SSL_KEY_EXCHANGE setKeystore(KeyStore ks)                       {this.key_store=ks; return this;}
     public KeyStore         getTruststore()                                {return trust_store;}
-    public SSL_KEY_EXCHANGE setTruststore(KeyStore ks)                       {this.trust_store=ks; return this;}
+    public SSL_KEY_EXCHANGE setTruststore(KeyStore ks)                     {this.trust_store=ks; return this;}
     public SessionVerifier  getSessionVerifier()                           {return session_verifier;}
     public SSL_KEY_EXCHANGE setSessionVerifier(SessionVerifier s)          {this.session_verifier=s; return this;}
-    public SSLContext getClientSSLContext()                                {return client_ssl_ctx;}
+    public SSLContext       getClientSSLContext()                          {return client_ssl_ctx;}
     public SSL_KEY_EXCHANGE setClientSSLContext(SSLContext client_ssl_ctx) {this.client_ssl_ctx = client_ssl_ctx; return this;}
-    public SSLContext getServerSSLContext()                                {return server_ssl_ctx;}
+    public SSLContext       getServerSSLContext()                          {return server_ssl_ctx;}
     public SSL_KEY_EXCHANGE setServerSSLContext(SSLContext server_ssl_ctx) {this.server_ssl_ctx = server_ssl_ctx; return this;}
+    public SSL_KEY_EXCHANGE setReloadThreshold(long d)                     {this.reload_threshold = d; return this;}
 
     public Address getServerLocation() {
         return srv_sock == null? null : new IpAddress(getTransport().getBindAddress(), srv_sock.getLocalPort());
@@ -168,6 +244,16 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
             }
         }
 
+        if (truststore_name == null) {
+            // Truststore not given, so use the keystore as a truststore for backwards compatibility
+            truststore_name = keystore_name;
+            truststore_type = keystore_type;
+            truststore_password = keystore_password;
+        }
+
+        client_ssl_ctx_reloader = new SSLContextReloader(reload_threshold).setContext(client_ssl_ctx);
+        server_ssl_ctx_reloader = new SSLContextReloader(reload_threshold).setContext(server_ssl_ctx);
+
         // Create an SSLContext if one was not already supplied
         if (client_ssl_ctx == null || server_ssl_ctx == null) {
             SslContextFactory sslContextFactory = new SslContextFactory();
@@ -178,15 +264,18 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
                     .keyStoreFileName(keystore_name)
                     .keyStorePassword(keystore_password.toCharArray())
                     .trustStore(trust_store)
-                    .trustStoreFileName(keystore_name)
-                    .trustStorePassword(keystore_password.toCharArray())
+                    .trustStoreType(truststore_type)
+                    .trustStoreFileName(truststore_name)
+                    .trustStorePassword(truststore_password.toCharArray())
                     .sslProtocol(ssl_protocol)
                     .provider(ssl_provider).getContext();
             if (client_ssl_ctx == null) {
                 client_ssl_ctx = sslContext;
+                client_ssl_ctx_reloader.setContext(client_ssl_ctx).setFactory(sslContextFactory);
             }
             if (server_ssl_ctx == null) {
                 server_ssl_ctx = sslContext;
+                server_ssl_ctx_reloader.setContext(server_ssl_ctx).setFactory(sslContextFactory);
             }
         }
 
@@ -205,6 +294,12 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     public void stop() {
         super.stop();
         stopKeyserver();
+    }
+
+    @ManagedOperation
+    public void reloadKeystoreAndTruststore() {
+        client_ssl_ctx_reloader.reload(true);
+        server_ssl_ctx_reloader.reload(true);
     }
 
     public void destroy() {
@@ -255,6 +350,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
 
     protected void accept() {
         try(SSLSocket client_sock=(SSLSocket)srv_sock.accept()) {
+            server_ssl_ctx_reloader.reload(); // try to reload ssl context before handshake
             client_sock.setEnabledCipherSuites(client_sock.getSupportedCipherSuites());
             client_sock.startHandshake();
             SSLSession sslSession=client_sock.getSession();
@@ -354,6 +450,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     }
 
     protected SSLSocket createSocketTo(Address target) throws Exception {
+        client_ssl_ctx_reloader.reload(); // try to reload the context before creating the socket
         SSLSocketFactory sslSocketFactory=this.client_ssl_ctx.getSocketFactory();
 
         if(target instanceof IpAddress)
@@ -409,4 +506,3 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         }
     }
 }
-
