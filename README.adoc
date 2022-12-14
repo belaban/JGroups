@@ -1,0 +1,155 @@
+
+
+
+= JGroups
+:author: Bela Ban <belaban@gmail.com>
+:toc2:
+:toclevels: 3
+:icons:
+:homepage: http://www.jgroups.org
+:source-highlighter: pygments
+
+== Overview
+link:$$http:///jgroups.org$$[JGroups] is a clustering library, allowing members to exchange messages.
+
+It provides the following functionality:
+
+* Joining a given cluster (becoming a member)
+* (Once joined), sending messages to other members
+* Getting a list of the members in the same cluster
+* Registering callbacks that are invoked when
+** a message is received
+** a member joins
+** a member leaves
+* Leaving a cluster
+
+
+== Sample code
+
+The code beloew shows how to send messages to all cluster members. Open two or more shells and run the demo with
+different arguments (names of the members), e.g. `node1`, `node2` etc.
+
+[source,java]
+----
+public class Demo {
+    protected JChannel ch;
+
+    protected void start(String name) throws Exception {
+        ch=new JChannel("udp.xml").name(name)
+          .setReceiver(new MyReceiver(name))
+          .connect("demo-cluster");
+        int counter=1;
+        for(;;) {
+            ch.send(null, "msg-" + counter++);
+            Util.sleep(3000);
+        }
+    }
+
+    protected static class MyReceiver implements Receiver {
+        protected final String name;
+
+        protected MyReceiver(String name) {
+            this.name=name;
+        }
+
+        public void receive(Message msg) {
+            System.out.printf("-- [%s] msg from %s: %s\n", name, msg.src(), msg.getObject());
+        }
+
+        public void viewAccepted(View v) {
+            System.out.printf("-- [%s] new view: %s\n", name, v);
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        new Demo().start(args[0]);
+    }
+}
+----
+
+`JChannel` is the handle to interact with JGroups. In `start()`, a new `JChannel` is created with configuration
+`udp.xml` (see <<Configuration>>), which needs to be found on the classpath. Alternatively, a fully qualified
+pathname can be given, e.g. `/Users/bela/tcp.xml`.
+
+The receiver is set to an instance of `MyReceiver`, which implements two callbacks: `viewAccepted()`, invoked when a
+member joins or leaves, and `receive()`, invoked when a message is received.
+
+Finally, cluster `"demo-cluster"` is joined via `JChannel.connect()`. When this call returns, a member can start
+sending and receiving messages.
+
+The main loop sends a message to all cluster members (including itself) at a given interval.
+
+The output of running 3 members `A`, `B` and `C` might look like this:
+
+[listing]
+....
+-------------------------------------------------------------------
+GMS: address=C, cluster=demo-cluster, physical address=192.168.1.106:59093
+-------------------------------------------------------------------
+-- [C] new view: [A|6] (3) [A, B, C]
+-- [C] message from C: msg-1
+-- [C] message from A: msg-15
+-- [C] message from B: msg-5
+-- [C] message from C: msg-2
+-- [C] message from A: msg-16
+....
+
+
+[[Configuration]]
+== Configuration
+A `JChannel` is created from an XML configuration (but can also be created programmatically, see the manual for
+details). The configuration contains a list of _protocols_. `JChannel.send(Message msg)` sends a message down the
+stack, passing each protocol, and the _transport protocol_ (at the bottom) sends the message.
+
+At the receiver, the transport protocol reads the message and passes it up the stack to the `JChannel`, which
+delivers it to the application (the `receive(Message msg)` callback).
+
+A configuration might look as follows:
+
+[source,xml]
+----
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+    <UDP
+         mcast_port="${jgroups.udp.mcast_port:45588}"
+         thread_pool.max_threads="200" />
+    <PING />
+    <MERGE3 max_interval="30000"
+            min_interval="10000"/>
+    <FD_SOCK2/>
+    <FD_ALL3/>
+    <VERIFY_SUSPECT2 timeout="1500"  />
+    <pbcast.NAKACK2 xmit_interval="500"/>
+    <UNICAST3 xmit_interval="500" />
+    <pbcast.STABLE desired_avg_gossip="50000"
+                   max_bytes="4M"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="1000"/>
+    <UFC max_credits="4M"
+         min_threshold="0.4"/>
+    <MFC max_credits="4M"
+         min_threshold="0.4"/>
+    <FRAG2 frag_size="60K"  />
+</config>
+----
+
+It essentially contains the list of protocols. In the example above, `UDP` is the transport protocol and
+`FRAG2` is the top protocol. Protocols have attributes, which govern the working of a protocol, e.g.
+`xmit_interval` in `UNICAST3`, which is the retransmission interval (in milliseconds) of messages, until
+they're acknowledged.
+
+The list of protocols defines the _quality of service_ of a given stack, ie. reliable retransmisson, FIFO or
+total ordering and so on.
+
+JGroups ships with multiple sample configurations, e.g. `tcp.xml`, which uses TCP instead of UDP as transport
+protocol. Consult the manual (link below) for more details.
+
+== Links
+* Web site: link:$$http://jgroups.org$$[http://www.jgroups.org]
+* Manual: link:$$http://www.jgroups.org/ug.html$$[http://www.jgroups.org/ug.html]
+* JIRA: link:$$https://issues.redhat.com/projects/JGRP$$[https://issues.redhat.com/projects/JGRP]
+* Forum: link:$$https://groups.google.com/g/jgroups-dev$$[https://groups.google.com/g/jgroups-dev]
+
+
+
+Bela Ban, Dec 2022
