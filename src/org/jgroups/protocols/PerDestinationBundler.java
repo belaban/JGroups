@@ -147,7 +147,7 @@ public class PerDestinationBundler implements Bundler {
             try {
                 if(total_bytes + msg_bytes >= max_size) {
                     num_batches_sent_due_to_max_size++;
-                    sendBatch(dest);
+                    sendBatch(dest); // will not throw an exception, just log a warning
                 }
 
                 msgs[index++]=msg;
@@ -159,7 +159,7 @@ public class PerDestinationBundler implements Bundler {
 
                 if(thread_count.decrementAndGet() == 0) {
                     num_batches_sent_due_to_last_thread++;
-                    sendBatch(dest);
+                    sendBatch(dest); // will not throw an exception, just log a warning
                 }
             }
             finally {
