@@ -1,6 +1,9 @@
 package org.jgroups.jmx;
 
-import org.jgroups.annotations.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -13,6 +16,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
@@ -235,6 +239,10 @@ public class ResourceDMBean implements DynamicMBean {
                 case SCALAR:
                     if(isNumeric(cl))
                         return String.format("%,d", val);
+                    if(cl.equals(LongAdder.class))
+                        return String.format("%,d", ((LongAdder)val).sum());
+                    if(val instanceof Number)
+                        return String.format("%,d", ((Number)val).longValue());
                     break;
             }
         }
