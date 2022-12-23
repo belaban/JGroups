@@ -199,7 +199,7 @@ public class PerDestinationBundler implements Bundler {
                     transport.getMessageStats().incrNumSingleMsgsSent(1);
             }
             catch(Throwable e) {
-                log.error("%s: failed sending message: %s", local_addr, e);
+                log.error("%s: failed sending message to %s: %s", local_addr, dest, e);
             }
         }
 
@@ -215,6 +215,10 @@ public class PerDestinationBundler implements Bundler {
             catch(Throwable e) {
                 log.trace(Util.getMessage("FailureSendingMsgBundle"), transport.getAddress(), e);
             }
+        }
+
+        public String toString() {
+            return String.format("%d msgs", size());
         }
 
         protected int size() {
