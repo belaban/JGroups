@@ -4249,7 +4249,16 @@ public class Util {
         return contains("java.vm.vendor", "android");
     }
 
-    public static boolean checkForMac() {return checkForPresence("os.name", "mac");}
+    public static boolean checkForMac() {return checkForPresence("os.name", "mac", "macosx", "osx", "darwin");}
+
+    private static boolean checkForPresence(String key, String ...values) {
+        if(values == null || values.length == 0)
+            return false;
+        for(String val: values)
+            if(checkForPresence(key, val))
+                return true;
+        return false;
+    }
 
     private static boolean checkForPresence(String key,String value) {
         try {
