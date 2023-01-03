@@ -135,25 +135,6 @@ public class SslContextFactory {
 
    public SSLContext getContext() {
       try {
-         SSLContext sslContext;
-         if (providerName != null) {
-            Provider provider = findProvider(providerName, SSLContext.class.getSimpleName(), sslProtocol);
-            if (provider == null) {
-               throw new IllegalArgumentException("No such provider " + providerName);
-            }
-            sslContext = SSLContext.getInstance(sslProtocol, provider);
-         } else {
-            sslContext = SSLContext.getInstance(sslProtocol);
-         }
-         initializeContext(sslContext);
-         return sslContext;
-      } catch (Exception e) {
-         throw new RuntimeException("Could not initialize SSL", e);
-      }
-   }
-
-   public void initializeContext(SSLContext sslContext) {
-      try {
          KeyManager[] keyManagers = null;
          if (keyStoreFileName != null || keyStore != null) {
             KeyManagerFactory kmf = getKeyManagerFactory();
@@ -164,7 +145,18 @@ public class SslContextFactory {
             TrustManagerFactory tmf = getTrustManagerFactory();
             trustManagers = tmf.getTrustManagers();
          }
+         SSLContext sslContext;
+         if (providerName != null) {
+            Provider provider = findProvider(providerName, SSLContext.class.getSimpleName(), sslProtocol);
+            if (provider == null) {
+               throw new IllegalArgumentException("No such provider " + providerName);
+            }
+            sslContext = SSLContext.getInstance(sslProtocol, provider);
+         } else {
+            sslContext = SSLContext.getInstance(sslProtocol);
+         }
          sslContext.init(keyManagers, trustManagers, null);
+         return sslContext;
       } catch (Exception e) {
          throw new RuntimeException("Could not initialize SSL", e);
       }
@@ -172,23 +164,22 @@ public class SslContextFactory {
 
    public KeyManagerFactory getKeyManagerFactory() throws IOException, GeneralSecurityException {
       Provider provider;
-      KeyStore ks = keyStore != null ? keyStore : null;
-      if (ks == null) {
+      if (keyStore == null) {
          String type = keyStoreType != null ? keyStoreType : DEFAULT_KEYSTORE_TYPE;
          provider = findProvider(this.providerName, KeyStore.class.getSimpleName(), type);
-         ks = provider != null ? KeyStore.getInstance(type, provider) : KeyStore.getInstance(type);
-         loadKeyStore(ks, keyStoreFileName, keyStorePassword, classLoader);
+         keyStore = provider != null ? KeyStore.getInstance(type, provider) : KeyStore.getInstance(type);
+         loadKeyStore(keyStore, keyStoreFileName, keyStorePassword, classLoader);
       } else {
-         provider = ks.getProvider();
+         provider = keyStore.getProvider();
       }
       if (keyAlias != null) {
-         if (ks.containsAlias(keyAlias) && ks.isKeyEntry(keyAlias)) {
+         if (keyStore.containsAlias(keyAlias) && keyStore.isKeyEntry(keyAlias)) {
             KeyStore.PasswordProtection passParam = new KeyStore.PasswordProtection(keyStorePassword);
-            KeyStore.Entry entry = ks.getEntry(keyAlias, passParam);
+            KeyStore.Entry entry = keyStore.getEntry(keyAlias, passParam);
             // Recreate the keystore with just one key
-            ks = provider != null ? KeyStore.getInstance(keyStoreType, provider) : KeyStore.getInstance(keyStoreType);
-            ks.load(null, null);
-            ks.setEntry(keyAlias, entry, passParam);
+            keyStore = provider != null ? KeyStore.getInstance(keyStoreType, provider) : KeyStore.getInstance(keyStoreType);
+            keyStore.load(null, null);
+            keyStore.setEntry(keyAlias, entry, passParam);
          } else {
             throw new RuntimeException("No alias '" + keyAlias + "' in key store '" + keyStoreFileName + "'");
          }
@@ -196,23 +187,22 @@ public class SslContextFactory {
       String algorithm = KeyManagerFactory.getDefaultAlgorithm();
       provider = findProvider(this.providerName, KeyManagerFactory.class.getSimpleName(), algorithm);
       KeyManagerFactory kmf = provider != null ? KeyManagerFactory.getInstance(algorithm, provider) : KeyManagerFactory.getInstance(algorithm);
-      kmf.init(ks, keyStorePassword);
+      kmf.init(keyStore, keyStorePassword);
       return kmf;
    }
 
    public TrustManagerFactory getTrustManagerFactory() throws IOException, GeneralSecurityException {
       Provider provider;
-      KeyStore ts = trustStore != null ? trustStore : null;
-      if (ts == null) {
+      if (trustStore == null) {
          String type = trustStoreType != null ? trustStoreType : DEFAULT_KEYSTORE_TYPE;
          provider = findProvider(this.providerName, KeyStore.class.getSimpleName(), type);
-         ts = provider != null ? KeyStore.getInstance(type, provider) : KeyStore.getInstance(type);
-         loadKeyStore(ts, trustStoreFileName, trustStorePassword, classLoader);
+         trustStore = provider != null ? KeyStore.getInstance(type, provider) : KeyStore.getInstance(type);
+         loadKeyStore(trustStore, trustStoreFileName, trustStorePassword, classLoader);
       }
       String algorithm = KeyManagerFactory.getDefaultAlgorithm();
       provider = findProvider(this.providerName, TrustManagerFactory.class.getSimpleName(), algorithm);
       TrustManagerFactory tmf = provider != null ? TrustManagerFactory.getInstance(algorithm, provider) : TrustManagerFactory.getInstance(algorithm);
-      tmf.init(ts);
+      tmf.init(trustStore);
       return tmf;
    }
 

@@ -7,7 +7,6 @@
 .factorypath
 .settings/
 .idea/
-.vscode/
 .DS_Store
 classes/
 build.properties
