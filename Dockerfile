@@ -26,7 +26,6 @@ WORKDIR /opt/jgroups
 
 COPY --from=build-stage /bin/ping /bin/netstat /bin/nc /bin/
 COPY --from=build-stage /sbin/ifconfig /sbin/
-COPY README $JGROUPS_HOME/
 COPY ./classes $JGROUPS_HOME/classes
 COPY ./lib $JGROUPS_HOME/lib
 COPY ./bin $JGROUPS_HOME/bin
@@ -37,6 +36,6 @@ RUN chown -R jgroups.jgroups $HOME/*
 USER jgroups
 
 RUN chmod u+x $HOME/*
-CMD clear && cat $HOME/JGroups/README && /bin/bash
+CMD /bin/bash
 
 
