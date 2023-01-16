@@ -290,7 +290,7 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
         for(int i=0; i < list.size(); i++)
             tokens[i]=list.get(i);
 
-        Map<String,String> map=new HashMap<>();
+        Map<String,String> map=new LinkedHashMap<>();
         for(ProbeHandler handler: handlers) {
             try {
                 Map<String,String> m=handler.handleProbe(tokens);
