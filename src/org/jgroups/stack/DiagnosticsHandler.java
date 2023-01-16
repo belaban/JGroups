@@ -290,25 +290,30 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
         for(int i=0; i < list.size(); i++)
             tokens[i]=list.get(i);
 
+        Map<String,String> map=new HashMap<>();
         for(ProbeHandler handler: handlers) {
-            Map<String, String> map=null;
             try {
-                map=handler.handleProbe(tokens);
+                Map<String,String> m=handler.handleProbe(tokens);
+                if(m == null || m.isEmpty())
+                    continue;
+                for(Map.Entry<String,String> e: m.entrySet()) {
+                    String key=e.getKey(), val=e.getValue();
+                    String existing=map.putIfAbsent(key, val);
+                    if(existing != null)
+                        log.warn("%s already present; skipping addition of new key by probe handler %s", key, handler);
+                }
             }
             catch(IllegalArgumentException ex) {
                 log.warn(ex.getMessage());
                 return;
             }
-            if(map == null || map.isEmpty())
-                continue;
-            String tmp=print_headers.apply(false);
-            StringBuilder info=new StringBuilder(tmp);
-            for(Map.Entry<String,String> entry: map.entrySet())
-                info.append(String.format("%s=%s\r\n", entry.getKey(), entry.getValue()));
-
-            String diag_rsp=info.toString();
-            rsp_sender.accept(sender, diag_rsp);
         }
+        String tmp=print_headers.apply(false);
+        StringBuilder info=new StringBuilder(tmp);
+        for(Map.Entry<String,String> entry: map.entrySet())
+            info.append(String.format("%s=%s\r\n", entry.getKey(), entry.getValue()));
+        String diag_rsp=info.toString();
+        rsp_sender.accept(sender, diag_rsp);
     }
 
 
