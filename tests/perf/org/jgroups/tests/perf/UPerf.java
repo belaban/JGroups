@@ -107,11 +107,12 @@ public class UPerf implements Receiver {
     }
 
 
-    public void init(String props, String name, AddressGenerator generator, int bind_port, boolean use_fibers) throws Throwable {
+    public void init(String props, String name, AddressGenerator generator, int bind_port,
+                     boolean use_virtual_threads) throws Throwable {
         thread_factory=new DefaultThreadFactory("invoker", false, true)
-          .useFibers(use_fibers);
-        if(use_fibers && Util.fibersAvailable())
-            System.out.println("-- using fibers instead of threads");
+          .useVirtualThreads(use_virtual_threads);
+        if(use_virtual_threads && Util.virtualThreadsAvailable())
+            System.out.println("-- using virtual threads instead of threads");
 
         channel=new JChannel(props).addAddressGenerator(generator).setName(name);
         if(bind_port > 0) {
@@ -573,7 +574,7 @@ public class UPerf implements Receiver {
 
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         String  props=null, name=null;
-        boolean run_event_loop=true, use_fibers=true;
+        boolean run_event_loop=true, use_virtual_threads=true;
         AddressGenerator addr_generator=null;
         int port=0;
 
@@ -599,8 +600,8 @@ public class UPerf implements Receiver {
                 port=Integer.parseInt(args[++i]);
                 continue;
             }
-            if("-use_fibers".equals(args[i])) {
-                use_fibers=Boolean.parseBoolean(args[++i]);
+            if("-use_virtual_threads".equals(args[i])) {
+                use_virtual_threads=Boolean.parseBoolean(args[++i]);
                 continue;
             }
             help();
@@ -610,7 +611,7 @@ public class UPerf implements Receiver {
         UPerf test=null;
         try {
             test=new UPerf();
-            test.init(props, name, addr_generator, port, use_fibers);
+            test.init(props, name, addr_generator, port, use_virtual_threads);
             if(run_event_loop)
                 test.eventLoop();
             else {
@@ -627,7 +628,7 @@ public class UPerf implements Receiver {
 
     static void help() {
         System.out.println("UPerf [-props <props>] [-name name] [-nohup] [-uuid <UUID>] [-port <bind port>] " +
-                             "[-use_fibers <true|false>]");
+                             "[-use_virtual_threads <true|false>]");
     }
 
 

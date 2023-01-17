@@ -183,8 +183,12 @@ public class Util {
         JAVA_VERSION=System.getProperty("java.vm.version", "");
     }
 
-
+    @Deprecated
     public static boolean fibersAvailable() {
+        return ThreadCreator.hasVirtualThreads();
+    }
+
+    public static boolean virtualThreadsAvailable() {
         return ThreadCreator.hasVirtualThreads();
     }
 

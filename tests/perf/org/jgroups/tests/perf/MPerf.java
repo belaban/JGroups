@@ -67,7 +67,7 @@ public class MPerf implements Receiver {
         }
     }
 
-    public void start(String props, String name, boolean use_fibers) throws Exception {
+    public void start(String props, String name, boolean use_virtual_threads) throws Exception {
         StringBuilder sb=new StringBuilder();
         sb.append("\n\n----------------------- MPerf -----------------------\n");
         sb.append("Date: ").append(new Date()).append('\n');
@@ -76,8 +76,8 @@ public class MPerf implements Receiver {
         System.out.println(sb);
 
         thread_factory=new DefaultThreadFactory("invoker", false, true)
-          .useFibers(use_fibers);
-        if(use_fibers && Util.fibersAvailable())
+          .useVirtualThreads(use_virtual_threads);
+        if(use_virtual_threads && Util.virtualThreadsAvailable())
             System.out.println("-- using fibers instead of threads");
 
         channel=new JChannel(props).setName(name).setReceiver(this)
@@ -738,7 +738,7 @@ public class MPerf implements Receiver {
 
     public static void main(String[] args) throws IOException {
         String props=null, name=null;
-        boolean run_event_loop=true, use_fibers=true;
+        boolean run_event_loop=true, use_virtual_threads=true;
         Path out_file_path=null;
 
         for(int i=0; i < args.length; i++) {
@@ -758,17 +758,18 @@ public class MPerf implements Receiver {
                 run_event_loop=false;
                 continue;
             }
-            if("-use_fibers".equals(args[i])) {
-                use_fibers=Boolean.parseBoolean(args[++i]);
+            if("-use_virtual_threads".equals(args[i])) {
+                use_virtual_threads=Boolean.parseBoolean(args[++i]);
                 continue;
             }
-            System.out.println("MPerf [-props <stack config>] [-name <logical name>] [-nohup] [-use_fibers true|false] [-file <file path>]");
+            System.out.println("MPerf [-props <stack config>] [-name <logical name>] [-nohup] " +
+                                 "[-use_virtual_threads true|false] [-file <file path>]");
             return;
         }
 
         final MPerf test=new MPerf(out_file_path);
         try {
-            test.start(props, name, use_fibers);
+            test.start(props, name, use_virtual_threads);
             if(run_event_loop)
                 test.eventLoop();
             else {

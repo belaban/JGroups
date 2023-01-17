@@ -692,7 +692,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void init() throws Exception {
         this.id=ClassConfigurator.getProtocolId(TP.class);
 
-        if(use_virtual_threads && !Util.fibersAvailable()) {
+        if(use_virtual_threads && !Util.virtualThreadsAvailable()) {
             log.debug("use_virtual_threads was set to false, as virtual threads are not available in this Java version");
             use_virtual_threads=false;
         }
@@ -705,7 +705,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         if(thread_factory == null)
             thread_factory=new LazyThreadFactory("jgroups", false, true)
-              .useFibers(use_virtual_threads).log(this.log);
+              .useVirtualThreads(use_virtual_threads).log(this.log);
 
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
