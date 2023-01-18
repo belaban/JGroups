@@ -9,16 +9,15 @@ import org.jgroups.protocols.TP;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Bits;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.RpcStats;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
@@ -59,9 +58,18 @@ public class RequestCorrelator {
     // send exceptions back wrapped in an {@link InvocationTargetException}, or not
     protected boolean                    wrap_exceptions;
 
+    /** When enabled, responses are handled by the common ForkJoinPool (https://issues.redhat.com/browse/JGRP-2644) */
+    protected boolean                    async_rsp_handling;
+
     protected final MyProbeHandler       probe_handler=new MyProbeHandler();
 
+    protected final ForkJoinPool         common_pool=ForkJoinPool.commonPool();
+
     protected final RpcStats             rpc_stats=new RpcStats(false);
+
+    protected final AverageMinMax        avg_req_delivery=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
+
+    protected final AverageMinMax        avg_rsp_delivery=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
 
     protected static final Log           log=LogFactory.getLog(RequestCorrelator.class);
 
@@ -91,6 +99,8 @@ public class RequestCorrelator {
     public RequestCorrelator      setLocalAddress(Address a)     {this.local_addr=a; return this;}
     public boolean                asyncDispatching()             {return async_dispatching;}
     public RequestCorrelator      asyncDispatching(boolean flag) {async_dispatching=flag; return this;}
+    public boolean                asyncRspHandling()             {return async_rsp_handling;}
+    public RequestCorrelator      asyncRspHandling(boolean f)    {async_rsp_handling=f; return this;}
     public boolean                wrapExceptions()               {return wrap_exceptions;}
     public RequestCorrelator      wrapExceptions(boolean flag)   {wrap_exceptions=flag; return this;}
 
@@ -232,37 +242,64 @@ public class RequestCorrelator {
                       hdr != null? String.valueOf(hdr.corrId) : "null", this.corr_id);
             return false;
         }
-
-        if(hdr instanceof MultiDestinationHeader) {
-            // if we are part of the exclusion list, then we discard the request (addressed to different members)
-            Address[] exclusion_list=((MultiDestinationHeader)hdr).exclusion_list;
-            if(local_addr != null && Util.contains(local_addr, exclusion_list)) {
-                log.trace("%s: dropped req from %s as we are in the exclusion list, hdr=%s", local_addr, msg.src(), hdr);
-                return true; // don't pass this message further up
-            }
-        }
+        if(skip(hdr, msg.src()))
+            return true;
         dispatch(msg, hdr);
         return true; // message was consumed
     }
 
     public void receiveMessageBatch(MessageBatch batch) {
+        if(!async_rsp_handling) { // one sequential sweep through all requests and responses
+            iterate(batch, true, true, true);
+            return;
+        }
+
+        // 1. process responses in parallel by passing them to the ForkJoinPool
+        iterate(batch, true, false, true);
+
+        // 2. process requests sequentially
+        iterate(batch, false, true, false);
+    }
+
+    protected void iterate(MessageBatch batch, boolean skip_excluded_msgs, boolean process_reqs, boolean process_rsps) {
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
             Message msg=it.next();
             Header hdr=msg.getHeader(this.corr_id);
             if(hdr == null || hdr.corrId != this.corr_id) // msg was sent by a different request corr in the same stack
                 continue;
 
-            if(hdr instanceof MultiDestinationHeader) {
-                // if we are part of the exclusion list, then we discard the request (addressed to different members)
-                Address[] exclusion_list=((MultiDestinationHeader)hdr).exclusion_list;
-                if(local_addr != null && Util.contains(local_addr, exclusion_list)) {
-                    log.trace("%s: dropped req from %s as we are in the exclusion list, hdr=%s", local_addr, msg.src(), hdr);
-                    it.remove();
-                    continue; // don't pass this message further up
-                }
+            if(skip_excluded_msgs && skip(hdr, msg.src())) {
+                it.remove(); // faster processing if we need a second pass
+                continue; // don't pass this message further up
             }
-            dispatch(msg, hdr);
+            switch(hdr.type) {
+                case Header.REQ:
+                    if(process_reqs)
+                        dispatch(msg, hdr);
+                    break;
+                case Header.RSP:
+                case Header.EXC_RSP:
+                    if(process_rsps) {
+                        if(async_rsp_handling)
+                            common_pool.execute(() -> dispatch(msg, hdr));
+                        else
+                            dispatch(msg, hdr);
+                    }
+                    break;
+            }
         }
+    }
+
+    protected boolean skip(Header hdr, Address sender) {
+        if(hdr instanceof MultiDestinationHeader) {
+            // if we are part of the exclusion list, then we discard the request (addressed to different members)
+            Address[] exclusion_list=((MultiDestinationHeader)hdr).exclusion_list;
+            if(local_addr != null && Util.contains(local_addr, exclusion_list)) {
+                log.trace("%s: dropped req from %s as we are in the exclusion list, hdr=%s", local_addr, sender, hdr);
+                return true;
+            }
+        }
+        return false;
     }
 
     protected void sendAnycastRequest(Message req, Collection<Address> dest_mbrs) {
@@ -310,15 +347,27 @@ public class RequestCorrelator {
     }
 
 
+
+
     protected void dispatch(final Message msg, final Header hdr) {
         switch(hdr.type) {
             case Header.REQ:
+                long start=System.nanoTime();
                 handleRequest(msg, hdr);
+                long time=(long)((System.nanoTime() - start) / 1000.0);
+                synchronized(avg_req_delivery) {
+                    avg_req_delivery.add(time);
+                }
                 break;
 
             case Header.RSP:
             case Header.EXC_RSP:
+                start=System.nanoTime();
                 handleResponse(msg, hdr);
+                time=(long)((System.nanoTime() - start) / 1000.0);
+                synchronized(avg_rsp_delivery) {
+                    avg_rsp_delivery.add(time);
+                }
                 break;
 
             default:
@@ -585,6 +634,33 @@ public class RequestCorrelator {
                     case "rtt":
                         retval.put(key + " (min/avg/max)", rpc_stats.printRTTStatsByDest());
                         break;
+                    case "avg-req-delivery":
+                        retval.put(key, avg_req_delivery.toString());
+                        break;
+                    case "avg-req-delivery-reset":
+                        avg_req_delivery.clear();
+                        break;
+                    case "avg-rsp-delivery":
+                        retval.put(key, avg_rsp_delivery.toString());
+                        break;
+                    case "avg-rsp-delivery-reset":
+                        avg_rsp_delivery.clear();
+                        break;
+                    case "fjp":
+                        retval.put(key, common_pool.toString());
+                        break;
+                }
+                if("avg-req-delivery".startsWith(key))
+                    retval.putIfAbsent("avg-req-delivery", avg_req_delivery.toString());
+                if("avg-rsp-delivery".startsWith(key))
+                    retval.putIfAbsent("avg-rsp-delivery", avg_rsp_delivery.toString());
+                if(key.startsWith("async-rsp-handling")) {
+                    int index=key.indexOf('=');
+                    if(index < 0)
+                        retval.putIfAbsent("async-rsp-handling",String.valueOf(async_rsp_handling));
+                    else {
+                        async_rsp_handling=Boolean.parseBoolean(key.substring(index+1).trim());
+                    }
                 }
             }
             return retval;
@@ -592,7 +668,9 @@ public class RequestCorrelator {
 
         public String[] supportedKeys() {
             return new String[]{"requests", "reqtable-info", "rpcs", "rpcs-reset", "rpcs-enable-details",
-              "rpcs-disable-details", "rpcs-details", "rtt", "rtt-reset"};
+              "rpcs-disable-details", "rpcs-details", "rtt", "rtt-reset",
+              "avg-req-delivery", "avg-req-delivery-reset", "async-rsp-handling",
+              "avg-rsp-delivery", "avg-rsp-delivery-reset", "fjp"};
         }
     }
 

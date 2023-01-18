@@ -108,7 +108,7 @@ public class UPerf implements Receiver {
 
 
     public void init(String props, String name, AddressGenerator generator, int bind_port,
-                     boolean use_virtual_threads) throws Throwable {
+                     boolean use_virtual_threads, boolean async_rsp_handling) throws Throwable {
         thread_factory=new DefaultThreadFactory("invoker", false, true)
           .useVirtualThreads(use_virtual_threads);
         if(use_virtual_threads && Util.virtualThreadsAvailable())
@@ -120,7 +120,9 @@ public class UPerf implements Receiver {
             transport.setBindPort(bind_port);
         }
 
-        disp=new RpcDispatcher(channel, this).setReceiver(this).setMethodLookup(id -> METHODS[id]);
+        disp=(RpcDispatcher)new RpcDispatcher(channel,this).setReceiver(this)
+          .setMethodLookup(id -> METHODS[id])
+          .asyncRspHandling(async_rsp_handling);
         channel.connect(groupname);
         local_addr=channel.getAddress();
 
@@ -574,7 +576,7 @@ public class UPerf implements Receiver {
 
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         String  props=null, name=null;
-        boolean run_event_loop=true, use_virtual_threads=true;
+        boolean run_event_loop=true, use_virtual_threads=true, async_rsp_handling=true;
         AddressGenerator addr_generator=null;
         int port=0;
 
@@ -604,6 +606,10 @@ public class UPerf implements Receiver {
                 use_virtual_threads=Boolean.parseBoolean(args[++i]);
                 continue;
             }
+            if("-async_rsp_handling".equals(args[i])) {
+                async_rsp_handling=Boolean.parseBoolean(args[++i]);
+                continue;
+            }
             help();
             return;
         }
@@ -611,7 +617,7 @@ public class UPerf implements Receiver {
         UPerf test=null;
         try {
             test=new UPerf();
-            test.init(props, name, addr_generator, port, use_virtual_threads);
+            test.init(props, name, addr_generator, port, use_virtual_threads, async_rsp_handling);
             if(run_event_loop)
                 test.eventLoop();
             else {
@@ -628,7 +634,7 @@ public class UPerf implements Receiver {
 
     static void help() {
         System.out.println("UPerf [-props <props>] [-name name] [-nohup] [-uuid <UUID>] [-port <bind port>] " +
-                             "[-use_virtual_threads <true|false>]");
+                             "[-use_virtual_threads <true|false>] [-async_rsp_handling <true|false>]");
     }
 
 

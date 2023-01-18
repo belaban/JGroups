@@ -42,6 +42,8 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
     protected Receiver                              receiver;
     protected RequestHandler                        req_handler;
     protected boolean                               async_dispatching;
+    /** When enabled, responses are handled by the common ForkJoinPool (https://issues.redhat.com/browse/JGRP-2644) */
+    protected boolean                               async_rsp_handling;
     protected boolean                               wrap_exceptions;
     protected ProtocolAdapter                       prot_adapter;
     protected volatile Collection<Address>          members=new HashSet<>();
@@ -85,6 +87,10 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
     public RequestCorrelator correlator()                 {return corr;}
     public boolean           getAsyncDispatching()        {return async_dispatching;}
     public boolean           asyncDispatching()           {return async_dispatching;}
+    public boolean           asyncRspHandling()           {return async_rsp_handling;}
+    public MessageDispatcher asyncRspHandling(boolean f)  {async_rsp_handling=f;
+                                                           if(corr != null) corr.asyncRspHandling(async_rsp_handling);
+                                                           return this;}
     public boolean           getWrapExceptions()          {return wrap_exceptions;}
     public boolean           wrapExceptions()             {return wrap_exceptions;}
     public UpHandler         getProtocolAdapter()         {return prot_adapter;}
@@ -111,7 +117,8 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
             return (X)this;
         stop();
         this.corr=c;
-        corr.asyncDispatching(this.async_dispatching).wrapExceptions(this.wrap_exceptions);
+        corr.asyncDispatching(this.async_dispatching).asyncRspHandling(async_rsp_handling)
+          .wrapExceptions(this.wrap_exceptions);
         start();
         return (X)this;
     }
@@ -154,7 +161,8 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
     public <X extends MessageDispatcher> X start() {
         if(corr == null)
             corr=createRequestCorrelator(prot_adapter, this, local_addr)
-              .asyncDispatching(async_dispatching).wrapExceptions(this.wrap_exceptions);
+              .asyncDispatching(async_dispatching).asyncRspHandling(async_rsp_handling)
+              .wrapExceptions(this.wrap_exceptions);
         corr.start();
 
         if(channel != null) {
