@@ -138,8 +138,6 @@ public class DNS_PING extends Discovery {
         boolean ports_found=false;
         if (dns_discovery_members != null) {
             for (Address address : dns_discovery_members) {
-                if (address.equals(physical_addr)) // no need to send the request to myself
-                    continue;
                 if(address instanceof IpAddress) {
                     IpAddress ip = ((IpAddress) address);
                     if(record_type == DNSResolver.DNSRecordType.SRV && ip.getPort() > 0) {
@@ -152,6 +150,7 @@ public class DNS_PING extends Discovery {
                         cluster_members.add(new IpAddress(ip.getIpAddress(), transportPort + i));
                 }
             }
+            cluster_members.remove(physical_addr); // skip request to self (https://issues.redhat.com/browse/JGRP-2669)
         }
 
         if(dns_discovery_members != null && !dns_discovery_members.isEmpty() && log.isDebugEnabled()) {
