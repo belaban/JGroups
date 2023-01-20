@@ -576,7 +576,8 @@ public class UPerf implements Receiver {
 
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         String  props=null, name=null;
-        boolean run_event_loop=true, use_virtual_threads=true, async_rsp_handling=true;
+        boolean run_event_loop=true, use_virtual_threads=true,
+          async_rsp_handling=!Util.virtualThreadsAvailable(); // good with convential threads, bad with vthreads!
         AddressGenerator addr_generator=null;
         int port=0;
 
