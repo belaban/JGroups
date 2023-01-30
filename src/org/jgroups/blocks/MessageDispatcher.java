@@ -43,7 +43,7 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
     protected RequestHandler                        req_handler;
     protected boolean                               async_dispatching;
     /** When enabled, responses are handled by the common ForkJoinPool (https://issues.redhat.com/browse/JGRP-2644) */
-    protected boolean                               async_rsp_handling;
+    protected boolean                               async_rsp_handling=!Util.virtualThreadsAvailable();
     protected boolean                               wrap_exceptions;
     protected ProtocolAdapter                       prot_adapter;
     protected volatile Collection<Address>          members=new HashSet<>();

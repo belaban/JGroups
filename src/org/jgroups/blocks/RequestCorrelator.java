@@ -59,7 +59,7 @@ public class RequestCorrelator {
     protected boolean                    wrap_exceptions;
 
     /** When enabled, responses are handled by the common ForkJoinPool (https://issues.redhat.com/browse/JGRP-2644) */
-    protected boolean                    async_rsp_handling;
+    protected boolean                    async_rsp_handling=!Util.virtualThreadsAvailable();
 
     protected final MyProbeHandler       probe_handler=new MyProbeHandler();
 
