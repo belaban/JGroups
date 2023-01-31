@@ -1242,7 +1242,7 @@ public class UtilTest {
     }
 
 
-    public static void testAttributeNameToMethodName() {
+    public void testAttributeNameToMethodName() {
         _testAttributeNameToMethodName("my_name", "MyName");
         _testAttributeNameToMethodName("bela", "Bela");
         _testAttributeNameToMethodName("oob_max_input_size", "OobMaxInputSize");
@@ -1253,7 +1253,7 @@ public class UtilTest {
         _testAttributeNameToMethodName("inet_address_method", "InetAddressMethod");
     }
 
-    public static void testMethodNameToAttributeName() {
+    public void testMethodNameToAttributeName() {
         _testMethodNameToAttributeName("setFoo", "foo");
         _testMethodNameToAttributeName("getFoo", "foo");
         _testMethodNameToAttributeName("isLogDiscardMessages", "log_discard_messages");
