@@ -174,10 +174,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         protected boolean submit(MessageBatch batch) {
             try {
                 submitted_batches++;
-                MessageBatch mb=new MessageBatch(batch.size()).sender(sender).dest(mcast? null : tp.getAddress())
-                  .clusterName(cluster_name).multicast(mcast);
-                mb.add(batch);
-                BatchHandlerLoop handler=new BatchHandlerLoop(mb, this, false);
+                BatchHandlerLoop handler=new BatchHandlerLoop(batch, this, false);
                 if(!tp.getThreadPool().execute(handler)) {
                     setRunning(false);
                     return false;
