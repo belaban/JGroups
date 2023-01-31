@@ -26,7 +26,7 @@ public class TCPPING_Test {
     public void testSettingInitialHostsProgrammatically() throws Exception {
         TCP transport=new TCP();
         transport.setBindAddress(InetAddress.getLoopbackAddress());
-        transport.setBindPort(9600);
+        transport.setBindPort(9800);
         TCPPING ping=new TCPPING();
         TCPGOSSIP gossip=new TCPGOSSIP();
         List<InetSocketAddress> gossip_router=Collections.singletonList(new InetSocketAddress(InetAddress.getLoopbackAddress(), 12000));

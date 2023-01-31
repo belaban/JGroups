@@ -1,5 +1,21 @@
 package org.jgroups.protocols;
 
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.protocols.pbcast.NAKACK2;
+import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.util.MyReceiver;
+import org.jgroups.util.Util;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+import org.wildfly.security.x500.cert.BasicConstraintsExtension;
+import org.wildfly.security.x500.cert.SelfSignedX509CertificateAndSigningKey;
+import org.wildfly.security.x500.cert.X509CertificateBuilder;
+
+import javax.security.auth.x500.X500Principal;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -15,23 +31,6 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-
-import javax.security.auth.x500.X500Principal;
-
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.util.MyReceiver;
-import org.jgroups.util.Util;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-import org.wildfly.security.x500.cert.BasicConstraintsExtension;
-import org.wildfly.security.x500.cert.SelfSignedX509CertificateAndSigningKey;
-import org.wildfly.security.x500.cert.X509CertificateBuilder;
 
 @Test(groups = {Global.FUNCTIONAL, Global.ENCRYPT}, singleThreaded = true)
 public class SSL_KEY_EXCHANGE_ReloadTest {
@@ -125,7 +124,7 @@ public class SSL_KEY_EXCHANGE_ReloadTest {
    private JChannel create(String name) throws Exception {
       TCP transport = new TCP();
       transport.setBindAddress(InetAddress.getLoopbackAddress());
-      transport.setBindPort(9600);
+      transport.setBindPort(9700);
       TCPPING ping = new TCPPING();
       ping.setInitialHosts2(Collections.singletonList(new IpAddress(transport.getBindAddress(), transport.getBindPort())));
       return new JChannel(
