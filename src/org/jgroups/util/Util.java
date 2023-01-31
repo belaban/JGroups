@@ -4826,8 +4826,10 @@ public class Util {
         // Pattern p=Pattern.compile("[A-Z]+");
         Matcher m=METHOD_NAME_TO_ATTR_NAME_PATTERN.matcher(name);
         StringBuilder sb=new StringBuilder();
+        int start=0, end=0;
         while(m.find()) {
-            int start=m.start(), end=m.end();
+            start=m.start();
+            end=m.end();
             String str=name.substring(start,end).toLowerCase();
             if(str.length() > 1) {
                 String tmp1=str.substring(0,str.length() - 1);
@@ -4840,7 +4842,9 @@ public class Util {
             else
                 m.appendReplacement(sb,"_" + str);
         }
-        m.appendTail(sb);
+        // m.appendTail(sb); // https://issues.redhat.com/browse/JGRP-2670
+        sb.append(name, end, name.length());
+
         return sb.length() > 0? sb.toString() : methodName;
     }
 
@@ -4867,10 +4871,13 @@ public class Util {
             // Pattern p=Pattern.compile("_.");
             Matcher m=ATTR_NAME_TO_METHOD_NAME_PATTERN.matcher(attr_name);
             StringBuilder sb=new StringBuilder();
+            int end=0;
             while(m.find()) {
+                end=m.end();
                 m.appendReplacement(sb,attr_name.substring(m.end() - 1,m.end()).toUpperCase());
             }
-            m.appendTail(sb);
+            // m.appendTail(sb); // https://issues.redhat.com/browse/JGRP-2670
+            sb.append(attr_name, end, attr_name.length());
             char first=sb.charAt(0);
             if(Character.isLowerCase(first)) {
                 sb.setCharAt(0,Character.toUpperCase(first));
