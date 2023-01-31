@@ -35,11 +35,11 @@ public class JGroupsTransport implements Receiver, RtTransport {
             return;
         for(int i=0; i < options.length; i++) {
             if(options[i].startsWith("-oob")) {
-                oob=Boolean.valueOf(options[++i]);
+                oob=Boolean.parseBoolean(options[++i]);
                 continue;
             }
             if(options[i].startsWith("-dont_bundle")) {
-                dont_bundle=Boolean.valueOf(options[++i]);
+                dont_bundle=Boolean.parseBoolean(options[++i]);
             }
         }
     }
