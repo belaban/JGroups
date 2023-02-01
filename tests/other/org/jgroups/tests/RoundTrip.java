@@ -134,7 +134,7 @@ public class RoundTrip implements RtReceiver {
     }
 
     protected void sendRequests() throws Exception {
-        List mbrs=tp.clusterMembers();
+        List<Object> mbrs=(List<Object>)tp.clusterMembers();
         if(mbrs != null && mbrs.size() != 2) {
             System.err.printf("Cluster must have exactly 2 members: %s\n", mbrs);
             return;
@@ -148,7 +148,7 @@ public class RoundTrip implements RtReceiver {
             senders[i]=new Sender((short)i, latch, sent_msgs, target);
             senders[i].start();
         }
-
+        System.out.printf("-- sending %d messages to %s\n", num_msgs, target);
         long start=time(use_ms);
         latch.countDown(); // start all sender threads
         for(Sender sender: senders)

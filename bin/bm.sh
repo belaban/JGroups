@@ -1,0 +1,22 @@
+## Uses byteman plus script to run a program
+
+#!/bin/bash
+
+if [ $# -lt 2 ];
+    then echo "bm.sh classname byteman-script";
+         exit 1
+fi
+
+PGM=$1
+SCRIPT=$2
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+LIB=`dirname $SCRIPT_DIR`/lib
+SCRIPT=`dirname $SCRIPT_DIR`/$SCRIPT
+BM_OPTS="-Dorg.jboss.byteman.compile.to.bytecode=true"
+
+shift
+shift
+
+
+jgroups.sh -javaagent:$LIB/byteman.jar=script:$SCRIPT $BM_OPTS $PGM $*
