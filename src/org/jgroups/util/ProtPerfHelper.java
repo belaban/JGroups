@@ -45,7 +45,7 @@ public class ProtPerfHelper extends Helper {
     public void downTime(Message msg, Protocol prot) {
         ProtPerfHeader hdr=getOrAddHeader(msg);
         if(prot != null && hdr.startDown() > 0) {
-            long time=(System.nanoTime() - hdr.startDown()) / 1000; // us
+            long time=System.nanoTime() - hdr.startDown(); // ns
             if(time > 0)
                 ph.add(getClusterName(prot), prot.getClass(), time, true);
         }
@@ -58,7 +58,7 @@ public class ProtPerfHelper extends Helper {
     public void upTime(Message msg, Protocol prot) {
         ProtPerfHeader hdr=getOrAddHeader(msg);
         if(prot != null && hdr.startUp() > 0) {
-            long time=(System.nanoTime() - hdr.startUp()) / 1000; // us
+            long time=System.nanoTime() - hdr.startUp(); // ns
             if(time > 0)
                 ph.add(getClusterName(prot), prot.getClass(), time, false);
         }
@@ -69,7 +69,7 @@ public class ProtPerfHelper extends Helper {
     @SuppressWarnings("MethodMayBeStatic")
     public void upTime(MessageBatch batch, Protocol prot) {
         if(prot != null && batch.timestamp() > 0) {
-            long time=(System.nanoTime() - batch.timestamp()) / 1000; // us
+            long time=System.nanoTime() - batch.timestamp(); // ns
             if(time > 0)
                 ph.add(getClusterName(prot), prot.getClass(), time, false);
         }
@@ -189,8 +189,8 @@ public class ProtPerfHelper extends Helper {
 
 
     protected static class Entry {
-        protected final AverageMinMax avg_down=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
-        protected final AverageMinMax avg_up=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
+        protected final AverageMinMax avg_down=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
+        protected final AverageMinMax avg_up=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
 
         protected void add(long value, boolean down) {
             if(down) {
@@ -225,7 +225,7 @@ public class ProtPerfHelper extends Helper {
         public static String print(AverageMinMax avg, boolean detailed) {
             return detailed?
               avg.toString() :
-              String.format("%,.2f %s (%s)", avg.getAverage(), avg.unit() == null? "" : Util.suffix(avg.unit()),
+              String.format("%,.2f %s (%s)", avg.getAverage()/1000.0, "us",
                             String.format("%,d", avg.count()));
         }
     }
