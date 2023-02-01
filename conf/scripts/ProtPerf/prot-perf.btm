@@ -125,9 +125,9 @@ HELPER org.jgroups.util.ProtPerfHelper
 METHOD process(Message,boolean)
 COMPILE
 AT ENTRY
-BIND msg=$1, prot=$this.getTransport();
+BIND msg=$1;
 IF TRUE
-   DO upTime(msg, prot);
+   DO setTime(msg, false);
 ENDRULE
 
 RULE TP: set up-time for a message batch
@@ -136,9 +136,9 @@ HELPER org.jgroups.util.ProtPerfHelper
 METHOD process(MessageBatch,boolean)
 COMPILE
 AT ENTRY
-BIND batch=$1, prot=$this.getTransport();
+BIND batch=$1;
 IF TRUE
-   DO upTime(batch, prot);
+   DO setTime(batch);
 ENDRULE
 
 

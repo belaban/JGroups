@@ -76,6 +76,21 @@ public class ProtPerfHelper extends Helper {
         batch.timestamp(System.nanoTime());
     }
 
+    @SuppressWarnings("MethodMayBeStatic")
+    public void setTime(Message msg, boolean down) {
+        ProtPerfHeader hdr=getOrAddHeader(msg);
+        long time=System.nanoTime();
+        if(down)
+            hdr.startDown(time);
+        else
+            hdr.startUp(time);
+    }
+
+    @SuppressWarnings("MethodMayBeStatic")
+    public void setTime(MessageBatch batch) {
+        batch.timestamp(System.nanoTime());
+    }
+
     protected static String getClusterName(Protocol p) {
         return p == null? null : p.getTransport().getClusterName();
     }
