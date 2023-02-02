@@ -203,7 +203,7 @@ public class TcpConnection extends Connection {
 
         client_sock.setKeepAlive(true);
         client_sock.setTcpNoDelay(server.tcp_nodelay);
-        try { // todo: remove try-catch clause one https://github.com/oracle/graal/issues/1087 has been fixed
+        try { // todo: remove try-catch clause once https://github.com/oracle/graal/issues/1087 has been fixed
             if(server.linger > 0)
                 client_sock.setSoLinger(true, server.linger);
             else
