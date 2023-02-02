@@ -37,20 +37,25 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
     }
 
     public boolean process(MessageBatch batch, boolean oob) {
-        if(oob)
-            removeAndDispatchNonBundledMessages(batch);
+        if(oob) {
+            boolean removed=removeAndDispatchNonBundledMessages(batch);
+            if(removed && batch.isEmpty())
+                return true;
+        }
         return tp.getThreadPool().execute(new BatchHandler(batch));
     }
 
 
     /**
      * Removes messages with flags DONT_BUNDLE and OOB set and executes them in the oob or internal thread pool. JGRP-1737
+     * Returns true if at least one message was removed
      */
-    protected void removeAndDispatchNonBundledMessages(MessageBatch oob_batch) {
+    protected boolean removeAndDispatchNonBundledMessages(MessageBatch oob_batch) {
         if(oob_batch == null)
-            return;
+            return false;
         AsciiString tmp=oob_batch.clusterName();
         byte[] cname=tmp != null? tmp.chars() : null;
+        boolean removed=false;
         for(Iterator<Message> it=oob_batch.iterator(); it.hasNext();) {
             Message msg=it.next();
             if(msg.isFlagSet(Message.Flag.DONT_BUNDLE) && msg.isFlagSet(Message.Flag.OOB)) {
@@ -58,8 +63,10 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
                 if(tp.statsEnabled())
                     tp.getMessageStats().incrNumOOBMsgsReceived(1);
                 tp.getThreadPool().execute(new SingleMessageHandlerWithClusterName(msg, cname));
+                removed=true;
             }
         }
+        return removed;
     }
 
     public class SingleLoopbackHandler implements Runnable {
