@@ -615,7 +615,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         Address dst=msg.getDest();
 
         /* only handle unicast messages */
-        if (dst == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY))
+        if(dst == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY))
             return down_prot.down(msg);
 
         if(!running) {
@@ -740,7 +740,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             long seqno=hdr != null? hdr.seqno : -1;
             log.trace("%s --> %s: resending(#%d)", local_addr, msg.getDest(), seqno);
         }
-        down_prot.down(msg);
+        resend(msg);
         num_xmits++;
     }
 
@@ -1018,7 +1018,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             UnicastHeader3 newhdr=hdr.copy();
             newhdr.first=true;
             copy.putHeader(this.id, newhdr);
-            down_prot.down(copy);
+            resend(copy);
         }
     }
 
@@ -1030,19 +1030,22 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         SenderEntry entry=send_table.get(sender);
         xmit_reqs_received.add(missing.size());
         Table<Message> win=entry != null? entry.msgs : null;
-        if(win != null) {
-            for(Long seqno: missing) {
-                Message msg=win.get(seqno);
-                if(msg == null) {
-                    if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(sender) && seqno > win.getLow())
-                        log.warn(Util.getMessage("MessageNotFound"), local_addr, sender, seqno);
-                    continue;
-                }
-
-                down_prot.down(msg);
-                xmit_rsps_sent.increment();
+        if(win == null)
+            return;
+        for(Long seqno: missing) {
+            Message msg=win.get(seqno);
+            if(msg == null) {
+                if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(sender) && seqno > win.getLow())
+                    log.warn(Util.getMessage("MessageNotFound"), local_addr, sender, seqno);
+                continue;
             }
+            resend(msg);
+            xmit_rsps_sent.increment();
         }
+    }
+
+    protected void resend(Message msg) { // needed for byteman ProtPerf script - don't remove!
+        down_prot.down(msg);
     }
 
     protected void deliverMessage(final Message msg, final Address sender, final long seqno) {

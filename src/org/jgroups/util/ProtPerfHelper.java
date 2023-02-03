@@ -87,6 +87,15 @@ public class ProtPerfHelper extends Helper {
     }
 
     @SuppressWarnings("MethodMayBeStatic")
+    public void setTime(Message msg, long time, boolean down) {
+        ProtPerfHeader hdr=getOrAddHeader(msg);
+        if(down)
+            hdr.startDown(time);
+        else
+            hdr.startUp(time);
+    }
+
+    @SuppressWarnings("MethodMayBeStatic")
     public void setTime(MessageBatch batch) {
         batch.timestamp(System.nanoTime());
     }
