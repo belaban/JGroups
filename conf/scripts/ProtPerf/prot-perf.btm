@@ -166,3 +166,18 @@ BIND batch=$this.batch;
 IF NOT callerEquals("run")
    DO batch.timestamp(System.nanoTime());
 ENDRULE
+
+# Retransmission of a message will cause an incorrect time measurement, as the start time was on the original send
+# ProtPerfHeader.start_down is set to *0*, as we don't want to measure retransmissions times (they're very short,
+# because they just fetch the message and send it down)
+# This rule applies to (1) retransmission by sender, (2) resending of the first msg, and (3) retransmission via XMIT-REQ
+RULE UNICAST3 retransmission
+CLASS org.jgroups.protocols.UNICAST3
+HELPER org.jgroups.util.ProtPerfHelper
+COMPILE
+METHOD resend(Message)
+AT ENTRY
+BIND msg=$1;
+IF TRUE
+   DO setTime(msg, 0, true);
+ENDRULE
