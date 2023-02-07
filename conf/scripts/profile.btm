@@ -1,0 +1,54 @@
+
+
+# Byteman script to profile individual methods
+
+
+RULE DiagnosticHandler creation
+CLASS ^TP
+HELPER org.jgroups.util.ProfilingHelper
+METHOD handleConnect()
+AT ENTRY
+BIND tp=$this, diag=tp.getDiagnosticsHandler();
+IF TRUE
+   DO diagCreated(diag);
+ENDRULE
+
+
+## Bundler.send
+RULE Bundler.send() start
+INTERFACE org.jgroups.protocols.Bundler
+HELPER org.jgroups.util.ProfilingHelper
+METHOD send
+AT ENTRY
+IF TRUE
+   DO start("bundler.send");
+ENDRULE
+
+RULE Bundler.send() stop
+INTERFACE org.jgroups.protocols.Bundler
+HELPER org.jgroups.util.ProfilingHelper
+METHOD send
+AT EXIT
+IF TRUE
+   DO stop("bundler.send");
+ENDRULE
+
+
+
+RULE BaseServer.send() start
+CLASS org.jgroups.blocks.cs.BaseServer
+HELPER org.jgroups.util.ProfilingHelper
+METHOD send
+AT ENTRY
+IF TRUE
+   DO start("bs.send");
+ENDRULE
+
+RULE BaseServer.send() stop
+CLASS org.jgroups.blocks.cs.BaseServer
+HELPER org.jgroups.util.ProfilingHelper
+METHOD send
+AT EXIT
+IF TRUE
+   DO stop("bs.send");
+ENDRULE
