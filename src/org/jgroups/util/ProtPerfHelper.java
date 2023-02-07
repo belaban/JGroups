@@ -11,10 +11,11 @@ import org.jgroups.stack.Protocol;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.jgroups.protocols.ProtPerfHeader.ID;
+import static org.jgroups.util.Util.printTime;
 
 /**
  * @author Bela Ban
@@ -190,13 +191,23 @@ public class ProtPerfHelper extends Helper {
 
         protected String dumpStats(String cluster, Map<Class<? extends Protocol>,Entry> m,
                                           boolean down, boolean up, boolean detailed) {
+            double avg_down_sum=0, avg_up_sum=0;
             List<Class<? extends Protocol>> order=ordering.get(cluster);
             if(order != null) {
                 StringBuilder sb=new StringBuilder("\n");
                 for(Class<? extends Protocol> cl: order) {
                     Entry e=m.get(cl);
+                    if(e != null) {
+                        if(down)
+                            avg_down_sum+=e.avg_down.getAverage();
+                        else
+                            avg_up_sum+=e.avg_up.getAverage();
+                    }
                     sb.append(String.format("%-20s %s\n", cl.getSimpleName() + ":", e == null? "n/a" : e.toString(down,up,detailed)));
                 }
+                sb.append("-".repeat(30));
+                sb.append(String.format("\n%-20s %s\n", "TOTAL" + ":",
+                                        down? printTime(avg_down_sum, NANOSECONDS) : printTime(avg_up_sum, NANOSECONDS)));
                 return sb.toString();
             }
             else
@@ -213,8 +224,8 @@ public class ProtPerfHelper extends Helper {
 
 
     protected static class Entry {
-        protected final AverageMinMax avg_down=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
-        protected final AverageMinMax avg_up=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
+        protected final AverageMinMax avg_down=new AverageMinMax().unit(NANOSECONDS);
+        protected final AverageMinMax avg_up=new AverageMinMax().unit(NANOSECONDS);
 
         protected void add(long value, boolean down) {
             if(down) {

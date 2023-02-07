@@ -181,3 +181,15 @@ BIND msg=$1;
 IF TRUE
    DO setTime(msg, 0, true);
 ENDRULE
+
+# Same as above, but for NAKACKK2
+RULE NAKACK2 retransmission
+CLASS org.jgroups.protocols.pbcast.NAKACK2
+HELPER org.jgroups.util.ProtPerfHelper
+COMPILE
+METHOD resend(Message)
+AT ENTRY
+BIND msg=$1;
+IF TRUE
+   DO setTime(msg, 0, true);
+ENDRULE
