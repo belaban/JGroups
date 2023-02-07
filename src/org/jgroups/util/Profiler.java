@@ -32,6 +32,8 @@ public class Profiler {
 
     @Override
     public String toString() {
+        if(avg.count() == 0)
+            return "n/a";
         return String.format("min/avg/max=%s/%s/%s", printTime(avg.min(), NANOSECONDS),
                              printTime(avg.average(), NANOSECONDS), printTime(avg.max(), NANOSECONDS));
     }
