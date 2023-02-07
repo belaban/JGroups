@@ -850,6 +850,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
 
+    protected void resend(Message msg) { // needed for byteman ProtPerf script - don't remove!
+        down_prot.down(msg);
+    }
 
     /**
      * Finds the corresponding retransmit buffer and adds the message to it (according to seqno). Then removes as many
@@ -1070,7 +1073,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             msg.setSrc(local_addr);
 
         if(use_mcast_xmit) { // we simply send the original multicast message
-            down_prot.down(msg);
+            resend(msg);
             return;
         }
 
@@ -1079,7 +1082,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         NakAckHeader2 newhdr=hdr.copy();
         newhdr.type=NakAckHeader2.XMIT_RSP; // change the type in the copy from MSG --> XMIT_RSP
         xmit_msg.putHeader(id, newhdr);
-        down_prot.down(xmit_msg);
+        resend(xmit_msg);
     }
 
 
