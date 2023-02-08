@@ -34,7 +34,7 @@ IF TRUE
 ENDRULE
 
 
-
+## BaseServer.send
 RULE BaseServer.send() start
 CLASS org.jgroups.blocks.cs.BaseServer
 HELPER org.jgroups.util.ProfilingHelper
@@ -52,3 +52,88 @@ AT EXIT
 IF TRUE
    DO stop("bs.send");
 ENDRULE
+
+
+
+## BaseServer.getConnection
+RULE BaseServer.getConnection() start
+CLASS org.jgroups.blocks.cs.BaseServer
+HELPER org.jgroups.util.ProfilingHelper
+METHOD getConnection
+AT ENTRY
+IF TRUE
+   DO start("bs.getConnection");
+ENDRULE
+
+RULE BaseServer.getConnection() stop
+CLASS org.jgroups.blocks.cs.BaseServer
+HELPER org.jgroups.util.ProfilingHelper
+METHOD getConnection
+AT EXIT
+IF TRUE
+   DO stop("bs.getConnection");
+ENDRULE
+
+## Connection.send()
+RULE Connection.send() start
+CLASS ^org.jgroups.blocks.cs.Connection
+HELPER org.jgroups.util.ProfilingHelper
+METHOD send
+AT ENTRY
+IF TRUE
+   DO start("conn.send");
+ENDRULE
+
+RULE Connection.send() stop
+CLASS ^org.jgroups.blocks.cs.Connection
+HELPER org.jgroups.util.ProfilingHelper
+METHOD send
+AT EXIT
+IF TRUE
+   DO stop("conn.send");
+ENDRULE
+
+
+### TcpConnection.updateLastAccessed
+RULE TcpConnection.updateLastAccessed() start
+CLASS ^org.jgroups.blocks.cs.TcpConnection
+HELPER org.jgroups.util.ProfilingHelper
+METHOD updateLastAccessed
+AT ENTRY
+IF TRUE
+   DO start("tcpconn.updateLastAccessed");
+ENDRULE
+
+RULE TcpConnection.updateLastAccessed() stop
+CLASS ^org.jgroups.blocks.cs.TcpConnection
+HELPER org.jgroups.util.ProfilingHelper
+METHOD updateLastAccessed
+AT EXIT
+IF TRUE
+   DO stop("tcpconn.updateLastAccessed");
+ENDRULE
+
+
+## TcpConnection.doSend()
+RULE TcpConnection.doSend() start
+CLASS ^org.jgroups.blocks.cs.TcpConnection
+HELPER org.jgroups.util.ProfilingHelper
+METHOD doSend
+AT ENTRY
+IF TRUE
+   DO start("tcpconn.doSend");
+ENDRULE
+
+RULE TcpConnection.doSend() stop
+CLASS ^org.jgroups.blocks.cs.TcpConnection
+HELPER org.jgroups.util.ProfilingHelper
+METHOD doSend
+AT EXIT
+IF TRUE
+   DO stop("tcpconn.doSend");
+ENDRULE
+
+
+
+
+
