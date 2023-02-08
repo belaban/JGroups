@@ -1,0 +1,35 @@
+
+
+Latency versus thoughput
+========================
+Author: Bela Ban
+Date:   Feb 2023
+
+
+JGroups can be configured to reduce latency (e.g. for synchronous RPCs), or to provide high throughput (e.g. for
+asynchronous sending of messages).
+
+Unfortunately, there is no middle ground configuration which provides both low latency *and* high throughput.
+
+This document therefore lists the changes that have to be made to a configuration to either provide low latency or
+high throughput. There will be 2 sample configurations as a result of this work.
+
+
+
+Components to look at
+---------------------
+
+* Single sender / multiple senders
+
+* Bundler type (TransferQueue, NoBundler, PerDestinationBundler)
+
+* Thread pool enabled/disabled
+
+* JDK: virtual threads available?
+
+* OOB or regular messages (FIFO delivery per sender needed)?
+  * DONT_BUNDLE flag set?
+
+* Transport: TCP, TCP_NIO2 or UDP?
+
+* TCP: output/input stream buffering? (TCP.buffered_{output,input}_stream_size)
