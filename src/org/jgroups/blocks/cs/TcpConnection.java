@@ -2,7 +2,9 @@ package org.jgroups.blocks.cs;
 
 import org.jgroups.Address;
 import org.jgroups.Version;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Bits;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
@@ -24,14 +26,15 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since  3.6.5
  */
 public class TcpConnection extends Connection {
-    protected final Socket           sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
-    protected final ReentrantLock    send_lock=new ReentrantLock(); // serialize send()
-    protected DataOutputStream       out;
-    protected DataInputStream        in;
-    protected volatile Receiver      receiver;
-    protected final TcpBaseServer    server;
-    protected final AtomicInteger    writers=new AtomicInteger(0); // to determine the last writer to flush
-    protected boolean                connected;
+    protected final Socket        sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
+    protected final ReentrantLock send_lock=new ReentrantLock(); // serialize send()
+    protected DataOutputStream    out;
+    protected DataInputStream     in;
+    protected volatile Receiver   receiver;
+    protected final TcpBaseServer server;
+    protected final AtomicInteger writers=new AtomicInteger(0); // to determine the last writer to flush
+    protected boolean             connected;
+    protected final byte[]        length_buf=new byte[Integer.BYTES]; // used to write the length of the data
 
     /** Creates a connection stub and binds it, use {@link #connect(Address)} to connect */
     public TcpConnection(Address peer_addr, TcpBaseServer server) throws Exception {
@@ -162,10 +165,13 @@ public class TcpConnection extends Connection {
     }
 
 
+    @GuardedBy("send_lock")
     protected void doSend(byte[] data, int offset, int length) throws Exception {
-        out.writeInt(length); // write the length of the data buffer first
-        out.write(data,offset,length);
+        Bits.writeInt(length, length_buf, 0); // write the length of the data buffer first
+        out.write(length_buf, 0, length_buf.length);
+        out.write(data, offset, length);
     }
+
 
     public void flush() {
         try {

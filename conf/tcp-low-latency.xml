@@ -1,0 +1,47 @@
+
+<!--
+  Sample TCP configuration providing low latency. Best used for applications which perform synchronous RPCs, or which
+  block senders until they receive responses from receivers, before sending the next request (synchronous behavior).
+  </br>
+  For high-throughput requirements, use tcp.xml
+  author: Bela Ban
+-->
+
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+
+   <TCP
+         bind_addr="${jgroups.bind_addr:match-address:192.*,site_local,loopback}"
+         bind_port="${jgroups.bind_port:7800}"
+
+         buffered_input_stream_size="8192"
+         buffered_output_stream_size="0"
+
+         thread_pool.enabled="false"
+
+         thread_pool.max_threads="200"
+
+         use_virtual_threads="true"
+         bundler_type="no-bundler" />
+
+    <MPING mcast_addr="224.0.0.5" />
+    <MERGE3 max_interval="120000"
+            min_interval="30000"/>
+    <FD_SOCK />
+    <FD_ALL3 />
+    <VERIFY_SUSPECT timeout="1500"  />
+    <pbcast.NAKACK2 use_mcast_xmit="false"/>
+    <UNICAST3 ack_threshold="50000"
+              conn_close_timeout="60000"/>
+    <pbcast.STABLE desired_avg_gossip="50000"
+                   max_bytes="4M"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="500"/>
+    <UFC max_credits="2M"
+         min_threshold="0.4"/>
+    <MFC max_credits="2M"
+         min_threshold="0.4"/>
+    <FRAG4 frag_size="60K"  />
+    <TIME down_msgs="true" up_batches="true" up_msgs="false"/>
+
+</config>

@@ -135,5 +135,63 @@ ENDRULE
 
 
 
+## TcpConnection.flush()
+RULE TcpConnection.flush() start
+CLASS ^org.jgroups.blocks.cs.TcpConnection
+HELPER org.jgroups.util.ProfilingHelper
+METHOD flush
+AT ENTRY
+IF TRUE
+   DO start("tcpconn.flush");
+ENDRULE
 
+RULE TcpConnection.flush() stop
+CLASS ^org.jgroups.blocks.cs.TcpConnection
+HELPER org.jgroups.util.ProfilingHelper
+METHOD flush
+AT EXIT
+IF TRUE
+   DO stop("tcpconn.flush");
+ENDRULE
+
+
+## TcpConnection.doSend() - writeInt()
+RULE TcpConnection.writeInt() start
+CLASS ^org.jgroups.blocks.cs.TcpConnection
+HELPER org.jgroups.util.ProfilingHelper
+METHOD doSend
+AT INVOKE DataOutputStream.writeInt
+IF TRUE
+   DO start("tcpconn.writeInt");
+ENDRULE
+
+RULE TcpConnection.writeInt() stop
+CLASS ^org.jgroups.blocks.cs.TcpConnection
+HELPER org.jgroups.util.ProfilingHelper
+METHOD doSend
+AFTER INVOKE DataOutputStream.writeInt
+IF TRUE
+   DO stop("tcpconn.writeInt");
+ENDRULE
+
+
+
+## TcpConnection.doSend() - write(byte[])
+RULE TcpConnection.write(byte[]) start
+CLASS ^org.jgroups.blocks.cs.TcpConnection
+HELPER org.jgroups.util.ProfilingHelper
+METHOD doSend
+AT INVOKE DataOutputStream.write(byte[],int,int)
+IF TRUE
+   DO start("tcpconn.writeBytes");
+ENDRULE
+
+RULE TcpConnection.write(byte[]) stop
+CLASS ^org.jgroups.blocks.cs.TcpConnection
+HELPER org.jgroups.util.ProfilingHelper
+METHOD doSend
+AFTER INVOKE DataOutputStream.write(byte[],int,int)
+IF TRUE
+   DO stop("tcpconn.writeBytes");
+ENDRULE
 
