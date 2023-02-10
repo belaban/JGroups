@@ -23,7 +23,7 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
     protected RtReceiver   receiver;
     protected InetAddress  host;
     protected int          port=7800;
-    protected boolean      server, nio;
+    protected boolean      server, nio, tcp_nodelay;
     protected final Log    log=LogFactory.getLog(ServerTransport.class);
 
 
@@ -31,7 +31,7 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
     }
 
     public String[] options() {
-        return new String[]{"-host <host>", "-port <port>", "-server", "-nio"};
+        return new String[]{"-host <host>", "-port <port>", "-server", "-nio", "-tcp-nodelay"};
     }
 
     public void options(String... options) throws Exception {
@@ -52,6 +52,10 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
             }
             if(options[i].equals("-nio")) {
                 nio=true;
+                continue;
+            }
+            if(options[i].equals("-tcp-nodelay")) {
+                tcp_nodelay=true;
             }
         }
         if(host == null)
@@ -76,7 +80,7 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
         if(server) {
             srv=nio? new NioServer(host, port) : new TcpServer(host, port);
             srv.connExpireTimeout(0);
-            srv.tcpNodelay(false);
+            srv.tcpNodelay(tcp_nodelay);
             srv.receiver(this);
             srv.start();
             System.out.printf("server started on %s (ctrl-c to terminate)\n", srv.localAddress());

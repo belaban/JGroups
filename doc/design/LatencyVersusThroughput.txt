@@ -14,7 +14,7 @@ Unfortunately, there is no middle ground configuration which provides both low l
 The goal of this work is to come up with recommendations and sample configurations which provide *low latency*.
 This includes
 * Configuration changes
-* Code changes / additions ( e.g. https://issues.redhat.com/browse/JGRP-2672)
+* Code changes / additions (e.g. https://issues.redhat.com/browse/JGRP-2672)
 * Best practices for applications to help in the reduction of latency. E.g. OOB versus regular messages, batch
   processing etc
 
