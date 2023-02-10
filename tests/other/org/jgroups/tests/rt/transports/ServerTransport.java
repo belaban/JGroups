@@ -23,7 +23,7 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
     protected RtReceiver   receiver;
     protected InetAddress  host;
     protected int          port=7800;
-    protected boolean      server, nio, tcp_nodelay;
+    protected boolean      server, nio, tcp_nodelay=true;
     protected final Log    log=LogFactory.getLog(ServerTransport.class);
 
 
@@ -31,7 +31,7 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
     }
 
     public String[] options() {
-        return new String[]{"-host <host>", "-port <port>", "-server", "-nio", "-tcp-nodelay"};
+        return new String[]{"-host <host>", "-port <port>", "-server", "-nio", "-tcp-nodelay <boolean>"};
     }
 
     public void options(String... options) throws Exception {
@@ -55,7 +55,7 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
                 continue;
             }
             if(options[i].equals("-tcp-nodelay")) {
-                tcp_nodelay=true;
+                tcp_nodelay=Boolean.parseBoolean(options[++i]);
             }
         }
         if(host == null)
