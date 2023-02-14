@@ -1,7 +1,7 @@
 
 
-Latency versus thoughput
-========================
+Latency versus throughput
+=========================
 Author: Bela Ban
 Date:   Feb 2023
 
@@ -26,6 +26,8 @@ Components to look at
 * Single sender / multiple senders
 
 * Bundler type (TransferQueue, NoBundler, PerDestinationBundler)
+  * Does the message submitted to the bundler cause the current thread to possibly send it? Or are messages added
+    to a queue from where a different thread sends it?
 
 * Thread pool enabled/disabled
 
