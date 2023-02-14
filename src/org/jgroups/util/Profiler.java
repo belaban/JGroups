@@ -1,5 +1,8 @@
 package org.jgroups.util;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.jgroups.util.Util.printTime;
 
@@ -9,24 +12,31 @@ import static org.jgroups.util.Util.printTime;
  * @since  5.2.13
  */
 public class Profiler {
-    protected final AverageMinMax avg=new AverageMinMax().unit(NANOSECONDS);
-    protected long                start;
+    protected final AverageMinMax    avg=new AverageMinMax().unit(NANOSECONDS);
+    protected final Map<Thread,Long> threads=new ConcurrentHashMap<>();
+
 
     public Profiler() {
     }
 
-    public void reset() {avg.clear();}
+    public void reset() {
+        synchronized(avg) {
+            avg.clear();
+        }
+    }
 
     public void start() {
-        start=System.nanoTime();
+        threads.put(Thread.currentThread(), System.nanoTime());
     }
 
     public void stop() {
-
-        if(start > 0) {
+        Thread curr_thread=Thread.currentThread();
+        Long start=threads.remove(curr_thread);
+        if(start != null) {
             long time=System.nanoTime() - start;
-            avg.add(time);
-            start=0;
+            synchronized(avg) {
+                avg.add(time);
+            }
         }
     }
 
