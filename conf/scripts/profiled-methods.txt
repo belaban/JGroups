@@ -1,12 +1,10 @@
 
 
-org.jgroups.protocols.Bundler.send
-
 org.jgroups.protocols.PerDestinationBundler$SendBuffer.addMessage
 
 org.jgroups.protocols.PerDestinationBundler$SendBuffer._addMessage
 
-org.jgroups.protocols.PerDestinationBundler$SendBuffer.sendBatch
+org.jgroups.protocols.PerDestinationBundler$SendBuffer.sendMessages
 
 org.jgroups.protocols.PerDestinationBundler$SendBuffer.sendSingleMessage
 
