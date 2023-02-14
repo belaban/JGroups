@@ -14,19 +14,25 @@ import static org.jgroups.util.Util.printTime;
 public class Profiler {
     protected final AverageMinMax    avg=new AverageMinMax().unit(NANOSECONDS);
     protected final Map<Thread,Long> threads=new ConcurrentHashMap<>();
+    protected boolean                print_details=true;
 
 
     public Profiler() {
     }
 
+    public boolean  details()          {return print_details;}
+    public Profiler details(boolean d) {print_details=d; return this;}
+
     public void reset() {
+        threads.clear();
         synchronized(avg) {
             avg.clear();
         }
     }
 
     public void start() {
-        threads.put(Thread.currentThread(), System.nanoTime());
+        Thread curr=Thread.currentThread();
+        threads.put(curr, System.nanoTime());
     }
 
     public void stop() {
@@ -44,7 +50,8 @@ public class Profiler {
     public String toString() {
         if(avg.count() == 0)
             return "n/a";
-        return String.format("min/avg/max=%s/%s/%s", printTime(avg.min(), NANOSECONDS),
-                             printTime(avg.average(), NANOSECONDS), printTime(avg.max(), NANOSECONDS));
+        return print_details? String.format("min/avg/max=%s/%s/%s", printTime(avg.min(), NANOSECONDS),
+                                            printTime(avg.average(), NANOSECONDS), printTime(avg.max(), NANOSECONDS))
+          : String.format("avg=%s", printTime(avg.average(), NANOSECONDS));
     }
 }
