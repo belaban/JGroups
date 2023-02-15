@@ -72,10 +72,11 @@ public class ProfilingHelper extends Helper {
     }
 
     protected static DiagnosticsHandler createDiagHandler() throws Exception {
-        return new DiagnosticsHandler()
-          .printHeaders(details-> String.format("%s [ip=%s, %s]\n", Util.generateLocalName(),
-                                                localAddress(),
-                                                Util.JAVA_VERSION.isEmpty()? "" : String.format("java %s", Util.JAVA_VERSION)));
+        DiagnosticsHandler ret=new DiagnosticsHandler();
+        ret.printHeaders(b -> String.format("%s [ip=%s, %s]\n", ret.getLocalAddress(),
+                                            localAddress(),
+                                            Util.JAVA_VERSION.isEmpty()? "" : String.format("java %s", Util.JAVA_VERSION)));
+        return ret;
     }
 
     protected static String localAddress() {
