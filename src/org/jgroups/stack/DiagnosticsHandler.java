@@ -5,10 +5,8 @@ import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.ReceiverAdapter;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.logging.Log;
-import org.jgroups.util.Runner;
-import org.jgroups.util.SocketFactory;
-import org.jgroups.util.ThreadFactory;
-import org.jgroups.util.Util;
+import org.jgroups.logging.LogFactory;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.net.*;
@@ -83,8 +81,12 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
         return this;
     }
 
-
-
+    /** Constructor used for standalone apps (without a JGroups stack) */
+    public DiagnosticsHandler() throws Exception {
+        this(LogFactory.getLog(DiagnosticsHandler.class), new DefaultSocketFactory(),
+             new DefaultThreadFactory("diag", true, true));
+        Configurator.setDefaultAddressValues(this, Util.getIpStackType());
+    }
 
     public DiagnosticsHandler(Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
         this.log=log;
