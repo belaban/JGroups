@@ -3,6 +3,8 @@
   Sample TCP configuration providing low latency. Best used for applications which perform synchronous RPCs, or which
   block senders until they receive responses from receivers, before sending the next request (synchronous behavior).
   </br>
+  This specific configuration is best used with few threads (e.g. RoundTrip, with 1 sender thread).
+  </br>
   For high-throughput requirements, use tcp.xml
   author: Bela Ban
 -->
