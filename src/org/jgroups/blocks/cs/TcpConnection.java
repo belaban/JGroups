@@ -5,6 +5,7 @@ import org.jgroups.Version;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Bits;
+import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
@@ -28,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class TcpConnection extends Connection {
     protected final Socket        sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
     protected final ReentrantLock send_lock=new ReentrantLock(); // serialize send()
-    protected DataOutputStream    out;
+    protected OutputStream        out;
     protected DataInputStream     in;
     protected volatile Receiver   receiver;
     protected final TcpBaseServer server;
@@ -181,9 +182,9 @@ public class TcpConnection extends Connection {
         }
     }
 
-    protected DataOutputStream createDataOutputStream(OutputStream out) {
+    protected OutputStream createDataOutputStream(OutputStream out) {
         int size=server.getBufferedOutputStreamSize();
-        return size == 0? new DataOutputStream(out) : new DataOutputStream(new BufferedOutputStream(out, size));
+        return size == 0? out : new BufferedOutputStream(out, size);
     }
 
     protected DataInputStream createDataInputStream(InputStream in) {
@@ -228,13 +229,13 @@ public class TcpConnection extends Connection {
      */
     protected void sendLocalAddress(Address local_addr) throws Exception {
         try {
-            // write the cookie
-            out.write(cookie, 0, cookie.length);
-
-            // write the version
-            out.writeShort(Version.version);
-            out.writeShort(local_addr.serializedSize()); // address size
-            local_addr.writeTo(out);
+            int addr_size=local_addr.serializedSize();
+            ByteArrayDataOutputStream os=new ByteArrayDataOutputStream(addr_size + Short.BYTES*2 + cookie.length);
+            os.write(cookie, 0, cookie.length);
+            os.writeShort(Version.version);
+            os.writeShort(addr_size); // address size
+            local_addr.writeTo(os);
+            out.write(os.buffer(), 0, os.position());
             out.flush(); // needed ?
             updateLastAccessed();
         }
