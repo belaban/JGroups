@@ -10,7 +10,9 @@ import org.jgroups.util.ThreadFactory;
  * @since  3.6.5
  */
 public abstract class TcpBaseServer extends BaseServer {
-    protected int               peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
+    protected int peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
+    protected int buffered_inputstream_size=8192;
+    protected int buffered_outputstream_size=8192;
 
     protected TcpBaseServer(ThreadFactory f, SocketFactory sf, int recv_buf_size) {
         super(f, sf, recv_buf_size);
@@ -22,7 +24,11 @@ public abstract class TcpBaseServer extends BaseServer {
     }
 
 
-    public int           peerAddressReadTimeout()                {return peer_addr_read_timeout;}
-    public TcpBaseServer peerAddressReadTimeout(int timeout)     {this.peer_addr_read_timeout=timeout; return this;}
+    public int           peerAddressReadTimeout()           {return peer_addr_read_timeout;}
+    public TcpBaseServer peerAddressReadTimeout(int t)      {this.peer_addr_read_timeout=t; return this;}
+    public int           getBufferedInputStreamSize()       {return buffered_inputstream_size;}
+    public TcpBaseServer setBufferedInputStreamSize(int s)  {this.buffered_inputstream_size=s; return this;}
+    public int           getBufferedOutputStreamSize()      {return buffered_outputstream_size;}
+    public TcpBaseServer setBufferedOutputStreamSize(int s) {this.buffered_outputstream_size=s; return this;}
 
 }

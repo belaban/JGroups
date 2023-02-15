@@ -182,12 +182,12 @@ public class TcpConnection extends Connection {
     }
 
     protected DataOutputStream createDataOutputStream(OutputStream out) {
-        int size=(server instanceof TcpServer)? ((TcpServer)server).getBufferedOutputStreamSize() : 0;
+        int size=server.getBufferedOutputStreamSize();
         return size == 0? new DataOutputStream(out) : new DataOutputStream(new BufferedOutputStream(out, size));
     }
 
     protected DataInputStream createDataInputStream(InputStream in) {
-        int size=(server instanceof TcpServer)? ((TcpServer)server).getBufferedInputStreamSize() : 0;
+        int size=server.getBufferedInputStreamSize();
         return size == 0? new DataInputStream(in) : new DataInputStream(new BufferedInputStream(in, size));
     }
 
