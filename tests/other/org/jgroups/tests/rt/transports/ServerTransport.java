@@ -78,17 +78,17 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
     public void start(String ... options) throws Exception {
         options(options);
         if(server) {
-            srv=nio? new NioServer(host, port) : new TcpServer(host, port);
-            srv.connExpireTimeout(0);
-            srv.tcpNodelay(tcp_nodelay);
-            srv.receiver(this);
+            srv=nio? new NioServer(host, port) : new TcpServer(host, port)
+              .connExpireTimeout(0)
+              .tcpNodelay(tcp_nodelay)
+              .receiver(this);
             srv.start();
             System.out.printf("server started on %s (ctrl-c to terminate)\n", srv.localAddress());
         }
         else {
-            srv=nio? new NioClient(null, 0, host, port) : new TcpClient(null, 0, host, port);
-            srv.tcpNodelay(false);
-            srv.receiver(this);
+            srv=nio? new NioClient(null, 0, host, port) : new TcpClient(null, 0, host, port)
+              .tcpNodelay(false)
+              .receiver(this);
             srv.start();
         }
     }
