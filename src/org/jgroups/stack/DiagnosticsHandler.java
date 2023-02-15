@@ -178,6 +178,33 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
         return udp_runner != null && udp_runner.isRunning() || tcp_runner != null && tcp_runner.isRunning();
     }
 
+    /** Returns the local datagram socket address (UDP) or the srv address (TCP) */
+    public SocketAddress getLocalAddress() {
+        if(udp_ucast_sock != null) {
+            InetAddress addr=udp_ucast_sock.getLocalAddress();
+            if(addr == null || addr. isAnyLocalAddress()) {
+                try {
+                    addr=InetAddress.getLocalHost();
+                }
+                catch(UnknownHostException e) {
+                }
+            }
+            return new InetSocketAddress(addr, udp_ucast_sock.getLocalPort());
+        }
+        if(srv_sock != null) {
+            InetAddress addr=srv_sock.getInetAddress();
+            if(addr == null || addr.isAnyLocalAddress()) {
+                try {
+                    addr=InetAddress.getLocalHost();
+                }
+                catch(UnknownHostException e) {
+                }
+            }
+            return new InetSocketAddress(addr, srv_sock.getLocalPort());
+        }
+        return null;
+    }
+
     protected void runUDP() {
         byte[] buf=new byte[10000]; // requests are small (responses might be bigger)
         DatagramPacket packet=new DatagramPacket(buf, 0, buf.length);
