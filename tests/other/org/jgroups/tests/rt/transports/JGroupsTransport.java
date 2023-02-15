@@ -3,7 +3,6 @@ package org.jgroups.tests.rt.transports;
 import org.jgroups.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.TP;
 import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
 import org.jgroups.util.MessageBatch;
@@ -71,16 +70,6 @@ public class JGroupsTransport implements Receiver, RtTransport {
             }
         }
         ch=new JChannel(props).name(name).receiver(this);
-        TP transport=ch.getProtocolStack().getTransport();
-        // uncomment below to disable the regular and OOB thread pools
-        // transport.setOOBThreadPool(new DirectExecutor());
-        // transport.setDefaultThreadPool(new DirectExecutor());
-
-        //ThreadPoolExecutor thread_pool=new ThreadPoolExecutor(4, 4, 30000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(5000));
-        //transport.setDefaultThreadPool(thread_pool);
-        //transport.setOOBThreadPool(thread_pool);
-        //transport.setInternalThreadPool(thread_pool);
-
         ch.connect("rt");
         View v=ch.getView();
         if(v.size() > 2)
