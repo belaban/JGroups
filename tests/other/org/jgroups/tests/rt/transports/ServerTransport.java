@@ -23,7 +23,8 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
     protected RtReceiver   receiver;
     protected InetAddress  host;
     protected int          port=7800;
-    protected boolean      server, nio, tcp_nodelay=true;
+    protected boolean      server, nio, tcp_nodelay;
+    protected int          out_buf_size=8192, in_buf_size=8192;
     protected final Log    log=LogFactory.getLog(ServerTransport.class);
 
 
@@ -31,7 +32,8 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
     }
 
     public String[] options() {
-        return new String[]{"-host <host>", "-port <port>", "-server", "-nio", "-tcp-nodelay <boolean>"};
+        return new String[]{"-host <host>", "-port <port>", "-server", "-nio", "-tcp-nodelay <boolean>",
+          "-outbuf <size>", "-inbuf <size>"};
     }
 
     public void options(String... options) throws Exception {
@@ -56,6 +58,14 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
             }
             if(options[i].equals("-tcp-nodelay")) {
                 tcp_nodelay=Boolean.parseBoolean(options[++i]);
+                continue;
+            }
+            if(options[i].equals("-outbuf")) {
+                out_buf_size=Integer.parseInt(options[++i]);
+                continue;
+            }
+            if(options[i].equals("-inbuf")) {
+                in_buf_size=Integer.parseInt(options[++i]);
             }
         }
         if(host == null)
@@ -82,6 +92,8 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
               .connExpireTimeout(0)
               .tcpNodelay(tcp_nodelay)
               .receiver(this);
+            if(srv instanceof TcpBaseServer)
+                ((TcpBaseServer)srv).setBufferedOutputStreamSize(out_buf_size).setBufferedInputStreamSize(in_buf_size);
             srv.start();
             System.out.printf("server started on %s (ctrl-c to terminate)\n", srv.localAddress());
         }
@@ -89,6 +101,8 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
             srv=nio? new NioClient(null, 0, host, port) : new TcpClient(null, 0, host, port)
               .tcpNodelay(false)
               .receiver(this);
+            if(srv instanceof TcpBaseServer)
+                ((TcpBaseServer)srv).setBufferedOutputStreamSize(out_buf_size).setBufferedInputStreamSize(in_buf_size);
             srv.start();
         }
     }

@@ -7,8 +7,7 @@ import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
 import org.jgroups.util.Util;
 
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -30,6 +29,7 @@ public class TcpTransport implements RtTransport {
     protected RtReceiver   receiver;
     protected InetAddress  host=null;
     protected int          port=7800;
+    protected int          out_buf_size=8192, in_buf_size=8192;
     protected boolean      server, tcp_nodelay;
     protected final Log    log=LogFactory.getLog(TcpTransport.class);
 
@@ -38,7 +38,7 @@ public class TcpTransport implements RtTransport {
     }
 
     public String[] options() {
-        return new String[]{"-host <host>", "-port <port>", "-server", "-tcp-nodelay"};
+        return new String[]{"-host <host>", "-port <port>", "-server", "-tcp-nodelay <boolean>", "-outbuf <size>", "-inbuf <size>"};
     }
 
     public void options(String... options) throws Exception {
@@ -58,7 +58,15 @@ public class TcpTransport implements RtTransport {
                 continue;
             }
             if(options[i].equals("-tcp-nodelay")) {
-                tcp_nodelay=true;
+                tcp_nodelay=Boolean.parseBoolean(options[++i]);
+                continue;
+            }
+            if(options[i].equals("-outbuf")) {
+                out_buf_size=Integer.parseInt(options[++i]);
+                continue;
+            }
+            if(options[i].equals("-inbuf")) {
+                in_buf_size=Integer.parseInt(options[++i]);
             }
         }
         if(host == null)
@@ -81,10 +89,10 @@ public class TcpTransport implements RtTransport {
             srv_sock=new ServerSocket(port, 50, host);
             out.println("server started (ctrl-c to kill)");
             for(;;) {
-                Socket client_sock=srv_sock.accept();
-                client_sock.setTcpNoDelay(tcp_nodelay); // we're concerned about latency
-                input=client_sock.getInputStream();
-                output=client_sock.getOutputStream();
+                Socket s=srv_sock.accept();
+                s.setTcpNoDelay(tcp_nodelay); // we're concerned about latency
+                input=in_buf_size > 0? new BufferedInputStream(s.getInputStream(), in_buf_size) : s.getInputStream();
+                output=out_buf_size > 0? new BufferedOutputStream(s.getOutputStream(), out_buf_size) : s.getOutputStream();
                 receiver_thread=new Receiver(input);
                 receiver_thread.start();
             }
@@ -93,8 +101,8 @@ public class TcpTransport implements RtTransport {
             sock=new Socket();
             sock.setTcpNoDelay(tcp_nodelay);
             sock.connect(new InetSocketAddress(host, port));
-            output=sock.getOutputStream();
-            input=sock.getInputStream();
+            input=in_buf_size > 0? new BufferedInputStream(sock.getInputStream(), in_buf_size) : sock.getInputStream();
+            output=out_buf_size > 0? new BufferedOutputStream(sock.getOutputStream(), out_buf_size) : sock.getOutputStream();
             receiver_thread=new Receiver(input);
             receiver_thread.start();
         }
@@ -105,8 +113,19 @@ public class TcpTransport implements RtTransport {
     }
 
     public void send(Object dest, byte[] buf, int offset, int length) throws Exception {
+        doSend(buf, offset, length);
+        flush();
+    }
+
+    public void doSend(byte[] buf, int offset, int length) throws Exception {
         output.write(buf, offset, length);
     }
+
+    public void flush() throws IOException {
+        output.flush();
+    }
+
+
 
 
     protected class Receiver extends Thread {
