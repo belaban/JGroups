@@ -215,7 +215,7 @@ public class RoundTrip implements RtReceiver {
                 e.printStackTrace();
             }
             for(;;) {
-                int num=sent_msgs.getAndIncrement();
+                int num=sent_msgs.incrementAndGet();
                 if(num > num_msgs)
                     break;
                 if(num > 0 && num % print == 0)
