@@ -1121,7 +1121,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected synchronized short getNewConnectionId() {
         short retval=last_conn_id;
-        if(last_conn_id >= Short.MAX_VALUE || last_conn_id < 0)
+        if(last_conn_id == Short.MAX_VALUE || last_conn_id < 0)
             last_conn_id=0;
         else
             last_conn_id++;

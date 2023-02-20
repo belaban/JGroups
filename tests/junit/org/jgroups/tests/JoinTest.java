@@ -5,13 +5,12 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.MyReceiver;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -64,29 +63,29 @@ public class JoinTest extends ChannelTestBase {
     public void testJoinsOnTwoChannelsAndSend() throws Exception {
         a.connect("JoinTest");
         b.connect("JoinTest");
-        MyReceiver r1=new MyReceiver("c1");
-        MyReceiver r2=new MyReceiver("c2");
+        MyReceiver<String> r1=new MyReceiver<String>().name("A");
+        MyReceiver<String> r2=new MyReceiver<String>().name("B");
         a.setReceiver(r1);
         b.setReceiver(r2);
         Message m1=new BytesMessage(null, "message-1"), m2=new BytesMessage(null, "message-2");
         a.connect("JoinTest-2");
         View view=a.getView();
-        assert view.size() == 2 : "c1's view: " + view;
+        assert view.size() == 2 : "A's view: " + view;
         b.connect("JoinTest-2");
         view=b.getView();
-        assert view.size() == 2 : "c2's view: " + view;
+        assert view.size() == 2 : "B's view: " + view;
         Util.sleep(200);
         view=a.getView();
-        assert view.size() == 2 : "c1's view: " + view;
+        assert view.size() == 2 : "A's view: " + view;
 
         a.send(m1);
         b.send(m2);
 
-        Util.sleep(1500);
-        List<String>c1_list=r1.getMsgs(), c2_list=r2.getMsgs();
-        System.out.println("c1: " + c1_list.size() + " msgs, c2: " + c2_list.size() + " msgs");
-        assert c1_list.size() == 2 : "cl_list: " + c1_list;
-        assert c2_list.size() == 2 : "c2_list: " + c2_list;
+        Util.waitUntil(5000, 50, () -> r1.size() == 2 && r2.size() == 2);
+        List<String>c1_list=r1.list(), c2_list=r2.list();
+        System.out.println("A: " + c1_list.size() + " msgs, B: " + c2_list.size() + " msgs");
+        assert c1_list.size() == 2 : "A_list: " + c1_list;
+        assert c2_list.size() == 2 : "B_list: " + c2_list;
         assert c1_list.contains("message-1");
         assert c2_list.contains("message-1");
         assert c1_list.contains("message-2");
@@ -156,32 +155,6 @@ public class JoinTest extends ChannelTestBase {
     }
 
 
-
-    private static class MyReceiver implements Receiver {
-        private final String name;
-        private final List<String> msgs;
-
-        public MyReceiver(String name) {
-            this.name=name;
-            msgs = Collections.synchronizedList(new ArrayList<>());
-        }
-
-        public List<String> getMsgs() {
-            return msgs;
-        }
-
-        public void clear() {msgs.clear();}
-
-        public void receive(Message msg) {
-            String s=msg.getObject();
-            msgs.add(s);
-            System.out.println("[" + name + "] received " + s + " from " + msg.getSrc());
-        }
-
-        public void viewAccepted(View new_view) {
-            System.out.println("[" + name + "] view: " + new_view);
-        }
-    }
 
 
     protected static class DELAY_JOIN_REQ extends Protocol {

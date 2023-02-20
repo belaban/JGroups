@@ -7,6 +7,7 @@ import org.jgroups.util.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
@@ -42,7 +43,7 @@ public class FRAG2 extends Fragmentation {
     protected final Predicate<Message> HAS_FRAG_HEADER=msg -> msg.getHeader(id) != null;
 
     /** Used to assign fragmentation-specific sequence IDs (monotonically increasing) */
-    protected int                 curr_id=1;
+    protected final AtomicLong    curr_id=new AtomicLong(1);
 
     protected final List<Address> members=new ArrayList<>(11);
     protected MessageFactory      msg_factory;
@@ -56,8 +57,8 @@ public class FRAG2 extends Fragmentation {
     @ManagedAttribute(description="min/avg/max size (in bytes) of messages re-assembled from fragments")
     public String getAvgSizeUp()   {return avg_size_up.toString();}
 
-    synchronized int getNextId() {
-        return curr_id++;
+    protected long getNextId() {
+        return curr_id.getAndIncrement();
     }  
 
     public void init() throws Exception {

@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 /**
@@ -221,6 +223,7 @@ public class BATCH extends Protocol {
     }
 
     protected class Buffer {
+        private final Lock       lock=new ReentrantLock();
         private final Address    dest;
         private Message[]        msgs;
         private int              index;
@@ -233,57 +236,74 @@ public class BATCH extends Protocol {
             this.index = 0;
         }
 
-        protected synchronized boolean addMessage(Message msg) {
-            if (closed) {
-                return false;
-            }
+        protected boolean addMessage(Message msg) {
+            lock.lock();
+            try {
+                if(closed) {
+                    return false;
+                }
 
-            int msg_bytes = msg.getLength();
-            if(total_bytes + msg_bytes > getTransport().getBundler().getMaxSize()) {
-                num_ebs_sent_due_to_full_queue++;
-                sendBatch(false);
-            }
+                int msg_bytes=msg.getLength();
+                if(total_bytes + msg_bytes > getTransport().getBundler().getMaxSize()) {
+                    num_ebs_sent_due_to_full_queue++;
+                    sendBatch(false);
+                }
 
-            msgs[index++] = msg;
-            total_bytes += msg_bytes;
-            if (index == msgs.length) {
-                num_ebs_sent_due_to_max_number_of_msgs++;
-                sendBatch(false);
+                msgs[index++]=msg;
+                total_bytes+=msg_bytes;
+                if(index == msgs.length) {
+                    num_ebs_sent_due_to_max_number_of_msgs++;
+                    sendBatch(false);
+                }
+                return true;
             }
-            return true;
+            finally {
+                lock.unlock();
+            }
         }
 
-        protected synchronized void sendBatch(boolean due_to_timeout) {
-            if (index == 0) {
-                return;
-            }
-            if (index == 1) {
-                down_prot.down(msgs[0]);
-                msgs[0] = null;
-                index = 0;
-                total_bytes = 0;
-                num_msgs_sent++;
-                return;
-            }
+        protected void sendBatch(boolean due_to_timeout) {
+            lock.lock();
+            try {
+                if(index == 0)
+                    return;
+                if(index == 1) {
+                    down_prot.down(msgs[0]);
+                    msgs[0]=null;
+                    index=0;
+                    total_bytes=0;
+                    num_msgs_sent++;
+                    return;
+                }
 
-            Address ebdest = dest instanceof NullAddress ? null : dest;
-            Message comp = new BatchMessage(ebdest, local_addr, msgs, index)
-              .putHeader(id, HEADER)
-              .setSrc(local_addr);
-            msgs = new Message[max_batch_size];
-            num_msgs_sent+=index;
-            num_ebs_sent++;
-            if(due_to_timeout)
-                num_ebs_sent_due_to_timeout++;
-            index=0;
-            total_bytes = 0;
-            // Could send down out of synchronize, but that could make batches hit nakack out of order
-            down_prot.down(comp);
+                Address ebdest=dest instanceof NullAddress? null : dest;
+                Message comp=new BatchMessage(ebdest, local_addr, msgs, index)
+                  .putHeader(id, HEADER)
+                  .setSrc(local_addr);
+                msgs=new Message[max_batch_size];
+                num_msgs_sent+=index;
+                num_ebs_sent++;
+                if(due_to_timeout)
+                    num_ebs_sent_due_to_timeout++;
+                index=0;
+                total_bytes=0;
+                // Could send down out of synchronize, but that could make batches hit nakack out of order
+                down_prot.down(comp);
+            }
+            finally {
+                lock.unlock();
+            }
         }
 
-        protected synchronized void close() {
-            this.closed = true;
-            sendBatch(false);
+        protected void close() {
+            lock.lock();
+            try {
+                this.closed=true;
+                sendBatch(false);
+            }
+            finally {
+                lock.unlock();
+            }
         }
     }
 

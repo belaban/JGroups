@@ -2,6 +2,7 @@ package org.jgroups.util;
 
 import org.jgroups.Message;
 import org.jgroups.Receiver;
+import org.jgroups.View;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -25,6 +26,12 @@ public class MyReceiver<T> implements Receiver, Closeable {
         if(verbose) {
             System.out.println((name() != null? name() + ":" : "") + " received message from " + msg.getSrc() + ": " + obj);
         }
+    }
+
+    @Override
+    public void viewAccepted(View new_view) {
+        if(verbose)
+            System.out.printf("-- %s: view is %s\n", name, new_view);
     }
 
     public MyReceiver<T> rawMsgs(boolean flag)      {this.raw_msgs=flag; return this;}

@@ -134,14 +134,16 @@ public class MFC extends FlowControl {
 
 
 
-    protected synchronized boolean needToSendCreditRequest() {
+    protected boolean needToSendCreditRequest() {
         long current_time=System.nanoTime();
-        // will most likely send a request the first time (last_credit_request is 0), unless nanoTime() is negative
-        if(current_time - last_credit_request >= TimeUnit.NANOSECONDS.convert(max_block_time, TimeUnit.MILLISECONDS)) {
-            last_credit_request=current_time;
-            return true;
+        synchronized(this) {
+            // will most likely send a request the first time (last_credit_request is 0), unless nanoTime() is negative
+            if(current_time - last_credit_request >= TimeUnit.NANOSECONDS.convert(max_block_time, TimeUnit.MILLISECONDS)) {
+                last_credit_request=current_time;
+                return true;
+            }
+            return false;
         }
-        return false;
     }
   
 
