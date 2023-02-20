@@ -23,8 +23,6 @@ This includes
 Components to look at
 ---------------------
 
-* Single sender / multiple senders
-
 * Bundler type (TransferQueue, NoBundler, PerDestinationBundler)
   * Does the message submitted to the bundler cause the current thread to possibly send it? Or are messages added
     to a queue from where a different thread sends it?
@@ -32,6 +30,9 @@ Components to look at
 * Thread pool enabled/disabled
 
 * JDK: virtual threads available?
+
+* Many threads sending messages / few threads sending messages?
+  * Oversubscription: more threads than cores? -> Virtual threads
 
 * OOB or regular messages (FIFO delivery per sender needed)?
   * DONT_BUNDLE flag set?
@@ -42,6 +43,9 @@ Components to look at
 
 * TCP: output/input stream buffering? (TCP.buffered_{output,input}_stream_size)
 
+* BATCH{2}: batching on the sender side (many small requests), with or without batching in the bundler
+
+
 
 Recommendations
 ---------------
@@ -49,7 +53,8 @@ Recommendations
 * General
   * Use a JDK >= 15. Changes to the networking code in 15 improved performance for TCP (and UDP datagram sockets)
     a lot: http://belaban.blogspot.com/2020/07/double-your-performance-virtual-threads.html
-  * Set use_virtual_threads=true. This reduces context switching when more threads than cores are used.
+  * Use virtual threads (set use_virtual_threads=true in the transport). This reduces context switching when more
+    threads than cores are used.
   * Remove TIME when up/down measurements are not needed anymore; every message sent/received requires a
     System.nanoTime(), slowing things down a bit
 
