@@ -1383,8 +1383,8 @@ public class Util {
      *
      * </pre>
      */
-    public static void writeMessageList(Address dest, Address src, byte[] cluster_name,
-                                        List<Message> msgs, DataOutput dos, boolean multicast, short transport_id) throws IOException {
+    public static void writeMessageList(Address dest, Address src, byte[] cluster_name, List<Message> msgs,
+                                        DataOutput dos, boolean multicast, short transport_id) throws IOException {
         writeMessageListHeader(dest, src, cluster_name, msgs != null ? msgs.size() : 0, dos, multicast);
 
         if(msgs != null)
@@ -1393,6 +1393,19 @@ public class Util {
                 msg.writeToNoAddrs(src, dos, transport_id); // exclude the transport header
             }
     }
+
+
+    public static void writeMessageList(Address dest, Address src, byte[] cluster_name, FastArray<Message> msgs,
+                                        DataOutput dos, boolean multicast, short transport_id) throws IOException {
+        writeMessageListHeader(dest, src, cluster_name, msgs != null ? msgs.size() : 0, dos, multicast);
+
+        if(msgs != null)
+            for(Message msg: msgs) {
+                dos.writeShort(msg.getType());
+                msg.writeToNoAddrs(src, dos, transport_id); // exclude the transport header
+            }
+    }
+
 
     public static void writeMessageList(Address dest, Address src, byte[] cluster_name,
                                         Message[] msgs, int offset, int length, DataOutput dos, boolean multicast,
