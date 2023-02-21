@@ -46,7 +46,7 @@ public abstract class BasicTCP extends TP implements Receiver {
     protected int         max_length;
     
     @Property(description="Should TCP no delay flag be turned on")
-    protected boolean     tcp_nodelay=true; // should be true by default as message bundling makes delaying packets moot
+    protected boolean     tcp_nodelay;
 
     @Property(description="SO_LINGER in seconds. Default of -1 disables it")
     protected int         linger=-1; // SO_LINGER (number of seconds, -1 disables it)
