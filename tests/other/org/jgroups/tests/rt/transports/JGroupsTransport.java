@@ -18,7 +18,7 @@ public class JGroupsTransport implements Receiver, RtTransport {
     protected JChannel     ch;
     protected RtReceiver   receiver;
     protected View         view;
-    protected boolean      oob=true, dont_bundle;
+    protected boolean      oob, dont_bundle;
     protected final Log    log=LogFactory.getLog(JGroupsTransport.class);
 
 
