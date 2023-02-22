@@ -1059,10 +1059,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     /* ------------------------------ Private Methods -------------------------------- */
 
-  protected DiagnosticsHandler createDiagnosticsHandler() {
-      return new DiagnosticsHandler(log, socket_factory, thread_factory)
-        .printHeaders(this::defaultHeaders).sameCluster(this::sameCluster);
-  }
+    protected DiagnosticsHandler createDiagnosticsHandler() {
+        return new DiagnosticsHandler(log, socket_factory, thread_factory)
+          .printHeaders(this::defaultHeaders).sameCluster(this::sameCluster);
+    }
 
     protected Bundler createBundler(String type) throws Exception {
         if(type == null)
