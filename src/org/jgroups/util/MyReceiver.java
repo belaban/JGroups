@@ -42,4 +42,9 @@ public class MyReceiver<T> implements Receiver, Closeable {
     public MyReceiver<T> reset()                    {list.clear(); return this;}
     public int           size()                     {return list.size();}
     public void          close() throws IOException {reset();}
+
+    @Override
+    public String toString() {
+        return String.format("%d elements", list.size());
+    }
 }

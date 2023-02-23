@@ -66,6 +66,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     public synchronized void start() {
         if(running)
             stop();
+        // todo: replace with LinkedBlockingQueue and measure impact (if any) on perf
         queue=new ArrayBlockingQueue<>(assertPositive(capacity, "bundler capacity cannot be " + capacity));
         bundler_thread=transport.getThreadFactory().newThread(this, THREAD_NAME);
         running=true;

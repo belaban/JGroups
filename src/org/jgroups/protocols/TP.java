@@ -761,7 +761,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             msg_factory=clazz.getDeclaredConstructor().newInstance();
         }
 
-        bundler=createBundler(bundler_type);
+        bundler=createBundler(bundler_type, getClass());
         bundler.init(this);
     }
 
@@ -805,7 +805,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedOperation(description="Creates and sets a new bundler. Type has to be either a bundler_type or the fully " +
       "qualified classname of a Bundler impl. Stops the current bundler (if running)")
     public <T extends TP> T bundler(String type) throws Exception {
-        Bundler new_bundler=createBundler(type);
+        Bundler new_bundler=createBundler(type, getClass());
         String old_bundler_class=null;
         if(bundler != null) {
             bundler.stop();
@@ -824,7 +824,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     @ManagedOperation(description="Enables diagnostics and starts DiagnosticsHandler (if not running)")
-    public void enableDiagnostics() {
+    public <T extends TP> T enableDiagnostics() {
         diag_handler.setEnabled(true);
         try {
             startDiagnostics();
@@ -832,6 +832,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         catch(Exception e) {
             log.error(Util.getMessage("FailedStartingDiagnostics"), e);
         }
+        return (T)this;
     }
 
     @ManagedOperation(description="Disables diagnostics and stops DiagnosticsHandler (if running)")
@@ -1064,7 +1065,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
           .printHeaders(this::defaultHeaders).sameCluster(this::sameCluster);
     }
 
-    protected Bundler createBundler(String type) throws Exception {
+    public static Bundler createBundler(String type, Class<?> cl) throws Exception {
         if(type == null)
             throw new IllegalArgumentException("bundler type has to be non-null");
 
@@ -1103,7 +1104,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             case "pdb":
                 return new PerDestinationBundler();
         }
-        Class<Bundler> clazz=(Class<Bundler>)Util.loadClass(type, getClass());
+        Class<Bundler> clazz=(Class<Bundler>)Util.loadClass(type, cl);
         return clazz.getDeclaredConstructor().newInstance();
     }
 

@@ -41,8 +41,8 @@ public class BundlerStressTest {
         this.bundler_type=bundler_type;
     }
 
-    protected void start() {
-        this.bundler=createBundler(bundler_type);
+    protected void start() throws Exception {
+        this.bundler=TP.createBundler(bundler_type, getClass());
         this.bundler.init(transport);
         this.bundler.start();
         loop();
@@ -74,7 +74,7 @@ public class BundlerStressTest {
                         try {
                             type=Util.readStringFromStdin("new bundler type: ");
                             Bundler old=this.bundler;
-                            this.bundler=createBundler(type);
+                            this.bundler=TP.createBundler(type, getClass());
                             this.bundler.init(transport);
                             this.bundler.start();
                             if(old != null)
@@ -153,31 +153,6 @@ public class BundlerStressTest {
                           msgs_sec, time_us, send_avg.min(), send_avg.average(), send_avg.max());
     }
 
-    protected Bundler createBundler(String bundler) {
-        if(bundler == null)
-            throw new IllegalArgumentException("bundler type has to be non-null");
-        if(bundler.equals("stq"))
-            return new SimplifiedTransferQueueBundler(BUFSIZE);
-        if(bundler.equals("tq"))
-            return new TransferQueueBundler(BUFSIZE);
-        if(bundler.startsWith("sender-sends") || bundler.equals("ss"))
-            return new SenderSendsBundler();
-        if(bundler.endsWith("ring-buffer") || bundler.equals("rb"))
-            return new RingBufferBundler(BUFSIZE);
-        if(bundler.equals("ring-buffer-lockless") || bundler.equals("rbl"))
-            return new RingBufferBundlerLockless(BUFSIZE);
-        if(bundler.equals("ring-buffer-lockless2") || bundler.equals("rbl2"))
-            return new RingBufferBundlerLockless2(BUFSIZE);
-        if(bundler.startsWith("no-bundler") || bundler.equals("nb"))
-            return new NoBundler();
-        try {
-            Class<Bundler> clazz=(Class<Bundler>)Util.loadClass(bundler, getClass());
-            return clazz.getDeclaredConstructor().newInstance();
-        }
-        catch(Throwable t) {
-            throw new IllegalArgumentException(String.format("failed creating instance of bundler %s: %s", bundler, t));
-        }
-    }
 
     protected Message[] generateMessages(int num) {
         Message[] msgs=new Message[num];
@@ -190,7 +165,7 @@ public class BundlerStressTest {
         return Util.pickRandomElement(ADDRESSES);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         String bundler="ring-buffer-lockless2";
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-bundler")) {
