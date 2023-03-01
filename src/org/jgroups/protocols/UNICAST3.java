@@ -1089,12 +1089,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return time_service.timestamp();
     }
 
-    protected void startRetransmitTask() {
+    public void startRetransmitTask() {
         if(xmit_task == null || xmit_task.isDone())
             xmit_task=timer.scheduleWithFixedDelay(new RetransmitTask(), 0, xmit_interval, TimeUnit.MILLISECONDS, sends_can_block);
     }
 
-    protected void stopRetransmitTask() {
+    public void stopRetransmitTask() {
         if(xmit_task != null) {
             xmit_task.cancel(true);
             xmit_task=null;
