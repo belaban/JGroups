@@ -35,7 +35,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         makeUnique(a,b);
         changeNAKACK2(a,b);
         // it should take between 0 and 6s to retransmit the last missing msg. if dropped, may have to run multiple times
-        changeDesiredGossipTime(3000, a,b);
+        changeDesiredGossipTime(2000, a,b);
         a.connect("LastMessageDroppedTest");
         b.connect("LastMessageDroppedTest");
         Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
@@ -58,10 +58,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         a.send(null, 3);
 
         Collection<Integer> list=receiver.getMsgs();
-        for(int i=0; i < 20 && list.size() < 3; i++)  {
-            System.out.println("list=" + list);
-            Util.sleep(1000);
-        }
+        Util.waitUntil(20000, 500, () -> list.size() == 3);
         System.out.println("list=" + list);
         assert list.size() == 3 : "list=" + list;
     }
@@ -84,10 +81,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         a.send(null, 3);
 
         Collection<Integer> list=receiver.getMsgs();
-        for(int i=0; i < 20 && list.size() < 3; i++)  {
-            System.out.println("list=" + list);
-            Util.sleep(1000);
-        }
+        Util.waitUntil(20000, 500, () -> list.size() == 3);
         System.out.println("list=" + list);
         assert list.size() == 3 : "list=" + list;
     }

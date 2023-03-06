@@ -235,6 +235,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected Future<?>                 xmit_task;
     /** Used by the retransmit task to keep the last retransmitted seqno per sender (https://issues.redhat.com/browse/JGRP-1539) */
     protected final Map<Address,Long>   xmit_task_map=new ConcurrentHashMap<>();
+    //* Used by stable to reduce the number of retransmissions (https://issues.redhat.com/browse/JGRP-2678) */
+    protected final Map<Address,Long>   stable_xmit_map=new ConcurrentHashMap<>();
 
     protected volatile boolean          leaving;
     protected volatile boolean          running;
@@ -541,6 +543,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             become_server_queue.clear();
         stopRetransmitTask();
         xmit_task_map.clear();
+        stable_xmit_map.clear();
         reset();
     }
 
@@ -585,6 +588,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 if(suppress_log_non_member != null)
                     suppress_log_non_member.removeExpired(suppress_time_non_member_warnings);
                 xmit_task_map.keySet().retainAll(mbrs);
+                stable_xmit_map.keySet().retainAll(mbrs);
                 break;
 
             case Event.BECOME_SERVER:
@@ -1434,11 +1438,13 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             Table<Message> buf=xmit_table.get(member);
             if(buf != null) {
                 long my_hr=buf.getHighestReceived();
-                if(hr >= 0 && hr > my_hr) {
+                Long prev_hr=stable_xmit_map.get(member);
+                if(prev_hr != null && prev_hr > my_hr) {
                     log.trace("%s: my_highest_rcvd (%d) < stability_highest_rcvd (%d): requesting retransmission of %s",
-                              local_addr, my_hr, hr, member + "#" + hr);
-                    retransmit(hr, hr, member, false);
+                              local_addr, my_hr, prev_hr, member + "#" + prev_hr);
+                    retransmit(prev_hr, prev_hr, member, false);
                 }
+                stable_xmit_map.put(member, hr);
             }
 
             // delete *delivered* msgs that are stable (all messages with seqnos <= seqno)
