@@ -123,7 +123,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected int     max_xmit_req_size;
 
     @Property(description="The max size of a message batch when delivering messages. 0 is unbounded")
-    protected int max_batch_size;
+    protected int     max_batch_size;
 
     @Property(description="If enabled, multicasts the highest sent seqno every xmit_interval ms. This is skipped if " +
       "a regular message has been multicast, and the task aquiesces if the highest sent seqno hasn't changed for " +
@@ -140,10 +140,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
 
     @ManagedAttribute(description="Number of messages sent",type=AttributeType.SCALAR)
-    protected int                          num_messages_sent;
+    protected int     num_messages_sent;
 
     @ManagedAttribute(description="Number of messages received",type=AttributeType.SCALAR)
-    protected int                          num_messages_received;
+    protected int     num_messages_received;
 
     protected static final Message DUMMY_OOB_MSG=new EmptyMessage().setFlag(Message.Flag.OOB);
 
@@ -1123,7 +1123,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         if(my_highest_received >= 0 && seqno > my_highest_received) {
             log.trace("%s: my_highest_rcvd (%s#%d) < highest received (%s#%d): requesting retransmission",
                       local_addr, sender, my_highest_received, sender, seqno);
-            retransmit(seqno,seqno,sender);
+            retransmit(seqno, seqno, sender, false);
         }
     }
 
@@ -1437,7 +1437,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 if(hr >= 0 && hr > my_hr) {
                     log.trace("%s: my_highest_rcvd (%d) < stability_highest_rcvd (%d): requesting retransmission of %s",
                               local_addr, my_hr, hr, member + "#" + hr);
-                    retransmit(hr, hr, member);
+                    retransmit(hr, hr, member, false);
                 }
             }
 
@@ -1451,14 +1451,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
 
-    protected void retransmit(long first_seqno, long last_seqno, Address sender) {
-        if(first_seqno <= last_seqno)
-            retransmit(first_seqno,last_seqno,sender,false);
-    }
-
-
 
     protected void retransmit(long first_seqno, long last_seqno, final Address sender, boolean multicast_xmit_request) {
+        if(first_seqno > last_seqno)
+            return;
         SeqnoList list=new SeqnoList((int)(last_seqno - first_seqno +1), first_seqno).add(first_seqno, last_seqno);
         retransmit(list,sender,multicast_xmit_request);
     }
