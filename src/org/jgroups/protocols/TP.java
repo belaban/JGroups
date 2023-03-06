@@ -1102,6 +1102,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 return new RemoveQueueBundler();
             case "pd":
             case "pdb":
+            case "per-destination":
                 return new PerDestinationBundler();
         }
         Class<Bundler> clazz=(Class<Bundler>)Util.loadClass(type, cl);
