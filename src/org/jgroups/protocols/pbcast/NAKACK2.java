@@ -236,9 +236,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     /** Used by the retransmit task to keep the last retransmitted seqno per sender (https://issues.redhat.com/browse/JGRP-1539) */
     protected final Map<Address,Long>   xmit_task_map=new ConcurrentHashMap<>();
 
-    protected volatile boolean          leaving=false;
-    protected volatile boolean          running=false;
-    protected TimeScheduler             timer=null;
+    protected volatile boolean          leaving;
+    protected volatile boolean          running;
+    protected TimeScheduler             timer;
     protected LastSeqnoResender         last_seqno_resender;
     protected final Lock                rebroadcast_lock=new ReentrantLock();
     protected final Condition           rebroadcast_done=rebroadcast_lock.newCondition();
