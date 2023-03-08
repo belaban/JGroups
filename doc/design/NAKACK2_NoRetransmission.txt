@@ -1,0 +1,86 @@
+
+NAKACK2 without retransmission over TCP
+=======================================
+
+Author:    Bela Ban
+Date:      March 2023
+JIRA:      https://issues.redhat.com/browse/JGRP-2675
+Unit test: NAKACK2_NoRetransmissionTest
+
+
+Goal
+----
+When run over TCP (and TCP_NIO2, see below) as transport, NAKACK2 can disable retransmission, as this is already
+performed by TCP.
+
+Contrary to [1], which completely removes NAKACK2, this design uses the retransmit table *for the sole purpose of
+establishing ordering*, but not for retransmission.
+
+
+Implementation
+--------------
+* Seqnos are still added to messages sent down the stack
+* On the receiver, messages (or message batches) are added to the retransmit table and delivered in order of seqnos
+* Digests received by STABLE purge messages (from the retransmit table) that have been see by everyone
+* xmit_interval <= 0 disables retransmission
+  * No retransmit task is running
+  * stable() will not trigger a retransmission
+  * The last-seqno-sender task is also disabled
+
+
+become_server_queue
+-------------------
+* A joiner queues messages received before JChannel.connect() returns
+* When getting a BECOME_SERVER event, the queued messages are sent up the stack
+* The become_server_queue is bounded (default: 50), so the following can happen:
+  * C joins a cluster {A,B}. B's highest seqno is 100, sent as a digest with the view {A,B,C} to C
+  * Before C can become a server, B sends 70 messages
+  * C queues 50 of those (101-150), but drops 151-170 as the queue is bounded
+    ** Correction: BoundedList drops the oldest N messages when the capacity has been exceeded, so 101-120
+                   However, this doesn't change anything on a concetual level
+  * C now creates the retransmit window for B at 50 (next seqno to be expected: 51)
+  * When C receives the BECOME_SERVER, it'll drain the 50 messages from the queue, so B's window is at 150
+    --> Since there is not retransmission, B's messages 151-170 will not get retransmitted, so further messages sent
+        by B will be added to B's window at C, but will not get delivered as there is a gap
+    --> Eventually, C's window for B might cause an OOME, as it only grows and never shrinks
+==> Solution: when xmit_interval is <= 0, make become_server_queue *unbounded*. The number of messages received in
+    that queue should be relatively small, as the time window between sending a join request and becoming server
+    is short
+==> xmit_interval should be able to be changed dynamically
+    * Start / stop the retransmission task
+    * Make become_server_queue bounded / unbounded
+
+
+Thread pool rejection policy
+----------------------------
+* The transport's thread pool must not drop messages, as this would create a gap in the retransmit table. This is
+  required, as there is no retransmission at the NAKACK2 level.
+
+
+Summary
+-------
+This design requires that a message received over TCP *cannot be dropped before it reaches NAKACK2*. So tests such as
+LastMessageDroppedTest, which inserts DISCARD just below NAKACK2 to drop selected messages, won't pass with
+retransmission disabled. As TCP/IP considers the message delivered, if it is nevertheless dropped later on, it will
+never be retransmitted (not by TCP/IP and not by NAKACK2).
+
+
+
+
+
+
+
+
+
+
+
+
+TCP_NIO2
+--------
+* When TCP_NIO2 is used as transport, when sending a message, the gathering-write buffer 'Buffers' cannot drop the
+  message, e.g. because the max capacity has been exceeded. Investigate making Buffers unbounded.
+
+
+Links
+-----
+[1] https://issues.redhat.com/browse/JGRP-2566

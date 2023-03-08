@@ -67,7 +67,7 @@ public class BecomeServerTest extends BMNGRunner {
     }
 
 
-    protected void sendMessage(JChannel ch, String message) {
+    protected static void sendMessage(JChannel ch, String message) {
         try {
             ch.send(new ObjectMessage(null, message).setFlag(Message.Flag.OOB));
         }

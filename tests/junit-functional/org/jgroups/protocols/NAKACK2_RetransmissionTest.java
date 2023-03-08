@@ -56,8 +56,6 @@ public class NAKACK2_RetransmissionTest {
      * - Trigger a next run of the retransmit task. The retransmit messages need to be 5, 10-12, 20-22, 25, 30
      * - Make NAKACK2 receive missing messages 5, 10-12
      * - Kick off another retransmission run: the missing messages are 20-22, 25, 30
-     *
-     *
      * - Receive all missing messages
      * - On the last run of the retransmit task, no messages are retransmitted
      */

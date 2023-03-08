@@ -10,10 +10,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -60,7 +57,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @Property(description="Use a multicast to request retransmission of missing messages")
     protected boolean use_mcast_xmit_req;
 
-
     /**
      * Ask a random member for retransmission of a missing message. If set to
      * true, discard_delivered_msgs will be set to false
@@ -68,12 +64,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @Property(description="Ask a random member for retransmission of a missing message. Default is false")
     protected boolean xmit_from_random_member;
 
-
     /**
      * Messages that have been received in order are sent up the stack (= delivered to the application).
-     * Delivered messages are removed from the retransmission buffer, so they can get GC'ed by the JVM. When this
-     * property is true, everyone (except the sender of a message) removes the message from their retransission
-     * buffers as soon as it has been delivered to the application
+     * Delivered messages are removed from the retransmit table, so they can get GC'ed by the JVM. When this
+     * property is true, everyone (except the sender of a message) removes the message from their retransmit
+     * table as soon as it has been delivered to the application
      */
     @Property(description="Should messages delivered to application be discarded")
     protected boolean discard_delivered_msgs=true;
@@ -110,7 +105,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @Property(description="Size of the queue to hold messages received after creating the channel, but before being " +
       "connected (is_server=false). After becoming the server, the messages in the queue are fed into up() and the " +
       "queue is cleared. The motivation is to avoid retransmissions (see https://issues.redhat.com/browse/JGRP-1509 " +
-      "for details). 0 disables the queue.")
+      "for details).")
     protected int     become_server_queue_size=50;
 
     @Property(description="Time during which identical warnings about messages from a non member will be suppressed. " +
@@ -257,7 +252,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     /** Keeps a bounded list of the last N digest sets */
     protected final BoundedList<String> digest_history=new BoundedList<>(10);
 
-    protected BoundedList<Message>      become_server_queue;
+    protected Queue<Message>            become_server_queue;
 
      /** Log to suppress identical warnings for messages from non-members */
     protected SuppressLog<Address>      suppress_log_non_member;
@@ -338,7 +333,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     @ManagedAttribute(description="Actual size of the become_server_queue",type=AttributeType.SCALAR)
     public int getBecomeServerQueueSizeActual() {
-        return become_server_queue != null? become_server_queue.size() : -1;
+        return become_server_queue.size();
     }
 
     /** Returns the receive window for sender; only used for testing. Do not use ! */
@@ -499,8 +494,23 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             }
         }
 
-        if(become_server_queue_size > 0)
-            become_server_queue=new BoundedList<>(become_server_queue_size);
+        if(xmit_interval <= 0) {
+            // https://issues.redhat.com/browse/JGRP-2675
+            become_server_queue=new ConcurrentLinkedQueue<>();
+            RejectedExecutionHandler handler=transport.getThreadPool().getRejectedExecutionHandler();
+            if(!(handler instanceof ThreadPoolExecutor.CallerRunsPolicy)) {
+                log.warn("%s: xmit_interval of %d requires a CallerRunsPolicy in the thread pool; replacing %s",
+                         local_addr, xmit_interval, handler.getClass().getSimpleName());
+                transport.getThreadPool().setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+            }
+        }
+        else {
+            if(become_server_queue_size <= 0) {
+                log.warn("%s: %s.become_server_queue_size is <= 0; setting it to 10", local_addr, NAKACK2.class.getSimpleName());
+                become_server_queue_size=10;
+            }
+            become_server_queue=new ArrayBlockingQueue<>(become_server_queue_size);
+        }
 
         if(suppress_time_non_member_warnings > 0)
             suppress_log_non_member=new SuppressLog<>(log, "MsgDroppedNak", "SuppressMsg");
@@ -539,8 +549,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     public void stop() {
         running=false;
         is_server=false;
-        if(become_server_queue != null)
-            become_server_queue.clear();
+        become_server_queue.clear();
         stopRetransmitTask();
         xmit_task_map.clear();
         stable_xmit_map.clear();
@@ -785,12 +794,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     /* --------------------------------- Private Methods --------------------------------------- */
 
     protected void queueMessage(Message msg, long seqno) {
-        if(become_server_queue != null) {
-            become_server_queue.add(msg);
-            log.trace("%s: message %s#%d was added to queue (not yet server)", local_addr, msg.getSrc(), seqno);
-        }
+        if(become_server_queue.offer(msg)) // discards item if queue is full
+            log.trace("%s: message %s#%d was queued (not yet server)", local_addr, msg.getSrc(), seqno);
         else
-            log.trace("%s: message %s#%d was discarded (not yet server)", local_addr, msg.getSrc(), seqno);
+            log.trace("%s: message %s#%d was discarded (not yet server, queue full)", local_addr, msg.getSrc(), seqno);
     }
 
     protected void unknownMember(Address sender, Object message) {
@@ -1028,19 +1035,14 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      * {@link GMS#installView(org.jgroups.View,org.jgroups.util.Digest)} method (called when a view is installed).
      */
     protected void flushBecomeServerQueue() {
-        if(become_server_queue != null && !become_server_queue.isEmpty()) {
+        if(!become_server_queue.isEmpty()) {
             log.trace("%s: flushing become_server_queue (%d elements)", local_addr, become_server_queue.size());
-
             TP transport=getTransport();
-            for(final Message msg: become_server_queue) {
-                transport.getThreadPool().execute(() -> {
-                    try {
-                        up(msg);
-                    }
-                    finally {
-                        become_server_queue.remove(msg);
-                    }
-                });
+            for(;;) {
+                final Message msg=become_server_queue.poll();
+                if(msg == null)
+                    break;
+                transport.getThreadPool().execute(() -> up(msg));
             }
         }
     }
@@ -1436,7 +1438,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             // check whether the last seqno received for a sender P in the stability digest is > last seqno
             // received for P in my digest. if yes, request retransmission (see "Last Message Dropped" topic in DESIGN)
             Table<Message> buf=xmit_table.get(member);
-            if(buf != null) {
+            if(buf != null && xmit_interval > 0) {
                 long my_hr=buf.getHighestReceived();
                 Long prev_hr=stable_xmit_map.get(member);
                 if(prev_hr != null && prev_hr > my_hr) {
@@ -1501,7 +1503,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
     protected void startRetransmitTask() {
-        if(xmit_task == null || xmit_task.isDone())
+        if(xmit_interval > 0 && (xmit_task == null || xmit_task.isDone()))
             xmit_task=timer.scheduleWithFixedDelay(new RetransmitTask(), 0, xmit_interval, TimeUnit.MILLISECONDS, sends_can_block);
     }
 

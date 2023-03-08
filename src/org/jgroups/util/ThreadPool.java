@@ -42,6 +42,10 @@ public class ThreadPool implements Lifecycle {
     @Property(description="Timeout (ms) to remove idle threads from the pool", type=AttributeType.TIME)
     protected long                keep_alive_time=30000;
 
+    @Property(description="The rejection policy to be used in the thread pool (abort, discard, run, custom etc. " +
+      "See Util.parseRejectionPolicy() for details")
+    protected String              rejection_policy="abort";
+
     @Property(description="The number of times a thread pool needs to be full before a thread dump is logged")
     protected int                 thread_dumps_threshold=1;
 
@@ -111,6 +115,23 @@ public class ThreadPool implements Lifecycle {
         return this;
     }
 
+    public ThreadPool setRejectionPolicy(String policy) {
+        RejectedExecutionHandler p=Util.parseRejectionPolicy(policy);
+        this.rejection_policy=policy;
+        if(thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)thread_pool).setRejectedExecutionHandler(p);
+        return this;
+    }
+
+    public RejectedExecutionHandler getRejectedExecutionHandler() {
+        Executor t=thread_pool;
+        return t instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)t).getRejectedExecutionHandler() : null;
+    }
+
+    public void setRejectedExecutionHandler(RejectedExecutionHandler handler) {
+        if(thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)thread_pool).setRejectedExecutionHandler(handler);
+    }
 
     public int getThreadDumpsThreshold() {
         return thread_dumps_threshold;
@@ -160,7 +181,7 @@ public class ThreadPool implements Lifecycle {
     public void init() throws Exception {
         if(enabled) {
             thread_pool=ThreadCreator.createThreadPool(min_threads, max_threads, keep_alive_time,
-                  "abort", new SynchronousQueue<>(), tp.getThreadFactory(), tp.useVirtualThreads(), tp.getLog());
+                  rejection_policy, new SynchronousQueue<>(), tp.getThreadFactory(), tp.useVirtualThreads(), tp.getLog());
         }
         else // otherwise use the caller's thread to unmarshal the byte buffer into a message
             thread_pool=new DirectExecutor();

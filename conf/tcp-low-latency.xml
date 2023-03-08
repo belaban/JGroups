@@ -18,7 +18,7 @@
          bind_port="${jgroups.bind_port:7800}"
 
          buffered_input_stream_size="8192"
-         buffered_output_stream_size="0"
+         buffered_output_stream_size="8192"
 
          thread_pool.enabled="false"
 
