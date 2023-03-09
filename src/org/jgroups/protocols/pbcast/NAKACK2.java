@@ -84,7 +84,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected boolean log_not_found_msgs=true;
 
     @Property(description="Interval (in milliseconds) at which missing messages (from all retransmit buffers) " +
-      "are retransmitted",type=AttributeType.TIME)
+      "are retransmitted. 0 turns retransmission off",type=AttributeType.TIME)
     protected long    xmit_interval=1000;
 
     @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
