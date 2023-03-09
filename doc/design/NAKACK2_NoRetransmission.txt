@@ -16,6 +16,10 @@ performed by TCP.
 Contrary to [1], which completely removes NAKACK2, this design uses the retransmit table *for the sole purpose of
 establishing ordering*, but not for retransmission.
 
+Result
+------
+No retransmission task, fewer packets sent across the network (if messages are indeed retransmitted), and definitely no retransmission storms.
+
 
 Implementation
 --------------
