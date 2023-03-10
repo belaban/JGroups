@@ -252,7 +252,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     /** Keeps a bounded list of the last N digest sets */
     protected final BoundedList<String> digest_history=new BoundedList<>(10);
 
-    protected Queue<Message>            become_server_queue;
+    protected Queue<Message>            become_server_queue=new ConcurrentLinkedQueue<>();
 
      /** Log to suppress identical warnings for messages from non-members */
     protected SuppressLog<Address>      suppress_log_non_member;
