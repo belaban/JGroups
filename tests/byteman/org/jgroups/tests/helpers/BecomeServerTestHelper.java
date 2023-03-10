@@ -3,7 +3,8 @@ package org.jgroups.tests.helpers;
 import org.jboss.byteman.rule.Rule;
 import org.jboss.byteman.rule.helper.Helper;
 import org.jgroups.Message;
-import org.jgroups.util.BoundedList;
+
+import java.util.Queue;
 
 /**
  * @author Bela Ban
@@ -20,7 +21,7 @@ public class BecomeServerTestHelper extends Helper {
      * @param list
      * @return
      */
-    public boolean messageReceived(BoundedList<Message> list) {
+    public boolean messageReceived(Queue<Message> list) {
         if(list == null || list.isEmpty())
             return false;
         for(Message msg: list)
