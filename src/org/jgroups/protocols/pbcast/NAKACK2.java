@@ -498,7 +498,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             // https://issues.redhat.com/browse/JGRP-2675
             become_server_queue=new ConcurrentLinkedQueue<>();
             RejectedExecutionHandler handler=transport.getThreadPool().getRejectedExecutionHandler();
-            if(!(handler instanceof ThreadPoolExecutor.CallerRunsPolicy)) {
+            if(!isCallerRunsHandler(handler)) {
                 log.warn("%s: xmit_interval of %d requires a CallerRunsPolicy in the thread pool; replacing %s",
                          local_addr, xmit_interval, handler.getClass().getSimpleName());
                 transport.getThreadPool().setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
@@ -1060,8 +1060,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
 
-
-
     /**
      * Sends a message msg to the requester. We have to wrap the original message into a retransmit message, as we need
      * to preserve the original message's properties, such as src, headers etc.
@@ -1251,6 +1249,12 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 return false;
         }
         return true;
+    }
+
+    protected static boolean isCallerRunsHandler(RejectedExecutionHandler h) {
+        return h instanceof ThreadPoolExecutor.CallerRunsPolicy ||
+          (h instanceof ShutdownRejectedExecutionHandler
+            && ((ShutdownRejectedExecutionHandler)h).handler() instanceof ThreadPoolExecutor.CallerRunsPolicy);
     }
 
 
