@@ -498,7 +498,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             // https://issues.redhat.com/browse/JGRP-2675
             become_server_queue=new ConcurrentLinkedQueue<>();
             RejectedExecutionHandler handler=transport.getThreadPool().getRejectedExecutionHandler();
-            if(!isCallerRunsHandler(handler)) {
+            if(handler != null && !isCallerRunsHandler(handler)) {
                 log.warn("%s: xmit_interval of %d requires a CallerRunsPolicy in the thread pool; replacing %s",
                          local_addr, xmit_interval, handler.getClass().getSimpleName());
                 transport.getThreadPool().setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());

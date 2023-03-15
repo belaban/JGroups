@@ -398,7 +398,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(xmits_enabled == false) {
             // https://issues.redhat.com/browse/JGRP-2676
             RejectedExecutionHandler handler=transport.getThreadPool().getRejectedExecutionHandler();
-            if(!isCallerRunsHandler(handler)) {
+            if(handler != null && !isCallerRunsHandler(handler)) {
                 log.warn("%s: xmits_enabled == false requires a CallerRunsPolicy in the thread pool; replacing %s",
                          local_addr, handler.getClass().getSimpleName());
                 transport.getThreadPool().setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
