@@ -328,6 +328,9 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     }
 
     protected Message encrypt(Message msg) throws Exception {
+        // To avoid NPE (https://issues.redhat.com/browse/JGRP-2680)
+        if(msg.getSrc() == null)
+            msg.setSrc(local_addr);
         // copy needed because same message (object) may be retransmitted -> prevent double encryption
         if(!msg.hasPayload())
             return msg.putHeader(this.id, new EncryptHeader((byte)0, symVersion(), makeIv()));
