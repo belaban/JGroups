@@ -403,6 +403,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                          local_addr, handler.getClass().getSimpleName());
                 transport.getThreadPool().setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
             }
+            Class<RED> cl=RED.class;
+            if(stack.findProtocol(cl) != null) {
+                String e=String.format("found %s: when retransmission is disabled (xmits_enabled=false), this can lead " +
+                                         "to message loss. Please remove %s or enable retransmission",
+                                       cl.getSimpleName(), cl.getSimpleName());
+                throw new IllegalStateException(e);
+            }
         }
     }
 

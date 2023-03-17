@@ -3,6 +3,7 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.AttributeType;
+import org.jgroups.protocols.RED;
 import org.jgroups.protocols.TCP;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.DiagnosticsHandler;
@@ -502,6 +503,13 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 log.warn("%s: xmit_interval of %d requires a CallerRunsPolicy in the thread pool; replacing %s",
                          local_addr, xmit_interval, handler.getClass().getSimpleName());
                 transport.getThreadPool().setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+            }
+            Class<RED> cl=RED.class;
+            if(stack.findProtocol(cl) != null) {
+                String e=String.format("found %s: when retransmission is disabled (xmit_interval=0), this can lead " +
+                                         "to message loss. Please remove %s, or enable retransmission",
+                                       cl.getSimpleName(), cl.getSimpleName());
+                throw new IllegalStateException(e);
             }
         }
         else {
