@@ -169,7 +169,8 @@ first entry that works will be used. Example:
 
 This would try to bind to `eth2` first. If not found, then an interface with address `10.5.5.5` would be tried,
 then an interface starting with `en` would be tried. If still not found, we'd bind to `127.0.0.1`.
-        
+
+Details of how IPv4 versus IPv6 addresses are picked can be found in https://issues.redhat.com/browse/JGRP-2343.
 
 [[UDP]]
 ==== UDP
