@@ -73,7 +73,7 @@ public final class PropertyHelper {
         String propertyName=getPropertyName(field, props);
         String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
 
-        PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().getDeclaredConstructor().newInstance();
+        PropertyConverter propertyConverter=annotation.converter().getDeclaredConstructor().newInstance();
         if(propertyConverter == null)
             throw new Exception("Could not find property converter for field " + propertyName + " in " + name);
         Object converted=null;
@@ -98,7 +98,7 @@ public final class PropertyHelper {
             throw new IllegalArgumentException("cannot get property name for " + propName + " (not annotated with @Property)");
 
         String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
-        PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().getDeclaredConstructor().newInstance();
+        PropertyConverter propertyConverter=annotation.converter().getDeclaredConstructor().newInstance();
         if(propertyConverter == null)
             throw new Exception("Could not find property converter for field " + propName + " in " + name);
         Object converted=null;
@@ -129,7 +129,7 @@ public final class PropertyHelper {
                                                  method.getName() + ": not annotated with @Property");
         String propertyName=getPropertyName(method);
         String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
-        PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().getDeclaredConstructor().newInstance();
+        PropertyConverter propertyConverter=annotation.converter().getDeclaredConstructor().newInstance();
         if(propertyConverter == null)
             throw new Exception("Could not find property converter for method " + propertyName + " in " + name);
         Object converted=null;

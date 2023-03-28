@@ -51,6 +51,10 @@ public abstract class BasicTCP extends TP implements Receiver {
     @Property(description="SO_LINGER in seconds. Default of -1 disables it")
     protected int         linger=-1; // SO_LINGER (number of seconds, -1 disables it)
 
+    @Property(description="Wait for an ack from the server when a connection is established " +
+      "(https://issues.redhat.com/browse/JGRP-2684)")
+    protected boolean     use_acks;
+
     // @Property(description="Sets socket option SO_REUSEADDR (https://issues.redhat.com/browse/JGRP-2009)")
     // protected boolean     reuse_addr;
 
@@ -107,6 +111,9 @@ public abstract class BasicTCP extends TP implements Receiver {
 
     public int         getLinger()                      {return linger;}
     public BasicTCP    setLinger(int l)                 {this.linger=l; return this;}
+
+    public boolean     useAcks()                        {return use_acks;}
+    public BasicTCP    useAcks(boolean f)               {use_acks=f; return this;}
 
     public InetAddress getClientBindAddr()              {return client_bind_addr;}
     public BasicTCP    setClientBindAddr(InetAddress c) {this.client_bind_addr=c; return this;}

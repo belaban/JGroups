@@ -2,12 +2,15 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
+import org.jgroups.blocks.LazyRemovalCache;
+import org.jgroups.protocols.UNICAST3;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Test whether physical addresses are fetched correctly after the UUID-physical address cache has been cleared
@@ -26,6 +29,8 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             a.setReceiver(r1);
             b=createChannel().name("B");
             b.setReceiver(r2);
+            boolean unicast_absent=Stream.of(a, b).map(JChannel::getProtocolStack)
+              .anyMatch(st -> st.findProtocol(UNICAST3.class) == null);
             makeUnique(a,b);
 
             a.connect("UUIDCacheClearTest");
@@ -40,11 +45,7 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             List<Message> c1_list=r1.getList();
             List<Message> c2_list=r2.getList();
 
-            for(int i=0; i < 20; i++) { // poor man's way of waiting until we have 1 message in each receiver... :-)
-                if(!c1_list.isEmpty() && !c2_list.isEmpty())
-                    break;
-                Util.sleep(500);
-            }
+            Util.waitUntil(10000, 500, () -> !c1_list.isEmpty() && !c2_list.isEmpty());
             assert c1_list.size() == 1 && c2_list.size() == 1;
 
             // now clear the caches and send message "two"
@@ -62,12 +63,21 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             // send one unicast message from a to b and vice versa
             a.send(b.getAddress(), "one");
             b.send(a.getAddress(), "two");
-            for(int i=0; i < 10; i++) { // poor man's way of waiting until we have 1 message in each receiver... :-)
-                if(!c1_list.isEmpty() && !c2_list.isEmpty())
-                    break;
-                Util.sleep(1000);
+
+            // With UNICAST3 present, the above 2 messages will get dropped, as the cache doesn't have the dest addrs and
+            // discovery is *async*. However, retransmission ensures that they're retransmitted. With UNICAST3 *absent*,
+            // this won't happen, so we're waiting for async discovery to complete and then resend the messages. Kind of
+            // a kludge to make this test pass.
+            if(unicast_absent) {
+                LazyRemovalCache<Address,PhysicalAddress> cache_a, cache_b;
+                cache_a=a.getProtocolStack().getTransport().getLogicalAddressCache();
+                cache_b=b.getProtocolStack().getTransport().getLogicalAddressCache();
+                Util.waitUntilTrue(5000, 200, () -> cache_a.size() >= 2 && cache_b.size() >= 2);
+                a.send(b.getAddress(), "one");
+                b.send(a.getAddress(), "two");
             }
 
+            Util.waitUntil(10000, 500, () -> !c1_list.isEmpty() && !c2_list.isEmpty());
             r1.enablePrinting(false); r2.enablePrinting(false);
 
             assert c1_list.size() == 1 && c2_list.size() == 1;

@@ -15,6 +15,7 @@ import org.jgroups.util.*;
 import java.io.Closeable;
 import java.io.DataInput;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -23,8 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Abstract class for a server handling sending, receiving and connection management.
@@ -35,11 +34,10 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected Address                         local_addr; // typically the address of the server socket or channel
     protected final List<ConnectionListener>  conn_listeners=new CopyOnWriteArrayList<>();
     protected final Map<Address,Connection>   conns=new ConcurrentHashMap<>();
-    protected final Lock                      sock_creation_lock=new ReentrantLock(true); // syncs socket establishment
     protected final ThreadFactory             factory;
     protected SocketFactory                   socket_factory=new DefaultSocketFactory();
     protected long                            reaperInterval;
-    protected Reaper                          reaper;
+    protected Reaper reaper;
     protected Receiver                        receiver;
     protected final AtomicBoolean             running=new AtomicBoolean(false);
     protected Log                             log=LogFactory.getLog(getClass());
@@ -61,12 +59,19 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
     @ManagedAttribute(description="When A connects to B, B reuses the same TCP connection to send data to A")
     protected boolean                         use_peer_connections;
+    @ManagedAttribute(description="Wait for an ack from the server when a connection is established, and retry " +
+      "connection establishment until a valid connection has been established, or the connection to the peer cannot " +
+      "be established (https://issues.redhat.com/browse/JGRP-2684)",writable=true)
+    protected boolean                         use_acks;
     @ManagedAttribute(description="Log a stack trace when a connection is closed")
     protected boolean                         log_details=true;
     protected int                             sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
     protected boolean                         tcp_nodelay=false;
     protected int                             linger=-1;
     protected TimeService                     time_service;
+    public static final byte[]                OK={1,2,3,4};   // ack (srv->client) on successful connection establishment
+    public static final byte[]                FAIL={4,3,2,1}; // ack (srv->client) on failed connection establishment
+
 
 
     protected BaseServer(ThreadFactory f, SocketFactory sf, int recv_buf_size) {
@@ -95,6 +100,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public BaseServer       socketFactory(SocketFactory factory)    {this.socket_factory=factory; return this;}
     public boolean          usePeerConnections()                    {return use_peer_connections;}
     public BaseServer       usePeerConnections(boolean flag)        {this.use_peer_connections=flag; return this;}
+    public boolean          useAcks()                               {return use_acks;}
+    public BaseServer       useAcks(boolean f)                      {use_acks=f; return this;}
     public boolean          logDetails()                            {return log_details;}
     public BaseServer       logDetails(boolean l)                   {log_details=l; return this;}
     public int              socketConnectionTimeout()               {return sock_conn_timeout;}
@@ -126,7 +133,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public int getNumOpenConnections() {
         int retval=0;
         for(Connection conn: conns.values())
-            if(conn.isOpen())
+            if(!conn.isClosed())
                 retval++;
         return retval;
     }
@@ -227,7 +234,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         // Get a connection (or create one if not yet existent) and send the data
         Connection conn=null;
         try {
-            conn=getConnection(dest);
+            conn=getConnection(dest, use_acks);
             conn.send(data, offset, length);
         }
         catch(Exception ex) {
@@ -254,7 +261,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         // Get a connection (or create one if not yet existent) and send the data
         Connection conn=null;
         try {
-            conn=getConnection(dest);
+            conn=getConnection(dest, use_acks);
             conn.send(data);
         }
         catch(Exception ex) {
@@ -277,21 +284,39 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     /** Creates a new connection object to target dest, but doesn't yet connect it */
     protected abstract Connection createConnection(Address dest) throws Exception;
 
-    public synchronized boolean hasConnection(Address address) {
+    public boolean hasConnection(Address address) {
         return conns.containsKey(address);
     }
 
-    public synchronized boolean connectionEstablishedTo(Address address) {
-        Connection conn=conns.get(address);
-        return conn != null && conn.isConnected();
+    public boolean connectionEstablishedTo(Address address) {
+        return connected(conns.get(address));
+    }
+
+    public Connection getConnection(Address dest, boolean retry) throws Exception {
+        if(!retry)
+            return getConnection(dest);
+        Connection conn=null;
+        do {
+            try {
+                conn=getConnection(dest);
+            }
+            catch(ConnectException ex) {
+                throw ex;
+            }
+            catch(Exception ise) {
+                Util.sleepRandom(1, 100);
+            }
+        }
+        while(!connected(conn));
+        return conn;
     }
 
     /** Creates a new connection to dest, or returns an existing one */
-    public Connection getConnection(Address dest) throws Exception {
+    /*public Connection getConnectionOriginal(Address dest) throws Exception {
         Connection conn;
         synchronized(this) {
-            if((conn=conns.get(dest)) != null
-              && (conn.isConnected() || conn.isConnectionPending())) // keep FAST path on the most common case
+            // keep FAST path on the most common case
+            if(connected(conn=conns.get(dest)))
                 return conn;
         }
 
@@ -303,7 +328,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             // (slow path, so not important)
             synchronized(this) {
                 conn=conns.get(dest); // check again after obtaining sock_creation_lock
-                if(conn != null && (conn.isConnected() || conn.isConnectionPending()))
+                if(connected(conn))
                     return conn;
 
                 // create conn stub
@@ -313,10 +338,13 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
             // now connect to dest:
             try {
-                log.trace("%s: connecting to %s", local_addr, dest);
-                conn.connect(dest);
-                notifyConnectionEstablished(conn);
-                conn.start();
+                synchronized(this) {
+                    log.trace("%s: connecting to %s", local_addr, dest);
+                    conn.connect(dest);
+
+                    notifyConnectionEstablished(conn);
+                    conn.start();
+                }
             }
             catch(Exception connect_ex) {
                 connect_exception=connect_ex;
@@ -325,8 +353,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             synchronized(this) {
                 Connection existing_conn=conns.get(dest); // check again after obtaining sock_creation_lock
                 // added by a successful accept()
-                if(existing_conn != null && (existing_conn.isConnected() || existing_conn.isConnectionPending())
-                  && existing_conn != conn) {
+                if(connected(existing_conn) && existing_conn != conn) {
                     log.trace("%s: found existing connection to %s, using it and deleting own conn-stub", local_addr, dest);
                     Util.close(conn); // close our connection; not really needed as conn was closed by accept()
                     return existing_conn;
@@ -343,12 +370,45 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         finally {
             sock_creation_lock.unlock();
         }
+    }*/
+
+
+    /** Creates a new connection to dest, or returns an existing one */
+    public Connection getConnection(Address dest) throws Exception {
+        Connection conn;
+        // keep FAST path on the most common case
+        if(connected(conn=conns.get(dest)))
+            return conn;
+
+        synchronized(this) {
+            if(connected(conn=conns.get(dest)))
+                return conn;
+            conn=createConnection(dest);
+            replaceConnection(dest, conn);
+
+            // now connect to dest:
+            try {
+                log.trace("%s: connecting to %s", local_addr, dest);
+                conn.connect(dest);
+                notifyConnectionEstablished(conn);
+                conn.start();
+            }
+            catch(Exception connect_ex) {
+                log.trace("%s: failed connecting to %s: %s", local_addr, dest, connect_ex);
+                removeConnectionIfPresent(dest, conn); // removes and closes the conn
+                throw connect_ex;
+            }
+        }
+        return conn;
     }
 
     @GuardedBy("this")
     public void replaceConnection(Address address, Connection conn) {
         Connection previous=conns.put(address, conn);
-        Util.close(previous); // closes previous connection (if present)
+        if(previous != null) {
+            previous.flush();
+            Util.close(previous);
+        }
     }
 
     public void closeConnection(Connection conn) {
@@ -391,15 +451,22 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     }
 
 
-    public synchronized BaseServer addConnectionListener(ConnectionListener cml) {
-        if(cml != null && !conn_listeners.contains(cml))
-            conn_listeners.add(cml);
+    public BaseServer addConnectionListener(ConnectionListener cl) {
+        if(cl == null)
+            return this;
+        synchronized(conn_listeners) {
+            if(!conn_listeners.contains(cl))
+                conn_listeners.add(cl);
+        }
         return this;
     }
 
-    public synchronized BaseServer removeConnectionListener(ConnectionListener cml) {
-        if(cml != null)
-            conn_listeners.remove(cml);
+    public BaseServer removeConnectionListener(ConnectionListener cl) {
+        if(cl == null)
+            return this;
+        synchronized(conn_listeners) {
+            conn_listeners.remove(cl);
+        }
         return this;
     }
     
@@ -510,6 +577,9 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         }
     }
 
+    protected static boolean connected(Connection c) {
+        return c != null && !c.isClosed() && (c.isConnected() || c.isConnectionPending());
+    }
 
     protected static org.jgroups.Address localAddress(InetAddress bind_addr, int local_port, InetAddress external_addr, int external_port) {
         if(external_addr != null)

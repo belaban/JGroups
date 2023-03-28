@@ -73,7 +73,7 @@ public class GMS_MergeTest {
         _testConcurrentMergeTwoPartitions(true, "testConcurrentMergeTwoPartitionsWithFlush");
     }
 
-    public static void testConcurrentMergeMultiplePartitions() throws Exception {
+    public void testConcurrentMergeMultiplePartitions() throws Exception {
         _testConcurrentMergeMultiplePartitions(false, "testConcurrentMergeMultiplePartitions");
     }
 

@@ -13,8 +13,9 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
-/**
+ /**
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast as well as multicast seqno tables.<br/>
  * Related JIRA: https://issues.redhat.com/browse/JGRP-940
  * @author Bela Ban
@@ -515,11 +516,8 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
 
     private static String print(List<Message> msgs) {
-        StringBuilder sb=new StringBuilder();
-        for(Message msg: msgs) {
-            sb.append(msg.getSrc()).append(": ").append((Object)msg.getObject()).append(" ");
-        }
-        return sb.toString();
+        return msgs.stream().map(Message::getObject).filter(Objects::nonNull)
+          .map(Object::toString).collect(Collectors.joining(", "));
     }
 
 

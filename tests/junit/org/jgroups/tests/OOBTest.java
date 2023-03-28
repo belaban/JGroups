@@ -3,9 +3,12 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.TP;
+import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.PassRegularMessagesUpDirectly;
+import org.jgroups.util.Tests;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -47,11 +50,16 @@ public class OOBTest extends ChannelTestBase {
      * received by B.
      */
     public void testNonBlockingUnicastOOBMessage() throws Exception {
-        send(b.getAddress());
+        // todo: test again when https://issues.redhat.com/browse/JGRP-2686 is in place
+        if(Tests.ucastRetransmissionAvailable(a, b))
+            send(b.getAddress());
     }
 
     public void testNonBlockingMulticastOOBMessage() throws Exception {
-        send(null);
+        // todo: test again when https://issues.redhat.com/browse/JGRP-2686 is in place
+        if(Tests.mcastRetransmissionAvailable(a,b) && Tests.hasThreadPool(a,b)
+          && !Tests.processingPolicyIs(PassRegularMessagesUpDirectly.class, a, b))
+            send(null);
     }
 
 
@@ -60,9 +68,11 @@ public class OOBTest extends ChannelTestBase {
      * until message 4 is received (https://issues.redhat.com/browse/JGRP-780)
      */
     public void testRegularAndOOBUnicasts() throws Exception {
-        DISCARD discard=new DISCARD();
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.Position.BELOW, Util.getUnicastProtocols());
+        UNICAST3 uni=stack.findProtocol(UNICAST3.class);
+        DISCARD discard=new DISCARD();
+        if(uni != null)
+            stack.insertProtocol(discard, ProtocolStack.Position.BELOW, uni.getClass());
 
         Address dest=b.getAddress();
         Message m1=new BytesMessage(dest, 1);
@@ -72,7 +82,7 @@ public class OOBTest extends ChannelTestBase {
         MyReceiver receiver=new MyReceiver("B");
         b.setReceiver(receiver);
         a.send(m1);
-        discard.dropDownUnicasts(1);
+        discard.dropDownUnicasts(1); // not relevant if UNICAST3 is not present
         a.send(m2);
         a.send(m3);
 
@@ -90,7 +100,8 @@ public class OOBTest extends ChannelTestBase {
     public void testRegularAndOOBUnicasts2() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.Position.BELOW, Util.getUnicastProtocols());
+        if(stack.findProtocol(UNICAST3.class) != null)
+            stack.insertProtocol(discard, ProtocolStack.Position.BELOW, Util.getUnicastProtocols());
 
         Address dest=b.getAddress();
         Message m1=new BytesMessage(dest, 1);
@@ -121,7 +132,8 @@ public class OOBTest extends ChannelTestBase {
     public void testRegularAndOOBMulticasts() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.Position.BELOW, NAKACK2.class);
+        if(stack.findProtocol(UNICAST3.class) != null)
+            stack.insertProtocol(discard, ProtocolStack.Position.BELOW, NAKACK2.class);
         a.setDiscardOwnMessages(true);
 
         Address dest=null; // send to all
@@ -154,7 +166,8 @@ public class OOBTest extends ChannelTestBase {
     public void testRandomRegularAndOOBMulticasts() throws Exception {
         DISCARD discard=new DISCARD().setAddress(a.getAddress()).setUpDiscardRate(0.5);
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
+        if(stack.findProtocol(UNICAST3.class) != null)
+            stack.insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
         MyReceiver r1=new MyReceiver("A"), r2=new MyReceiver("B");
         a.setReceiver(r1);
         b.setReceiver(r2);
@@ -275,8 +288,6 @@ public class OOBTest extends ChannelTestBase {
             }
             return;
         }
-
-
         for(int i=0; i < num_msgs; i++) {
             JChannel sender=Util.tossWeightedCoin(0.5) ? a : b;
             boolean oob=Util.tossWeightedCoin(oob_prob);

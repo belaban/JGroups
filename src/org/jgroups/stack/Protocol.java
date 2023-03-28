@@ -8,6 +8,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.conf.XmlNode;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -21,6 +22,8 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 
 /**
@@ -42,29 +45,30 @@ import java.util.List;
  * @author Bela Ban
  */
 public abstract class Protocol implements Lifecycle {
-    protected Protocol         up_prot, down_prot;
-    protected ProtocolStack    stack;
+    protected Protocol             up_prot, down_prot;
+    protected ProtocolStack        stack;
 
     @Property(description="Determines whether to collect statistics (and expose them via JMX). Default is true")
-    protected boolean          stats=true;
+    protected boolean              stats=true;
 
     @Property(description="Enables ergonomics: dynamically find the best values for properties at runtime")
-    protected boolean          ergonomics=true;
+    protected boolean              ergonomics=true;
 
     @Property(description="Fully qualified name of a class implementing ProtocolHook, will be called after creation of " +
       "the protocol (before init())",writable=false)
-    protected String           after_creation_hook;
+    protected String               after_creation_hook;
 
     @Property(description="Give the protocol a different ID if needed so we can have multiple " +
             "instances of it in the same stack",writable=false)
-    protected short            id=ClassConfigurator.getProtocolId(getClass());
+    protected short                id=ClassConfigurator.getProtocolId(getClass());
 
     @ManagedAttribute(description="The local address of this member")
-    protected Address          local_addr;
+    protected Address              local_addr;
 
-    protected final Log        log=LogFactory.getLog(this.getClass());
+    protected final Log            log=LogFactory.getLog(this.getClass());
 
 
+    protected List<Policy>         policies;
 
 
     /**
@@ -97,8 +101,30 @@ public abstract class Protocol implements Lifecycle {
     public <T extends Protocol> T  setProtocolStack(ProtocolStack s) {this.stack=s; return (T)this;}
     public String                  afterCreationHook()               {return after_creation_hook;}
     public Log                     getLog()                          {return log;}
+    public List<? extends Policy>  getPolicies()                     {return policies;}
 
+    @ManagedAttribute(description="The list of policies")
+    public String policies() {return policies == null? "n/a" :
+      policies.stream().map(p -> p.getClass().getSimpleName()).collect(Collectors.joining(", "));}
 
+    @Property(name="policies",converter= PropertyConverters.PolicyConverter.class)
+    public <T extends Protocol> T  setPolicies(List<Policy> l) {
+        this.policies=l;
+        return (T)this;
+    }
+
+    public <T extends Protocol> T  addPolicy(Policy p) {
+        if(policies == null)
+            policies=new ArrayList<>();
+        policies.add(Objects.requireNonNull(p));
+        return (T)this;
+    }
+
+    public <T extends Protocol> T  removePolicy(Policy p) {
+        if(policies != null && p != null)
+            policies.remove(p);
+        return (T)this;
+    }
 
     public Object getValue(String name) {
         if(name == null) return null;

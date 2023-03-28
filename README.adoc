@@ -26,7 +26,7 @@ It provides the following functionality:
 
 == Sample code
 
-The code beloew shows how to send messages to all cluster members. Open two or more shells and run the demo with
+The code below shows how to send messages to all cluster members. Open two or more shells and run the demo with
 different arguments (names of the members), e.g. `node1`, `node2` etc.
 
 [source,java]

@@ -106,12 +106,11 @@ public class TcpServer extends TcpBaseServer {
                     if(ex instanceof SocketException && srv_sock.isClosed() || Thread.currentThread().isInterrupted())
                         break;
                     if(log_accept_error)
-                        log.warn(Util.getMessage("AcceptError"), client_sock, ex);
+                        log.warn(Util.getMessage("AcceptError"), local_addr, client_sock, ex);
                     Util.close(client_sock);
                 }
             }
         }
-
 
         protected void handleAccept(final Socket client_sock) throws Exception {
             TcpConnection conn=null;
@@ -123,12 +122,17 @@ public class TcpServer extends TcpBaseServer {
                       replace=conn_exists && use_peer_connections && local_addr.compareTo(peer_addr) < 0; // bigger conn wins
 
                     if(!conn_exists || replace) {
+                        if(use_acks)
+                            conn.send(OK, 0, OK.length); // do this *before* other threads can send messages!!
                         replaceConnection(peer_addr, conn); // closes old conn
                         conn.start();
                         log.trace("%s: accepted connection from %s", local_addr, peer_addr);
                     }
                     else {
                         log.trace("%s: rejected connection from %s %s", local_addr, peer_addr, explanation(conn_exists, replace));
+                        if(use_acks)
+                            conn.send(FAIL, 0, FAIL.length);
+                        conn.flush();
                         Util.close(conn); // keep our existing conn, reject accept() and close client_sock
                     }
                 }

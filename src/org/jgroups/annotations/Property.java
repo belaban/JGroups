@@ -31,8 +31,7 @@ import java.util.concurrent.TimeUnit;
  * class. If a method is decorated with Property annotation it is assumed that
  * such a method is a setter with only one parameter type that a specified
  * converter can convert from a String to an actual type.
- * 
- * 
+ *
  * @author Vladimir Blagojevic
  */
 
@@ -46,7 +45,7 @@ public @interface Property {
 
     String deprecatedMessage() default "";
 
-    Class<?> converter() default PropertyConverters.Default.class;    
+    Class<? extends PropertyConverter> converter() default PropertyConverters.Default.class;
     
     String dependsUpon() default "";
 

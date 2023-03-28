@@ -88,6 +88,8 @@ public class ThreadPool implements Lifecycle {
         return thread_pool instanceof ExecutorService && ((ExecutorService)thread_pool).isShutdown();
     }
 
+    public boolean isEnabled() {return enabled;}
+
     public int getMinThreads() {return min_threads;}
 
     public ThreadPool setMinThreads(int size) {

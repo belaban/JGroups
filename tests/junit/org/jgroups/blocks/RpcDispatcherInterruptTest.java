@@ -7,9 +7,7 @@ import org.jgroups.JChannel;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.tests.ChannelTestBase;
-import org.jgroups.util.Rsp;
-import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -49,12 +47,9 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
 
 
     public void testMethodCallWithTimeoutNoInterrupt() throws Exception {
-        long timeout, block_time;
-        RspList rsps;
-
-        timeout=0;
-        block_time=0;
-        rsps=call(timeout, block_time);
+        long timeout=0;
+        long block_time=0;
+        RspList<Void> rsps=call(timeout, block_time);
         checkResults(rsps, 2, true);
 
         timeout=0;
@@ -67,10 +62,13 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
         rsps=call(timeout, block_time);
         checkResults(rsps, 2, true);
 
-        timeout=1000;
-        block_time=10000L;
-        rsps=call(timeout, block_time);
-        checkResults(rsps, 2, false);
+        if(Tests.hasThreadPool(a,b) && !Tests.processingPolicyIs(PassRegularMessagesUpDirectly.class)) {
+            // todo: test once https://issues.redhat.com/browse/JGRP-2686 is in place
+            timeout=1000;
+            block_time=5000L;
+            rsps=call(timeout, block_time);
+            checkResults(rsps, 2, false);
+        }
     }
 
 
@@ -81,12 +79,12 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
             gms.setLogCollectMessages(false);
     }
 
-    private RspList call(long timeout, long block_time) throws Exception {
+    private RspList<Void> call(long timeout, long block_time) throws Exception {
         long start, stop, diff;
         System.out.println("calling with timeout=" + timeout + ", block_time=" + block_time);
         start=System.currentTimeMillis();
-        RspList retval=disp.callRemoteMethods(null, "foo", new Object[]{block_time}, new Class[]{long.class},
-                                              new RequestOptions(ResponseMode.GET_ALL, timeout));
+        RspList<Void> retval=disp.callRemoteMethods(null, "foo", new Object[]{block_time}, new Class[]{long.class},
+                                                    new RequestOptions(ResponseMode.GET_ALL, timeout));
         stop=System.currentTimeMillis();
         diff=stop-start;
         System.out.println("rsps (in " + diff + "ms:)\n" + retval);

@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 /**
  * {@link org.jgroups.stack.MessageProcessingPolicy} which processes <em>regular</em> messages and message batches by
@@ -104,7 +105,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         }
 
         public String toString() {
-            return map.entrySet().stream().collect(StringBuilder::new, (sb,e) -> sb.append(e).append("\n"), (a,b) -> {}).toString();
+            return map.entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue())).collect(Collectors.joining("\n"));
         }
     }
 

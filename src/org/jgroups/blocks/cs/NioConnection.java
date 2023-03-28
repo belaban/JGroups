@@ -82,10 +82,6 @@ public class NioConnection extends Connection {
 
 
 
-    @Override
-    public boolean isOpen() {
-        return channel != null && channel.isOpen();
-    }
 
     @Override
     public boolean isConnected() {
@@ -94,6 +90,11 @@ public class NioConnection extends Connection {
 
     @Override
     public boolean isConnectionPending() {return channel != null && channel.isConnectionPending();}
+
+    @Override
+    public boolean isClosed() {
+        return channel == null || !channel.isOpen();
+    }
 
     @Override
     public boolean isExpired(long now) {
@@ -297,10 +298,10 @@ public class NioConnection extends Connection {
     @Override
     public String status() {
         if(channel == null)       return "n/a";
+        if(isClosed())            return "closed";
         if(isConnected())         return "connected";
         if(isConnectionPending()) return "connection pending";
-        if(isOpen())              return "open";
-        return "closed";
+        return                           "open";
     }
 
     protected long getTimestamp() {
@@ -376,9 +377,7 @@ public class NioConnection extends Connection {
             ByteBuffer buf=recv_buf.get(current_position);
             if(buf == null)
                 return null;
-            // Workaround for JDK8 compatibility
-            // flip() returns java.nio.Buffer in JDK8, but java.nio.ByteBuffer since JDK9.
-            ((java.nio.Buffer) buf).flip();
+            buf.flip();
             switch(current_position) {
                 case 0:      // cookie
                     byte[] cookie_buf=getBuffer(buf);

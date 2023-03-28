@@ -109,6 +109,7 @@ public class TCP extends BasicTCP {
         srv.setBufferedInputStreamSize(buffered_input_stream_size).setBufferedOutputStreamSize(buffered_output_stream_size)
           .peerAddressReadTimeout(peer_addr_read_timeout)
           .usePeerConnections(true)
+          .useAcks(this.use_acks)
           .socketFactory(getSocketFactory());
 
         if(send_buf_size > 0)

@@ -42,6 +42,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static java.lang.System.nanoTime;
 import static org.jgroups.protocols.TP.LIST;
@@ -1263,6 +1264,29 @@ public class Util {
         Message msg=mf.create(type);
         msg.readFrom(in);
         return msg;
+    }
+
+    /** Tries to return a legible representation of a message's payload */
+    public static String getObject(Message msg) {
+        if(msg == null)
+            return "null";
+        if(!msg.hasPayload())
+            return msg.printHeaders();
+        try {
+            Object obj=msg.getObject();
+            return obj != null? obj.toString() : "null";
+        }
+        catch(Throwable t) {
+            return String.format("<%d bytes>", msg.getLength());
+        }
+    }
+
+    public static String getObjects(Iterable<Message> it) {
+        if(it == null)
+            return "0";
+        return StreamSupport.stream(it.spliterator(), false)
+          .map(Message::getObject)
+          .map(Object::toString).collect(Collectors.joining(", "));
     }
 
     public static ByteBuffer wrapDirect(byte[] array) {

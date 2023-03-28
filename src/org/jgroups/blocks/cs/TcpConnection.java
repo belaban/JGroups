@@ -16,9 +16,11 @@ import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Blocking IO (BIO) connection. Starts 1 reader thread for the peer socket and blocks until data is available.
@@ -34,10 +36,10 @@ public class TcpConnection extends Connection {
     protected volatile Receiver   receiver;
     protected final TcpBaseServer server;
     protected final AtomicInteger writers=new AtomicInteger(0); // to determine the last writer to flush
-    protected boolean             connected;
+    protected volatile boolean    connected;
     protected final byte[]        length_buf=new byte[Integer.BYTES]; // used to write the length of the data
 
-    /** Creates a connection stub and binds it, use {@link #connect(Address)} to connect */
+    /** Creates a connection to a remote peer, use {@link #connect(Address)} to connect */
     public TcpConnection(Address peer_addr, TcpBaseServer server) throws Exception {
         this.server=server;
         if(peer_addr == null)
@@ -48,6 +50,7 @@ public class TcpConnection extends Connection {
         last_access=getTimestamp(); // last time a message was sent or received (ns)
     }
 
+    /** Called by {@link TcpServer.Acceptor#handleAccept(Socket)} */
     public TcpConnection(Socket s, TcpServer server) throws Exception {
         this.sock=s;
         this.server=server;
@@ -90,10 +93,10 @@ public class TcpConnection extends Connection {
     }
 
     public void connect(Address dest) throws Exception {
-        connect(dest, server.usePeerConnections());
+        connect(dest, server.usePeerConnections(), server.useAcks());
     }
 
-    protected void connect(Address dest, boolean send_local_addr) throws Exception {
+    protected void connect(Address dest, boolean send_local_addr, boolean use_acks) throws Exception {
         SocketAddress destAddr=new InetSocketAddress(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort());
         try {
             if(!server.defer_client_binding)
@@ -101,14 +104,26 @@ public class TcpConnection extends Connection {
             Util.connect(this.sock, destAddr, server.sock_conn_timeout);
             if(this.sock.getLocalSocketAddress() != null && this.sock.getLocalSocketAddress().equals(destAddr))
                 throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
+            if(sock instanceof SSLSocket)
+                ((SSLSocket) sock).startHandshake();
             this.out=createDataOutputStream(sock.getOutputStream());
             this.in=createDataInputStream(sock.getInputStream());
-            connected=sock.isConnected();
             if(send_local_addr)
                 sendLocalAddress(server.localAddress());
-            else if (sock instanceof SSLSocket) {
-                ((SSLSocket) sock).startHandshake();
+            if(use_acks) {
+                int len=in.readInt();
+                byte[] ack=new byte[len];
+                in.readFully(ack, 0, ack.length);
+                if(Arrays.equals(BaseServer.OK, ack))
+                    ;
+                else if(Arrays.equals(BaseServer.FAIL, ack))
+                    throw new IllegalStateException("received FAIL from peer");
+                else
+                    server.log().error("%s: received invalid ACK: %s", localAddress(), Arrays.toString(ack));
             }
+            // needs to be at the end or else isConnected() will return this connection and threads can start sending
+            // even though we haven't yet sent the local address and waited for the ack (if use_acks==true)
+            connected=sock.isConnected();
         }
         catch(Exception t) {
             Util.close(this.sock);
@@ -305,7 +320,6 @@ public class TcpConnection extends Connection {
 
         public boolean isRunning()  {return receiving;}
         public boolean canRun()     {return isRunning() && isConnected();}
-        public int     bufferSize() {return buffer != null? buffer.length : 0;}
 
         public void run() {
             try {
@@ -345,20 +359,18 @@ public class TcpConnection extends Connection {
         if(tmp_sock == null)
             return "<null socket>";
         InetAddress local=tmp_sock.getLocalAddress(), remote=tmp_sock.getInetAddress();
-        String local_str=local != null? Util.shortName(local) : "<null>";
-        String remote_str=remote != null? Util.shortName(remote) : "<null>";
-        return String.format("%s:%s --> %s:%s (%d secs old) [%s] [recv_buf=%d]",
-                             local_str, tmp_sock.getLocalPort(), remote_str, tmp_sock.getPort(),
-                             TimeUnit.SECONDS.convert(getTimestamp() - last_access, TimeUnit.NANOSECONDS),
-                             status(), receiver != null? receiver.bufferSize() : 0);
+        String l=local != null? Util.shortName(local) : "<null>";
+        String r=remote != null? Util.shortName(remote) : "<null>";
+        return String.format("%s:%s --> %s:%s (%d secs old) [%s]", l, tmp_sock.getLocalPort(), r, tmp_sock.getPort(),
+                             SECONDS.convert(getTimestamp() - last_access, NANOSECONDS), status());
     }
 
     @Override
     public String status() {
-        if(sock == null)    return "n/a";
-        if(isConnected())   return "connected";
-        if(isOpen())        return "open";
-        return                     "closed";
+        if(sock == null)  return "n/a";
+        if(isClosed())    return "closed";
+        if(isConnected()) return "connected";
+        return                   "open";
     }
 
     public boolean isExpired(long now) {
@@ -373,8 +385,9 @@ public class TcpConnection extends Connection {
         return false;
     }
 
-    public boolean isOpen() {
-        return sock != null && !sock.isClosed();
+    @Override
+    public boolean isClosed() {
+        return sock == null || sock.isClosed();
     }
 
     public void close() throws IOException {

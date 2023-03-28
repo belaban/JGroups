@@ -54,7 +54,6 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
     public Address           remoteAddress()               {return remote_addr;}
     /** Sets the address of the server. Has no effect when already connected. */
     public TcpClient         remoteAddress(IpAddress addr) {this.remote_addr=addr; return this;}
-    @Override public boolean isOpen()                      {return conn != null && conn.isOpen();}
     @Override public boolean isConnected()                 {return conn != null && conn.isConnected();}
 
 
@@ -123,7 +122,7 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
         super.start();
         conn=createConnection(remote_addr);
         addConnectionListener(this);
-        conn.connect(remote_addr, false);
+        conn.connect(remote_addr, false, false);
         local_addr=conn.localAddress();
         if(use_peer_connections)
             conn.sendLocalAddress(local_addr);

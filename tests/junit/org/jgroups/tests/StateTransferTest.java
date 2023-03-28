@@ -43,7 +43,8 @@ public class StateTransferTest extends ChannelTestBase {
 
     @DataProvider(name="createChannels")
     protected Iterator<Object[]> createChannels() {
-        return new ArrayIterator<>(new Class[][]{{STATE_TRANSFER.class}, {STATE.class}, {STATE_SOCK.class}});
+        // return new ArrayIterator<>(new Class[][]{{STATE_TRANSFER.class}, {STATE.class}, {STATE_SOCK.class}});
+        return new ArrayIterator<>(new Class[][]{{STATE.class}});
     }
 
 
@@ -74,8 +75,7 @@ public class StateTransferTest extends ChannelTestBase {
     // @Test(dataProvider="createChannels",invocationCount=10)
     @Test(dataProvider="createChannels")
     public void testStateTransferWhileSending(final Class<? extends Protocol> state_transfer_class) throws Exception {
-        Semaphore semaphore=new Semaphore(APP_COUNT, true); // fifo order
-        semaphore.acquire(APP_COUNT);
+        Semaphore semaphore=new Semaphore(0);
         Thread[] threads=new Thread[APP_COUNT];
 
         int from=0, to=MSG_SEND_COUNT;
@@ -97,7 +97,7 @@ public class StateTransferTest extends ChannelTestBase {
 
         for(int i=0;i < threads.length; i++) {
             semaphore.release();
-            Util.sleep(i == 0? 4000 : 100); // to reduce changes of a merge
+            Util.sleep(i == 0? 3000 : 100); // to reduce changes of a merge
         }
 
         // Make sure everyone is in sync

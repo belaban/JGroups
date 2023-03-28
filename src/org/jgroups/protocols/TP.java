@@ -292,6 +292,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
     }
 
+    public MessageProcessingPolicy getMessageProcessingPolicy() {return msg_processing_policy;}
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
     @Component(name="msg_stats")

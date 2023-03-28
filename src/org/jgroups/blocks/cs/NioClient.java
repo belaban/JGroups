@@ -56,7 +56,6 @@ public class NioClient extends NioBaseServer implements Client {
     public Address           remoteAddress()               {return remote_addr;}
     /** Sets the address of the server. Has no effect when already connected. */
     public NioClient         remoteAddress(IpAddress addr) {this.remote_addr=addr; return this;}
-    @Override public boolean isOpen()                      {return conn != null && conn.isOpen();}
     @Override public boolean isConnected()                 {return conn != null && conn.isConnected();}
 
     @Override

@@ -384,10 +384,10 @@ public class ProtocolStack extends Protocol {
                     Object value=Util.getField(field, prot);
                     if(value != null) {
                         annotation=field.getAnnotation(Property.class);
-                        Class<?> conv_class=annotation.converter();
+                        Class<? extends PropertyConverter> conv_class=annotation.converter();
                         PropertyConverter conv=null;
                         try {
-                            conv=(PropertyConverter)conv_class.getDeclaredConstructor().newInstance();
+                            conv=conv_class.getDeclaredConstructor().newInstance();
                         }
                         catch(Exception e) {
                         }
@@ -774,12 +774,9 @@ public class ProtocolStack extends Protocol {
         else if(ip_version == StackType.Dual)
             ip_version=StackType.IPv4; // prefer IPv4 addresses
         Configurator.setDefaultAddressValues(protocols, ip_version);
-        initProtocolStack();
-    }
-
-    public void initProtocolStack() throws Exception {
         initProtocolStack(null);
     }
+
 
     /** Calls @link{{@link Protocol#init()}} in all protocols, from bottom to top */
     public void initProtocolStack(List<ProtocolConfiguration> configs) throws Exception {
@@ -793,6 +790,13 @@ public class ProtocolStack extends Protocol {
                 callAfterCreationHook(prot, prot.afterCreationHook());
                 prot.init();
                 initComponents(prot, configs != null? configs.get(i) : null);
+
+                // sanity checking via policies:
+                List<? extends Policy> pols=prot.getPolicies();
+                if(pols != null && !pols.isEmpty()) {
+                    for(Policy p: pols)
+                        p.check(prot);
+                }
             }
         }
         catch(Exception ex) {

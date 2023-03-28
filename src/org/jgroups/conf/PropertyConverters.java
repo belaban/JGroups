@@ -2,6 +2,7 @@ package org.jgroups.conf;
 
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Policy;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Groups a set of standard PropertyConverter(s) supplied by JGroups.
@@ -124,6 +126,30 @@ public final class PropertyConverters {
         // return a String version of the converted value
         public String toString(Object value) {
             return (String)value;
+        }
+    }
+
+    /** Creates a list of Policy objects from a comma-separated list of classnames */
+    public static class PolicyConverter implements PropertyConverter {
+
+        @Override
+        public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String val, boolean check_scope, StackType ip_version) throws Exception {
+            if(val == null)
+                return null;
+            List<String> classes=Util.parseCommaDelimitedStrings(val);
+            List<Policy> l=new ArrayList<>();
+            for(String classname: classes) {
+                Class<? extends Policy> clazz=(Class<? extends Policy>)Util.loadClass(classname, getClass());
+                Policy p=clazz.getConstructor().newInstance();
+                l.add(p);
+            }
+            return l;
+        }
+
+        @Override
+        public String toString(Object value) {
+            List<Policy> l=(List<Policy>)value;
+            return l == null? "n/a" : l.stream().map(p -> p.getClass().getSimpleName()).collect(Collectors.joining(", "));
         }
     }
 

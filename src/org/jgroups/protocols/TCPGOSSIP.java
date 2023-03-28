@@ -2,6 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
@@ -68,6 +69,11 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
 
     public boolean isDynamic() {
         return true;
+    }
+
+    @ManagedAttribute(description="The list of GossipRouters to connect to")
+    public String initialHosts() {
+        return initial_hosts.toString();
     }
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */

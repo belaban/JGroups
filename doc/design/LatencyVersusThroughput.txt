@@ -63,7 +63,7 @@ Recommendations
     * buffered_output_stream_size=0 (or a low value)
     * bundler_type="no-bundler"
       * Investigate: use "per-destination" bunder_type, but also use OOB|DONT_BUNDLE
-
+    * Disable thread pool when having only few senders
   * High throughput: set buffered_output_stream to a high value (e.g. 65k)
 
 

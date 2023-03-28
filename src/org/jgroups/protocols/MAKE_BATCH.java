@@ -12,6 +12,7 @@ import org.jgroups.util.MessageBatch;
 import org.jgroups.util.TimeScheduler;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -37,11 +38,11 @@ public class MAKE_BATCH extends Protocol {
     protected long sleep_time=100;
 
     // all maps have sender and msg list pairs
-    protected final Map<Address,List<Message>> reg_map_mcast=new HashMap<>();
-    protected final Map<Address,List<Message>> reg_map_ucast=new HashMap<>();
+    protected final Map<Address,List<Message>> reg_map_mcast=new ConcurrentHashMap<>();
+    protected final Map<Address,List<Message>> reg_map_ucast=new ConcurrentHashMap<>();
 
-    protected final Map<Address,List<Message>> oob_map_mcast=new HashMap<>();
-    protected final Map<Address,List<Message>> oob_map_ucast=new HashMap<>();
+    protected final Map<Address,List<Message>> oob_map_mcast=new ConcurrentHashMap<>();
+    protected final Map<Address,List<Message>> oob_map_ucast=new ConcurrentHashMap<>();
 
     protected TimeScheduler                     timer;
     protected AsciiString                       cluster_name;

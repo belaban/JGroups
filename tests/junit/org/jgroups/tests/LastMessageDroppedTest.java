@@ -1,6 +1,9 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.Receiver;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.pbcast.NAKACK2;
@@ -47,6 +50,8 @@ public class LastMessageDroppedTest extends ChannelTestBase {
     }
 
     public void testLastMessageDropped() throws Exception {
+        if(!retransmissionAvailable(a, b))
+            return;
         DISCARD discard=new DISCARD();
         a.getProtocolStack().insertProtocol(discard,ProtocolStack.Position.BELOW,NAKACK2.class);
 
@@ -58,9 +63,8 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         a.send(null, 3);
 
         Collection<Integer> list=receiver.getMsgs();
-        Util.waitUntil(20000, 500, () -> list.size() == 3);
+        Util.waitUntil(20000, 500, () -> list.size() == 3, () -> String.format("list: %s", list));
         System.out.println("list=" + list);
-        assert list.size() == 3 : "list=" + list;
     }
 
     /**
@@ -68,6 +72,8 @@ public class LastMessageDroppedTest extends ChannelTestBase {
      * a timeout of 5s should make sure that B eventually does get message 3.
      */
     public void testLastMessageAndLastSeqnoDropped() throws Exception {
+        if(!retransmissionAvailable(a,b))
+            return;
         DISCARD discard=new DISCARD();
         ProtocolStack stack=a.getProtocolStack();
         stack.insertProtocol(discard,ProtocolStack.Position.BELOW,NAKACK2.class);
@@ -99,6 +105,16 @@ public class LastMessageDroppedTest extends ChannelTestBase {
             STABLE stable=ch.getProtocolStack().findProtocol(STABLE.class);
             stable.setDesiredAverageGossip(avg_desired_gossip);
         }
+    }
+
+    protected static boolean retransmissionAvailable(JChannel... channels) {
+        for(JChannel ch: channels) {
+            ProtocolStack stack=ch.getProtocolStack();
+            Protocol nak=stack.findProtocol(NAKACK2.class);
+            if(nak == null || ((NAKACK2)nak).getXmitInterval() <= 0)
+                return false;
+        }
+        return true;
     }
 
     /** Drop {@link org.jgroups.protocols.pbcast.NakAckHeader2#HIGHEST_SEQNO} headers, needs to be inserted below NAKACK2 */

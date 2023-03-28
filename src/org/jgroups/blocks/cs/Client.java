@@ -14,8 +14,6 @@ public interface Client {
 
     Address remoteAddress();
 
-    boolean isOpen();
-
     boolean isConnected();
 
     /** Sends data to the remote server. The server's address must have been set before. */

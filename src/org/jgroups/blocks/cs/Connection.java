@@ -14,9 +14,9 @@ public abstract class Connection implements Closeable {
     protected Address             peer_addr;    // address of the 'other end' of the connection
     protected long                last_access;  // timestamp of the last access to this connection (read or write)
 
-    abstract public boolean isOpen();
     abstract public boolean isConnected();
     abstract public boolean isConnectionPending();
+    abstract public boolean isClosed();
     abstract public Address localAddress();
     abstract public Address peerAddress();
     abstract public boolean isExpired(long millis);

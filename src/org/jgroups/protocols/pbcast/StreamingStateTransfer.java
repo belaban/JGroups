@@ -123,7 +123,8 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
     }
 
     public void destroy() {
-        thread_pool.shutdown();
+        if(thread_pool != null)
+            thread_pool.shutdown();
         super.destroy();
     }
 
