@@ -4838,8 +4838,9 @@ public class Util {
 
         // Pattern p=Pattern.compile("[A-Z]+");
         Matcher m=METHOD_NAME_TO_ATTR_NAME_PATTERN.matcher(name);
-        //StringBuilder sb=new StringBuilder();
-        StringBuffer sb=new StringBuffer(); // Fix android platform NoSuchMethodException: Matcher.appendReplacement(StringBuffer, String);
+        // Fix android platform NoSuchMethodException: Matcher.appendReplacement(StringBuffer, String);
+        //noinspection StringBufferMayBeStringBuilder
+        StringBuffer sb=new StringBuffer();
         int start=0, end=0;
         while(m.find()) {
             start=m.start();
@@ -4884,8 +4885,9 @@ public class Util {
         if(attr_name.contains("_")) {
             // Pattern p=Pattern.compile("_.");
             Matcher m=ATTR_NAME_TO_METHOD_NAME_PATTERN.matcher(attr_name);
-            //StringBuilder sb=new StringBuilder();
-            StringBuffer sb=new StringBuffer(); // Fix android platform NoSuchMethodException: Matcher.appendReplacement(StringBuffer, String);
+            // Fix android platform NoSuchMethodException: Matcher.appendReplacement(StringBuffer, String);
+            //noinspection StringBufferMayBeStringBuilder
+            StringBuffer sb=new StringBuffer();
             int end=0;
             while(m.find()) {
                 end=m.end();
