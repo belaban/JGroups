@@ -106,6 +106,45 @@ address chosen will be:
 |===============
 
 
+[[IPAddresses]]
+=== Resolving names to IP addresses
+The algorithm for resolving names to dotted-decimal IPv4 or IPv6 addresses is described below.
+
+The following types of names need to be resolved:
+
+* Symbolic addresses such as `site_local`, `global`, `link_local`, `loopback` and `non_loopback` etc
+* Symbolic names, e.g. `belasmac`, `www.google.com`
+* Regexps such as `match-interface`, `match-host` etc
+* Defaults, e.g. `UDP.mcast_addr`. If not set, it will be assigned `228.8.8.8` (IPv4) or `ff0e::8:8:8` (IPv6)
+
+All of these can only be resolved once we know what type of addresses we need to provide.
+
+E.g. when `UDP.bind_addr` is `127.0.0.1`, `site_local` would have to be an IPv4 address.
+
+When `bind_addr` is `::1`, `site_local` needs to pick an IPv6 address.
+
+==== Only IPv4 stack is available
+* IPv4 addresses are created by default (e.g. by `InetAddress.getByName()`, or `site_local`)
+* When an IPv6 address is defined in a configuration, an exception is thrown and the stack will not start
+
+==== Only IPv6 stack is available
+* IPv6 addresses are created by default
+* When an IPv4 address is created, convert it to an IPv6-mapped address (default behavior)
+
+==== Both IPv4 and IPv6 stacks are available (dual stack)
+* If `java.net.preferIPv4Stack=true` and `java.net.preferIPv6Addresses=false`
+** Assign IPv4 addresses by default
+** When an IPv6 address is encountered, throw an exception and don't start the stack
+* If `java.net.preferIPv4Stack=false` and `java.net.preferIPv6Addresses=true`
+** Assign IPv6 addresses by default
+** When an IPv4 address is encountered, convert it to an IPv6-mapped address (default behavior)
+* Both `java.net.preferIPv4Stack` and `java.net.preferIPv6Addresses` are set, or none are set
+** The JDK's preference is to assign IPv4 addresses
+** If `bind_addr` is an IPv6 address -> Assign IPv6 addresses
+** Otherwise (or `bind_addr == null`) -> use IPv4 addresses
+
+For dual stacks (both IPv4 and IPv6 stack is available in the JDK), these changes allow JGroups to run different
+configurations in the same JVM, e.g. one channel joining an IPv4 cluster, and another one joining an IPv6 cluster.
 
 
 [[Transport]]
