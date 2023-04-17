@@ -275,8 +275,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void setMessageProcessingPolicy(String policy) {
         if(policy == null)
             return;
+
         msg_processing_policy=policy.startsWith("submit")? new SubmitToThreadPool() :
-          policy.startsWith("max")? new MaxOneThreadPerSender() : null;
+          policy.startsWith("max")? new MaxOneThreadPerSender() :
+            policy.startsWith("direct")? new PassRegularMessagesUpDirectly() : null;
         try {
             if(msg_processing_policy == null) {
                 Class<MessageProcessingPolicy> clazz=(Class<MessageProcessingPolicy>)Util.loadClass(policy, getClass());
@@ -289,6 +291,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             log.error("failed setting message_processing_policy", e);
         }
     }
+
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
     @Component(name="msg_stats")
