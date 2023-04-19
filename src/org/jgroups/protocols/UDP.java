@@ -457,7 +457,7 @@ public class UDP extends TP {
                     interfaces=receive_interfaces;
                 else
                     interfaces=Util.getAllAvailableInterfaces();
-                bindToInterfaces(interfaces, mcast_sock, mcast_addr.getIpAddress());
+                joinGroupOnInterfaces(interfaces, mcast_sock, mcast_addr.getIpAddress());
             }
             else {
                 if(bind_addr != null)
@@ -530,16 +530,13 @@ public class UDP extends TP {
     }
 
     /**
-     *
-     * @param interfaces List<NetworkInterface>. Guaranteed to have no duplicates
-     * @param s
-     * @param mcastAddr
-     * @throws IOException
+     * Joins a multicast address on all interfaces
+     * @param interfaces List<NetworkInterface>. The interfaces to join mcast_addr:mcast_port
+     * @param s The MulticastSocket to join on
+     * @param mcast_addr The multicast address to join
      */
-    protected void bindToInterfaces(List<NetworkInterface> interfaces,
-                                  MulticastSocket s,
-                                  InetAddress mcastAddr) {
-        SocketAddress tmp_mcast_addr=new InetSocketAddress(mcastAddr, mcast_port);
+    protected void joinGroupOnInterfaces(List<NetworkInterface> interfaces, MulticastSocket s, InetAddress mcast_addr) {
+        SocketAddress tmp_mcast_addr=new InetSocketAddress(mcast_addr, mcast_port);
         for(NetworkInterface intf: interfaces) {
 
             //[ JGRP-680] - receive_on_all_interfaces requires every NIC to be configured
