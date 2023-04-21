@@ -295,10 +295,8 @@ public class ServerUnitTest {
     }
 
     protected static void waitForOpenConns(int expected, BaseServer... servers) throws Exception {
-        for(int i=0; i < 20; i++) {
-            if(!Arrays.stream(servers).allMatch(srv -> srv.getNumOpenConnections() == expected))
-                Util.sleep(1000);
-        }
+        Util.waitUntilTrue(20000, 1000,
+                           () -> Arrays.stream(servers).allMatch(srv -> srv.getNumOpenConnections() == expected));
         if(!Arrays.stream(servers).allMatch(srv -> srv.getNumOpenConnections() == expected)) {
             String msg=String.format("expected connections: %d, actual:\n%s\n", expected,
                                      Stream.of(servers).map(s -> String.format("%s: %s", s.getNumOpenConnections(), s.printConnections()))
