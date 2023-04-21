@@ -180,7 +180,7 @@ public class Configurator {
         String protocol_name=config.getProtocolName();
         if(protocol_name == null)
             return null;
-        Class<? extends Protocol> clazz=Util.loadProtocolClass(protocol_name, stack != null? stack.getClass() : null);
+        Class<? extends Protocol> clazz=config.loadProtocolClass(stack != null? stack.getClass() : null);
         if(clazz.getAnnotation(Deprecated.class) != null)
             log.warn("%s has been deprecated; please upgrade to a newer version of the protocol", clazz.getSimpleName());
         if(clazz.getAnnotation(RecommendedForUpgrade.class) != null)

@@ -3180,22 +3180,16 @@ public class Util {
 
     public static Class<? extends Protocol> loadProtocolClass(String protocol_name, Class<?> cl) throws Exception {
         String defaultProtocolName=Global.PREFIX + protocol_name;
-        Class<? extends Protocol> clazz=null;
         try {
-            clazz=(Class<? extends Protocol>)Util.loadClass(defaultProtocolName, cl);
+            return (Class<? extends Protocol>) Util.loadClass(defaultProtocolName, cl);
         }
-        catch(ClassNotFoundException e) {
-        }
-        if(clazz == null) {
+        catch(ClassNotFoundException ignored1) {
             try {
-                clazz=(Class<? extends Protocol>)Util.loadClass(protocol_name, cl);
-            }
-            catch(ClassNotFoundException e) {
-            }
-            if(clazz == null)
+                return (Class<? extends Protocol>)Util.loadClass(protocol_name, cl);
+            } catch (ClassNotFoundException ignored2) {
                 throw new Exception(String.format(Util.getMessage("ProtocolLoadError"), protocol_name, defaultProtocolName));
+            }
         }
-        return clazz;
     }
 
     @SafeVarargs

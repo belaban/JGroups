@@ -430,12 +430,16 @@ public class ProtocolStack extends Protocol {
 
 
     public void setup(List<ProtocolConfiguration> configs) throws Exception {
+        setup(configs, null);
+    }
+
+    public void setup(List<ProtocolConfiguration> configs, ProtocolHook afterCreationHook) throws Exception {
         if(top_prot == null) {
             top_prot=new Configurator(this).setupProtocolStack(configs);
             top_prot.setUpProtocol(this);
             this.setDownProtocol(top_prot);
             bottom_prot=getBottomProtocol();
-            initProtocolStack(configs);
+            initProtocolStack(configs, afterCreationHook);
         }
     }
 
@@ -780,6 +784,10 @@ public class ProtocolStack extends Protocol {
 
     /** Calls @link{{@link Protocol#init()}} in all protocols, from bottom to top */
     public void initProtocolStack(List<ProtocolConfiguration> configs) throws Exception {
+        initProtocolStack(configs, null);
+    }
+
+    public void initProtocolStack(List<ProtocolConfiguration> configs, ProtocolHook afterCreationHook) throws Exception {
         List<Protocol> protocols=getProtocols();
         Collections.reverse(protocols);
         try {
@@ -788,6 +796,9 @@ public class ProtocolStack extends Protocol {
                 if(prot.getProtocolStack() == null)
                     prot.setProtocolStack(this);
                 callAfterCreationHook(prot, prot.afterCreationHook());
+                if (afterCreationHook != null) {
+                    afterCreationHook.afterCreation(prot);
+                }
                 prot.init();
                 initComponents(prot, configs != null? configs.get(i) : null);
 

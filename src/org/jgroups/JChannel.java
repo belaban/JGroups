@@ -896,7 +896,7 @@ public class JChannel implements Closeable {
         // replace vars with system props
         configs.forEach(ProtocolConfiguration::substituteVariables);
         prot_stack=new ProtocolStack(this);
-        prot_stack.setup(configs); // Setup protocol stack (creates protocol, calls init() on them)
+        prot_stack.setup(configs, configurator); // Setup protocol stack (creates protocol, calls init() on them)
         return this;
     }
 
