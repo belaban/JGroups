@@ -1,5 +1,6 @@
 package org.jgroups.conf;
 
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
 import java.util.*;
@@ -81,8 +82,29 @@ public class ProtocolConfiguration {
         return properties;
     }
 
+    /**
+     * Load the class of the {@link Protocol} configured by this instance.
+     *
+     * @param loadingClass The {@link Class} to fetch the preferred {@link ClassLoader}. It can be null.
+     * @return The {@link Class} of the {@link Protocol}.
+     * @throws Exception If unable to find or load the class.
+     */
+    public Class<? extends Protocol> loadProtocolClass(Class<?> loadingClass) throws Exception {
+        return Util.loadProtocolClass(protocol_name, loadingClass);
+    }
 
-
+    /**
+     * Determines if the class {@code other} is the same or superclass (or superinterface) as the {@link Protocol}
+     * configured by this instance.
+     *
+     * @param other        The {@link Class} to check.
+     * @param loadingClass The {@link Class} to fetch the preferred {@link ClassLoader}. It can be null.
+     * @return {@code true} if {@code other} is the same or superclass/interface as the {@link Protocol} configured by this instance.
+     * @throws Exception If unable to find or load the class.
+     */
+    public boolean isAssignableProtocol(Class<? extends Protocol> other, Class<?> loadingClass) throws Exception {
+        return loadProtocolClass(loadingClass).isAssignableFrom(other);
+    }
 
     public void substituteVariables() {
         for(Iterator<Map.Entry<String, String>> it=properties.entrySet().iterator(); it.hasNext();) {
