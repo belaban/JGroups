@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Bela Ban
  * @since  5.2.15
  */
-public class TLS {
+public class TLSHelper {
     public  static final String PROTOCOL = "TLSv1.2";
     public  static final String BASE_DN = "CN=%s,OU=JGroups,O=JBoss,L=Red Hat";
     public  static final String KEY_PASSWORD = "secret";
@@ -37,7 +37,7 @@ public class TLS {
 
     static {
         DEFAULT_CA_DN = dn("CA");
-        DEFAULT_CA=TLS.createSelfSignedCertificate(DEFAULT_CA_DN, true, KEY_SIGNATURE_ALGORITHM, KEY_ALGORITHM);
+        DEFAULT_CA=createSelfSignedCertificate(DEFAULT_CA_DN, true, KEY_SIGNATURE_ALGORITHM, KEY_ALGORITHM);
     }
 
     /** Generates a key pair from the default algorithm ("RSA") */
@@ -126,7 +126,7 @@ public class TLS {
             X509Certificate certificate=createSignedCertificate(publicKey, ca, issuerDN, name);
             trustStore.setCertificateEntry(name, certificate);
             try {
-                KeyStore ks=TLS.createKeyStore(keystore_type);
+                KeyStore ks=createKeyStore(keystore_type);
                 ks.setCertificateEntry("ca", caCertificate);
                 ks.setKeyEntry(name, signingKey, key_password.toCharArray(), new X509Certificate[]{certificate, caCertificate});
                 return ks;
@@ -151,7 +151,7 @@ public class TLS {
         KeyPair kp=generateKeyPair();
         SSLContext sslContext=SSLContext.getInstance(protocol);
         KeyManagerFactory keyManagerFactory=KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        KeyStore trustStore=TLS.createKeyStore(keyStoreType);
+        KeyStore trustStore=createKeyStore(keyStoreType);
         TrustManagerFactory trustManagerFactory=TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustStore.setCertificateEntry("ca", ca.getSelfSignedCertificate());
         trustManagerFactory.init(trustStore);

@@ -9,7 +9,7 @@ import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.DefaultSocketFactory;
 import org.jgroups.util.MyReceiver;
-import org.jgroups.util.TLS;
+import org.jgroups.util.TLSHelper;
 import org.jgroups.util.Util;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -46,31 +46,31 @@ public class TLSTest {
 
    @BeforeClass
    public void init() throws Exception {
-      KeyPair keyPair = TLS.generateKeyPair(KEY_ALGORITHM);
+      KeyPair keyPair = TLSHelper.generateKeyPair(KEY_ALGORITHM);
       PrivateKey signingKey = keyPair.getPrivate();
       PublicKey publicKey = keyPair.getPublic();
 
       // The CA which will sign all trusted certificates
       X500Principal CA_DN = dn("CA");
-      SelfSignedX509CertificateAndSigningKey ca = TLS.createSelfSignedCertificate(CA_DN, true,
-                                                                                  KEY_SIGNATURE_ALGORITHM,
-                                                                                  KEY_ALGORITHM);
+      SelfSignedX509CertificateAndSigningKey ca = TLSHelper.createSelfSignedCertificate(CA_DN, true,
+                                                                                        KEY_SIGNATURE_ALGORITHM,
+                                                                                        KEY_ALGORITHM);
       // The truststore which contains all of the certificates
-      KeyStore trustStore = TLS.createKeyStore(KEYSTORE_TYPE);
+      KeyStore trustStore = TLSHelper.createKeyStore(KEYSTORE_TYPE);
       TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
       trustStore.setCertificateEntry("ca", ca.getSelfSignedCertificate());
       trustManagerFactory.init(trustStore);
 
       // One certificate per legitimate node, signed by the CA
       for (String name : Arrays.asList("A", "B", "C")) {
-         keyStores.put(name, TLS.createCertAndAddToKeystore(signingKey, publicKey, ca, CA_DN, name, trustStore,
+         keyStores.put(name, TLSHelper.createCertAndAddToKeystore(signingKey, publicKey, ca, CA_DN, name, trustStore,
                                                             KEYSTORE_TYPE, KEY_PASSWORD));
       }
       // A self-signed certificate which has the same DN as the CA, but which is a rogue
-      SelfSignedX509CertificateAndSigningKey other = TLS.createSelfSignedCertificate(CA_DN, true,
+      SelfSignedX509CertificateAndSigningKey other = TLSHelper.createSelfSignedCertificate(CA_DN, true,
                                                                                      KEY_SIGNATURE_ALGORITHM, KEY_ALGORITHM);
       try {
-         KeyStore ks=TLS.createKeyStore(KEYSTORE_TYPE);
+         KeyStore ks=TLSHelper.createKeyStore(KEYSTORE_TYPE);
          ks.setCertificateEntry("O", other.getSelfSignedCertificate());
          keyStores.put("O", ks);
       } catch (KeyStoreException e) {
