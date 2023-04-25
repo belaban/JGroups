@@ -33,6 +33,15 @@ public class Chat implements Receiver {
         try {
             channel=new JChannel(props).name(name);
             channel.setReceiver(this);
+
+            // todo: remove once https://issues.redhat.com/browse/JGRP-2689 has been implemented
+            /*
+            TP tp=channel.getProtocolStack().getTransport();
+            SSLContext context=TLS.getSSLContext();
+            DefaultSocketFactory ssl_factory=new DefaultSocketFactory(context);
+            tp.setSocketFactory(ssl_factory);
+            */
+
             channel.connect(CLUSTER);
         }
         catch(Exception ex) {

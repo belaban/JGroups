@@ -34,7 +34,7 @@ public final class KeyStoreGenerator {
     static String keyStoreName="defaultStore.keystore";
     static String storePass="changeit";
     static String alias="myKey";
-    static String storeType="JCEKS";
+    static String storeType="pkcs12";
 
 	private KeyStoreGenerator() {
 		throw new InstantiationError( "Must not instantiate this class" );

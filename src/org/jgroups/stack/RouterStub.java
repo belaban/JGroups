@@ -31,7 +31,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     protected BaseServer                                  client;
     protected IpAddress                                   local;     // bind address
     protected IpAddress                                   remote;    // address of remote GossipRouter
-    protected InetSocketAddress                           remote_sa; // address of remote GosipRouter, not resolved yet
+    protected InetSocketAddress                           remote_sa; // address of remote GossipRouter, not resolved yet
     protected final boolean                               use_nio;
     protected StubReceiver                                receiver;  // external consumer of data, e.g. TUNNEL
     protected CloseListener                               close_listener;

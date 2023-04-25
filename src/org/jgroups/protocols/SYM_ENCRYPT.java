@@ -41,7 +41,7 @@ public class SYM_ENCRYPT extends Encrypt<KeyStore.SecretKeyEntry> {
 
     @Property(description="The type of the keystore. " +
       "Types are listed in http://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html")
-    protected String   keystore_type="JCEKS";
+    protected String   keystore_type="pkcs12";
 
     @Property(description="Password used to check the integrity/unlock the keystore. Change the default",
       exposeAsManagedAttribute=false)
