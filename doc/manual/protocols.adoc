@@ -1790,6 +1790,45 @@ able to communicate with cluster members.
 members such that a non-member cannot understand them.
 
 
+[[TLS]]
+==== Transport level security (TLS)
+TLS can be enabled in selected transports to authenticate peers and encrypt/decrypt traffic. It is currently
+available in `TCP` and `TUNNEL`.
+
+NOTE: For `UDP` and `TCP_NIO2` -> use <<SYM_ENCRYPT>> or <<ASYM_ENCRYPT>> with <<SSL_KEY_EXCHANGE>>.
+
+When TLS is enabled, an SSLSocketFactory will be installed in the transport, which creates `SSLSockets` instead of
+`Sockets` and `SSLServerSockets` instead of `ServerSockets`.
+
+The following steps explain how to enable TLS in `TCP`:
+
+. Create a keystore containing a self-signed certificate and a key ("server") for all peers.
+ link:$$https://github.com/belaban/JGroups/blob/master/bin/gen-keys.sh$$[gen-keys.sh] can be used to do this. It will
+generate a keystore `good-server.jks` in the `keystore` directory.
+. Copy `good-server.jks` to the classpath. Alternatively, give the full path to `good-server.jks` in the
+configuration below
+. Modify the configuration:
+
+[source,xml]
+----
+<TCP
+    tls.enabled="true"
+    tls.client_auth="NEED"
+    tls.keystore_path="good-server.jks"
+    tls.keystore_password="password"
+    tls.keystore_alias="server"
+    ...
+/>
+----
+
+The same XML snippet also works for `TUNNEL`.
+
+For configuration details look at <<TCP>> or <<TUNNEL>>.
+
+NOTE: When TLS is used, <<SSL_KEY_EXCHANGE>> is not needed with <<ASYM_ENCRYPT>>; the former is required for key
+exchange in <<ASYM_ENCRYPT>>. However, because TLS already provides authenticated and encrypted communication,
+<<SSL_KEY_EXCHANGE>> can be removed.
+
 
 [[ENCRYPT]]
 ==== Encryption

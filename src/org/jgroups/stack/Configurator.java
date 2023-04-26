@@ -812,7 +812,6 @@ public class Configurator {
                                           + " could not be assigned", e);
                 }
             }
-
             props.remove(propertyName);
         }
     }

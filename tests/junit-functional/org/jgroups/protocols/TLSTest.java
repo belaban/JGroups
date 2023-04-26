@@ -9,7 +9,6 @@ import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.DefaultSocketFactory;
 import org.jgroups.util.MyReceiver;
-import org.jgroups.util.TLSHelper;
 import org.jgroups.util.Util;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;

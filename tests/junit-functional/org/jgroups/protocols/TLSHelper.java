@@ -1,5 +1,7 @@
-package org.jgroups.util;
+package org.jgroups.protocols;
 
+import org.jgroups.util.DefaultSocketFactory;
+import org.jgroups.util.SocketFactory;
 import org.wildfly.security.x500.cert.BasicConstraintsExtension;
 import org.wildfly.security.x500.cert.SelfSignedX509CertificateAndSigningKey;
 import org.wildfly.security.x500.cert.X509CertificateBuilder;
@@ -162,8 +164,8 @@ public class TLSHelper {
         return sslContext;
     }
 
-    public static SocketFactory getSSLSocketFactory() throws UnrecoverableKeyException, NoSuchAlgorithmException,
-                                                             KeyStoreException, KeyManagementException {
+    public static org.jgroups.util.SocketFactory getSSLSocketFactory() throws UnrecoverableKeyException, NoSuchAlgorithmException,
+                                                                              KeyStoreException, KeyManagementException {
         return new DefaultSocketFactory(getSSLContext());
     }
 

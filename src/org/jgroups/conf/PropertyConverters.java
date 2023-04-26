@@ -176,6 +176,10 @@ public final class PropertyConverters {
                 return Short.parseShort(propertyValue);
             if(Float.TYPE.equals(propertyFieldType))
                 return Float.parseFloat(propertyValue);
+            if(String[].class.equals(propertyFieldType))
+                return Util.parseStringArray(propertyValue, ",");
+            if(propertyFieldType.isEnum())
+                return Util.createEnum(propertyValue, propertyFieldType);
             if(InetAddress.class.equals(propertyFieldType)) {
                 InetAddress retval=null;
                 if(propertyValue.contains(",")) {
@@ -210,7 +214,6 @@ public final class PropertyConverters {
             }
             return propertyValue;
         }
-
 
 
 

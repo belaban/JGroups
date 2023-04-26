@@ -49,5 +49,7 @@ JMX="-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxr
 #DEBUG="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5000"
 PREVIEW=--enable-preview
 
-java -cp $CP $PREVIEW $DEBUG $LOG $GC $JG_FLAGS $FLAGS $JMX $JMC  $*
+# SSL_FLAGS="-Djavax.net.debug=ssl:handshake"
+
+java -cp $CP $SSL_FLAGS $PREVIEW $DEBUG $LOG $GC $JG_FLAGS $FLAGS $JMX $JMC  $*
 

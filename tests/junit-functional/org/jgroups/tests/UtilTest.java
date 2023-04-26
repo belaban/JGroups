@@ -1158,23 +1158,43 @@ public class UtilTest {
     }
 
 
-    public static void testParseSemicolonDelimitedString() {
+    public void testParseSemicolonDelimitedString() {
         String input="one;two ; three; four ; five;six";
         List<String> list=Util.parseStringList(input, ";");
         System.out.println("list: " + list);
         Assert.assertEquals(6, list.size());
         Assert.assertEquals("one", list.get(0));
         Assert.assertEquals("six", list.get(list.size() - 1));
+
+        String[] arr=Util.parseStringArray(input, ";");
+        System.out.println("array: " + Arrays.toString(arr));
+        Assert.assertEquals(6, arr.length);
+        Assert.assertEquals("one", arr[0]);
+        Assert.assertEquals("six", arr[arr.length - 1]);
     }
 
 
-    public static void testParseSemicolonDelimitedString2() {
+    public void testParseSemicolonDelimitedString2() {
         String input="  myID1::subID1 ; myID2::mySubID2; myID3 ;myID4::blaSubID4";
         List<String> list=Util.parseStringList(input, ";");
         System.out.println("list: " + list);
         Assert.assertEquals(4, list.size());
         Assert.assertEquals("myID1::subID1", list.get(0));
         Assert.assertEquals("myID4::blaSubID4", list.get(list.size() - 1));
+
+        String[] arr=Util.parseStringArray(input, ";");
+        System.out.println("array: " + Arrays.toString(arr));
+        Assert.assertEquals(4, arr.length);
+        Assert.assertEquals("myID1::subID1", arr[0]);
+        Assert.assertEquals("myID4::blaSubID4", arr[arr.length - 1]);
+    }
+
+    public void testReadStringArray() {
+        String s="  A   ,B,  C";
+        String[] arr=Util.parseStringArray(s, ",");
+        System.out.printf("arr: %s\n", Arrays.toString(arr));
+        assert arr.length == 3;
+        assert arr[0].equals("A") && arr[2].equals("C");
     }
 
 

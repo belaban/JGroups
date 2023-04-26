@@ -56,7 +56,7 @@ public class SSL_KEY_EXCHANGE_ReloadTest {
    protected File trustStoreFile;
 
    protected void createTempDirectory() throws IOException {
-      tmpDir = new File(System.getProperty("java.io.tmpdir"), File.separator + FILE_PING_Test.class.getSimpleName());
+      tmpDir = new File(System.getProperty("java.io.tmpdir"), File.separator + SSL_KEY_EXCHANGE_ReloadTest.class.getSimpleName());
       if(!tmpDir.exists())
          tmpDir.mkdir();
    }

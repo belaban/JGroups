@@ -16,10 +16,10 @@ SERVER_CSR=$KEYSTORE_DIR/server.csr
 SERVER_CER=$KEYSTORE_DIR/server.cer
 ROGUE_CSR=$KEYSTORE_DIR/rogue.csr
 ROGUE_CER=$KEYSTORE_DIR/rogue.cer
-REAL_DIR=`realpath $KEYSTORE_DIR`
 
 
 mkdir -p $KEYSTORE_DIR
+REAL_DIR=$( cd $KEYSTORE_DIR ; pwd -P )
 
 # generate CA
 keytool -genkeypair -alias ca -dname cn=ca -validity 10000 -keyalg RSA -keysize 2048 -ext bc:c -keystore $CA_KS -keypass password -storepass password

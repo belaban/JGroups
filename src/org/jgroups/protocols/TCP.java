@@ -3,12 +3,15 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.Component;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.TcpServer;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.util.SocketFactory;
+import org.jgroups.util.TLS;
+import org.jgroups.util.Util;
 
 import java.util.Collection;
 
@@ -36,15 +39,18 @@ public class TCP extends BasicTCP {
 
     @Property(description="Size of the buffer of the BufferedInputStream in TcpConnection. A read always tries to read " +
       "ahead as much data as possible into the buffer. 0: default size",type=AttributeType.BYTES)
-    protected int buffered_input_stream_size=65536;
+    protected int       buffered_input_stream_size=65536;
 
     @Property(description="Size of the buffer of the BufferedOutputStream in TcpConnection. Smaller messages are " +
       " buffered until this size is exceeded or flush() is called. Bigger messages are sent immediately. 0: default size",
       type=AttributeType.BYTES)
-    protected int buffered_output_stream_size=65536;
+    protected int       buffered_output_stream_size=65536;
 
     @Property(description="Log a warning (or not) when ServerSocket.accept() throws an exception")
-    protected boolean log_accept_error=true; // https://issues.redhat.com/browse/JGRP-2540
+    protected boolean   log_accept_error=true; // https://issues.redhat.com/browse/JGRP-2540
+
+    @Component(name="tls",description="Contains the attributes for TLS (SSL sockets) when enabled=true")
+    protected TLS       tls=new TLS();
 
     public int getBufferedInputStreamSize() {
         return buffered_input_stream_size;
@@ -63,10 +69,10 @@ public class TCP extends BasicTCP {
         this.buffered_output_stream_size=buffered_output_stream_size;
         return this;
     }
-
+    public TLS     tls()                     {return tls;}
+    public TCP     tls(TLS t)                {this.tls=t; return this;}
     public boolean logAcceptError()          {return log_accept_error;}
-    public TCP     logAcceptError(boolean l) {this.log_accept_error=l;
-        if(srv != null) srv.setLogAcceptError(l); return this;}
+    public TCP     logAcceptError(boolean l) {this.log_accept_error=l; if(srv != null) srv.setLogAcceptError(l); return this;}
 
     @ManagedAttribute
     public int getOpenConnections() {
@@ -98,6 +104,10 @@ public class TCP extends BasicTCP {
     }
 
     public void start() throws Exception {
+        if(tls.enabled()) {
+            SocketFactory factory=tls.createSocketFactory();
+            setSocketFactory(factory);
+        }
         srv=new TcpServer(getThreadFactory(), getSocketFactory(), bind_addr, bind_port, bind_port+port_range,
                           external_addr, external_port, recv_buf_size).setLogAcceptError(log_accept_error);
         srv.receiver(this)
@@ -139,7 +149,7 @@ public class TCP extends BasicTCP {
     public void stop() {
         if(log.isDebugEnabled()) log.debug("%s: closing sockets and stopping threads", local_addr);
         super.stop();
-        srv.stop(); //not needed, but just in case
+        Util.close(srv); //not needed, but just in case
     }
 
 

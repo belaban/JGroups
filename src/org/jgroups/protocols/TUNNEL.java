@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.Component;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
@@ -12,6 +13,8 @@ import org.jgroups.stack.GossipData;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.stack.RouterStubManager;
+import org.jgroups.util.SocketFactory;
+import org.jgroups.util.TLS;
 import org.jgroups.util.Util;
 
 import java.net.DatagramSocket;
@@ -75,6 +78,8 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     protected TUNNELPolicy                  tunnel_policy=new DefaultTUNNELPolicy();
     protected DatagramSocket                sock; // used to get a unique client address
     protected volatile RouterStubManager    stubManager;
+    @Component(name="tls",description="Contains the attributes for TLS (SSL sockets) when enabled=true")
+    protected TLS                           tls=new TLS();
 
 
 
@@ -88,6 +93,8 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     public TUNNEL  setTcpNodelay(boolean nd)    {this.tcp_nodelay=nd;return this;}
     public boolean useNio()                     {return use_nio;}
     public TUNNEL  useNio(boolean use_nio)      {this.use_nio=use_nio; return this;}
+    public TLS     tls()                        {return tls;}
+    public TUNNEL  tls(TLS t)                   {this.tls=t; return this;}
 
     /** We can simply send a message with dest == null and the GossipRouter will take care of routing it to all
      * members in the cluster */
@@ -167,7 +174,16 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         stubManager=RouterStubManager.emptyGossipClientStubManager(log, timer).useNio(this.use_nio);
         sock=getSocketFactory().createDatagramSocket("jgroups.tunnel.ucast_sock", bind_port, bind_addr);
     }
-    
+
+    @Override
+    public void start() throws Exception {
+        super.start();
+        if(tls.enabled()) {
+            SocketFactory factory=tls.createSocketFactory();
+            setSocketFactory(factory);
+        }
+    }
+
     public void destroy() {
         if(stubManager != null)
             stubManager.destroyStubs();

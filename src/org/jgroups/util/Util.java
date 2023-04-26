@@ -383,6 +383,12 @@ public class Util {
         }
     }
 
+    /** Creates an enum from a string */
+    public static <T extends Enum<T>> T createEnum(String name, Type type) {
+        return Enum.valueOf((Class<T>) type, name);
+    }
+
+
     public static byte[] createAuthenticationDigest(String passcode,long t1,double q1) throws IOException,
                                                                                               NoSuchAlgorithmException {
         ByteArrayOutputStream baos=new ByteArrayOutputStream(512);
@@ -1374,6 +1380,9 @@ public class Util {
         if(type == double.class  || type == Double.class)  return Double.valueOf(arg);
         if(arg == null || arg.equals("null"))
             return null;
+        if(type.isEnum()) {
+            return Util.createEnum(arg, type);
+        }
         return arg;
     }
 
@@ -3844,6 +3853,16 @@ public class Util {
         return tmp;
     }
 
+    public static String[] parseStringArray(String s, String separator) {
+        if(s == null || s.isEmpty())
+            return new String[]{};
+        String[] list=s.split(separator != null? separator : ",");
+        List<String> tmp=Stream.of(list).map(String::trim).filter(Objects::nonNull).collect(Collectors.toList());
+        String[] retval=new String[tmp.size()];
+        for(int i=0; i < tmp.size(); i++)
+            retval[i]=tmp.get(i);
+        return retval;
+    }
 
     /**
      * Reads a line of text.  A line is considered to be terminated by any one

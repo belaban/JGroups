@@ -131,7 +131,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
 
     @Property(description="The type of the keystore. " +
       "Types are listed in http://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html")
-    protected String          keystore_type="JKS";
+    protected String          keystore_type="pkcs12";
 
     @Property(description="Password to access the keystore",exposeAsManagedAttribute=false)
     protected String          keystore_password="changeit";
@@ -150,7 +150,8 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected long            reload_threshold=60000;
 
     @Property(description="The type of secret key to be sent up the stack (converted from DH). " +
-      "Should be the same as the algorithm part of ASYM_ENCRYPT.sym_algorithm if ASYM_ENCRYPT is used")
+      "Should be the same as the algorithm part of ASYM_ENCRYPT.sym_algorithm if AS" +
+      "YM_ENCRYPT is used")
     protected String          secret_key_algorithm="AES";
 
     @Property(description="If enabled, clients are authenticated as well (not just the server). Set to true to prevent " +

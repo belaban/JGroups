@@ -102,8 +102,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     protected Timer                timer;
     protected final Log            log=LogFactory.getLog(this.getClass());
 
-    @Component
+    @Component(name="diag",description="DiagnosticsHandler listening for probe requests")
     protected DiagnosticsHandler   diag;
+    @Component(name="tls",description="Contains the attributes for TLS (SSL sockets) when enabled=true")
+    protected TLS                  tls=new TLS();
 
     // mapping between groups and <member address> - <physical addr / logical name> pairs
     protected final Map<String,ConcurrentMap<Address,Entry>> address_mappings=new ConcurrentHashMap<>();
@@ -164,6 +166,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     public GossipRouter  maxLength(int len)                 {max_length=len; if(server != null) server.setMaxLength(len);
                                                              return this;}
     public DiagnosticsHandler diagHandler()                 {return diag;}
+    public TLS           tls()                              {return tls;}
+    public GossipRouter  tls(TLS t)                         {this.tls=t; return this;}
 
 
     @ManagedAttribute(description="operational status", name="running")
@@ -206,6 +210,12 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
             StackType ip_version=bind_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
             Configurator.setDefaultAddressValues(diag, ip_version);
             diag.start();
+        }
+        // Creating the DiagnosticsHandler _before_ the TLS socket factory makes the former use regular sockets;
+        // if this was not the case, Probe would have to be extended to use SSLSockets, too
+        if(tls.enabled()) {
+            SocketFactory factory=tls.createSocketFactory();
+            socketFactory(factory);
         }
 
         server=use_nio? new NioServer(thread_factory, socket_factory, bind_addr, port, port, null, 0,
@@ -762,25 +772,11 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         List<NetworkInterface> diag_bind_interfaces=null;
         String                 diag_passcode=null;
 
-        String[] tls_protocols=null;
-        String[] tls_cipher_suites=null;
-        String tls_provider=null;
-        String tls_keystore_path=null;
-        String tls_keystore_password=null;
-        String tls_keystore_type=null;
-        String tls_keystore_alias=null;
-        String tls_truststore_path=null;
-        String tls_truststore_password=null;
-        String tls_truststore_type=null;
-        TLSClientAuth tls_client_auth=TLSClientAuth.NONE;
-        List<SNIMatcher> tls_sni_matchers=new ArrayList<>();
-
+        TLS tls=new TLS();
         long start=System.currentTimeMillis();
-        GossipRouter router;
         String bind_addr=null;
         boolean jmx=false, nio=false, suspects=true;
         DumpMessages dump_msgs = DumpMessages.NONE;
-        boolean use_tls=false;
 
         for(int i=0; i < args.length; i++) {
             String arg=args[i];
@@ -873,73 +869,60 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
                 continue;
             }
             if("-tls_protocol".equals(arg)) {
-                tls_protocols=args[++i].split(",");
-                use_tls = true;
+                tls.enabled(true).setProtocols(args[++i].split(","));
                 continue;
             }
             if("-tls_cipher_suites".equals(arg)) {
-                tls_cipher_suites=args[++i].split(",");
-                use_tls = true;
+                tls.enabled(true).setCipherSuites(args[++i].split(","));
                 continue;
             }
             if("-tls_provider".equals(arg)) {
-                tls_provider=args[++i];
-                use_tls = true;
+                tls.enabled(true).setProvider(args[++i]);
                 continue;
             }
             if("-tls_keystore_path".equals(arg)) {
-                tls_keystore_path=args[++i];
-                use_tls = true;
+                tls.enabled(true).setKeystorePath(args[++i]);
                 continue;
             }
             if("-tls_keystore_password".equals(arg)) {
-                tls_keystore_password=args[++i];
-                use_tls = true;
+                tls.enabled(true).setKeystorePassword(args[++i]);
                 continue;
             }
             if("-tls_keystore_type".equals(arg)) {
-                tls_keystore_type=args[++i];
-                use_tls = true;
+                tls.enabled(true).setKeystoreType(args[++i]);
                 continue;
             }
             if("-tls_keystore_alias".equals(arg)) {
-                tls_keystore_alias=args[++i];
-                use_tls = true;
+                tls.enabled(true).setKeystoreAlias(args[++i]);
                 continue;
             }
             if("-tls_truststore_path".equals(arg)) {
-                tls_truststore_path=args[++i];
-                use_tls = true;
+                tls.enabled(true).setTruststorePath(args[++i]);
                 continue;
             }
             if("-tls_truststore_password".equals(arg)) {
-                tls_truststore_password=args[++i];
-                use_tls = true;
+                tls.enabled(true).setTruststorePassword(args[++i]);
                 continue;
             }
             if("-tls_truststore_type".equals(arg)) {
-                tls_truststore_type=args[++i];
-                use_tls = true;
+                tls.enabled(true).setTruststoreType(args[++i]);
                 continue;
             }
             if("-tls_client_auth".equals(arg)) {
-                tls_client_auth=TLSClientAuth.valueOf(args[++i].toUpperCase());
-                use_tls = true;
+                tls.enabled(true).setClientAuth(TLSClientAuth.valueOf(args[++i].toUpperCase()));
                 continue;
             }
             if("-tls_sni_matcher".equals(arg)) {
-                tls_sni_matchers.add(SNIHostName.createSNIMatcher(args[++i]));
-                use_tls = true;
+                tls.enabled(true).getSniMatchers().add(SNIHostName.createSNIMatcher(args[++i]));
                 continue;
             }
             help();
             return;
         }
-        if(use_tls && nio)
-            // Doesn't work yet
+        if(tls.enabled() && nio)
             throw new IllegalArgumentException("Cannot use NIO with TLS");
 
-        router=new GossipRouter(bind_addr, port)
+        GossipRouter router=new GossipRouter(bind_addr, port)
           .jmx(jmx).expiryTime(expiry_time)
           .useNio(nio)
           .backlog(backlog)
@@ -948,7 +931,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
           .lingerTimeout(soLinger)
           .emitSuspectEvents(suspects)
           .dumpMessages(dump_msgs)
-          .maxLength(max_length);
+          .maxLength(max_length)
+          .tls(tls);
         router.diagHandler().setEnabled(diag_enabled)
           .enableUdp(diag_enable_udp)
           .enableTcp(diag_enable_tcp)
@@ -960,41 +944,12 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
           .setBindInterfaces(diag_bind_interfaces)
           .setPasscode(diag_passcode);
         String type="";
-        if (use_tls) {
-            SslContextFactory sslContextFactory = new SslContextFactory();
-            sslContextFactory
-                  .sslProtocol("TLS")
-                  .provider(tls_provider)
-                  .keyStoreFileName(tls_keystore_path)
-                  .keyStorePassword(tls_keystore_password)
-                  .keyStoreType(tls_keystore_type)
-                  .keyAlias(tls_keystore_alias)
-                  .trustStoreFileName(tls_truststore_path)
-                  .trustStorePassword(tls_truststore_password)
-                  .trustStoreType(tls_truststore_type);
-            SSLContext context = sslContextFactory.getContext();
-            DefaultSocketFactory socketFactory = new DefaultSocketFactory(context);
-            final SSLParameters serverParameters = new SSLParameters();
-            if (tls_protocols!=null) {
-                serverParameters.setProtocols(tls_protocols);
-            }
-            if (tls_cipher_suites!=null) {
-                serverParameters.setCipherSuites(tls_cipher_suites);
-            }
-            serverParameters.setSNIMatchers(tls_sni_matchers);
-            switch (tls_client_auth) {
-                case NEED:
-                    serverParameters.setNeedClientAuth(true);
-                    break;
-                case WANT:
-                    serverParameters.setWantClientAuth(true);
-                    break;
-                default:
-                    break;
-            }
-            socketFactory.setServerSocketConfigurator(s -> ((SSLServerSocket)s).setSSLParameters(serverParameters));
-            router.socketFactory(socketFactory);
-            type = String.format(" (%s/%s)", tls_protocols!=null?String.join(",",tls_protocols):"TLS", context.getProvider().getName());
+        if(tls.enabled()) {
+            SSLContext context=tls.createContext();
+            SocketFactory socket_factory=tls.createSocketFactory(context);
+            router.socketFactory(socket_factory);
+            type=String.format(" (%s/%s)", tls.getProtocols()!=null?String.join(",",tls.getProtocols()):"TLS",
+                               context.getProvider());
         }
         router.start();
         long time=System.currentTimeMillis()-start;
@@ -1003,11 +958,6 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
                           time, bind_addr != null? bind_addr : "0.0.0.0",  local.getPort(), type);
     }
 
-    public enum TLSClientAuth {
-        NONE,
-        WANT,
-        NEED
-    }
 
     enum DumpMessages {
         NONE,
@@ -1033,24 +983,20 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         System.out.println("Options:");
         System.out.println();
         System.out.println("    -backlog <backlog>      - Max queue size of backlogged connections. Must be");
-        System.out.println("                              greater than zero or the default of 1000 will be");
-        System.out.println("                              used.");
+        System.out.println("                              greater than zero or the default of 1000 will be used.");
         System.out.println();
         System.out.println("    -jmx <true|false>       - Expose attributes and operations via JMX.\n");
         System.out.println("    -recv_buf_size <bytes>  - Sets the receive buffer");
         System.out.println();
         System.out.println("    -solinger <msecs>       - Time for setting SO_LINGER on connections. 0");
         System.out.println("                              means do not set SO_LINGER. Must be greater than");
-        System.out.println("                              or equal to zero or the default of 2000 will be");
-        System.out.println("                              used.");
+        System.out.println("                              or equal to zero or the default of 2000 will be used.");
         System.out.println();
         System.out.println("    -sotimeout <msecs>      - Time for setting SO_TIMEOUT on connections. 0");
         System.out.println("                               means don't set SO_TIMEOUT. Must be greater than");
-        System.out.println("                               or equal to zero or the default of 3000 will be");
-        System.out.println("                               used.");
+        System.out.println("                               or equal to zero or the default of 3000 will be used.");
         System.out.println();
-        System.out.println("    -expiry <msecs>         - Time for closing idle connections. 0");
-        System.out.println("                              means don't expire.");
+        System.out.println("    -expiry <msecs>         - Time for closing idle connections. 0 means don't expire.");
         System.out.println();
         System.out.println("    -nio <true|false>       - Whether or not to use non-blocking connections (NIO)");
         System.out.println();
@@ -1068,7 +1014,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         System.out.println();
         System.out.println("    -tls_provider <name>    - The name of the security provider to use for TLS.");
         System.out.println();
-        System.out.println("    -tls_keystore_path <file> - The keystore path which contains the .");
+        System.out.println("    -tls_keystore_path <file> - The keystore path which contains the key.");
         System.out.println();
         System.out.println("    -tls_keystore_password <password> - The key store password.");
         System.out.println();
@@ -1080,7 +1026,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         System.out.println();
         System.out.println("    -tls_truststore_password <password> - The trust store password.");
         System.out.println();
-        System.out.println("    -tls_truststore_type <type>  - The truststore path.");
+        System.out.println("    -tls_truststore_type <type>  - The truststore type.");
         System.out.println();
         System.out.println("    -tls_sni_matcher <name>      - A regular expression that servers use to match and accept SNI host names.");
         System.out.println("                                   Can be repeated multiple times.");

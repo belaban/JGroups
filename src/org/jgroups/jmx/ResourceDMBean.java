@@ -250,6 +250,8 @@ public class ResourceDMBean implements DynamicMBean {
             return String.format("%d", val);
         if(isFractional(cl))
             return String.format("%,.2f", val);
+        if(cl.equals(String[].class))
+            return Arrays.toString((String[])val);
         return val.toString();
     }
 
