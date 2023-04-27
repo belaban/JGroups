@@ -48,6 +48,9 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         this.pos=checkBounds(pos); return this;
     }
 
+    public byte[] buffer() {return buf;}
+    public ByteArray getBuffer() {return new ByteArray(buf, pos, limit-pos);}
+    public ByteBuffer byteBuffer() {return ByteBuffer.wrap(buf, pos, limit-pos);}
     public int position() {return pos;}
     public int limit()    {return limit;}
     public int capacity() {return buf.length;}
