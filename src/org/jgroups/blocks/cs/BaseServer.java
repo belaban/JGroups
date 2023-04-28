@@ -12,6 +12,7 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.*;
 
+import javax.net.ssl.SSLException;
 import java.io.Closeable;
 import java.io.DataInput;
 import java.io.IOException;
@@ -300,7 +301,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             try {
                 conn=getConnection(dest);
             }
-            catch(ConnectException ex) {
+            catch(ConnectException | SSLException ex) {
                 throw ex;
             }
             catch(Exception ise) {
@@ -310,67 +311,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         while(!connected(conn));
         return conn;
     }
-
-    /** Creates a new connection to dest, or returns an existing one */
-    /*public Connection getConnectionOriginal(Address dest) throws Exception {
-        Connection conn;
-        synchronized(this) {
-            // keep FAST path on the most common case
-            if(connected(conn=conns.get(dest)))
-                return conn;
-        }
-
-        Exception connect_exception=null; // set if connect() throws an exception
-        sock_creation_lock.lockInterruptibly();
-        try {
-            // lock / release, create new conn under sock_creation_lock, it can be skipped but then it takes
-            // extra check in conn map and closing the new connection, w/ sock_creation_lock it looks much simpler
-            // (slow path, so not important)
-            synchronized(this) {
-                conn=conns.get(dest); // check again after obtaining sock_creation_lock
-                if(connected(conn))
-                    return conn;
-
-                // create conn stub
-                conn=createConnection(dest);
-                replaceConnection(dest, conn);
-            }
-
-            // now connect to dest:
-            try {
-                synchronized(this) {
-                    log.trace("%s: connecting to %s", local_addr, dest);
-                    conn.connect(dest);
-
-                    notifyConnectionEstablished(conn);
-                    conn.start();
-                }
-            }
-            catch(Exception connect_ex) {
-                connect_exception=connect_ex;
-            }
-
-            synchronized(this) {
-                Connection existing_conn=conns.get(dest); // check again after obtaining sock_creation_lock
-                // added by a successful accept()
-                if(connected(existing_conn) && existing_conn != conn) {
-                    log.trace("%s: found existing connection to %s, using it and deleting own conn-stub", local_addr, dest);
-                    Util.close(conn); // close our connection; not really needed as conn was closed by accept()
-                    return existing_conn;
-                }
-
-                if(connect_exception != null) {
-                    log.trace("%s: failed connecting to %s: %s", local_addr, dest, connect_exception);
-                    removeConnectionIfPresent(dest, conn); // removes and closes the conn
-                    throw connect_exception;
-                }
-                return conn;
-            }
-        }
-        finally {
-            sock_creation_lock.unlock();
-        }
-    }*/
 
 
     /** Creates a new connection to dest, or returns an existing one */
