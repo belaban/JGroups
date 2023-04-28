@@ -55,6 +55,19 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
     public int limit()    {return limit;}
     public int capacity() {return buf.length;}
 
+    /**
+     * Advances the current position without reading any bytes. This can be useful to skip bytes if necessary or if
+     * the byte[] is read externally from this InputStream.
+     * @param amount the amount to move the position forward
+     * @throws IndexOutOfBoundsException if the amount to move and the current position is larger than the limit
+     */
+    public void advance(int amount) {
+        if (pos + amount > limit) {
+            throw new IndexOutOfBoundsException();
+        }
+        pos += amount;
+    }
+
 
 
     /**
