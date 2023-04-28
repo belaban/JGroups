@@ -48,12 +48,12 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         this.pos=checkBounds(pos); return this;
     }
 
-    public byte[] buffer() {return buf;}
-    public ByteArray getBuffer() {return new ByteArray(buf, pos, limit-pos);}
+    public byte[]     buffer()     {return buf;}
+    public ByteArray  getBuffer()  {return new ByteArray(buf, pos, limit-pos);}
     public ByteBuffer byteBuffer() {return ByteBuffer.wrap(buf, pos, limit-pos);}
-    public int position() {return pos;}
-    public int limit()    {return limit;}
-    public int capacity() {return buf.length;}
+    public int        position()   {return pos;}
+    public int        limit()      {return limit;}
+    public int        capacity()   {return buf.length;}
 
     /**
      * Advances the current position without reading any bytes. This can be useful to skip bytes if necessary or if
@@ -61,11 +61,11 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
      * @param amount the amount to move the position forward
      * @throws IndexOutOfBoundsException if the amount to move and the current position is larger than the limit
      */
-    public void advance(int amount) {
-        if (pos + amount > limit) {
+    public ByteArrayDataInputStream advance(int amount) {
+        if(pos + amount > limit)
             throw new IndexOutOfBoundsException();
-        }
         pos += amount;
+        return this;
     }
 
 
