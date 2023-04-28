@@ -20,7 +20,7 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-class DefaultDNSResolver implements DNSResolver {
+public class DefaultDNSResolver implements DNSResolver {
 
     private static final Pattern SRV_REGEXP = Pattern.compile("\\d+ \\d+ (\\d+) ([\\w+\\.-]+)");
 
@@ -28,7 +28,7 @@ class DefaultDNSResolver implements DNSResolver {
 
     private final DirContext dnsContext;
 
-    DefaultDNSResolver(DirContext context) {
+    public DefaultDNSResolver(DirContext context) {
         this.dnsContext = context;
     }
 
