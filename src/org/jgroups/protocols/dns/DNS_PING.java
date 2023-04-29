@@ -62,6 +62,24 @@ public class DNS_PING extends Discovery {
         }
     }
 
+    public DNS_PING setDNSResolver(DNSResolver resolver) {
+        this.dns_resolver = resolver;
+        return this;
+    }
+
+    public DNS_PING setDNSQuery(String query) {
+        this.dns_query = query;
+        return this;
+    }
+
+    public String getDNSContextFactory() {
+        return this.dns_context_factory;
+    }
+
+    public String getDNSAddress() {
+        return this.dns_address;
+    }
+
     protected void validateProperties() {
         if (dns_query == null || dns_query.trim().isEmpty()) {
             throw new IllegalArgumentException("dns_query can not be null or empty");

@@ -13,11 +13,11 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 
-class AddressedDNSResolver extends DefaultDNSResolver {
+public class AddressedDNSResolver extends DefaultDNSResolver {
 
     private static final Log log = LogFactory.getLog(MethodHandles.lookup().lookupClass());
 
-    AddressedDNSResolver(DirContext context) {
+    public AddressedDNSResolver(DirContext context) {
         super(context);
     }
 
