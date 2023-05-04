@@ -3,6 +3,8 @@ package org.jgroups.demos;
 import org.jgroups.*;
 import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.RouteStatusListener;
+import org.jgroups.util.ExtendedUUID;
+import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
 /** Demos RELAY. Create 2 *separate* clusters with RELAY as top protocol. Each RELAY has bridge_props="tcp.xml" (tcp.xml
@@ -65,6 +67,7 @@ public class RelayDemo implements Receiver {
     }
 
     protected void start(String props, String name, boolean print_route_status, boolean nohup) throws Exception {
+        ExtendedUUID.setPrintFunction(UUID::printName);
         ch=new JChannel(props).setReceiver(this);
         if(name != null)
             ch.setName(name);
@@ -95,6 +98,8 @@ public class RelayDemo implements Receiver {
         for(;;) {
             try {
                 String line=Util.readStringFromStdin(": ");
+                if(line == null)
+                    break;
                 if(process(line)) // see if we have a command, otherwise pass down
                     continue;
                 ch.send(null, line);

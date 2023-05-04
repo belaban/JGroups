@@ -78,7 +78,10 @@ public class UUID implements Address, Constructable<UUID> {
     }
 
 
-
+    public static String printName(UUID uuid) {
+        String val=NameCache.get(uuid);
+        return val != null? val : uuid.toStringLong();
+    }
 
     public String toString() {
         String val=NameCache.get(this);

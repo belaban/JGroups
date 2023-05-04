@@ -266,6 +266,11 @@ public class Relayer {
                 relay.sitesChange(false, up.toArray(new String[0]));
         }
 
+        @Override
+        public String toString() {
+            return String.format("bridge %s", cluster_name);
+        }
+
         protected boolean contains(List<Route> routes, Address addr) {
             return routes.stream().anyMatch(route -> route.siteMaster().equals(addr));
         }
