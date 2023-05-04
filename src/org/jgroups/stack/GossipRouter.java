@@ -503,7 +503,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     }
 
     protected static void dump(GossipData data) {
-        Util.parse(data.buffer, data.offset, data.length, MSG_CONSUMER, null, false);
+        Util.parse(data.buffer, data.offset, data.length, MSG_CONSUMER, null, null, false, false);
     }
 
     @Override

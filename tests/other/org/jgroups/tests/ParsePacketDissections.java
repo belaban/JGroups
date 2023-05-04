@@ -1,13 +1,13 @@
 package org.jgroups.tests;
 
+import org.jgroups.util.Util;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.FileReader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.jgroups.util.Util;
 
 /**
  * If you use `tshark ... -w data.tshark > parsed.txt` when the test is over, the parse will continue running and can take a lot of time.
@@ -35,7 +35,7 @@ public class ParsePacketDissections {
 
    public static void main(String[] args) throws Exception {
       boolean print_vers=false, binary_to_ascii=true, parse_discovery_responses=true, tcp=false;
-      ParseMessages.InnerParseMessages inner = new ParseMessages.InnerParseMessages(print_vers, binary_to_ascii, parse_discovery_responses, null);
+      ParseMessages.InnerParseMessages pm = new ParseMessages.InnerParseMessages(print_vers, binary_to_ascii, parse_discovery_responses, null);
       System.out.println("No.,Time,Source,Destination,Protocol,Length,Info");
       Long count = null;
       try (BufferedReader br = new BufferedReader(new FileReader(args[0]))) {
@@ -46,23 +46,24 @@ public class ParsePacketDissections {
                count = Long.valueOf(line.trim().split(" ")[0]);
             }
             // begin of a packet
-            if (line.trim().length() > 0 && line.trim().startsWith(count++ + "")) {
-               List<String> innerData = Arrays.stream(line.trim().split(" ")).filter(s -> s.length() > 0).collect(Collectors.toList());
-               System.out.println(String.format("---> %s,%s,%s,%s,%s,%s,%s", innerData.remove(0), innerData.remove(0), innerData.remove(0), innerData.remove(0), innerData.remove(0), innerData.remove(0), innerData.toString().replace("[", "").replace("]", "").replace(", ", " ")));
+            if (!line.trim().isEmpty() && line.trim().startsWith(String.valueOf(count++))) {
+               List<String> innerData = Arrays.stream(line.trim().split(" ")).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+               System.out.printf("---> %s,%s,%s,%s,%s,%s,%s%n", innerData.remove(0), innerData.remove(0), innerData.remove(0), innerData.remove(0), innerData.remove(0), innerData.remove(0), innerData.toString().replace("[", "").replace("]", "").replace(", ", " "));
             } else {
                // line will be empty
                // br.readLine will return the next line
                // when the line is empty, it is the end of the packet
                StringBuilder sb = new StringBuilder();
                while ((line = br.readLine()) != null) {
-                  if (line.trim().length() == 0) {
+                  if (line.trim().isEmpty()) {
                      break;
                   }
                   // the output has a pattern
                   sb.append(line.substring(4, 54).replaceAll(" ", ""));
                }
                String jgroupsMessage = sb.substring(32 + 32 + 20);
-               Util.parse(inner.createInputStream(new ByteArrayInputStream(jgroupsMessage.getBytes())), inner.msg_consumer, inner.batch_consumer, tcp);
+               Util.parse(pm.createInputStream(new ByteArrayInputStream(jgroupsMessage.getBytes())), pm.msg_consumer,
+                          pm.batch_consumer, pm.gossip_consumer, tcp, false);
             }
          }
       }

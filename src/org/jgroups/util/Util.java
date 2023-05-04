@@ -14,9 +14,7 @@ import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.SiteUUID;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolStack;
+import org.jgroups.stack.*;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -1541,12 +1539,14 @@ public class Util {
     }
 
     public static void parse(byte[] buf, int offset, int length, BiConsumer<Short,Message> msg_consumer,
-                        BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) {
-        parse(new ByteArrayInputStream(buf, offset, length), msg_consumer, batch_consumer, tcp);
+                        BiConsumer<Short,MessageBatch> batch_consumer, Consumer<GossipData> gossip_consumer,
+                             boolean tcp, boolean gossip) {
+        parse(new ByteArrayInputStream(buf, offset, length), msg_consumer, batch_consumer, gossip_consumer, tcp, gossip);
     }
 
     public static void parse(InputStream input, BiConsumer<Short,Message> msg_consumer,
-                             BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) {
+                             BiConsumer<Short,MessageBatch> batch_consumer, Consumer<GossipData> gossip_consumer,
+                             boolean tcp, boolean gossip) {
         if(msg_consumer == null && batch_consumer == null)
             return;
         byte[] tmp=new byte[Global.INT_SIZE];
@@ -1567,6 +1567,15 @@ public class Util {
                     else {
                         // do nothing - the 4 bytes were the length
                         // int len=Bits.readInt(tmp, 0);
+                    }
+                }
+                if(gossip) { // messages to or from a GossipRouter
+                    GossipData g=new GossipData();
+                    g.readFrom(dis, true, false);
+                    if(g.getType() != GossipType.MESSAGE) {
+                        if(gossip_consumer != null)
+                            gossip_consumer.accept(g);
+                        continue;
                     }
                 }
                 short version=dis.readShort();

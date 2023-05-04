@@ -168,7 +168,11 @@ public class GossipData implements SizeStreamable {
     }
 
 
-    protected void readFrom(DataInput in, boolean read_type) throws IOException, ClassNotFoundException {
+    public void readFrom(DataInput in, boolean read_type) throws IOException, ClassNotFoundException {
+        readFrom(in, read_type, true);
+    }
+
+    public void readFrom(DataInput in, boolean read_type, boolean read_payload) throws IOException, ClassNotFoundException {
         if(read_type)
             type=GossipType.values()[in.readByte()];
         group=Bits.readString(in);
@@ -190,12 +194,11 @@ public class GossipData implements SizeStreamable {
         }
 
         length=in.readInt();
-        if(length > 0) {
+        if(length > 0 && read_payload) {
             buffer=new byte[length];
             in.readFully(buffer, offset=0, length);
         }
     }
-
 
 
 }

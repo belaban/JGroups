@@ -1,11 +1,15 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
+import org.jgroups.Header;
+import org.jgroups.Message;
+import org.jgroups.Version;
+import org.jgroups.View;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.PingData;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.JoinRsp;
+import org.jgroups.stack.GossipData;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.UUID;
@@ -15,6 +19,7 @@ import java.io.*;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Parses messages out of a captured file and writes them to stdout
@@ -25,19 +30,21 @@ public class ParseMessages {
     protected static boolean show_views=true;
 
     public static void parse(byte[] buf, int offset, int length, BiConsumer<Short,Message> msg_consumer,
-                             BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) {
-        Util.parse(new ByteArrayInputStream(buf, offset, length), msg_consumer, batch_consumer, tcp);
+                             BiConsumer<Short,MessageBatch> batch_consumer, Consumer<GossipData> gossip_consumer,
+                             boolean tcp, boolean gossip) {
+        Util.parse(new ByteArrayInputStream(buf, offset, length), msg_consumer, batch_consumer, gossip_consumer, tcp, gossip);
     }
 
-    public void parse(InputStream in, BiConsumer<Short,Message> msg_consumer,
-                             BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) throws FileNotFoundException {
-        Util.parse(in, msg_consumer, batch_consumer, tcp);
+    public void parse(InputStream in, BiConsumer<Short,Message> msg_consumer, BiConsumer<Short,MessageBatch> batch_consumer,
+                      Consumer<GossipData> gossip_consumer,
+                      boolean tcp, boolean gossip) throws FileNotFoundException {
+        Util.parse(in, msg_consumer, batch_consumer, gossip_consumer, tcp, gossip);
     }
 
 
     public static void main(String[] args) throws Exception {
         String file=null;
-        boolean print_vers=false, binary_to_ascii=true, parse_discovery_responses=true, tcp=false;
+        boolean print_vers=false, binary_to_ascii=true, parse_discovery_responses=true, tcp=false, gossip=false;
         String instance = null;
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-file")) {
@@ -50,6 +57,10 @@ public class ParseMessages {
             }
             if("-tcp".equalsIgnoreCase(args[i])) {
                 tcp=true;
+                continue;
+            }
+            if("-gossip".equals(args[i])) {
+                gossip=true;
                 continue;
             }
             if("-mappings".equalsIgnoreCase(args[i])) {
@@ -75,15 +86,18 @@ public class ParseMessages {
             help();
             return;
         }
-        InnerParseMessages inner = new InnerParseMessages(print_vers, binary_to_ascii, parse_discovery_responses, instance);
-        inner.parse(inner.createInputStream(file != null? new FileInputStream(file) : System.in), inner.msg_consumer, inner.batch_consumer, tcp);
+        InnerParseMessages pm=new InnerParseMessages(print_vers, binary_to_ascii, parse_discovery_responses, instance);
+        pm.parse(pm.createInputStream(file != null? new FileInputStream(file) : System.in), pm.msg_consumer,
+                    pm.batch_consumer, pm.gossip_consumer, tcp, gossip);
     }
 
-    static class InnerParseMessages {
-        private final boolean binary_to_ascii;
-        final BiConsumer<Short,Message> msg_consumer;
+    protected static class InnerParseMessages {
+        private final boolean                binary_to_ascii;
+        final BiConsumer<Short,Message>      msg_consumer;
         final BiConsumer<Short,MessageBatch> batch_consumer;
-        private final ParseMessages parseMessages;
+        final Consumer<GossipData>           gossip_consumer;
+        private final ParseMessages          parseMessages;
+
         public InnerParseMessages(boolean print_vers, boolean binary_to_ascii, boolean parse_discovery_responses, String instance) throws Exception {
             this.binary_to_ascii = binary_to_ascii;
             final boolean print_version=print_vers, parse=parse_discovery_responses;
@@ -130,10 +144,12 @@ public class ParseMessages {
                           view == null? "" : "(view: " + view + ")");
                 }
             };
+            this.gossip_consumer=g -> System.out.printf("-- gossip: %s\n", g);
+
             if (instance == null) {
                 parseMessages = new ParseMessages();
             } else {
-                parseMessages = (ParseMessages) Class.forName(instance).newInstance();
+                parseMessages = (ParseMessages) Class.forName(instance).getDeclaredConstructor().newInstance();
             }
         }
         public InputStream createInputStream(InputStream in) {
@@ -144,8 +160,9 @@ public class ParseMessages {
             }
         }
         public void parse(InputStream input, BiConsumer<Short,Message> msg_consumer,
-                          BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) throws FileNotFoundException {
-            parseMessages.parse(input, msg_consumer, batch_consumer, tcp);
+                          BiConsumer<Short,MessageBatch> batch_consumer, Consumer<GossipData> gossip_consumer,
+                          boolean tcp, boolean gossip) throws FileNotFoundException {
+            parseMessages.parse(input, msg_consumer, batch_consumer, gossip_consumer, tcp, gossip);
         }
     }
 
@@ -192,6 +209,7 @@ public class ParseMessages {
                              "[-show-views (true|false)\n\n" +
                              "-file: if missing stdin will be used\n" +
                              "-tcp: when TCP is used, the first 4 bytes (length) is skipped\n" +
+                             "-gossip: read messages to/from the GossipRouter\n" +
                              "-mappings: file containing UUIDs and logical name (1 mapping per line)\n" +
                              "-binary-to-ascii <true|false>: if the input contains binary data, convert it to ASCII " +
                              "(required by ParseMessages) on the fly\n" +
@@ -211,7 +229,7 @@ public class ParseMessages {
 
                 UUID uuid=null;
                 try {
-                    long tmp=Long.valueOf(uuid_str);
+                    long tmp=Long.parseLong(uuid_str);
                     uuid=new UUID(0, tmp);
                 }
                 catch(Throwable t) {

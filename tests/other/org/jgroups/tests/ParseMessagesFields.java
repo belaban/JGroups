@@ -1,18 +1,16 @@
 package org.jgroups.tests;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
+import org.jgroups.Message;
+import org.jgroups.stack.GossipData;
+import org.jgroups.util.MessageBatch;
+
+import java.io.*;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.function.BiConsumer;
-
-import org.jgroups.Message;
-import org.jgroups.util.MessageBatch;
+import java.util.function.Consumer;
 
 /**
  * While investigating network errors, we would like to look for timestamp and JGroups data.
@@ -42,9 +40,12 @@ public class ParseMessagesFields extends ParseMessages {
 
    @Override
    public void parse(InputStream in, BiConsumer<Short,Message> msg_consumer,
-                     BiConsumer<Short,MessageBatch> batch_consumer, boolean tcp) {
-      parseWithFields(in, msg_consumer, batch_consumer, tcp);
+                     BiConsumer<Short,MessageBatch> batch_consumer, Consumer<GossipData> gossip_consumer,
+                     boolean tcp, boolean gossip) {
+      parseWithFields(in, msg_consumer, batch_consumer, tcp, gossip);
    }
+
+
 
    public static class BinaryToAsciiWithFieldsInputStream extends ParseMessages.BinaryToAsciiInputStream {
 
@@ -102,7 +103,7 @@ public class ParseMessagesFields extends ParseMessages {
    }
 
    public void parseWithFields(InputStream input, BiConsumer<Short, Message> msg_consumer,
-                                         BiConsumer<Short, MessageBatch> batch_consumer, boolean tcp) {
+                                         BiConsumer<Short, MessageBatch> batch_consumer, boolean tcp, boolean gossip) {
       try {
          for(;;) {
             // parse fields
@@ -134,7 +135,8 @@ public class ParseMessagesFields extends ParseMessages {
                for (String fieldValue : fieldValues) {
                   System.out.print(fieldValue + " ");
                }
-               super.parse(new BinaryToAsciiInputStream(new ByteArrayInputStream(outputStream.toByteArray())), msg_consumer, batch_consumer, tcp);
+               super.parse(new BinaryToAsciiInputStream(new ByteArrayInputStream(outputStream.toByteArray())),
+                           msg_consumer, batch_consumer, null, tcp, false);
             }
          }
       } catch(EOFException ignored) {
