@@ -4958,8 +4958,42 @@ public class Util {
     }
 
 
+    public static Map<String,List<Address>> getSites(View bridge_view, String excluding_site) {
+        Map<String,List<Address>> m=new HashMap<>();
+        if(bridge_view == null)
+            return m;
+        for(Address a: bridge_view) {
+            if(a instanceof SiteUUID) {
+                String sitename=((SiteUUID)a).getSite();
+                if(sitename == null || sitename.equals(excluding_site))
+                    continue;
+                List<Address> site_addrs=m.computeIfAbsent(sitename, s -> new ArrayList<>());
+                site_addrs.add(a);
+            }
+        }
+        return m;
+    }
+
+    /**
+     * Returns the sites of the view (all addresses are SiteUUIDs) minus the given site, Example:
+     * bridge_view=A:net1,B:net1,X:net2,Y:net2, excluding_site=net1 -> ["net2"]
+     * @param bridge_view
+     * @param excluding_site
+     * @return the sites of members who are _not_ in excluding_site; each site is returned onlt once
+     */
+    public static Collection<String> otherSites(View bridge_view, String excluding_site) {
+        if(bridge_view == null)
+            return Collections.emptySet();
+        Set<String> ret=new HashSet<>(bridge_view.size());
+        Address[] members=bridge_view.getMembersRaw();
+        for(Address addr: members) {
+            if(addr instanceof SiteUUID) {
+                String site=((SiteUUID)addr).getSite();
+                if(site != null && !site.equals(excluding_site))
+                    ret.add(site);
+            }
+        }
+        return ret;
+    }
+
 }
-
-
-
-

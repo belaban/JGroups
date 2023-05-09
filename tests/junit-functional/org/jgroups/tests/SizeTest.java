@@ -601,6 +601,10 @@ public class SizeTest {
         hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.SITES_UP, null, null)
           .setSites("sfo", "lon","nyc");
         _testSize(hdr);
+
+        hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, dest, null)
+          .addToVisitedSites(List.of("nyc", "sfc", "lon"));
+        _testSize(hdr);
     }
 
 

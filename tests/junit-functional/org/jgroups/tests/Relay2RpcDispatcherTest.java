@@ -5,7 +5,10 @@ import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
 import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.protocols.*;
+import org.jgroups.protocols.MERGE3;
+import org.jgroups.protocols.SHARED_LOOPBACK;
+import org.jgroups.protocols.SHARED_LOOPBACK_PING;
+import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.relay.RELAY2;
@@ -20,9 +23,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -120,10 +121,10 @@ public class Relay2RpcDispatcherTest {
         System.out.println("Route at sfo to lon: " + route);
         assert route != null;
 
-        assertSiteView(a, Arrays.asList(LON, SFO));
+        assertSiteView(a, List.of(SFO));
         assert getCurrentSites(b) == null;
 
-        assertSiteView(x, Arrays.asList(LON, SFO));
+        assertSiteView(x, List.of(LON));
         assert getCurrentSites(y) == null;
 
         System.out.println("B: sending message 0 to the site master of SFO");

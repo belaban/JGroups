@@ -4,8 +4,10 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.Message.Flag;
 import org.jgroups.Message.TransientFlag;
+import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Bits;
+import org.jgroups.util.UUID;
 import org.jgroups.util.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -1471,6 +1473,121 @@ public class UtilTest {
 
         en=Util.enumerate(array, 5, 0);
         check(en, new Integer[]{});
+    }
+
+
+    /** Tests {@link Util#otherSites(View, String)} */
+    public void testBridgeMembers() {
+        Collection<String> sites=Util.otherSites(null, null);
+        assert sites != null && sites.isEmpty();
+
+        Address _a=new SiteUUID(UUID.randomUUID(), "A", "lon"),
+          _b=new SiteUUID(UUID.randomUUID(), "B", "lon"),
+          _x=new SiteUUID(UUID.randomUUID(), "X", "sfc"),
+          _y=new SiteUUID(UUID.randomUUID(), "Y", "sfc"),
+          _z=new SiteUUID(UUID.randomUUID(), "Z", "nyc");
+
+        View v=View.create(_a, 1, _a);
+        sites=Util.otherSites(v, "sfc");
+        assert sites.size() == 1;
+        assert sites.contains("lon");
+
+        v=View.create(_a, 1, _a,_b);
+        sites=Util.otherSites(v, "sfc");
+        assert sites.size() == 1;
+        assert sites.contains("lon");
+
+        v=View.create(_a, 1, _a,_b,_x);
+        sites=Util.otherSites(v, "sfc");
+        assert sites.size() == 1;
+        assert sites.contains("lon");
+        assert !sites.contains("sfc");
+
+        sites=Util.otherSites(v, "foo");
+        assert sites.size() == 2;
+        assert sites.containsAll(List.of("lon", "sfc"));
+
+        v=View.create(_a, 1, _a,_b,_x,_y,_z);
+        Collection<String> sites_old=Util.otherSites(null, "lon"),
+          sites_new=Util.otherSites(v, "lon");
+        boolean removed=sites_new.removeAll(sites_old);
+        assert !removed;
+        assert sites_new.containsAll(List.of("nyc", "sfc"));
+
+        View v2=View.create(_a, 1, _a, _y); // ["lon,"sfc"]
+        sites_old=Util.otherSites(v2, "lon");
+        sites_new=Util.otherSites(v, "lon");
+
+        sites_new.removeAll(sites_old);
+        assert sites_new.size() == 1;
+        assert sites_new.contains("nyc");
+
+        sites_old=Util.otherSites(v, "lon");
+        sites_new=Util.otherSites(v2, "lon");
+        sites_old.removeAll(sites_new);
+        assert sites_old.size() == 1;
+        assert sites_old.contains("nyc");
+    }
+
+    /** Tests {@link Util#getSites(View, String)} */
+    public void testGetSites() {
+        Map<String,List<Address>> sites=Util.getSites(null, null);
+        assert sites != null && sites.isEmpty();
+
+        Address _a=new SiteUUID(UUID.randomUUID(), "A", "lon"),
+          _b=new SiteUUID(UUID.randomUUID(), "B", "lon"),
+          _x=new SiteUUID(UUID.randomUUID(), "X", "sfc"),
+          _y=new SiteUUID(UUID.randomUUID(), "Y", "sfc"),
+          _z=new SiteUUID(UUID.randomUUID(), "Z", "nyc");
+
+        View v=View.create(_a, 1, _a);
+        sites=Util.getSites(v, null);
+        assert sites.size() == 1;
+        assert sites.containsKey("lon");
+
+        sites=Util.getSites(v, "sfc");
+        assert sites.size() == 1;
+        assert sites.containsKey("lon");
+
+        v=View.create(_a, 1, _a,_b);
+        sites=Util.getSites(v, "sfc");
+        assert sites.size() == 1;
+        assert sites.containsKey("lon");
+        List<Address> list=sites.get("lon");
+        assert list.containsAll(List.of(_a,_b));
+
+        v=View.create(_a, 1, _a,_b,_x);
+        sites=Util.getSites(v, "sfc");
+        assert sites.size() == 1;
+        assert sites.containsKey("lon");
+        assert !sites.containsKey("sfc");
+
+        sites=Util.getSites(v, "foo");
+        assert sites.size() == 2;
+        assert sites.containsKey("lon");
+        assert sites.containsKey("sfc");
+
+        v=View.create(_a, 1, _a,_b,_x,_y,_z);
+        Map<String,List<Address>> sites_old=Util.getSites(null, "lon"),
+          sites_new=Util.getSites(v, "lon");
+        boolean removed=sites_new.keySet().removeAll(sites_old.keySet());
+        assert !removed;
+        assert sites_new.containsKey("nyc");
+        assert sites_new.containsKey("sfc");
+
+        View v2=View.create(_a, 1, _a, _y); // ["lon,"sfc"]
+        sites_old=Util.getSites(v2, "lon");
+        sites_new=Util.getSites(v, "lon");
+
+        sites_new.keySet().removeAll(sites_old.keySet());
+        assert sites_new.size() == 1;
+        assert sites_new.containsKey("nyc");
+
+        sites_old=Util.getSites(v, "lon");
+        sites_new=Util.getSites(v2, "lon");
+        sites_old.keySet().removeAll(sites_new.keySet());
+        assert sites_old.size() == 1;
+        assert sites_old.containsKey("nyc");
     }
 
     protected static void check(Enumeration<Integer> en, Integer[] expected) {

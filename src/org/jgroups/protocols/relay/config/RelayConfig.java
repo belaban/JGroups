@@ -18,7 +18,7 @@ import java.util.Map;
  * @author Bela Ban
  * @since 3.2
  */
-public final class RelayConfig {
+public class RelayConfig {
     protected static final String RELAY_CONFIG  = "RelayConfiguration";
     protected static final String SITES         = "sites";
     protected static final String SITE          = "site";
@@ -97,7 +97,10 @@ public final class RelayConfig {
                 continue;
             String name=attrs.get("name");
             String config=attrs.get("config");
-            BridgeConfig bridge_config=new PropertiesBridgeConfig(name, config);
+            String to=attrs.get("to");
+            if(to == null) // "to" overrides site-name (when given)
+                to=site_config.getName();
+            BridgeConfig bridge_config=new PropertiesBridgeConfig(name, to, config);
             site_config.addBridge(bridge_config);
         }
     }
@@ -154,21 +157,28 @@ public final class RelayConfig {
     }
 
     public abstract static class BridgeConfig {
-        protected final String cluster_name;
+        protected String cluster_name;
+        protected String to; // the site to/from which this bridge forwards/receives messages
 
-        protected BridgeConfig(String cluster_name) {this.cluster_name=cluster_name;}
+        protected BridgeConfig(String cluster_name, String to) {
+            this.cluster_name=cluster_name;
+            this.to=to;
+        }
 
-        public String            getClusterName()  {return cluster_name;}
-        public abstract JChannel  createChannel() throws Exception;
+        public String            getClusterName()         {return cluster_name;}
+        public BridgeConfig      setClusterName(String s) {cluster_name=s; return this;}
+        public String            getTo()                  {return to;}
+        public BridgeConfig      setTo(String s)          {to=s; return this;}
+        public abstract JChannel createChannel() throws Exception;
 
-        public String toString() {return "cluster=" + cluster_name;}
+        public String toString() {return String.format("to=%s, cluster=%s", to, cluster_name);}
     }
 
     public static class PropertiesBridgeConfig extends BridgeConfig {
         protected final String config;
 
-        public PropertiesBridgeConfig(String cluster_name, String config) {
-            super(cluster_name);
+        public PropertiesBridgeConfig(String cluster_name, String to, String config) {
+            super(cluster_name, to);
             this.config=Util.substituteVariable(config);
         }
 
@@ -181,7 +191,11 @@ public final class RelayConfig {
         protected Protocol[] protocols;
 
         public ProgrammaticBridgeConfig(String cluster_name, Protocol[] prots) {
-            super(cluster_name);
+            this(cluster_name, cluster_name, prots);
+        }
+
+        public ProgrammaticBridgeConfig(String cluster_name, String to, Protocol[] prots) {
+            super(cluster_name, to);
             this.protocols=prots;
         }
 
@@ -210,6 +224,11 @@ public final class RelayConfig {
     }
 
 
+    /**
+     * Forwards to site 'to' via route 'gateway'. Example: if site HF is reachable via NET1, if NET2 is not directly
+     * connected to HF, it needs to have a ForwardConfig with to="HF" and gateway="NET1". This means that a message to
+     * site HF will be forwarded to NET1, which then forwards it to HF.
+     */
     public static class ForwardConfig {
         protected final String to;
         protected final String gateway;
@@ -219,11 +238,11 @@ public final class RelayConfig {
             this.gateway=gateway;
         }
 
-        public String getGateway() {return gateway;}
-        public String getTo()      {return to;}
+        public String gateway() {return gateway;}
+        public String to()      {return to;}
 
         public String toString() {
-            return "forward to=" + to + " gateway=" + gateway;
+            return "forward to=" + to + " gw=" + gateway;
         }
     }
 

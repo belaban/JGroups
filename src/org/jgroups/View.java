@@ -230,10 +230,11 @@ public class View implements Comparable<View>, SizeStreamable, Iterable<Address>
     }
 
     public static List<Address> newMembers(View old, View new_view) {
-        if(old == null || new_view == null)
+        if(new_view == null)
             return null;
         List<Address> retval=new ArrayList<>(new_view.getMembers());
-        retval.removeAll(old.getMembers());
+        if(old != null)
+            retval.removeAll(old.getMembers());
         return retval;
     }
 

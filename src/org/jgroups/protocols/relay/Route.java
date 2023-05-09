@@ -5,7 +5,10 @@ import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.logging.Log;
+import org.jgroups.protocols.relay.RELAY2.Relay2Header;
 import org.jgroups.util.Util;
+
+import java.util.Collection;
 
 
 /**
@@ -34,11 +37,15 @@ public class Route implements Comparable<Route> {
     public Route    stats(boolean f) {stats=f; return this;}
 
     public void send(Address final_destination, Address original_sender, final Message msg) {
+        send(final_destination, original_sender, msg, null);
+    }
+
+    public void send(Address final_destination, Address original_sender, final Message msg, Collection<String> visited_sites) {
         if(log.isTraceEnabled())
             log.trace("routing message to " + final_destination + " via " + site_master);
         long start=stats? System.nanoTime() : 0;
         try {
-            Message copy=createMessage(site_master, final_destination, original_sender, msg);
+            Message copy=createMessage(site_master, final_destination, original_sender, msg, visited_sites);
             bridge.send(copy);
             if(stats) {
                 relay.addToRelayedTime(System.nanoTime() - start);
@@ -66,9 +73,11 @@ public class Route implements Comparable<Route> {
         return (site_master != null? site_master.toString() : "");
     }
 
-    protected Message createMessage(Address target, Address final_destination, Address original_sender, final Message msg) {
+    protected Message createMessage(Address target, Address final_destination, Address original_sender,
+                                    final Message msg, Collection<String> visited_sites) {
         Message copy=relay.copy(msg).setDest(target).setSrc(null);
-        RELAY2.Relay2Header hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, final_destination, original_sender);
+        Relay2Header hdr=new Relay2Header(Relay2Header.DATA, final_destination, original_sender)
+          .addToVisitedSites(visited_sites);
         copy.putHeader(relay.getId(), hdr);
         return copy;
     }

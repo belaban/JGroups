@@ -265,6 +265,14 @@ public class ViewTest {
         assert new_mbrs.contains(d);
     }
 
+    public void testNewMembers2() {
+        View one=null, two=View.create(b, 2, a,b);
+        List<Address> new_mbrs=View.newMembers(one, two);
+        assert new_mbrs.size() == 2;
+        assert new_mbrs.contains(a);
+        assert new_mbrs.contains(b);
+    }
+
     public void testIterator() {
         List<Address> mbrs=new ArrayList<>(members.size());
         for(Address addr: view)

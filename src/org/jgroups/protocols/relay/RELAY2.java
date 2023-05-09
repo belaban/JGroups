@@ -15,6 +15,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
@@ -335,11 +336,6 @@ public class RELAY2 extends Protocol {
         if(site_config == null)
             throw new Exception("site configuration for \"" + site + "\" not found in " + config);
         log.trace("site configuration:\n" + site_config);
-
-        if(!site_config.getForwards().isEmpty())
-            log.warn(local_addr + ": forwarding routes are currently not supported and will be ignored. This will change " +
-                       "with hierarchical routing (https://issues.redhat.com/browse/JGRP-1506)");
-
         if(enable_address_tagging) {
             JChannel ch=getProtocolStack().getChannel();
             ch.addAddressGenerator(() -> {
@@ -442,7 +438,7 @@ public class RELAY2 extends Protocol {
      * {@link #isSiteMaster()} returns false).
      */
     public List<String> getCurrentSites() {
-        Relayer rel = relayer;
+        Relayer rel=relayer;
         return rel == null ? null : rel.getSiteNames();
     }
 
@@ -517,13 +513,8 @@ public class RELAY2 extends Protocol {
 
         if(hdr == null) {
             // forward a multicast message to all bridges except myself, then pass up
-            if(dest == null && is_site_master && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
-                Address src=msg.getSrc();
-                SiteUUID sender=new SiteUUID((UUID)msg.getSrc(), NameCache.get(msg.getSrc()), site);
-                if(src instanceof ExtendedUUID)
-                    sender.addContents((ExtendedUUID)src);
-                sendToBridges(sender, msg, site);
-            }
+            if(dest == null && is_site_master && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY))
+                sendToBridges(msg);
             return up_prot.up(msg); // pass up
         }
         if(handleAdminMessage(hdr, msg.src()))
@@ -544,13 +535,8 @@ public class RELAY2 extends Protocol {
 
             if(hdr == null) {
                 // forward a multicast message to all bridges except myself, then pass up
-                if(dest == null && is_site_master && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
-                    Address src=msg.getSrc();
-                    SiteUUID sender=new SiteUUID((UUID)msg.getSrc(), NameCache.get(msg.getSrc()), site);
-                    if(src instanceof ExtendedUUID)
-                        sender.addContents((ExtendedUUID)src);
-                    sendToBridges(sender, msg, site);
-                }
+                if(dest == null && is_site_master && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY))
+                    sendToBridges(msg);
             }
             else { // header is not null
                 if(handleAdminMessage(hdr, batch.sender())) {
@@ -660,7 +646,8 @@ public class RELAY2 extends Protocol {
             down_prot.down(copy); // multicast locally
 
             // Don't forward: https://issues.redhat.com/browse/JGRP-1519
-            // sendToBridges(msg.getSrc(), buf, from_site, site_id);  // forward to all bridges except self and from
+            // Changed May 2023: send to all sites - local - hdr.visited_sites
+            sendToBridges(msg);
         }
     }
 
@@ -732,6 +719,8 @@ public class RELAY2 extends Protocol {
         }
 
         Route route=tmp.getRoute(target_site, sender);
+        if(route == null)
+            route=tmp.getForwardingRouteMatching(target_site, sender);
         if(route == null) {
             if(suppress_log_no_route != null)
                 suppress_log_no_route.log(SuppressLog.Level.error, target_site, suppress_time_no_route_errors, sender, target_site);
@@ -744,20 +733,47 @@ public class RELAY2 extends Protocol {
     }
 
 
-    /** Sends the message via all bridges excluding the excluded_sites bridges */
-    protected void sendToBridges(Address sender, final Message msg, String ... excluded_sites) {
+    /** Sends the message to all sites in the routing table, minus the local site */
+    protected void sendToBridges(final Message msg) {
         Relayer tmp=relayer;
-        List<Route> routes=tmp != null? tmp.getRoutes(excluded_sites) : null;
+        Map<String,List<Route>> routes=tmp != null? tmp.routes : null;
         if(routes == null)
             return;
-        for(Route route: routes) {
-            if(log.isTraceEnabled())
-                log.trace(local_addr + ": relaying multicast message from " + sender + " via route " + route);
-            try {
-                route.send(null, sender, msg);
-            }
-            catch(Exception ex) {
-                log.error(local_addr + ": failed relaying message from " + sender + " via route " + route, ex);
+        Address      src=msg.getSrc();
+        Relay2Header hdr=msg.getHeader(this.id);
+        Address      original_sender=hdr != null && hdr.original_sender != null? hdr.getOriginalSender() :
+          new SiteUUID((UUID)src, NameCache.get(src), site);
+        if(src instanceof ExtendedUUID)
+            ((ExtendedUUID)original_sender).addContents((ExtendedUUID)src);
+
+        Set<String> visited_sites=new HashSet<>(routes.keySet()), // to be added to the header
+          sites_to_visit=new HashSet<>(routes.keySet());          // sites to which to forward the message
+
+        if(this.site != null) {
+            visited_sites.add(this.site);
+            sites_to_visit.remove(this.site); // don't send to the local site
+        }
+
+        if(hdr != null && hdr.hasVisitedSites()) {
+            visited_sites.addAll(hdr.getVisitedSites());
+            sites_to_visit.removeAll(hdr.getVisitedSites()); // avoid cycles (https://issues.redhat.com/browse/JGRP-1519)
+        }
+
+        for(String dest_site: sites_to_visit) {
+            List<Route> val=routes.get(dest_site);
+            if(val == null)
+                continue;
+            // try sending over all routes; break after the first successful send
+            for(Route route: val) {
+                if(log.isTraceEnabled())
+                    log.trace(local_addr + ": relaying multicast message from " + original_sender + " via route " + route);
+                try {
+                    route.send(null, original_sender, msg, visited_sites);
+                    break;
+                }
+                catch(Exception ex) {
+                    log.error(local_addr + ": failed relaying message from " + original_sender + " via route " + route, ex);
+                }
             }
         }
     }
@@ -857,7 +873,7 @@ public class RELAY2 extends Protocol {
     protected void startRelayer(Relayer rel, String bridge_name) {
         try {
             log.trace(local_addr + ": became site master; starting bridges");
-            rel.start(site_config.getBridges(), bridge_name, site);
+            rel.start(site_config, bridge_name, site);
         }
         catch(Throwable t) {
             log.error(local_addr + ": failed starting relayer", t);
@@ -875,7 +891,7 @@ public class RELAY2 extends Protocol {
      * members which cannot become site masters (can_become_site_master == false). If no site master can be found,
      * the first member of the view will be returned (even if it has can_become_site_master == false)
      */
-    protected List<Address> determineSiteMasters(View view, int max_num_site_masters) {
+    protected static List<Address> determineSiteMasters(View view, int max_num_site_masters) {
         List<Address> retval=new ArrayList<>(view.size());
         int selected=0;
 
@@ -965,10 +981,12 @@ public class RELAY2 extends Protocol {
         public static final byte TOPO_REQ         = 6;
         public static final byte TOPO_RSP         = 7;
 
-        protected byte     type;
-        protected Address  final_dest;
-        protected Address  original_sender;
-        protected String[] sites; // used with SITES_UP/SITES_DOWN/TOPO_RSP
+        protected byte        type;
+        protected Address     final_dest;
+        protected Address     original_sender;
+        protected String[]    sites; // used with SITES_UP/SITES_DOWN/TOPO_RSP
+        protected Set<String> visited_sites; // used to record sites to which this msg was already sent
+        // (https://issues.redhat.com/browse/JGRP-1519)
 
 
         public Relay2Header() {
@@ -998,9 +1016,28 @@ public class RELAY2 extends Protocol {
             return sites;
         }
 
+        public Relay2Header addToVisitedSites(String s) {
+            if(visited_sites == null)
+                visited_sites=new HashSet<>();
+            visited_sites.add(s);
+            return this;
+        }
+
+        public Relay2Header addToVisitedSites(Collection<String> list) {
+            if(list == null || list.isEmpty())
+                return this;
+            for(String s: list)
+                addToVisitedSites(s);
+            return this;
+        }
+
+        public boolean     hasVisitedSites() {return visited_sites != null && !visited_sites.isEmpty();}
+        public Set<String> getVisitedSites() {return visited_sites;}
+
         @Override
         public int serializedSize() {
-            return Global.BYTE_SIZE + Util.size(final_dest) + Util.size(original_sender) + sizeOf(sites);
+            return Global.BYTE_SIZE + Util.size(final_dest) + Util.size(original_sender) +
+              sizeOf(sites) + sizeOf(visited_sites);
         }
 
         @Override
@@ -1013,6 +1050,11 @@ public class RELAY2 extends Protocol {
                 for(String s: sites)
                     Bits.writeString(s, out);
             }
+            out.writeInt(visited_sites == null? 0 : visited_sites.size());
+            if(visited_sites != null) {
+                for(String s: visited_sites)
+                    Bits.writeString(s, out);
+            }
         }
 
         @Override
@@ -1021,16 +1063,25 @@ public class RELAY2 extends Protocol {
             final_dest=Util.readAddress(in);
             original_sender=Util.readAddress(in);
             int num_elements=in.readInt();
-            if(num_elements == 0)
-                return;
-            sites=new String[num_elements];
-            for(int i=0; i < sites.length; i++)
-                sites[i]=Bits.readString(in);
+            if(num_elements > 0) {
+                sites=new String[num_elements];
+                for(int i=0; i < sites.length; i++)
+                    sites[i]=Bits.readString(in);
+            }
+            num_elements=in.readInt();
+            if(num_elements > 0) {
+                visited_sites=new ConcurrentSkipListSet<>();
+                for(int i=0; i < num_elements; i++)
+                    visited_sites.add(Bits.readString(in));
+            }
         }
 
         public String toString() {
-            return typeToString(type) + " [dest=" + final_dest + ", sender=" + original_sender +
-              (type == TOPO_RSP? ", topos=" : ", sites=") + Arrays.toString(sites) + "]";
+            return String.format("%s [final dest=%s, original sender=%s, %s%s%s]",
+                                 typeToString(type), final_dest, original_sender,
+                                 type == TOPO_RSP? "topos=" : "sites=", Arrays.toString(sites),
+                                 visited_sites == null || visited_sites.isEmpty()? "" :
+                                   String.format(", visited=%s", visited_sites));
         }
 
         protected static String typeToString(byte type) {
@@ -1050,6 +1101,15 @@ public class RELAY2 extends Protocol {
             int retval=Global.INT_SIZE; // number of elements
             if(arr != null) {
                 for(String s: arr)
+                    retval+=Bits.sizeUTF(s) + 1; // presence bytes
+            }
+            return retval;
+        }
+
+        protected static int sizeOf(Collection<String> list) {
+            int retval=Global.INT_SIZE; // number of elements
+            if(list != null) {
+                for(String s: list)
                     retval+=Bits.sizeUTF(s) + 1; // presence bytes
             }
             return retval;

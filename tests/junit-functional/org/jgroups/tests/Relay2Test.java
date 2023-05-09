@@ -18,7 +18,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -71,14 +73,9 @@ public class Relay2Test {
         // Check for RELAY2 presence
         RELAY2 ar=a.getProtocolStack().findProtocol(RELAY2.class);
         assert ar != null;
-
-        waitUntilRoute(SFO, true, 10000, 500, a);
-
-        assert !ar.printRoutes().equals("n/a (not site master)") : "This member should be site master";
-
+        Util.waitUntilTrue(3000, 500, () -> getRoute(a, SFO) != null);
         Route route=getRoute(a, SFO);
-        System.out.println("Route at sfo to sfo: " + route);
-        assert route != null;
+        assert route == null; // no other site master has joined this bridge cluster, so no route is found
     }
     
     /**
@@ -382,6 +379,18 @@ public class Relay2Test {
         System.out.printf("X: size=%d\nY: size=%d\nZ: size=%d\n", rx.size(), ry.size(), rz.size());
         assert rx.size() == NUM || ry.size() == NUM;
         assert rz.size() == 0;
+    }
+
+    public void testForwardingRoute() {
+        ForwardingRoute r1=new ForwardingRoute("hf", "net1"),
+          r2=new ForwardingRoute("hf", "net3");
+        assert !r1.equals(r2);
+        Set<ForwardingRoute> routes=new HashSet<>();
+        routes.add(r1);
+        routes.add(r2);
+        assert routes.size() == 2;
+        r2.gateway("net1");
+        assert r1.equals(r2);
     }
 
     protected static class SiteMasterPickerImpl implements SiteMasterPicker {
