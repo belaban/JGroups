@@ -97,10 +97,7 @@ public class RelayConfig {
                 continue;
             String name=attrs.get("name");
             String config=attrs.get("config");
-            String to=attrs.get("to");
-            if(to == null) // "to" overrides site-name (when given)
-                to=site_config.getName();
-            BridgeConfig bridge_config=new PropertiesBridgeConfig(name, to, config);
+            BridgeConfig bridge_config=new PropertiesBridgeConfig(name, config);
             site_config.addBridge(bridge_config);
         }
     }
@@ -158,27 +155,23 @@ public class RelayConfig {
 
     public abstract static class BridgeConfig {
         protected String cluster_name;
-        protected String to; // the site to/from which this bridge forwards/receives messages
 
-        protected BridgeConfig(String cluster_name, String to) {
+        protected BridgeConfig(String cluster_name) {
             this.cluster_name=cluster_name;
-            this.to=to;
         }
 
         public String            getClusterName()         {return cluster_name;}
         public BridgeConfig      setClusterName(String s) {cluster_name=s; return this;}
-        public String            getTo()                  {return to;}
-        public BridgeConfig      setTo(String s)          {to=s; return this;}
         public abstract JChannel createChannel() throws Exception;
 
-        public String toString() {return String.format("to=%s, cluster=%s", to, cluster_name);}
+        public String toString() {return String.format("bridge %s", cluster_name);}
     }
 
     public static class PropertiesBridgeConfig extends BridgeConfig {
         protected final String config;
 
-        public PropertiesBridgeConfig(String cluster_name, String to, String config) {
-            super(cluster_name, to);
+        public PropertiesBridgeConfig(String cluster_name, String config) {
+            super(cluster_name);
             this.config=Util.substituteVariable(config);
         }
 
@@ -191,11 +184,7 @@ public class RelayConfig {
         protected Protocol[] protocols;
 
         public ProgrammaticBridgeConfig(String cluster_name, Protocol[] prots) {
-            this(cluster_name, cluster_name, prots);
-        }
-
-        public ProgrammaticBridgeConfig(String cluster_name, String to, Protocol[] prots) {
-            super(cluster_name, to);
+            super(cluster_name);
             this.protocols=prots;
         }
 

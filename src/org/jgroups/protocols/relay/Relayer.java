@@ -73,7 +73,7 @@ public class Relayer {
             // Add configured bridges
             List<RelayConfig.BridgeConfig> bridge_configs=site_cfg.getBridges();
             for(RelayConfig.BridgeConfig cfg: bridge_configs) {
-                Bridge bridge=new Bridge(cfg.createChannel(), cfg.getClusterName(), cfg.getTo(), bridge_name,
+                Bridge bridge=new Bridge(cfg.createChannel(), cfg.getClusterName(), bridge_name,
                                          () -> new SiteUUID(UUID.randomUUID(), null, my_site_id));
                 bridges.add(bridge);
             }
@@ -186,17 +186,15 @@ public class Relayer {
     protected class Bridge implements Receiver {
         protected JChannel channel;
         protected String   cluster_name;
-        protected String   to;
         protected View     view;
 
-        protected Bridge(final JChannel ch, final String cluster_name, String to, String channel_name,
+        protected Bridge(final JChannel ch, final String cluster_name, String channel_name,
                          AddressGenerator addr_generator) throws Exception {
             this.channel=ch;
             channel.setName(channel_name);
             channel.setReceiver(this);
             channel.addAddressGenerator(addr_generator);
             this.cluster_name=cluster_name;
-            this.to=to;
         }
 
         protected void start() throws Exception {
@@ -284,7 +282,7 @@ public class Relayer {
 
         @Override
         public String toString() {
-            return String.format("bridge to %s [cluster: %s]", to, cluster_name);
+            return String.format("bridge %s", cluster_name);
         }
 
         protected boolean contains(List<Route> routes, Address addr) {
