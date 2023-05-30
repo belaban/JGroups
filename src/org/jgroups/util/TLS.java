@@ -21,9 +21,9 @@ public class TLS implements Lifecycle {
     @Property(description="Enables TLS; when true, SSL sockets will be used instead of regular sockets")
     protected boolean          enabled;
 
-    @Property(description="One or more TLS protocol names to use, e.g. TLSv1.2. Setting this requires " +
+    @Property(description="One or more TLS protocol names to use, e.g. TLSv1.3. Setting this requires " +
       "configuring key and trust stores")
-    protected String[]         protocols={"TLSv1.2"};
+    protected String[]         protocols;
 
     @Property(description="The list of cipher suites")
     protected String[]         cipher_suites;
