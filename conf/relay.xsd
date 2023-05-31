@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema
-           elementFormDefault="qualified"
-           targetNamespace="urn:jgroups:relay:1.0"
-           xmlns:xs="http://www.w3.org/2001/XMLSchema"
-           xmlns:tns="urn:jgroups:relay:1.0">
+<xs:schema elementFormDefault="qualified" targetNamespace="urn:jgroups:relay:1.0"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="urn:jgroups:relay:1.0"
+           xmlns:cs="http://www.w3.org/2001/XMLSchema">
 
     <xs:complexType name="RelayConfigurationType">
         <xs:sequence>
@@ -19,8 +17,27 @@
 
     <xs:complexType name="siteType">
         <xs:sequence>
-            <xs:element name="bridges" type="tns:bridgesType"/>
-            <xs:element name="forwards" type="tns:forwardsType" minOccurs="0"/>
+            <xs:element name="bridges" type="tns:bridgesType">
+                <xs:annotation>
+                    <xs:documentation>
+                        The definition of the bridges of a giben site. Bridges contain the configuration of bridge
+                        cluster and its name. All endpoints (site masters) will join this bridge.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="forwards" type="tns:forwardsType" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Manual definition of additional routes to be added to the routing table. 'To' defines the target
+                        site (e.g. 'net.*') and 'gateway' the site to forward a message to any site starting with 'net'
+                        to. E.g. if we have sites 'hf' - 'net1' - 'net2' - 'net3', then the routing table of 'hf' could
+                        have a forwarding entry of "net.* -> net1". This means that all messages targetting a destination
+                        site starting with 'net' need to be forwarded to site 'net1'. A message sent from 'hf' to 'net3'
+                        will therefore be sent to 'net1' (which has another rule to forward the message to 'net2',
+                        which forwards it to 'net3').
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
         </xs:sequence>
 		<xs:attribute name="name" type="xs:string" use="required"/>
     </xs:complexType>
@@ -34,30 +51,63 @@
     <xs:complexType name="bridgeType">
 		<xs:simpleContent>
 			<xs:extension base="xs:string">
-				<xs:attribute name="name" type="xs:string" use="required"/>
-				<xs:attribute name="config" type="xs:string" use="required"/>
+				<xs:attribute name="name" type="xs:string" use="required">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The name of the bridge. This is the cluster name that all endpoints (site masters) of the
+                            bridge will join.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+				<xs:attribute name="config" type="xs:string" use="required">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The configuration of the bridge cluster. Make sure this configuration is unique, to prevent
+                            site masters from other bridges from inadvertently joining this bridge.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
 			</xs:extension>
 		</xs:simpleContent>
 	</xs:complexType>
 
     <xs:complexType name="forwardsType">
         <xs:sequence>
-            <xs:element minOccurs="0" maxOccurs="unbounded" name="forward" type="tns:forwardType"/>
+            <xs:element minOccurs="0" maxOccurs="unbounded" name="forward" type="tns:forwardType">
+                <xs:annotation>
+                    <xs:documentation>
+                        The target site(s) for which to forward requests. Can be a regular expression, e.g. 'net.*'
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="forwardType">
+        <xs:annotation>
+            <xs:documentation>
+                Defines sites to which to forward requests to if the sites are not directly connected to the current site
+            </xs:documentation>
+        </xs:annotation>
         <xs:simpleContent>
             <xs:extension base="xs:string">
-                <xs:attribute name="to" type="xs:string" use="required"/>
-                <xs:attribute name="gateway" type="xs:string" use="required"/>
+                <xs:attribute name="to" type="xs:string" use="required">
+                    <xs:annotation>
+                        <xs:documentation>The target site (can be a regular expression)</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="gateway" type="xs:string" use="required">
+                    <xs:annotation>
+                        <cs:documentation>The gateway site to which to forwards messages with a target site of 'to'</cs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
 			</xs:extension>
 		</xs:simpleContent>
 	</xs:complexType>
 
     <xs:element name="RelayConfiguration" type="tns:RelayConfigurationType">
         <xs:annotation>
-            <xs:documentation>Sample configuration of multiple sites, to be used in RELAY2</xs:documentation>
+            <xs:documentation>Configuration of multiple sites</xs:documentation>
         </xs:annotation>
     </xs:element>
 
