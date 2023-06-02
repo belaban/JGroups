@@ -225,7 +225,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
     protected static boolean find(char starting_ch, String s, InputStream in, StringBuilder sb, boolean drop)
       throws IOException {
-        int index=0;
         StringBuilder tmp=new StringBuilder().append(starting_ch);
         for(int i=0; i < s.length(); i++) {
             int c=s.codePointAt(i);
