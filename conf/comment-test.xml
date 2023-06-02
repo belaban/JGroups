@@ -1,0 +1,40 @@
+
+<!--
+  XML file to test comments (https://issues.redhat.com/browse/JGRP-2692)
+  author: Bela Ban
+  <!-- This is a nested comment -->
+-->
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd"
+        >
+    <SHARED_LOOPBACK
+         <!--mcast_port="${jgroups.udp.mcast_port:45588}"-->
+         <!--thread_pool.min_threads="0"
+         thread_pool.max_threads="200"--> <!-- weird XML shit but JGroups is happy to eat it:-) -->
+         thread_pool.keep_alive_time="30000"/>
+    <RED/>
+    <LOCAL_PING />
+    <MERGE3 max_interval="30000"
+            min_interval="10000"/>
+    <!--
+    <FD_SOCK2/>
+    <FD_ALL3/>
+    -->
+    <VERIFY_SUSPECT2 timeout="1500"  />
+    <BARRIER />
+    <pbcast.NAKACK2 xmit_interval="500"/>
+    <UNICAST3 xmit_interval="500" />
+    <pbcast.STABLE desired_avg_gossip="50000"
+                   max_bytes="4M"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="5"/>
+
+    <UFC max_credits="10M"
+         <!-- comments inside of XML elements are accepted by the JGroups XML parser -->
+         min_threshold="0.4"/>
+    <MFC max_credits="10M"
+         min_threshold="0.4"/>
+    <FRAG2 frag_size="60K"  />
+    <!--FRAG2 frag_size="60K"  />
+    <pbcast.STATE_TRANSFER /-->
+</config>

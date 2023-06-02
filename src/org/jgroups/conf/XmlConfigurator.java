@@ -172,15 +172,82 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
 
     protected static String readNode(InputStream in) throws IOException {
-        String tmp=readTillMatchingCharacter(in, '<');
-        if(tmp == null)
-            return null;
-        StringBuilder sb=new StringBuilder("<");
-        tmp=readTillMatchingCharacter(in, '>');
-        if(tmp == null)
-            return null;
-        sb.append(tmp);
-        return sb.toString();
+        StringBuilder sb=new StringBuilder();
+        boolean       eof=false, in_comment=false;
+        int           comments=0;
+
+        for(;;) {
+            int ch=in.read();
+            if(ch == -1) {
+                eof=true;
+                break;
+            }
+            switch(ch) {
+                case '<':
+                    if(isCommentStart(in, sb, in_comment)) {
+                        comments++;
+                        in_comment=true;
+                    }
+                    continue;
+                case '-':
+                    if(isCommentEnd(in, sb, in_comment)) {
+                        comments--;
+                        if(comments < 0)
+                            throw new IllegalStateException("found '-->' without corresponding '<!--'");
+                        if(comments == 0)
+                            in_comment=false;
+                    }
+                    continue;
+                case '>':
+                    if(!in_comment) {
+                        sb.append((char)ch);
+                        return sb.toString();
+                    }
+                    break;
+            }
+            if(!in_comment)
+                sb.append((char)ch);
+        }
+
+        String retval=sb.toString().trim();
+        return eof && retval.isEmpty()? null : retval;
+    }
+
+    /** Searches for a sequence of '!--' */
+    protected static boolean isCommentStart(InputStream in, StringBuilder sb, boolean drop) throws IOException {
+        return find('<', "!--", in, sb, drop);
+    }
+
+    /* Searches for an end comment, e.g. '-->' */
+    protected static boolean isCommentEnd(InputStream in, StringBuilder sb, boolean drop) throws IOException {
+        return find('-', "->", in, sb, drop);
+    }
+
+    protected static boolean find(char starting_ch, String s, InputStream in, StringBuilder sb, boolean drop)
+      throws IOException {
+        int index=0;
+        StringBuilder tmp=new StringBuilder().append(starting_ch);
+        for(int i=0; i < s.length(); i++) {
+            int c=s.codePointAt(i);
+            for(;;) {
+                int ch=in.read();
+                if(ch == -1) {
+                    sb.append(tmp);
+                    return false;
+                }
+                tmp.append((char)ch);
+                if(Character.isWhitespace(ch))
+                    continue;
+                if(ch != c) {
+                    if(!drop)
+                        sb.append(tmp);
+                    return false;
+                }
+                else
+                    break;
+            }
+        }
+        return true;
     }
 
     /** Fixes errors like "/  >" with "/>" */
@@ -235,15 +302,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         if(s.endsWith(">"))
             return ElementType.START;
         return ElementType.UNDEFINED;
-    }
-
-    protected static boolean isClosed(String s) {
-        s=s.trim();
-        return s.startsWith("</") || s.endsWith("/>");
-    }
-
-    protected static boolean isComment(String s) {
-        return s.trim().startsWith("<!--");
     }
 
     public static void main(String[] args) throws Exception {
@@ -321,31 +379,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         }
 
         return retval.toString();
-    }
-
-    private static String inputAsString(InputStream input) throws IOException {
-        int len=input.available();
-        byte[] buf=new byte[len];
-        input.read(buf, 0, len);
-        return new String(buf);
-    }
-
-    public static String replace(String input, final String expr, String replacement) {
-        StringBuilder sb=new StringBuilder();
-        int new_index=0, index=0, len=expr.length(), input_len=input.length();
-
-        while(true) {
-            new_index=input.indexOf(expr, index);
-            if(new_index == -1) {
-                sb.append(input, index, input_len);
-                break;
-            }
-            sb.append(input, index, new_index);
-            sb.append(replacement);
-            index=new_index + len;
-        }
-
-        return sb.toString();
     }
 
     static void help() {
