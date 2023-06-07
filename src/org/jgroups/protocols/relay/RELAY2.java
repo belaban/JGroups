@@ -61,7 +61,8 @@ public class RELAY2 extends Protocol {
       "If this property is false, can_become_site_master is ignored")
     protected boolean                                  enable_address_tagging;
 
-    @Property(description="Whether or not to relay multicast (dest=null) messages")
+    @Deprecated
+    @Property(description="Whether or not to relay multicast (dest=null) messages",deprecatedMessage="will be ignored")
     protected boolean                                  relay_multicasts=true;
 
     @Property(description="If true, the creation of the relay channel (and the connect()) are done in the background. " +
@@ -150,7 +151,10 @@ public class RELAY2 extends Protocol {
     public RELAY2 config(String cfg)                   {config=cfg;                  return this;}
     public RELAY2 canBecomeSiteMaster(boolean flag)    {can_become_site_master=flag; return this;}
     public RELAY2 enableAddressTagging(boolean flag)   {enable_address_tagging=flag; return this;}
-    public RELAY2 relayMulticasts(boolean flag)        {relay_multicasts=flag;       return this;}
+    @Deprecated(since="5.2.15")
+    public boolean relayMulticasts()                   {return true;}
+    @Deprecated(since="5.2.15")
+    public RELAY2 relayMulticasts(boolean flag)        {                             return this;}
     public RELAY2 asyncRelayCreation(boolean flag)     {async_relay_creation=flag;   return this;}
     public RELAY2 siteMasterPicker(SiteMasterPicker s) {if(s != null) this.site_master_picker=s; return this;}
 
@@ -161,7 +165,6 @@ public class RELAY2 extends Protocol {
     public String  config()                            {return config;}
     public boolean canBecomeSiteMaster()               {return can_become_site_master;}
     public boolean enableAddressTagging()              {return enable_address_tagging;}
-    public boolean relayMulticasts()                   {return relay_multicasts;}
     public boolean asyncRelayCreation()                {return async_relay_creation;}
     public TimeScheduler getTimer()                    {return timer;}
     public void incrementRelayed()                     {relayed.increment();}
@@ -513,7 +516,7 @@ public class RELAY2 extends Protocol {
 
         if(hdr == null) {
             // forward a multicast message to all bridges except myself, then pass up
-            if(dest == null && is_site_master && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY))
+            if(dest == null && is_site_master && !msg.isFlagSet(Message.Flag.NO_RELAY))
                 sendToBridges(msg);
             return up_prot.up(msg); // pass up
         }
@@ -535,7 +538,7 @@ public class RELAY2 extends Protocol {
 
             if(hdr == null) {
                 // forward a multicast message to all bridges except myself, then pass up
-                if(dest == null && is_site_master && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY))
+                if(dest == null && is_site_master && !msg.isFlagSet(Message.Flag.NO_RELAY))
                     sendToBridges(msg);
             }
             else { // header is not null
@@ -737,7 +740,7 @@ public class RELAY2 extends Protocol {
     protected void sendToBridges(final Message msg) {
         Relayer tmp=relayer;
         Map<String,List<Route>> routes=tmp != null? tmp.routes : null;
-        if(routes == null)
+        if(routes == null || routes.isEmpty())
             return;
         Address      src=msg.getSrc();
         Relay2Header hdr=msg.getHeader(this.id);
