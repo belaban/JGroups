@@ -447,7 +447,7 @@ public class Relay2Test {
     protected static Protocol[] createBridgeStack() throws UnknownHostException {
         return new Protocol[] {
           new TCP().setBindAddress(LOOPBACK),
-          new MPING().setMcastAddr(InetAddress.getByName("239.9.9.9")),
+          new LOCAL_PING(),
           new MERGE3().setMaxInterval(3000).setMinInterval(1000),
           new NAKACK2().useMcastXmit(false),
           new UNICAST3(),

@@ -9,9 +9,10 @@ import org.jgroups.auth.X509Token;
 import org.jgroups.blocks.RequestCorrelator;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.*;
-import org.jgroups.protocols.relay.RELAY2;
+import org.jgroups.protocols.relay.Relay2Header;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.SiteUUID;
+import org.jgroups.protocols.relay.Topology.MemberInfo;
 import org.jgroups.stack.GossipData;
 import org.jgroups.stack.GossipType;
 import org.jgroups.stack.IpAddress;
@@ -25,6 +26,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.*;
+
+import static org.jgroups.protocols.relay.Relay2Header.DATA;
 
 
 /**
@@ -592,19 +595,36 @@ public class SizeTest {
 
     public void testRelay2Header() throws Exception {
         Address dest=new SiteMaster("sfo");
-        RELAY2.Relay2Header hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, dest, null);
+        Relay2Header hdr=new Relay2Header(DATA, dest, null);
         _testSize(hdr);
         Address sender=new SiteUUID(UUID.randomUUID(), "dummy", "sfo");
-        hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, dest, sender);
+        hdr=new Relay2Header(DATA, dest, sender);
         _testSize(hdr);
 
-        hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.SITES_UP, null, null)
+        hdr=new Relay2Header(Relay2Header.SITES_UP, null, null)
           .setSites("sfo", "lon","nyc");
         _testSize(hdr);
 
-        hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, dest, null)
+        hdr=new Relay2Header(DATA, dest, null)
+          .setSites("sfo")
           .addToVisitedSites(List.of("nyc", "sfc", "lon"));
         _testSize(hdr);
+
+        Relay2Header hdr2=hdr.copy();
+        assert hdr.getType() == hdr2.getType();
+        assert hdr.getSites().equals(hdr2.getSites());
+        assert hdr.getVisitedSites().equals(hdr2.getVisitedSites());
+    }
+
+    public void testMemberInfo() throws Exception {
+        Address addr=Util.createRandomAddress("A");
+        IpAddress ip_addr=new IpAddress("127.0.0.1", 5000);
+        MemberInfo m1=new MemberInfo("sfo", addr, ip_addr, true);
+        _testSize(m1);
+
+        byte[] serialized_form=Util.streamableToByteBuffer(m1);
+        MemberInfo m2=Util.streamableFromByteBuffer(MemberInfo.class, serialized_form);
+        assert m1.equals(m2);
     }
 
 

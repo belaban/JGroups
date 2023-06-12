@@ -80,6 +80,9 @@
 
     <class id="550" name="org.jgroups.protocols.OPEN_TELEMETRY"   external="true"/>
 
+    <!-- Used to attach TopoHeader in RELAY2 -->
+    <class id="560" name="org.jgroups.protocols.relay.RELAY2"     external="true"/>
+
     <!-- User-defined protocols should use IDs >= 1024 -->
 
 </protocol-ids>

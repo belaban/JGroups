@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+
 /**
  * Maintains bridges and routing table. Does the routing of outgoing messages and dispatches incoming messages to
  * the right members.<p/>
@@ -23,21 +24,21 @@ import java.util.stream.Stream;
  */
 public class Relayer {
     /** The routing table. Site IDs are the keys (e.g. "sfo", and list of routes are the values */
-    protected final Map<String,List<Route>>     routes=new ConcurrentHashMap<>(5);
+    protected final Map<String,List<Route>> routes=new ConcurrentHashMap<>(5);
 
-    protected final Set<ForwardingRoute>        forward_routes=new ConcurrentSkipListSet<>();
+    protected final Set<ForwardingRoute>    forward_routes=new ConcurrentSkipListSet<>();
 
     /** The bridges which are used to connect to different sites */
-    protected final Collection<Bridge>          bridges=new ConcurrentLinkedQueue<>();
+    protected final Collection<Bridge>      bridges=new ConcurrentLinkedQueue<>();
 
-    protected final Log                         log;
+    protected final Log                     log;
 
-    protected final RELAY2                      relay;
+    protected final RELAY2                  relay;
 
     /** Flag set when stop() is called. Since a Relayer should not be used after stop() has been called, a new
      * instance needs to be created */
-    protected volatile boolean                  done;
-    protected boolean                           stats;
+    protected volatile boolean              done;
+    protected boolean                       stats;
 
 
     public Relayer(RELAY2 relay, Log log) {
@@ -208,28 +209,10 @@ public class Relayer {
         }
 
         public void receive(Message msg) {
-            RELAY2.Relay2Header hdr=msg.getHeader(relay.getId());
+            Relay2Header hdr=msg.getHeader(relay.getId());
             if(hdr == null) {
                 log.warn("received a message without a relay header; discarding it");
                 return;
-            }
-            switch(hdr.type) {
-                case RELAY2.Relay2Header.TOPO_REQ:
-                    RELAY2.Relay2Header rsp_hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.TOPO_RSP)
-                      .setSites(relay.printLocalTopology());
-                    Message topo_rsp=new EmptyMessage(msg.src()).putHeader(relay.getId(), rsp_hdr);
-                    try {
-                        channel.send(topo_rsp);
-                    }
-                    catch(Exception e) {
-                        log.warn("%s: failed sending TOPO-RSP message to %s: %s", channel.getAddress(), msg.src(), e);
-                    }
-                    return; // not relayed
-                case RELAY2.Relay2Header.TOPO_RSP:
-                    String[] sites=hdr.getSites();
-                    if(sites != null && sites.length > 0 && sites[0] != null)
-                        relay.topo_collector.add(msg.src(), sites[0]);
-                    return;
             }
             relay.handleRelayMessage(hdr, msg);
         }

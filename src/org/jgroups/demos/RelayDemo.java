@@ -3,9 +3,12 @@ package org.jgroups.demos;
 import org.jgroups.*;
 import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.RouteStatusListener;
+import org.jgroups.protocols.relay.Topology;
 import org.jgroups.util.ExtendedUUID;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
+
+import java.util.List;
 
 /** Demos RELAY. Create 2 *separate* clusters with RELAY as top protocol. Each RELAY has bridge_props="tcp.xml" (tcp.xml
  * needs to be present). Then start 2 instances in the first cluster and 2 instances in the second cluster. They should
@@ -22,7 +25,7 @@ public class RelayDemo implements Receiver {
     public static void main(String[] args) throws Exception {
         String props="udp.xml";
         String name=null;
-        boolean print_route_status=false, nohup=false;
+        boolean print_route_status=true, nohup=false;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-props")) {
@@ -53,7 +56,7 @@ public class RelayDemo implements Receiver {
         System.out.println("<< " + msg.getObject() + " from " + sender);
         Address dst=msg.getDest();
         if(dst == null) {
-            Message rsp=new BytesMessage(msg.getSrc(), "response");
+            Message rsp=new ObjectMessage(msg.getSrc(), "response");
             try {
                 ch.send(rsp);
             }
@@ -102,7 +105,8 @@ public class RelayDemo implements Receiver {
                     break;
                 if(process(line)) // see if we have a command, otherwise pass down
                     continue;
-                ch.send(null, line);
+                ObjectMessage msg=new ObjectMessage(null, line);
+                ch.send(msg);
             }
             catch(Throwable t) {
                 t.printStackTrace();
@@ -129,11 +133,18 @@ public class RelayDemo implements Receiver {
             System.out.printf("configured sites: %s\n", relay.getSites());
             return true;
         }
-        if(line.equalsIgnoreCase("topo")) {
-            System.out.printf("\n%s\n", printTopology());
+        if(line.startsWith("topo")) {
+            String sub=line.substring("topo".length()).trim();
+            String site=null;
+            if(sub != null && !sub.isEmpty()) {
+                String[] tmp=sub.split(" ");
+                site=tmp.length > 0 && !tmp[0].isEmpty()? tmp[0].trim() : null;
+            }
+            Topology topo=relay.topo().removeAll(site != null? List.of(site) : null).refresh(site);
+            Util.sleep(100);
+            System.out.printf("\n%s\n", topo.print(site));
             return true;
         }
-
         return false;
     }
 

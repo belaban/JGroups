@@ -5,10 +5,11 @@ import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.logging.Log;
-import org.jgroups.protocols.relay.RELAY2.Relay2Header;
 import org.jgroups.util.Util;
 
 import java.util.Collection;
+
+import static org.jgroups.protocols.relay.Relay2Header.DATA;
 
 
 /**
@@ -76,8 +77,10 @@ public class Route implements Comparable<Route> {
     protected Message createMessage(Address target, Address final_destination, Address original_sender,
                                     final Message msg, Collection<String> visited_sites) {
         Message copy=relay.copy(msg).setDest(target).setSrc(null);
-        Relay2Header hdr=new Relay2Header(Relay2Header.DATA, final_destination, original_sender)
-          .addToVisitedSites(visited_sites);
+        Relay2Header tmp=msg.getHeader(relay.getId());
+        Relay2Header hdr=tmp != null? tmp.copy().setFinalDestination(final_destination).setOriginalSender(original_sender)
+          : new Relay2Header(DATA, final_destination, original_sender);
+        hdr.addToVisitedSites(visited_sites);
         copy.putHeader(relay.getId(), hdr);
         return copy;
     }

@@ -5,25 +5,24 @@ import org.jgroups.annotations.*;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.XmlNode;
+import org.jgroups.protocols.relay.Topology.MemberInfo;
 import org.jgroups.protocols.relay.config.RelayConfig;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.UUID;
 import org.jgroups.util.*;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+
+import static org.jgroups.protocols.relay.Relay2Header.*;
 
 /**
- *
- * Design: ./doc/design/RELAY2.txt and at https://github.com/belaban/JGroups/blob/master/doc/design/RELAY2.txt.<p/>
+ * Provides relaying of messages between autonomous sites.<br/>
+ * Design: ./doc/design/RELAY2.txt and at https://github.com/belaban/JGroups/blob/master/doc/design/RELAY2.txt.<br/>
  * JIRA: https://issues.redhat.com/browse/JGRP-1433
  * @author Bela Ban
  * @since 3.2
@@ -33,8 +32,9 @@ import java.util.function.Supplier;
 @MBean(description="RELAY2 protocol")
 public class RELAY2 extends Protocol {
     // reserved flags
-    public static final short site_master_flag            = 1 << 0;
-    public static final short can_become_site_master_flag = 1 << 1;
+    public static final short    site_master_flag            = 1 << 0;
+    public static final short    can_become_site_master_flag = 1 << 1;
+    protected static final short TOPO_ID=560; // defined in jg-protocol-ids.xml
 
     /* ------------------------------------------    Properties     ---------------------------------------------- */
     @Property(description="Name of the site (needs to be defined in the configuration)",writable=false)
@@ -114,10 +114,11 @@ public class RELAY2 extends Protocol {
     @Property(description="Number of millis to wait for topology detection",type=AttributeType.TIME)
     protected long                                     topo_wait_time=2000;
 
-    // protocol IDs above RELAY2
-    protected short[]                                  prots_above;
+    protected short[]                                  prots_above; // protocol IDs above RELAY2
 
     protected volatile RouteStatusListener             route_status_listener;
+
+    protected final Set<String>                        site_cache=new HashSet<>(); // to prevent duplicate site-ups
 
     /** Number of messages forwarded to the local SiteMaster */
     protected final LongAdder                          forward_to_site_master=new LongAdder();
@@ -138,6 +139,9 @@ public class RELAY2 extends Protocol {
     /** Number of messages delivered locally, e.g. received and delivered to self */
     protected final LongAdder                          local_deliveries=new LongAdder();
 
+    @Component(description="Maintains a cache of sites and members",name="topo")
+    protected Topology                                 topo=new Topology(this);
+
     /** Total time (ms) for received messages that are delivered locally */
     protected final LongAdder                          local_delivery_time=new LongAdder();
 
@@ -154,10 +158,10 @@ public class RELAY2 extends Protocol {
     @Deprecated(since="5.2.15")
     public boolean relayMulticasts()                   {return true;}
     @Deprecated(since="5.2.15")
-    public RELAY2 relayMulticasts(boolean flag)        {                             return this;}
+    public RELAY2 relayMulticasts(boolean flag)        {return this;}
     public RELAY2 asyncRelayCreation(boolean flag)     {async_relay_creation=flag;   return this;}
     public RELAY2 siteMasterPicker(SiteMasterPicker s) {if(s != null) this.site_master_picker=s; return this;}
-
+    public Topology topo()                             {return topo;}
     public String  site()                              {return site;}
     public List<Address> siteMasters()                 {return site_masters;}
     public List<Address> members()                     {return members;}
@@ -348,7 +352,6 @@ public class RELAY2 extends Protocol {
                 return retval;
             });
         }
-
         prots_above=getIdsAbove();
     }
 
@@ -392,27 +395,12 @@ public class RELAY2 extends Protocol {
     public String printTopology(boolean all_sites) {
         if(!all_sites)
             return printLocalTopology();
-        if(relayer != null) // I'm a site-master
-            return _printTopology(relayer);
-        Address site_master=site_masters != null && !site_masters.isEmpty()? site_masters.get(0) : null;
-        return site_master == null? "not site-master" : fetchTopoFromSiteMaster(site_master);
+        return topo.print();
     }
 
     @ManagedOperation(description="Prints the topology (site masters and local members) of this site")
     public String printLocalTopology() {
-        StringBuilder sb=new StringBuilder(site).append("\n");
-        for(Address mbr: members) {
-            sb.append("  ").append(mbr);
-            PhysicalAddress pa=getPhysicalAddress(mbr);
-            if(pa != null)
-                sb.append(String.format(" (%s)", pa));
-            if(Objects.equals(mbr, local_addr))
-                sb.append(" (me)");
-            if(site_masters.contains(mbr))
-                sb.append(" // site master");
-            sb.append("\n");
-        }
-        return sb.toString();
+        return topo.print(this.site);
     }
 
     /**
@@ -446,11 +434,8 @@ public class RELAY2 extends Protocol {
     }
 
     public Object down(Event evt) {
-        switch(evt.getType()) {
-            case Event.VIEW_CHANGE:
-                handleView(evt.getArg());
-                break;
-        }
+        if(evt.getType() == Event.VIEW_CHANGE)
+            handleView(evt.getArg());
         return down_prot.down(evt);
     }
 
@@ -502,30 +487,35 @@ public class RELAY2 extends Protocol {
 
 
     public Object up(Event evt) {
-        switch(evt.getType()) {
-            case Event.VIEW_CHANGE:
-                handleView(evt.getArg());
-                break;
-        }
+        if(evt.getType() == Event.VIEW_CHANGE)
+            handleView(evt.getArg());
         return up_prot.up(evt);
     }
 
     public Object up(Message msg) {
         Relay2Header hdr=msg.getHeader(id);
-        Address dest=msg.getDest();
+        Address dest=msg.getDest(),
+          sender=hdr != null && hdr.original_sender != null? hdr.original_sender : msg.src();
+
+        // forward a multicast message to all bridges except myself, then pass up
+        if(dest == null && is_site_master && !msg.isFlagSet(Message.Flag.NO_RELAY))
+            sendToBridges(msg);
 
         if(hdr == null) {
-            // forward a multicast message to all bridges except myself, then pass up
-            if(dest == null && is_site_master && !msg.isFlagSet(Message.Flag.NO_RELAY))
-                sendToBridges(msg);
-            return up_prot.up(msg); // pass up
+            TopoHeader topo_hdr=msg.getHeader(TOPO_ID);
+            if(topo_hdr != null) {
+                handleTopo(topo_hdr, sender, msg, false);
+                return null;
+            }
         }
-        if(handleAdminMessage(hdr, msg.src()))
-            return null;
-        if(dest != null)
-            handleMessage(hdr, msg);
-        else
-            deliver(null, hdr.original_sender, msg);
+        else {
+            if(handleAdminMessage(hdr))
+                return null;
+            if(dest != null)
+                handleMessage(hdr, msg);
+            else
+                deliver(dest, sender, msg); //todo: replace in batch rather than pass up each msg
+        }
         return null;
     }
 
@@ -534,21 +524,25 @@ public class RELAY2 extends Protocol {
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
             Message msg=it.next();
             Relay2Header hdr=msg.getHeader(id);
-            Address dest=msg.getDest();
+            Address dest=msg.getDest(),
+              sender=hdr != null && hdr.original_sender != null? hdr.original_sender : batch.sender();
 
+            // forward a multicast message to all bridges except myself, then pass up
+            if(dest == null && is_site_master && !msg.isFlagSet(Message.Flag.NO_RELAY))
+                sendToBridges(msg);
             if(hdr == null) {
-                // forward a multicast message to all bridges except myself, then pass up
-                if(dest == null && is_site_master && !msg.isFlagSet(Message.Flag.NO_RELAY))
-                    sendToBridges(msg);
-            }
-            else { // header is not null
-                if(handleAdminMessage(hdr, batch.sender())) {
+                TopoHeader topo_hdr=msg.getHeader(TOPO_ID);
+                if(topo_hdr != null) {
+                    handleTopo(topo_hdr, sender, msg, false);
                     it.remove();
-                    continue;
                 }
+            }
+            else {
                 it.remove(); // message is consumed
+                if(handleAdminMessage(hdr))
+                    continue;
                 if(dest != null) {
-                    if(hdr.getType() == Relay2Header.SITE_UNREACHABLE) {
+                    if(hdr.getType() == SITE_UNREACHABLE) {
                         SiteAddress site_addr=(SiteAddress)hdr.final_dest;
                         String site_name=site_addr.getSite();
                         if(unreachable_sites == null)
@@ -561,7 +555,7 @@ public class RELAY2 extends Protocol {
                         handleMessage(hdr, msg);
                 }
                 else
-                    deliver(null, hdr.original_sender, msg);
+                    deliver(null, hdr.original_sender, msg); //todo: replace in batch rather than pass up each msg
             }
         }
         if(unreachable_sites != null) {
@@ -570,6 +564,30 @@ public class RELAY2 extends Protocol {
         }
         if(!batch.isEmpty())
             up_prot.up(batch);
+    }
+
+    protected void handleTopo(TopoHeader hdr, Address sender, Message msg, boolean send_rsps_for_entire_view) {
+        switch(hdr.type()) {
+            case TopoHeader.REQ:
+                List<Address> targets=send_rsps_for_entire_view? new ArrayList<>(members) : List.of(local_addr);
+                for(Address t: targets)
+                    sendResponseFor(t, sender);
+                break;
+            case TopoHeader.RSP:
+                MemberInfo mi=msg.getObject();
+                topo.handleResponse(mi.site(), mi);
+                break;
+        }
+    }
+
+    protected void sendResponseFor(Address mbr, Address dest) {
+        SiteAddress my_addr=mbr instanceof SiteMaster? new SiteMaster(((SiteMaster)mbr).getSite())
+          : new SiteUUID((UUID)mbr, NameCache.get(mbr), site);
+        MemberInfo mi=new MemberInfo(this.site, my_addr,
+                                     (IpAddress)getPhysicalAddress(mbr),
+                                     site_masters.contains(mbr));
+        Message rsp=new ObjectMessage(dest, mi).putHeader(TOPO_ID, new TopoHeader(TopoHeader.RSP));
+        down(rsp);
     }
 
     protected PhysicalAddress getPhysicalAddress(Address mbr) {
@@ -619,6 +637,8 @@ public class RELAY2 extends Protocol {
         }
         if(suppress_log_no_route != null)
             suppress_log_no_route.removeExpired(suppress_time_no_route_errors);
+
+        topo().adjust(this.site, view.getMembers());
     }
 
 
@@ -626,9 +646,8 @@ public class RELAY2 extends Protocol {
     protected void handleRelayMessage(Relay2Header hdr, Message msg) {
         if(hdr.final_dest != null) {
             Message message=msg;
-            Relay2Header header=hdr;
 
-            if(header.type == Relay2Header.DATA && can_forward_local_cluster) {
+            if(hdr.type == DATA && can_forward_local_cluster) {
                 SiteUUID site_uuid=(SiteUUID)hdr.final_dest;
 
                 //  If configured to do so, we want to load-balance these messages,
@@ -638,11 +657,12 @@ public class RELAY2 extends Protocol {
                 // If we select a different address to handle this message, we handle it here.
                 if(!final_dest.equals(hdr.final_dest)) {
                     message=copy(msg);
-                    header=new Relay2Header(Relay2Header.DATA, final_dest, hdr.original_sender );
-                    message.putHeader(id, header);
+                    byte type=hdr.type > 0? hdr.type : DATA;
+                    hdr=new Relay2Header(type, final_dest, hdr.original_sender );
+                    message.putHeader(id, hdr);
                 }
             }
-            handleMessage(header, message);
+            handleMessage(hdr, message);
         }
         else {
             Message copy=copy(msg).setDest(null).setSrc(null).putHeader(id, hdr);
@@ -650,30 +670,33 @@ public class RELAY2 extends Protocol {
 
             // Don't forward: https://issues.redhat.com/browse/JGRP-1519
             // Changed May 2023: send to all sites - local - hdr.visited_sites
-            sendToBridges(msg);
+            //sendToBridges(msg);
         }
     }
 
     /** Handles SITES_UP/SITES_DOWN/TOPO_REQ/TOPO_RSP messages */
-    protected boolean handleAdminMessage(Relay2Header hdr, Address sender) {
+    protected boolean handleAdminMessage(Relay2Header hdr) {
         switch(hdr.type) {
-            case Relay2Header.SITES_UP:
-            case Relay2Header.SITES_DOWN:
-                if(route_status_listener != null) {
-                    if(hdr.type == Relay2Header.SITES_UP)
-                        route_status_listener.sitesUp(hdr.getSites());
-                    else
-                        route_status_listener.sitesDown(hdr.getSites());
+            case SITES_UP:
+            case SITES_DOWN:
+                Set<String> tmp_sites=hdr.getSites();
+                if(route_status_listener != null && tmp_sites != null) {
+                    tmp_sites.remove(this.site);
+                    if(hdr.type == SITES_UP) {
+                        tmp_sites.removeAll(site_cache);
+                        site_cache.addAll(tmp_sites);
+                    }
+                    if(tmp_sites.isEmpty())
+                        return true;
+                    String[] tmp=tmp_sites.toArray(new String[]{});
+                    if(hdr.type == SITES_UP)
+                        route_status_listener.sitesUp(tmp);
+                    else {
+                        route_status_listener.sitesDown(tmp);
+                        site_cache.removeAll(tmp_sites);
+                        topo.removeAll(tmp_sites);
+                    }
                 }
-                return true;
-            case Relay2Header.TOPO_REQ:
-                Message topo_rsp=new EmptyMessage(sender)
-                  .putHeader(id, new Relay2Header(Relay2Header.TOPO_RSP).setSites(_printTopology(relayer)));
-                down_prot.down(topo_rsp);
-                return true;
-            case Relay2Header.TOPO_RSP:
-                String rsp=hdr.sites != null && hdr.sites.length > 0? hdr.sites[0] : null;
-                topo_collector.add(sender, rsp);
                 return true;
         }
         return false;
@@ -683,14 +706,13 @@ public class RELAY2 extends Protocol {
     /** Called to handle a message received by the transport */
     protected void handleMessage(Relay2Header hdr, Message msg) {
         switch(hdr.type) {
-            case Relay2Header.DATA:
+            case DATA:
                 route((SiteAddress)hdr.final_dest, (SiteAddress)hdr.original_sender, msg);
                 break;
-            case Relay2Header.SITE_UNREACHABLE:
+            case SITE_UNREACHABLE:
                 triggerSiteUnreachableEvent((SiteAddress)hdr.final_dest);
                 break;
-            case Relay2Header.HOST_UNREACHABLE:
-                break;
+            case HOST_UNREACHABLE:
             default:
                 log.error("type " + hdr.type + " unknown");
                 break;
@@ -796,7 +818,7 @@ public class RELAY2 extends Protocol {
         }
         // send message back to the src node.
         Message msg=new EmptyMessage(src).setFlag(Message.Flag.OOB)
-          .putHeader(id,new Relay2Header(Relay2Header.SITE_UNREACHABLE,new SiteMaster(target_site),null));
+          .putHeader(id,new Relay2Header(SITE_UNREACHABLE, new SiteMaster(target_site), null));
         down_prot.down(msg);
     }
 
@@ -805,9 +827,12 @@ public class RELAY2 extends Protocol {
         if(log.isTraceEnabled())
             log.trace(local_addr + ": forwarding message to final destination " + final_dest + " to " +
                         (forward_to_current_coord? " the current coordinator" : next_dest));
-        Message copy=copy(msg).setDest(next_dest).setSrc(null);
-        Relay2Header hdr=new Relay2Header(Relay2Header.DATA, final_dest, original_sender);
-        copy.putHeader(id,hdr);
+        Relay2Header hdr=msg.getHeader(this.id);
+        if(hdr != null)
+            hdr.setOriginalSender(original_sender).setFinalDestination(final_dest);
+        else
+            hdr=new Relay2Header(DATA, final_dest, original_sender);
+        Message copy=copy(msg).setDest(next_dest).setSrc(null).putHeader(id,hdr);
         down_prot.down(copy);
     }
 
@@ -843,6 +868,11 @@ public class RELAY2 extends Protocol {
 
     protected void deliver(Address dest, Address sender, final Message msg) {
         try {
+            TopoHeader hdr=msg.getHeader(TOPO_ID);
+            if(hdr != null) {
+                handleTopo(hdr, sender, msg, dest instanceof SiteMaster);
+                return;
+            }
             Message copy=copy(msg).setDest(dest).setSrc(sender);
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": delivering message from " + sender);
@@ -861,9 +891,9 @@ public class RELAY2 extends Protocol {
     protected void sitesChange(boolean down, String ... sites) {
         if(!broadcast_route_notifications || sites == null || sites.length == 0)
             return;
-        Relay2Header hdr=new Relay2Header(down? Relay2Header.SITES_DOWN : Relay2Header.SITES_UP, null, null)
+        Relay2Header hdr=new Relay2Header(down? SITES_DOWN : SITES_UP, null, null)
           .setSites(sites);
-        down_prot.down(new EmptyMessage(null).putHeader(id, hdr).setFlag(Message.Flag.NO_RELAY));
+        down_prot.down(new EmptyMessage(null).putHeader(id, hdr)); // .setFlag(Message.Flag.NO_RELAY));
     }
 
     /** Copies the message, but only the headers above the current protocol (RELAY) (or RpcDispatcher related headers) */
@@ -922,200 +952,8 @@ public class RELAY2 extends Protocol {
         return site_master_picker.pickSiteMaster(masters, sender);
     }
 
-
-    protected String _printTopology(Relayer rel) {
-        Map<Address,String> local_sitemasters=new HashMap<>();
-        List<String> all_sites=rel.getSiteNames();
-        List<Supplier<Boolean>> topo_reqs=new ArrayList<>();
-        for(String site_name: all_sites) {
-            Route r=rel.getRoute(site_name);
-            JChannel bridge=r.bridge();
-            Address site_master=r.site_master;
-            if(Objects.equals(site_master, r.bridge().getAddress()))
-                local_sitemasters.put(site_master, printLocalTopology());
-            else {
-                local_sitemasters.put(site_master, null);
-                topo_reqs.add(() -> sendTopoReq(bridge, site_master));
-            }
-        }
-        topo_collector.reset(local_sitemasters.keySet());
-        local_sitemasters.entrySet().stream().filter(e -> e.getValue() != null)
-          .forEach(e -> topo_collector.add(e.getKey(), e.getValue()));
-        topo_reqs.forEach(Supplier::get);
-
-        topo_collector.waitForAllResponses(topo_wait_time);
-        Map<Address,String> rsps=topo_collector.getResults();
-        if(rsps == null || rsps.isEmpty())
-            return "n/a";
-        return String.join("\n", rsps.values());
-    }
-
-    protected boolean sendTopoReq(JChannel bridge, Address dest) {
-        Message topo_req=new EmptyMessage(dest).putHeader(id, new Relay2Header(Relay2Header.TOPO_REQ));
-        try {
-            bridge.send(topo_req);
-            return true;
-        }
-        catch(Exception e) {
-            log.warn("%s: failed sending TOPO-REQ message to %s: %s", bridge.getAddress(), dest, e);
-            return false;
-        }
-    }
-
-    protected String fetchTopoFromSiteMaster(Address sm) {
-        topo_collector.reset(sm);
-        Message topo_req=new EmptyMessage(sm).putHeader(id, new Relay2Header(Relay2Header.TOPO_REQ));
-        down_prot.down(topo_req);
-        topo_collector.waitForAllResponses(topo_wait_time);
-        Map<Address,String> rsps=topo_collector.getResults();
-        return rsps != null? rsps.get(sm) : null;
-    }
-
     private void triggerSiteUnreachableEvent(SiteAddress remoteSite) {
         up_prot.up(new Event(Event.SITE_UNREACHABLE, remoteSite));
     }
 
-    public static class Relay2Header extends Header {
-        public static final byte DATA             = 1;
-        public static final byte SITE_UNREACHABLE = 2; // final_dest is a SiteMaster
-        public static final byte HOST_UNREACHABLE = 3; // final_dest is a SiteUUID (not currently used)
-        public static final byte SITES_UP         = 4;
-        public static final byte SITES_DOWN       = 5;
-        public static final byte TOPO_REQ         = 6;
-        public static final byte TOPO_RSP         = 7;
-
-        protected byte        type;
-        protected Address     final_dest;
-        protected Address     original_sender;
-        protected String[]    sites; // used with SITES_UP/SITES_DOWN/TOPO_RSP
-        protected Set<String> visited_sites; // used to record sites to which this msg was already sent
-        // (https://issues.redhat.com/browse/JGRP-1519)
-
-
-        public Relay2Header() {
-        }
-
-        public Relay2Header(byte type) {
-            this.type=type;
-        }
-
-        public Relay2Header(byte type, Address final_dest, Address original_sender) {
-            this(type);
-            this.final_dest=final_dest;
-            this.original_sender=original_sender;
-        }
-        public short getMagicId() {return 80;}
-        public Supplier<? extends Header> create() {return Relay2Header::new;}
-        public byte    getType()           {return type;}
-        public Address getFinalDest()      {return final_dest;}
-        public Address getOriginalSender() {return original_sender;}
-
-        public Relay2Header setSites(String ... s) {
-            sites=s;
-            return this;
-        }
-
-        public String[] getSites() {
-            return sites;
-        }
-
-        public Relay2Header addToVisitedSites(String s) {
-            if(visited_sites == null)
-                visited_sites=new HashSet<>();
-            visited_sites.add(s);
-            return this;
-        }
-
-        public Relay2Header addToVisitedSites(Collection<String> list) {
-            if(list == null || list.isEmpty())
-                return this;
-            for(String s: list)
-                addToVisitedSites(s);
-            return this;
-        }
-
-        public boolean     hasVisitedSites() {return visited_sites != null && !visited_sites.isEmpty();}
-        public Set<String> getVisitedSites() {return visited_sites;}
-
-        @Override
-        public int serializedSize() {
-            return Global.BYTE_SIZE + Util.size(final_dest) + Util.size(original_sender) +
-              sizeOf(sites) + sizeOf(visited_sites);
-        }
-
-        @Override
-        public void writeTo(DataOutput out) throws IOException {
-            out.writeByte(type);
-            Util.writeAddress(final_dest, out);
-            Util.writeAddress(original_sender, out);
-            out.writeInt(sites == null? 0 : sites.length);
-            if(sites != null) {
-                for(String s: sites)
-                    Bits.writeString(s, out);
-            }
-            out.writeInt(visited_sites == null? 0 : visited_sites.size());
-            if(visited_sites != null) {
-                for(String s: visited_sites)
-                    Bits.writeString(s, out);
-            }
-        }
-
-        @Override
-        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-            type=in.readByte();
-            final_dest=Util.readAddress(in);
-            original_sender=Util.readAddress(in);
-            int num_elements=in.readInt();
-            if(num_elements > 0) {
-                sites=new String[num_elements];
-                for(int i=0; i < sites.length; i++)
-                    sites[i]=Bits.readString(in);
-            }
-            num_elements=in.readInt();
-            if(num_elements > 0) {
-                visited_sites=new ConcurrentSkipListSet<>();
-                for(int i=0; i < num_elements; i++)
-                    visited_sites.add(Bits.readString(in));
-            }
-        }
-
-        public String toString() {
-            return String.format("%s [final dest=%s, original sender=%s, %s%s%s]",
-                                 typeToString(type), final_dest, original_sender,
-                                 type == TOPO_RSP? "topos=" : "sites=", Arrays.toString(sites),
-                                 visited_sites == null || visited_sites.isEmpty()? "" :
-                                   String.format(", visited=%s", visited_sites));
-        }
-
-        protected static String typeToString(byte type) {
-            switch(type) {
-                case DATA:             return "DATA";
-                case SITE_UNREACHABLE: return "SITE_UNREACHABLE";
-                case HOST_UNREACHABLE: return "HOST_UNREACHABLE";
-                case SITES_UP:         return "SITES_UP";
-                case SITES_DOWN:       return "SITES_DOWN";
-                case TOPO_REQ:         return "TOPO_REQ";
-                case TOPO_RSP:         return "TOPO_RSP";
-                default:               return "<unknown>";
-            }
-        }
-
-        protected static int sizeOf(String[] arr) {
-            int retval=Global.INT_SIZE; // number of elements
-            if(arr != null) {
-                for(String s: arr)
-                    retval+=Bits.sizeUTF(s) + 1; // presence bytes
-            }
-            return retval;
-        }
-
-        protected static int sizeOf(Collection<String> list) {
-            int retval=Global.INT_SIZE; // number of elements
-            if(list != null) {
-                for(String s: list)
-                    retval+=Bits.sizeUTF(s) + 1; // presence bytes
-            }
-            return retval;
-        }
-    }
 }
