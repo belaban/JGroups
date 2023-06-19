@@ -25,14 +25,15 @@ import java.util.function.Function;
 public class ExtendedUUIDTest {
 
     public void testCreation() {
-        ExtendedUUID uuid=ExtendedUUID.randomUUID("A").setFlag(RELAY2.site_master_flag);
+        ExtendedUUID uuid=ExtendedUUID.randomUUID("A");
         System.out.println("uuid = " + uuid);
     }
 
     public void testFlags() {
-        ExtendedUUID uuid=ExtendedUUID.randomUUID("A").setFlag(RELAY2.site_master_flag).setFlag((short)2).setFlag((short)4);
+        ExtendedUUID uuid=ExtendedUUID.randomUUID("A").setFlag(RELAY2.can_become_site_master_flag)
+          .setFlag((short)2).setFlag((short)4);
         System.out.println("uuid = " + uuid);
-        assert uuid.isFlagSet(RELAY2.site_master_flag);
+        assert uuid.isFlagSet(RELAY2.can_become_site_master_flag);
         assert uuid.isFlagSet((short)2);
         assert uuid.isFlagSet((short)4);
         uuid.clearFlag((short)2);
@@ -40,9 +41,10 @@ public class ExtendedUUIDTest {
     }
 
     public void testFlags2() throws Exception {
-        FlagsUUID uuid=FlagsUUID.randomUUID("A").setFlag(RELAY2.site_master_flag).setFlag((short)2).setFlag((short)4);
+        FlagsUUID uuid=FlagsUUID.randomUUID("A").setFlag(RELAY2.can_become_site_master_flag)
+          .setFlag((short)2).setFlag((short)4);
         System.out.println("uuid = " + uuid);
-        assert uuid.isFlagSet(RELAY2.site_master_flag);
+        assert uuid.isFlagSet(RELAY2.can_become_site_master_flag);
         assert uuid.isFlagSet((short)2);
         assert uuid.isFlagSet((short)4);
         uuid.clearFlag((short)2);

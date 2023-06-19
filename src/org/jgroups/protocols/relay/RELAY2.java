@@ -32,7 +32,6 @@ import static org.jgroups.protocols.relay.Relay2Header.*;
 @MBean(description="RELAY2 protocol")
 public class RELAY2 extends Protocol {
     // reserved flags
-    public static final short    site_master_flag            = 1 << 0;
     public static final short    can_become_site_master_flag = 1 << 1;
     protected static final short TOPO_ID=560; // defined in jg-protocol-ids.xml
 
@@ -156,7 +155,7 @@ public class RELAY2 extends Protocol {
     @Deprecated(since="5.2.15")
     public boolean relayMulticasts()                   {return true;}
     @Deprecated(since="5.2.15")
-    public RELAY2 relayMulticasts(boolean flag)        {return this;}
+    public RELAY2 relayMulticasts(boolean ignoredFlag) {return this;}
     public RELAY2 asyncRelayCreation(boolean flag)     {async_relay_creation=flag;   return this;}
     public RELAY2 siteMasterPicker(SiteMasterPicker s) {if(s != null) this.site_master_picker=s; return this;}
     public Topology topo()                             {return topo;}

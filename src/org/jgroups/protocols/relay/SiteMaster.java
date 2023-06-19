@@ -17,7 +17,6 @@ import java.util.function.Supplier;
 public class SiteMaster extends SiteUUID {
 
     public SiteMaster() {
-        setFlag(RELAY2.site_master_flag);
     }
 
     public SiteMaster(String site) {
@@ -26,7 +25,6 @@ public class SiteMaster extends SiteUUID {
 
     public SiteMaster(byte[] site) {
         super(0, 0, null, site);
-        setFlag(RELAY2.site_master_flag);
     }
 
     public Supplier<? extends UUID> create() {
