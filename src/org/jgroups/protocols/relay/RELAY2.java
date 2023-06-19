@@ -145,8 +145,6 @@ public class RELAY2 extends Protocol {
     /** Total time (ms) for received messages that are delivered locally */
     protected final LongAdder                          local_delivery_time=new LongAdder();
 
-    protected final ResponseCollector<String>          topo_collector=new ResponseCollector<>();
-
     /** Log to suppress identical errors for messages to non-existing sites ('no route to site X') */
     protected SuppressLog<String>                      suppress_log_no_route;
 
@@ -514,7 +512,7 @@ public class RELAY2 extends Protocol {
             if(dest != null)
                 handleMessage(hdr, msg);
             else
-                deliver(dest, sender, msg); //todo: replace in batch rather than pass up each msg
+                deliver(dest, sender, msg);
         }
         return null;
     }
