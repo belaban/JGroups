@@ -28,10 +28,10 @@ public class EmptyMessage extends BaseMessage {
     public byte[]                getArray()                           {return null;}
     public int                   getOffset()                          {return 0;}
     public int                   getLength()                          {return 0;}
-    public EmptyMessage          setArray(byte[] b, int off, int len) {throw new UnsupportedOperationException();}
-    public EmptyMessage          setArray(ByteArray buf)              {throw new UnsupportedOperationException();}
-    public <T extends Object> T  getObject()                          {throw new UnsupportedOperationException();}
-    public EmptyMessage          setObject(Object obj)                {throw new UnsupportedOperationException();}
+    public EmptyMessage          setArray(byte[] b, int off, int len) {return this;}
+    public EmptyMessage          setArray(ByteArray buf)              {return this;}
+    public <T extends Object> T  getObject()                          {return null;}
+    public EmptyMessage          setObject(Object obj)                {return this;}
 
     public void                  writePayload(DataOutput out) throws IOException {
         // no payload to write

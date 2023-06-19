@@ -3,6 +3,7 @@ package org.jgroups.protocols.relay;
 import org.jgroups.*;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Bits;
 import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Util;
 
@@ -171,7 +172,7 @@ public class Topology {
 
         @Override
         public void writeTo(DataOutput out) throws IOException {
-            Util.writeString(site, out);
+            Bits.writeString(site, out);
             Util.writeAddress(addr, out);
             Util.writeAddress(ip_addr, out);
             out.writeBoolean(site_master);
@@ -179,7 +180,7 @@ public class Topology {
 
         @Override
         public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-            site=Util.readString(in);
+            site=Bits.readString(in);
             addr=Util.readAddress(in);
             ip_addr=(IpAddress)Util.readAddress(in);
             site_master=in.readBoolean();
