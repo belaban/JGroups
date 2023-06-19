@@ -107,7 +107,8 @@ public class RELAY2 extends Protocol {
     protected volatile List<Address>                   members=new ArrayList<>(11);
 
     @Property(description="If true, a site master forwards messages received from other sites to randomly chosen " +
-      "members of the local site for load balancing, reducing work for itself")
+      "members of the local site for load balancing, reducing work for itself",deprecatedMessage="ignored")
+    @Deprecated(since="5.2.15",forRemoval=true)
     protected boolean                                  can_forward_local_cluster;
 
     @Property(description="Number of millis to wait for topology detection",type=AttributeType.TIME)
@@ -641,33 +642,11 @@ public class RELAY2 extends Protocol {
 
     /** Called to handle a message received by the relayer */
     protected void handleRelayMessage(Relay2Header hdr, Message msg) {
-        if(hdr.final_dest != null) {
-            Message message=msg;
-
-            if(hdr.type == DATA && can_forward_local_cluster) {
-                SiteUUID site_uuid=(SiteUUID)hdr.final_dest;
-
-                //  If configured to do so, we want to load-balance these messages,
-                UUID tmp=(UUID)Util.pickRandomElement(members);
-                SiteAddress final_dest=new SiteUUID(tmp, site_uuid.getName(), site_uuid.getSite());
-
-                // If we select a different address to handle this message, we handle it here.
-                if(!final_dest.equals(hdr.final_dest)) {
-                    message=copy(msg);
-                    byte type=hdr.type > 0? hdr.type : DATA;
-                    hdr=new Relay2Header(type, final_dest, hdr.original_sender );
-                    message.putHeader(id, hdr);
-                }
-            }
-            handleMessage(hdr, message);
-        }
+        if(hdr.final_dest != null)
+            handleMessage(hdr, msg);
         else {
             Message copy=copy(msg).setDest(null).setSrc(null).putHeader(id, hdr);
             down_prot.down(copy); // multicast locally
-
-            // Don't forward: https://issues.redhat.com/browse/JGRP-1519
-            // Changed May 2023: send to all sites - local - hdr.visited_sites
-            //sendToBridges(msg);
         }
     }
 
