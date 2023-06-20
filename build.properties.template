@@ -6,7 +6,7 @@
 jgroups.bind_addr=localhost
 jgroups.tcpping.initial_hosts=localhost[7800],localhost[7801]
 jgroups.tunnel.gossip_router_hosts=localhost[12001]
-jgroups.udp.mcast_addr=239.8.8.8
+jgroups.udp.mcast_addr=224.8.8.8
 jgroups.udp.mcast_port=45588
 jgroups.udp.ip_ttl=5
 # use true for IPv6 and false for IPv4 
