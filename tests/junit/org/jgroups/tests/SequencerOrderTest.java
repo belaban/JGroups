@@ -4,14 +4,19 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
+import org.jgroups.protocols.MPING;
 import org.jgroups.protocols.SHUFFLE;
+import org.jgroups.protocols.TP;
+import org.jgroups.protocols.UDP;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,20 +43,15 @@ public class SequencerOrderTest {
 
     @BeforeMethod
     void setUp() throws Exception {
-        a=new JChannel(props).name("A");
-        a.connect(GROUP);
-        r1=new MyReceiver("A");
-        a.setReceiver(r1);
+        String mcast_addr=ResourceManager.getNextMulticastAddress();
+        a=create(props, "A", mcast_addr).connect(GROUP);
+        a.setReceiver(r1=new MyReceiver("A"));
 
-        b=new JChannel(props).name("B");
-        b.connect(GROUP);
-        r2=new MyReceiver("B");
-        b.setReceiver(r2);
+        b=create(props, "B", mcast_addr).connect(GROUP);
+        b.setReceiver(r2=new MyReceiver("B"));
 
-        c=new JChannel(props).name("C");
-        c.connect(GROUP);
-        r3=new MyReceiver("C");
-        c.setReceiver(r3);
+        c=create(props, "C", mcast_addr).connect(GROUP);
+        c.setReceiver(r3=new MyReceiver("C"));
 
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b, c);
 
@@ -91,6 +91,17 @@ public class SequencerOrderTest {
         System.out.println("-- verifying messages on A, B and C");
         verifyNumberOfMessages(EXPECTED_MSGS, l1, l2, l3);
         verifySameOrder(EXPECTED_MSGS, l1, l2, l3);
+    }
+
+    protected JChannel create(String props, String name, String mcast_addr) throws Exception {
+        JChannel ch=new JChannel(props).name(name);
+        TP tp=ch.getProtocolStack().getTransport();
+        if(tp instanceof UDP)
+            ((UDP)tp).setMulticastAddress(InetAddress.getByName(mcast_addr));
+        MPING mping=ch.getProtocolStack().findProtocol(MPING.class);
+        if(mping != null)
+            mping.setMulticastAddress(mcast_addr);
+        return ch;
     }
 
     protected static void insertShuffle(JChannel... channels) throws Exception {

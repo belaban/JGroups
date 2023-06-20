@@ -8,6 +8,7 @@ import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -30,9 +31,10 @@ public class NioServerTest2 {
     protected MyReceiver           ra, rb;
 
     @BeforeMethod protected void init() throws Exception {
-        a=create("A");
+        String mcast_addr=ResourceManager.getNextMulticastAddress();
+        a=create("A", mcast_addr);
         a.setReceiver(ra=new MyReceiver());
-        b=create("B");
+        b=create("B", mcast_addr);
         b.setReceiver(rb=new MyReceiver());
         a.connect("NioServerTest2");
         b.connect("NioServerTest2");
@@ -76,10 +78,10 @@ public class NioServerTest2 {
     }
 
 
-    protected static JChannel create(String name) throws Exception {
+    protected static JChannel create(String name, String mcast_addr) throws Exception {
         return new JChannel(
           new TCP_NIO2().setRecvBufSize(recv_buf_size).setSendBufSize(send_buf_size).setBindAddress(Util.getLoopback()),
-          new MPING(),
+          new MPING().setMulticastAddress(mcast_addr),
           new NAKACK2().useMcastXmit(false),
           new UNICAST3(),
           new STABLE(),

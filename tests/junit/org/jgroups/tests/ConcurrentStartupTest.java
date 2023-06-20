@@ -8,10 +8,12 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -40,21 +42,29 @@ public class ConcurrentStartupTest {
     }
 
     @Test(enabled=false)
-    protected void setup(Class<? extends TP> tp_cl, Class<? extends Discovery> discovery_cl) throws Exception {
-        for(int i=0; i < channels.length; i++)
-            channels[i]=create(tp_cl, discovery_cl, String.valueOf(i+1));
+    protected void setup(Class<? extends TP> tp_cl, Class<? extends Discovery> discovery_cl,
+                         String mcast_addr) throws Exception {
+        for(int i=0; i < channels.length; i++) {
+            channels[i]=create(tp_cl,discovery_cl,String.valueOf(i + 1));
+            if(mcast_addr != null) {
+                TP tp=channels[i].getProtocolStack().getTransport();
+                if(tp instanceof UDP)
+                    ((UDP)tp).setMulticastAddress(InetAddress.getByName(mcast_addr));
+            }
+        }
     }
 
 
     // @Test(invocationCount=5)
     public void testConcurrentJoinWithSHARED_LOOPBACK() throws Exception {
-        setup(SHARED_LOOPBACK.class, SHARED_LOOPBACK_PING.class);
+        setup(SHARED_LOOPBACK.class, SHARED_LOOPBACK_PING.class, null);
         startThreads(CLUSTER_SHARED);
     }
 
     @Test(invocationCount=10)
     public void testConcurrentJoinWithLOCAL_PING() throws Exception {
-        setup(UDP.class, LOCAL_PING.class);
+        String mcast_addr=ResourceManager.getNextMulticastAddress();
+        setup(UDP.class, LOCAL_PING.class, mcast_addr);
         for(int i=0; i < channels.length; i++) {
             final int index=i;
             channels[i].setUpHandler(new UpHandler() {
@@ -82,7 +92,8 @@ public class ConcurrentStartupTest {
 
     // @Test(invocationCount=10)
     public void testConcurrentJoinWithPING() throws Exception {
-        setup(UDP.class, PING.class);
+        String mcast_addr=ResourceManager.getNextMulticastAddress();
+        setup(UDP.class, PING.class, mcast_addr);
         startThreads("withUDPandPING");
     }
 
