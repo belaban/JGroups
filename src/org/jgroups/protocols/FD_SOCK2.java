@@ -442,6 +442,8 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     /** Returns the physical addresses for a in range [a+offset..a+offset+port_range */
     protected List<IpAddress> getPhysicalAddresses(Address a) {
         IpAddress pa=(IpAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, a));
+        if(pa == null)
+            return Collections.emptyList();
         InetAddress addr=pa.getIpAddress();
         int actual_port=pa.getPort();
         int[] bind_ports=computeBindPorts(actual_port);
