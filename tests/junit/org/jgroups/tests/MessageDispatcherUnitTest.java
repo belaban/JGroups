@@ -8,17 +8,17 @@ import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
+import org.jgroups.protocols.TP;
+import org.jgroups.protocols.UDP;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.util.ByteArray;
-import org.jgroups.util.Rsp;
-import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,6 +34,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
     protected MessageDispatcher      da, db;
     protected JChannel               a, b;
     protected static final ByteArray buf;
+    protected InetAddress            mcast_addr;
 
     static {
         byte[] data="bla".getBytes();
@@ -42,6 +43,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
 
     @BeforeClass
     protected void setUp() throws Exception {
+        mcast_addr=InetAddress.getByName(ResourceManager.getNextMulticastAddress());
         a=createChannel().name("A");
         GMS gms=a.getProtocolStack().findProtocol(GMS.class);
         if(gms != null)
@@ -213,6 +215,20 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         Util.close(b);
     }
 
+    protected static void setMcastAddress(InetAddress mcast_addr, JChannel... channels) {
+        for(JChannel ch: channels) {
+            TP tp=ch.getProtocolStack().getTransport();
+            if(tp instanceof UDP)
+                ((UDP)tp).setMcastGroupAddr(mcast_addr);
+        }
+    }
+
+    @Override
+    protected JChannel createChannel() throws Exception {
+        JChannel ch=super.createChannel();
+        setMcastAddress(mcast_addr, ch);
+        return ch;
+    }
 
     private static class MyHandler implements RequestHandler {
         byte[] retval=null;
