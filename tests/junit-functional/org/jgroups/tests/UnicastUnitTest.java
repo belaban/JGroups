@@ -7,10 +7,12 @@ import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,7 +31,9 @@ public class UnicastUnitTest {
 
 
     public void testUnicastMessageInCallbackExistingMember() throws Throwable {
-        a=create("A", false); b=create("B", false);
+        String mcast_addr=ResourceManager.getNextMulticastAddress();
+        a=create("A", false, mcast_addr);
+        b=create("B", false, mcast_addr);
         a.connect("UnicastUnitTest");
         MyReceiver receiver=new MyReceiver(a);
         a.setReceiver(receiver);
@@ -43,21 +47,26 @@ public class UnicastUnitTest {
     /** Tests sending msgs from A to B */
     // @Test(invocationCount=10)
     public void testMessagesToOther() throws Exception {
-        a=create("A", false); b=create("B", false);
+        String mcast_addr=ResourceManager.getNextMulticastAddress();
+        a=create("A", false, mcast_addr);
+        b=create("B", false, mcast_addr);
         _testMessagesToOther();
     }
 
     public void testMessagesToOtherBatching() throws Exception {
-        a=create("A", true); b=create("B", true);
+        String mcast_addr=ResourceManager.getNextMulticastAddress();
+        a=create("A", true, mcast_addr);
+        b=create("B", true, mcast_addr);
         _testMessagesToOther();
     }
 
     public void testMessagesToEverybodyElse() throws Exception {
         MyReceiver<String> r1=new MyReceiver(), r2=new MyReceiver(), r3=new MyReceiver(), r4=new MyReceiver();
-        a=create("A", false);
-        b=create("B", false);
-        c=create("C", false);
-        d=create("D", false);
+        String mcast_addr=ResourceManager.getNextMulticastAddress();
+        a=create("A", false, mcast_addr);
+        b=create("B", false, mcast_addr);
+        c=create("C", false, mcast_addr);
+        d=create("D", false, mcast_addr);
         connect(a,b,c,d);
 
         a.setReceiver(r1);
@@ -95,8 +104,9 @@ public class UnicastUnitTest {
     }
 
     public void testPartition() throws Exception {
-        a=create("A", false);
-        b=create("B", false);
+        String mcast_addr=ResourceManager.getNextMulticastAddress();
+        a=create("A", false, mcast_addr);
+        b=create("B", false, mcast_addr);
         connect(a,b);
         System.out.println("-- Creating network partition");
         Stream.of(a,b).forEach(ch -> {
@@ -138,7 +148,7 @@ public class UnicastUnitTest {
           msg(dest)
         };
 
-        MyReceiver<Integer> receiver=new MyReceiver();
+        MyReceiver<Integer> receiver=new MyReceiver<>();
         b.setReceiver(receiver);
         send(a, msgs);
         checkReception(receiver, false, 1,2,3,4,5);
@@ -147,12 +157,16 @@ public class UnicastUnitTest {
 
     // @Test(invocationCount=10)
     public void testMessagesToSelf() throws Exception {
-        a=create("A", false); b=create("B", false);
+        String mcast_addr=ResourceManager.getNextMulticastAddress();
+        a=create("A", false, mcast_addr);
+        b=create("B", false, mcast_addr);
         _testMessagesToSelf();
     }
 
     public void testMessagesToSelfBatching() throws Exception {
-        a=create("A", true); b=create("B", true);
+        String mcast_addr=ResourceManager.getNextMulticastAddress();
+        a=create("A", true, mcast_addr);
+        b=create("B", true, mcast_addr);
         _testMessagesToSelf();
     }
 
@@ -178,12 +192,16 @@ public class UnicastUnitTest {
     }
 
     public void testMessagesToSelf2() throws Exception {
-        a=create("A", false); b=create("B", false);
+        String mcast_addr=ResourceManager.getNextMulticastAddress();
+        a=create("A", false, mcast_addr);
+        b=create("B", false, mcast_addr);
         _testMessagesToSelf2();
     }
 
     public void testMessagesToSelf2Batching() throws Exception {
-        a=create("A", true); b=create("B", true);
+        String mcast_addr=ResourceManager.getNextMulticastAddress();
+        a=create("A", true, mcast_addr);
+        b=create("B", true, mcast_addr);
         _testMessagesToSelf2();
     }
 
@@ -239,11 +257,10 @@ public class UnicastUnitTest {
 
     protected static Message msg(Address dest) {return new BytesMessage(dest);}
 
-    protected static JChannel create(String name, boolean use_batching) throws Exception {
+    protected static JChannel create(String name, boolean use_batching, String mcast_addr) throws Exception {
         Protocol[] protocols={
-          new UDP().setBindAddress(Util.getLoopback()),
+          new UDP().setMcastGroupAddr(InetAddress.getByName(mcast_addr)).setBindAddress(Util.getLoopback()),
           new LOCAL_PING(),
-          // new TEST_PING(),
           new MERGE3().setMinInterval(500).setMaxInterval(3000).setCheckInterval(4000),
           new FD_ALL3().setTimeout(2000).setInterval(500),
           new NAKACK2(),

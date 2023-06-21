@@ -7,11 +7,13 @@ import org.jgroups.*;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
 import java.util.*;
 
 
@@ -30,9 +32,10 @@ public class SequencerFailoverTest extends BMNGRunner {
 
     @BeforeMethod
     void setUp() throws Exception {
-        a=createChannel(props, "A", GROUP);
-        b=createChannel(props, "B", GROUP);
-        c=createChannel(props, "C", GROUP);
+        String mcast_addr=ResourceManager.getNextMulticastAddress();
+        a=createChannel(props, "A", mcast_addr).connect(GROUP);
+        b=createChannel(props, "B", mcast_addr).connect(GROUP);
+        c=createChannel(props, "C", mcast_addr).connect(GROUP);
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b, c);
     }
 
@@ -315,11 +318,16 @@ public class SequencerFailoverTest extends BMNGRunner {
         }
     }
 
-
-    protected static JChannel createChannel(final String props, final String name, final String cluster_name) throws Exception {
-        JChannel retval=new JChannel(props);
-        retval.setName(name);
-        retval.connect(cluster_name);
-        return retval;
+    protected static JChannel createChannel(String props, String name, String mcast_addr) throws Exception {
+        JChannel ch=new JChannel(props).name(name);
+        TP tp=ch.getProtocolStack().getTransport();
+        if(tp instanceof UDP)
+            ((UDP)tp).setMulticastAddress(InetAddress.getByName(mcast_addr));
+        MPING mping=ch.getProtocolStack().findProtocol(MPING.class);
+        if(mping != null)
+            mping.setMulticastAddress(mcast_addr);
+        return ch;
     }
+
+
 }
