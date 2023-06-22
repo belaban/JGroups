@@ -67,7 +67,7 @@ public class Relay2Test {
         for(Protocol p=relayToInject; p != null; p=p.getDownProtocol())
             p.setAddress(a.getAddress());
         relayToInject.setProtocolStack(a.getProtocolStack());
-        relayToInject.configure();
+        relayToInject.init(); // configure();
         relayToInject.handleView(a.getView());
 
         // Check for RELAY2 presence
@@ -284,7 +284,7 @@ public class Relay2Test {
 
         for (int i = 0; i < 100; i++) {
             Message take = h.getReceived().take();
-            assert !(take.src() instanceof SiteUUID) : "Address was " + take.src();
+            assert take.src() instanceof SiteUUID : "Address was " + take.src();
         }
         // https://issues.redhat.com/browse/JGRP-2586
         Util.waitUntilTrue(10000, 500, () -> h.getSiteUnreachableEvents() > 0);
@@ -433,7 +433,7 @@ public class Relay2Test {
 
 
     protected static RELAY2 createRELAY2(String site_name) throws UnknownHostException {
-        RELAY2 relay=new RELAY2().site(site_name).enableAddressTagging(false).asyncRelayCreation(false);
+        RELAY2 relay=new RELAY2().site(site_name).asyncRelayCreation(false);
 
         RelayConfig.SiteConfig lon_cfg=new RelayConfig.SiteConfig(LON),
           sfo_cfg=new RelayConfig.SiteConfig(SFO);

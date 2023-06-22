@@ -23,9 +23,11 @@ import java.util.function.Supplier;
 public class Relay2Header extends Header {
     public static final byte DATA             = 1;
     public static final byte SITE_UNREACHABLE = 2; // final_dest is a SiteMaster
-    public static final byte HOST_UNREACHABLE = 3; // final_dest is a SiteUUID (not currently used)
     public static final byte SITES_UP         = 4;
     public static final byte SITES_DOWN       = 5;
+
+    public static final byte TOPO_REQ         = 6;
+    public static final byte TOPO_RSP         = 7; // MemberInfo is the payload of the response message
 
     protected byte        type;
     protected Address     final_dest;
@@ -137,9 +139,9 @@ public class Relay2Header extends Header {
     }
 
     public String toString() {
-        return String.format("%s [final dest=%s, original sender=%s, %s%s]",
+        return String.format("%s [final dest=%s, original sender=%s%s%s]",
                              typeToString(type), final_dest, original_sender,
-                             sites + ", sites,",
+                             sites == null || sites.isEmpty()? "" : String.format(", sites=%s", sites),
                              visited_sites == null || visited_sites.isEmpty()? "" :
                                String.format(", visited=%s", visited_sites));
     }
@@ -148,9 +150,10 @@ public class Relay2Header extends Header {
         switch(type) {
             case DATA:             return "DATA";
             case SITE_UNREACHABLE: return "SITE_UNREACHABLE";
-            case HOST_UNREACHABLE: return "HOST_UNREACHABLE";
             case SITES_UP:         return "SITES_UP";
             case SITES_DOWN:       return "SITES_DOWN";
+            case TOPO_REQ:         return "TOPO_REQ";
+            case TOPO_RSP:         return "TOPO_RSP";
             default:               return "<unknown>";
         }
     }

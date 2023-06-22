@@ -13,6 +13,7 @@ import org.jgroups.protocols.relay.Relay2Header;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.protocols.relay.Topology.MemberInfo;
+import org.jgroups.protocols.relay.Topology.Members;
 import org.jgroups.stack.GossipData;
 import org.jgroups.stack.GossipType;
 import org.jgroups.stack.IpAddress;
@@ -616,6 +617,14 @@ public class SizeTest {
         assert hdr.getVisitedSites().equals(hdr2.getVisitedSites());
     }
 
+    public void testSiteUUID() throws Exception {
+        SiteUUID u1=new SiteUUID((UUID)Util.createRandomAddress(), "A", "sfo");
+        _testSize(u1);
+
+        SiteMaster sm=new SiteMaster("sfo");
+        _testSize(sm);
+    }
+
     public void testMemberInfo() throws Exception {
         Address addr=Util.createRandomAddress("A");
         IpAddress ip_addr=new IpAddress("127.0.0.1", 5000);
@@ -627,6 +636,24 @@ public class SizeTest {
         assert m1.equals(m2);
     }
 
+    public void testMembers() throws Exception {
+        Members mbrs=new Members();
+        _testSize(mbrs);
+
+        mbrs=new Members("nyc");
+        _testSize(mbrs);
+
+        Address[] addrs=new Address[5];
+        for(int i=0; i < addrs.length; i++)
+            addrs[i]=Util.createRandomAddress();
+        mbrs.addJoined(new MemberInfo("net1", addrs[0], new IpAddress("127.0.0.1", 7000), true));
+        mbrs.addJoined(new MemberInfo("net2", addrs[1], new IpAddress("127.0.0.1", 8000), true));
+        mbrs.addJoined(new MemberInfo("hf", addrs[2], new IpAddress("127.0.0.1", 9000), false));
+        _testSize(mbrs);
+        mbrs.addLeft(addrs[3]).addLeft(addrs[4]);
+        _testSize(mbrs);
+    }
+
 
     public void testEncryptHeader() throws Exception {
         EncryptHeader hdr=new EncryptHeader((byte)0, new byte[]{'b','e', 'l', 'a'}, new byte[]{'b', 'a', 'n'});
@@ -636,7 +663,7 @@ public class SizeTest {
     }
 
 
-    public static void testIpAddress() throws Exception {
+    public void testIpAddress() throws Exception {
         IpAddress addr=new IpAddress();
         _testSize(addr);
     }
@@ -864,6 +891,8 @@ public class SizeTest {
         byte[] serialized_form=Util.streamableToByteBuffer(addr);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
+        Address addr2=Util.streamableFromByteBuffer(addr.getClass(), serialized_form);
+        assert addr.equals(addr2);
     }
 
 

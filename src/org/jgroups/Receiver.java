@@ -31,7 +31,7 @@ public interface Receiver {
             try {
                 receive(msg);
             }
-            catch(Throwable t) {
+            catch(Throwable ignored) {
             }
         }
     }

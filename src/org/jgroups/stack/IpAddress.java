@@ -173,19 +173,20 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
     @Override
     public void readFrom(DataInput in) throws IOException {
         int len=in.readByte();
-        if(len > 0 && (len != Global.IPV4_SIZE && len != Global.IPV6_SIZE))
-            throw new IOException("length has to be " + Global.IPV4_SIZE + " or " + Global.IPV6_SIZE + " bytes (was " +
-                    len + " bytes)");
-        byte[] a = new byte[len]; // 4 bytes (IPv4) or 16 bytes (IPv6)
-        in.readFully(a);
-        if(len == Global.IPV6_SIZE) {
-            int scope_id=in.readInt();
-            this.ip_addr=Inet6Address.getByAddress(null, a, scope_id);
+        if(len > 0) {
+            if(len != Global.IPV4_SIZE && len != Global.IPV6_SIZE)
+                throw new IOException(String.format("length has to be %d or %d bytes (was %d bytes)",
+                                                    Global.IPV4_SIZE, Global.IPV6_SIZE, len));
+            byte[] a=new byte[len]; // 4 bytes (IPv4) or 16 bytes (IPv6)
+            in.readFully(a);
+            if(len == Global.IPV6_SIZE) {
+                int scope_id=in.readInt();
+                this.ip_addr=Inet6Address.getByAddress(null, a, scope_id);
+            }
+            else {
+                this.ip_addr=InetAddress.getByAddress(a);
+            }
         }
-        else {
-            this.ip_addr=InetAddress.getByAddress(a);
-        }
-
         // changed from readShort(): we need the full 65535, with a short we'd only get up to 32K !
         port=in.readUnsignedShort();
     }

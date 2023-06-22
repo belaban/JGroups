@@ -75,7 +75,14 @@ public class Relayer {
             List<RelayConfig.BridgeConfig> bridge_configs=site_cfg.getBridges();
             for(RelayConfig.BridgeConfig cfg: bridge_configs) {
                 Bridge bridge=new Bridge(cfg.createChannel(), cfg.getClusterName(), bridge_name,
-                                         () -> new SiteUUID(UUID.randomUUID(), null, my_site_id));
+                                         new AddressGenerator() {
+                                             @Override
+                                             public Address generateAddress() {return generateAddress(null);}
+                                             @Override
+                                             public Address generateAddress(String name) {
+                                                 return new SiteUUID(UUID.randomUUID(), name, my_site_id);
+                                             }
+                                         });
                 bridges.add(bridge);
             }
             for(Bridge bridge: bridges)
@@ -124,7 +131,6 @@ public class Relayer {
             return null;
         if(list.size() == 1)
             return list.get(0);
-
         return relay.site_master_picker.pickRoute(site, list, sender);
     }
 

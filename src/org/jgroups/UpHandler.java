@@ -22,7 +22,7 @@ public interface UpHandler {
             try {
                 up(msg);
             }
-            catch(Throwable t) {
+            catch(Throwable ignored) {
             }
         }
     }

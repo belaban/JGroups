@@ -10,10 +10,7 @@ import org.jgroups.util.Util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.BiConsumer;
@@ -57,8 +54,8 @@ public class Topology {
      */
     @ManagedOperation(description="Fetches information (site, address, IP address) from all members of a given site")
     public Topology refresh(String site) {
-        Address dest=site != null? new SiteMaster(site) : null;
-        Message topo_req=new EmptyMessage(dest).putHeader(RELAY2.TOPO_ID, new TopoHeader(TopoHeader.REQ));
+        Address dest=new SiteMaster(site); // sent to all site masters if site == null
+        Message topo_req=new EmptyMessage(dest).putHeader(relay.getId(), new Relay2Header(Relay2Header.TOPO_REQ));
         relay.down(topo_req);
         return this;
     }
@@ -95,7 +92,7 @@ public class Topology {
     public Topology adjust(String site, Collection<Address> mbrs) {
         Set<MemberInfo> list=cache.get(site);
         if(list != null && mbrs != null)
-            list.removeIf(mi -> !mbrs.contains(mi.address()));
+            list.removeIf(mi -> !mbrs.contains(mi.addr));
         return this;
     }
 
@@ -116,11 +113,19 @@ public class Topology {
     }
 
     /** Called when a response has been received. Updates the internal cache */
-    protected void handleResponse(String site, MemberInfo rsp) {
+    protected void handleResponse(Members rsp) {
+        String site=rsp.site;
         Set<MemberInfo> infos=cache.computeIfAbsent(site,s -> new ConcurrentSkipListSet<>());
-        infos.add(rsp);
-        if(rsp_handler != null)
-            rsp_handler.accept(site, rsp);
+        if(rsp.joined != null) {
+            infos.addAll(rsp.joined);
+            if(rsp_handler != null)
+                for(MemberInfo mi: rsp.joined)
+                    rsp_handler.accept(site, mi);
+        }
+
+        if(rsp.left != null) {
+            // todo: implement
+        }
     }
 
     @FunctionalInterface
@@ -128,6 +133,84 @@ public class Topology {
         void handle(String site, MemberInfo rsp);
     }
 
+    /** Contains information about joined and left members for a given site */
+    public static class Members implements SizeStreamable {
+        protected String           site;
+        protected List<MemberInfo> joined;
+        protected List<Address>    left;
+
+        public Members() {}
+        public Members(String site) {this.site=site;}
+
+        public Members addJoined(MemberInfo mi) {
+            if(this.joined == null)
+                this.joined=new ArrayList<>();
+            this.joined.add(Objects.requireNonNull(mi));
+            return this;
+        }
+
+        public Members addLeft(Address left) {
+            if(this.left == null)
+                this.left=new ArrayList<>();
+            this.left.add(Objects.requireNonNull(left));
+            return this;
+        }
+
+        public int serializedSize() {
+            int size=Util.size(site) + Short.BYTES * 2;
+            if(joined != null && !joined.isEmpty()) {
+                for(MemberInfo mi: joined)
+                    size+=mi.serializedSize();
+            }
+            if(left != null && !left.isEmpty()) {
+                for(Address addr: left)
+                    size+=Util.size(addr);
+            }
+            return size;
+        }
+
+        public void writeTo(DataOutput out) throws IOException {
+            Bits.writeString(site, out);
+            if(joined == null || joined.isEmpty())
+                out.writeShort(0);
+            else {
+                out.writeShort(joined.size());
+                for(MemberInfo mi: joined)
+                    mi.writeTo(out);
+            }
+            if(left == null || left.isEmpty())
+                out.writeShort(0);
+            else {
+                out.writeShort(left.size());
+                for(Address addr: left)
+                    Util.writeAddress(addr, out);
+            }
+        }
+
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+            site=Bits.readString(in);
+            short len=in.readShort();
+            if(len > 0) {
+                joined=new ArrayList<>(len);
+                for(int i=0; i < len; i++) {
+                    MemberInfo mi=new MemberInfo();
+                    mi.readFrom(in);
+                    joined.add(mi);
+                }
+            }
+            len=in.readShort();
+            if(len > 0) {
+                left=new ArrayList<>(len);
+                Address addr=Util.readAddress(in);
+                left.add(addr);
+            }
+        }
+
+        public String toString() {
+            return String.format("site %s: %d members joined %d left", site, joined == null? 0 : joined.size(),
+                                 left == null? 0 : left.size());
+        }
+    }
 
     public static class MemberInfo implements SizeStreamable, Comparable<MemberInfo> {
         protected String    site;
@@ -144,11 +227,6 @@ public class Topology {
             this.ip_addr=ip_addr;
             this.site_master=site_master;
         }
-
-        public String    site()       {return site;}
-        public Address   address()    {return addr;}
-        public IpAddress ipAddress()  {return ip_addr;}
-        public boolean   siteMaster() {return site_master;}
 
         @Override
         public int hashCode() {

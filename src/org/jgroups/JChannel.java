@@ -930,16 +930,17 @@ public class JChannel implements Closeable {
      * a SET_LOCAL_ADDRESS
      */
     protected JChannel setAddress() {
-        Address old_addr=local_addr;
-        local_addr=generateAddress();
-        if(old_addr != null)
-            down(new Event(Event.REMOVE_ADDRESS, old_addr));
         if(name == null || name.isEmpty()) // generate a logical name if not set
             name=Util.generateLocalName();
+        Address old_addr=local_addr;
+        local_addr=generateAddress(name);
         if(name != null && !name.isEmpty()) {
             log.info("local_addr: %s, name: %s", local_addr, name);
             NameCache.add(local_addr, name);
         }
+        if(old_addr != null)
+            down(new Event(Event.REMOVE_ADDRESS, old_addr));
+
         for(Protocol p=prot_stack.getTopProtocol(); p != null; p=p.getDownProtocol())
             p.setAddress(local_addr);
         if(up_handler != null)
@@ -947,16 +948,16 @@ public class JChannel implements Closeable {
         return this;
     }
 
-    protected Address generateAddress() {
+    protected Address generateAddress(String name) {
         if(address_generators == null || address_generators.isEmpty())
             return UUID.randomUUID();
         if(address_generators.size() == 1)
-            return address_generators.get(0).generateAddress();
+            return address_generators.get(0).generateAddress(name);
 
         // at this point we have multiple AddressGenerators installed
         Address[] addrs=new Address[address_generators.size()];
         for(int i=0; i < addrs.length; i++)
-            addrs[i]=address_generators.get(i).generateAddress();
+            addrs[i]=address_generators.get(i).generateAddress(name);
 
         for(int i=0; i < addrs.length; i++) {
             if(!(addrs[i] instanceof ExtendedUUID)) {

@@ -10,4 +10,9 @@ public interface RouteStatusListener {
     void sitesUp(String... sites);
     /** The sites went down */
     void sitesDown(String... sites);
+
+    /** The sites are unreachable (no route to them) */
+    default void sitesUnreachable(String ... sites) {
+
+    }
 }

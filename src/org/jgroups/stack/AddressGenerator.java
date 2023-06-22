@@ -8,5 +8,9 @@ import org.jgroups.Address;
  * @since 2.12
  */
 public interface AddressGenerator {
+    @Deprecated(since="5.2.15")
     Address generateAddress();
+    default Address generateAddress(String name) {
+        return generateAddress();
+    }
 }

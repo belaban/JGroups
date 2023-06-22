@@ -88,6 +88,11 @@ public class RelayDemo implements Receiver {
                     System.out.printf("-- %s: site(s) %s went down\n",
                                       ch.getAddress(), String.join(", ", sites));
                 }
+
+                public void sitesUnreachable(String... sites) {
+                    System.out.printf("-- %s: site(s) %s are unreachable\n",
+                                      ch.getAddress(), String.join(", ", sites));
+                }
             });
         }
         ch.connect("RelayDemo");
@@ -140,7 +145,8 @@ public class RelayDemo implements Receiver {
                 String[] tmp=sub.split(" ");
                 site=tmp.length > 0 && !tmp[0].isEmpty()? tmp[0].trim() : null;
             }
-            Topology topo=relay.topo().removeAll(site != null? List.of(site) : null).refresh(site);
+            Topology topo=relay.topo().removeAll(site != null? List.of(site) : null)
+              .refresh(site);
             Util.sleep(100);
             System.out.printf("\n%s\n", topo.print(site));
             return true;

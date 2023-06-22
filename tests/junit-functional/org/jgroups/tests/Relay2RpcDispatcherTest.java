@@ -100,31 +100,22 @@ public class Relay2RpcDispatcherTest {
         RELAY2 xr=x.getProtocolStack().findProtocol(RELAY2.class);
 
         assert ar != null && xr != null;
-
-        JChannel a_bridge=null, x_bridge=null;
-        for(int i=0; i < 20; i++) {
-            a_bridge=ar.getBridge(SFO);
-            x_bridge=xr.getBridge(LON);
-            if(a_bridge != null && x_bridge != null && a_bridge.getView().size() == 2 && x_bridge.getView().size() == 2)
-                break;
-            Util.sleep(500);
-        }
-
-        assert a_bridge != null && x_bridge != null;
-
+        Util.waitUntil(10000, 500, () -> {
+            JChannel ab=ar.getBridge(SFO); JChannel xb=xr.getBridge(LON);
+            return ab != null && xb != null && ab.getView().size() == 2 && xb.getView().size() == 2;
+        });
+        JChannel a_bridge=ar.getBridge(SFO), x_bridge=xr.getBridge(LON);
         System.out.println("A's bridge channel: " + a_bridge.getView());
         System.out.println("X's bridge channel: " + x_bridge.getView());
-        assert a_bridge.getView().size() == 2 : "bridge view is " + a_bridge.getView();
-        assert x_bridge.getView().size() == 2 : "bridge view is " + x_bridge.getView();
 
         Route route=getRoute(x, LON);
         System.out.println("Route at sfo to lon: " + route);
         assert route != null;
 
-        assertSiteView(a, List.of(SFO));
+        assertSiteView(a, List.of(SFO, LON));
         assert getCurrentSites(b) == null;
 
-        assertSiteView(x, List.of(LON));
+        assertSiteView(x, List.of(LON, SFO));
         assert getCurrentSites(y) == null;
 
         System.out.println("B: sending message 0 to the site master of SFO");
@@ -279,9 +270,8 @@ public class Relay2RpcDispatcherTest {
        List<String> sites = getCurrentSites(channel);
        assert sites != null;
        assert sites.size() == sitesName.size();
-       for (String site : sitesName) {
+       for (String site : sitesName)
           assert sites.contains(site);
-       }
     }
 
     protected static class MyReceiver implements Receiver {

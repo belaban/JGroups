@@ -5,8 +5,11 @@ import org.jgroups.annotations.*;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.XmlNode;
+import org.jgroups.protocols.relay.SiteAddress.Type;
 import org.jgroups.protocols.relay.Topology.MemberInfo;
+import org.jgroups.protocols.relay.Topology.Members;
 import org.jgroups.protocols.relay.config.RelayConfig;
+import org.jgroups.stack.AddressGenerator;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.UUID;
@@ -17,8 +20,12 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static org.jgroups.protocols.relay.Relay2Header.*;
+
+// todo: instead of sending one TOPO-RSP for *each* member, send one TOPO-RSP for *all* members -> 1 instead of N msgs
+// todo: check if copy is needed in reoute(), passUp() and deliver(); possibly pass a boolean as parameter (copy or not)
 
 /**
  * Provides relaying of messages between autonomous sites.<br/>
@@ -27,16 +34,16 @@ import static org.jgroups.protocols.relay.Relay2Header.*;
  * @author Bela Ban
  * @since 3.2
  */
+@SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
 @XmlInclude(schema="relay.xsd",type=XmlInclude.Type.IMPORT,namespace="urn:jgroups:relay:1.0",alias="relay")
 @XmlElement(name="RelayConfiguration",type="relay:RelayConfigurationType")
 @MBean(description="RELAY2 protocol")
 public class RELAY2 extends Protocol {
     // reserved flags
-    public static final short    can_become_site_master_flag = 1 << 1;
-    protected static final short TOPO_ID=560; // defined in jg-protocol-ids.xml
+    public static final short can_become_site_master_flag = 1 << 1;
 
     /* ------------------------------------------    Properties     ---------------------------------------------- */
-    @Property(description="Name of the site (needs to be defined in the configuration)",writable=false)
+    @Property(description="Name of the site; must be defined in the configuration",writable=false)
     protected String                                   site;
 
     @Property(description="Name of the relay configuration",writable=false)
@@ -56,8 +63,9 @@ public class RELAY2 extends Protocol {
       "See https://issues.redhat.com/browse/JGRP-2581 for details")
     protected double                                   site_masters_ratio;
 
+    @Deprecated(since="5.2.17")
     @Property(description="Whether or not we generate our own addresses in which we use can_become_site_master. " +
-      "If this property is false, can_become_site_master is ignored")
+      "If this property is false, can_become_site_master is ignored",deprecatedMessage="will be ignored")
     protected boolean                                  enable_address_tagging;
 
     @Deprecated
@@ -136,14 +144,8 @@ public class RELAY2 extends Protocol {
 
     protected final LongAdder                          forward_to_local_mbr_time=new LongAdder();
 
-    /** Number of messages delivered locally, e.g. received and delivered to self */
-    protected final LongAdder                          local_deliveries=new LongAdder();
-
     @Component(description="Maintains a cache of sites and members",name="topo")
     protected Topology                                 topo=new Topology(this);
-
-    /** Total time (ms) for received messages that are delivered locally */
-    protected final LongAdder                          local_delivery_time=new LongAdder();
 
     /** Log to suppress identical errors for messages to non-existing sites ('no route to site X') */
     protected SuppressLog<String>                      suppress_log_no_route;
@@ -152,7 +154,8 @@ public class RELAY2 extends Protocol {
     public RELAY2 site(String site_name)               {site=site_name;              return this;}
     public RELAY2 config(String cfg)                   {config=cfg;                  return this;}
     public RELAY2 canBecomeSiteMaster(boolean flag)    {can_become_site_master=flag; return this;}
-    public RELAY2 enableAddressTagging(boolean flag)   {enable_address_tagging=flag; return this;}
+    @Deprecated
+    public RELAY2 enableAddressTagging(boolean flag)   {return this;}
     @Deprecated(since="5.2.15")
     public boolean relayMulticasts()                   {return true;}
     @Deprecated(since="5.2.15")
@@ -166,7 +169,7 @@ public class RELAY2 extends Protocol {
     public List<String> siteNames()                    {return getSites();}
     public String  config()                            {return config;}
     public boolean canBecomeSiteMaster()               {return can_become_site_master;}
-    public boolean enableAddressTagging()              {return enable_address_tagging;}
+    public boolean enableAddressTagging()              {return true;}
     public boolean asyncRelayCreation()                {return async_relay_creation;}
     public TimeScheduler getTimer()                    {return timer;}
     public void incrementRelayed()                     {relayed.increment();}
@@ -190,8 +193,8 @@ public class RELAY2 extends Protocol {
     public boolean broadcastRouteNotifications()          {return broadcast_route_notifications;}
     public RELAY2  broadcastRouteNotifications(boolean b) {this.broadcast_route_notifications=b; return this;}
 
-    public boolean canForwardLocalCluster()               {return can_forward_local_cluster;}
-    public RELAY2  canForwardLocalCluster(boolean c)      {this.can_forward_local_cluster=c; return this;}
+    public boolean canForwardLocalCluster()               {return false;}
+    public RELAY2  canForwardLocalCluster(boolean c)      {return this;}
 
     public long    getTopoWaitTime()                      {return topo_wait_time;}
     public RELAY2  setTopoWaitTime(long t)                {this.topo_wait_time=t; return this;}
@@ -238,28 +241,17 @@ public class RELAY2 extends Protocol {
     public long getAvgMsgsForwardingToLocalMbr() {return getTimeForwardingToLocalMbr() > 0?
                                                   (long)(getNumForwardedToLocalMbr() / (getTimeForwardingToLocalMbr()/1000.0)) : 0;}
 
-    @ManagedAttribute(description="Number of messages delivered locally, e.g. received and delivered to self")
-    public long getNumLocalDeliveries() {return local_deliveries.sum();}
-
-    @ManagedAttribute(description="The total time (ms) spent delivering received messages locally",type=AttributeType.TIME)
-    public long getTimeDeliveringLocally() {return TimeUnit.MILLISECONDS.convert(local_delivery_time.sum(),TimeUnit.NANOSECONDS);}
-
-    @ManagedAttribute(description="The average number of messages / s for delivering received messages locally")
-    public long getAvgMsgsDeliveringLocally() {return getTimeDeliveringLocally() > 0?
-                                               (long)(getNumLocalDeliveries() / (getTimeDeliveringLocally()/1000.0)) : 0;}
-
     @ManagedAttribute(description="Whether or not this instance is a site master")
     public boolean isSiteMaster() {return relayer != null;}
 
     @ManagedAttribute(description="Number of 'no route to site X' errors")
     public int getNumberOfNoRouteErrors() {
-        return suppress_log_no_route != null? suppress_log_no_route.getCache().size() : 0;
+        return suppress_log_no_route.getCache().size();
     }
 
     @ManagedOperation(description="Clears the 'no route to site X' cache")
     public RELAY2 clearNoRouteCache() {
-        if(suppress_log_no_route != null)
-            suppress_log_no_route.getCache().clear();
+        suppress_log_no_route.getCache().clear();
         return this;
     }
 
@@ -271,8 +263,6 @@ public class RELAY2 extends Protocol {
         relayed_time.reset();
         forward_to_local_mbr.reset();
         forward_to_local_mbr_time.reset();
-        local_deliveries.reset();
-        local_delivery_time.reset();
         clearNoRouteCache();
     }
 
@@ -307,8 +297,9 @@ public class RELAY2 extends Protocol {
             };
         }
 
-        if(suppress_time_no_route_errors > 0)
-            suppress_log_no_route=new SuppressLog<>(log, "RelayNoRouteToSite", "SuppressMsgRelay");
+        if(suppress_time_no_route_errors <= 0)
+            throw new IllegalArgumentException("suppress_time_no_route_errors has to be > 0");
+        suppress_log_no_route=new SuppressLog<>(log, "RelayNoRouteToSite", "SuppressMsgRelay");
     }
 
     public void configure() throws Exception {
@@ -341,15 +332,16 @@ public class RELAY2 extends Protocol {
         if(site_config == null)
             throw new Exception("site configuration for \"" + site + "\" not found in " + config);
         log.trace("site configuration:\n" + site_config);
-        if(enable_address_tagging) {
-            JChannel ch=getProtocolStack().getChannel();
-            ch.addAddressGenerator(() -> {
-                ExtendedUUID retval=ExtendedUUID.randomUUID();
+        JChannel ch=getProtocolStack().getChannel();
+        ch.addAddressGenerator(new AddressGenerator() {
+            @Override public Address generateAddress() {return generateAddress(null);}
+            @Override public Address generateAddress(String name) {
+                SiteUUID uuid=new SiteUUID(UUID.randomUUID(), name, site);
                 if(can_become_site_master)
-                    retval.setFlag(can_become_site_master_flag);
-                return retval;
-            });
-        }
+                    uuid.setFlag(can_become_site_master_flag);
+                return uuid;
+            }
+        });
         prots_above=getIdsAbove();
     }
 
@@ -439,10 +431,10 @@ public class RELAY2 extends Protocol {
 
 
     public Object down(Message msg) {
-        Address dest=msg.getDest();
-        if(!(dest instanceof SiteAddress))
-            return down_prot.down(msg);
+        msg.src(local_addr);
+        return process(true, msg);
 
+        /*Address dest=msg.getDest();
         SiteAddress target=(SiteAddress)dest;
         Address src=msg.getSrc();
         SiteAddress sender=src instanceof SiteMaster? new SiteMaster(((SiteMaster)src).getSite())
@@ -450,38 +442,42 @@ public class RELAY2 extends Protocol {
         if(local_addr instanceof ExtendedUUID)
             ((ExtendedUUID)sender).addContents((ExtendedUUID)local_addr);
 
-        // target is in the same site; we can deliver the message in our local cluster
-        if(target.getSite().equals(site)) {
-            if(local_addr.equals(target) || (target instanceof SiteMaster && is_site_master)) {
-                // we cannot simply pass msg down, as the transport doesn't know how to send a message to a (e.g.) SiteMaster
-                long start=stats? System.nanoTime() : 0;
-                forwardTo(local_addr, target, sender, msg, false);
-                if(stats) {
-                    local_delivery_time.add(System.nanoTime() - start);
-                    local_deliveries.increment();
+       if(target instanceof SiteMaster) {
+            if(!is_site_master)
+                sendToLocalSiteMaster(sender, msg);
+            else {
+                if(target.getSite() == null) { // send to *all* site masters
+                    msg.setSrc(local_addr);
+                    sendToBridges(msg);
+                }
+                if(local_addr.equals(target) || (target instanceof SiteMaster && is_site_master)) {
+                    // we cannot simply pass msg down, as the transport doesn't know how to send a message to a (e.g.) SiteMaster
+                    deliver(local_addr, msg);
                 }
             }
-            else
+            return null;
+        }
+
+        // target is in the same site; we can deliver the message in our local cluster
+        if(site.equals(target.getSite()) || target.getSite() == null) {
+            // we're the target or we're the site master and need to forward the message to a member of the local cluster
+            if(local_addr.equals(target) || (target instanceof SiteMaster && is_site_master)) {
+                // we cannot simply pass msg down, as the transport doesn't know how to send a message to a (e.g.) SiteMaster
+                deliver(local_addr, msg);
+            }
+            else // forward to another member of the local cluster
                 deliverLocally(target, sender, msg);
             return null;
         }
 
         // forward to the site master unless we're the site master (then route the message directly)
-        if(!is_site_master) {
-            long start=stats? System.nanoTime() : 0;
-            Address site_master=pickSiteMaster(sender);
-            if(site_master == null)
-                throw new IllegalStateException("site master is null");
-            forwardTo(site_master, target, sender, msg, max_site_masters == 1);
-            if(stats) {
-                forward_sm_time.add(System.nanoTime() - start);
-                forward_to_site_master.increment();
-            }
-        }
+        if(!is_site_master)
+            sendToLocalSiteMaster(sender, msg);
         else
             route(target, sender, msg);
-        return null;
+        return null; */
     }
+
 
 
     public Object up(Event evt) {
@@ -491,18 +487,19 @@ public class RELAY2 extends Protocol {
     }
 
     public Object up(Message msg) {
+        Message copy=msg;
         Relay2Header hdr=msg.getHeader(id);
         Address dest=msg.getDest(),
           sender=hdr != null && hdr.original_sender != null? hdr.original_sender : msg.src();
 
         // forward a multicast message to all bridges except myself, then pass up
-        if(dest == null && is_site_master && !msg.isFlagSet(Message.Flag.NO_RELAY))
+        /*if(dest == null && is_site_master && !msg.isFlagSet(Message.Flag.NO_RELAY))
             sendToBridges(msg);
 
         if(hdr == null) {
             TopoHeader topo_hdr=msg.getHeader(TOPO_ID);
             if(topo_hdr != null) {
-                handleTopo(topo_hdr, sender, msg, false);
+                handleTopo(topo_hdr, sender, msg);
                 return null;
             }
             deliver(dest, sender, msg); // fixes https://issues.redhat.com/browse/JGRP-2710
@@ -514,25 +511,55 @@ public class RELAY2 extends Protocol {
                 handleMessage(hdr, msg);
             else
                 deliver(dest, sender, msg);
+        }*/
+        if(hdr != null) {
+            if(hdr.getType() == SITE_UNREACHABLE) {
+                triggerSiteUnreachableEvent((SiteAddress)hdr.final_dest);
+                return null;
+            }
+            //todo: check if copy is needed!
+            copy=copy(msg).dest(hdr.final_dest).src(hdr.original_sender).putHeader(id, hdr);
+            // msg.dest(hdr.final_dest).src(hdr.original_sender); // message can be changed as it is delivered (no xmits)
         }
-        return null;
+        return process(false, copy);
     }
 
     public void up(MessageBatch batch) {
         List<SiteAddress> unreachable_sites=null;
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
-            Message msg=it.next();
+            Message msg=it.next(), copy=msg;
             Relay2Header hdr=msg.getHeader(id);
             Address dest=msg.getDest(),
               sender=hdr != null && hdr.original_sender != null? hdr.original_sender : batch.sender();
 
+            it.remove();
+            if(hdr != null) {
+                if(hdr.getType() == SITE_UNREACHABLE) {
+                    SiteAddress site_addr=(SiteAddress)hdr.final_dest;
+                    String site_name=site_addr.getSite();
+                    if(unreachable_sites == null)
+                        unreachable_sites=new ArrayList<>();
+                    boolean contains=unreachable_sites.stream().anyMatch(sa -> sa.getSite().equals(site_name));
+                    if(!contains)
+                        unreachable_sites.add(site_addr);
+                    continue;
+                }
+                copy=copy(msg).dest(hdr.final_dest).src(hdr.original_sender).putHeader(id, hdr);
+                // msg.dest(hdr.final_dest).src(hdr.original_sender); // message can be changed as it is delivered (no xmits)
+            }
+            process(false, copy);
+
             // forward a multicast message to all bridges except myself, then pass up
-            if(dest == null && is_site_master && !msg.isFlagSet(Message.Flag.NO_RELAY))
-                sendToBridges(msg);
+            /*if((dest == null || dest instanceof SiteMaster && ((SiteMaster)dest).getSite() == null)
+              && is_site_master && !msg.isFlagSet(Message.Flag.NO_RELAY))
+                sendToBridges(msg);*/
+
+           /* if(dest == null)
+                route(msg, null);
             if(hdr == null) {
                 TopoHeader topo_hdr=msg.getHeader(TOPO_ID);
                 if(topo_hdr != null) {
-                    handleTopo(topo_hdr, sender, msg, false);
+                    handleTopo(topo_hdr, sender, msg);
                     it.remove();
                 }
             }
@@ -555,7 +582,7 @@ public class RELAY2 extends Protocol {
                 }
                 else
                     deliver(null, hdr.original_sender, msg); //todo: replace in batch rather than pass up each msg
-            }
+            }*/
         }
         if(unreachable_sites != null) {
             for(SiteAddress sa: unreachable_sites)
@@ -565,27 +592,17 @@ public class RELAY2 extends Protocol {
             up_prot.up(batch);
     }
 
-    protected void handleTopo(TopoHeader hdr, Address sender, Message msg, boolean send_rsps_for_entire_view) {
-        switch(hdr.type()) {
-            case TopoHeader.REQ:
-                List<Address> targets=send_rsps_for_entire_view? new ArrayList<>(members) : List.of(local_addr);
-                for(Address t: targets)
-                    sendResponseFor(t, sender);
-                break;
-            case TopoHeader.RSP:
-                MemberInfo mi=msg.getObject();
-                topo.handleResponse(mi.site(), mi);
-                break;
-        }
-    }
 
-    protected void sendResponseFor(Address mbr, Address dest) {
-        SiteAddress my_addr=mbr instanceof SiteMaster? new SiteMaster(((SiteMaster)mbr).getSite())
-          : new SiteUUID((UUID)mbr, NameCache.get(mbr), site);
-        MemberInfo mi=new MemberInfo(this.site, my_addr,
-                                     (IpAddress)getPhysicalAddress(mbr),
-                                     site_masters.contains(mbr));
-        Message rsp=new ObjectMessage(dest, mi).putHeader(TOPO_ID, new TopoHeader(TopoHeader.RSP));
+    protected void sendResponseFor(List<Address> mbrs, Address dest) {
+        Members m=new Members(this.site);
+        for(Address mbr: mbrs) {
+            SiteAddress addr=mbr instanceof SiteMaster? new SiteMaster(((SiteMaster)mbr).getSite())
+              : new SiteUUID((UUID)mbr, NameCache.get(mbr), site);
+            MemberInfo mi=new MemberInfo(this.site, addr, (IpAddress)getPhysicalAddress(mbr),
+                                         site_masters.contains(mbr));
+            m.addJoined(mi);
+        }
+        Message rsp=new ObjectMessage(dest, m).putHeader(this.id, new Relay2Header(TOPO_RSP));
         down(rsp);
     }
 
@@ -634,25 +651,30 @@ public class RELAY2 extends Protocol {
                     relayer.stop();
             }
         }
-        if(suppress_log_no_route != null)
-            suppress_log_no_route.removeExpired(suppress_time_no_route_errors);
-
+        suppress_log_no_route.removeExpired(suppress_time_no_route_errors);
         topo().adjust(this.site, view.getMembers());
     }
 
 
     /** Called to handle a message received by the relayer */
     protected void handleRelayMessage(Relay2Header hdr, Message msg) {
-        if(hdr.final_dest != null)
-            handleMessage(hdr, msg);
-        else {
-            Message copy=copy(msg).setDest(null).setSrc(null).putHeader(id, hdr);
-            down_prot.down(copy); // multicast locally
-        }
+        //if(hdr.final_dest != null)
+          //  handleMessage(hdr, msg);
+       // else {
+         //   Message copy=copy(msg).setDest(null).setSrc(null).putHeader(id, hdr);
+           // down_prot.down(copy); // multicast locally
+       // }
+
+        Message copy=copy(msg).dest(hdr.final_dest).src(hdr.original_sender)
+          .putHeader(id, hdr);
+
+        // todo: check if copy is needed!
+        // msg.dest(hdr.final_dest).src(hdr.original_sender); // message can be changed as it is delivered (no xmits)
+        process(true, copy);
     }
 
     /** Handles SITES_UP/SITES_DOWN/TOPO_REQ/TOPO_RSP messages */
-    protected boolean handleAdminMessage(Relay2Header hdr) {
+    protected boolean handleAdminMessage(Relay2Header hdr, Message msg) {
         switch(hdr.type) {
             case SITES_UP:
             case SITES_DOWN:
@@ -675,6 +697,13 @@ public class RELAY2 extends Protocol {
                     }
                 }
                 return true;
+            case TOPO_REQ:
+                sendResponseFor(members, msg.src());
+                return true;
+            case TOPO_RSP:
+                Members mbrs=msg.getObject();
+                topo.handleResponse(mbrs);
+                return true;
         }
         return false;
     }
@@ -687,9 +716,10 @@ public class RELAY2 extends Protocol {
                 route((SiteAddress)hdr.final_dest, (SiteAddress)hdr.original_sender, msg);
                 break;
             case SITE_UNREACHABLE:
-                triggerSiteUnreachableEvent((SiteAddress)hdr.final_dest);
+                String unreachable_site=hdr.sites != null && !hdr.sites.isEmpty()? hdr.sites.iterator().next() : null;
+                if(unreachable_site != null)
+                    triggerSiteUnreachableEvent(new SiteMaster(unreachable_site));
                 break;
-            case HOST_UNREACHABLE:
             default:
                 log.error("type " + hdr.type + " unknown");
                 break;
@@ -706,10 +736,9 @@ public class RELAY2 extends Protocol {
      */
     protected void route(SiteAddress dest, SiteAddress sender, Message msg) {
         String target_site=dest.getSite();
-        if(target_site.equals(site)) {
-            if(local_addr.equals(dest) || ((dest instanceof SiteMaster) && is_site_master)) {
+        if(site.equals(target_site) || target_site == null) {
+            if(local_addr.equals(dest) || is_site_master && dest instanceof SiteMaster)
                 deliver(dest, sender, msg);
-            }
             else
                 deliverLocally(dest, sender, msg); // send to member in same local site
             return;
@@ -724,10 +753,7 @@ public class RELAY2 extends Protocol {
         if(route == null)
             route=tmp.getForwardingRouteMatching(target_site, sender);
         if(route == null) {
-            if(suppress_log_no_route != null)
-                suppress_log_no_route.log(SuppressLog.Level.error, target_site, suppress_time_no_route_errors, sender, target_site);
-            else
-                log.error(Util.getMessage("RelayNoRouteToSite"), local_addr, target_site);
+            suppress_log_no_route.log(SuppressLog.Level.error, target_site, suppress_time_no_route_errors, sender, target_site);
             sendSiteUnreachableTo(msg.getSrc(), target_site);
         }
         else
@@ -770,7 +796,7 @@ public class RELAY2 extends Protocol {
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": relaying multicast message from " + original_sender + " via route " + route);
                 try {
-                    route.send(null, original_sender, msg, visited_sites);
+                    route.send(msg.dest(), original_sender, msg, visited_sites);
                     break;
                 }
                 catch(Exception ex) {
@@ -778,6 +804,198 @@ public class RELAY2 extends Protocol {
                 }
             }
         }
+    }
+
+    // todo: use ComptableFutures and possibly thenRunAsync() to parallelize (e.g.) routing and local delivery
+    protected Object routeThen(Message msg, List<String> sites, Supplier<Object> action) {
+        if(!msg.isFlagSet(Message.Flag.NO_RELAY))
+            route(msg, sites);
+        return action != null? action.get() : null;
+    }
+
+    protected Object process(boolean down, Message msg) {
+        Address dest=msg.dest();
+        SiteAddress dst=null;
+        Type type=dest == null? Type.ALL : (dst=(SiteAddress)dest).type();
+        if(is_site_master) {
+            switch(type) {
+                case ALL:
+                    if(down)
+                        return routeThen(msg,null,() -> deliver(null, msg, true));
+                    return routeThen(msg,null,() -> passUp(msg));
+                case SM_ALL:
+                    if(down)
+                        return routeThen(msg,null,() -> deliver(local_addr, msg, false));
+                    return routeThen(msg,null,() -> passUp(msg));
+                case SM:
+                    if(sameSite(dst)) {
+                        if(down)
+                            return deliver(local_addr, msg, false);
+                        return passUp(msg);
+                    }
+                    return route(msg, Arrays.asList(dst.getSite()));
+                case UNICAST:
+                    if(sameSite(dst)) {
+                        if(down)
+                            return deliver(dst, msg, false);
+                        if(local_addr.equals(dst))
+                            return passUp(msg);
+                        return deliver(dst, msg, false);
+                    }
+                    else
+                        return route(msg, Arrays.asList(dst.getSite()));
+            }
+        }
+        else {
+            switch(type) {
+                case ALL:
+                    if(down)
+                        return deliver(null, msg, false);
+                    return passUp(msg);
+                case SM_ALL:
+                case SM:
+                    if(down)
+                        return sendToLocalSiteMaster(local_addr, msg); // todo: local_addr or msg.src()?
+                    throw new IllegalStateException(String.format("non site master received a sg with dst %s",dst));
+                case UNICAST:
+                    if(down) {
+                        if(sameSite(dst))
+                            return deliver(dst, msg, false);
+                        return sendToLocalSiteMaster(local_addr, msg);
+                    }
+                    return passUp(msg);
+            }
+        }
+        return null;
+    }
+
+
+    /**
+     * Sends a message to the given sites, or all sites (excluding the local site)
+     * @param msg The message to be sent
+     * @param sites The sites to send the message to. If null, msg will be sent to all sites listed in the routing table,
+     *              excepting the local site
+     */
+    protected Object route(Message msg, Collection<String> sites) {
+        // boolean skip_null_routes=sites != null;
+        final Relayer r=relayer;
+        if(r == null) {
+            log.warn("%s: not site master; dropping message", local_addr);
+            return null;
+        }
+        if(sites == null)
+            sites=new ArrayList<>(r.routes.keySet());
+        sites.remove(this.site);
+        if(sites.isEmpty()) // no sites in routing table
+            return null;
+        Relay2Header hdr=msg.getHeader(this.id);
+        Address dest=msg.dest(), sender=hdr != null && hdr.original_sender != null?
+          ((ExtendedUUID)hdr.getOriginalSender()).addContents((ExtendedUUID)local_addr) : local_addr;
+        // msg.src(sender); // todo: check if necessary
+
+        Set<String> visited_sites=null;
+        if(dest == null || dest instanceof  SiteMaster && ((SiteMaster)dest).getSite() == null) {
+            visited_sites=new HashSet<>(sites); // to be added to the header
+            visited_sites.add(this.site);
+            if(hdr != null && hdr.hasVisitedSites()) {
+                visited_sites.addAll(hdr.getVisitedSites());
+                sites.removeAll(hdr.getVisitedSites()); // avoid cycles (https://issues.redhat.com/browse/JGRP-1519)
+            }
+        }
+
+        for(String s: sites) {
+            Route route=r.getRoute(s, sender);
+            if(route == null) {
+                //if(skip_null_routes)
+                  //  continue;
+                route=r.getForwardingRouteMatching(s, sender);
+            }
+            if(route == null) {
+                suppress_log_no_route.log(SuppressLog.Level.error, s, suppress_time_no_route_errors, sender, s);
+                sendSiteUnreachableTo(msg.getSrc(), s);
+            }
+            else
+                route.send(dest, sender, msg, visited_sites);
+        }
+        return null;
+    }
+
+    /**
+     * Sends the message to a local destination.
+     * @param next_dest The destination. If null, the message will be delivered to all members of the local cluster. In
+     *             this case, flag {@link org.jgroups.Message.Flag#NO_RELAY} will be set, so that the resulting
+     *             multicast is not forwarded to other sites.
+     * @param msg The message to deliver
+     */
+    protected Object deliver(Address next_dest, Message msg, boolean dont_relay) {
+        checkLocalAddress(next_dest);
+        Address final_dest=msg.dest(), original_sender=msg.src();
+        if(log.isTraceEnabled())
+            log.trace(local_addr + ": forwarding message to final destination " + final_dest + " to " +
+                        next_dest);
+        Relay2Header hdr=msg.getHeader(this.id);
+        if(hdr != null)
+            hdr.setOriginalSender(original_sender).setFinalDestination(final_dest);
+        else
+            hdr=new Relay2Header(DATA, final_dest, original_sender);
+        Message copy=copy(msg).setDest(next_dest).setSrc(null).putHeader(id, hdr);
+        if(dont_relay)
+            copy.setFlag(Message.Flag.NO_RELAY);
+        return down_prot.down(copy);
+    }
+
+    protected Object sendToLocalSiteMaster(Address sender, Message msg) {
+        long start=stats? System.nanoTime() : 0;
+        Address site_master=pickSiteMaster(sender);
+        if(site_master == null)
+            throw new IllegalStateException("site master is null");
+        Object ret=deliver(site_master, msg, false);
+        if(stats) {
+            forward_sm_time.add(System.nanoTime() - start);
+            forward_to_site_master.increment();
+        }
+        return ret;
+    }
+
+    /**
+     * Sends a message up the stack. If there's a header, msg.dest is set to the header's final destination and
+     * msg.src to te header's original sender
+     * @param msg The message to be sent up
+     */
+    protected Object passUp(Message msg) {
+        Relay2Header hdr=msg.getHeader(this.id);
+        Message copy=copy(msg); // todo: check if copy is needed!
+        if(hdr != null) {
+            copy.dest(hdr.final_dest).src(hdr.original_sender); // no need to copy as msg won't get retransmitted
+            if(handleAdminMessage(hdr, copy))
+                return null;
+        }
+        return up_prot.up(copy);
+    }
+
+    protected Address checkLocalAddress(Address dest) {
+        if(dest == null)
+            return dest;
+        SiteAddress s=(SiteAddress)dest;
+        String dest_site=s.getSite();
+        if(dest_site != null && !site.equals(dest_site))
+            throw new IllegalArgumentException(String.format("destination %s it not the same as the local site %s",
+                                                             dest_site, this.site));
+        return dest;
+    }
+
+    protected boolean sameSite(Address addr) {
+        if(addr == null)
+            return true;
+        String dest_site=((SiteAddress)addr).getSite();
+        return dest_site == null || this.site.equals(dest_site);
+    }
+
+    protected boolean sameSite(SiteAddress addr) {
+        if(addr == null)
+            return true;
+        String dest_site=addr.getSite();
+        return dest_site == null || this.site.equals(dest_site);
     }
 
     /**
@@ -795,34 +1013,18 @@ public class RELAY2 extends Protocol {
         }
         // send message back to the src node.
         Message msg=new EmptyMessage(src).setFlag(Message.Flag.OOB)
-          .putHeader(id,new Relay2Header(SITE_UNREACHABLE, new SiteMaster(target_site), null));
-        down_prot.down(msg);
-    }
-
-    protected void forwardTo(Address next_dest, SiteAddress final_dest, Address original_sender, final Message msg,
-                             boolean forward_to_current_coord) {
-        if(log.isTraceEnabled())
-            log.trace(local_addr + ": forwarding message to final destination " + final_dest + " to " +
-                        (forward_to_current_coord? " the current coordinator" : next_dest));
-        Relay2Header hdr=msg.getHeader(this.id);
-        if(hdr != null)
-            hdr.setOriginalSender(original_sender).setFinalDestination(final_dest);
-        else
-            hdr=new Relay2Header(DATA, final_dest, original_sender);
-        Message copy=copy(msg).setDest(next_dest).setSrc(null).putHeader(id,hdr);
-        down_prot.down(copy);
+          .putHeader(id, new Relay2Header(SITE_UNREACHABLE).setSites(target_site));
+        down(msg);
     }
 
 
     protected void deliverLocally(SiteAddress dest, SiteAddress sender, Message msg) {
         Address local_dest;
-        boolean send_to_coord=false;
         if(dest instanceof SiteUUID) {
             if(dest instanceof SiteMaster) {
                 local_dest=pickSiteMaster(sender);
                 if(local_dest == null)
                     throw new IllegalStateException("site master was null");
-                send_to_coord=true;
             }
             else {
                 SiteUUID tmp=(SiteUUID)dest;
@@ -835,7 +1037,7 @@ public class RELAY2 extends Protocol {
         if(log.isTraceEnabled())
             log.trace(local_addr + ": delivering message to " + dest + " in local cluster");
         long start=stats? System.nanoTime() : 0;
-        forwardTo(local_dest, dest, sender, msg, send_to_coord);
+        deliver(local_dest, msg, false);
         if(stats) {
             forward_to_local_mbr_time.add(System.nanoTime() - start);
             forward_to_local_mbr.increment();
@@ -845,20 +1047,10 @@ public class RELAY2 extends Protocol {
 
     protected void deliver(Address dest, Address sender, final Message msg) {
         try {
-            TopoHeader hdr=msg.getHeader(TOPO_ID);
-            if(hdr != null) {
-                handleTopo(hdr, sender, msg, dest instanceof SiteMaster);
-                return;
-            }
             Message copy=copy(msg).setDest(dest).setSrc(sender);
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": delivering message from " + sender);
-            long start=stats? System.nanoTime() : 0;
             up_prot.up(copy);
-            if(stats) {
-                local_delivery_time.add(System.nanoTime() - start);
-                local_deliveries.increment();
-            }
         }
         catch(Exception e) {
             log.error(Util.getMessage("FailedDeliveringMessage"), e);
@@ -931,6 +1123,8 @@ public class RELAY2 extends Protocol {
 
     private void triggerSiteUnreachableEvent(SiteAddress remoteSite) {
         up_prot.up(new Event(Event.SITE_UNREACHABLE, remoteSite));
+        if(route_status_listener != null)
+            route_status_listener.sitesUnreachable(remoteSite.getSite());
     }
 
 }
