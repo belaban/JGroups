@@ -254,7 +254,7 @@ public class Relayer {
 
             // remove all routes which were dropped between the old and new view:
             if(!removed_routes.isEmpty() && log.isTraceEnabled())
-                log.trace("%s: removing routes %s from routing table", removed_routes);
+                log.trace("%s: removing routes %s from routing table", channel.getAddress(), removed_routes);
             removed_routes.forEach(routes.keySet()::remove);
 
             if(!down.isEmpty())
