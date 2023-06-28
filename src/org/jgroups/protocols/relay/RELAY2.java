@@ -505,6 +505,7 @@ public class RELAY2 extends Protocol {
                 handleTopo(topo_hdr, sender, msg, false);
                 return null;
             }
+            deliver(dest, sender, msg); // fixes https://issues.redhat.com/browse/JGRP-2710
         }
         else {
             if(handleAdminMessage(hdr))
