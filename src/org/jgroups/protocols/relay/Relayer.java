@@ -143,7 +143,8 @@ public class Relayer {
     }
 
     protected List<String> getSiteNames() {
-        return new ArrayList<>(routes.keySet());
+        return Stream.concat(Stream.of(relay.site), routes.keySet().stream())
+                .collect(Collectors.toList());
     }
 
     protected synchronized List<Route> getRoutes(String ... excluded_sites) {
