@@ -137,11 +137,8 @@ public class Relay2Header extends Header {
     }
 
     public String toString() {
-        return String.format("%s [final dest=%s, original sender=%s, %s%s]",
-                             typeToString(type), final_dest, original_sender,
-                             sites + ", sites,",
-                             visited_sites == null || visited_sites.isEmpty()? "" :
-                               String.format(", visited=%s", visited_sites));
+        return String.format("%s [final dest=%s, original sender=%s, sites=%s, visited=%s]",
+                             typeToString(type), final_dest, original_sender, sites, visited_sites);
     }
 
     protected static String typeToString(byte type) {
