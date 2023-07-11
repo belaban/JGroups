@@ -3,7 +3,6 @@ package org.jgroups.stack;
 
 import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
-import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.SocketFactory;
@@ -12,8 +11,6 @@ import org.jgroups.util.Util;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -24,14 +21,11 @@ import java.util.function.Consumer;
  * @author Bela Ban
  */
 public class RouterStubManager implements Runnable, RouterStub.CloseListener {
-    @GuardedBy("reconnectorLock")
-    protected final ConcurrentMap<RouterStub,Future<?>> futures=new ConcurrentHashMap<>();
-
     // List of currently connected RouterStubs
-    protected volatile List<RouterStub>                 stubs;
+    protected final List<RouterStub> stubs=new ArrayList<>();
 
     // List of destinations that the reconnect task needs to create and connect
-    protected final Set<Target>                         reconnect_list=new HashSet<>();
+    protected final Set<Target>      reconnect_list=new HashSet<>();
 
     protected final Protocol         owner;
     protected final TimeScheduler    timer;
@@ -49,7 +43,6 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     public RouterStubManager(Protocol owner, String cluster_name, Address local_addr,
                              String logical_name, PhysicalAddress phys_addr, long interval) {
         this.owner = owner;
-        this.stubs = new ArrayList<>();
         this.log = LogFactory.getLog(owner.getClass());
         this.timer = owner.getTransport().getTimer();
         this.cluster_name=cluster_name;
@@ -73,7 +66,9 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
      * @param action
      */
     public void forEach(Consumer<RouterStub> action) {
-        stubs.stream().filter(RouterStub::isConnected).forEach(action);
+        synchronized(stubs) {
+            stubs.stream().filter(RouterStub::isConnected).forEach(action);
+        }
     }
 
     /**
@@ -81,13 +76,9 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
      * @param action
      */
     public void forAny(Consumer<RouterStub> action) {
-        while(!stubs.isEmpty()) {
-            RouterStub stub=Util.pickRandomElement(stubs);
-            if(stub != null && stub.isConnected()) {
-                action.accept(stub);
-                return;
-            }
-        }
+        RouterStub stub=findRandomConnectedStub();
+        if(stub != null && stub.isConnected())
+            action.accept(stub);
     }
 
 
@@ -110,12 +101,17 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
 
 
     public void connectStubs() {
-        for(RouterStub stub : stubs) {
+        List<RouterStub> list=null;
+        synchronized(stubs) {
+            list=new ArrayList<>(stubs);
+        }
+
+        for(RouterStub stub: list) {
             try {
                 if(!stub.isConnected())
                     stub.connect(cluster_name, local_addr, logical_name, phys_addr);
             }
-            catch (Throwable e) {
+            catch(Throwable e) {
                 moveStubToReconnects(stub);
             }
         }
@@ -124,19 +120,23 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     
     public void disconnectStubs() {
         stopReconnector();
-        for(RouterStub stub : stubs) {
-            try {
-                stub.disconnect(cluster_name, local_addr);
+        synchronized(stubs) {
+            for(RouterStub stub : stubs) {
+                try {
+                    stub.disconnect(cluster_name, local_addr);
+                }
+                catch(Throwable e) {
+                }
             }
-            catch (Throwable e) {
-            }
-        }       
+        }
     }
     
     public void destroyStubs() {
         stopReconnector();
-        stubs.forEach(RouterStub::destroy);
-        stubs.clear();
+        synchronized(stubs) {
+            stubs.forEach(RouterStub::destroy);
+            stubs.clear();
+        }
     }
 
     public String printStubs() {
@@ -201,10 +201,9 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
 
     protected boolean add(RouterStub stub) {
         if(stub == null) return false;
-        List<RouterStub> new_stubs=new ArrayList<>(stubs);
-        boolean retval=!new_stubs.contains(stub) && new_stubs.add(stub);
-        this.stubs=new_stubs;
-        return retval;
+        synchronized(stubs) {
+            return !stubs.contains(stub) && stubs.add(stub);
+        }
     }
 
 
@@ -217,10 +216,8 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
 
     protected boolean remove(RouterStub stub) {
         if(stub == null) return false;
+        boolean retval=this.stubs.remove(stub);
         stub.destroy();
-        List<RouterStub> new_stubs=new ArrayList<>(stubs);
-        boolean retval=new_stubs.remove(stub);
-        this.stubs=new_stubs;
         return retval;
     }
 
@@ -233,12 +230,30 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
 
 
     protected RouterStub find(IpAddress router_addr) {
-        for(RouterStub stub: stubs) {
-            IpAddress addr=stub.gossipRouterAddress();
-            if(Objects.equals(addr, router_addr))
-                return stub;
+        synchronized(stubs) {
+            for(RouterStub stub : stubs) {
+                IpAddress addr=stub.gossipRouterAddress();
+                if(Objects.equals(addr, router_addr))
+                    return stub;
+            }
         }
         return null;
+    }
+
+    protected RouterStub findRandomConnectedStub() {
+        synchronized(stubs) {
+            while(connectedStubs() > 0) {
+                RouterStub tmp=Util.pickRandomElement(stubs);
+                if(tmp != null && tmp.isConnected())
+                    return tmp;
+            }
+            return null;
+        }
+    }
+
+    // unsynchronized
+    protected int connectedStubs() {
+        return (int)stubs.stream().filter(RouterStub::isConnected).count();
     }
 
     protected synchronized void startReconnector() {
