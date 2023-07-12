@@ -216,7 +216,10 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
 
     protected boolean remove(RouterStub stub) {
         if(stub == null) return false;
-        boolean retval=this.stubs.remove(stub);
+        boolean retval=false;
+        synchronized(stubs) {
+            retval=this.stubs.remove(stub);
+        }
         stub.destroy();
         return retval;
     }
