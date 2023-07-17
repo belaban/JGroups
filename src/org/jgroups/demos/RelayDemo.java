@@ -138,6 +138,14 @@ public class RelayDemo implements Receiver {
             System.out.printf("configured sites: %s\n", relay.getSites());
             return true;
         }
+        if(line.startsWith("tp")) { // topo-print
+            System.out.printf("\n%s\n", relay.topo().print());
+            return true;
+        }
+        if(line.startsWith("tc")) { // topo-clean
+            relay.topo().removeAll(null);
+            return true;
+        }
         if(line.startsWith("topo")) {
             String sub=line.substring("topo".length()).trim();
             String site=null;

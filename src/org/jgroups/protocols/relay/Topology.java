@@ -27,7 +27,7 @@ import java.util.function.BiConsumer;
 public class Topology {
     protected final RELAY2                      relay;
     protected final Map<String,Set<MemberInfo>> cache=new ConcurrentHashMap<>(); // cache of sites and members
-    protected BiConsumer<String,MemberInfo>     rsp_handler;
+    protected BiConsumer<String,Members>        rsp_handler;
 
 
     public Topology(RELAY2 relay) {
@@ -38,9 +38,10 @@ public class Topology {
 
     /**
      * Sets a response handler
-     * @param c The response handler. Arguments are the site and MemberInfo of the member from which we received the rsp
+     * @param c The response handler. Arguments are the site and {@link Members}
+     *          ({@link MemberInfo} of joined and left members)
      */
-    public Topology setResponseHandler(BiConsumer<String,MemberInfo> c) {rsp_handler=c; return this;}
+    public Topology setResponseHandler(BiConsumer<String,Members> c) {rsp_handler=c; return this;}
 
 
     @ManagedOperation(description="Fetches information (site, address, IP address) from all members")
@@ -118,20 +119,14 @@ public class Topology {
         Set<MemberInfo> infos=cache.computeIfAbsent(site,s -> new ConcurrentSkipListSet<>());
         if(rsp.joined != null) {
             infos.addAll(rsp.joined);
-            if(rsp_handler != null)
-                for(MemberInfo mi: rsp.joined)
-                    rsp_handler.accept(site, mi);
         }
-
         if(rsp.left != null) {
             // todo: implement
         }
+        if(rsp_handler != null)
+            rsp_handler.accept(site, rsp);
     }
 
-    @FunctionalInterface
-    public interface ResponseHandler {
-        void handle(String site, MemberInfo rsp);
-    }
 
     /** Contains information about joined and left members for a given site */
     public static class Members implements SizeStreamable {

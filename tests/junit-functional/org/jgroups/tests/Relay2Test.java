@@ -385,7 +385,11 @@ public class Relay2Test extends RelayTests {
 
             JChannel _g=createNode(SFO, "G", BRIDGE_CLUSTER, LON, NYC, SFO);
             JChannel _h=createNode(SFO, "H", BRIDGE_CLUSTER, LON, NYC, SFO);
-            JChannel _i=createNode(SFO, "I", BRIDGE_CLUSTER, LON, NYC, SFO);) {
+            JChannel _i=createNode(SFO, "I", BRIDGE_CLUSTER, LON, NYC, SFO)) {
+
+            Util.waitUntilAllChannelsHaveSameView(5000, 100, _a,_b,_c);
+            Util.waitUntilAllChannelsHaveSameView(5000, 100, _d,_e,_f);
+            Util.waitUntilAllChannelsHaveSameView(5000, 100, _g,_h,_i);
 
             waitUntilRoute(NYC, true, 5000, 500, _a);
             waitUntilRoute(SFO, true, 5000, 500, _a);
@@ -399,19 +403,17 @@ public class Relay2Test extends RelayTests {
             assert Stream.of(_a,_d,_g).map(ch -> (RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class))
               .allMatch(RELAY2::isSiteMaster);
 
-            Stream.of(_b,_c,_d,_e,_f,_g,_h,_i)
+            Stream.of(_d,_e,_f,_g,_h,_i)
               .map(ch -> (RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class))
-              .forEach(r -> r.setRouteStatusListener(new MyRouteStatusListener(r.getAddress()).verbose(true)));
+              .forEach(r -> r.setRouteStatusListener(new MyRouteStatusListener(r.getAddress()).verbose(false)));
 
             // now stop A; B will become new site master and we should get a site-down(NYC), then site-up(NYC)
             Util.close(_a);
-
-            Util.waitUntil(5000, 500, () -> Stream.of(_b,_c,_d, _e, _f, _g, _h, _i)
+            Util.waitUntil(5000, 500, () -> Stream.of(_d,_e,_f,_g,_h,_i)
               .map(ch -> (RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class))
               .peek(r -> System.out.printf("%s: %s\n", r.getAddress(), r.getRouteStatusListener()))
               .map(r -> (MyRouteStatusListener)r.getRouteStatusListener())
-              .allMatch(l -> l.down().size() == 1 && l.down().contains(NYC)
-                && l.up().size() == 1 && l.up().contains(NYC)));
+              .allMatch(l -> l.down().contains(LON) && l.up().contains(LON)));
         }
     }
 

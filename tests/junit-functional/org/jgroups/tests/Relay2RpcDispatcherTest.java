@@ -191,7 +191,7 @@ public class Relay2RpcDispatcherTest {
 
 
     protected RELAY2 createRELAY2(String site_name) {
-        RELAY2 relay=new RELAY2().site(site_name).enableAddressTagging(false).asyncRelayCreation(true);
+        RELAY2 relay=new RELAY2().site(site_name).asyncRelayCreation(true);
 
         RelayConfig.SiteConfig lon_cfg=new RelayConfig.SiteConfig(LON),
           sfo_cfg=new RelayConfig.SiteConfig(SFO);

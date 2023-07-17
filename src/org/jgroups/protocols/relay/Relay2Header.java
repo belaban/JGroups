@@ -49,6 +49,7 @@ public class Relay2Header extends Header {
         this.final_dest=final_dest;
         this.original_sender=original_sender;
     }
+
     public short        getMagicId()                   {return 80;}
     public Supplier<? extends Header> create()         {return Relay2Header::new;}
     public byte         getType()                      {return type;}
@@ -56,7 +57,8 @@ public class Relay2Header extends Header {
     public Relay2Header setFinalDestination(Address d) {final_dest=d; return this;}
     public Address      getOriginalSender()            {return original_sender;}
     public Relay2Header setOriginalSender(Address s)   {original_sender=s; return this;}
-    public Set<String>  getSites()                     {return sites;}
+    public Set<String>  getSites()                     {return sites != null? new HashSet<>(sites) : null;}
+    public boolean      hasSites()                     {return sites != null && !sites.isEmpty();}
 
     public Relay2Header addToSites(Collection<String> s) {
         if(s != null) {
@@ -64,6 +66,7 @@ public class Relay2Header extends Header {
                 this.sites=new HashSet<>(s.size());
             this.sites.addAll(s);
         }
+        assertNonNullSites();
         return this;
     }
 
@@ -73,6 +76,7 @@ public class Relay2Header extends Header {
                 this.sites=new HashSet<>();
             this.sites.addAll(Arrays.asList(s));
         }
+        assertNonNullSites();
         return this;
     }
 
@@ -96,14 +100,16 @@ public class Relay2Header extends Header {
 
     public Relay2Header copy() {
         Relay2Header hdr=new Relay2Header(type, final_dest, original_sender)
-          .addToSites(this.sites);
-        if(visited_sites != null)
-            hdr.addToVisitedSites(visited_sites);
+          .addToSites(this.sites)
+          .addToVisitedSites(visited_sites);
+        assertNonNullSites();
+        hdr.assertNonNullSites();
         return hdr;
     }
 
     @Override
     public int serializedSize() {
+        assertNonNullSites();
         return Global.BYTE_SIZE + Util.size(final_dest) + Util.size(original_sender) +
           sizeOf(sites) + sizeOf(visited_sites);
     }
@@ -123,6 +129,7 @@ public class Relay2Header extends Header {
             for(String s: visited_sites)
                 Bits.writeString(s, out);
         }
+        assertNonNullSites();
     }
 
     @Override
@@ -132,16 +139,17 @@ public class Relay2Header extends Header {
         original_sender=Util.readAddress(in);
         int num_elements=in.readInt();
         if(num_elements > 0) {
-            sites=new HashSet<>();
+            sites=new HashSet<>(num_elements);
             for(int i=0; i < num_elements; i++)
                 sites.add(Bits.readString(in));
         }
         num_elements=in.readInt();
         if(num_elements > 0) {
-            visited_sites=new HashSet<>();
+            visited_sites=new HashSet<>(num_elements);
             for(int i=0; i < num_elements; i++)
                 visited_sites.add(Bits.readString(in));
         }
+        assertNonNullSites();
     }
 
     public String toString() {
@@ -172,4 +180,12 @@ public class Relay2Header extends Header {
         }
         return retval;
     }
+
+    protected void assertNonNullSites() {
+        if(type == SITES_UP || type == SITES_DOWN) {
+            if(sites == null)
+                throw new IllegalStateException(String.format("sites cannot be null with type %s\n", type));
+        }
+    }
+
 }
