@@ -57,9 +57,17 @@ public class Relay2Header extends Header {
     public Address      getOriginalSender()            {return original_sender;}
     public Relay2Header setOriginalSender(Address s)   {original_sender=s; return this;}
     public Set<String>  getSites()                     {return sites;}
-    public Relay2Header setSites(Set<String> s)        {sites=s; return this;}
 
-    public Relay2Header setSites(String ... s) {
+    public Relay2Header addToSites(Collection<String> s) {
+        if(s != null) {
+            if(this.sites == null)
+                this.sites=new HashSet<>(s.size());
+            this.sites.addAll(s);
+        }
+        return this;
+    }
+
+    public Relay2Header addToSites(String ... s) {
         if(s != null && s.length > 0) {
             if(this.sites == null)
                 this.sites=new HashSet<>();
@@ -87,12 +95,10 @@ public class Relay2Header extends Header {
     public Set<String> getVisitedSites() {return visited_sites;}
 
     public Relay2Header copy() {
-        Relay2Header hdr=new Relay2Header(type, final_dest, original_sender);
-        if(this.sites != null)
-            hdr.sites=new HashSet<>(this.sites);
-        if(visited_sites != null) {
+        Relay2Header hdr=new Relay2Header(type, final_dest, original_sender)
+          .addToSites(this.sites);
+        if(visited_sites != null)
             hdr.addToVisitedSites(visited_sites);
-        }
         return hdr;
     }
 

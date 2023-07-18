@@ -126,7 +126,11 @@ public class RELAY2 extends Protocol {
 
     protected volatile RouteStatusListener             route_status_listener;
 
-    protected final Set<String>                        site_cache=new HashSet<>(); // to prevent duplicate site-ups
+    // to prevent duplicate sitesUp()/sitesDown() notifications; this is needed in every member: routes are only
+    // maintained by site masters (relayer != null)
+    // todo: replace with topo once JGRP-2706 is in place
+    @ManagedAttribute(description="A cache maintaining a list of sites that are up")
+    protected final Set<String>                        site_cache=new HashSet<>();
 
     /** Number of messages forwarded to the local SiteMaster */
     protected final LongAdder                          forward_to_site_master=new LongAdder();
@@ -679,21 +683,24 @@ public class RELAY2 extends Protocol {
             case SITES_UP:
             case SITES_DOWN:
                 Set<String> tmp_sites=hdr.getSites();
-                if(route_status_listener != null && tmp_sites != null) {
-                    tmp_sites.remove(this.site);
+                tmp_sites.remove(this.site);
+                if(tmp_sites != null) {
                     if(hdr.type == SITES_UP) {
                         tmp_sites.removeAll(site_cache);
                         site_cache.addAll(tmp_sites);
                     }
-                    if(tmp_sites.isEmpty())
-                        return true;
-                    String[] tmp=tmp_sites.toArray(new String[]{});
-                    if(hdr.type == SITES_UP)
-                        route_status_listener.sitesUp(tmp);
-                    else {
-                        route_status_listener.sitesDown(tmp);
-                        site_cache.removeAll(tmp_sites);
+                    else { // SITES_DOWN
                         topo.removeAll(tmp_sites);
+                        tmp_sites.retainAll(site_cache);
+                        site_cache.removeAll(tmp_sites);
+                    }
+
+                    if(route_status_listener != null && !tmp_sites.isEmpty()) {
+                        String[] tmp=tmp_sites.toArray(new String[]{});
+                        if(hdr.type == SITES_UP)
+                            route_status_listener.sitesUp(tmp);
+                        else
+                            route_status_listener.sitesDown(tmp);
                     }
                 }
                 return true;
@@ -1013,7 +1020,7 @@ public class RELAY2 extends Protocol {
         }
         // send message back to the src node.
         Message msg=new EmptyMessage(src).setFlag(Message.Flag.OOB)
-          .putHeader(id, new Relay2Header(SITE_UNREACHABLE).setSites(target_site));
+          .putHeader(id, new Relay2Header(SITE_UNREACHABLE).addToSites(target_site));
         down(msg);
     }
 
@@ -1057,11 +1064,11 @@ public class RELAY2 extends Protocol {
         }
     }
 
-    protected void sitesChange(boolean down, String ... sites) {
-        if(!broadcast_route_notifications || sites == null || sites.length == 0)
+    protected void sitesChange(boolean down, Set<String> sites) {
+        if(!broadcast_route_notifications || sites == null || sites.isEmpty())
             return;
         Relay2Header hdr=new Relay2Header(down? SITES_DOWN : SITES_UP, null, null)
-          .setSites(sites);
+          .addToSites(sites);
         down_prot.down(new EmptyMessage(null).putHeader(id, hdr)); // .setFlag(Message.Flag.NO_RELAY));
     }
 

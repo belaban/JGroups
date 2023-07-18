@@ -603,11 +603,11 @@ public class SizeTest {
         _testSize(hdr);
 
         hdr=new Relay2Header(Relay2Header.SITES_UP, null, null)
-          .setSites("sfo", "lon","nyc");
+          .addToSites("sfo", "lon", "nyc");
         _testSize(hdr);
 
         hdr=new Relay2Header(DATA, dest, null)
-          .setSites("sfo")
+          .addToSites("sfo")
           .addToVisitedSites(List.of("nyc", "sfc", "lon"));
         _testSize(hdr);
 

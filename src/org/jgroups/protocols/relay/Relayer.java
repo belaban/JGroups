@@ -265,9 +265,9 @@ public class Relayer {
             removed_routes.forEach(routes.keySet()::remove);
 
             if(!down.isEmpty())
-                relay.sitesChange(true, down.toArray(new String[0]));
+                relay.sitesChange(true, down);
             if(!up.isEmpty())
-                relay.sitesChange(false, up.toArray(new String[0]));
+                relay.sitesChange(false, up);
         }
 
         @Override

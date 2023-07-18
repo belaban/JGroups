@@ -34,6 +34,12 @@ public class LOCAL_PING extends Discovery {
         super.stop();
     }
 
+    public static void clear() {
+        synchronized(discovery) {
+            discovery.clear();
+        }
+    }
+
     @ManagedOperation(description="Dumps the contents of the discovery cache")
     public static String print() {
         StringBuilder sb=new StringBuilder();
