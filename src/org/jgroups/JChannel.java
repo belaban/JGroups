@@ -764,7 +764,9 @@ public class JChannel implements Closeable {
         return this;
     }
 
-
+    public String toString() {
+        return isConnected()? String.format("%s (%s)", address(), cluster_name) : super.toString();
+    }
 
     @ManagedOperation
     public String toString(boolean details) {

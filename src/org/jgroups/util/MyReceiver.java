@@ -8,6 +8,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Generic receiver for a JChannel
@@ -23,9 +25,8 @@ public class MyReceiver<T> implements Receiver, Closeable {
     public void receive(Message msg) {
         T obj=raw_msgs? (T)msg : (T)msg.getObject();
         list.add(obj);
-        if(verbose) {
+        if(verbose)
             System.out.println((name() != null? name() + ":" : "") + " received message from " + msg.getSrc() + ": " + obj);
-        }
     }
 
     @Override
@@ -36,6 +37,7 @@ public class MyReceiver<T> implements Receiver, Closeable {
 
     public MyReceiver<T> rawMsgs(boolean flag)      {this.raw_msgs=flag; return this;}
     public List<T>       list()                     {return list;}
+    public List<String>  list(Function<T,String> f) {return list.stream().map(f).collect(Collectors.toList());}
     public MyReceiver<T> verbose(boolean flag)      {verbose=flag; return this;}
     public String        name()                     {return name;}
     public MyReceiver<T> name(String name)          {this.name=name; return this;}

@@ -1,8 +1,6 @@
-package org.jgroups.tests;
+ package org.jgroups.tests;
 
-import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.LOCAL_PING;
@@ -11,13 +9,17 @@ import org.jgroups.protocols.TCP;
 import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.protocols.relay.RELAY2;
-import org.jgroups.protocols.relay.Route;
-import org.jgroups.protocols.relay.RouteStatusListener;
+import org.jgroups.protocols.relay.*;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Bits;
+import org.jgroups.util.MyReceiver;
+import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Util;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -99,6 +101,11 @@ public class RelayTests {
         return relay.getRoute(site_name);
     }
 
+    protected static boolean isSiteMaster(JChannel ch) {
+        RELAY2 r=ch.getProtocolStack().findProtocol(RELAY2.class);
+        return r != null && r.isSiteMaster();
+    }
+
     /** Creates a singleton view for each channel listed and injects it */
     protected static void injectSingletonPartitions(JChannel ... channels) {
         for(JChannel ch: channels) {
@@ -163,4 +170,98 @@ public class RelayTests {
         }
     }
 
+    protected static class ResponseSender<T> extends MyReceiver<T> {
+        protected final JChannel ch;
+
+        public ResponseSender(JChannel ch) {
+            this.ch=ch;
+        }
+
+        @Override
+        public void receive(Message msg) {
+            super.receive(msg);
+            if(msg.dest() == null || msg.dest() instanceof SiteMaster) { // send unicast response back to sender
+                Message rsp=new ObjectMessage(msg.src(),"rsp-" + ch.getAddress());
+                if(msg.isFlagSet(Message.Flag.NO_RELAY))
+                    rsp.setFlag(Message.Flag.NO_RELAY);
+                try {
+                    ch.send(rsp);
+                }
+                catch(Exception e) {
+                    System.out.printf("%s: failed sending response: %s", ch.getAddress(), e);
+                }
+            }
+        }
+    }
+
+    protected static class UnicastResponseSender<T> extends MyReceiver<T> {
+        protected final JChannel ch;
+
+        public UnicastResponseSender(JChannel ch) {
+            this.ch=ch;
+        }
+
+        public void receive(Message msg) {
+            super.receive(msg);
+            Object obj=msg.getObject();
+            Data data=(Data)obj;
+            if(data.type == Data.Type.REQ) {
+                Message rsp=new ObjectMessage(msg.src(), new Data(Data.Type.RSP,String.valueOf(ch.getAddress())));
+                if(msg.isFlagSet(Message.Flag.NO_RELAY))
+                    rsp.setFlag(Message.Flag.NO_RELAY);
+                try {
+                    ch.send(rsp);
+                }
+                catch(Exception e) {
+                    System.out.printf("%s: failed sending response: %s",ch.getAddress(),e);
+                }
+            }
+        }
+    }
+
+    protected static class SiteMasterPickerImpl implements SiteMasterPicker {
+        public SiteMasterPickerImpl() {
+        }
+
+        public Address pickSiteMaster(List<Address> site_masters, Address original_sender) {
+            return site_masters.get(0);
+        }
+
+        public Route pickRoute(String site, List<Route> routes, Address original_sender) {
+            return routes.get(0);
+        }
+    }
+
+    protected static class Data implements SizeStreamable {
+        enum Type {REQ,RSP}
+        protected Type   type;
+        protected String payload;
+
+        public Data() {}
+        public Data(Type t, String s) {
+            type=t;
+            payload=s;
+        }
+
+        public Type   type()    {return type;}
+        public String payload() {return payload;}
+
+        public int serializedSize() {
+            return Integer.BYTES + Bits.sizeUTF(payload) +1;
+        }
+
+        public void writeTo(DataOutput out) throws IOException {
+            out.writeInt(type.ordinal());
+            Bits.writeString(payload, out);
+        }
+
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+            this.type=Type.values()[in.readInt()];
+            this.payload=Bits.readString(in);
+        }
+
+        public String toString() {
+            return String.format("%s: %s", type, payload);
+        }
+    }
 }

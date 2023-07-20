@@ -27,7 +27,8 @@ import java.util.function.Supplier;
 import static org.jgroups.protocols.relay.Relay2Header.*;
 
 // todo: check if copy is needed in route(), passUp() and deliver(); possibly pass a boolean as parameter (copy or not)
-
+// todo: use CompletableFutures in routeThen(); this could parallelize routing and delivery/passsing up
+// todo: check if a message can bypass RELAY2 completely when NO_RELAY is set (in up(),down())
 /**
  * Provides relaying of messages between autonomous sites.<br/>
  * Design: ./doc/design/RELAY2.txt and at https://github.com/belaban/JGroups/blob/master/doc/design/RELAY2.txt.<br/>
@@ -41,7 +42,8 @@ import static org.jgroups.protocols.relay.Relay2Header.*;
 @MBean(description="RELAY2 protocol")
 public class RELAY2 extends Protocol {
     // reserved flags
-    public static final short                          can_become_site_master_flag = 1 << 1;
+    public    static final short                       can_become_site_master_flag = 1 << 1;
+    protected static final String                      RELAY2_CL=RELAY2.class.getSimpleName();
 
     /* ------------------------------------------    Properties     ---------------------------------------------- */
     @Property(description="Name of the site; must be defined in the configuration",writable=false)
@@ -430,6 +432,8 @@ public class RELAY2 extends Protocol {
     }
 
     public Object down(Message msg) {
+        //if(msg.isFlagSet(Flag.NO_RELAY))
+          //  return down_prot.down(msg);
         msg.src(local_addr);
         return process(true, msg);
     }
@@ -441,6 +445,8 @@ public class RELAY2 extends Protocol {
     }
 
     public Object up(Message msg) {
+       // if(msg.isFlagSet(Flag.NO_RELAY))
+         //   return up_prot.up(msg);
         Message copy=msg;
         Relay2Header hdr=msg.getHeader(id);
         if(hdr != null) {
@@ -458,6 +464,8 @@ public class RELAY2 extends Protocol {
         List<SiteAddress> unreachable_sites=null;
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
             Message msg=it.next(), copy=msg;
+           // if(msg.isFlagSet(Flag.NO_RELAY))
+             //   continue;
             Relay2Header hdr=msg.getHeader(id);
             it.remove();
             if(hdr != null) {
@@ -546,6 +554,9 @@ public class RELAY2 extends Protocol {
         topo().adjust(this.site, view.getMembers());
     }
 
+    public String toString() {
+        return String.format("%s%s", RELAY2_CL, local_addr != null? String.format(" (%s)", local_addr) : "");
+    }
 
     /** Called to handle a message received from a different site (via a bridge channel) */
     protected void handleRelayMessage(Relay2Header hdr, Message msg) {
@@ -605,29 +616,24 @@ public class RELAY2 extends Protocol {
             switch(type) {
                 case ALL:
                     if(down)
-                        return routeThen(msg,null,() -> deliver(null, msg, true));
-                    return routeThen(msg,null,() -> passUp(msg));
+                        return routeThen(msg, null,() -> deliver(null, msg, true));
+                    return routeThen(msg, null, () -> passUp(msg));
                 case SM_ALL:
-                    if(down)
-                        return routeThen(msg,null,() -> deliver(local_addr, msg, false));
-                    return routeThen(msg,null,() -> passUp(msg));
+                    return routeThen(msg, null, () -> passUp(msg));
                 case SM:
-                    if(sameSite(dst)) {
-                        if(down)
-                            return deliver(local_addr, msg, false);
+                    if(sameSite(dst))
                         return passUp(msg);
-                    }
                     return route(msg, Arrays.asList(dst.getSite()));
                 case UNICAST:
                     if(sameSite(dst)) {
-                        if(down)
-                            return deliver(dst, msg, false);
-                        if(local_addr.equals(dst))
-                            return passUp(msg);
-                        return deliver(dst, msg, false);
+                        if(down) {
+                            // no passUp() if dst == local_addr: we want the transport to use a separate thread to do
+                            // loopbacks
+                            return deliver(dst, msg,false);
+                        }
+                        return passUp(msg);
                     }
-                    else
-                        return route(msg, Arrays.asList(dst.getSite()));
+                    return route(msg, Arrays.asList(dst.getSite()));
             }
         }
         else {
@@ -640,10 +646,10 @@ public class RELAY2 extends Protocol {
                 case SM:
                     if(down)
                         return sendToLocalSiteMaster(local_addr, msg); // todo: local_addr or msg.src()?
-                    throw new IllegalStateException(String.format("non site master received a sg with dst %s",dst));
+                    throw new IllegalStateException(String.format("non site master received a msg with dst %s",dst));
                 case UNICAST:
                     if(down) {
-                        if(sameSite(dst))
+                        if(sameSite(dst)) // todo: if same address -> passUp()
                             return deliver(dst, msg, false);
                         return sendToLocalSiteMaster(local_addr, msg);
                     }
