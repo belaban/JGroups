@@ -182,47 +182,31 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
 
     @Override
     public void receive(Address sender, byte[] buf, int offset, int length) {
-        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
-        GossipData data=new GossipData();
+        receive(sender, new ByteArrayDataInputStream(buf, offset, length));
+    }
+
+    @Override
+    public void receive(Address sender, DataInput in) {
         try {
+            GossipData data = new GossipData();
             data.readFrom(in);
-            switch(data.getType()) {
+            switch (data.getType()) {
                 case HEARTBEAT:
                     break;
                 case MESSAGE:
                 case SUSPECT:
-                    if(receiver != null)
+                    if (receiver != null)
                         receiver.receive(data);
                     break;
                 case GET_MBRS_RSP:
                     notifyResponse(data.getGroup(), data.getPingData());
                     break;
             }
-            if(handle_heartbeats)
-                last_heartbeat=System.currentTimeMillis();
-        }
-        catch(Exception ex) {
+            if (handle_heartbeats)
+                last_heartbeat = System.currentTimeMillis();
+        } catch (Exception ex) {
             log.error(Util.getMessage("FailedReadingData"), ex);
         }
-    }
-
-    public void receive(Address sender, DataInput in) throws Exception {
-        GossipData data=new GossipData();
-        data.readFrom(in);
-        switch(data.getType()) {
-            case HEARTBEAT:
-                break;
-            case MESSAGE:
-            case SUSPECT:
-                if(receiver != null)
-                    receiver.receive(data);
-                break;
-            case GET_MBRS_RSP:
-                notifyResponse(data.getGroup(), data.getPingData());
-                break;
-        }
-        if(handle_heartbeats)
-            last_heartbeat=System.currentTimeMillis();
     }
 
     @Override
