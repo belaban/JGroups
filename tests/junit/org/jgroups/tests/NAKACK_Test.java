@@ -109,7 +109,7 @@ public class NAKACK_Test extends ChannelTestBase {
     /** Sends multicast messages on A, the disconnects and reconnects A and sends more messages. B and C should
      * receive all of A's messages. https://issues.redhat.com/browse/JGRP-2720
      */
-    public void testRetransmission() throws Exception {
+    public void testReconnect() throws Exception {
         NAKACK_Test.MyReceiver r1=new NAKACK_Test.MyReceiver("A");
         NAKACK_Test.MyReceiver r2=new NAKACK_Test.MyReceiver("B");
         NAKACK_Test.MyReceiver r3=new NAKACK_Test.MyReceiver("C");
