@@ -8,7 +8,7 @@ import org.jgroups.blocks.ResponseMode;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.TP;
-import org.jgroups.protocols.relay.RELAY2;
+import org.jgroups.protocols.relay.RELAY;
 import org.jgroups.stack.AddressGenerator;
 import org.jgroups.tests.perf.PerfUtil.Config;
 import org.jgroups.tests.perf.PerfUtil.GetCall;
@@ -20,7 +20,10 @@ import javax.management.MBeanServer;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.LongAdder;
@@ -471,7 +474,7 @@ public class UPerf implements Receiver {
     }
 
     protected static List<String> getSites(JChannel channel) {
-        RELAY2 relay=channel.getProtocolStack().findProtocol(RELAY2.class);
+        RELAY relay=channel.getProtocolStack().findProtocol(RELAY.class);
         return relay != null? relay.siteNames() : new ArrayList<>(0);
     }
 

@@ -11,15 +11,13 @@ import org.jgroups.protocols.SHARED_LOOPBACK_PING;
 import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.protocols.relay.RELAY2;
-import org.jgroups.protocols.relay.Route;
-import org.jgroups.protocols.relay.SiteMaster;
+import org.jgroups.protocols.relay.*;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -27,12 +25,12 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Various RELAY2-related tests
+ * Various RpcDispatcher tests for {@link org.jgroups.protocols.relay.RELAY2} and {@link RELAY3}
  * @author Bela Ban
  * @since 3.2
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
-public class Relay2RpcDispatcherTest {
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true,dataProvider="relayProvider")
+public class RelayRpcDispatcherTest {
     protected JChannel a, b;  			// members in site "lon"
     protected JChannel x, y;  			// members in site "sfo
     
@@ -47,17 +45,24 @@ public class Relay2RpcDispatcherTest {
     protected static final String SFO_CLUSTER    = "sfo-cluster";
     protected static final String SFO            = "sfo", LON="lon";
 
-    @BeforeMethod
-    protected void setUp() throws Exception {
-    	a = createNode(LON, "A");
-    	b = createNode(LON, "B");
+    @DataProvider protected Object[][] relayProvider() {
+        return new Object[][] {
+          {RELAY2.class},
+          {RELAY3.class}
+        };
+    }
+
+    @Test(enabled=false)
+    protected void setUp(Class<? extends RELAY> cl) throws Exception {
+    	a = createNode(cl, LON, "A");
+    	b = createNode(cl, LON, "B");
     	al=new MyReceiver("A");
     	bl=new MyReceiver("B");
     	rpca = new RpcDispatcher(a, new ServerObject(1)).setReceiver(al);
     	rpcb = new RpcDispatcher(b, new ServerObject(1)).setReceiver(bl);
     	
-    	x = createNode(SFO, "X");
-    	y = createNode(SFO, "Y");
+    	x = createNode(cl, SFO, "X");
+    	y = createNode(cl, SFO, "Y");
     	xl=new MyReceiver("X");
     	yl=new MyReceiver("Y");
     	rpcx = new RpcDispatcher(x, new ServerObject(1)).setReceiver(xl);
@@ -66,7 +71,8 @@ public class Relay2RpcDispatcherTest {
     @AfterMethod protected void destroy() {Util.close(y,x,b,a);}
 
 
-    public void testRpcToUnknownSite() throws Exception {
+    public void testRpcToUnknownSite(Class<? extends RELAY> cl) throws Exception {
+        setUp(cl);
         a.connect(LON_CLUSTER);
         try {
             rpca.callRemoteMethod(new SiteMaster("nyc"),"foo",null,null,RequestOptions.SYNC());
@@ -80,7 +86,8 @@ public class Relay2RpcDispatcherTest {
     /**
      * Tests that notifications are routed to all sites.
      */
-    public void testNotificationAndRpcRelay2Transit() throws Exception {
+    public void testNotificationAndRpcRelay2Transit(Class<? extends RELAY> cl) throws Exception {
+        setUp(cl);
     	a.connect(LON_CLUSTER);
     	b.connect(LON_CLUSTER);
     	rpca.start();
@@ -96,8 +103,8 @@ public class Relay2RpcDispatcherTest {
         assert a.getView().size() == 2;
         assert x.getView().size() == 2;
 
-        RELAY2 ar=a.getProtocolStack().findProtocol(RELAY2.class);
-        RELAY2 xr=x.getProtocolStack().findProtocol(RELAY2.class);
+        RELAY ar=a.getProtocolStack().findProtocol(RELAY.class);
+        RELAY xr=x.getProtocolStack().findProtocol(RELAY.class);
 
         assert ar != null && xr != null;
         Util.waitUntil(10000, 500, () -> {
@@ -159,14 +166,14 @@ public class Relay2RpcDispatcherTest {
     }
     
     
-    protected JChannel createNode(String site_name, String node_name) throws Exception {
+    protected static JChannel createNode(Class<? extends RELAY> cl, String site_name, String node_name) throws Exception {
     	JChannel ch=new JChannel(new SHARED_LOOPBACK(),
-    			new SHARED_LOOPBACK_PING(),
-                new MERGE3().setMaxInterval(3000).setMinInterval(1000),
-    			new NAKACK2(),
-    			new UNICAST3(),
-    			new GMS().printLocalAddress(false),
-    			createRELAY2(site_name));
+                                 new SHARED_LOOPBACK_PING(),
+                                 new MERGE3().setMaxInterval(3000).setMinInterval(1000),
+                                 new NAKACK2(),
+                                 new UNICAST3(),
+                                 new GMS().printLocalAddress(false),
+                                 createRELAY(cl, site_name));
     	ch.setName(node_name);
     	return ch;
     }
@@ -190,8 +197,9 @@ public class Relay2RpcDispatcherTest {
     }
 
 
-    protected RELAY2 createRELAY2(String site_name) {
-        RELAY2 relay=new RELAY2().site(site_name).asyncRelayCreation(true);
+    protected static RELAY createRELAY(Class<? extends RELAY> cl, String site_name) throws Exception {
+        RELAY relay=cl.getConstructor().newInstance();
+        relay.site(site_name).asyncRelayCreation(true);
 
         RelayConfig.SiteConfig lon_cfg=new RelayConfig.SiteConfig(LON),
           sfo_cfg=new RelayConfig.SiteConfig(SFO);
@@ -228,7 +236,7 @@ public class Relay2RpcDispatcherTest {
         while(System.currentTimeMillis() < deadline) {
             boolean views_correct=true;
             for(JChannel ch: channels) {
-                RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
+                RELAY relay=ch.getProtocolStack().findProtocol(RELAY.class);
                 View bridge_view=relay.getBridgeView(BRIDGE_CLUSTER);
                 if(bridge_view == null || bridge_view.size() != expected_size) {
                     views_correct=false;
@@ -242,13 +250,13 @@ public class Relay2RpcDispatcherTest {
 
         System.out.println("Bridge views:\n");
         for(JChannel ch: channels) {
-            RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
+            RELAY relay=ch.getProtocolStack().findProtocol(RELAY.class);
             View bridge_view=relay.getBridgeView(BRIDGE_CLUSTER);
             System.out.println(ch.getAddress() + ": " + bridge_view);
         }
 
         for(JChannel ch: channels) {
-            RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
+            RELAY relay=ch.getProtocolStack().findProtocol(RELAY.class);
             View bridge_view=relay.getBridgeView(BRIDGE_CLUSTER);
             assert bridge_view != null && bridge_view.size() == expected_size
               : ch.getAddress() + ": bridge view=" + bridge_view + ", expected=" + expected_size;
@@ -257,12 +265,12 @@ public class Relay2RpcDispatcherTest {
 
 
     protected static Route getRoute(JChannel ch, String site_name) {
-        RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
+        RELAY relay=ch.getProtocolStack().findProtocol(RELAY.class);
         return relay.getRoute(site_name);
     }
 
     protected List<String> getCurrentSites(JChannel channel) {
-       RELAY2 relay=channel.getProtocolStack().findProtocol(RELAY2.class);
+       RELAY relay=channel.getProtocolStack().findProtocol(RELAY.class);
        return relay.getCurrentSites();
     }
 

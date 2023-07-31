@@ -1,31 +1,30 @@
  package org.jgroups.tests;
 
-import org.jgroups.*;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.LOCAL_PING;
-import org.jgroups.protocols.MERGE3;
-import org.jgroups.protocols.TCP;
-import org.jgroups.protocols.UNICAST3;
-import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.protocols.relay.*;
-import org.jgroups.protocols.relay.config.RelayConfig;
-import org.jgroups.stack.Protocol;
-import org.jgroups.util.Bits;
-import org.jgroups.util.MyReceiver;
-import org.jgroups.util.SizeStreamable;
-import org.jgroups.util.Util;
+ import org.jgroups.*;
+ import org.jgroups.logging.Log;
+ import org.jgroups.logging.LogFactory;
+ import org.jgroups.protocols.LOCAL_PING;
+ import org.jgroups.protocols.MERGE3;
+ import org.jgroups.protocols.TCP;
+ import org.jgroups.protocols.UNICAST3;
+ import org.jgroups.protocols.pbcast.GMS;
+ import org.jgroups.protocols.pbcast.NAKACK2;
+ import org.jgroups.protocols.relay.*;
+ import org.jgroups.protocols.relay.config.RelayConfig;
+ import org.jgroups.stack.Protocol;
+ import org.jgroups.util.Bits;
+ import org.jgroups.util.MyReceiver;
+ import org.jgroups.util.SizeStreamable;
+ import org.jgroups.util.Util;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Stream;
+ import java.io.DataInput;
+ import java.io.DataOutput;
+ import java.io.IOException;
+ import java.net.InetAddress;
+ import java.util.ArrayList;
+ import java.util.Arrays;
+ import java.util.List;
+ import java.util.stream.Stream;
 
 /**
  * Common functionality for relay tests
@@ -64,18 +63,20 @@ public class RelayTests {
      * @param bridge The name of the bridge cluster
      * @param sites The sites to which this site connects
      */
-    protected static JChannel createNode(String site, String name, String bridge, String ... sites) throws Exception {
-        RELAY2 relay=createSymmetricRELAY2(site, bridge, sites);
+    protected static JChannel createNode(Class<? extends RELAY> cl, String site, String name, String bridge,
+                                         String ... sites) throws Exception {
+        RELAY relay=createSymmetricRELAY(cl, site, bridge, sites);
         JChannel ch=new JChannel(defaultStack(relay)).name(name);
         if(site != null)
             ch.connect(site);
         return ch;
     }
 
-    /** Creates a symmetric scenario for local_site, where all sites are connected via the bridge cluster */
-    protected static RELAY2 createSymmetricRELAY2(String local_site, String bridge, String ... sites)
-      throws UnknownHostException {
-        RELAY2 relay=new RELAY2().site(local_site).asyncRelayCreation(false);
+
+    protected static RELAY createSymmetricRELAY(Class<? extends RELAY> cl, String local_site, String bridge, String ... sites)
+      throws Exception {
+        RELAY relay=cl.getDeclaredConstructor().newInstance();
+        relay.site(local_site).asyncRelayCreation(false);
         for(String site: sites) {
             RelayConfig.SiteConfig cfg=new RelayConfig.SiteConfig(site)
               .addBridge(new RelayConfig.ProgrammaticBridgeConfig(bridge, defaultStack()));
@@ -86,9 +87,9 @@ public class RelayTests {
 
     protected static void waitUntilRoute(String site_name, boolean present,
                                          long timeout, long interval, JChannel ch) throws Exception {
-        RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
+        RELAY relay=ch.getProtocolStack().findProtocol(RELAY.class);
         if(relay == null)
-            throw new IllegalArgumentException("Protocol RELAY2 not found");
+            throw new IllegalArgumentException("protocol RELAY not found");
 
         Util.waitUntil(timeout, interval, () -> {
             Route route=relay.getRoute(site_name);
@@ -97,12 +98,12 @@ public class RelayTests {
     }
 
     protected static Route getRoute(JChannel ch, String site_name) {
-        RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
+        RELAY relay=ch.getProtocolStack().findProtocol(RELAY.class);
         return relay.getRoute(site_name);
     }
 
     protected static boolean isSiteMaster(JChannel ch) {
-        RELAY2 r=ch.getProtocolStack().findProtocol(RELAY2.class);
+        RELAY r=ch.getProtocolStack().findProtocol(RELAY.class);
         return r != null && r.isSiteMaster();
     }
 
@@ -118,18 +119,18 @@ public class RelayTests {
     protected static void waitForBridgeView(int expected_size, long timeout, long interval, String cluster,
                                             JChannel... channels) {
         Util.waitUntilTrue(timeout, interval, () -> Stream.of(channels)
-          .map(ch -> (RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class))
+          .map(ch -> (RELAY)ch.getProtocolStack().findProtocol(RELAY.class))
           .map(r -> r.getBridgeView(cluster)).allMatch(v -> v != null && v.size() == expected_size));
 
         System.out.println("Bridge views:\n");
         for(JChannel ch: channels) {
-            RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
+            RELAY relay=ch.getProtocolStack().findProtocol(RELAY.class);
             View bridge_view=relay.getBridgeView(cluster);
             System.out.println(ch.getAddress() + ": " + bridge_view);
         }
 
         for(JChannel ch: channels) {
-            RELAY2 relay=ch.getProtocolStack().findProtocol(RELAY2.class);
+            RELAY relay=ch.getProtocolStack().findProtocol(RELAY.class);
             View bridge_view=relay.getBridgeView(cluster);
             assert bridge_view != null && bridge_view.size() == expected_size
               : ch.getAddress() + ": bridge view=" + bridge_view + ", expected=" + expected_size;

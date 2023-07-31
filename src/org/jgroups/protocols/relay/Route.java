@@ -9,7 +9,7 @@ import org.jgroups.util.Util;
 
 import java.util.Collection;
 
-import static org.jgroups.protocols.relay.Relay2Header.DATA;
+import static org.jgroups.protocols.relay.RelayHeader.DATA;
 
 
 /**
@@ -21,11 +21,11 @@ public class Route implements Comparable<Route> {
     /** SiteUUID: address of the site master */
     protected final Address  site_master;
     protected final JChannel bridge;
-    protected final RELAY2   relay;
+    protected final RELAY    relay;
     protected final Log      log;
     protected boolean        stats=true;
 
-    public Route(Address site_master, JChannel bridge, RELAY2 relay, Log log) {
+    public Route(Address site_master, JChannel bridge, RELAY relay, Log log) {
         this.site_master=site_master;
         this.bridge=bridge;
         this.relay=relay;
@@ -77,9 +77,9 @@ public class Route implements Comparable<Route> {
     protected Message createMessage(Address target, Address final_destination, Address original_sender,
                                     final Message msg, Collection<String> visited_sites) {
         Message copy=relay.copy(msg).setDest(target).setSrc(null);
-        Relay2Header tmp=msg.getHeader(relay.getId());
-        Relay2Header hdr=tmp != null? tmp.copy().setFinalDestination(final_destination).setOriginalSender(original_sender)
-          : new Relay2Header(DATA, final_destination, original_sender);
+        RelayHeader tmp=msg.getHeader(relay.getId());
+        RelayHeader hdr=tmp != null? tmp.copy().setFinalDestination(final_destination).setOriginalSender(original_sender)
+          : new RelayHeader(DATA, final_destination, original_sender);
         hdr.addToVisitedSites(visited_sites);
         copy.putHeader(relay.getId(), hdr);
         return copy;

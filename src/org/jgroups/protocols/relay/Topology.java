@@ -17,20 +17,20 @@ import java.util.function.BiConsumer;
 
 /**
  * Provides a cache of all sites and their members (addresses, IP addresses, site masters etc) in a network of
- * autonomous sites. The cache is an approximation, and is refreshed on reception of {@link Relay2Header#SITES_UP}
- * or {@link Relay2Header#SITES_DOWN} notifications. A refresh can also be triggered programmatically.
+ * autonomous sites. The cache is an approximation, and is refreshed on reception of {@link RelayHeader#SITES_UP}
+ * or {@link RelayHeader#SITES_DOWN} notifications. A refresh can also be triggered programmatically.
  * <br/>
- * Used as a component in {@link RELAY2}.
+ * Used as a component in {@link RELAY2} and {@link RELAY3}.
  * @author Bela Ban
  * @since  5.2.15
  */
 public class Topology {
-    protected final RELAY2                      relay;
+    protected final RELAY                       relay;
     protected final Map<String,Set<MemberInfo>> cache=new ConcurrentHashMap<>(); // cache of sites and members
     protected BiConsumer<String,Members>        rsp_handler;
 
 
-    public Topology(RELAY2 relay) {
+    public Topology(RELAY relay) {
         this.relay=Objects.requireNonNull(relay);
     }
 
@@ -56,7 +56,7 @@ public class Topology {
     @ManagedOperation(description="Fetches information (site, address, IP address) from all members of a given site")
     public Topology refresh(String site) {
         Address dest=new SiteMaster(site); // sent to all site masters if site == null
-        Message topo_req=new EmptyMessage(dest).putHeader(relay.getId(), new Relay2Header(Relay2Header.TOPO_REQ));
+        Message topo_req=new EmptyMessage(dest).putHeader(relay.getId(), new RelayHeader(RelayHeader.TOPO_REQ));
         relay.down(topo_req);
         return this;
     }

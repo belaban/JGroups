@@ -7,7 +7,7 @@ import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.protocols.relay.RELAY2;
+import org.jgroups.protocols.relay.RELAY;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.util.Util;
 
@@ -297,7 +297,7 @@ public class UnicastTestRpc implements Receiver {
 
 
     protected static List<String> getSites(JChannel channel) {
-        RELAY2 relay=channel.getProtocolStack().findProtocol(RELAY2.class);
+        RELAY relay=channel.getProtocolStack().findProtocol(RELAY.class);
         return relay != null? relay.siteNames() : Collections.emptyList();
     }
 

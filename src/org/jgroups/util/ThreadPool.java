@@ -37,7 +37,7 @@ public class ThreadPool implements Lifecycle {
     protected int                 min_threads;
 
     @Property(description="Maximum thread pool size for the thread pool")
-    protected int                 max_threads=100;
+    protected int                 max_threads=200;
 
     @Property(description="Timeout (ms) to remove idle threads from the pool", type=AttributeType.TIME)
     protected long                keep_alive_time=30000;

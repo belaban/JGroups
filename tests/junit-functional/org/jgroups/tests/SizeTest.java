@@ -9,7 +9,7 @@ import org.jgroups.auth.X509Token;
 import org.jgroups.blocks.RequestCorrelator;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.*;
-import org.jgroups.protocols.relay.Relay2Header;
+import org.jgroups.protocols.relay.RelayHeader;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.protocols.relay.Topology.MemberInfo;
@@ -28,7 +28,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.*;
 
-import static org.jgroups.protocols.relay.Relay2Header.DATA;
+import static org.jgroups.protocols.relay.RelayHeader.DATA;
 
 
 /**
@@ -594,24 +594,24 @@ public class SizeTest {
     }
 
 
-    public void testRelay2Header() throws Exception {
+    public void testRelayHeader() throws Exception {
         Address dest=new SiteMaster("sfo");
-        Relay2Header hdr=new Relay2Header(DATA, dest, null);
+        RelayHeader hdr=new RelayHeader(DATA, dest, null);
         _testSize(hdr);
         Address sender=new SiteUUID(UUID.randomUUID(), "dummy", "sfo");
-        hdr=new Relay2Header(DATA, dest, sender);
+        hdr=new RelayHeader(DATA, dest, sender);
         _testSize(hdr);
 
-        hdr=new Relay2Header(Relay2Header.SITES_UP, null, null)
+        hdr=new RelayHeader(RelayHeader.SITES_UP, null, null)
           .addToSites("sfo", "lon", "nyc");
         _testSize(hdr);
 
-        hdr=new Relay2Header(DATA, dest, null)
+        hdr=new RelayHeader(DATA, dest, null)
           .addToSites("sfo")
           .addToVisitedSites(List.of("nyc", "sfc", "lon"));
         _testSize(hdr);
 
-        Relay2Header hdr2=hdr.copy();
+        RelayHeader hdr2=hdr.copy();
         assert hdr.getType() == hdr2.getType();
         assert hdr.getSites().equals(hdr2.getSites());
         assert hdr.getVisitedSites().equals(hdr2.getVisitedSites());

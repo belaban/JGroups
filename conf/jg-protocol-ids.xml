@@ -40,6 +40,7 @@
     <class id="41" name="org.jgroups.protocols.pbcast.NAKACK2"/>
     <class id="43" name="org.jgroups.protocols.SWIFT_PING"/>
     <class id="44" name="org.jgroups.protocols.relay.RELAY2"/>
+    <class id="45" name="org.jgroups.protocols.relay.RELAY3"/>
     <class id="46" name="org.jgroups.protocols.PDC"/>
     <class id="48" name="org.jgroups.protocols.UNICAST3"/>
     <class id="49" name="org.jgroups.protocols.PERF"/>

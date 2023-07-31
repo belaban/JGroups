@@ -16,16 +16,15 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * Header for {@link RELAY2}
+ * Header for {@link RELAY2} and {@link RELAY3}
  * @author Bela Ban
  * @since  5.2.15
  */
-public class Relay2Header extends Header {
+public class RelayHeader extends Header {
     public static final byte DATA             = 1;
     public static final byte SITE_UNREACHABLE = 2; // final_dest is a SiteMaster
     public static final byte SITES_UP         = 4;
     public static final byte SITES_DOWN       = 5;
-
     public static final byte TOPO_REQ         = 6;
     public static final byte TOPO_RSP         = 7; // MemberInfo is the payload of the response message
 
@@ -37,30 +36,30 @@ public class Relay2Header extends Header {
     // (https://issues.redhat.com/browse/JGRP-1519)
 
 
-    public Relay2Header() {
+    public RelayHeader() {
     }
 
-    public Relay2Header(byte type) {
+    public RelayHeader(byte type) {
         this.type=type;
     }
 
-    public Relay2Header(byte type, Address final_dest, Address original_sender) {
+    public RelayHeader(byte type, Address final_dest, Address original_sender) {
         this(type);
         this.final_dest=final_dest;
         this.original_sender=original_sender;
     }
 
     public short        getMagicId()                   {return 80;}
-    public Supplier<? extends Header> create()         {return Relay2Header::new;}
+    public Supplier<? extends Header> create()         {return RelayHeader::new;}
     public byte         getType()                      {return type;}
     public Address      getFinalDest()                 {return final_dest;}
-    public Relay2Header setFinalDestination(Address d) {final_dest=d; return this;}
+    public RelayHeader setFinalDestination(Address d) {final_dest=d; return this;}
     public Address      getOriginalSender()            {return original_sender;}
-    public Relay2Header setOriginalSender(Address s)   {original_sender=s; return this;}
+    public RelayHeader setOriginalSender(Address s)   {original_sender=s; return this;}
     public Set<String>  getSites()                     {return sites != null? new HashSet<>(sites) : null;}
     public boolean      hasSites()                     {return sites != null && !sites.isEmpty();}
 
-    public Relay2Header addToSites(Collection<String> s) {
+    public RelayHeader addToSites(Collection<String> s) {
         if(s != null) {
             if(this.sites == null)
                 this.sites=new HashSet<>(s.size());
@@ -70,7 +69,7 @@ public class Relay2Header extends Header {
         return this;
     }
 
-    public Relay2Header addToSites(String ... s) {
+    public RelayHeader addToSites(String ... s) {
         if(s != null && s.length > 0) {
             if(this.sites == null)
                 this.sites=new HashSet<>();
@@ -80,14 +79,14 @@ public class Relay2Header extends Header {
         return this;
     }
 
-    public Relay2Header addToVisitedSites(String s) {
+    public RelayHeader addToVisitedSites(String s) {
         if(visited_sites == null)
             visited_sites=new HashSet<>();
         visited_sites.add(s);
         return this;
     }
 
-    public Relay2Header addToVisitedSites(Collection<String> list) {
+    public RelayHeader addToVisitedSites(Collection<String> list) {
         if(list == null || list.isEmpty())
             return this;
         for(String s: list)
@@ -98,8 +97,8 @@ public class Relay2Header extends Header {
     public boolean     hasVisitedSites() {return visited_sites != null && !visited_sites.isEmpty();}
     public Set<String> getVisitedSites() {return visited_sites;}
 
-    public Relay2Header copy() {
-        Relay2Header hdr=new Relay2Header(type, final_dest, original_sender)
+    public RelayHeader copy() {
+        RelayHeader hdr=new RelayHeader(type, final_dest, original_sender)
           .addToSites(this.sites)
           .addToVisitedSites(visited_sites);
         assertNonNullSites();

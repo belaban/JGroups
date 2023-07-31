@@ -1,7 +1,8 @@
 package org.jgroups.demos;
 
 import org.jgroups.*;
-import org.jgroups.protocols.relay.RELAY2;
+import org.jgroups.protocols.relay.RELAY;
+import org.jgroups.protocols.relay.RELAY3;
 import org.jgroups.protocols.relay.RouteStatusListener;
 import org.jgroups.protocols.relay.Topology;
 import org.jgroups.util.ExtendedUUID;
@@ -19,7 +20,7 @@ public class RelayDemo implements Receiver {
     protected static final String SITE_MASTERS="site-masters";
 
     protected JChannel ch;
-    protected RELAY2   relay;
+    protected RELAY    relay;
 
 
     public static void main(String[] args) throws Exception {
@@ -74,9 +75,9 @@ public class RelayDemo implements Receiver {
         ch=new JChannel(props).setReceiver(this);
         if(name != null)
             ch.setName(name);
-        relay=ch.getProtocolStack().findProtocol(RELAY2.class);
+        relay=ch.getProtocolStack().findProtocol(RELAY.class);
         if(relay == null)
-            throw new IllegalStateException(String.format("Protocol %s not found", RELAY2.class.getSimpleName()));
+            throw new IllegalStateException(String.format("Protocol %s not found", RELAY.class.getSimpleName()));
         if(print_route_status) {
             relay.setRouteStatusListener(new RouteStatusListener() {
                 public void sitesUp(String... sites) {
@@ -138,15 +139,7 @@ public class RelayDemo implements Receiver {
             System.out.printf("configured sites: %s\n", relay.getSites());
             return true;
         }
-        if(line.startsWith("tp")) { // topo-print
-            System.out.printf("\n%s\n", relay.topo().print());
-            return true;
-        }
-        if(line.startsWith("tc")) { // topo-clean
-            relay.topo().removeAll(null);
-            return true;
-        }
-        if(line.startsWith("topo")) {
+        if(line.startsWith("topo") && relay instanceof RELAY3) {
             String sub=line.substring("topo".length()).trim();
             String site=null;
             if(sub != null && !sub.isEmpty()) {
@@ -171,9 +164,6 @@ public class RelayDemo implements Receiver {
                              "\ntopo: prints the topology (site masters and local members of all sites)\n");
     }
 
-    protected String printTopology() {
-        return relay.printTopology(true);
-    }
 
     protected static String print(View view) {
         StringBuilder sb=new StringBuilder();
