@@ -13,6 +13,8 @@ import org.testng.annotations.Test;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Tests the NAKACK protocol for OOB and regular msgs, tests https://issues.redhat.com/browse/JGRP-379
@@ -42,9 +44,9 @@ public class NAKACK_Test extends ChannelTestBase {
      * Note that OOB messages *destroys* FIFO ordering (or whatever ordering properties are set) !
      */
     public void testOutOfBandMessages() throws Exception {
-        NAKACK_Test.MyReceiver receiver1=new NAKACK_Test.MyReceiver();
-        NAKACK_Test.MyReceiver receiver2=new NAKACK_Test.MyReceiver();
-        NAKACK_Test.MyReceiver receiver3=new NAKACK_Test.MyReceiver();
+        NAKACK_Test.MyReceiver receiver1=new NAKACK_Test.MyReceiver("A");
+        NAKACK_Test.MyReceiver receiver2=new NAKACK_Test.MyReceiver("B");
+        NAKACK_Test.MyReceiver receiver3=new NAKACK_Test.MyReceiver("C");
         a.setReceiver(receiver1);
         b.setReceiver(receiver2);
         c.setReceiver(receiver3);
@@ -86,7 +88,7 @@ public class NAKACK_Test extends ChannelTestBase {
     }
 
     public void testOobBatch() throws Exception {
-        NAKACK_Test.MyReceiver receiver2=new NAKACK_Test.MyReceiver();
+        NAKACK_Test.MyReceiver receiver2=new NAKACK_Test.MyReceiver("B");
         b.setReceiver(receiver2);
 
         MAKE_BATCH m=new MAKE_BATCH().multicasts(true).unicasts(false).skipOOB(false);
@@ -102,6 +104,39 @@ public class NAKACK_Test extends ChannelTestBase {
             a.send(msg);
         }
         Util.waitUntil(5000, 500, () -> receiver2.size() == 5);
+    }
+
+    /** Sends multicast messages on A, the disconnects and reconnects A and sends more messages. B and C should
+     * receive all of A's messages. https://issues.redhat.com/browse/JGRP-2720
+     */
+    public void testRetransmission() throws Exception {
+        NAKACK_Test.MyReceiver r1=new NAKACK_Test.MyReceiver("A");
+        NAKACK_Test.MyReceiver r2=new NAKACK_Test.MyReceiver("B");
+        NAKACK_Test.MyReceiver r3=new NAKACK_Test.MyReceiver("C");
+        a.connect("NAKACK_Test").setReceiver(r1);
+        b.connect("NAKACK_Test").setReceiver(r2);
+        c.connect("NAKACK_Test").setReceiver(r3);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, a,b,c);
+
+        for(int i=1; i <= 10; i++)
+            a.send(null, i);
+        Util.waitUntil(5000, 200, () -> Stream.of(r1,r2,r3).allMatch(r -> r.size() == 10));
+
+        System.out.println("-- disconnecting and reconnecting A:");
+        a.disconnect();
+        Util.sleep(1000);
+        a.connect("NAKACK_Test").setReceiver(r1);
+
+        Stream.of(r1,r2,r3).forEach(MyReceiver::clear);
+        for(int i=11; i <= 20; i++)
+            a.send(null, i);
+        Util.waitUntil(5000, 200,
+                       () -> Stream.of(r1,r2,r3).allMatch(r -> r.size() == 10),
+                       () -> Stream.of(r1,r2,r3)
+                         .map(r -> String.format("%s: %s", r.name(), r.getSeqnos())).collect(Collectors.joining("\n")));
+        System.out.printf("-- receivers:\n%s\n",
+                          Stream.of(r1,r2,r3).map(r -> String.format("%s: %s", r.name, r.seqnos))
+                            .collect(Collectors.joining("\n")));
     }
 
 
@@ -126,14 +161,16 @@ public class NAKACK_Test extends ChannelTestBase {
 
 
     public static class MyReceiver implements Receiver {
-        Collection<Integer> seqnos=new ConcurrentLinkedQueue<>();
+        protected final Collection<Integer> seqnos=new ConcurrentLinkedQueue<>();
+        protected final String              name;
 
-        public MyReceiver() {
+        public MyReceiver(String name) {
+            this.name=name;
         }
 
-        public Collection<Integer> getSeqnos() {
-            return seqnos;
-        }
+        public String              name()      {return name;}
+        public Collection<Integer> getSeqnos() {return seqnos;}
+        public MyReceiver          clear()     {seqnos.clear(); return this;}
 
         public void receive(Message msg) {
             if(msg != null) {

@@ -561,6 +561,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         stopRetransmitTask();
         xmit_task_map.clear();
         stable_xmit_map.clear();
+        local_xmit_table=null; // fixes https://issues.redhat.com/browse/JGRP-2720
         reset();
     }
 
