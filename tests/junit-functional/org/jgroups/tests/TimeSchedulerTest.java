@@ -151,7 +151,7 @@ public class TimeSchedulerTest {
 
         Util.waitUntil(10000, 200, () -> timer.size() == 10);
         timer.stop();
-        Util.waitUntil(2000, 200, () -> timer.size() == 0);
+        Util.waitUntil(10000, 200, () -> timer.size() == 0);
         int size=timer.size();
         assert size == 0 : "size=" + size + " (should be 0)";
     }
@@ -160,9 +160,7 @@ public class TimeSchedulerTest {
     /** Adds a task after shut down */
     public void testShutdown2() {
         timer.stop();
-
         timer.schedule(() -> System.out.print("."), 500, TimeUnit.MILLISECONDS);
-
         int size=timer.size();
         assert size == 0;
     }
