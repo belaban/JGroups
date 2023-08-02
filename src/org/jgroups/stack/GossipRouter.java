@@ -293,15 +293,14 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
 
         switch(type) {
             case REGISTER:
-                DataInput in=new ByteArrayDataInputStream(buf);
-                handleRegister(sender, in);
+                handleRegister(sender, new ByteArrayDataInputStream(buf));
                 break;
 
             case MESSAGE:
                 // we already read the type, now read group and dest (minimal info required to route the message)
                 // this way, we don't need to copy the buffer
                 try {
-                    in=new ByteArrayDataInputStream(buf);
+                    DataInput in=new ByteArrayDataInputStream(buf);
                     String group=Bits.readString(in);
                     Address dest=Util.readAddress(in);
                     route(group, dest, buf.position(original_pos));
@@ -324,13 +323,11 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
                 break;
 
             case GET_MBRS:
-                in=new ByteArrayDataInputStream(buf);
-                handleGetMembersRequest(sender, in);
+                handleGetMembersRequest(sender, new ByteArrayDataInputStream(buf));
                 break;
 
             case UNREGISTER:
-                in=new ByteArrayDataInputStream(buf);
-                handleUnregister(in);
+                handleUnregister(new ByteArrayDataInputStream(buf));
                 break;
         }
     }
@@ -350,9 +347,11 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
                     // available natively
                     if((request=readRequest(in, type)) != null) {
                         ByteArrayDataOutputStream out=getOutputStream(request.sender, request.serializedSize());
-                        out.position(0);
-                        request.writeTo(out);
-                        route(request.group, request.addr, out.buffer(), 0, out.position());
+                        synchronized (out) {
+                            out.position(0);
+                            request.writeTo(out);
+                            route(request.group, request.addr, out.buffer(), 0, out.position());
+                        }
                         if(dump_msgs == DumpMessages.ALL)
                             dump(request);
                     }
@@ -428,7 +427,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     }
 
     protected ByteArrayDataOutputStream getOutputStream(Address mbr, int size) {
-        return output_streams.computeIfAbsent(mbr, addr -> new ByteArrayDataOutputStream(size));
+        return output_streams.computeIfAbsent(mbr, __ -> new ByteArrayDataOutputStream(size));
     }
 
     protected void handleHeartbeat(Address sender) {
@@ -542,6 +541,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
 
 
     protected void addAddressMapping(Address sender, String group, Address addr, PhysicalAddress phys_addr, String logical_name) {
+        NameCache.add(addr, logical_name);
         ConcurrentMap<Address,Entry> m=address_mappings.get(group);
         if(m == null) {
             ConcurrentMap<Address,Entry> existing=this.address_mappings.putIfAbsent(group, m=new ConcurrentHashMap<>());
@@ -959,7 +959,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     }
 
 
-    enum DumpMessages {
+    public enum DumpMessages {
         NONE,
         REGISTRATION,
         ALL;
