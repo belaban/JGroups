@@ -347,7 +347,12 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
                     // available natively
                     if((request=readRequest(in, type)) != null) {
                         ByteArrayDataOutputStream out=getOutputStream(request.sender, request.serializedSize());
-                        synchronized (out) {
+
+                        // we might be concurrent traffic from *different* (senders) TcpConnections for the
+                        // *same* target address, so we have to synchronized below in order to avoid corruption
+                        // of data (https://issues.redhat.com/browse/JGRP-2722)
+                        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+                        synchronized(out) {
                             out.position(0);
                             request.writeTo(out);
                             route(request.group, request.addr, out.buffer(), 0, out.position());
