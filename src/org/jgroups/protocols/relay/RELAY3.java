@@ -32,8 +32,6 @@ import static org.jgroups.protocols.relay.RelayHeader.*;
 //@XmlElement(name="RelayConfiguration",type="relay:RelayConfigurationType")
 @MBean(description="RELAY3 protocol")
 public class RELAY3 extends RELAY {
-    protected volatile Relayer3                        relayer;
-
     // to prevent duplicate sitesUp()/sitesDown() notifications; this is needed in every member: routes are only
     // maintained by site masters (relayer != null)
     // todo: replace with topo once JGRP-2706 is in place
@@ -42,28 +40,7 @@ public class RELAY3 extends RELAY {
 
     public SiteStatus siteStatus()                     {return site_status;}
 
-    @ManagedAttribute(description="Whether or not this instance is a site master")
-    public boolean isSiteMaster() {return relayer != null;}
-
-
-    public void resetStats() {
-        super.resetStats();
-        forward_to_site_master.reset();
-        forward_sm_time.reset();
-        relayed.reset();
-        relayed_time.reset();
-        forward_to_local_mbr.reset();
-        forward_to_local_mbr_time.reset();
-        clearNoRouteCache();
-    }
-
-    public View getBridgeView(String cluster_name) {
-        Relayer3 tmp=relayer;
-        return tmp != null? tmp.getBridgeView(cluster_name) : null;
-    }
-
-    @Override
-    public void configure() throws Exception {
+    @Override public void configure() throws Exception {
         super.configure();
         JChannel ch=getProtocolStack().getChannel();
         ch.addAddressGenerator(new AddressGenerator() {
@@ -75,28 +52,6 @@ public class RELAY3 extends RELAY {
                 return uuid;
             }
         });
-    }
-
-
-    public void stop() {
-        super.stop();
-        is_site_master=false;
-        log.trace("%s: ceased to be site master; closing bridges", local_addr);
-        if(relayer != null)
-            relayer.stop();
-    }
-
-
-    @ManagedOperation(description="Prints the contents of the routing table. " +
-      "Only available if we're the current coordinator (site master)")
-    public String printRoutes() {
-        return relayer != null? relayer.printRoutes() : "n/a (not site master)";
-    }
-
-    @ManagedOperation(description="Prints the routes that are currently up. " +
-      "Only available if we're the current coordinator (site master)")
-    public String printSites() {
-        return relayer != null? Util.print(relayer.getSiteNames()) : "n/a (not site master)";
     }
 
     @ManagedOperation(description="Prints the topology (site masters and local members) of this site")
@@ -111,53 +66,12 @@ public class RELAY3 extends RELAY {
         return topo.print(this.site);
     }
 
-    /**
-     * Returns the bridge channel to a given site
-     * @param site_name The site name, e.g. "SFO"
-     * @return The JChannel to the given site, or null if no route was found or we're not the coordinator
-     */
-    public JChannel getBridge(String site_name) {
-        Relayer tmp=relayer;
-        Route route=tmp != null? tmp.getRoute(site_name): null;
-        return route != null? route.bridge() : null;
-    }
-
-    /**
-     * Returns the route to a given site
-     * @param site_name The site name, e.g. "SFO"
-     * @return The route to the given site, or null if no route was found or we're not the coordinator
-     */
-    public Route getRoute(String site_name) {
-        Relayer3 tmp=relayer;
-        return tmp != null? tmp.getRoute(site_name): null;
-    }
-
-    /**
-     * @return A {@link List} of sites name that are currently up or {@code null} if this node is not a Site Master (i.e.
-     * {@link #isSiteMaster()} returns false).
-     */
-    public List<String> getCurrentSites() {
-        Relayer3 rel=relayer;
-        return rel == null ? null : rel.getSiteNames();
-    }
-
-    public Object down(Event evt) {
-        if(evt.getType() == Event.VIEW_CHANGE)
-            handleView(evt.getArg());
-        return down_prot.down(evt);
-    }
 
     public Object down(Message msg) {
         //if(msg.isFlagSet(Flag.NO_RELAY))
           //  return down_prot.down(msg);
         msg.src(local_addr);
         return process(true, msg);
-    }
-
-    public Object up(Event evt) {
-        if(evt.getType() == Event.VIEW_CHANGE)
-            handleView(evt.getArg());
-        return up_prot.up(evt);
     }
 
     public Object up(Message msg) {
@@ -221,10 +135,6 @@ public class RELAY3 extends RELAY {
         down(rsp);
     }
 
-    protected PhysicalAddress getPhysicalAddress(Address mbr) {
-        return mbr != null? (PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, mbr)) : null;
-    }
-
     public void handleView(View view) {
         members=view.getMembers(); // First, save the members for routing received messages to local members
 
@@ -250,11 +160,11 @@ public class RELAY3 extends RELAY {
             if(relayer != null)
                 relayer.stop();
             relayer=new Relayer3(this, log);
-            final Relayer3 tmp=relayer;
+            final Relayer3 tmp=(Relayer3)relayer;
             if(async_relay_creation)
                 timer.execute(() -> startRelayer(tmp, bridge_name));
             else
-                startRelayer(relayer, bridge_name);
+                startRelayer(tmp, bridge_name);
             notifySiteMasterListener(true);
         }
         else {
@@ -270,9 +180,6 @@ public class RELAY3 extends RELAY {
         topo().adjust(this.site, view.getMembers());
     }
 
-    public String toString() {
-        return String.format("%s%s", getClass().getSimpleName(), local_addr != null? String.format(" (%s)", local_addr) : "");
-    }
 
     /** Called to handle a message received from a different site (via a bridge channel) */
     protected void handleRelayMessage(Message msg) {
@@ -389,7 +296,7 @@ public class RELAY3 extends RELAY {
      */
     protected Object route(Message msg, Collection<String> sites) {
         // boolean skip_null_routes=sites != null;
-        final Relayer3 r=relayer;
+        final Relayer r=relayer;
         if(r == null) {
             log.warn("%s: not site master; dropping message", local_addr);
             return null;
@@ -527,46 +434,6 @@ public class RELAY3 extends RELAY {
         catch(Throwable t) {
             log.error(local_addr + ": failed starting relayer", t);
         }
-    }
-
-
-    /**
-     * Iterates over the list of members and adds every member if the member's rank is below max_site_masters. Skips
-     * members which cannot become site masters (can_become_site_master == false). If no site master can be found,
-     * the first member of the view will be returned (even if it has can_become_site_master == false)
-     */
-    protected static List<Address> determineSiteMasters(View view, int max_num_site_masters) {
-        List<Address> retval=new ArrayList<>(view.size());
-        int selected=0;
-
-        for(Address member: view) {
-            if(member instanceof ExtendedUUID && !((ExtendedUUID)member).isFlagSet(can_become_site_master_flag))
-                continue;
-
-            if(selected++ < max_num_site_masters)
-                retval.add(member);
-        }
-
-        if(retval.isEmpty()) {
-            Address coord=view.getCoord();
-            if(coord != null)
-                retval.add(coord);
-        }
-        return retval;
-    }
-
-    /** Returns a site master from site_masters */
-    protected Address pickSiteMaster(Address sender) {
-        List<Address> masters=site_masters;
-        if(masters.size() == 1)
-            return masters.get(0);
-        return site_master_picker.pickSiteMaster(masters, sender);
-    }
-
-    private void triggerSiteUnreachableEvent(SiteAddress remoteSite) {
-        up_prot.up(new Event(Event.SITE_UNREACHABLE, remoteSite));
-        if(route_status_listener != null)
-            route_status_listener.sitesUnreachable(remoteSite.getSite());
     }
 
 }

@@ -6,13 +6,11 @@ import org.jgroups.logging.Log;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.AddressGenerator;
 import org.jgroups.util.UUID;
-import org.jgroups.util.Util;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 /**
@@ -23,9 +21,8 @@ import java.util.stream.Stream;
  * @since 3.2
  */
 public class Relayer3 extends Relayer {
-    protected final Set<ForwardingRoute>    forward_routes=new ConcurrentSkipListSet<>();
     /** The bridges which are used to connect to different sites */
-    protected final Collection<Bridge>      bridges=new ConcurrentLinkedQueue<>();
+    protected final Collection<Bridge> bridges=new ConcurrentLinkedQueue<>();
 
 
     public Relayer3(RELAY relay, Log log) {
@@ -79,76 +76,11 @@ public class Relayer3 extends Relayer {
         }
     }
 
-
     /** Disconnects and destroys all bridges */
     public void stop() {
         done=true;
         bridges.forEach(Bridge::stop);
         bridges.clear();
-    }
-
-
-    public synchronized String printRoutes() {
-        StringBuilder sb=new StringBuilder();
-        for(Map.Entry<String,List<Route>> entry: routes.entrySet()) {
-            List<Route> list=entry.getValue();
-            if(list != null && !list.isEmpty())
-                sb.append(entry.getKey() + " --> ").append(Util.print(list)).append("\n");
-        }
-        for(ForwardingRoute fr: this.forward_routes) {
-            sb.append(String.format("%s --> %s [fwd]\n", fr.to(), fr.gateway()));
-        }
-        return sb.toString();
-    }
-
-    protected synchronized void addRoutes(String site, List<Route> new_routes) {
-        this.routes.put(site, new_routes);
-    }
-
-
-    /** Returns a Route matching any of the ForwardingRoutes, or null if none matches */
-    protected synchronized Route getForwardingRouteMatching(String site, Address sender) {
-        if(site == null)
-            return null;
-        for(ForwardingRoute fr: forward_routes) {
-            if(fr.matches(site)) {
-                Route r=getRoute(fr.gateway(), sender);
-                if(r != null)
-                    return r;
-            }
-        }
-        return null;
-    }
-
-    protected synchronized boolean containsRoute(String r) {
-        return routes.containsKey(r);
-    }
-
-    protected synchronized void removeRoute(String site) {
-        routes.remove(site);
-    }
-
-    protected List<String> getSiteNames() {
-        return Stream.concat(Stream.of(relay.site()), routes.keySet().stream())
-                .collect(Collectors.toList());
-    }
-
-    /** Gets routes for a given site. The result is the real value, which can be modified, so make a copy! */
-    protected synchronized List<Route> getRoutes(String site) {
-        return routes.get(site);
-    }
-
-    protected synchronized List<Route> getRoutes(String ... excluded_sites) {
-        List<Route> retval=new ArrayList<>(routes.size());
-        for(List<Route> list: routes.values()) {
-            for(Route route: list) {
-                if(route != null && !isExcluded(route, excluded_sites)) {
-                    retval.add(route);
-                    break;
-                }
-            }
-        }
-        return retval;
     }
 
     protected View getBridgeView(String cluster_name) {
@@ -161,15 +93,6 @@ public class Relayer3 extends Relayer {
         return null;
     }
 
-    protected static boolean isExcluded(Route route, String... excluded_sites) {
-        if(excluded_sites == null)
-            return false;
-        String site=((SiteUUID)route.site_master).getSite();
-        for(String excluded_site: excluded_sites)
-            if(site.equals(excluded_site))
-                return true;
-        return false;
-    }
 
 
 }

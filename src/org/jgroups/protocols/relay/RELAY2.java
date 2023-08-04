@@ -2,7 +2,6 @@ package org.jgroups.protocols.relay;
 
 import org.jgroups.*;
 import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
@@ -23,8 +22,6 @@ import java.util.function.Supplier;
 //@XmlElement(name="RelayConfiguration",type="relay:RelayConfigurationType")
 @MBean(description="RELAY2 protocol")
 public class RELAY2 extends RELAY {
-    // reserved flags
-    // public static final short site_master_flag            = 1 << 0;
 
     /* ------------------------------------------    Properties     ---------------------------------------------- */
     @Property(description="Whether or not we generate our own addresses in which we use can_become_site_master. " +
@@ -35,8 +32,6 @@ public class RELAY2 extends RELAY {
     protected boolean                                  relay_multicasts=true;
 
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
-    protected volatile Relayer2                        relayer;
-
     @Property(description="If true, a site master forwards messages received from other sites to randomly chosen " +
       "members of the local site for load balancing, reducing work for itself")
     protected boolean                                  can_forward_local_cluster;
@@ -56,25 +51,6 @@ public class RELAY2 extends RELAY {
     public long    getTopoWaitTime()                   {return topo_wait_time;}
     public RELAY2  setTopoWaitTime(long t)             {this.topo_wait_time=t; return this;}
 
-    @ManagedAttribute(description="Whether or not this instance is a site master")
-    public boolean isSiteMaster() {return relayer != null;}
-
-
-    public void resetStats() {
-        super.resetStats();
-        forward_to_site_master.reset();
-        forward_sm_time.reset();
-        relayed.reset();
-        relayed_time.reset();
-        forward_to_local_mbr.reset();
-        forward_to_local_mbr_time.reset();
-        clearNoRouteCache();
-    }
-
-    public View getBridgeView(String cluster_name) {
-        Relayer2 tmp=relayer;
-        return tmp != null? tmp.getBridgeView(cluster_name) : null;
-    }
 
     @Override
     public void configure() throws Exception {
@@ -93,28 +69,6 @@ public class RELAY2 extends RELAY {
                 return retval;
             });
         }
-    }
-
-
-    public void stop() {
-        super.stop();
-        is_site_master=false;
-        log.trace(local_addr + ": ceased to be site master; closing bridges");
-        if(relayer != null)
-            relayer.stop();
-    }
-
-
-    @ManagedOperation(description="Prints the contents of the routing table. " +
-      "Only available if we're the current coordinator (site master)")
-    public String printRoutes() {
-        return relayer != null? relayer.printRoutes() : "n/a (not site master)";
-    }
-
-    @ManagedOperation(description="Prints the routes that are currently up. " +
-      "Only available if we're the current coordinator (site master)")
-    public String printSites() {
-        return relayer != null? Util.print(relayer.getSiteNames()) : "n/a (not site master)";
     }
 
     @ManagedOperation(description="Prints the topology (site masters and local members) of this site")
@@ -142,45 +96,6 @@ public class RELAY2 extends RELAY {
             sb.append("\n");
         }
         return sb.toString();
-    }
-
-    /**
-     * Returns the bridge channel to a given site
-     * @param site_name The site name, e.g. "SFO"
-     * @return The JChannel to the given site, or null if no route was found or we're not the coordinator
-     */
-    public JChannel getBridge(String site_name) {
-        Relayer2 tmp=relayer;
-        Route route=tmp != null? tmp.getRoute(site_name): null;
-        return route != null? route.bridge() : null;
-    }
-
-    /**
-     * Returns the route to a given site
-     * @param site_name The site name, e.g. "SFO"
-     * @return The route to the given site, or null if no route was found or we're not the coordinator
-     */
-    public Route getRoute(String site_name) {
-        Relayer2 tmp=relayer;
-        return tmp != null? tmp.getRoute(site_name): null;
-    }
-
-    /**
-     * @return A {@link List} of sites name that are currently up or {@code null} if this node is not a Site Master (i.e.
-     * {@link #isSiteMaster()} returns false).
-     */
-    public List<String> getCurrentSites() {
-        Relayer2 rel = relayer;
-        return rel == null ? null : rel.getSiteNames();
-    }
-
-    public Object down(Event evt) {
-        switch(evt.getType()) {
-            case Event.VIEW_CHANGE:
-                handleView(evt.getArg());
-                break;
-        }
-        return down_prot.down(evt);
     }
 
 
@@ -222,16 +137,6 @@ public class RELAY2 extends RELAY {
         else
             route(target, sender, msg);
         return null;
-    }
-
-
-    public Object up(Event evt) {
-        switch(evt.getType()) {
-            case Event.VIEW_CHANGE:
-                handleView(evt.getArg());
-                break;
-        }
-        return up_prot.up(evt);
     }
 
     public Object up(Message msg) {
@@ -306,10 +211,6 @@ public class RELAY2 extends RELAY {
             up_prot.up(batch);
     }
 
-    protected PhysicalAddress getPhysicalAddress(Address mbr) {
-        return mbr != null? (PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, mbr)) : null;
-    }
-
     public void handleView(View view) {
         members=view.getMembers(); // First, save the members for routing received messages to local members
 
@@ -335,11 +236,11 @@ public class RELAY2 extends RELAY {
             if(relayer != null)
                 relayer.stop();
             relayer=new Relayer2(this, log);
-            final Relayer2 tmp=relayer;
+            final Relayer2 tmp=(Relayer2)relayer;
             if(async_relay_creation)
                 timer.execute(() -> startRelayer(tmp, bridge_name));
             else
-                startRelayer(relayer, bridge_name);
+                startRelayer(tmp, bridge_name);
             notifySiteMasterListener(true);
         }
         else {
@@ -454,7 +355,7 @@ public class RELAY2 extends RELAY {
                 deliverLocally(dest, sender, msg); // send to member in same local site
             return;
         }
-        Relayer2 tmp=relayer;
+        Relayer tmp=relayer;
         if(tmp == null) {
             log.warn(local_addr + ": not site master; dropping message");
             return;
@@ -475,7 +376,7 @@ public class RELAY2 extends RELAY {
 
     /** Sends the message via all bridges excluding the excluded_sites bridges */
     protected void sendToBridges(Address sender, final Message msg, String ... excluded_sites) {
-        Relayer2 tmp=relayer;
+        Relayer tmp=relayer;
         List<Route> routes=tmp != null? tmp.getRoutes(excluded_sites) : null;
         if(routes == null)
             return;
@@ -574,42 +475,7 @@ public class RELAY2 extends RELAY {
         }
     }
 
-
-    /**
-     * Iterates over the list of members and adds every member if the member's rank is below max_site_masters. Skips
-     * members which cannot become site masters (can_become_site_master == false). If no site master can be found,
-     * the first member of the view will be returned (even if it has can_become_site_master == false)
-     */
-    protected List<Address> determineSiteMasters(View view, int max_num_site_masters) {
-        List<Address> retval=new ArrayList<>(view.size());
-        int selected=0;
-
-        for(Address member: view) {
-            if(member instanceof ExtendedUUID && !((ExtendedUUID)member).isFlagSet(can_become_site_master_flag))
-                continue;
-
-            if(selected++ < max_num_site_masters)
-                retval.add(member);
-        }
-
-        if(retval.isEmpty()) {
-            Address coord=view.getCoord();
-            if(coord != null)
-                retval.add(coord);
-        }
-        return retval;
-    }
-
-    /** Returns a site master from site_masters */
-    protected Address pickSiteMaster(Address sender) {
-        List<Address> masters=site_masters;
-        if(masters.size() == 1)
-            return masters.get(0);
-        return site_master_picker.pickSiteMaster(masters, sender);
-    }
-
-
-    protected String _printTopology(Relayer2 rel) {
+    protected String _printTopology(Relayer rel) {
         Map<Address,String> local_sitemasters=new HashMap<>();
         List<String> all_sites=rel.getSiteNames();
         List<Supplier<Boolean>> topo_reqs=new ArrayList<>();
@@ -657,107 +523,4 @@ public class RELAY2 extends RELAY {
         return rsps != null? rsps.get(sm) : null;
     }
 
-    private void triggerSiteUnreachableEvent(SiteAddress remoteSite) {
-        up_prot.up(new Event(Event.SITE_UNREACHABLE, remoteSite));
-    }
-
-/*    public static class Relay2Header extends Header {
-        public static final byte DATA             = 1;
-        public static final byte SITE_UNREACHABLE = 2; // final_dest is a SiteMaster
-        public static final byte HOST_UNREACHABLE = 3; // final_dest is a SiteUUID (not currently used)
-        public static final byte SITES_UP         = 4;
-        public static final byte SITES_DOWN       = 5;
-        public static final byte TOPO_REQ         = 6;
-        public static final byte TOPO_RSP         = 7;
-
-        protected byte     type;
-        protected Address  final_dest;
-        protected Address  original_sender;
-        protected String[] sites; // used with SITES_UP/SITES_DOWN/TOPO_RSP
-
-
-        public Relay2Header() {
-        }
-
-        public Relay2Header(byte type) {
-            this.type=type;
-        }
-
-        public Relay2Header(byte type, Address final_dest, Address original_sender) {
-            this(type);
-            this.final_dest=final_dest;
-            this.original_sender=original_sender;
-        }
-        public short getMagicId() {return 80;}
-        public Supplier<? extends Header> create() {return Relay2Header::new;}
-        public byte    getType()           {return type;}
-        public Address getFinalDest()      {return final_dest;}
-        public Address getOriginalSender() {return original_sender;}
-
-        public Relay2Header setSites(String ... s) {
-            sites=s;
-            return this;
-        }
-
-        public String[] getSites() {
-            return sites;
-        }
-
-        @Override
-        public int serializedSize() {
-            return Global.BYTE_SIZE + Util.size(final_dest) + Util.size(original_sender) + sizeOf(sites);
-        }
-
-        @Override
-        public void writeTo(DataOutput out) throws IOException {
-            out.writeByte(type);
-            Util.writeAddress(final_dest, out);
-            Util.writeAddress(original_sender, out);
-            out.writeInt(sites == null? 0 : sites.length);
-            if(sites != null) {
-                for(String s: sites)
-                    Bits.writeString(s, out);
-            }
-        }
-
-        @Override
-        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-            type=in.readByte();
-            final_dest=Util.readAddress(in);
-            original_sender=Util.readAddress(in);
-            int num_elements=in.readInt();
-            if(num_elements == 0)
-                return;
-            sites=new String[num_elements];
-            for(int i=0; i < sites.length; i++)
-                sites[i]=Bits.readString(in);
-        }
-
-        public String toString() {
-            return typeToString(type) + " [dest=" + final_dest + ", sender=" + original_sender +
-              (type == TOPO_RSP? ", topos=" : ", sites=") + Arrays.toString(sites) + "]";
-        }
-
-        protected static String typeToString(byte type) {
-            switch(type) {
-                case DATA:             return "DATA";
-                case SITE_UNREACHABLE: return "SITE_UNREACHABLE";
-                case HOST_UNREACHABLE: return "HOST_UNREACHABLE";
-                case SITES_UP:         return "SITES_UP";
-                case SITES_DOWN:       return "SITES_DOWN";
-                case TOPO_REQ:         return "TOPO_REQ";
-                case TOPO_RSP:         return "TOPO_RSP";
-                default:               return "<unknown>";
-            }
-        }
-
-        protected static int sizeOf(String[] arr) {
-            int retval=Global.INT_SIZE; // number of elements
-            if(arr != null) {
-                for(String s: arr)
-                    retval+=Bits.sizeUTF(s) + 1; // presence bytes
-            }
-            return retval;
-        }
-    }*/
 }

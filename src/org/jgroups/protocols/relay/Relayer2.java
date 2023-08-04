@@ -73,34 +73,6 @@ public class Relayer2 extends Relayer {
     }
 
 
-    public synchronized String printRoutes() {
-        StringBuilder sb=new StringBuilder();
-        for(Map.Entry<String,List<Route>> entry: routes.entrySet()) {
-            List<Route> list=entry.getValue();
-            if(list != null && !list.isEmpty())
-                sb.append(entry.getKey() + " --> ").append(Util.print(list)).append("\n");
-        }
-        return sb.toString();
-    }
-
-
-    protected List<String> getSiteNames() {
-        return new ArrayList<>(routes.keySet());
-    }
-
-    protected synchronized List<Route> getRoutes(String ... excluded_sites) {
-        List<Route> retval=new ArrayList<>(routes.size());
-        for(List<Route> list: routes.values()) {
-            for(Route route: list) {
-                if(route != null && !isExcluded(route, excluded_sites)) {
-                    retval.add(route);
-                    break;
-                }
-            }
-        }
-        return retval;
-    }
-
     protected View getBridgeView(String cluster_name) {
         if(cluster_name == null || bridges == null)
             return null;
@@ -110,19 +82,6 @@ public class Relayer2 extends Relayer {
         }
         return null;
     }
-
-    protected static boolean isExcluded(Route route, String... excluded_sites) {
-        if(excluded_sites == null)
-            return false;
-        String site=((SiteUUID)route.site_master).getSite();
-        for(String excluded_site: excluded_sites)
-            if(site.equals(excluded_site))
-                return true;
-        return false;
-    }
-
-
-
 
 
 
@@ -176,8 +135,7 @@ public class Relayer2 extends Relayer {
             relay.handleRelayMessage(msg);
         }
 
-        /** The view contains a list of SiteUUIDs. Adjust the routing table based on the SiteUUIDs UUID and site
-         */
+        /** The view contains a list of SiteUUIDs. Adjust the routing table based on the SiteUUIDs UUID and site */
         public void viewAccepted(View new_view) {
             this.view=new_view;
             log.trace("[Relayer " + channel.getAddress() + "] view: " + new_view);
