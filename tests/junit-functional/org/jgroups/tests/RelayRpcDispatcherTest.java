@@ -269,16 +269,16 @@ public class RelayRpcDispatcherTest {
         return relay.getRoute(site_name);
     }
 
-    protected List<String> getCurrentSites(JChannel channel) {
+    protected static Collection<String> getCurrentSites(JChannel channel) {
        RELAY relay=channel.getProtocolStack().findProtocol(RELAY.class);
        return relay.getCurrentSites();
     }
 
-    protected void assertSiteView(JChannel channel, Collection<String> sitesName) {
-       List<String> sites = getCurrentSites(channel);
+    protected static void assertSiteView(JChannel channel, Collection<String> siteNames) {
+       Collection<String> sites=getCurrentSites(channel);
        assert sites != null;
-       assert sites.size() == sitesName.size();
-       for (String site : sitesName)
+       assert sites.size() == siteNames.size();
+       for(String site: siteNames)
           assert sites.contains(site);
     }
 

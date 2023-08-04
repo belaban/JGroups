@@ -477,7 +477,7 @@ public class RELAY2 extends RELAY {
 
     protected String _printTopology(Relayer rel) {
         Map<Address,String> local_sitemasters=new HashMap<>();
-        List<String> all_sites=rel.getSiteNames();
+        Collection<String> all_sites=rel.getSiteNames();
         List<Supplier<Boolean>> topo_reqs=new ArrayList<>();
         for(String site_name: all_sites) {
             Route r=rel.getRoute(site_name);

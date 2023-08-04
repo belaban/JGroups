@@ -223,7 +223,7 @@ public abstract class RELAY extends Protocol {
      * @return A {@link List} of sites name that are currently up or {@code null} if this node is not a Site Master (i.e.
      * {@link #isSiteMaster()} returns false).
      */
-    public List<String> getCurrentSites() {
+    public Collection<String> getCurrentSites() {
         Relayer rel=relayer;
         return rel == null ? null : rel.getSiteNames();
     }

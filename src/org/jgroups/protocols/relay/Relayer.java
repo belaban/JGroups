@@ -5,10 +5,7 @@ import org.jgroups.View;
 import org.jgroups.logging.Log;
 import org.jgroups.util.Util;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
@@ -110,9 +107,9 @@ public abstract class Relayer {
         return null;
     }
 
-    protected List<String> getSiteNames() {
+    protected Collection<String> getSiteNames() {
         return Stream.concat(Stream.of(relay.site()), routes.keySet().stream())
-          .collect(Collectors.toList());
+          .collect(Collectors.toSet());
     }
 
     protected static boolean isExcluded(Route route, String... excluded_sites) {

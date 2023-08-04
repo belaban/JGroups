@@ -280,7 +280,7 @@ public abstract class BaseLeaveTest {
                 System.out.printf("-- sorted requests from %s to: %s\n", requests, l);
                 requests.clear();
                 requests.addAll(l);
-                process(requests);
+                process();
             }
             return false;
         }
