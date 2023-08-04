@@ -78,6 +78,7 @@ public class RelayDemo implements Receiver {
         relay=ch.getProtocolStack().findProtocol(RELAY.class);
         if(relay == null)
             throw new IllegalStateException(String.format("Protocol %s not found", RELAY.class.getSimpleName()));
+        String site_name=relay.site();
         if(print_route_status) {
             relay.setRouteStatusListener(new RouteStatusListener() {
                 public void sitesUp(String... sites) {
@@ -96,7 +97,7 @@ public class RelayDemo implements Receiver {
                 }
             });
         }
-        ch.connect("RelayDemo");
+        ch.connect(site_name);
         if(!nohup) {
             eventLoop(ch);
             Util.close(ch);
