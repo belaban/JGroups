@@ -61,28 +61,35 @@ public class ViewHandler<R> {
 
     public ViewHandler<R> add(R req) {
         if(_add(req))
-            process(requests);
+            process();
         return this;
     }
 
     @SuppressWarnings("unchecked")
     public ViewHandler<R> add(R ... reqs) {
         if(_add(reqs))
-            process(requests);
+            process();
         return this;
     }
 
     public ViewHandler<R> add(Collection<R> reqs) {
         if(_add(reqs))
-            process(requests);
+            process();
         return this;
     }
 
 
     /** Clears the queue and discards new requests from now on */
     public void suspend() {
-        if(suspended.compareAndSet(false, true))
-            requests.clear();
+        if(suspended.compareAndSet(false, true)) {
+            lock.lock();
+            try {
+                requests.clear();
+            }
+            finally {
+                lock.unlock();
+            }
+        }
     }
 
 
@@ -242,10 +249,19 @@ public class ViewHandler<R> {
     }
 
     /** We're guaranteed that only one thread will be called with this method at any time */
-    protected void process(Collection<R> requests) {
+    protected void process() {
         for(;;) {
             while(!requests.isEmpty()) {
-                removeAndProcess(requests); // remove matching requests and process them
+                Collection<R> reqs=null;
+                lock.lock();
+                try {
+                    reqs=removeAndProcess(requests); // remove matching requests
+                }
+                finally {
+                    lock.unlock();
+                }
+                if(reqs != null && !reqs.isEmpty())
+                    req_processor.accept(reqs); // process outside of the lock scope
             }
             lock.lock();
             try {
@@ -264,14 +280,17 @@ public class ViewHandler<R> {
      * Removes requests as long as they match - breaks at the first non-matching request or when requests is empty
      * This method must catch all exceptions; or else process() might return without setting processing to true again!
      */
-    protected void removeAndProcess(Collection<R> requests) {
+    @GuardedBy("lock")
+    protected Collection<R> removeAndProcess(Collection<R> requests) {
+        Collection<R> removed=new ArrayList<>();
+        R             first_req=null;
+        Iterator<R>   it=requests.iterator();
         try {
-            Collection<R> removed=new ArrayList<>();
-            Iterator<R> it=requests.iterator();
-            R first_req=it.next();
-            removed.add(first_req);
-            it.remove();
-
+            if(it.hasNext()) { // safeguard to prevent https://issues.redhat.com/browse/JGRP-2718
+                first_req=it.next();
+                removed.add(first_req);
+                it.remove();
+            }
             while(it.hasNext()) {
                 R next=it.next();
                 if(req_matcher.test(first_req, next)) {
@@ -281,11 +300,11 @@ public class ViewHandler<R> {
                 else
                     break;
             }
-            req_processor.accept(removed);
         }
         catch(Throwable t) {
             log().error("failed processing requests", t);
         }
+        return removed;
     }
 
 
