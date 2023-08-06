@@ -245,7 +245,7 @@ public class RELAY3 extends RELAY {
                 case ALL:
                     if(down)
                         return routeThen(msg, null,() -> deliver(null, msg, true));
-                    return routeThen(msg, null, () -> passUp(msg));
+                    return dontRoute(msg)? passUp(msg) : routeThen(msg, null, () -> passUp(msg));
                 case SM_ALL:
                     return routeThen(msg, null, () -> passUp(msg));
                 case SM:
@@ -287,6 +287,20 @@ public class RELAY3 extends RELAY {
         return null;
     }
 
+    /**
+     * Determines if a message should be routed. If NO_RELAY is set, then the message won't be routed. If we have
+     * multiple site masters, and this site master is picked to route the message, then return true, else return false.
+     * JIRA: https://issues.redhat.com/browse/JGRP-2696
+     */
+    protected boolean dontRoute(Message msg) {
+        if(msg.isFlagSet(Flag.NO_RELAY))
+            return true; // don't route
+        final List<Address> sms=site_masters;
+        if(sms == null || sms.size() < 2)
+            return false; // do route
+        Address first_sm=sms.get(0);
+        return local_addr.equals(first_sm);
+    }
 
     /**
      * Sends a message to the given sites, or all sites (excluding the local site)

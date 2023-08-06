@@ -3,10 +3,7 @@
  import org.jgroups.*;
  import org.jgroups.logging.Log;
  import org.jgroups.logging.LogFactory;
- import org.jgroups.protocols.LOCAL_PING;
- import org.jgroups.protocols.MERGE3;
- import org.jgroups.protocols.TCP;
- import org.jgroups.protocols.UNICAST3;
+ import org.jgroups.protocols.*;
  import org.jgroups.protocols.pbcast.GMS;
  import org.jgroups.protocols.pbcast.NAKACK2;
  import org.jgroups.protocols.relay.*;
@@ -65,9 +62,14 @@ public class RelayTests {
      */
     protected static JChannel createNode(Class<? extends RELAY> cl, String site, String name, String bridge,
                                          String ... sites) throws Exception {
+        return createNode(cl, site, name, bridge, true, sites);
+    }
+
+    protected static JChannel createNode(Class<? extends RELAY> cl, String site, String name, String bridge,
+                                         boolean connect, String ... sites) throws Exception {
         RELAY relay=createSymmetricRELAY(cl, site, bridge, sites);
         JChannel ch=new JChannel(defaultStack(relay)).name(name);
-        if(site != null)
+        if(connect)
             ch.connect(site);
         return ch;
     }
