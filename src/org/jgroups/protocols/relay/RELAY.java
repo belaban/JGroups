@@ -223,9 +223,9 @@ public abstract class RELAY extends Protocol {
      * @return A {@link List} of sites name that are currently up or {@code null} if this node is not a Site Master (i.e.
      * {@link #isSiteMaster()} returns false).
      */
-    public Collection<String> getCurrentSites() {
+    public List<String> getCurrentSites() { // must return a List, as Infinispan expects a List (not a Collection)
         Relayer rel=relayer;
-        return rel == null ? null : rel.getSiteNames();
+        return rel == null ? null : new ArrayList<>(rel.getSiteNames());
     }
 
     /**
