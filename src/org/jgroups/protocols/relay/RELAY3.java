@@ -2,17 +2,17 @@ package org.jgroups.protocols.relay;
 
 import org.jgroups.*;
 import org.jgroups.Message.Flag;
-import org.jgroups.annotations.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.protocols.relay.SiteAddress.Type;
 import org.jgroups.protocols.relay.SiteStatus.Status;
-import org.jgroups.protocols.relay.Topology.MemberInfo;
-import org.jgroups.protocols.relay.Topology.Members;
 import org.jgroups.stack.AddressGenerator;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.UUID;
 import org.jgroups.util.*;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import static org.jgroups.protocols.relay.RelayHeader.*;
@@ -121,21 +121,38 @@ public class RELAY3 extends RELAY {
             up_prot.up(batch);
     }
 
-
-    protected void sendResponseFor(List<Address> mbrs, Address dest) {
-        Members m=new Members(this.site);
-        for(Address mbr: mbrs) {
-            SiteAddress addr=mbr instanceof SiteMaster? new SiteMaster(((SiteMaster)mbr).getSite())
-              : new SiteUUID((UUID)mbr, NameCache.get(mbr), site);
-            MemberInfo mi=new MemberInfo(this.site, addr, (IpAddress)getPhysicalAddress(mbr),
-                                         site_masters.contains(mbr));
-            m.addJoined(mi);
+    /**
+     * Returns information about all members of all sites, or only the local members of a given site
+     * @param all_sites When true, return information about all sites (1 msg/site), otherwise only about this site
+     * @param dest The address to which to send the response
+     */
+    protected void sendResponseTo(Address dest, boolean all_sites) {
+        if(all_sites) {
+            sendResponsesForAllSites(dest);
+            return;
         }
-        Message rsp=new ObjectMessage(dest, m).putHeader(this.id, new RelayHeader(TOPO_RSP));
+        if(log.isDebugEnabled())
+            log.debug("%s: sending topo response to %s: %s", local_addr, dest, view);
+        RelayHeader hdr=new RelayHeader(TOPO_RSP, dest, local_addr).addToSites(this.site);
+        Message rsp=new ObjectMessage(dest, this.view).putHeader(this.id, hdr);
         down(rsp);
     }
 
+    protected void sendResponsesForAllSites(Address dest) {
+        for(Map.Entry<String,View> e: topo.cache().entrySet()) {
+            String site_name=e.getKey();
+            View v=e.getValue();
+            if(log.isDebugEnabled())
+                log.debug("%s: sending topo response to %s: %s", local_addr, dest, view);
+            RelayHeader hdr=new RelayHeader(TOPO_RSP, dest, local_addr).addToSites(site_name);
+            Message rsp=new ObjectMessage(dest, v).putHeader(this.id, hdr);
+            down(rsp);
+        }
+    }
+
     public void handleView(View view) {
+        View old_view=this.view;
+        this.view=view;
         members=view.getMembers(); // First, save the members for routing received messages to local members
 
         int max_num_site_masters=max_site_masters;
@@ -161,10 +178,13 @@ public class RELAY3 extends RELAY {
                 relayer.stop();
             relayer=new Relayer3(this, log);
             final Relayer3 tmp=(Relayer3)relayer;
+            final long start=System.currentTimeMillis();
             if(async_relay_creation)
-                timer.execute(() -> startRelayer(tmp, bridge_name));
+                timer.execute(() -> startRelayer(tmp, bridge_name)
+                  .handleAsync((r,t) -> handleRelayerStarted(relayer, start, r, t)));
             else
-                startRelayer(tmp, bridge_name);
+                startRelayer(tmp, bridge_name)
+                  .handleAsync((r,t) -> handleRelayerStarted(relayer, start, r, t));
             notifySiteMasterListener(true);
         }
         else {
@@ -177,9 +197,40 @@ public class RELAY3 extends RELAY {
             }
         }
         suppress_log_no_route.removeExpired(suppress_time_no_route_errors);
-        topo().adjust(this.site, view.getMembers());
+        topo.put(site, view);
+
+        if(!topo.globalViews())
+            return;
+
+        if(is_site_master) {
+            if(!become_site_master) {
+                // send my own information as a TOPO_RSP to all site masters, who then forward it locally with NO_RELAY
+                sendResponseTo(new SiteMaster(null), false);
+            }
+        }
+        else { // not site master
+            // on the first view and as non site master -> fetch the cache from the site master
+            if(old_view == null && !cease_site_master) {
+                topo.refresh(this.site, true);
+                // CompletableFuture.runAsync(() -> topo.refresh(this.site, true));
+            }
+        }
     }
 
+    protected <T> Object handleRelayerStarted(Relayer r, long start, T ignored, Throwable t) {
+        if(t != null)
+            log.error(local_addr + ": failed starting relayer", t);
+        else {
+            log.info("%s: relayer was started in %d ms: %s", local_addr, System.currentTimeMillis() - start, r);
+            if(topo.globalViews()) {
+                // get the caches from all site masters
+                topo.refresh(null);
+                // send my own information as a TOPO_RSP to all site masters, who then forward it locally with NO_RELAY
+                sendResponseTo(new SiteMaster(null), false);
+            }
+        }
+        return null;
+    }
 
     /** Called to handle a message received from a different site (via a bridge channel) */
     protected void handleRelayMessage(Message msg) {
@@ -217,12 +268,21 @@ public class RELAY3 extends RELAY {
                 }
                 return true;
             case TOPO_REQ:
-                sendResponseFor(members, msg.src());
+                sendResponseTo(msg.src(), hdr.returnEntireCache());
                 return true;
             case TOPO_RSP:
-                Members mbrs=msg.getObject();
-                if(mbrs != null)
-                    topo.handleResponse(mbrs);
+                View v=msg.getObject();
+                String site_name=Objects.requireNonNull(hdr.getSite());
+                if(v != null) {
+                    topo.put(site_name, v);
+                    if(!topo.globalViews())
+                        return true;
+                    Address dest=msg.getDest();
+                    if(dest != null && ((SiteAddress)dest).type() == Type.SM_ALL) {
+                        Message local_mcast=new ObjectMessage(null, v).putHeader(id, hdr);
+                        deliver(null, local_mcast, true, true);
+                    }
+                }
                 return true;
         }
         return false;
@@ -236,6 +296,7 @@ public class RELAY3 extends RELAY {
         return action != null? action.get() : null;
     }
 
+    /** This method has all of the routing logic, for both site masters and regular members */
     protected Object process(boolean down, Message msg) {
         Address dest=msg.dest();
         SiteAddress dst=null;
@@ -358,11 +419,14 @@ public class RELAY3 extends RELAY {
      * @param msg The message to deliver
      */
     protected Object deliver(Address next_dest, Message msg, boolean dont_relay) {
+        return deliver(next_dest, msg, dont_relay, false);
+    }
+
+    protected Object deliver(Address next_dest, Message msg, boolean dont_relay, boolean dont_loopback) {
         checkLocalAddress(next_dest);
         Address final_dest=msg.dest(), original_sender=msg.src();
         if(log.isTraceEnabled())
-            log.trace(local_addr + ": forwarding message to final destination " + final_dest + " to " +
-                        next_dest);
+            log.trace("%s: forwarding message to final destination %s to %s", local_addr, final_dest, next_dest);
         RelayHeader tmp=msg.getHeader(this.id);
         // todo: check if copy is needed here
         RelayHeader hdr=tmp != null? tmp.copy().setOriginalSender(original_sender).setFinalDestination(final_dest)
@@ -370,6 +434,8 @@ public class RELAY3 extends RELAY {
         Message copy=copy(msg).setDest(next_dest).setSrc(null).putHeader(id, hdr);
         if(dont_relay)
             copy.setFlag(Flag.NO_RELAY);
+        if(dont_loopback)
+            copy.setFlag(Message.TransientFlag.DONT_LOOPBACK);
         return down_prot.down(copy);
     }
 
@@ -440,13 +506,13 @@ public class RELAY3 extends RELAY {
     }
 
 
-    protected void startRelayer(Relayer3 rel, String bridge_name) {
+    protected CompletableFuture<Relayer> startRelayer(Relayer3 rel, String bridge_name) {
         try {
             log.trace(local_addr + ": became site master; starting bridges");
-            rel.start(site_config, bridge_name, site);
+            return rel.start(site_config, bridge_name, site);
         }
         catch(Throwable t) {
-            log.error(local_addr + ": failed starting relayer", t);
+            return CompletableFuture.failedFuture(t);
         }
     }
 

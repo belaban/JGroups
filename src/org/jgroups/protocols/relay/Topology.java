@@ -1,18 +1,16 @@
 package org.jgroups.protocols.relay;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.EmptyMessage;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.util.Bits;
-import org.jgroups.util.SizeStreamable;
-import org.jgroups.util.Util;
+import org.jgroups.annotations.Property;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.BiConsumer;
 
 /**
@@ -25,23 +23,27 @@ import java.util.function.BiConsumer;
  * @since  5.2.15
  */
 public class Topology {
-    protected final RELAY                       relay;
-    protected final Map<String,Set<MemberInfo>> cache=new ConcurrentHashMap<>(); // cache of sites and members
-    protected BiConsumer<String,Members>        rsp_handler;
-
+    protected final RELAY             relay;
+    protected final Map<String,View>  cache=new ConcurrentHashMap<>(); // cache of sites and members
+    protected BiConsumer<String,View> view_handler;
+    @Property(description="When true, members joining or leaving any site in the network are triggering the " +
+      "view handler callback")
+    protected boolean                 global_views=true; // might be set to false by default in the future
 
     public Topology(RELAY relay) {
         this.relay=Objects.requireNonNull(relay);
     }
 
-    public Map<String,Set<MemberInfo>> cache() {return cache;}
+    public Map<String,View> cache()                {return cache;}
+    public boolean          globalViews()          {return global_views;}
+    public Topology         globalViews(boolean b) {global_views=b; return this;}
 
     /**
-     * Sets a response handler
-     * @param c The response handler. Arguments are the site and {@link Members}
-     *          ({@link MemberInfo} of joined and left members)
+     * Sets a view handler
+     * @param c The view handler. Arguments are the site and the {@link View} of that site)
      */
-    public Topology setResponseHandler(BiConsumer<String,Members> c) {rsp_handler=c; return this;}
+    public Topology setViewHandler(BiConsumer<String,View> c) {
+        view_handler=c; return this;}
 
 
     @ManagedOperation(description="Fetches information (site, address, IP address) from all members")
@@ -55,8 +57,16 @@ public class Topology {
      */
     @ManagedOperation(description="Fetches information (site, address, IP address) from all members of a given site")
     public Topology refresh(String site) {
+        return refresh(site, false);
+    }
+
+    @ManagedOperation(description="Fetches the topology information for a given site")
+    public Topology refresh(String site, boolean return_entire_cache) {
         Address dest=new SiteMaster(site); // sent to all site masters if site == null
-        Message topo_req=new EmptyMessage(dest).putHeader(relay.getId(), new RelayHeader(RelayHeader.TOPO_REQ));
+        RelayHeader hdr=new RelayHeader(RelayHeader.TOPO_REQ)
+          .setFinalDestination(dest).setOriginalSender(relay.getAddress())
+          .returnEntireCache(return_entire_cache);
+        Message topo_req=new EmptyMessage(dest).putHeader(relay.getId(), hdr);
         relay.down(topo_req);
         return this;
     }
@@ -76,8 +86,8 @@ public class Topology {
         if(site != null)
             return dumpSite(site);
         StringBuilder sb=new StringBuilder();
-        for(Map.Entry<String,Set<MemberInfo>> e: cache.entrySet()) {
-            sb.append(dumpSite(e.getKey()));
+        for(Map.Entry<String,View> e: cache.entrySet()) {
+            sb.append(dumpSite(e.getKey())).append("\n");
         }
         return sb.toString();
     }
@@ -90,182 +100,26 @@ public class Topology {
         return this;
     }
 
-    public Topology adjust(String site, Collection<Address> mbrs) {
-        Set<MemberInfo> list=cache.get(site);
-        if(list != null && mbrs != null)
-            list.removeIf(mi -> !mbrs.contains(mi.addr));
-        return this;
-    }
-
     @Override
     public String toString() {
         return String.format("%d sites", cache.size());
     }
 
     protected String dumpSite(String site) {
-        Set<MemberInfo> members=cache.get(site);
-        if(members == null)
-            return String.format("%s: no members found", site);
-        StringBuilder sb=new StringBuilder(site).append("\n");
-        for(MemberInfo mi: members) {
-            sb.append("  ").append(mi.toStringNoSite()).append("\n");
-        }
-        return sb.toString();
+        View view=cache.get(site);
+        if(view == null)
+            return String.format("%s: no view found for site %s", relay.getAddress(), site);
+        return String.format("%s: %s", site, view);
     }
 
     /** Called when a response has been received. Updates the internal cache */
-    protected void handleResponse(Members rsp) {
-        String site=rsp.site;
-        Set<MemberInfo> infos=cache.computeIfAbsent(site,s -> new ConcurrentSkipListSet<>());
-        if(rsp.joined != null) {
-            infos.addAll(rsp.joined);
-        }
-        if(rsp.left != null) {
-            // todo: implement
-        }
-        if(rsp_handler != null)
-            rsp_handler.accept(site, rsp);
-    }
-
-
-    /** Contains information about joined and left members for a given site */
-    public static class Members implements SizeStreamable {
-        protected String           site;
-        protected List<MemberInfo> joined;
-        protected List<Address>    left;
-
-        public Members() {}
-        public Members(String site) {this.site=site;}
-
-        public Members addJoined(MemberInfo mi) {
-            if(this.joined == null)
-                this.joined=new ArrayList<>();
-            this.joined.add(Objects.requireNonNull(mi));
-            return this;
-        }
-
-        public Members addLeft(Address left) {
-            if(this.left == null)
-                this.left=new ArrayList<>();
-            this.left.add(Objects.requireNonNull(left));
-            return this;
-        }
-
-        public int serializedSize() {
-            int size=Util.size(site) + Short.BYTES * 2;
-            if(joined != null && !joined.isEmpty()) {
-                for(MemberInfo mi: joined)
-                    size+=mi.serializedSize();
-            }
-            if(left != null && !left.isEmpty()) {
-                for(Address addr: left)
-                    size+=Util.size(addr);
-            }
-            return size;
-        }
-
-        public void writeTo(DataOutput out) throws IOException {
-            Bits.writeString(site, out);
-            if(joined == null || joined.isEmpty())
-                out.writeShort(0);
-            else {
-                out.writeShort(joined.size());
-                for(MemberInfo mi: joined)
-                    mi.writeTo(out);
-            }
-            if(left == null || left.isEmpty())
-                out.writeShort(0);
-            else {
-                out.writeShort(left.size());
-                for(Address addr: left)
-                    Util.writeAddress(addr, out);
-            }
-        }
-
-        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-            site=Bits.readString(in);
-            short len=in.readShort();
-            if(len > 0) {
-                joined=new ArrayList<>(len);
-                for(int i=0; i < len; i++) {
-                    MemberInfo mi=new MemberInfo();
-                    mi.readFrom(in);
-                    joined.add(mi);
-                }
-            }
-            len=in.readShort();
-            if(len > 0) {
-                left=new ArrayList<>(len);
-                Address addr=Util.readAddress(in);
-                left.add(addr);
-            }
-        }
-
-        public String toString() {
-            return String.format("site %s: %d members joined %d left", site, joined == null? 0 : joined.size(),
-                                 left == null? 0 : left.size());
+    protected void put(String site, View v) {
+        View existing=cache.get(site);
+        if(!Objects.equals(existing, v)) {
+            cache.put(site, v);
+            if(view_handler != null)
+                view_handler.accept(site, v);
         }
     }
 
-    public static class MemberInfo implements SizeStreamable, Comparable<MemberInfo> {
-        protected String    site;
-        protected Address   addr;
-        protected IpAddress ip_addr;
-        protected boolean   site_master;
-
-        public MemberInfo() {
-        }
-
-        public MemberInfo(String site, Address addr, IpAddress ip_addr, boolean site_master) {
-            this.site=site;
-            this.addr=Objects.requireNonNull(addr);
-            this.ip_addr=ip_addr;
-            this.site_master=site_master;
-        }
-
-        @Override
-        public int hashCode() {
-            return addr.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            return obj instanceof MemberInfo && this.compareTo((MemberInfo)obj) == 0;
-        }
-
-        @Override
-        public int compareTo(MemberInfo o) {
-            return addr.compareTo(o.addr);
-        }
-
-        @Override
-        public int serializedSize() {
-            return Util.size(site) + Util.size(addr) + Util.size(ip_addr) + Global.BYTE_SIZE;
-        }
-
-        @Override
-        public void writeTo(DataOutput out) throws IOException {
-            Bits.writeString(site, out);
-            Util.writeAddress(addr, out);
-            Util.writeAddress(ip_addr, out);
-            out.writeBoolean(site_master);
-        }
-
-        @Override
-        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
-            site=Bits.readString(in);
-            addr=Util.readAddress(in);
-            ip_addr=(IpAddress)Util.readAddress(in);
-            site_master=in.readBoolean();
-        }
-
-        @Override
-        public String toString() {
-            return String.format("site=%s, addr=%s (ip=%s%s)", site, addr, ip_addr, site_master? ", sm" : "");
-        }
-
-        public String toStringNoSite() {
-            return String.format("%s (ip=%s%s)", addr, ip_addr, site_master? ", sm" : "");
-        }
-    }
 }

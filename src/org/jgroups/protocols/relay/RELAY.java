@@ -97,6 +97,7 @@ public abstract class RELAY extends Protocol {
     protected short[]                      prots_above; // protocol IDs above RELAY
     protected TimeScheduler                timer;
     protected SiteMasterPicker             site_master_picker;
+    protected volatile View                view;
     protected volatile List<Address>       members=new ArrayList<>(11);
     protected volatile RouteStatusListener route_status_listener;
 
@@ -156,6 +157,7 @@ public abstract class RELAY extends Protocol {
     public <T extends RELAY> T setSite(String s)         {this.site=s; return (T)this;}
     public <T extends RELAY> T site(String s)            {site=s; return (T)this;}
     public Topology            topo()                    {return topo;}
+    public View                view()                    {return view;}
     public List<Address>       members()                 {return members;}
     public String              config()                  {return config;}
     public <T extends RELAY> T config(String cfg)        {config=cfg; return (T)this;}

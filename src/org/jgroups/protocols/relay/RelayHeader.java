@@ -9,10 +9,7 @@ import org.jgroups.util.Util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 
 /**
@@ -26,14 +23,16 @@ public class RelayHeader extends Header {
     public static final byte SITES_UP         = 4;
     public static final byte SITES_DOWN       = 5;
     public static final byte TOPO_REQ         = 6;
-    public static final byte TOPO_RSP         = 7; // MemberInfo is the payload of the response message
+    public static final byte TOPO_RSP         = 7; // View is the payload of the response message (site: hdr.sites)
 
     protected byte        type;
     protected Address     final_dest;
     protected Address     original_sender;
     protected Set<String> sites; // used with SITES_UP/SITES_DOWN/TOPO_RSP
-    protected Set<String> visited_sites; // used to record sites to which this msg was already sent
-    // (https://issues.redhat.com/browse/JGRP-1519)
+    // used to record sites to which this msg was already sent (https://issues.redhat.com/browse/JGRP-1519)
+    protected Set<String> visited_sites;
+    // used with TOPO_REQ: when set, return the entire cache, otherwise only information about the local members
+    protected boolean     return_entire_cache;
 
 
     public RelayHeader() {
@@ -53,11 +52,20 @@ public class RelayHeader extends Header {
     public Supplier<? extends Header> create()         {return RelayHeader::new;}
     public byte         getType()                      {return type;}
     public Address      getFinalDest()                 {return final_dest;}
-    public RelayHeader setFinalDestination(Address d) {final_dest=d; return this;}
+    public RelayHeader  setFinalDestination(Address d) {final_dest=d; return this;}
     public Address      getOriginalSender()            {return original_sender;}
-    public RelayHeader setOriginalSender(Address s)   {original_sender=s; return this;}
+    public RelayHeader  setOriginalSender(Address s)   {original_sender=s; return this;}
     public Set<String>  getSites()                     {return sites != null? new HashSet<>(sites) : null;}
     public boolean      hasSites()                     {return sites != null && !sites.isEmpty();}
+    public boolean      returnEntireCache()            {return return_entire_cache;}
+    public RelayHeader  returnEntireCache(boolean b)   {return_entire_cache=b; return this;}
+
+    public String getSite() {
+        if(sites == null || sites.isEmpty())
+            return null;
+        Iterator<String> it=sites.iterator();
+        return it.hasNext()? it.next() : null;
+    }
 
     public RelayHeader addToSites(Collection<String> s) {
         if(s != null) {
@@ -100,7 +108,7 @@ public class RelayHeader extends Header {
     public RelayHeader copy() {
         RelayHeader hdr=new RelayHeader(type, final_dest, original_sender)
           .addToSites(this.sites)
-          .addToVisitedSites(visited_sites);
+          .addToVisitedSites(visited_sites).returnEntireCache(return_entire_cache);
         assertNonNullSites();
         hdr.assertNonNullSites();
         return hdr;
@@ -109,13 +117,14 @@ public class RelayHeader extends Header {
     @Override
     public int serializedSize() {
         assertNonNullSites();
-        return Global.BYTE_SIZE + Util.size(final_dest) + Util.size(original_sender) +
+        return Global.BYTE_SIZE*2 + Util.size(final_dest) + Util.size(original_sender) +
           sizeOf(sites) + sizeOf(visited_sites);
     }
 
     @Override
     public void writeTo(DataOutput out) throws IOException {
         out.writeByte(type);
+        out.writeBoolean(return_entire_cache);
         Util.writeAddress(final_dest, out);
         Util.writeAddress(original_sender, out);
         out.writeInt(sites == null? 0 : sites.size());
@@ -134,6 +143,7 @@ public class RelayHeader extends Header {
     @Override
     public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         type=in.readByte();
+        return_entire_cache=in.readBoolean();
         final_dest=Util.readAddress(in);
         original_sender=Util.readAddress(in);
         int num_elements=in.readInt();

@@ -12,8 +12,6 @@ import org.jgroups.protocols.pbcast.*;
 import org.jgroups.protocols.relay.RelayHeader;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.SiteUUID;
-import org.jgroups.protocols.relay.Topology.MemberInfo;
-import org.jgroups.protocols.relay.Topology.Members;
 import org.jgroups.stack.GossipData;
 import org.jgroups.stack.GossipType;
 import org.jgroups.stack.IpAddress;
@@ -624,36 +622,6 @@ public class SizeTest {
         SiteMaster sm=new SiteMaster("sfo");
         _testSize(sm);
     }
-
-    public void testMemberInfo() throws Exception {
-        Address addr=Util.createRandomAddress("A");
-        IpAddress ip_addr=new IpAddress("127.0.0.1", 5000);
-        MemberInfo m1=new MemberInfo("sfo", addr, ip_addr, true);
-        _testSize(m1);
-
-        byte[] serialized_form=Util.streamableToByteBuffer(m1);
-        MemberInfo m2=Util.streamableFromByteBuffer(MemberInfo.class, serialized_form);
-        assert m1.equals(m2);
-    }
-
-    public void testMembers() throws Exception {
-        Members mbrs=new Members();
-        _testSize(mbrs);
-
-        mbrs=new Members("nyc");
-        _testSize(mbrs);
-
-        Address[] addrs=new Address[5];
-        for(int i=0; i < addrs.length; i++)
-            addrs[i]=Util.createRandomAddress();
-        mbrs.addJoined(new MemberInfo("net1", addrs[0], new IpAddress("127.0.0.1", 7000), true));
-        mbrs.addJoined(new MemberInfo("net2", addrs[1], new IpAddress("127.0.0.1", 8000), true));
-        mbrs.addJoined(new MemberInfo("hf", addrs[2], new IpAddress("127.0.0.1", 9000), false));
-        _testSize(mbrs);
-        mbrs.addLeft(addrs[3]).addLeft(addrs[4]);
-        _testSize(mbrs);
-    }
-
 
     public void testEncryptHeader() throws Exception {
         EncryptHeader hdr=new EncryptHeader((byte)0, new byte[]{'b','e', 'l', 'a'}, new byte[]{'b', 'a', 'n'});

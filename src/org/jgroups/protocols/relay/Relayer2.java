@@ -127,9 +127,9 @@ public class Relayer2 extends Relayer {
                     }
                     return; // not relayed
                 case RelayHeader.TOPO_RSP:
-                    Set<String> sites=hdr.getSites();
-                    if(sites != null && !sites.isEmpty())
-                        ((RELAY2)relay).topo_collector.add(msg.src(), sites.iterator().next());
+                    String site_name=hdr.getSite();
+                    if(site_name != null)
+                        ((RELAY2)relay).topo_collector.add(msg.src(), site_name);
                     return;
             }
             relay.handleRelayMessage(msg);

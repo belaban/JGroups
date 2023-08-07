@@ -26,7 +26,7 @@ public class RelayDemo implements Receiver {
     public static void main(String[] args) throws Exception {
         String props="udp.xml";
         String name=null;
-        boolean print_route_status=true, nohup=false;
+        boolean print_route_status=true, nohup=false, use_view_handler=true;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-props")) {
@@ -45,11 +45,16 @@ public class RelayDemo implements Receiver {
                 nohup=true;
                 continue;
             }
-            System.out.println("RelayDemo [-props props] [-name name] [-print_route_status false|true] [-nohup]");
+            if("-use_view_handler".equals(args[i])) {
+                use_view_handler=Boolean.parseBoolean(args[++i]);
+                continue;
+            }
+            System.out.println("RelayDemo [-props props] [-name name] [-print_route_status false|true] " +
+                                 "[-nohup] [-use_view_handler [true|false]]");
             return;
         }
         RelayDemo demo=new RelayDemo();
-        demo.start(props, name, print_route_status, nohup);
+        demo.start(props, name, print_route_status, nohup, use_view_handler);
     }
 
     public void receive(Message msg) {
@@ -67,10 +72,11 @@ public class RelayDemo implements Receiver {
         }
     }
     public void viewAccepted(View new_view) {
-        System.out.println(print(new_view));
+        System.out.printf("Local view: %s\n", new_view);
     }
 
-    protected void start(String props, String name, boolean print_route_status, boolean nohup) throws Exception {
+    protected void start(String props, String name, boolean print_route_status,
+                         boolean nohup, boolean use_view_handler) throws Exception {
         ExtendedUUID.setPrintFunction(UUID::printName);
         ch=new JChannel(props).setReceiver(this);
         if(name != null)
@@ -97,6 +103,11 @@ public class RelayDemo implements Receiver {
                 }
             });
         }
+        if(use_view_handler)
+            relay.topo().setViewHandler((s, v) -> {
+                if(!s.equals(relay.getSite()))
+                    System.out.printf("Global view: %s\n", v);
+            });
         ch.connect(site_name);
         if(!nohup) {
             eventLoop(ch);
@@ -141,19 +152,29 @@ public class RelayDemo implements Receiver {
             return true;
         }
         if(line.startsWith("topo") && relay instanceof RELAY3) {
-            String sub=line.substring("topo".length()).trim();
-            String site=null;
-            if(sub != null && !sub.isEmpty()) {
-                String[] tmp=sub.split(" ");
-                site=tmp.length > 0 && !tmp[0].isEmpty()? tmp[0].trim() : null;
-            }
-            Topology topo=relay.topo().removeAll(site != null? List.of(site) : null)
-              .refresh(site);
-            Util.sleep(100);
-            System.out.printf("\n%s\n", topo.print(site));
+            System.out.printf("\n%s\n", printTopo(line, "topo", true));
+            return true;
+        }
+        if(line.startsWith("pt") && relay instanceof RELAY3) {
+            System.out.printf("\n%s\n", printTopo(line, "pt", false));
             return true;
         }
         return false;
+    }
+
+    protected String printTopo(String line, String command, boolean refresh) {
+        String sub=line.substring(command.length()).trim();
+        String site=null;
+        if(sub != null && !sub.isEmpty()) {
+            String[] tmp=sub.split(" ");
+            site=tmp.length > 0 && !tmp[0].isEmpty()? tmp[0].trim() : null;
+        }
+        Topology topo=relay.topo();
+        if(refresh) {
+            topo.removeAll(site != null? List.of(site) : null).refresh(site);
+            Util.sleep(100);
+        }
+        return topo.print(site);
     }
 
     protected static void help() {
@@ -162,21 +183,9 @@ public class RelayDemo implements Receiver {
                              "\nmbrs: prints the local members" +
                              "\nsite-masters (sm): prints the site masters of this site" +
                              "\nsites: prints the configured sites" +
-                             "\ntopo: prints the topology (site masters and local members of all sites)\n");
+                             "\ntopo: prints the topology (site masters and local members of all sites)" +
+                             "\npt: prints the cache (no refresh)\n");
     }
 
 
-    protected static String print(View view) {
-        StringBuilder sb=new StringBuilder();
-        boolean first=true;
-        sb.append(view.getClass().getSimpleName() + ": ").append(view.getViewId()).append(": ");
-        for(Address mbr: view.getMembers()) {
-            if(first)
-                first=false;
-            else
-                sb.append(", ");
-            sb.append(mbr);
-        }
-        return sb.toString();
-    }
 }

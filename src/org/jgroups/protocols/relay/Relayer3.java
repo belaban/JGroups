@@ -10,6 +10,7 @@ import org.jgroups.util.UUID;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 
@@ -36,10 +37,10 @@ public class Relayer3 extends Relayer {
      * @param bridge_name The name of the local bridge channel, prefixed with '_'.
      * @param my_site_id The ID of this site
      */
-    public void start(RelayConfig.SiteConfig site_cfg, String bridge_name, final String my_site_id) throws Throwable {
+    public CompletableFuture<Relayer> start(RelayConfig.SiteConfig site_cfg, String bridge_name, final String my_site_id) throws Throwable {
         if(done) {
             log.trace(relay.getAddress() + ": will not start the Relayer as stop() has been called");
-            return;
+            return CompletableFuture.completedFuture(this);
         }
         try {
             // Add configured forward routes:
@@ -65,10 +66,12 @@ public class Relayer3 extends Relayer {
             }
             for(Bridge bridge: bridges)
                 bridge.start();
+            return CompletableFuture.completedFuture(this);
         }
         catch(Throwable t) {
             stop();
-            throw t;
+            return CompletableFuture.failedFuture(t);
+            // throw t;
         }
         finally {
             if(done)
