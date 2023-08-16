@@ -141,7 +141,7 @@
             <groupId>org.jboss.byteman</groupId>
             <artifactId>byteman-bmunit</artifactId>
             <version>4.0.20</version>
-            <scope>compile</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.wildfly.security</groupId>
