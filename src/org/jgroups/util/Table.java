@@ -542,7 +542,7 @@ public class Table<T> implements Iterable<T> {
 
         for(int i=0; i < distance; i++) {
             T element=current_row == null? null : current_row[column];
-            if(!visitor.visit(from, element, row, column))
+            if(visitor != null && !visitor.visit(from, element, row, column))
                 break;
 
             from++;

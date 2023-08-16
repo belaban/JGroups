@@ -169,12 +169,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
 
-    protected static final Table.Visitor<Message> DECR=(seqno, msg, row, col) -> {
-        if(msg instanceof Refcountable)
-            ((Refcountable<Message>)msg).decr();
-        return true;
-    };
-
     @ManagedAttribute(description="Returns the number of outgoing (send) connections")
     public int getNumSendConnections() {
         return send_table.size();
@@ -666,8 +660,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         short send_conn_id=entry.connId();
         long seqno=entry.sent_msgs_seqno.getAndIncrement();
         long sleep=10;
-        if(msg instanceof Refcountable && !dont_loopback_set)
-            ((Refcountable<Message>)msg).incr();
         do {
             try {
                 msg.putHeader(this.id,UnicastHeader3.createDataHeader(seqno,send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
@@ -1012,7 +1004,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
         Table<Message> win=entry != null? entry.msgs : null;
         if(win != null && entry.updateLastTimestamp(timestamp)) {
-            win.forEach(win.getLow(), seqno, DECR);
+            // win.forEach(win.getLow(), seqno, null);
             win.purge(seqno, true); // removes all messages <= seqno (forced purge)
             num_acks_received++;
         }

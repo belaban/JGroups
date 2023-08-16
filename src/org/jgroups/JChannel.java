@@ -445,15 +445,7 @@ public class JChannel implements Closeable {
         if(msg == null)
             throw new NullPointerException("msg is null");
         checkClosedOrNotConnected();
-        try {
-            if(msg instanceof Refcountable)
-                ((Refcountable<Message>)msg).incr();
-            down(msg);
-        }
-        finally {
-            if(msg instanceof Refcountable)
-                ((Refcountable<Message>)msg).decr();
-        }
+        down(msg);
         return this;
     }
 
