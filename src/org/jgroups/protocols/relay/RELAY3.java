@@ -28,8 +28,6 @@ import static org.jgroups.protocols.relay.RelayHeader.*;
  * @since 3.2
  */
 @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
-//@XmlInclude(schema="relay.xsd",type=XmlInclude.Type.IMPORT,namespace="urn:jgroups:relay:1.0",alias="relay")
-//@XmlElement(name="RelayConfiguration",type="relay:RelayConfigurationType")
 @MBean(description="RELAY3 protocol")
 public class RELAY3 extends RELAY {
     // to prevent duplicate sitesUp()/sitesDown() notifications; this is needed in every member: routes are only

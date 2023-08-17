@@ -18,9 +18,8 @@ import java.util.List;
  */
 public class RelayDemo implements Receiver {
     protected static final String SITE_MASTERS="site-masters";
-
-    protected JChannel ch;
-    protected RELAY    relay;
+    protected JChannel            ch;
+    protected RELAY               relay;
 
 
     public static void main(String[] args) throws Exception {

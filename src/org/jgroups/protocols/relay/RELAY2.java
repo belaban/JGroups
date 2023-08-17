@@ -18,8 +18,6 @@ import java.util.function.Supplier;
  * @author Bela Ban
  * @since 3.2
  */
-//@XmlInclude(schema="relay.xsd",type=XmlInclude.Type.IMPORT,namespace="urn:jgroups:relay:1.0",alias="relay")
-//@XmlElement(name="RelayConfiguration",type="relay:RelayConfigurationType")
 @MBean(description="RELAY2 protocol")
 public class RELAY2 extends RELAY {
 
