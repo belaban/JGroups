@@ -16,10 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -707,47 +705,6 @@ public class RelayTest extends RelayTests {
         return new SiteUUID((UUID)addr, name, site);
     }
 
-    protected static void assertNumMessages(int expected, JChannel ... channels) throws TimeoutException {
-        try {
-            Util.waitUntil(5000,100,
-                           () -> Stream.of(channels).map(ch -> getReceiver(ch).list()).allMatch(l -> l.size() == expected),
-                           () -> msgs(channels));
-        }
-        finally {
-            Stream.of(channels).forEach(ch -> getReceiver(ch).reset());
-        }
-    }
-
-    protected static MyReceiver<Message> getReceiver(JChannel ch) {
-        return (MyReceiver<Message>)ch.getReceiver();
-    }
-
-    protected static int receivedMessages(JChannel ch) {
-        return getReceiver(ch).list().size();
-    }
-
-    protected static boolean expectedUnicasts(List<Message> msgs,int expected) {
-        return expectedDests(msgs,m -> m.dest() != null,expected);
-    }
-
-    protected static boolean expectedMulticasts(List<Message> msgs,int expected) {
-        return expectedDests(msgs,m -> m.dest() == null,expected);
-    }
-
-    protected static boolean expectedDests(List<Message> msgs,Predicate<Message> p,int expected) {
-        return msgs.stream().filter(p).count() == expected;
-    }
-
-    protected static void printMessages(JChannel ... channels) {
-        System.out.println(msgs(channels));
-    }
-
-    protected static String msgs(JChannel... channels) {
-        return Stream.of(channels)
-          .map(ch -> String.format("%s: %s",ch.address(),getReceiver(ch).list(Message::getObject)))
-          .collect(Collectors.joining("\n"));
-    }
-
     protected static JChannel createNode(Class<? extends RELAY> cl, String site_name, String node_name) throws Exception {
         return createNode(cl, site_name, node_name, 1, null);
     }
@@ -761,6 +718,8 @@ public class RelayTest extends RelayTests {
             ch.connect(site_name);
         return ch;
     }
+
+
 
     protected void createSymmetricNetwork(Class<? extends RELAY> cl, Function<JChannel,Receiver> r) throws Exception {
         a=createNode(cl, LON, "A", BRIDGE_CLUSTER, LON, NYC, SFO);

@@ -3,16 +3,17 @@
  import org.jgroups.*;
  import org.jgroups.logging.Log;
  import org.jgroups.logging.LogFactory;
- import org.jgroups.protocols.*;
+ import org.jgroups.protocols.LOCAL_PING;
+ import org.jgroups.protocols.MERGE3;
+ import org.jgroups.protocols.TCP;
+ import org.jgroups.protocols.UNICAST3;
  import org.jgroups.protocols.pbcast.GMS;
  import org.jgroups.protocols.pbcast.NAKACK2;
  import org.jgroups.protocols.relay.*;
  import org.jgroups.protocols.relay.config.RelayConfig;
+ import org.jgroups.protocols.relay.config.RelayConfig.SiteConfig;
  import org.jgroups.stack.Protocol;
- import org.jgroups.util.Bits;
- import org.jgroups.util.MyReceiver;
- import org.jgroups.util.SizeStreamable;
- import org.jgroups.util.Util;
+ import org.jgroups.util.*;
 
  import java.io.DataInput;
  import java.io.DataOutput;
@@ -21,6 +22,9 @@
  import java.util.ArrayList;
  import java.util.Arrays;
  import java.util.List;
+ import java.util.concurrent.TimeoutException;
+ import java.util.function.Predicate;
+ import java.util.stream.Collectors;
  import java.util.stream.Stream;
 
 /**
@@ -74,15 +78,37 @@ public class RelayTests {
         return ch;
     }
 
+    protected static JChannel createNode(Class<? extends RELAY> cl, String site, String node_name,
+                                         int num_site_masters, boolean connect, MySiteConfig ... site_cfgs) throws Exception {
+        RELAY relay=createAsymmetricRELAY(cl, site, site_cfgs).setMaxSiteMasters(num_site_masters);
+        JChannel ch=new JChannel(defaultStack(relay)).name(node_name);
+        if(connect)
+            ch.connect(site);
+        return ch;
+    }
+
 
     protected static RELAY createSymmetricRELAY(Class<? extends RELAY> cl, String local_site, String bridge, String ... sites)
       throws Exception {
-        RELAY relay=cl.getDeclaredConstructor().newInstance();
-        relay.site(local_site).asyncRelayCreation(false);
+        RELAY relay=cl.getDeclaredConstructor().newInstance().site(local_site).asyncRelayCreation(false);
         for(String site: sites) {
-            RelayConfig.SiteConfig cfg=new RelayConfig.SiteConfig(site)
+            SiteConfig cfg=new SiteConfig(site)
               .addBridge(new RelayConfig.ProgrammaticBridgeConfig(bridge, defaultStack()));
             relay.addSite(site, cfg);
+        }
+        return relay;
+    }
+
+    protected static RELAY createAsymmetricRELAY(Class<? extends RELAY> cl, String local_site, MySiteConfig... site_cfgs)
+      throws Exception {
+        RELAY relay=cl.getDeclaredConstructor().newInstance().site(local_site).asyncRelayCreation(false);
+        for(MySiteConfig cfg: site_cfgs) {
+            SiteConfig site_cfg=new SiteConfig(cfg.site);
+            for(String bridge_name: cfg.bridges)
+                site_cfg.addBridge(new RelayConfig.ProgrammaticBridgeConfig(bridge_name, defaultStack()));
+            for(Tuple<String,String> t: cfg.forwards)
+                site_cfg.addForward(new RelayConfig.ForwardConfig(t.getVal1(), t.getVal2()));
+            relay.addSite(cfg.site, site_cfg);
         }
         return relay;
     }
@@ -137,6 +163,60 @@ public class RelayTests {
             assert bridge_view != null && bridge_view.size() == expected_size
               : ch.getAddress() + ": bridge view=" + bridge_view + ", expected=" + expected_size;
         }
+    }
+
+    protected static MyReceiver<Message> getReceiver(JChannel ch) {
+        return (MyReceiver<Message>)ch.getReceiver();
+    }
+
+    protected static int receivedMessages(JChannel ch) {
+        return getReceiver(ch).list().size();
+    }
+
+    protected static void assertNumMessages(int expected, JChannel ... channels) throws TimeoutException {
+        assertNumMessages(expected, Arrays.asList(channels));
+    }
+
+    protected static void assertNumMessages(int expected, List<JChannel> channels) throws TimeoutException {
+        assertNumMessages(expected, channels, true);
+    }
+
+    protected static void assertNumMessages(int expected, List<JChannel> channels, boolean reset) throws TimeoutException {
+        try {
+            Util.waitUntil(5000,100,
+                           () -> channels.stream().map(ch -> getReceiver(ch).list()).allMatch(l -> l.size() == expected),
+                           () -> msgs(channels));
+        }
+        finally {
+            if(reset)
+                channels.forEach(ch -> getReceiver(ch).reset());
+        }
+    }
+
+    protected static boolean expectedUnicasts(List<Message> msgs,int expected) {
+        return expectedDests(msgs,m -> m.dest() != null,expected);
+    }
+
+    protected static boolean expectedMulticasts(List<Message> msgs,int expected) {
+        return expectedDests(msgs,m -> m.dest() == null,expected);
+    }
+
+    protected static boolean expectedDests(List<Message> msgs, Predicate<Message> p, int expected) {
+        return msgs.stream().filter(p).count() == expected;
+    }
+
+    protected static void printMessages(JChannel ... channels) {
+        System.out.println(msgs(channels));
+    }
+
+    protected static String msgs(JChannel... channels) {
+        return msgs(Arrays.asList(channels));
+    }
+
+    protected static String msgs(List<JChannel> channels) {
+        return channels.stream()
+          .map(ch -> String.format("%s: %s",ch.address(),getReceiver(ch).list(Message::getObject)))
+          .collect(Collectors.joining("\n"));
     }
 
     protected static class MyRouteStatusListener implements RouteStatusListener {
@@ -232,6 +312,22 @@ public class RelayTests {
 
         public Route pickRoute(String site, List<Route> routes, Address original_sender) {
             return routes.get(0);
+        }
+    }
+
+    protected static class MySiteConfig {
+        protected final String                     site;
+        protected final List<String>               bridges;
+        protected final List<Tuple<String,String>> forwards=new ArrayList<>();
+
+        protected MySiteConfig(String site, String ... bridges) {
+            this.site=site;
+            this.bridges=Arrays.asList(bridges);
+        }
+
+        protected MySiteConfig addForward(String to, String gateway) {
+            forwards.add(new Tuple<>(to,gateway));
+            return this;
         }
     }
 
