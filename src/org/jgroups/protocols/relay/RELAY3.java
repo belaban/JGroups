@@ -256,6 +256,12 @@ public class RELAY3 extends RELAY {
                     Set<String> tmp=site_status.add(tmp_sites, status);
                     if(status == Status.down)
                         topo.removeAll(tmp_sites);
+                    else {
+                        if(topo.globalViews()) {
+                            for(String s : tmp_sites)
+                                topo.refresh(s, true);
+                        }
+                    }
                     if(route_status_listener != null && !tmp.isEmpty()) {
                         String[] t=tmp.toArray(new String[]{});
                         if(hdr.type == SITES_UP)
