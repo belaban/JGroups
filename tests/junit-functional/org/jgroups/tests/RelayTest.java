@@ -375,8 +375,8 @@ public class RelayTest extends RelayTests {
         for(JChannel ch: allChannels())
             ch.send(null, String.format("%s", ch.getAddress()));
         Util.waitUntil(5000, 500,
-                       () -> allChannels().stream().peek(RelayTest::printMessages)
-                         .map(RelayTest::getReceiver)
+                       () -> allChannels().stream().peek(RelayTests::printMessages)
+                         .map(RelayTests::getReceiver)
                          .allMatch(r -> r.size() == 6));
     }
 
@@ -386,8 +386,8 @@ public class RelayTest extends RelayTests {
         for(JChannel ch: allChannels())
             ch.send(null, String.format("%s", ch.getAddress()));
         Util.waitUntil(5000, 500,
-                       () -> allChannels().stream().peek(RelayTest::printMessages)
-                         .map(RelayTest::getReceiver)
+                       () -> allChannels().stream().peek(RelayTests::printMessages)
+                         .map(RelayTests::getReceiver)
                          .allMatch(r -> r.size() == 6 * 2));
 
         for(JChannel ch: allChannels()) {
@@ -481,8 +481,8 @@ public class RelayTest extends RelayTests {
         b.send(new ObjectMessage(null, "from-B").setFlag(Message.Flag.NO_RELAY));
 
         Util.waitUntil(5000, 200,
-                       () -> Stream.of(a,b).peek(RelayTest::printMessages)
-                         .map(RelayTest::getReceiver)
+                       () -> Stream.of(a,b).peek(RelayTests::printMessages)
+                         .map(RelayTests::getReceiver)
                          .allMatch(r -> r.list().size() == 4));
 
         assert Stream.of(a,b).map(ch -> getReceiver(ch).list())
@@ -502,13 +502,13 @@ public class RelayTest extends RelayTests {
         d.send(null, "d-req"); // non site-master (C is SM)
 
         // all members in all sites should received the 2 multicasts:
-        Util.waitUntil(5000, 200, () -> allChannels().stream().peek(RelayTest::printMessages)
+        Util.waitUntil(5000, 200, () -> allChannels().stream().peek(RelayTests::printMessages)
           .map(ch -> getReceiver(ch).list())
           .allMatch(l -> l.size() >= 2));
 
         Util.waitUntil(5000, 200,
                        () -> Stream.of(b,d)
-                         .peek(RelayTest::printMessages)
+                         .peek(RelayTests::printMessages)
                          .map(ch -> getReceiver(ch).list())
                          .allMatch(l -> l.size() == 2 /* mcasts */ + 6 /* unicast rsps */));
     }
@@ -639,7 +639,7 @@ public class RelayTest extends RelayTests {
             b.send(null, "from B");
 
             Util.waitUntil(5000, 100,
-                           () -> generator.get().map(RelayTest::getReceiver).allMatch(r -> r.size() == 2),
+                           () -> generator.get().map(RelayTests::getReceiver).allMatch(r -> r.size() == 2),
                            () -> printMessages(generator.get()));
 
             System.out.printf("received messages:\n%s\n", printMessages(generator.get()));
@@ -658,20 +658,20 @@ public class RelayTest extends RelayTests {
                 // this and always picked the first site master / route in the list, only D and G would
                 // receive messages (2 each); E and H would receive 0 messages
                 Util.waitUntil(3000, 100,
-                               () -> Stream.of(a,b).map(RelayTest::getReceiver).allMatch(r -> r.size() == 1));
+                               () -> Stream.of(a,b).map(RelayTests::getReceiver).allMatch(r -> r.size() == 1));
 
                 // all other site masters (D or E, G or H) get A's and B's message:
                 Util.waitUntil(3000, 100,
                                () -> Stream.of(d,e,_g,_h)
                                  // a site master receives 0, 1 or 2 messages:
-                                 .map(RelayTest::getReceiver).allMatch(r -> r.size() >= 0 && r.size() <= 2),
+                                 .map(RelayTests::getReceiver).allMatch(r -> r.size() >= 0 && r.size() <= 2),
                                () -> printMessages(generator.get()));
                 System.out.printf("-- received messages:\n%s\n", printMessages(generator.get()));
                 generator.get().forEach(ch -> getReceiver(ch).reset());
 
                 c.send(new SiteMaster(null), "from C");
                 // same as above: A or B receives 1 message, D or E and G or H
-                Util.waitUntil(3000, 100, () -> Stream.of(a,b,d,e,_g,_h).map(RelayTest::getReceiver)
+                Util.waitUntil(3000, 100, () -> Stream.of(a,b,d,e,_g,_h).map(RelayTests::getReceiver)
                   .allMatch(r -> r.size() >= 0 && r.size() <= 2), () -> printMessages(generator.get()));
                 System.out.printf("-- received messages:\n%s\n", printMessages(generator.get()));
                 generator.get().forEach(ch -> getReceiver(ch).reset());
@@ -680,7 +680,7 @@ public class RelayTest extends RelayTests {
             // C sends a multicast; A *or* B (but not both) should forward it to the other sites NYC and SFO
             c.send(null, "from C");
             Util.waitUntil(3000, 100,
-                           () -> generator.get().map(RelayTest::getReceiver).allMatch(r -> r.size() == 1),
+                           () -> generator.get().map(RelayTests::getReceiver).allMatch(r -> r.size() == 1),
                            () -> printMessages(generator.get()));
             System.out.printf("-- received messages:\n%s\n", printMessages(generator.get()));
         }

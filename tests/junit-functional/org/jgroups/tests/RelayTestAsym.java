@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Address;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.protocols.relay.RELAY3;
 import org.jgroups.util.MyReceiver;
 import org.jgroups.util.Util;
@@ -13,7 +10,9 @@ import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Tests asymmetric networks. The sites are setup as follows:
@@ -52,31 +51,64 @@ public class RelayTestAsym extends RelayTests {
         allChannels().forEach(ch -> ch.setReceiver(new MyReceiver<Message>().rawMsgs(true)));
 
         // multicasts:
-        allChannels().forEach(ch -> {
-            try {
-                ch.send(null, String.format("from %s", ch.address()));
-            }
-            catch(Exception ex) {
-                throw new RuntimeException(ex);
-            }
-        });
+        allChannels().forEach(ch -> send(ch, null, String.format("from %s", ch.address())));
         assertNumMessages(12, allChannels(), true); // reset receivers
 
         // unicasts:
         Collection<Address> all_addrs=allChannels().stream().map(JChannel::getAddress).collect(Collectors.toSet());
         allChannels().forEach(ch -> {
-            all_addrs.forEach(target -> {
-                try {
-                    ch.send(target, String.format("from %s", ch.address()));
-                }
-                catch(Exception ex) {
-                    throw new RuntimeException(ex);
-                }
-            });
+            all_addrs.forEach(target -> send(ch, target, String.format("from %s", ch.address())));
         });
-
         assertNumMessages(12, allChannels(), true);
+    }
 
+    public void testTopology() throws Exception {
+        setup(true);
+        Util.waitUntilTrue(3000, 100, () -> assertTopo(allChannels()));
+        for(JChannel ch: allChannels()) {
+            RELAY3 r=ch.getProtocolStack().findProtocol(RELAY3.class);
+            Map<String,View> cache=r.topo().cache();
+            System.out.printf("%s", printTopo(List.of(ch)));
+            assert cache.size() == 4 : printTopo(List.of(ch)); // 4 sites - HF, NET1-3
+            assert cache.values().stream().allMatch(v -> v.size() == 3) : printTopo(List.of(ch));
+        }
+    }
+
+    /** Tests sending mcasts from HF and NET3 when NET1 is down: messages should not be received across the broken link */
+    public void testMessageSendingWithNet1Down() throws Exception {
+        setup(true);
+        // take NET1 down:
+        Util.close(d,e,f);
+        allChannels().stream().filter(ch -> !ch.isClosed())
+          .forEach(ch -> ch.setReceiver(new MyReceiver<Message>().rawMsgs(true)));
+        Stream.of(a,b,c,x,y,z).forEach(ch -> send(ch, null, String.format("from %s", ch.address())));
+        // we only receive 3 messages (from own site)
+        assertNumMessages(3, a,b,c,x,y,z);
+    }
+
+    protected static void send(JChannel ch, Address dest, Object payload) {
+        try {
+            ch.send(dest, payload);
+        }
+        catch(Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    protected static boolean assertTopo(List<JChannel> channels) {
+        for(JChannel ch: channels) {
+            RELAY3 r=ch.getProtocolStack().findProtocol(RELAY3.class);
+            Map<String,View> cache=r.topo().cache();
+            if(cache.size() != 4 || !cache.values().stream().allMatch(v -> v.size() == 3))
+                return false;
+        }
+        return true;
+    }
+
+    protected static String printTopo(List<JChannel> channels) {
+        return channels.stream()
+          .map(ch -> String.format("%s:\n%s\n", ch.address(), ((RELAY3)ch.getProtocolStack().findProtocol(RELAY3.class))
+            .printTopology(true))).collect(Collectors.joining("\n"));
     }
 
     protected void setup(boolean connect) throws Exception {
