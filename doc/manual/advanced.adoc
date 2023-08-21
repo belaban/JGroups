@@ -1330,7 +1330,7 @@ you'll get a message stating the site is unreachable.
 === Hierarchical/asymmetric routing with RELAY3
 
 `RELAY3` is the successor to RELAY2. It has been refactored to concentrate the entire routing logic in a single place,
-and it provides _asymmetric (hierarchical) routing_. Contrary to RELAY2, this means that not sites are not necessarily
+and it provides _asymmetric (hierarchical) routing_. Contrary to RELAY2, this means that sites are not necessarily
 connected to all other sites.
 
 CAUTION: RELAY2 and RELAY3 are not compatible, and can therefore not be used in the same network.
@@ -1385,7 +1385,28 @@ This is from NET3 and defines that all messages that are not local should be for
 The `SiteMaster(String site)` can be used to send a message to the site master of `site`. RELAY3 now allows for `site` to be null: this means that a message is sent to *all* site masters.
 
 ==== Getting information about the topology
+RELAY3 added functionality to fetch the topology, ie. information about all sites and their members across an
+entire network. In addition, callbacks can be registered when a member join or leaves *anywhere* in the network, ie.
+in any site, or when a site goes down or comes up.
 
+To fetch the current topology, the following code can be used:
+[source,java]
+----
+JChannel ch;
+RELAY r=ch.getProtocolStack().findProtocol(RELAY.class);
+Topology topo=r.topo();
+Map<String,View> m=topo.cache(); // all sites and their views
+// alternatively:
+System.out.printf("sites:\n%s\n", topo.print());
+----
+
+To get notified when a member joins or leaves, a view handler can be registered with `Topology`:
+[source,java]
+----
+topo.setViewHandler((s,v) -> System.out.printf("site %s: new view: %s\n", s, v));
+----
+
+To register when a site goes down or comes up, `RELAY.setRouteStatusListener(RouteStatusListener l)` can be used.
 
 
 ==== Samples
