@@ -1,0 +1,53 @@
+
+<!--
+  Site-local config
+  Author: Bela Ban
+-->
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="urn:org:jgroups"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+    <UDP
+         bind_addr="192.168.1.106"
+         bind_port="8200"
+         ip_mcast="false"
+         thread_pool.min_threads="0"
+         thread_pool.max_threads="200"
+         thread_pool.keep_alive_time="30000"/>
+
+    <MPING mcast_addr="225.0.0.4" />
+
+    <MERGE3 max_interval="30000" min_interval="10000" />
+    <FD_SOCK/>
+    <!--FD_ALL timeout="15000" interval="3000"/-->
+    <VERIFY_SUSPECT timeout="1500"  />
+    <pbcast.NAKACK2 xmit_interval="500"
+                    discard_delivered_msgs="true" />
+    <UNICAST3 xmit_interval="500" />
+    <pbcast.STABLE desired_avg_gossip="50000"
+                   max_bytes="8m"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="1000" />
+    <UFC max_credits="2M"
+         min_threshold="0.4"/>
+    <MFC max_credits="2M"
+         min_threshold="0.4"/>
+    <FRAG2 frag_size="60K"  />
+   <relay.RELAY3 site="hf"
+                 max_site_masters="1"
+                 can_become_site_master="true">
+        <RelayConfiguration xmlns="urn:jgroups:relay:1.0"
+                            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                            xsi:schemaLocation="urn:jgroups:relay:1.0 relay.xsd">
+            <sites>
+                <site name="hf">
+                    <bridges>
+                        <bridge name="bridge-net1-hf"   config="/Users/bela/bridge-net1-hf.xml"/>
+                    </bridges>
+                    <forwards>
+                        <forward to=".*" gateway="net1"/>
+                    </forwards>
+                </site>
+            </sites>
+        </RelayConfiguration>
+    </relay.RELAY2>
+</config>

@@ -1079,18 +1079,15 @@ next-in-line (B) takes over and starts relaying.
 Relaying is done via the RELAY2 protocol added to the top of the stack. The bridge is configured with
 the bridge_props property, e.g. bridge_props="/home/bela/tcp.xml". This creates a JChannel inside RELAY2.
 
-
-Note that property "site" must be set in both subclusters. In the example above, we could set site="nyc"
-for the NYC subcluster and site="sfo" for the SFO subcluster.
-
+Note that property `site` must be set in both subclusters. In the example above, we could set `site="nyc"`
+for the NYC subcluster and `site="sfo"` for the SFO subcluster.
 
 The design is described in detail in JGroups/doc/design/RELAY2.txt (part of the source distribution). In
 a nutshell, multicast messages received in a local cluster are wrapped and forwarded to the remote cluster
 by a relay (= the coordinator of a local cluster). When a remote cluster receives such a message, it is
 unwrapped and put onto the local cluster.
 
-
-JGroups uses subclasses of UUID (PayloadUUID) to ship the site name with an address. When we see an address
+JGroups uses subclasses of UUID to ship the site name with an address. When we see an address
 with site="nyc" on the SFO side, then RELAY2 will forward the message to the SFO subcluster, and vice versa.
 
 When C multicasts a message in the NYC cluster, A will forward it to D, which will re-broadcast the message on
@@ -1121,7 +1118,6 @@ To use RELAY2, it has to be placed at the top of the configuration, e.g.:
 
 [source,xml]
 ----
-
 <relay.RELAY2 site="LON" config="/home/bela/relay2.xml"
               relay_multicasts="true" />
 ----
@@ -1130,7 +1126,7 @@ The above configuration has a site name which will be used to route messages bet
             contain the site-ID, so we always know which site the address is from. E.g. an address A1:LON in the SFO site
             is not local, but will be routed to the remote site LON.
 
-The relay_multicasts property determines whether or not multicast messages (with dest = null) are relayed to
+The `relay_multicasts` property determines whether or not multicast messages (with dest = null) are relayed to
             the other sites, or not. When we have a site LON, connected to sites SFO and NYC, if a multicast message is
             sent in site LON, and relay_multicasts is true, then all members of sites SFO and NYC will receive the message.
         
@@ -1246,7 +1242,6 @@ Invoking RPCs across sites is more or less transparent, except for the case when
 
 [source,java]
 ----
-
 List<Address> dests=new ArrayList<Address>(view.getMembers());
 dests.add(new SiteMaster("SFO"));
 RspList<Object> rsps;
@@ -1258,7 +1253,6 @@ for(Rsp rsp: rsps.values()) {
     else
         System.out.println("<< " + rsp.getValue() + " from " + rsp.getSender());
 }
-            
 ----
 
 First, we add the members (A1 and A2) of the current (local) view to the destination set. Then we add the
@@ -1331,7 +1325,79 @@ mcast lon sfo nyc
 
 to invoke RPCs on all local members and site masters SFO, NYC and LON. If one of the sites is down,
 you'll get a message stating the site is unreachable.
-            
+
+[[Relay3Advanced]]
+=== Hierarchical/asymmetric routing with RELAY3
+
+`RELAY3` is the successor to RELAY2. It has been refactored to concentrate the entire routing logic in a single place,
+and it provides _asymmetric (hierarchical) routing_. Contrary to RELAY2, this means that not sites are not necessarily
+connected to all other sites.
+
+CAUTION: RELAY2 and RELAY3 are not compatible, and can therefore not be used in the same network.
+
+For example, in <<AsymmetricRouting>>, we have sites `HF`, `NET1`, `NET2` and `NET3`:
+
+[[AsymmetricRouting]]
+.Asymmetric routing with RELAY3
+image::./images/network.png[RELAY3,width="100%"]
+
+HF is connected to NET1, which in turn is connected to NET2, and NET2 is connected to NET3.
+
+When a member in HF wants to send a message to a member in site NET3, it first needs to send it to the _gateway site_
+NET1. The site master in NET1 sees that the target site is not local, and therefore forwards the message according to
+forwarding rules (discussed below). This means that the message is sent to site NET2, which forwards it to the final
+destination NET3. There, the site master sees that the target site is local and sends the message to the corresponding
+member in site NET3.
+
+==== Forwarding rules
+A forwarding rules defines how to process messages whose target site is not local and not a directly connected site.
+E.g.:
+
+[source,xml]
+----
+<bridges>
+    <bridge name="bridge-net1-net2" config="/Users/bela/bridge-net1-net2.xml"/>
+    <bridge name="bridge-net1-hf"   config="/Users/bela/bridge-net1-hf.xml"/>
+</bridges>
+<forwards>
+    <forward to="net3" gateway="net2"/> <1>
+</forwards>
+----
+
+The snippet above is from NET1. It defines 2 bridges, namely one to site NET2 and one to HF. This means that site NET1
+is directly connected to sites HF and NET2 (see <<AsymmetricRouting>> above).
+
+The new part is the `<forwards/>` section, which defines a rule how to send messages from the local site (NET1) to
+site NET3. Because messages from NET1 can reach NET3 only through _gateway site_ NET2, the forwaring rule as shown
+in (1) is added. This means that all messages to site "net3" have to be forwarded to (gateway) site "net2".
+
+It is also possible to use wildcards in forwarding rules:
+[source,xml]
+----
+<forwards>
+    <forward to=".*" gateway="net2"/>
+</forwards>
+----
+
+This is from NET3 and defines that all messages that are not local should be forwarded via gateway site NET2.
+
+==== Sending a message to all site masters
+The `SiteMaster(String site)` can be used to send a message to the site master of `site`. RELAY3 now allows for `site` to be null: this means that a message is sent to *all* site masters.
+
+==== Getting information about the topology
+
+
+
+==== Samples
+The definition of the network described above (<<AsymmetricRouting>>) is defined in 4 configuration files in
+xref:https://github.com/belaban/JGroups/tree/master/conf/relay/[]: `hf.xml`, `net1.xml`, `net2.xml` and `net3.xml`.
+
+The 3 bridges are defined in the 3 `bridge-*.xml` files.
+
+To use the config files to run a demo (e.g. `RelayDemo`), the IP addresses of the files have to be changed.
+
+
+
 
 [[DaisyChaining]]
 === Daisychaining

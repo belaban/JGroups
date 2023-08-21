@@ -1071,7 +1071,8 @@ simply to notify everyone that a node in the cluster is suspected of having cras
 
 The SUSPECT message is handled by the GMS protocol of the current coordinator only; all other members ignore it.
         
-
+The attributes defined in `FailureDetection` (FD_ALLX classes extend it) are:
+${FailureDetection}
 
 
 [[FD_ALL]]
@@ -2124,19 +2125,27 @@ compression algorith should be (0: no compression, 9: highest compression).
 
 ${COMPRESS}
 
-
+[[RELAY]]
+==== RELAY
+Base class for <<RELAY2>> and <<RELAY3>>; the following attributes can be used in both subclasses:
+${RELAY}
 
 
 [[RELAY2]]
-
-
 ==== RELAY2
 
 RELAY2 provides clustering between different sites (local clusters), for multicast and unicast messages.
-                See <<Relay2Advanced>> for details.
-            
+See <<Relay2Advanced>> for details.
 
 ${RELAY2}
+
+
+[[RELAY3]]
+==== RELAY3
+RELAY3 is the successor to RELAY2, and provides asymmetric routing. For details see <<Relay3Advanced>>.
+
+${RELAY3}
+
 
 [[STOMP_Protocol]]
 

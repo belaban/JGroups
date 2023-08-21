@@ -194,6 +194,7 @@
         <copy todir="${compile.dir}/">
             <fileset dir="${conf.dir}" includes="*.btm *.jks">
                 <include name="scripts/**"/>
+                <include name="relay/**"/>
                 <exclude name="log4j*.xml"/>
                 <exclude name="settings.xml"/>
                 <exclude name="${version.file}"/>
@@ -202,6 +203,7 @@
         <copy todir="${compile.dir}/">
             <fileset dir="${conf.dir}" includes="*.properties, *.xml">
                 <include name="scripts/**"/>
+                <include name="relay/**"/>
                 <exclude name="log4j*.xml"/>
                 <exclude name="settings.xml"/>
             </fileset>
