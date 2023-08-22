@@ -224,7 +224,7 @@ public class RELAY3 extends RELAY {
                 // get the caches from all site masters
                 topo.refresh(null);
                 // send my own information as a TOPO_RSP to all site masters, who then forward it locally with NO_RELAY
-                sendResponseTo(new SiteMaster(null), false);
+                sendResponseTo(new SiteMaster(null), true);
             }
         }
         return null;
@@ -256,12 +256,6 @@ public class RELAY3 extends RELAY {
                     Set<String> tmp=site_status.add(tmp_sites, status);
                     if(status == Status.down)
                         topo.removeAll(tmp_sites);
-                    else {
-                        if(topo.globalViews()) {
-                            for(String s : tmp_sites)
-                                topo.refresh(s, true);
-                        }
-                    }
                     if(route_status_listener != null && !tmp.isEmpty()) {
                         String[] t=tmp.toArray(new String[]{});
                         if(hdr.type == SITES_UP)
@@ -374,7 +368,6 @@ public class RELAY3 extends RELAY {
      *              routing table, excepting the local site
      */
     protected Object route(Message msg, Collection<String> sites) {
-        // boolean skip_null_routes=sites != null;
         final Relayer r=relayer;
         if(r == null) {
             log.warn("%s: not site master; dropping message", local_addr);
