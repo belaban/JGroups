@@ -158,6 +158,10 @@ public class RelayDemo implements Receiver {
             System.out.printf("\n%s\n", printTopo(line, "pt", false));
             return true;
         }
+        if(line.startsWith("routes")) {
+            System.out.printf("%s\n", relay.printRoutes());
+            return true;
+        }
         return false;
     }
 
@@ -183,7 +187,8 @@ public class RelayDemo implements Receiver {
                              "\nsite-masters (sm): prints the site masters of this site" +
                              "\nsites: prints the configured sites" +
                              "\ntopo: prints the topology (site masters and local members of all sites)" +
-                             "\npt: prints the cache (no refresh)\n");
+                             "\npt: prints the cache (no refresh)" +
+                             "\nroutes: prints all routes (if site master)\n");
     }
 
 
