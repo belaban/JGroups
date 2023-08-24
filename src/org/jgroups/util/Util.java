@@ -319,6 +319,19 @@ public class Util {
         return false;
     }
 
+    /** In a separate thread (common ForkJoinPool): waits for the given timeout / interval until a condition is true.
+     * When true, executes the on_success supplier, else the on_failure supplier */
+    public static <T> void asyncWaitUntilTrue(long timeout, long interval, BooleanSupplier cond,
+                                          Supplier<T> on_success, Supplier<T> on_failure) {
+        CompletableFuture.supplyAsync(() -> Util.waitUntilTrue(timeout, interval, cond))
+          .thenAccept(success -> {
+              if(success)
+                  on_success.get();
+              else
+                  on_failure.get();
+          });
+    }
+
     public static boolean allChannelsHaveSameView(JChannel... channels) {
         View first=channels[0].getView();
         for(JChannel ch : channels) {

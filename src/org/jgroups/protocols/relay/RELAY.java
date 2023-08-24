@@ -61,6 +61,10 @@ public abstract class RELAY extends Protocol {
       "Async relay creation is recommended, so the view callback won't be blocked")
     protected boolean                      async_relay_creation=true;
 
+    @Property(description="When a site master goes down, delay the sitesDown() callback if we have multiple members; " +
+      "we know that another member will become site master (https://issues.redhat.com/browse/JGRP-2708)")
+    protected boolean                      delay_sites_down=true;
+
     @Property(description="Time during which identical errors about no route to host will be suppressed. " +
       "0 disables this (every error will be logged).",type= TIME)
     protected long                         suppress_time_no_route_errors=60000;
@@ -182,6 +186,8 @@ public abstract class RELAY extends Protocol {
     public <T extends RELAY> T siteMasterPicker(SiteMasterPicker s) {if(s != null) this.site_master_picker=s; return (T)this;}
     public boolean             asyncRelayCreation()                 {return async_relay_creation;}
     public <T extends RELAY> T asyncRelayCreation(boolean flag)     {async_relay_creation=flag;   return (T)this;}
+    public boolean             delaySitesDown()                     {return delay_sites_down;}
+    public <T extends RELAY> T delaySitesDown(boolean b)            {this.delay_sites_down=b; return (T)this;}
 
     public boolean             broadcastRouteNotifications()          {return broadcast_route_notifications;}
     public <T extends RELAY> T broadcastRouteNotifications(boolean b) {this.broadcast_route_notifications=b; return (T)this;}

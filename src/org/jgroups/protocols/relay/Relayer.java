@@ -68,7 +68,7 @@ public abstract class Relayer {
         this.routes.put(site, new_routes);
     }
 
-    protected synchronized boolean containsRoute(String r) {
+    protected synchronized boolean hasRouteTo(String r) {
         return routes.containsKey(r);
     }
 

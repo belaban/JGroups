@@ -5,10 +5,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
- * Maintains the status of sites (up, down, undefined)
+ * Maintains the status of sites (up, down, undefined). This weeds out duplicate up or down notifications
  * @author Bela Ban
  * @since  5.2.17
  */

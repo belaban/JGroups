@@ -2,10 +2,12 @@ package org.jgroups.protocols.relay;
 
 import org.jgroups.*;
 import org.jgroups.logging.Log;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.AddressGenerator;
 import org.jgroups.util.Util;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,6 +24,7 @@ public class Bridge implements Receiver {
     protected final Log      log;
     protected final String   cluster_name;
     protected       View     view;
+    protected final long     join_timeout;
 
 
     protected Bridge(final JChannel ch, final Relayer3 r, final String cluster_name,
@@ -32,6 +35,7 @@ public class Bridge implements Receiver {
         this.relay=rel.relay();
         this.log=rel.log();
         channel.setName(channel_name).setReceiver(this).addAddressGenerator(addr_generator);
+        join_timeout=((GMS)channel.getProtocolStack().findProtocol(GMS.class)).getJoinTimeout();
     }
 
     protected void start() throws Exception {
@@ -58,7 +62,7 @@ public class Bridge implements Receiver {
         this.view=new_view;
         // add new routes to routing table:
         for(String r: sites.keySet()) {
-            if(!rel.containsRoute(r))
+            if(!rel.hasRouteTo(r))
                 up.add(r);
         }
         log.trace("[Relayer " + channel.getAddress() + "] view: " + new_view);
@@ -86,11 +90,29 @@ public class Bridge implements Receiver {
         // remove all routes which were dropped between the old and new view:
         if(!removed_routes.isEmpty() && log.isTraceEnabled())
             log.trace("%s: removing routes %s from routing table", channel.getAddress(), removed_routes);
-        // removed_routes.forEach(rel.routes.keySet()::remove);
         removed_routes.forEach(rel::removeRoute);
 
-        if(!down.isEmpty())
-            relay.sitesChange(true, down);
+        if(!down.isEmpty()) {
+            if(relay.delaySitesDown()) {
+                final Relayer r=relay.relayer;
+                final Map<String,View> cache=relay.topo().cache();
+                for(String s: down) {
+                    View v=cache.get(s);
+                    if(v == null || v.size() < 2) {
+                        relay.sitesChange(true, Set.of(s));
+                        continue;
+                    }
+                    long timeout=join_timeout*2, interval=timeout / 10;
+                    CompletableFuture.supplyAsync(() -> Util.waitUntilTrue(timeout, interval, () -> r.hasRouteTo(s)))
+                      .thenAccept(success -> {
+                          if(!success)
+                              relay.sitesChange(true, Set.of(s));
+                      });
+                }
+            }
+            else
+                relay.sitesChange(true, down);
+        }
         if(!up.isEmpty())
             relay.sitesChange(false, up);
     }

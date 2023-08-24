@@ -90,7 +90,9 @@ public class RelayTests {
 
     protected static RELAY createSymmetricRELAY(Class<? extends RELAY> cl, String local_site, String bridge, String ... sites)
       throws Exception {
-        RELAY relay=cl.getDeclaredConstructor().newInstance().site(local_site).asyncRelayCreation(false);
+        RELAY relay=cl.getDeclaredConstructor().newInstance().site(local_site)
+          .asyncRelayCreation(false)
+          .delaySitesDown(false); // for compatibility with testSitesUp()
         for(String site: sites) {
             SiteConfig cfg=new SiteConfig(site)
               .addBridge(new RelayConfig.ProgrammaticBridgeConfig(bridge, defaultStack()));
