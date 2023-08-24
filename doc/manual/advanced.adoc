@@ -1408,6 +1408,9 @@ topo.setViewHandler((s,v) -> System.out.printf("site %s: new view: %s\n", s, v))
 
 To register when a site goes down or comes up, `RELAY.setRouteStatusListener(RouteStatusListener l)` can be used.
 
+There's an additional callback in `RELAY3` to register when a member becomes site master, or ceases to be
+site master: `setSiteMasterListener(Consumer<Boolean> l)`. The argument is `true` when the member just became
+site master, and `false` otherwise.
 
 ==== Samples
 The definition of the network described above (<<AsymmetricRouting>>) is defined in 4 configuration files in
