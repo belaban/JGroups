@@ -136,7 +136,8 @@ public abstract class NioBaseServer extends BaseServer {
                         // a key can be connectable *and* readable (https://issues.redhat.com/browse/JGRP-2531)
                         if(key.isConnectable()) {
                             SocketChannel ch=(SocketChannel)key.channel();
-                            if(ch.finishConnect() || ch.isConnected()) {
+                            // https://issues.redhat.com/browse/JGRP-2727
+                            if((ch.isConnectionPending() && ch.finishConnect()) || ch.isConnected()) {
                                 conn.clearSelectionKey(SelectionKey.OP_CONNECT);
                                 conn.connected(true);
                             }
