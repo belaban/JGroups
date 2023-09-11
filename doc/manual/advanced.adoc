@@ -1414,7 +1414,7 @@ site master, and `false` otherwise.
 
 ==== Samples
 The definition of the network described above (<<AsymmetricRouting>>) is defined in 4 configuration files in
-xref:https://github.com/belaban/JGroups/tree/master/conf/relay/[]: `hf.xml`, `net1.xml`, `net2.xml` and `net3.xml`.
+link:$$https://github.com/belaban/JGroups/tree/master/conf/relay/$$[]: `hf.xml`, `net1.xml`, `net2.xml` and `net3.xml`.
 
 The 3 bridges are defined in the 3 `bridge-*.xml` files.
 
