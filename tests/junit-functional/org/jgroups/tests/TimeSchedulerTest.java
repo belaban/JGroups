@@ -151,7 +151,7 @@ public class TimeSchedulerTest {
 
         Util.waitUntil(10000, 200, () -> timer.size() == 10);
         timer.stop();
-        Util.waitUntil(10000, 200, () -> timer.size() == 0);
+        Util.waitUntil(10000, 200, () -> timer.size() == 0, () -> String.format("timer size=: %d", timer.size()));
         int size=timer.size();
         assert size == 0 : "size=" + size + " (should be 0)";
     }
