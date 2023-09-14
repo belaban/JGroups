@@ -211,6 +211,11 @@ public abstract class RELAY extends Protocol {
         return relayer != null? Util.print(relayer.getSiteNames()) : "n/a (not site master)";
     }
 
+    @ManagedOperation(description="Number of routes in the routing table")
+    public int getNumRoutes() {
+        return relayer != null? relayer.getNumRoutes() : 0;
+    }
+
     @ManagedOperation(description="Prints the contents of the routing table. " +
       "Only available if we're the current coordinator (site master)")
     public String printRoutes() {

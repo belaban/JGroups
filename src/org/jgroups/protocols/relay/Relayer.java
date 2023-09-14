@@ -40,7 +40,8 @@ public abstract class Relayer {
     public boolean               done()  {return done;}
     protected abstract View      getBridgeView(String cluster_name);
     protected Route              getRoute(String site) { return getRoute(site, null);}
-    public String                toString() {return String.format("%d routes", routes.size());}
+    public String                toString()     {return String.format("%d routes", routes.size());}
+    public int                   getNumRoutes() {return routes.size();}
 
     protected synchronized Route getRoute(String site, Address sender) {
         List<Route> list=routes.get(site);
