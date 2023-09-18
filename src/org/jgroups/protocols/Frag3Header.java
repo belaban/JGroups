@@ -39,10 +39,18 @@ public class Frag3Header extends Header {
         this.offset=offset;
     }
 
-    public short                      getMagicId()                       {return 91;}
-    public Supplier<? extends Header> create()                           {return Frag3Header::new;}
-    public boolean                    needsDeserialization()             {return needs_deserialization;}
-    public Frag3Header                needsDeserialization(boolean flag) {needs_deserialization=flag; return this;}
+    public short                      getMagicId()                    {return 91;}
+    public Supplier<? extends Header> create()                        {return Frag3Header::new;}
+    public int                        getFragId()                     {return frag_id;}
+    public Frag3Header                setFragId(int frag_id)          {this.frag_id=frag_id; return this;}
+    public int                        getNumFrags()                   {return num_frags;}
+    public Frag3Header                setNumFrags(int n)              {this.num_frags=n; return this;}
+    public int                        getOriginalLength()             {return original_length;}
+    public Frag3Header                setOriginalLength(int l)        {this.original_length=l; return this;}
+    public int                        getOffset()                     {return offset;}
+    public Frag3Header                setOffset(int offset)           {this.offset=offset; return this;}
+    public boolean                    needsDeserialization()          {return needs_deserialization;}
+    public Frag3Header                needsDeserialization(boolean f) {needs_deserialization=f; return this;}
 
     public String toString() {
         return String.format("[id=%d, frag-id=%d, num_frags=%d orig-length=%d, offset=%d]",

@@ -20,10 +20,7 @@ import org.jgroups.util.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.*;
 import java.util.*;
 
 import static org.jgroups.protocols.relay.RelayHeader.DATA;
@@ -197,7 +194,18 @@ public class SizeTest {
         _testSize(hdr) ;
     }
 
-
+    public void testHeaderMarshalling() throws IOException, ClassNotFoundException {
+        Header[] headers={
+          NakAckHeader2.createMessageHeader(322649),
+          UnicastHeader3.createDataHeader(1024, (short)22, true),
+          new Frag3Header(22, 2, 3)
+        };
+        ByteArray buf=Headers.writeHeaders(headers);
+        Header[] hdrs=Headers.readHeaders(buf);
+        assert hdrs[0].getClass().equals(NakAckHeader2.class);
+        assert ((UnicastHeader3)hdrs[1]).first();
+        assert ((Frag3Header)hdrs[2]).getFragId() == 2;
+    }
 
     public void testUnicast3Header() throws Exception {
         UnicastHeader3 hdr=UnicastHeader3.createDataHeader(322649, (short)127, false);

@@ -1,16 +1,16 @@
 package org.jgroups.util;
 
-import org.jgroups.BaseMessage;
 import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.conf.ClassConfigurator;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Helper class providing functions to manipulate the {@link BaseMessage#headers} array. The headers are stored
- * in the array as follows:
+ * Helper class providing functions to manipulate the headers array in {@link org.jgroups.BaseMessage}.
+ * The headers are stored in the array as follows:
  * <pre>
  * Headers:  hdr-1 | hdr-2 | hdr-3 | ... | hdr-n |
  * </pre>
@@ -22,7 +22,7 @@ import java.util.Map;
  * putting a new key/header are operations with O(n) cost, so this implementation is <em>not</em> recommended for
  * a large number of elements.
  * <br/>
- * This class is synchronized for writes (put(), resize()), but not for reads (size(), get())
+ * This class is unsynchronized.
  * @author Bela Ban
  */
 public final class Headers {
@@ -95,7 +95,7 @@ public final class Headers {
                 first=false;
             else
                 sb.append(", ");
-            Class clazz=ClassConfigurator.getProtocol(id);
+            Class<?> clazz=ClassConfigurator.getProtocol(id);
             String name=clazz != null? clazz.getSimpleName() : Short.toString(id);
             sb.append(name).append(": ").append(hdr);
         }
@@ -134,6 +134,39 @@ public final class Headers {
             }
         }
         throw new IllegalStateException("unable to add element " + id + ", index=" + i); // we should never come here
+    }
+
+    public static ByteArray writeHeaders(Header[] hdrs) throws IOException {
+        int size=Headers.size(hdrs);
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(marshalledSize(hdrs));
+        out.writeShort(size);
+        if(size > 0) {
+            for(Header hdr : hdrs) {
+                if(hdr == null)
+                    break;
+                short id=hdr.getProtId();
+                out.writeShort(id);
+                short magic_number=hdr.getMagicId();
+                out.writeShort(magic_number);
+                hdr.writeTo(out);
+            }
+        }
+        return out.getBuffer();
+    }
+
+    public static Header[] readHeaders(ByteArray buf) throws IOException, ClassNotFoundException {
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf);
+        int len=in.readShort();
+        Header[] headers=new Header[len];
+        for(int i=0; i < len; i++) {
+            short id=in.readShort();
+            short magic_number=in.readShort();
+            Header hdr=ClassConfigurator.create(magic_number);
+            hdr.readFrom(in);
+            hdr.setProtId(id);
+            headers[i]=hdr;
+        }
+        return headers;
     }
 
     /**
