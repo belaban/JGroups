@@ -78,6 +78,8 @@ public class SiteUUID extends ExtendedUUID implements SiteAddress {
         return super.compareTo(other);
     }
 
+    @Override public boolean isSiteAddress() {return true;}
+
     public String print(boolean detailed) {
         String retval=name != null? name : NameCache.get(this);
         return String.format("%s:%s%s", retval, site != null? site : "<all sites>", detailed? printOthers() : "");

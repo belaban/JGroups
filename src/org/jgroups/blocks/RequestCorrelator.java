@@ -182,6 +182,9 @@ public class RequestCorrelator {
                 String site=site_master.getSite();
                 setSiteUnreachable(site);
                 break; // let others have a stab at this event, too
+            case Event.MBR_UNREACHABLE:
+                setMemberUnreachable(evt.arg());
+                break;
         }
         return false;
     }
@@ -210,11 +213,13 @@ public class RequestCorrelator {
     // .......................................................................
 
 
-
-
     /** An entire site is down; mark all requests that point to that site as unreachable (used by RELAY2) */
     public void setSiteUnreachable(String site) {
         requests.values().stream().filter(Objects::nonNull).forEach(req -> req.siteUnreachable(site));
+    }
+
+    public void setMemberUnreachable(Address mbr) {
+        requests.values().stream().filter(Objects::nonNull).forEach(req -> req.memberUnreachable(mbr));
     }
 
 

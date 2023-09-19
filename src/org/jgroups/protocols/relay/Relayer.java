@@ -45,7 +45,7 @@ public abstract class Relayer {
 
     protected synchronized Route getRoute(String site, Address sender) {
         List<Route> list=routes.get(site);
-        if(list == null)
+        if(list == null || list.isEmpty())
             return null;
         if(list.size() == 1)
             return list.get(0);

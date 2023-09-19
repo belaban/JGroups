@@ -1,5 +1,7 @@
 package org.jgroups.protocols.relay;
 
+import org.jgroups.Address;
+
 /**
  * Gets notified when a site comes up or goes down
  * @author Bela Ban
@@ -13,6 +15,11 @@ public interface RouteStatusListener {
 
     /** The sites are unreachable (no route to them) */
     default void sitesUnreachable(String ... sites) {
+
+    }
+
+    /** Sent back to the original sender when the unicast destination is not part of the local cluster (site) */
+    default void memberUnreachable(Address member) {
 
     }
 }

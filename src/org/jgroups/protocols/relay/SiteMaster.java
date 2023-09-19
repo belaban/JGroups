@@ -14,7 +14,7 @@ import java.util.function.Supplier;
  */
 public class SiteMaster extends SiteUUID {
     protected static final SiteMaster ALL_SMS=new SiteMaster(null);
-    protected static final int HASH=ALL_SMS.hashCode();
+    protected static final int        HASH=ALL_SMS.hashCode();
 
     public SiteMaster() {
     }
@@ -30,6 +30,9 @@ public class SiteMaster extends SiteUUID {
     public Type type() {
         return site == null? Type.SM_ALL : Type.SM;
     }
+
+    @Override public boolean isMulticast()  {return site == null;}
+    @Override public boolean isSiteMaster() {return true;}
 
     public int compareTo(Address other) {
         if(other instanceof SiteMaster) {

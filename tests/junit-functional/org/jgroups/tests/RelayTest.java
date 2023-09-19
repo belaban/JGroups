@@ -1,12 +1,15 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.protocols.DROP;
+import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.relay.*;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MyReceiver;
 import org.jgroups.util.NameCache;
-import org.jgroups.util.UUID;
+import org.jgroups.util.Table;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
@@ -18,18 +21,20 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.jgroups.tests.RelayTests.Data.Type.REQ;
+import static org.jgroups.tests.RelayTests.Data.Type.RSP;
 
 /**
  * Various RELAY-related tests ({@link RELAY2} and {@link RELAY3})
  * @author Bela Ban
  * @since 3.2
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=true,dataProvider="relayProvider")
+@Test(groups={Global.FUNCTIONAL,Global.RELAY},singleThreaded=true,dataProvider="relayProvider")
 public class RelayTest extends RelayTests {
     protected JChannel a, b, c;  // members in site "lon"
     protected JChannel d, e, f;  // used for other tests AB CD EF
@@ -54,7 +59,7 @@ public class RelayTest extends RelayTests {
      */
     public void testAddRelay2ToAnAlreadyConnectedChannel(Class<? extends RELAY> cl) throws Exception {
         // Create and connect a channel.
-        a=new JChannel(defaultStack()).name("A").connect(SFO);
+        a=new JChannel(defaultStack(null)).name("A").connect(SFO);
         System.out.printf("Channel %s is connected. View: %s\n", a.getName(), a.getView());
 
         // Add RELAY protocol to the already connected channel.
@@ -272,6 +277,54 @@ public class RelayTest extends RelayTests {
           : "Expecting 100 site unreachable events on node A but got " + h2.getSiteUnreachableEvents();
     }
 
+    /** Tests sending a message to SiteMaster("nyc") (which is down). Should result in a SITE-UNREACHABLE message */
+    public void testSiteUnreachable(Class<? extends RELAY> cl) throws Exception {
+        _testSiteUnreachable(() -> new SiteMaster(NYC), cl);
+    }
+
+    /** Tests sending a message to X (which is down). Should also result in a SITE-UNREACHABLE message */
+    public void testSiteUnreachableToMember(Class<? extends RELAY> cl) throws Exception {
+        _testSiteUnreachable(() -> x.address(), cl);
+    }
+
+    @Test(enabled=false)
+    protected void _testSiteUnreachable(Supplier<Address> supplier, Class<? extends RELAY> cl) throws Exception {
+        if(cl.equals(RELAY2.class))
+            return;
+        a=createNode(cl, LON, "A");
+        b=createNode(cl, LON, "B");
+        x=createNode(cl, SFO, "X");
+        waitForBridgeView(2, 10000, 500, BRIDGE_CLUSTER, a, x);
+        Address target=supplier.get();
+        final MyUphandler up_handler=new MyUphandler();
+        b.setUpHandler(up_handler);
+
+        log.debug("Disconnecting X");
+        x.disconnect();
+        log.debug("A: waiting for site SFO to be down");
+        waitUntilRoute(SFO, false, 10000, 500, a);
+
+        for(int j = 0; j < 100; j++)
+            b.send(target, "to-sfo".getBytes());
+
+        // https://issues.redhat.com/browse/JGRP-2586
+        Util.waitUntilTrue(10000, 500, () -> up_handler.getSiteUnreachableEvents() > 0);
+        assert up_handler.getSiteUnreachableEvents() > 0 && up_handler.getSiteUnreachableEvents() <= 100
+          : "Expecting <= 100 site unreachable events on node B but got " + up_handler.getSiteUnreachableEvents();
+
+        // drain site-unreachable events received after this point
+        Util.waitUntilTrue(3000, 500, () -> up_handler.getSiteUnreachableEvents() > 10);
+
+        MyUphandler h2=new MyUphandler();
+        assert ((RELAY) a.getProtocolStack().findProtocol(RELAY.class)).isSiteMaster();
+        a.setUpHandler(h2);
+
+        // check if the site master receives the events
+        for (int i = 0; i < 100; i++)
+            a.send(target, "to-sfo-from-a".getBytes());
+        assert h2.getSiteUnreachableEvents() == 100
+          : "Expecting 100 site unreachable events on node A but got " + h2.getSiteUnreachableEvents();
+    }
 
 
     /**
@@ -353,14 +406,14 @@ public class RelayTest extends RelayTests {
 
             Stream.of(d,e,f,_g,_h,_i)
               .map(ch -> (RELAY)ch.getProtocolStack().findProtocol(RELAY.class))
-              .forEach(r -> r.setRouteStatusListener(new MyRouteStatusListener(r.getAddress()).verbose(false)));
+              .forEach(r -> r.setRouteStatusListener(new DefaultRouteStatusListener(r::getAddress).verbose(false)));
 
             // now stop A; B will become new site master and we should get a site-down(NYC), then site-up(NYC)
             Util.close(a);
             Util.waitUntil(5000, 500, () -> Stream.of(d,e,f,_g,_h,_i)
               .map(ch -> (RELAY)ch.getProtocolStack().findProtocol(RELAY.class))
               .peek(r -> System.out.printf("%s: %s\n", r.getAddress(), r.getRouteStatusListener()))
-              .map(r -> (MyRouteStatusListener)r.getRouteStatusListener())
+              .map(r -> (DefaultRouteStatusListener)r.getRouteStatusListener())
               .allMatch(l -> l.down().contains(LON) && l.up().contains(LON)));
         }
     }
@@ -408,11 +461,11 @@ public class RelayTest extends RelayTests {
 
     /** Tests sending to the 3 site masters A, C and E, and expecting responses */
     public void testSendingToSiteMasters(Class<? extends RELAY> cl) throws Exception {
-        createSymmetricNetwork(cl, ch -> new ResponseSender<Message>(ch).rawMsgs(true));
+        createSymmetricNetwork(cl, ch -> new UnicastResponseSender<Message>(ch).rawMsgs(true));
         for(JChannel ch: allChannels()) {
             for(String site: new String[]{LON,NYC,SFO}) {
                 Address target=new SiteMaster(site);
-                ch.send(target, String.format("%s", ch.getAddress()));
+                ch.send(target, new Data(REQ, String.format("%s", ch.getAddress())));
             }
         }
 
@@ -434,9 +487,34 @@ public class RelayTest extends RelayTests {
           .allMatch(l -> l.stream().allMatch(m -> m.dest() != null && m.src() != null));
 
         // check that we have 6 messages with dest=SiteMaster(S) where S is the current site (only in site masters)
-        assert allChannels().stream().filter(RelayTests::isSiteMaster)
-          .map(ch -> getReceiver(ch).list())
-          .allMatch(l -> l.stream().filter(m -> m.dest() instanceof SiteMaster).count() == 6);
+        // Note that the SiteMaster("X") to self message will result in a unicast (self) dest address, so 5 SM dests;
+        // this was changed in JGRP-2729 (only in RELAY3)
+        for(JChannel ch: allChannels()) {
+            List<Message> list=getReceiver(ch).list();
+            RELAY relay=ch.getProtocolStack().findProtocol(RELAY.class);
+            int sm=0, loopbacks=0;
+            for(Message msg: list) {
+                if(msg.dest() instanceof SiteMaster)
+                    sm++;
+                else if(ch.getAddress().equals(msg.dest()))
+                    loopbacks++;
+            }
+            System.out.printf("--> %s: %d sms %d loopbacks\n", ch.getAddress(), sm, loopbacks);
+            if(!relay.isSiteMaster()) {
+                assert sm == 0;
+                assert loopbacks == 3;
+            }
+            else { // site master
+                if(relay.getClass().equals(RELAY2.class)) {
+                    assert loopbacks == 3;
+                    assert sm == 6;
+                }
+                else { // RELAY3
+                    assert loopbacks == 4;
+                    assert sm == 5;
+                }
+            }
+        }
     }
 
     /** Same as above but with SiteMaster(null) as target */
@@ -471,6 +549,23 @@ public class RelayTest extends RelayTests {
         assert allChannels().stream().filter(RelayTests::isSiteMaster)
           .map(ch -> getReceiver(ch).list())
           .allMatch(l -> l.stream().filter(m -> m.dest() instanceof SiteMaster).count() == 6);
+    }
+
+    /** Tests A sending to SM("lon") (A, loopback) and B sending to SM("lon") (A) */
+    public void testSendingToLocalSiteMaster(Class<? extends RELAY> cl) throws Exception {
+        createSymmetricNetwork(cl, ch -> new UnicastResponseSender<Message>(ch).rawMsgs(true));
+        a.send(new SiteMaster(LON), new Data(REQ, "hello"));
+        List<Message> list_a=getReceiver(a).list();
+        List<Message> list_b=getReceiver(b).list();
+        Util.waitUntil(2000, 100, () -> list_a.size() == 2);
+        assert list_a.stream().map(Message::getObject).filter(obj -> ((Data)obj).type == REQ).count() == 1;
+        assert list_a.stream().map(Message::getObject).filter(obj -> ((Data)obj).type == RSP).count() == 1;
+
+        list_a.clear();
+        b.send(new SiteMaster(LON), new Data(REQ, "hello"));
+        Util.waitUntil(2000, 100, () -> list_a.size() == 1 && list_b.size() == 1);
+        assert list_a.stream().map(Message::getObject).filter(obj -> ((Data)obj).type == REQ).count() == 1;
+        assert list_b.stream().map(Message::getObject).filter(obj -> ((Data)obj).type == RSP).count() == 1;
     }
 
     /** Sends a message to all members of the local site only */
@@ -564,29 +659,59 @@ public class RelayTest extends RelayTests {
     /** Sends unicasts between members of different sites */
     public void testUnicasts(Class<? extends RELAY> cl) throws Exception {
         createSymmetricNetwork(cl, ch -> new UnicastResponseSender<>(ch).rawMsgs(true));
-        boolean relay2=cl.equals(RELAY2.class);
 
         // because an address is not a SiteUUID in RELAY2 (just a regular address), A would not know C
         // we therefore wrap C's address into a SiteUUID (for RELAY2 only)
-        Address target=relay2? makeSiteUUID(c.getAddress(), "nyc") : c.getAddress();
-
+        Address target=addr(cl, c, "nyc");
         a.send(target, new Data(REQ,"hello from A"));
         assertNumMessages(1, a,c);
 
         // SM to SM
-        target=relay2? makeSiteUUID(a.getAddress(), "lon") : a.getAddress();
+        target=addr(cl, a, "lon");
         c.send(target, new Data(REQ,"hello from C"));
         assertNumMessages(1,a,c);
 
         // non-SM to SM
-        target=relay2? makeSiteUUID(c.getAddress(), "nyc") : c.getAddress();
+        target=addr(cl, c, "nyc");
         b.send(target, new Data(REQ,"hello from B"));
         assertNumMessages(1, b,c);
 
         // SM to non-SM
-        target=relay2? makeSiteUUID(d.getAddress(), "nyc") : d.getAddress();
+        target=addr(cl, d, "nyc");
         a.send(target, new Data(REQ,"hello from A"));
         assertNumMessages(1, a,d);
+
+        // non-SM to non-SM (B -> D)
+        target=addr(cl, d, "nyc");
+        b.send(target, new Data(REQ,"hello from B"));
+        assertNumMessages(1, b,d);
+    }
+
+    /** Tests sending a large message across sites (from A:lon -> C:nyc); the fragmentation protocol should
+     * fragment/unfragment it */
+    public void testFragmentation(Class<? extends RELAY> cl) throws Exception {
+        createSymmetricNetwork(cl, ch -> new UnicastResponseSender<>(ch).rawMsgs(true));
+        String s="hello".repeat(1000);
+        a.send(b.getAddress(), new Data(REQ, s));
+        List<Message> list_a=getReceiver(a).list(), list_b=getReceiver(b).list();
+        Util.waitUntil(2000, 100, () -> list_a.size() == 1 && list_b.size() == 1);
+    }
+
+    /** Tests state transfer between sites: from C:nyc to A:lon */
+    public void testStateTransfer(Class<? extends RELAY> cl) throws Exception {
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true));
+        MyReceiver<Message> r_a=getReceiver(a);
+        MyReceiver<Message> r_c=getReceiver(c);
+
+        // set state in C:
+        r_c.state().put("name", "Bela");
+        r_c.state().put("id", "322649");
+
+        // because an address is not a SiteUUID in RELAY2 (just a regular address), A would not know C
+        // we therefore wrap C's address into a SiteUUID (for RELAY2 only)
+        Address target=addr(cl, c, "nyc");
+        a.getState(target, 2000);
+        assert r_a.state().size() == 2;
     }
 
     /** Tests https://issues.redhat.com/browse/JGRP-2696 */
@@ -686,6 +811,249 @@ public class RelayTest extends RelayTests {
         }
     }
 
+    /**
+     * A sends a message M to SiteMaster("nyc") (C), but C fails before receiving M. A retransmits M and eventually
+     * the new site master of "nyc" (D) receives and processes M. We want to make sure that a SITE-UNREACHABLE("nyc")
+     * notification received by A:lon does not kill retransmission of M until D:nyc becomes site master.
+     */
+    public void testFailover(Class<? extends RELAY> cl) throws Exception {
+        if(cl.equals(RELAY2.class))
+            return;
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()));
+        Util.close(f,e);
+        waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
+        waitForSiteMasters(true, a, c);
+
+        UNICAST3 unicast=a.getProtocolStack().findProtocol(UNICAST3.class);
+        RELAY relay=a.getProtocolStack().findProtocol(RELAY.class);
+        relay.delaySitesDown(true);
+        relay.setRouteStatusListener(new DefaultRouteStatusListener(() -> a.address()).verbose(true));
+        Address target=new SiteMaster(NYC);
+
+        // now kill C; D will take over as site master
+        System.out.println("-- closing site master of nyc (C):");
+        Util.close(c);
+        for(int i=1; i <=5; i++)
+            a.send(target, "hello-" + i);
+
+        Util.waitUntil(3000, 100,
+                       () -> ((RELAY)d.getProtocolStack().findProtocol(RELAY.class)).isSiteMaster());
+        MyReceiver<Message> r=getReceiver(d);
+        Util.waitUntil(200000, 200, () -> r.size() == 5);
+
+        Table<Message> send_win=unicast.getSendWindow(target);
+        // wait until the ack from D has been received
+        Util.waitUntil(2000, 100, () -> send_win.getHighestDelivered() == send_win.getHighestReceived());
+        relay.setRouteStatusListener(null);
+    }
+
+    /** A sends a message M to SiteMaster("nyc") (C), but C drops M and then fails. A retransmits M and eventually
+     * the new site master of "nyc" (D) receives and processes M */
+    public void testFailover2(Class<? extends RELAY> cl) throws Exception {
+        if(cl.equals(RELAY2.class))
+            return;
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()));
+        Util.close(f,e);
+        waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
+        waitForSiteMasters(true, a, c);
+
+        DROP drop=new DROP(); // drops unicast messages from A:lon -> C:nyc (site master)
+        drop.addUpFilter(m -> m.src() != null && m.src().equals(a.getAddress())
+          && m.dest() != null && m.dest().isSiteMaster());
+        c.getProtocolStack().insertProtocol(drop, ProtocolStack.Position.BELOW, UNICAST3.class);
+
+        UNICAST3 unicast=a.getProtocolStack().findProtocol(UNICAST3.class);
+        RELAY relay=a.getProtocolStack().findProtocol(RELAY.class);
+        relay.delaySitesDown(true);
+        relay.setRouteStatusListener(new DefaultRouteStatusListener(() -> a.address()).verbose(true));
+        Address target=new SiteMaster(NYC);
+        a.send(target, "hello");
+
+        // now kill C; D will take over as site master
+        System.out.println("-- closing site master of nyc (C):");
+        Util.close(c);
+        Util.waitUntil(3000, 500,
+                       () -> ((RELAY)d.getProtocolStack().findProtocol(RELAY.class)).isSiteMaster());
+        MyReceiver<Message> r=getReceiver(d);
+        Util.waitUntil(2000, 200, () -> r.size() == 1);
+
+        Table<Message> send_win=unicast.getSendWindow(target);
+        // wait until the ack from D has been received
+        Util.waitUntil(2000, 100, () -> send_win.getHighestDelivered() == send_win.getHighestReceived());
+        relay.setRouteStatusListener(null);
+    }
+
+    /** Same as above, but now DROP is added to the bridge stack between "lon" and "nyc" */
+    public void testFailover3(Class<? extends RELAY> cl) throws Exception {
+        if(cl.equals(RELAY2.class))
+            return;
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.getName()));
+        Util.close(f,e);
+        waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
+        waitForSiteMasters(true, a, c);
+
+        DROP drop=new DROP(); // drops unicast message from _A:lon -> _C:nyc (site master)
+        RELAY relay_a=a.getProtocolStack().findProtocol(RELAY.class), relay_c=c.stack().findProtocol(RELAY.class);
+        JChannel bridge_a=relay_a.getBridge(NYC), bridge_c=relay_c.getBridge(LON);
+        bridge_a.getProtocolStack().insertProtocol(drop, ProtocolStack.Position.BELOW, UNICAST3.class);
+        Predicate<Message> down_filter=m -> assertDest(m, bridge_c.address());
+        drop.addDownFilter(down_filter);
+
+        a.send(new SiteMaster("nyc"), "hello");
+
+        // now kill C, D will take over as site master
+        Util.close(c);
+        Util.waitUntil(3000, 500,
+                       () -> ((RELAY)d.getProtocolStack().findProtocol(RELAY.class)).isSiteMaster());
+        drop.clearDownFilters();
+        MyReceiver<Message> r=getReceiver(d);
+        Util.waitUntil(2000, 200, () -> r.size() == 1);
+    }
+
+    /** B:lon sends M to SiteMaster("nyc") (C). Before forwarding M to the local site master (A), A fails.
+     * B now becomes site master and forwards M to C:nyc
+     */
+    public void testFailover4(Class<? extends RELAY> cl) throws Exception {
+        if(cl.equals(RELAY2.class))
+            return;
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()));
+        Util.close(f, e);
+        waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
+        waitForSiteMasters(true, a, c);
+
+        MyReceiver<Message> r=getReceiver(c);
+        DROP drop=new DROP().addUpFilter(m -> m.src() != null && m.src().equals(b.address()));
+        a.getProtocolStack().insertProtocol(drop, ProtocolStack.Position.BELOW, UNICAST3.class);
+        b.send(new SiteMaster("nyc"), "hello");
+        Util.close(a);
+
+        waitForSiteMasters(true, b, c);
+        drop.clearDownFilters();
+        Util.waitUntil(2000, 200, () -> r.size() == 1);
+    }
+
+    /** A:lon sends M to SiteMaster("nyc"). Before M is received by either C or D, the entire site NYC (C and D) fails.
+     * Make sure that sitesDown or site-unreachable causes retransmission on A to stop */
+    public void testFailoverSiteDown(Class<? extends RELAY> cl) throws Exception {
+        _testFailoverSiteDown(cl, () -> new SiteMaster("nyc"));
+    }
+
+    /** A:lon sends M to C:nyc. Before M is received by either C, the entire site NYC (C and D) fails.
+     * Make sure that sitesDown or site-unreachable causes retransmission on A to stop */
+    public void testFailoverSiteDown2(Class<? extends RELAY> cl) throws Exception {
+        _testFailoverSiteDown(cl, () -> c.address());
+    }
+
+    @Test(enabled=false)
+    protected void _testFailoverSiteDown(Class<? extends RELAY> cl, Supplier<Address> s) throws Exception {
+        if(cl.equals(RELAY2.class))
+            return;
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true));
+        Address target=s.get();
+        Util.close(f, e); // close NYC, we don't need it for this test
+        waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
+        waitForSiteMasters(true, a, c);
+
+        DROP drop=new DROP(); // drops unicast message from _A:lon -> _C:nyc (site master)
+        RELAY relay=a.getProtocolStack().findProtocol(RELAY.class), relay_c=c.stack().findProtocol(RELAY.class);
+        relay.setRouteStatusListener(new DefaultRouteStatusListener(relay::addr).verbose(true));
+
+        JChannel bridge=relay.getBridge(NYC), bridge_c=relay_c.getBridge(LON);
+        bridge.getProtocolStack().insertProtocol(drop, ProtocolStack.Position.BELOW, UNICAST3.class);
+        Address target_addr=bridge_c.address();
+        Predicate<Message> down_filter=m -> assertDest(m, target_addr) && m.getHeader(relay.getId()) != null;
+        drop.addDownFilter(down_filter);
+        a.send(target, "hello"); // won't succeed
+
+        Util.close(d,c); // causes a sitesDown("nyc")
+        MyReceiver<Message> r_c=getReceiver(c), r_d=getReceiver(d);
+        Util.waitUntilTrue(2000, 200, () -> r_c.size() != 0 && r_d.size() != 0);
+        assert r_c.size() == 0;
+        assert r_d.size() == 0;
+
+        drop.clearDownFilters();
+        UNICAST3 unicast=a.getProtocolStack().findProtocol(UNICAST3.class);
+        relay.setRouteStatusListener(null);
+        // check if there is still retransmission going on in A
+        retransmissionsDone(unicast, target);
+    }
+
+    public void testSiteDown(Class<? extends RELAY> cl) throws Exception {
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true));
+        RELAY r=a.stack().findProtocol(RELAY.class);
+        boolean relay2=cl.equals(RELAY2.class);
+        Util.close(f, e);
+        waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
+        waitForSiteMasters(true, a, c);
+
+        Util.close(d,c); // sitesDown("nyc")
+        waitForBridgeView(1, 5000, 200, BRIDGE_CLUSTER, a);
+        int expected_routes=relay2? 1 : 0;
+        Util.waitUntil(5000, 200, () -> r.getNumRoutes() == expected_routes);
+    }
+
+    /** We have {A:lon,B:lon} and {C:nyc,D:nyc}, and A sends a unicast message to all other 3 members. When B:lon
+     * leaves, does this cause the unicast connections to C and D to be closed on A? */
+    public void testViewChange(Class<? extends RELAY> cl) throws Exception {
+        if(cl.equals(RELAY2.class)) // since UNICAST3 is bypassed when RELAY2 is above it, we don't need to test RELAY2
+            return;
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()));
+        UNICAST3 unicast=a.getProtocolStack().findProtocol(UNICAST3.class);
+
+        Util.close(f, e);
+        waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
+        waitForSiteMasters(true, a, c);
+        a.send(b.address(), "hello");
+        a.send(c.address(), "hello");
+        a.send(d.address(), "hello");
+
+        Util.waitUntil(5000, 500,
+                       () -> Stream.of(b,c,d).map(RelayTests::getReceiver).allMatch(r -> r.size() == 1));
+        assert unicast.hasSendConnectionTo(c.address());
+        assert unicast.hasSendConnectionTo(d.address());
+        System.out.println("-- closing B");
+        Util.close(b);
+        Util.waitUntil(5000, 100, () -> a.getView().size() == 1);
+
+        // make sure A still has (send) connections to C and D
+        assert unicast.hasSendConnectionTo(c.address());
+        assert unicast.hasSendConnectionTo(d.address());
+    }
+
+    /** Same as {@link #testViewChange(Class)}, but makes sure that retransmission to non-local members is not stopped
+     * on a view change */
+    public void testViewChangeDuringRetransmission(Class<? extends RELAY> cl) throws Exception {
+        if(cl.equals(RELAY2.class)) // since UNICAST3 is bypassed when RELAY2 is above it, we don't need to test RELAY2
+            return;
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()));
+        UNICAST3 unicast=a.getProtocolStack().findProtocol(UNICAST3.class);
+        Util.close(f, e);
+        waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
+        waitForSiteMasters(true, a, c);
+
+        DROP drop=new DROP().addDownFilter(msg -> msg.dest() != null && msg.dest().equals(c.address()));
+        a.getProtocolStack().insertProtocol(drop, ProtocolStack.Position.BELOW, UNICAST3.class);
+        a.send(c.address(), "hello"); // this should cause retransmission from A:lon -> C:nyc
+
+        assert unicast.hasSendConnectionTo(c.address());
+        System.out.println("-- closing B");
+        Util.close(b);
+        Util.waitUntil(5000, 100, () -> a.getView().size() == 1);
+        drop.clearDownFilters();
+
+        // make sure A still has (send) connections to C and D
+        assert unicast.hasSendConnectionTo(c.address());
+        Table<Message> send_win=unicast.getSendWindow(c.address());
+        // check if there is still retransmission going on in A
+        Util.waitUntil(5000, 1000, () -> {
+            long highest_acked=send_win.getHighestDelivered(); // highest delivered == highest ack (sender win)
+            long highest_sent=send_win.getHighestReceived();   // we use table as a *sender* win, so it's highest *sent*...
+            System.out.printf("** highest_sent: %d highest_acked: %d\n", highest_sent, highest_acked);
+            return highest_acked >= highest_sent;
+        });
+    }
+
+
     protected static String printMessages(Stream<JChannel> s) {
         return s.map(ch -> String.format("%s: %d msgs (%s)", ch.address(), getReceiver(ch).size(),
                                          getReceiver(ch).list(Message::getObject)))
@@ -700,10 +1068,6 @@ public class RelayTest extends RelayTests {
             ((RELAY2)relay).relayMulticasts(true);
     }
 
-    protected static SiteUUID makeSiteUUID(Address addr, String site) {
-        String name=NameCache.get(addr);
-        return new SiteUUID((UUID)addr, name, site);
-    }
 
     protected static JChannel createNode(Class<? extends RELAY> cl, String site_name, String node_name) throws Exception {
         return createNode(cl, site_name, node_name, 1, null);
@@ -747,17 +1111,27 @@ public class RelayTest extends RelayTests {
     protected class MyUphandler implements UpHandler {
         protected final BlockingQueue<Message> received=new LinkedBlockingDeque<>();
         protected final AtomicInteger          siteUnreachableEvents=new AtomicInteger(0);
+        protected final AtomicInteger          memberUnreachableEvents=new AtomicInteger(0);
 
-        public BlockingQueue<Message> getReceived()              {return received;}
-        public int                    getSiteUnreachableEvents() {return siteUnreachableEvents.get();}
-        @Override public UpHandler    setLocalAddress(Address a) {return this;}
-        public void                   clear() {received.clear(); siteUnreachableEvents.set(0);}
+        public BlockingQueue<Message> getReceived()                {return received;}
+        public int                    getSiteUnreachableEvents()   {return siteUnreachableEvents.get();}
+        public int                    getMemberUnreachableEvents() {return memberUnreachableEvents.get();}
+        @Override public UpHandler    setLocalAddress(Address a)   {return this;}
+        public void                   clear() {
+            received.clear(); siteUnreachableEvents.set(0); memberUnreachableEvents.set(0);
+        }
 
         @Override
         public Object up(Event evt) {
-            if(evt.getType() == Event.SITE_UNREACHABLE) {
-                log.debug("Site %s is unreachable", (Object) evt.getArg());
-                siteUnreachableEvents.incrementAndGet();
+            switch(evt.type()) {
+                case Event.SITE_UNREACHABLE:
+                    log.debug("Site %s is unreachable", (Object) evt.getArg());
+                    siteUnreachableEvents.incrementAndGet();
+                    break;
+                case Event.MBR_UNREACHABLE:
+                    log.debug("member %s unreachable", (Object)evt.arg());
+                    memberUnreachableEvents.incrementAndGet();
+                    break;
             }
             return null;
         }

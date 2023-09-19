@@ -3,12 +3,11 @@
  import org.jgroups.*;
  import org.jgroups.logging.Log;
  import org.jgroups.logging.LogFactory;
- import org.jgroups.protocols.LOCAL_PING;
- import org.jgroups.protocols.MERGE3;
- import org.jgroups.protocols.TCP;
- import org.jgroups.protocols.UNICAST3;
+ import org.jgroups.protocols.*;
  import org.jgroups.protocols.pbcast.GMS;
  import org.jgroups.protocols.pbcast.NAKACK2;
+ import org.jgroups.protocols.pbcast.STABLE;
+ import org.jgroups.protocols.pbcast.STATE_TRANSFER;
  import org.jgroups.protocols.relay.*;
  import org.jgroups.protocols.relay.config.RelayConfig;
  import org.jgroups.protocols.relay.config.RelayConfig.SiteConfig;
@@ -22,6 +21,7 @@
  import java.util.ArrayList;
  import java.util.Arrays;
  import java.util.List;
+ import java.util.Objects;
  import java.util.concurrent.TimeoutException;
  import java.util.function.Predicate;
  import java.util.stream.Collectors;
@@ -40,21 +40,37 @@ public class RelayTests {
         LOOPBACK=InetAddress.getLoopbackAddress();
     }
 
+    protected static Protocol[] defaultStack(RELAY relay) {
+        RELAY2 r2=relay instanceof RELAY2? (RELAY2)relay : null;
+        RELAY3 r3=relay instanceof RELAY3? (RELAY3)relay : null;
+        if(r3 != null)
+            r3.asyncRelayCreation(false);
 
-    protected static Protocol[] defaultStack(Protocol ... additional_protocols) {
         Protocol[] protocols={
           new TCP().setBindAddress(LOOPBACK),
           new LOCAL_PING(),
           new MERGE3().setMaxInterval(3000).setMinInterval(1000),
           new NAKACK2().useMcastXmit(false),
+          r3,
           new UNICAST3(),
-          new GMS().printLocalAddress(false)
+          new STABLE().setDesiredAverageGossip(50000).setMaxBytes(8_000_000),
+          new GMS().printLocalAddress(false).setJoinTimeout(100),
+          new UFC().setMaxCredits(2_000_000).setMinThreshold(0.4),
+          new MFC().setMaxCredits(2_000_000).setMinThreshold(0.4),
+          new FRAG2().setFragSize(1024),
+          r2,
+          new STATE_TRANSFER()
         };
-        if(additional_protocols == null)
-            return protocols;
-        Protocol[] tmp=Arrays.copyOf(protocols, protocols.length + additional_protocols.length);
-        System.arraycopy(additional_protocols, 0, tmp, protocols.length, additional_protocols.length);
-        return tmp;
+        return Util.combine(Protocol.class, protocols);
+    }
+
+    public static Address addr(Class<? extends RELAY> cl, JChannel ch, String site) {
+        return cl.equals(RELAY2.class) ? makeSiteUUID(ch.address(), site) : ch.address();
+    }
+
+    protected static SiteUUID makeSiteUUID(Address addr, String site) {
+        String name=NameCache.get(addr);
+        return new SiteUUID((UUID)addr, name, site);
     }
 
     /**
@@ -95,7 +111,7 @@ public class RelayTests {
           .delaySitesDown(false); // for compatibility with testSitesUp()
         for(String site: sites) {
             SiteConfig cfg=new SiteConfig(site)
-              .addBridge(new RelayConfig.ProgrammaticBridgeConfig(bridge, defaultStack()));
+              .addBridge(new RelayConfig.ProgrammaticBridgeConfig(bridge, defaultStack(null)));
             relay.addSite(site, cfg);
         }
         return relay;
@@ -107,12 +123,25 @@ public class RelayTests {
         for(MySiteConfig cfg: site_cfgs) {
             SiteConfig site_cfg=new SiteConfig(cfg.site);
             for(String bridge_name: cfg.bridges)
-                site_cfg.addBridge(new RelayConfig.ProgrammaticBridgeConfig(bridge_name, defaultStack()));
+                site_cfg.addBridge(new RelayConfig.ProgrammaticBridgeConfig(bridge_name, defaultStack(null)));
             for(Tuple<String,String> t: cfg.forwards)
                 site_cfg.addForward(new RelayConfig.ForwardConfig(t.getVal1(), t.getVal2()));
             relay.addSite(cfg.site, site_cfg);
         }
         return relay;
+    }
+
+    protected static void retransmissionsDone(UNICAST3 unicast, Address dest) throws TimeoutException {
+        Util.waitUntil(5000, 1000, () -> {
+            Table<Message> send_win=unicast.getSendWindow(dest);
+            if(send_win == null)
+                return true;
+            long highest_sent=send_win.getHighestReceived();
+            long highest_acked=send_win.getHighestDelivered(); // highest delivered == highest ack (sender win)
+            System.out.printf("** %s -> %s: highest_sent: %d highest_acked: %d, sender-entry=%s\n",
+                              unicast.addr(), dest, highest_sent, highest_acked, send_win);
+            return highest_acked == highest_sent;
+        });
     }
 
     protected static void waitUntilRoute(String site_name, boolean present,
@@ -167,6 +196,12 @@ public class RelayTests {
         }
     }
 
+    protected static void waitForSiteMasters(boolean expected, JChannel ... channels) throws TimeoutException {
+        Util.waitUntil(5000, 500,
+                       () -> Stream.of(channels).map(ch -> ((RELAY)ch.getProtocolStack().findProtocol(RELAY.class)))
+                         .allMatch(r -> r.isSiteMaster() == expected));
+    }
+
     protected static MyReceiver<Message> getReceiver(JChannel ch) {
         return (MyReceiver<Message>)ch.getReceiver();
     }
@@ -207,6 +242,17 @@ public class RelayTests {
         return msgs.stream().filter(p).count() == expected;
     }
 
+    protected static boolean assertSenderAndDest(Message msg, Address expected_sender, Address expected_dest) {
+        Address src=msg.src(), dest=msg.dest();
+        return Objects.equals(Objects.requireNonNull(expected_sender), src)
+          && Objects.equals(Objects.requireNonNull(expected_dest), dest);
+    }
+
+    protected static boolean assertDest(Message msg, Address expected_dest) {
+        Address dest=msg.dest();
+        return  Objects.equals(Objects.requireNonNull(expected_dest), dest);
+    }
+
     protected static void printMessages(JChannel ... channels) {
         System.out.println(msgs(channels));
     }
@@ -219,40 +265,6 @@ public class RelayTests {
         return channels.stream()
           .map(ch -> String.format("%s: %s",ch.address(),getReceiver(ch).list(Message::getObject)))
           .collect(Collectors.joining("\n"));
-    }
-
-    protected static class MyRouteStatusListener implements RouteStatusListener {
-        protected final Address      local_addr;
-        protected final List<String> up=new ArrayList<>(), down=new ArrayList<>();
-        protected boolean            verbose;
-
-        protected MyRouteStatusListener(Address local_addr) {
-            this.local_addr=local_addr;
-        }
-
-        protected List<String>          up()               {return up;}
-        protected List<String>          down()             {return down;}
-        protected MyRouteStatusListener verbose(boolean b) {this.verbose=b; return this;}
-        protected boolean               verbose()          {return verbose;}
-
-        @Override public synchronized void sitesUp(String... sites) {
-            if(verbose)
-                System.out.printf("%s: UP(%s)\n", local_addr, Arrays.toString(sites));
-            up.addAll(Arrays.asList(sites));
-        }
-
-        @Override public synchronized void sitesDown(String... sites) {
-            if(verbose)
-                System.out.printf("%s: DOWN(%s)\n", local_addr, Arrays.toString(sites));
-            down.addAll(Arrays.asList(sites));
-        }
-
-        protected synchronized MyRouteStatusListener clear() {up.clear(); down.clear(); return this;}
-
-        @Override
-        public String toString() {
-            return String.format("down: %s, up: %s", down, up);
-        }
     }
 
     protected static class ResponseSender<T> extends MyReceiver<T> {

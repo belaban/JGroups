@@ -207,7 +207,7 @@ public abstract class FlowControl extends Protocol {
             return down_prot.down(msg);
 
         Address dest=msg.getDest();
-        boolean multicast=dest == null;
+        boolean multicast=dest == null || dest.isMulticast();
         boolean handle_multicasts=handleMulticastMessage();
         boolean process=(multicast && handle_multicasts)
           || (!multicast && !handle_multicasts && !(msg.isFlagSet(DONT_LOOPBACK) && Objects.equals(dest, local_addr)));

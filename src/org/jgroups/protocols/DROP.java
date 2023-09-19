@@ -41,6 +41,7 @@ public class DROP extends Protocol {
 
     public DROP clearUpFilters()   {up_filters.clear(); return this;}
     public DROP clearDownFilters() {down_filters.clear(); return this;}
+    public DROP clearAllFilters()  {clearUpFilters(); return clearDownFilters();}
 
 
     public Object down(Message msg) {
@@ -76,7 +77,8 @@ public class DROP extends Protocol {
             up_prot.up(batch);
     }
 
-    protected void dropped(Message msg, boolean down) {
-        log.trace("dropped msg %s hdrs: %s\n", down? "to " + msg.getDest() : "from " + msg.getSrc(), msg.printHeaders());
+    protected void dropped(Message m, boolean down) {
+        log.trace("%s: dropped %s msg from %s to %s, hdrs: %s", local_addr, down? "down" : "up",
+                  m.src(), m.dest() == null? "all" : m.dest(), m.printHeaders());
     }
 }

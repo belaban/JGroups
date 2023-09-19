@@ -44,7 +44,7 @@ public class ExpiryCache<K> {
 
     public boolean hasExpired(K key) {
         Long val=map.get(key);
-        return val == null || hasExpired(val, System.nanoTime());
+        return val != null && hasExpired(val, System.nanoTime());
     }
 
     public void remove(K key) {

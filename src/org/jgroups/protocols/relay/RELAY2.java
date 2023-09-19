@@ -262,6 +262,15 @@ public class RELAY2 extends RELAY {
             log.warn("%s: received a message without a relay header; discarding it", local_addr);
             return;
         }
+        try {
+            msg.clearHeaders(); // remove all headers added by the bridge cluster
+            msg.putHeader(id, hdr);
+            ((BaseMessage)msg).readHeaders(hdr.originalHeaders());
+        }
+        catch(Exception ex) {
+            log.error("%s: failed handling message relayed from %s: %s", local_addr, msg.src(), ex);
+        }
+
         if(hdr.final_dest != null) {
             Message message=msg;
             RelayHeader header=hdr;
@@ -362,7 +371,8 @@ public class RELAY2 extends RELAY {
         Route route=tmp.getRoute(target_site, sender);
         if(route == null) {
             if(suppress_log_no_route != null)
-                suppress_log_no_route.log(SuppressLog.Level.error, target_site, suppress_time_no_route_errors, sender, target_site);
+                suppress_log_no_route.log(SuppressLog.Level.error, target_site, suppress_time_no_route_errors,
+                                          local_addr, sender, dest);
             else
                 log.error(Util.getMessage("RelayNoRouteToSite"), local_addr, target_site);
             sendSiteUnreachableTo(msg.getSrc(), target_site);

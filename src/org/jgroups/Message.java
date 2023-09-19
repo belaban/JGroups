@@ -64,6 +64,9 @@ public interface Message extends SizeStreamable, Constructable<Message> {
     /** Returns a pretty-printed string of the headers */
     String               printHeaders();
 
+    /** Removes all headers: use carefully! */
+    Message              clearHeaders();
+
     /** Sets one or more flags */
     Message              setFlag(Flag... flags);
 

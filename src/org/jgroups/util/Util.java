@@ -254,7 +254,7 @@ public class Util {
         while(System.currentTimeMillis() <= target_time) {
             boolean all_channels_have_correct_view=true;
             View first=channels[0].getView();
-            for(JChannel ch : channels) {
+            for(JChannel ch: channels) {
                 View view=ch.getView();
                 if(first == null || !Objects.equals(view, first) || view.size() != channels.length) {
                     all_channels_have_correct_view=false;
@@ -2270,6 +2270,17 @@ public class Util {
         E[] retval=(E[])Array.newInstance(arrays[0].getClass().getComponentType(), size);
         AtomicInteger index=new AtomicInteger();
         Stream.of(arrays).flatMap(Stream::of).forEach(el -> retval[index.getAndIncrement()]=el);
+        return retval;
+    }
+
+    @SafeVarargs
+    public static <E> E[] combine(Class<?> cl, E ... array) {
+        if(array == null)
+            return null;
+        int size=(int)Stream.of(array).filter(Objects::nonNull).count();
+        E[] retval=(E[])Array.newInstance(cl, size);
+        AtomicInteger index=new AtomicInteger();
+        Stream.of(array).filter(Objects::nonNull).forEach(el -> retval[index.getAndIncrement()]=el);
         return retval;
     }
 

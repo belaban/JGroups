@@ -5,7 +5,9 @@ import org.jgroups.Header;
 import org.jgroups.conf.ClassConfigurator;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -138,7 +140,7 @@ public final class Headers {
 
     public static ByteArray writeHeaders(Header[] hdrs) throws IOException {
         int size=Headers.size(hdrs);
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(marshalledSize(hdrs));
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(marshalledSize(hdrs) + Global.SHORT_SIZE);
         out.writeShort(size);
         if(size > 0) {
             for(Header hdr : hdrs) {
@@ -154,19 +156,18 @@ public final class Headers {
         return out.getBuffer();
     }
 
-    public static Header[] readHeaders(ByteArray buf) throws IOException, ClassNotFoundException {
+    public static List<Header> readHeaders(ByteArray buf) throws IOException, ClassNotFoundException {
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf);
         int len=in.readShort();
-        Header[] headers=new Header[len];
+        List<Header> list=new ArrayList<>(len);
         for(int i=0; i < len; i++) {
             short id=in.readShort();
             short magic_number=in.readShort();
             Header hdr=ClassConfigurator.create(magic_number);
             hdr.readFrom(in);
-            hdr.setProtId(id);
-            headers[i]=hdr;
+            list.add(hdr.setProtId(id));
         }
-        return headers;
+        return list;
     }
 
     /**

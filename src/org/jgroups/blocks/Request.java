@@ -60,6 +60,8 @@ public abstract class Request<T> extends CompletableFuture<T> {
 
     public abstract void siteUnreachable(String site);
 
+    public abstract void memberUnreachable(Address mbr);
+
     public abstract void transportClosed();
 
     /** Blocks until all responses have been received and returns result or throws exception */

@@ -23,4 +23,28 @@ public interface Address extends SizeStreamable, Comparable<Address> {
     byte SITE_UUID    = 1 << 2;
     byte SITE_MASTER  = 1 << 3;
     byte IP_ADDR      = 1 << 4;
+
+    /**
+     * Whether or not this address causes a message to be sent to mulitple members. Typically, 'null' as destination
+     * sends the message to all members of a cluster, and a non-null address sends it to a single member. However, if
+     * a non-null destination address causes multicast behavior, this method needs to return true.
+     * @return True if a message with this address as destination is sent to multiple members, else false
+     */
+    default boolean isMulticast()   {return false;}
+
+    /**
+     * Whether or not this address is a {@link org.jgroups.protocols.relay.SiteAddress}. Kludgey workaround to avoid
+     * the use of {@code instanceof SiteAddress}.<br/>
+     * Will be removed once the type pollution issue (https://bugs.openjdk.org/browse/JDK-8180450) is fixed.
+     * @return True if this address is a site address, otherwise false
+     */
+    default boolean isSiteAddress() {return false;}
+
+    /**
+     * Whether or not this address is a {@link org.jgroups.protocols.relay.SiteMaster}. Kludgey workaround to avoid
+     * the use of {@code instanceof SiteMaster}.<br/>
+     * Will be removed once the type pollution issue (https://bugs.openjdk.org/browse/JDK-8180450) is fixed.
+     * @return true if this address is a site master, false otherwise
+     */
+    default boolean isSiteMaster() {return false;}
 }

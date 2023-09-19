@@ -5,14 +5,18 @@ import org.jgroups.Message.Flag;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
+import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.relay.SiteAddress.Type;
 import org.jgroups.protocols.relay.SiteStatus.Status;
 import org.jgroups.stack.AddressGenerator;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.UUID;
 import org.jgroups.util.*;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static org.jgroups.protocols.relay.RelayHeader.*;
@@ -34,9 +38,22 @@ public class RELAY3 extends RELAY {
     // maintained by site masters (relayer != null)
     // todo: replace with topo once JGRP-2706 is in place
     @ManagedAttribute(description="A cache maintaining a list of sites that are up")
-    protected final SiteStatus                         site_status=new SiteStatus();
+    protected final SiteStatus site_status=new SiteStatus();
 
-    public SiteStatus siteStatus()                     {return site_status;}
+    @Property(description="Number of millis by which SITE_UNREACHABLE events are delayed; see " +
+      "RelayTest.testFailover() for details")
+    protected long             delay_site_unreachable_events=3000;
+
+    protected Delayer<String>  site_unreachable_delayer;
+    protected UNICAST3         unicast;
+
+    public SiteStatus siteStatus()                       {return site_status;}
+    public long       delaySiteUnreachableEvents()       {return delay_site_unreachable_events;}
+    public RELAY3     delaySiteUnreachableEvents(long t) {
+        delay_site_unreachable_events=t;
+        if(site_unreachable_delayer != null)
+            site_unreachable_delayer.timeout(t);
+        return this;}
 
     @Override public void configure() throws Exception {
         super.configure();
@@ -50,6 +67,19 @@ public class RELAY3 extends RELAY {
                 return uuid;
             }
         });
+    }
+
+    @Override
+    public void init() throws Exception {
+        super.init();
+        site_unreachable_delayer=new Delayer<>(delay_site_unreachable_events);
+        unicast=ProtocolStack.findProtocol(up_prot, false, UNICAST3.class);
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        site_unreachable_delayer.clear();
     }
 
     @ManagedOperation(description="Prints the topology (site masters and local members) of this site")
@@ -68,20 +98,31 @@ public class RELAY3 extends RELAY {
     public Object down(Message msg) {
         //if(msg.isFlagSet(Flag.NO_RELAY))
           //  return down_prot.down(msg);
-        msg.src(local_addr);
+        if(msg.src() == null)
+            msg.src(local_addr);
         return process(true, msg);
     }
 
     public Object up(Message msg) {
-       // if(msg.isFlagSet(Flag.NO_RELAY))
-         //   return up_prot.up(msg);
+        // if(msg.isFlagSet(Flag.NO_RELAY))
+        //     return up_prot.up(msg);
         Message copy=msg;
         RelayHeader hdr=msg.getHeader(id);
         if(hdr != null) {
-            if(hdr.getType() == SITE_UNREACHABLE) {
-                triggerSiteUnreachableEvent((SiteAddress)hdr.final_dest);
-                return null;
+            switch(hdr.type) {
+                case SITE_UNREACHABLE:
+                    Set<String> tmp_sites=hdr.getSites();
+                    if(tmp_sites != null) {
+                        for(String s: tmp_sites)
+                            triggerSiteUnreachableEvent(new SiteMaster(s));
+                    }
+                    return null;
+                case MBR_UNREACHABLE:
+                    Address unreachable_mbr=msg.getObject();
+                    triggerMemberUnreachableEvent(unreachable_mbr);
+                    return null;
             }
+
             //todo: check if copy is needed!
             copy=copy(msg).dest(hdr.final_dest).src(hdr.original_sender).putHeader(id, hdr);
         }
@@ -89,7 +130,7 @@ public class RELAY3 extends RELAY {
     }
 
     public void up(MessageBatch batch) {
-        List<SiteAddress> unreachable_sites=null;
+        Set<String> unreachable_sites=null;
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
             Message msg=it.next(), copy=msg;
            // if(msg.isFlagSet(Flag.NO_RELAY))
@@ -97,23 +138,27 @@ public class RELAY3 extends RELAY {
             RelayHeader hdr=msg.getHeader(id);
             it.remove();
             if(hdr != null) {
-                if(hdr.getType() == SITE_UNREACHABLE) {
-                    SiteAddress site_addr=(SiteAddress)hdr.final_dest;
-                    String site_name=site_addr.getSite();
-                    if(unreachable_sites == null)
-                        unreachable_sites=new ArrayList<>();
-                    boolean contains=unreachable_sites.stream().anyMatch(sa -> sa.getSite().equals(site_name));
-                    if(!contains)
-                        unreachable_sites.add(site_addr);
-                    continue;
+                switch(hdr.type) {
+                    case SITE_UNREACHABLE:
+                        Set<String> tmp_sites=hdr.getSites();
+                        if(tmp_sites != null) {
+                            if(unreachable_sites == null)
+                                unreachable_sites=new HashSet<>();
+                            unreachable_sites.addAll(tmp_sites);
+                        }
+                        continue;
+                    case MBR_UNREACHABLE:
+                        Address unreachable_mbr=msg.getObject();
+                        triggerMemberUnreachableEvent(unreachable_mbr);
+                        continue;
                 }
                 copy=copy(msg).dest(hdr.final_dest).src(hdr.original_sender).putHeader(id, hdr);
             }
             process(false, copy);
         }
         if(unreachable_sites != null) {
-            for(SiteAddress sa: unreachable_sites)
-                triggerSiteUnreachableEvent(sa); // https://issues.redhat.com/browse/JGRP-2586
+            for(String s: unreachable_sites)
+                triggerSiteUnreachableEvent(new SiteMaster(s)); // https://issues.redhat.com/browse/JGRP-2586
         }
         if(!batch.isEmpty())
             up_prot.up(batch);
@@ -132,7 +177,8 @@ public class RELAY3 extends RELAY {
         if(log.isDebugEnabled())
             log.debug("%s: sending topo response to %s: %s", local_addr, dest, view);
         RelayHeader hdr=new RelayHeader(TOPO_RSP, dest, local_addr).addToSites(this.site);
-        Message rsp=new ObjectMessage(dest, this.view).putHeader(this.id, hdr);
+        Message rsp=new ObjectMessage(dest, this.view).putHeader(this.id, hdr)
+          .setFlag(Message.TransientFlag.DONT_LOOPBACK);
         down(rsp);
     }
 
@@ -143,7 +189,8 @@ public class RELAY3 extends RELAY {
             if(log.isDebugEnabled())
                 log.debug("%s: sending topo response to %s: %s", local_addr, dest, view);
             RelayHeader hdr=new RelayHeader(TOPO_RSP, dest, local_addr).addToSites(site_name);
-            Message rsp=new ObjectMessage(dest, v).putHeader(this.id, hdr);
+            Message rsp=new ObjectMessage(dest, v).putHeader(this.id, hdr)
+              .setFlag(Message.TransientFlag.DONT_LOOPBACK);
             down(rsp);
         }
     }
@@ -237,9 +284,18 @@ public class RELAY3 extends RELAY {
             log.warn("%s: received a message without a relay header; discarding it", local_addr);
             return;
         }
-        Message copy=copy(msg).dest(hdr.final_dest).src(hdr.original_sender).putHeader(id, hdr);
-        // todo: check if copy is needed!
-        process(true, copy);
+        try {
+            Message copy=copy(msg).dest(hdr.final_dest).src(hdr.original_sender);
+            copy.clearHeaders(); // remove all headers added by the bridge cluster
+            copy.putHeader(id, hdr);
+            ((BaseMessage)copy).readHeaders(hdr.originalHeaders());
+            copy.setFlag(hdr.originalFlags(), false);
+            // todo: check if copy is needed!
+            process(true, copy);
+        }
+        catch(Exception ex) {
+            log.error("%s: failed handling message relayed from %s: %s", local_addr, msg.src(), ex);
+        }
     }
 
     /** Handles SITES_UP/SITES_DOWN/TOPO_REQ/TOPO_RSP messages */
@@ -266,7 +322,8 @@ public class RELAY3 extends RELAY {
                 }
                 return true;
             case TOPO_REQ:
-                sendResponseTo(msg.src(), hdr.returnEntireCache());
+                if(!Objects.equals(local_addr, msg.src()))
+                    sendResponseTo(msg.src(), hdr.returnEntireCache());
                 return true;
             case TOPO_RSP:
                 View v=msg.getObject();
@@ -278,7 +335,7 @@ public class RELAY3 extends RELAY {
                     Address dest=msg.getDest();
                     if(dest != null && ((SiteAddress)dest).type() == Type.SM_ALL) {
                         Message local_mcast=new ObjectMessage(null, v).putHeader(id, hdr);
-                        deliver(null, local_mcast, true, true);
+                        deliver(null, local_mcast, true, true, true);
                     }
                 }
                 return true;
@@ -286,6 +343,34 @@ public class RELAY3 extends RELAY {
         return false;
     }
 
+    @Override
+    protected void triggerSiteUnreachableEvent(SiteAddress s) {
+        if(!delay_sites_down) {
+            _triggerSiteUnreachableEvent(s);
+            return;
+        }
+        String unreachable_site=s.getSite();
+        Predicate<String> pred=k -> relayer != null && relayer.hasRouteTo(k);
+        site_unreachable_delayer.add(unreachable_site, pred, success -> {
+            if(!success) // only trigger if the route was *not* found
+                _triggerSiteUnreachableEvent(s);
+        });
+    }
+
+    protected void _triggerSiteUnreachableEvent(SiteAddress s) {
+        super.triggerSiteUnreachableEvent(s);
+        if(unicast != null) {
+            Predicate<Address> pred=addr -> addr.isSiteAddress() && ((SiteAddress)addr).getSite().equals(s.getSite());
+            unicast.removeSendConnection(pred);
+        }
+    }
+
+    @Override
+    protected void triggerMemberUnreachableEvent(Address mbr) {
+        super.triggerMemberUnreachableEvent(mbr);
+        if(unicast != null)
+            unicast.removeSendConnection(mbr);
+    }
 
     // todo: use CompletableFutures and possibly thenRunAsync() to parallelize (e.g.) routing and local delivery
     protected Object routeThen(Message msg, List<String> sites, Supplier<Object> action) {
@@ -314,8 +399,8 @@ public class RELAY3 extends RELAY {
                 case UNICAST:
                     if(sameSite(dst)) {
                         if(down) {
-                            // no passUp() if dst == local_addr: we want the transport to use a separate thread to do
-                            // loopbacks
+                            // no passUp() if dst == local_addr: we want the transport to use a separate thread to
+                            // handle the loopback message!
                             return deliver(dst, msg,false);
                         }
                         return passUp(msg);
@@ -333,7 +418,8 @@ public class RELAY3 extends RELAY {
                 case SM:
                     if(down)
                         return sendToLocalSiteMaster(local_addr, msg); // todo: local_addr or msg.src()?
-                    throw new IllegalStateException(String.format("non site master received a msg with dst %s",dst));
+                    throw new IllegalStateException(String.format("non site master %s received a msg with dst %s",
+                                                                  local_addr,dst));
                 case UNICAST:
                     if(down) {
                         if(sameSite(dst)) // todo: if same address -> passUp()
@@ -379,12 +465,13 @@ public class RELAY3 extends RELAY {
         if(sites.isEmpty()) // no sites in routing table
             return null;
         RelayHeader hdr=msg.getHeader(this.id);
-        Address dest=msg.dest(), sender=hdr != null && hdr.original_sender != null?
-          ((ExtendedUUID)hdr.getOriginalSender()).addContents((ExtendedUUID)local_addr) : local_addr;
-        // msg.src(sender); // todo: check if necessary
-
+        Address dest=msg.dest(), sender=msg.src();
+        if(sender == null) {
+            sender=hdr != null && hdr.original_sender != null?
+              ((ExtendedUUID)hdr.getOriginalSender()).addContents((ExtendedUUID)local_addr) : local_addr;
+        }
         Set<String> visited_sites=null;
-        if(dest == null || dest instanceof  SiteMaster && ((SiteMaster)dest).getSite() == null) {
+        if(dest == null || dest.isMulticast()) {
             visited_sites=new HashSet<>(sites); // to be added to the header
             visited_sites.add(this.site);
             if(hdr != null && hdr.hasVisitedSites()) {
@@ -399,7 +486,8 @@ public class RELAY3 extends RELAY {
                 route=r.getForwardingRouteMatching(s, sender);
             }
             if(route == null) {
-                suppress_log_no_route.log(SuppressLog.Level.error, s, suppress_time_no_route_errors, sender, s);
+                suppress_log_no_route.log(SuppressLog.Level.error, s, suppress_time_no_route_errors,
+                                          local_addr, sender, dest);
                 sendSiteUnreachableTo(msg.getSrc(), s);
             }
             else
@@ -416,14 +504,16 @@ public class RELAY3 extends RELAY {
      * @param msg The message to deliver
      */
     protected Object deliver(Address next_dest, Message msg, boolean dont_relay) {
-        return deliver(next_dest, msg, dont_relay, false);
+        return deliver(next_dest, msg, dont_relay, false, false);
     }
 
-    protected Object deliver(Address next_dest, Message msg, boolean dont_relay, boolean dont_loopback) {
+    protected Object deliver(Address next_dest, Message msg, boolean dont_relay, boolean dont_loopback, boolean oob) {
         checkLocalAddress(next_dest);
         Address final_dest=msg.dest(), original_sender=msg.src();
-        if(log.isTraceEnabled())
-            log.trace("%s: forwarding message to final destination %s to %s", local_addr, final_dest, next_dest);
+        if(next_dest != null && view != null && !view.containsMember(next_dest)) {
+            sendMemberUnreachableTo(original_sender, next_dest);
+            return null;
+        }
         RelayHeader tmp=msg.getHeader(this.id);
         // todo: check if copy is needed here
         RelayHeader hdr=tmp != null? tmp.copy().setOriginalSender(original_sender).setFinalDestination(final_dest)
@@ -431,6 +521,8 @@ public class RELAY3 extends RELAY {
         Message copy=copy(msg).setDest(next_dest).setSrc(null).putHeader(id, hdr);
         if(dont_relay)
             copy.setFlag(Flag.NO_RELAY);
+        if(oob)
+            copy.setFlag(Flag.OOB);
         if(dont_loopback)
             copy.setFlag(Message.TransientFlag.DONT_LOOPBACK);
         return down_prot.down(copy);
@@ -455,6 +547,15 @@ public class RELAY3 extends RELAY {
      * @param msg The message to be sent up
      */
     protected Object passUp(Message msg) {
+        // drop message to self if DONT_LOOPBACK is set
+        if(msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK)) {
+            Address dest=msg.dest();
+            Type type=dest == null? Type.ALL : ((SiteAddress)dest).type();
+            switch(type) {
+                case ALL: case SM_ALL: case SM:
+                    return null;
+            }
+        }
         RelayHeader hdr=msg.getHeader(this.id);
         Message copy=copy(msg); // todo: check if copy is needed!
         if(hdr != null) {
@@ -484,21 +585,37 @@ public class RELAY3 extends RELAY {
     }
 
     /**
-     * Sends a SITE-UNREACHABLE message to the sender of the message. Because the sender is always local (we're the
-     * relayer), no routing needs to be done
-     * @param src The node who is trying to send a message to the {@code target_site}
+     * Sends a SITE-UNREACHABLE message to the sender of the message.
+     * @param dest The node who is trying to send a message to the {@code target_site}
      * @param target_site The remote site's name.
      */
-    protected void sendSiteUnreachableTo(Address src, String target_site) {
-        if (src == null || src.equals(local_addr)) {
+    protected void sendSiteUnreachableTo(Address dest, String target_site) {
+        if (dest == null || dest.equals(local_addr)) {
             //short circuit
-            // if src == null, it means the message comes from the top protocol (i.e. the local node)
+            // if dest == null, it means the message comes from the top protocol (i.e. the local node)
             triggerSiteUnreachableEvent(new SiteMaster(target_site));
             return;
         }
-        // send message back to the src node.
-        Message msg=new EmptyMessage(src).setFlag(Flag.OOB)
+        // send message back to the dest node.
+        Message msg=new EmptyMessage(dest).setFlag(Flag.OOB)
           .putHeader(id, new RelayHeader(SITE_UNREACHABLE).addToSites(target_site));
+        down(msg);
+    }
+
+    /**
+     * Sends a MBR-UNREACHABLE message to the sender of a unicast message
+     * @param dest The node who original sent the unicast message. Must never be null
+     */
+    protected void sendMemberUnreachableTo(Address dest, Address member) {
+        if(dest.equals(local_addr)) {
+            //short circuit
+            // if dest == null, it means the message comes from the top protocol (i.e. the local node)
+            triggerMemberUnreachableEvent(member);
+            return;
+        }
+        // send message back to the original sender
+        Message msg=new ObjectMessage(dest, member).setFlag(Flag.OOB)
+          .putHeader(id, new RelayHeader(MBR_UNREACHABLE));
         down(msg);
     }
 

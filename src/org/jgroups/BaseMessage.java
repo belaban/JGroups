@@ -3,12 +3,14 @@ package org.jgroups;
 
 
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.Headers;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,13 +45,20 @@ public abstract class BaseMessage implements Message {
     }
 
 
-    public Address               getDest()                 {return dest;}
-    public Message               setDest(Address new_dest) {dest=new_dest; return this;}
-    public Address               getSrc()                  {return sender;}
-    public Message               setSrc(Address new_src)   {sender=new_src; return this;}
-    public int                   getNumHeaders()           {return Headers.size(this.headers);}
-    public Map<Short,Header>     getHeaders()              {return Headers.getHeaders(this.headers);}
-    public String                printHeaders()            {return Headers.printHeaders(this.headers);}
+    public Address           getDest()                         {return dest;}
+    public Message           setDest(Address new_dest)         {dest=new_dest; return this;}
+    public Address           getSrc()                          {return sender;}
+    public Message           setSrc(Address new_src)           {sender=new_src; return this;}
+    public int               getNumHeaders()                   {return Headers.size(this.headers);}
+    public Map<Short,Header> getHeaders()                      {return Headers.getHeaders(this.headers);}
+    public String            printHeaders()                    {return Headers.printHeaders(this.headers);}
+    public ByteArray         writeHeaders() throws IOException {return Headers.writeHeaders(this.headers);}
+    public Message           readHeaders(ByteArray ba) throws IOException, ClassNotFoundException {
+        List<Header> hdrs=Headers.readHeaders(ba);
+        for(Header h: hdrs)
+            putHeader(h.getProtId(), h);
+        return this;
+    }
 
 
     /**
@@ -86,12 +95,10 @@ public abstract class BaseMessage implements Message {
 
 
     public Message setFlag(short flag, boolean transient_flags) {
-        short tmp=transient_flags? this.transient_flags : this.flags;
-        tmp|=flag;
         if(transient_flags)
-            this.transient_flags=(byte)tmp;
+            this.transient_flags=(byte)flag;
         else
-            this.flags=tmp;
+            this.flags=flag;
         return this;
     }
 
@@ -195,13 +202,19 @@ public abstract class BaseMessage implements Message {
         return this;
     }
 
-
-
     public <T extends Header> T getHeader(short id) {
         if(id <= 0)
             throw new IllegalArgumentException("An ID of " + id + " is invalid. Add the protocol which calls " +
                                                  "getHeader() to jg-protocol-ids.xml");
         return Headers.getHeader(this.headers, id);
+    }
+
+    /** Removes all headers: use carefully! */
+    public Message clearHeaders() {
+        synchronized(this) {
+            headers=createHeaders(Util.DEFAULT_HEADERS);
+        }
+        return this;
     }
 
     public <T> T   getPayload() {return getObject();}
@@ -350,7 +363,7 @@ public abstract class BaseMessage implements Message {
     }
 
     protected static Header[] createHeaders(int size) {
-        return size > 0? new Header[size] : new Header[3];
+        return size > 0? new Header[size] : new Header[Util.DEFAULT_HEADERS];
     }
 
 

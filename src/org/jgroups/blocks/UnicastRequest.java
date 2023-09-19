@@ -5,6 +5,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.protocols.relay.SiteAddress;
 
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -18,7 +19,7 @@ import java.util.function.Supplier;
  * @author Bela Ban
  */
 public class UnicastRequest<T> extends Request<T> {
-    protected final Address    target;
+    protected final Address target;
 
 
     public UnicastRequest(RequestCorrelator corr, Address target, RequestOptions options) {
@@ -53,12 +54,19 @@ public class UnicastRequest<T> extends Request<T> {
         corrDone();
     }
 
-
     public void siteUnreachable(String site) {
         if(!(target instanceof SiteAddress) || !((SiteAddress)target).getSite().equals(site) || isDone())
             return;
         completeExceptionally(new UnreachableException(target));
         corrDone();
+    }
+
+    @Override
+    public void memberUnreachable(Address mbr) {
+        if(!isDone() && target != null && target.isSiteAddress() && Objects.equals(target, mbr)) {
+            completeExceptionally(new UnreachableException(mbr));
+            corrDone();
+        }
     }
 
     /**

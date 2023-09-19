@@ -5,6 +5,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
+import org.jgroups.protocols.relay.RELAY;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.AckCollector;
 import org.jgroups.util.MessageBatch;
@@ -73,6 +74,8 @@ public class RSVP extends Protocol {
     public RSVP    ackOnDelivery(boolean b)           {ack_on_delivery=b; return this;}
     public long    getResendInterval()                {return resend_interval;}
     public RSVP    setResendInterval(long i)          {resend_interval=i; return this;}
+    public boolean handleUnicasts()                   {return handle_unicasts;}
+    public RSVP    handleUnicasts(boolean b)          {handle_unicasts=b; return this;}
 
 
 
@@ -90,6 +93,11 @@ public class RSVP extends Protocol {
     public void start() throws Exception {
         super.start();
         startResendTask();
+        Protocol relay=findDownProtocol(RELAY.class);
+        if(relay != null)
+            log.warn("%s: %s only works within a local cluster, but %s was found: however, RSVPs from other sites " +
+                       "will be ignored. Use flag NO_RELAY to make sure RSVP messages are not relayed",
+                     local_addr, RSVP.class.getSimpleName(), relay.getClass().getSimpleName());
     }
 
     public void stop() {
@@ -258,7 +266,6 @@ public class RSVP extends Protocol {
         }
     }
 
-
     protected void handleResponse(Address member, short id) {
         Entry entry=ids.get(id);
         if(entry != null) {
@@ -273,7 +280,7 @@ public class RSVP extends Protocol {
     protected void sendResponse(Address dest, short id) {
         try {
             RsvpHeader hdr=new RsvpHeader(RsvpHeader.RSP,id);
-            Message msg=new EmptyMessage(dest) .putHeader(this.id, hdr)
+            Message msg=new EmptyMessage(dest).putHeader(this.id, hdr)
               .setFlag(Message.Flag.RSVP, Message.Flag.DONT_BUNDLE, Message.Flag.OOB);
 
             if(log.isTraceEnabled())
@@ -304,6 +311,17 @@ public class RSVP extends Protocol {
     @ManagedAttribute(description="Is the resend task running")
     protected synchronized boolean isResendTaskRunning() {
         return resend_task != null && !resend_task.isDone();
+    }
+
+    protected <T extends Protocol> T findDownProtocol(Class<? extends Protocol> cl) {
+        Protocol tmp=down_prot;
+        while(tmp != null) {
+            Class<?> protClass=tmp.getClass();
+            if(cl.isAssignableFrom(protClass))
+                return (T)tmp;
+            tmp=tmp.getDownProtocol();
+        }
+        return null;
     }
 
     protected static class Entry {

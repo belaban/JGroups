@@ -25,7 +25,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 
 /**
- * Failure detection protocol based on TCP connections, successor to {@link FD_SOCK}.
+ * Failure detection protocol based on TCP connections, successor to {@link FD_SOCK}. The design
+ * is at ./docs/design/FD_SOCK2.txt
  * @author Bela Ban April 27 2021
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")

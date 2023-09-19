@@ -198,13 +198,15 @@ public class SizeTest {
         Header[] headers={
           NakAckHeader2.createMessageHeader(322649),
           UnicastHeader3.createDataHeader(1024, (short)22, true),
-          new Frag3Header(22, 2, 3)
+          new Frag3Header(22, 2, 3),
+          null, null
         };
         ByteArray buf=Headers.writeHeaders(headers);
-        Header[] hdrs=Headers.readHeaders(buf);
-        assert hdrs[0].getClass().equals(NakAckHeader2.class);
-        assert ((UnicastHeader3)hdrs[1]).first();
-        assert ((Frag3Header)hdrs[2]).getFragId() == 2;
+        List<Header> hdrs=Headers.readHeaders(buf);
+        assert hdrs.size() == 3;
+        assert hdrs.get(0).getClass().equals(NakAckHeader2.class);
+        assert ((UnicastHeader3)hdrs.get(1)).first();
+        assert ((Frag3Header)hdrs.get(2)).getFragId() == 2;
     }
 
     public void testUnicast3Header() throws Exception {
@@ -615,6 +617,9 @@ public class SizeTest {
         hdr=new RelayHeader(DATA, dest, null)
           .addToSites("sfo")
           .addToVisitedSites(List.of("nyc", "sfc", "lon"));
+        _testSize(hdr);
+
+        hdr.originalHeaders(new ByteArray(new byte[]{'1','2', '3', '4'}, 0, 4));
         _testSize(hdr);
 
         RelayHeader hdr2=hdr.copy();

@@ -24,6 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static org.jgroups.Message.Flag.NO_RELAY;
 import static org.jgroups.Message.Flag.OOB;
 
 
@@ -545,7 +546,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         }
 
         Message view_change_msg=new BytesMessage().putHeader(this.id, new GmsHeader(GmsHeader.VIEW))
-          .setArray(marshal(new_view, digest)).setFlag(Message.TransientFlag.DONT_LOOPBACK);
+          .setArray(marshal(new_view, digest)).setFlag(Message.TransientFlag.DONT_LOOPBACK)
+          .setFlag(NO_RELAY); // a view should only be sent to the local cluster members
         if(new_view instanceof MergeView) // https://issues.redhat.com/browse/JGRP-1484
             view_change_msg.setFlag(Message.Flag.NO_TOTAL_ORDER);
 

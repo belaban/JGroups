@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.util.Bits;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -20,6 +21,7 @@ import java.util.function.Supplier;
 public class RelayHeader extends Header {
     public static final byte DATA             = 1;
     public static final byte SITE_UNREACHABLE = 2; // final_dest is a SiteMaster
+    public static final byte MBR_UNREACHABLE  = 3; // sent back when a given member is not part of the local cluster
     public static final byte SITES_UP         = 4;
     public static final byte SITES_DOWN       = 5;
     public static final byte TOPO_REQ         = 6;
@@ -33,6 +35,8 @@ public class RelayHeader extends Header {
     protected Set<String> visited_sites;
     // used with TOPO_REQ: when set, return the entire cache, otherwise only information about the local members
     protected boolean     return_entire_cache;
+    protected ByteArray   original_hdrs; // marshalled headers (https://issues.redhat.com/browse/JGRP-2729)
+    protected short       original_flags;
 
 
     public RelayHeader() {
@@ -59,6 +63,10 @@ public class RelayHeader extends Header {
     public boolean      hasSites()                     {return sites != null && !sites.isEmpty();}
     public boolean      returnEntireCache()            {return return_entire_cache;}
     public RelayHeader  returnEntireCache(boolean b)   {return_entire_cache=b; return this;}
+    public ByteArray    originalHeaders()              {return original_hdrs;}
+    public RelayHeader  originalHeaders(ByteArray ba)  {original_hdrs=ba; return this;}
+    public short        originalFlags()                {return original_flags;}
+    public RelayHeader  originalFlags(short fl)        {original_flags=fl; return this;}
 
     public String getSite() {
         if(sites == null || sites.isEmpty())
@@ -108,7 +116,8 @@ public class RelayHeader extends Header {
     public RelayHeader copy() {
         RelayHeader hdr=new RelayHeader(type, final_dest, original_sender)
           .addToSites(this.sites)
-          .addToVisitedSites(visited_sites).returnEntireCache(return_entire_cache);
+          .addToVisitedSites(visited_sites).returnEntireCache(return_entire_cache)
+          .originalHeaders(this.original_hdrs).originalFlags(this.original_flags);
         assertNonNullSites();
         hdr.assertNonNullSites();
         return hdr;
@@ -118,7 +127,8 @@ public class RelayHeader extends Header {
     public int serializedSize() {
         assertNonNullSites();
         return Global.BYTE_SIZE*2 + Util.size(final_dest) + Util.size(original_sender) +
-          sizeOf(sites) + sizeOf(visited_sites);
+          sizeOf(sites) + sizeOf(visited_sites) +
+          Global.BYTE_SIZE + (original_hdrs != null? originalHeaders().serializedSize() : 0) + Short.BYTES; // orig-flags
     }
 
     @Override
@@ -138,6 +148,10 @@ public class RelayHeader extends Header {
                 Bits.writeString(s, out);
         }
         assertNonNullSites();
+        out.writeBoolean(original_hdrs != null);
+        if(original_hdrs != null)
+            original_hdrs.writeTo(out);
+        out.writeShort(original_flags);
     }
 
     @Override
@@ -159,6 +173,11 @@ public class RelayHeader extends Header {
                 visited_sites.add(Bits.readString(in));
         }
         assertNonNullSites();
+        if(in.readBoolean()) {
+            original_hdrs=new ByteArray(null, 0, 0);
+            original_hdrs.readFrom(in);
+        }
+        original_flags=in.readShort();
     }
 
     public String toString() {
@@ -173,6 +192,7 @@ public class RelayHeader extends Header {
         switch(type) {
             case DATA:             return "DATA";
             case SITE_UNREACHABLE: return "SITE_UNREACHABLE";
+            case MBR_UNREACHABLE:  return "MBR_UNREACHABLE";
             case SITES_UP:         return "SITES_UP";
             case SITES_DOWN:       return "SITES_DOWN";
             case TOPO_REQ:         return "TOPO_REQ";

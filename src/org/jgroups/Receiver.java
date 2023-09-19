@@ -73,11 +73,11 @@ public interface Receiver {
      * been written, the OutputStream doesn't need to be closed as stream closing is automatically
      * done when a calling thread returns from this callback.
      *
-     * @param output The OutputStream
+     * @param out The OutputStream
      * @throws Exception If the streaming fails, any exceptions should be thrown so that the state requester
      *                   can re-throw them and let the caller know what happened
      */
-    default void getState(OutputStream output) throws Exception {
+    default void getState(OutputStream out) throws Exception {
         throw new UnsupportedOperationException("getState() needs to be overridden by applications");
     }
 
@@ -86,11 +86,11 @@ public interface Receiver {
      * read, the InputStream doesn't need to be closed as stream closing is automatically done when a
      * calling thread returns from this callback.
      *
-     * @param input The InputStream
+     * @param in The InputStream
      * @throws Exception If the streaming fails, any exceptions should be thrown so that the state requester
      *                   can catch them and thus know what happened
      */
-    default void setState(InputStream input) throws Exception {
+    default void setState(InputStream in) throws Exception {
         throw new UnsupportedOperationException("setState() needs to be overridden by applications");
     }
 }

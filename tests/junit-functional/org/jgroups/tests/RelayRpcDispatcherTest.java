@@ -5,12 +5,10 @@ import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
 import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.protocols.MERGE3;
-import org.jgroups.protocols.SHARED_LOOPBACK;
-import org.jgroups.protocols.SHARED_LOOPBACK_PING;
-import org.jgroups.protocols.UNICAST3;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
+import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.protocols.relay.*;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.Protocol;
@@ -20,6 +18,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -44,6 +43,12 @@ public class RelayRpcDispatcherTest {
     protected static final String LON_CLUSTER    = "lon-cluster";
     protected static final String SFO_CLUSTER    = "sfo-cluster";
     protected static final String SFO            = "sfo", LON="lon";
+
+    protected static final InetAddress LOOPBACK;
+
+    static {
+        LOOPBACK=InetAddress.getLoopbackAddress();
+    }
 
     @DataProvider protected Object[][] relayProvider() {
         return new Object[][] {
@@ -76,6 +81,29 @@ public class RelayRpcDispatcherTest {
         a.connect(LON_CLUSTER);
         try {
             rpca.callRemoteMethod(new SiteMaster("nyc"),"foo",null,null,RequestOptions.SYNC());
+            assert false : "The RPC should have thrown an UnreachableException";
+        }
+        catch(UnreachableException unreachable) {
+            System.out.println("caught " + unreachable.getClass().getSimpleName() + " - as expected");
+        }
+    }
+
+    /** A:lon invokes a sync RPC on Y:sfo, but Y:sfo is dead. It should throw an exception */
+    public void testMemberUnreachable(Class<? extends RELAY> cl) throws Exception {
+        if(cl.equals(RELAY2.class))  // doesn't support MBR_UNREACHABLE event
+            return;
+        setUp(cl);
+        a.connect(LON_CLUSTER);
+        x.connect(SFO_CLUSTER);
+        y.connect(SFO_CLUSTER);
+        Util.waitUntilAllChannelsHaveSameView(2000, 100, x,y);
+        Address target=RelayTests.addr(cl, y, SFO);
+        Util.close(y);
+        Util.waitUntil(2000, 100, () -> y.getView() == null && x.getView().size() == 1);
+        RELAY r=a.stack().findProtocol(RELAY.class);
+        r.setRouteStatusListener(new DefaultRouteStatusListener(r::addr).verbose(true));
+        try {
+            rpca.callRemoteMethod(target,"foo",null,null,RequestOptions.SYNC());
             assert false : "The RPC should have thrown an UnreachableException";
         }
         catch(UnreachableException unreachable) {
@@ -125,16 +153,15 @@ public class RelayRpcDispatcherTest {
         assertSiteView(x, List.of(LON, SFO));
         assert getCurrentSites(y) == null;
 
-        System.out.println("B: sending message 0 to the site master of SFO");
-        Address sm_sfo=new SiteMaster(SFO);
         MethodCall call=new MethodCall(ServerObject.class.getMethod("foo"));
         System.out.println("B: call foo method on A");
-        Object rsp = rpcb.callRemoteMethod(a.getAddress(), call, new RequestOptions(ResponseMode.GET_ALL,5000));
+        Object rsp = rpcb.callRemoteMethod(a.getAddress(), call, new RequestOptions(ResponseMode.GET_ALL, 2000));
         System.out.println("RSP is: " + rsp );
         
-        
+        System.out.println("B: sending message 0 to the site master of SFO");
+        Address sm_sfo=new SiteMaster(SFO);
         System.out.println("B: call foo method on SFO master site");
-        rsp = rpcb.callRemoteMethod(sm_sfo, call, new RequestOptions(ResponseMode.GET_ALL,15000));
+        rsp = rpcb.callRemoteMethod(sm_sfo, call, new RequestOptions(ResponseMode.GET_ALL, 5000));
         System.out.println("RSP is: " + rsp );
         
         System.out.println("B: call foo method on all members in site LON");
@@ -167,17 +194,20 @@ public class RelayRpcDispatcherTest {
     
     
     protected static JChannel createNode(Class<? extends RELAY> cl, String site_name, String node_name) throws Exception {
-    	JChannel ch=new JChannel(new SHARED_LOOPBACK(),
-                                 new SHARED_LOOPBACK_PING(),
-                                 new MERGE3().setMaxInterval(3000).setMinInterval(1000),
-                                 new NAKACK2(),
-                                 new UNICAST3(),
-                                 new GMS().printLocalAddress(false),
-                                 createRELAY(cl, site_name));
-    	ch.setName(node_name);
-    	return ch;
+        Protocol[] protocols={
+          new TCP().setBindAddress(LOOPBACK),
+          new LOCAL_PING(),
+          new NAKACK2().useMcastXmit(false),
+          cl.equals(RELAY3.class)? createRELAY(cl, site_name).asyncRelayCreation(false) : null,
+          new UNICAST3(),
+          new STABLE().setDesiredAverageGossip(50000).setMaxBytes(8_000_000),
+          new GMS().printLocalAddress(false).setJoinTimeout(100),
+          cl.equals(RELAY2.class)? createRELAY(cl, site_name) : null,
+        };
+        return new JChannel(Util.combine(Protocol.class, protocols)).name(node_name);
     }
-    
+
+
     protected static class ServerObject {
     	protected int i;
 
@@ -198,6 +228,8 @@ public class RelayRpcDispatcherTest {
 
 
     protected static RELAY createRELAY(Class<? extends RELAY> cl, String site_name) throws Exception {
+        if(cl == null)
+            return null;
         RELAY relay=cl.getConstructor().newInstance();
         relay.site(site_name).asyncRelayCreation(true);
 

@@ -60,6 +60,15 @@ public class ExpiryCacheTest {
         assert cache.size() == 0;
     }
 
+    public void testHasExpired() {
+        ExpiryCache<String> cache=new ExpiryCache<>(20000);
+        assert !cache.hasExpired("Bela");
+        cache.addIfAbsentOrExpired("Bela");
+        assert !cache.hasExpired("Bela");
+        cache.setTimeout(200);
+        Util.sleep(1000);
+        assert cache.hasExpired("Bela");
+    }
 
     protected static <T> boolean add(ExpiryCache<T> cache, T key) {
         boolean added=cache.addIfAbsentOrExpired(key);

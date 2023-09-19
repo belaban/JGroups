@@ -372,7 +372,9 @@ public abstract class Protocol implements Lifecycle {
             up_prot.up(batch);
     }
 
-
+    public String toString() {
+        return String.format("%s%s", getClass().getSimpleName(), local_addr != null? String.format(" (%s)", local_addr) : "");
+    }
 
     /**
      * Called by the default implementation of {@link #up(org.jgroups.util.MessageBatch)} for each message to determine

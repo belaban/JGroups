@@ -142,10 +142,6 @@ public class LOCAL_PING extends Discovery {
         }
     }
 
-    public String toString() {
-        return String.format("%s(%s)", LOCAL_PING.class.getSimpleName(), local_addr);
-    }
-
     protected void addAddressToLocalCache(Address addr, PhysicalAddress phys_addr) {
         Tuple<Address,PhysicalAddress> tuple=new Tuple(addr, phys_addr);
         down_prot.down(new Event(Event.ADD_PHYSICAL_ADDRESS, tuple));

@@ -272,17 +272,8 @@ public abstract class RELAY extends Protocol {
         super.init();
         configure();
 
-        if(site_master_picker == null) {
-            site_master_picker=new SiteMasterPicker() {
-                public Address pickSiteMaster(List<Address> site_masters, Address original_sender) {
-                    return Util.pickRandomElement(site_masters);
-                }
-
-                public Route pickRoute(String site, List<Route> routes, Address original_sender) {
-                    return Util.pickRandomElement(routes);
-                }
-            };
-        }
+        if(site_master_picker == null)
+            site_master_picker=new StickySiteMasterPicker();
 
         if(suppress_time_no_route_errors <= 0)
             throw new IllegalArgumentException("suppress_time_no_route_errors has to be > 0");
@@ -336,8 +327,15 @@ public abstract class RELAY extends Protocol {
     }
 
     public Object down(Event evt) {
-        if(evt.getType() == Event.VIEW_CHANGE)
-            handleView(evt.getArg());
+        switch(evt.type()) {
+            case Event.VIEW_CHANGE:
+                handleView(evt.arg());
+                break;
+            case Event.IS_LOCAL_SITEMASTER:
+                return isLocalSitemaster(evt.arg());
+            case Event.IS_LOCAL:
+                return isLocal(evt.arg());
+        }
         return down_prot.down(evt);
     }
 
@@ -351,8 +349,12 @@ public abstract class RELAY extends Protocol {
 
     protected abstract void handleRelayMessage(Message msg);
 
-    public String toString() {
-        return String.format("%s%s", getClass().getSimpleName(), local_addr != null? String.format(" (%s)", local_addr) : "");
+    protected boolean isLocal(SiteAddress addr) {
+        return Objects.equals(site, addr.getSite());
+    }
+
+    protected boolean isLocalSitemaster(SiteAddress addr) {
+        return is_site_master && isLocal(addr);
     }
 
     /** Parses the configuration by reading the config file */
@@ -412,6 +414,8 @@ public abstract class RELAY extends Protocol {
     /** Returns a site master from site_masters */
     protected Address pickSiteMaster(Address sender) {
         List<Address> masters=site_masters;
+        if(masters == null || masters.isEmpty())
+            return null;
         if(masters.size() == 1)
             return masters.get(0);
         return site_master_picker.pickSiteMaster(masters, sender);
@@ -421,6 +425,12 @@ public abstract class RELAY extends Protocol {
         up_prot.up(new Event(Event.SITE_UNREACHABLE, remoteSite));
         if(route_status_listener != null)
             route_status_listener.sitesUnreachable(remoteSite.getSite());
+    }
+
+    protected void triggerMemberUnreachableEvent(Address mbr) {
+        up_prot.up(new Event(Event.MBR_UNREACHABLE, mbr));
+        if(route_status_listener != null)
+            route_status_listener.memberUnreachable(mbr);
     }
 
 }

@@ -21,8 +21,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
-import static org.jgroups.Message.Flag.NO_RELIABILITY;
-import static org.jgroups.Message.Flag.OOB;
+import static org.jgroups.Message.Flag.*;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 
 
@@ -624,7 +623,7 @@ public class STABLE extends Protocol {
         // https://issues.redhat.com/browse/JGRP-1638: we reverted to sending the STABILITY message *unreliably*,
         // but clear votes *before* sending it
         try {
-            Message msg=new ObjectMessage(null, d).setFlag(OOB, NO_RELIABILITY).setFlag(DONT_LOOPBACK)
+            Message msg=new ObjectMessage(null, d).setFlag(OOB, NO_RELIABILITY, NO_RELAY).setFlag(DONT_LOOPBACK)
               .putHeader(id, new StableHeader(StableHeader.STABILITY, view_id));
             log.trace("%s: sending stability msg %s", local_addr, printDigest(d));
             num_stability_msgs_sent++;

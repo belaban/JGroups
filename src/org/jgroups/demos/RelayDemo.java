@@ -1,15 +1,16 @@
 package org.jgroups.demos;
 
 import org.jgroups.*;
-import org.jgroups.protocols.relay.RELAY;
-import org.jgroups.protocols.relay.RELAY3;
-import org.jgroups.protocols.relay.RouteStatusListener;
+import org.jgroups.protocols.relay.*;
 import org.jgroups.protocols.relay.Topology;
 import org.jgroups.util.ExtendedUUID;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /** Demos RELAY. Create 2 *separate* clusters with RELAY as top protocol. Each RELAY has bridge_props="tcp.xml" (tcp.xml
  * needs to be present). Then start 2 instances in the first cluster and 2 instances in the second cluster. They should
@@ -17,7 +18,7 @@ import java.util.List;
  * @author Bela Ban
  */
 public class RelayDemo implements Receiver {
-    protected static final String SITE_MASTERS="site-masters";
+    protected static final String SITE_MASTERS="site-masters", SENDTO="sendto";
     protected JChannel            ch;
     protected RELAY               relay;
 
@@ -84,24 +85,8 @@ public class RelayDemo implements Receiver {
         if(relay == null)
             throw new IllegalStateException(String.format("Protocol %s not found", RELAY.class.getSimpleName()));
         String site_name=relay.site();
-        if(print_route_status) {
-            relay.setRouteStatusListener(new RouteStatusListener() {
-                public void sitesUp(String... sites) {
-                    System.out.printf("-- %s: site(s) %s came up\n",
-                                      ch.getAddress(), String.join(", ", sites));
-                }
-
-                public void sitesDown(String... sites) {
-                    System.out.printf("-- %s: site(s) %s went down\n",
-                                      ch.getAddress(), String.join(", ", sites));
-                }
-
-                public void sitesUnreachable(String... sites) {
-                    System.out.printf("-- %s: site(s) %s are unreachable\n",
-                                      ch.getAddress(), String.join(", ", sites));
-                }
-            });
-        }
+        if(print_route_status)
+            relay.setRouteStatusListener(new DefaultRouteStatusListener(() -> relay.addr()).verbose(true));
         if(use_view_handler)
             relay.topo().setViewHandler((s, v) -> {
                 if(!s.equals(relay.getSite()))
@@ -162,7 +147,46 @@ public class RelayDemo implements Receiver {
             System.out.printf("%s\n", relay.printRoutes());
             return true;
         }
+        if(line.startsWith(SENDTO)) {
+            sendTo(line);
+            return true;
+        }
         return false;
+    }
+
+    // sendto dest msg times sleep
+    protected void sendTo(String line) {
+        String[] list=line.split("\\s"); // whitespace, ie. " "
+        long sleep=Long.parseLong(list[list.length-1]);
+        int times=Integer.parseInt(list[list.length-2]);
+        String dest=list[1];
+        List<String> tmp=new ArrayList<>(Arrays.asList(list).subList(2, list.length - 2));
+        String msg=String.join(" ", tmp);
+        String[] s=dest.split(":");
+        String member_name=s[0], site_name=s[1];
+        Map<String,View> cache=relay.topo().cache();
+        View v=cache.get(site_name);
+        if(v == null)
+            throw new IllegalArgumentException(String.format("site %s not found in cache", site_name));
+        Address target=null;
+        for(Address addr: v) {
+            SiteUUID sa=(SiteUUID)addr;
+            if(member_name.equals(sa.getName())) {
+                target=sa;
+                break;
+            }
+        }
+        if(target == null)
+            throw new IllegalArgumentException(String.format("member %s not found in cache", member_name));
+        try {
+            for(int i=1; i <= times; i++) {
+                ch.send(target, String.format("%s [#%d]", msg, i));
+                Util.sleep(sleep);
+            }
+        }
+        catch(Exception ex) {
+            System.err.printf("failed sending msg to %s: %s\n", target, ex);
+        }
     }
 
     protected String printTopo(String line, String command, boolean refresh) {
@@ -188,7 +212,8 @@ public class RelayDemo implements Receiver {
                              "\nsites: prints the configured sites" +
                              "\ntopo: prints the topology (site masters and local members of all sites)" +
                              "\npt: prints the cache (no refresh)" +
-                             "\nroutes: prints all routes (if site master)\n");
+                             "\nroutes: prints all routes (if site master)" +
+                             "\nsendto <dest> msg <number of times> <sleep (ms)>\n");
     }
 
 

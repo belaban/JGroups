@@ -116,6 +116,7 @@ public class FORK extends Protocol {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
             case Event.SITE_UNREACHABLE:
+            case Event.MBR_UNREACHABLE:
                 for(Protocol bottom: fork_stacks.values())
                     bottom.up(evt);
                 break;

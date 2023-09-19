@@ -56,7 +56,8 @@ public class Event {
     public static final int LOCK_SIGNAL                        = 99; // arg = AwaitInfo
     public static final int IS_MERGE_IN_PROGRESS               = 100; // returns true or false
     public static final int GET_PHYSICAL_ADDRESSES             = 102; // arg = null (returns all physical addresses)
-    public static final int SITE_UNREACHABLE                   = 104; // arg = SiteMaster (RELAY2)
+    public static final int SITE_UNREACHABLE                   = 104; // arg = SiteMaster (RELAY2/RELAY3)
+    public static final int MBR_UNREACHABLE                    = 105; // arg = Address (member)
     public static final int PUNCH_HOLE                         = 106; // arg = Address (member)
     public static final int CLOSE_HOLE                         = 107; // arg = Address (member)
     public static final int GET_VIEW_FROM_COORD                = 108;
@@ -65,6 +66,8 @@ public class Event {
     public static final int SET_SECRET_KEY                     = 112; // arg = Tuple<SecretKey,byte[]> // PK+version
     public static final int UNLOCK_FORCE                       = 113; // arg = lock name
     public static final int INSTALL_MERGE_VIEW                 = 114; // arg = MergeView
+    public static final int IS_LOCAL_SITEMASTER                = 115; // arg = SiteMaster(site), returns true / false
+    public static final int IS_LOCAL                           = 116; // arg = SiteAddress(site), returns true / false
 
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
 
@@ -145,6 +148,7 @@ public class Event {
             case IS_MERGE_IN_PROGRESS:   return "IS_MERGE_IN_PROGRESS";
             case GET_PHYSICAL_ADDRESSES: return "GET_PHYSICAL_ADDRESSES";
             case SITE_UNREACHABLE:       return "SITE_UNREACHABLE";
+            case MBR_UNREACHABLE:        return "MBR_UNREACHABLE";
             case PUNCH_HOLE:             return "PUNCH_HOLE";
             case CLOSE_HOLE:             return "CLOSE_HOLE";
             case GET_VIEW_FROM_COORD:    return "GET_VIEW_FROM_COORD";
@@ -153,6 +157,8 @@ public class Event {
             case SET_SECRET_KEY:         return "SET_SECRET_KEY";
             case UNLOCK_FORCE:           return "UNLOCK_FORCE";
             case INSTALL_MERGE_VIEW:     return "INSTALL_MERGE_VIEW";
+            case IS_LOCAL_SITEMASTER:    return "IS_LOCAL_SITEMASTER";
+            case IS_LOCAL:               return "IS_LOCAL";
 
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";

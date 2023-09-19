@@ -41,8 +41,6 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
         ip_addr=InetAddress.getByName(i);
     }
 
-
-
     public IpAddress(InetAddress i, int p) {
         ip_addr=i; port=p;
         if(this.ip_addr == null)

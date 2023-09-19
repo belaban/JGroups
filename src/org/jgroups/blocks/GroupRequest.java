@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 
 
 /**
@@ -111,9 +112,17 @@ public class GroupRequest<T> extends Request<RspList<T>> {
         }
     }
 
+    @Override public void siteUnreachable(String site) {
+        Predicate<SiteAddress> pred=addr -> addr.getSite().equals(site);
+        unreachable(pred);
+    }
 
+    @Override public void memberUnreachable(Address mbr) {
+        Predicate<SiteAddress> pred=addr -> addr.equals(mbr);
+        unreachable(pred);
+    }
 
-    public void siteUnreachable(String site) {
+    protected void unreachable(Predicate<SiteAddress> pred) {
         lock.lock();
         try {
             for(Map.Entry<Address,Rsp<T>> entry : rsps.entrySet()) {
@@ -121,7 +130,7 @@ public class GroupRequest<T> extends Request<RspList<T>> {
                 if(!(member instanceof SiteAddress))
                     continue;
                 SiteAddress addr=(SiteAddress)member;
-                if(addr.getSite().equals(site)) {
+                if(pred.test(addr)) {
                     Rsp<T> rsp=entry.getValue();
                     if(rsp != null && rsp.setUnreachable()) {
                         lock.lock();
