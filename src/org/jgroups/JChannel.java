@@ -107,7 +107,8 @@ public class JChannel implements Closeable {
 
     /**
      * Creates a channel with a configuration based on an input stream.
-     * @param input An input stream, pointing to a streamed configuration
+     * @param input An input stream, pointing to a streamed configuration. It is the caller's resposibility to close
+     *              the input stream after the constructor returns
      */
     public JChannel(InputStream input) throws Exception {
         this(ConfiguratorFactory.getStackConfigurator(input));
