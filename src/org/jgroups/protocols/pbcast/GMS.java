@@ -360,6 +360,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         leaver.reset();
         if(prev_members != null)
             prev_members.clear();
+        view_handler.processing(false);
     }
 
 
