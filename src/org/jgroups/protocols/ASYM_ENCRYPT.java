@@ -558,7 +558,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             cacheGroupKey(sym_version);
         }
         catch(Exception ex) {
-            log.error("%s: failed creating group key and initializing ciphers: %s", local_addr, ex);
+            log.error("%s: failed creating group key and initializing ciphers", local_addr, ex);
         }
     }
 
