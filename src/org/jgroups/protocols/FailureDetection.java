@@ -118,7 +118,7 @@ public abstract class FailureDetection extends Protocol {
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
         for(Tuple<Address,Long> tmp: suspect_history) {
-            sb.append(new Date(tmp.getVal2())).append(": ").append(tmp.getVal1()).append("\n");
+            sb.append(Util.utcEpoch(tmp.getVal2())).append(": ").append(tmp.getVal1()).append("\n");
         }
         return sb.toString();
     }

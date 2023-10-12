@@ -177,7 +177,7 @@ public class ViewHandler<R> {
             log().trace("%s: queue is suspended; request %s is discarded", gms.getAddress(), req);
             return false;
         }
-        String log=new Date() + ": " + req;
+        String log= Util.utcNow() + ": " + req;
         lock.lock();
         try {
             if(!requests.contains(req)) { // non-null check already performed (above)
@@ -212,7 +212,7 @@ public class ViewHandler<R> {
             for(R req: reqs) {
                 if(req != null && !requests.contains(req)) {
                     requests.add(req);
-                    history.add(new Date() + ": " + req);
+                    history.add(Util.utcNow() + ": " + req);
                 }
             }
             return processing.compareAndSet(false, true);
