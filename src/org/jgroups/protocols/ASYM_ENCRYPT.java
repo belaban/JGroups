@@ -101,6 +101,11 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
     }
 
     public void init() throws Exception {
+        SecretKey k=createSecretKey();
+        byte[] encoded=k.getEncoded();
+        if(encoded == null)
+            throw new IllegalArgumentException(String.format("secret key %s/%s does not support encoding (FIPS enabled?)",
+                                                             k.getAlgorithm(), k.getFormat()));
         send_group_keys=false;
         initKeyPair();
         super.init();
