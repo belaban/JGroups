@@ -108,7 +108,7 @@ public class FD_HOST extends Protocol {
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
         for(Tuple<InetAddress,Long> tmp: suspect_history) {
-            sb.append(new Date(tmp.getVal2())).append(": ").append(tmp.getVal1()).append("\n");
+            sb.append(Util.utcEpoch(tmp.getVal2())).append(": ").append(tmp.getVal1()).append("\n");
         }
         return sb.toString();
     }

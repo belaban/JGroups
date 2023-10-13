@@ -107,7 +107,7 @@ public class SOS extends Protocol {
     protected String getMetadata() {
         TP tp=stack.getTransport();
         return String.format("\nDate: %s, member: %s (%s), version: %s\nview: %s\n",
-                             new Date(), tp.getAddress(), tp.getPhysicalAddress(),
+              Util.utcNow(), tp.getAddress(), tp.getPhysicalAddress(),
                              Version.printVersion(), tp.view());
     }
 

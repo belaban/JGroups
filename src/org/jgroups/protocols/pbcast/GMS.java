@@ -692,7 +692,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
         if(stats) {
             num_views++;
-            prev_views.add(new Date() + ": " + new_view);
+            prev_views.add(Util.utcNow() + ": " + new_view);
         }
     }
 

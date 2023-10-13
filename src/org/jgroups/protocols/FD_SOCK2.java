@@ -473,7 +473,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
             return;
 
         suspects.remove(local_addr);
-        suspects.forEach(suspect -> suspect_history.add(String.format("%s: %s", new Date(), suspect)));
+        suspects.forEach(suspect -> suspect_history.add(String.format("%s: %s", Util.utcNow(), suspect)));
         suspected_mbrs.add(suspects);
         Collection<Address> suspects_copy=suspected_mbrs.getMembers(); // returns a copy
         if(suspects_copy.isEmpty())
