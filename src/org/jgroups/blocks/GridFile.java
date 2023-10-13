@@ -7,7 +7,6 @@ import org.jgroups.annotations.Experimental;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Set;
 
 /**
@@ -360,8 +359,8 @@ public class GridFile extends File {
             StringBuilder sb=new StringBuilder();
             sb.append(getType());
             if(is_file)
-                sb.append(", len=" + Util.printBytes(length) + ", chunk_size=" + chunk_size);
-            sb.append(", mod_time=" + new Date(modification_time));
+                sb.append(", len=").append(Util.printBytes(length)).append(", chunk_size=").append(chunk_size);
+            sb.append(", mod_time=").append(Util.utcEpoch(modification_time));
             return sb.toString();
         }
 

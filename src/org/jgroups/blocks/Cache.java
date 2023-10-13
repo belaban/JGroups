@@ -202,7 +202,7 @@ public class Cache<K,V> {
             if(expiration_time <= 0)
                 sb.append(expiration_time);
             else {
-                sb.append(new Date(expiration_time));
+                sb.append(Util.utcEpoch(expiration_time));
             }
             sb.append(")\n");
         }

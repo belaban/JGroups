@@ -32,6 +32,10 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -110,6 +114,7 @@ public class Util {
     private static final StackType  ip_stack_type=_getIpStackType();
     public static final boolean     can_bind_to_mcast_addr;
     protected static ResourceBundle resource_bundle;
+    static DateTimeFormatter UTF_FORMAT = DateTimeFormatter.ofPattern("E MMM d H:m:s 'UTC' y");
 
     static {
         String tmp;
@@ -5007,6 +5012,14 @@ public class Util {
             }
         }
         return ret;
+    }
+
+    public static String utcNow() {
+        return UTF_FORMAT.format(LocalDateTime.now(ZoneOffset.UTC));
+    }
+
+    public static String utcEpoch(long milliseconds) {
+        return UTF_FORMAT.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(milliseconds), ZoneOffset.UTC));
     }
 
 }

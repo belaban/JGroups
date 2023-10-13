@@ -525,7 +525,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             return;
 
         suspects.remove(local_addr);
-        suspects.forEach(suspect -> suspect_history.add(String.format("%s: %s", new Date(), suspect)));
+        suspects.forEach(suspect -> suspect_history.add(String.format("%s: %s", Util.utcNow(), suspect)));
 
         suspected_mbrs.addAll(suspects);
         List<Address> eligible_mbrs=new ArrayList<>(this.members);
@@ -752,7 +752,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         bcast_task.addSuspectedMember(suspected_mbr);
         if(stats) {
             num_suspect_events++;
-            suspect_history.add(String.format("%s: %s", new Date(), suspected_mbr));
+            suspect_history.add(String.format("%s: %s", Util.utcNow(), suspected_mbr));
         }
     }
 

@@ -752,7 +752,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
      * Prints startup information.
      */
     private void printStartupInfo() {
-        System.out.println("GossipRouter started at " + new Date());
+        System.out.println("GossipRouter started at " + Util.utcNow());
 
         System.out.print("Listening on port " + port);
         System.out.println(" bound on address " + server.localAddress());
