@@ -32,13 +32,11 @@ packets is preferred to costly retransmission).
 === Transport protocols
 
 A _transport protocol_ refers to the protocol at the bottom of the protocol stack which is
-            responsible for sending messages to and receiving messages from the network. There are a number of transport
-            protocols in JGroups. They are discussed in the following sections.
+responsible for sending messages to and receiving messages from the network. There are a number of transport
+protocols in JGroups. They are discussed in the following sections.
         
 
 A typical protocol stack configuration using UDP is:
-        
-
 
 [source,xml]
 ----
@@ -1329,11 +1327,11 @@ you'll get a message stating the site is unreachable.
 [[Relay3Advanced]]
 === Hierarchical/asymmetric routing with RELAY3
 
-`RELAY3` is the successor to RELAY2. It has been refactored to concentrate the entire routing logic in a single place,
+`RELAY3` is the successor to `RELAY2`. It has been refactored to concentrate the entire routing logic in a single place,
 and it provides _asymmetric (hierarchical) routing_. Contrary to RELAY2, this means that sites are not necessarily
 connected to all other sites.
 
-CAUTION: RELAY2 and RELAY3 are not compatible, and can therefore not be used in the same network.
+CAUTION: RELAY2 and RELAY3 are *not compatible*, and can therefore not be used in the same network.
 
 For example, in <<AsymmetricRouting>>, we have sites `HF`, `NET1`, `NET2` and `NET3`:
 
@@ -1420,7 +1418,164 @@ The 3 bridges are defined in the 3 `bridge-*.xml` files.
 
 To use the config files to run a demo (e.g. `RelayDemo`), the IP addresses of the files have to be changed.
 
+A sample config (e.g. net1.xml) looks as follows (edited for brevity):
+[[ReliableRELAY3]]
+[source,xml]
+----
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="urn:org:jgroups"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+    <UDP
+         bind_addr="192.168.2.2"
+         bind_port="7000"
+         mcast_addr="225.0.0.1" />
 
+    <PING />
+    <pbcast.NAKACK2 xmit_interval="500"
+                    discard_delivered_msgs="true" />
+    <relay.RELAY3 site="net1"
+                 max_site_masters="1"
+                 can_become_site_master="true">
+        <RelayConfiguration xmlns="urn:jgroups:relay:1.0"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="urn:jgroups:relay:1.0 relay.xsd">
+            <sites>
+                <site name="net1">
+                    <bridges>
+                        <bridge name="bridge-net1-net2" config="/Users/bela/bridge-net1-net2.xml"/>
+                        <bridge name="bridge-net1-hf"   config="/Users/bela/bridge-net1-hf.xml"/>
+                    </bridges>
+                    <forwards>
+                        <forward to="net3" gateway="net2"/>
+                    </forwards>
+                </site>
+            </sites>
+        </RelayConfiguration>
+    </relay.RELAY3>
+    <UNICAST3 xmit_interval="500" />
+    <pbcast.STABLE desired_avg_gossip="50000"
+                   max_bytes="8m"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="1000" />
+</config>
+----
+
+NOTE: The above configuration requires modifications; `bind_addr`, `mcast_addr` and the location of the bridge files
+(e.g. `/Users/bela/bridge-net1-net2.xml`) need to be changed.
+
+==== Reliability of messages across sites
+
+A downside of `RELAY2` has always been that messages between sites can be dropped, e.g. in the following scenario:
+
+[ditaa]
+----
+              LON                                             NYC
+
+       +----+     +----+       bridge LON to NYC      +----+      +----+
+       |  B |     |  A | ---------------------------> |  D |      |  E |
+       +----+     +----+                              +----+      +----+
+                     ^                                   |
+                     |                                   |
+          +--+--+    |                                   |    +----+
+          |  C  |----+                                   +--> |  F |
+          +-----+                                             +----+
+----
+
+* Sites LON with members {A,B,C} and NYC with {D,E,F}; A and D are site masters
+* C:lon sends a message M to F:nyc
+** This means C:lon sends M to A:lon, which forwards it to D:nyc, which then forwards it to F:nyc
+* Before F:nyc receives M, the following can happen:
+** Site master A crashes. Although B will become site master a few milliseconds later -> M is lost
+** Site master D:nyc crashes. Before E:nyc can take over -> M is lost
+
+Applications would typically either use blocking RPCs or some ack to know that a message was received by the target
+in a different site.
+
+The reason for the potential loss of M is that *M is not retransmitted across sites*, unlike in the local cluster.
+
+Enter `RELAY3`: the configuration in <<ReliableRELAY3>> above has `UNICAST3` *above* `RELAY3`, so unicasts will be
+retransmitted, regardless of whether the destination is in the local cluster or in a remote site. This looks as follows:
+
+[ditaa]
+----
+          LON                                                                 NYC
+
+     +----------+                                                        +----------+
+     |    GMS   |                                                        |   GMS    |
+     +----------|                                                        +----------+
+     | UNICAST3 |                  bridge LON  to NYC                    |          |
+     +----------+                                                        +----------+
+     |  RELAY3  | <---> +----------+               +------------+ <----> |  RELAY3  |
+     +----------+       |   GMS    |               |    GMS     |        +----------+
+     | NAKACK2  |       +----------+               +------------+        |  NAKACK2 |
+     +----------+       | UNICAST3 |               |  UNICAST3  |        +----------+
+     |   ...    |       +----------+               +------------|        |    ...   |
+     +----------+       |  NAKACK2 |               |  NAKACK2   |        +----------+
+     |   UDP    |       +----------+               +------------+        |   UDP    |
+     +----------+       |    ...   |               |     ...    |        +----------+
+                        +----------+               +------------+
+                        |    TCP   | <-----------> |     TCP    |
+                        +----------+               +------------+
+----
+
+NOTE: Reliability currently applies only to unicast messages, not to multicast messages! Reliable multicast messages
+will be investigated in https://issues.redhat.com/browse/JGRP-2738.
+
+Of course, `RELAY3` can still be on top of the stack, above `UNICAST3`, but then unicast messages wold not get
+retransmitted, resulting in the same behavior as with `RELAY2`.
+
+However, the above configuration is recommended for `RELAY3`. If a specific messages doesn't need to be retransmitted
+across sites, flag `NO_RELIABILITY` can be set. This allows a user to define on a per-message basis whether or not to
+enable or disable retransmission across sites.
+
+In the example above, the following would happen:
+
+* Site master A crashes:
+** M is retransmitted
+** B becomes site master -> retransmission ensures that B will eventually receive M
+* Site master D:nyc crashes
+** M is retransmitted
+** New site master E:nyc receives and forwards M to F:nyc
+
+
+===== Stopping of retransmission to dead members / sites
+In the above example, retransmission of M ensures that M will eventually be received. However, what happens when F:nyc
+crashes, or the entire site "nyc" crashes?
+
+When F:nyc crashes, the site master of "nyc" (either D or E) sends a MBR-UNREACHABLE message back to the sender
+of M (C:lon). This triggers 2 actions:
+
+* C's `RouteStatusListener.memberUnreachable(Address m)` method (in `RELAY3`) will be invoked
+* In `UNICAST3` of C, the sender entry for F:nyc will be removed, stopping retransmission of M
+
+When members D, E and F of site "nyc" crash, then a SITE-UNREACHABLE message will be sent to C:lon. This causes 2 actions:
+
+ * C's `RouteStatusListener.siteUnreachable()` method (in `RELAY3`) will be invoked
+ * In `UNICAST3` of C, the sender entry for F:nyc will be removed, stopping retransmission of M
+
+
+==== Multiple site masters with RELAY3
+When we have multiple site masters (e.g. `RELAY3.max_site_masters="2"`), then messages between sites can be routed
+through a different site master every time when the `SiteMasterPicker` uses a load balancing strategy.
+
+This is fine when the target is a unicast destination, e.g. F:nyc in the example above.
+
+However, when the destination is a site master (e.g. `SiteMaster("nyc"`), then the following issue exists:
+
+* C:lon sends 5 unicast messages to `SiteMaster("nyc")"`
+* For messages 1-3, site master A:lon picks D:nyc
+* For messages 4-5, A:lon picks E:nyc
+* C:lon get acks for messages 1-2 from D:nyc, and removes these messages from its send table
+* E:nyc sees message 4-5 from C:lon, and asks C:lon for the first message
+* C:lon sends message 3 as its first message to E:nyc
+
+So D:nyc received messages 1-3, and E:nyc received messages 3-5 -> message 3 was received by both site masters. Even
+worse, depending on when A:lon gets the ack from D:nyc (for example, later), it might resend messages 1-3 to E:nyc.
+
+To avoid these duplicate messages, the site master picker in RELAY3 is by default set to `StickySiteMasterPicker`. This
+implementation caches the site master it picked for a given sender, and picks a random site master if not yet cached.
+In the above example, site master A:lon would therefore either pick D:nyc or E:nyc, but stick with the selected
+site master once it has picked one. It would therefore send all 5 messages to either D:nyc or E:nyc, and continue to
+do so until the selected site master crashed, and then select a new one.
 
 
 [[DaisyChaining]]

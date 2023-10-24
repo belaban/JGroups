@@ -14,7 +14,7 @@
     <MERGE3 max_interval="120000"
             min_interval="30000"/>
     <FD_SOCK2 offset="10" />
-    <!--FD_ALL3 /-->
+    <FD_ALL3 />
     <VERIFY_SUSPECT timeout="1500"  />
 
     <pbcast.NAKACK2 xmit_interval="500" 

@@ -755,7 +755,7 @@
             <mkdir dir="@{dir}/build"/>
             <echo message="Generating index.html in @{dir}/build"/>
             <exec executable="${asciidoc.executable}" dir="@{dir}">
-                <arg line="-n -a source-highlighter=highlightjs -a stylesheet=${asciidoctor-style} -a icons -o @{dir}/build/index.html @{input}"/>
+                <arg line="-r asciidoctor-diagram -n -a source-highlighter=highlightjs -a stylesheet=${asciidoctor-style} -a icons -o @{dir}/build/index.html @{input}"/>
             </exec>
         </sequential>
     </macrodef>
