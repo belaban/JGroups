@@ -1368,7 +1368,7 @@ The snippet above is from NET1. It defines 2 bridges, namely one to site NET2 an
 is directly connected to sites HF and NET2 (see <<AsymmetricRouting>> above).
 
 The new part is the `<forwards/>` section, which defines a rule how to send messages from the local site (NET1) to
-site NET3. Because messages from NET1 can reach NET3 only through _gateway site_ NET2, the forwaring rule as shown
+site NET3. Because messages from NET1 can reach NET3 only through _gateway site_ NET2, the forwarding rule as shown
 in (1) is added. This means that all messages to site "net3" have to be forwarded to (gateway) site "net2".
 
 It is also possible to use wildcards in forwarding rules:
