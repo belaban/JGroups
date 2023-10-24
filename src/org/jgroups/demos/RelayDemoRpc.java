@@ -49,10 +49,6 @@ public class RelayDemoRpc implements Receiver {
         demo.start(props, name);
     }
 
-    public void receive(Message msg) {
-
-    }
-
     public void start(String props, String name) throws Exception {
         ch=new JChannel(props);
         if(name != null)
