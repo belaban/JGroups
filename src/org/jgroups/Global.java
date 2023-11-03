@@ -53,6 +53,8 @@ public final class Global {
     public static final String USE_JDK_LOGGER="jgroups.use.jdk_logger"; // forces use of the JDK logger
     public static final String LOG_CLASS="jgroups.log_class"; // class of preferred logger
 
+    public static final String VERSION_CHECK="jgroups.version.check"; // used to disable/enable version checking
+
     /** System prop for defining the default number of headers in a Message */
     public static final String DEFAULT_HEADERS="jgroups.msg.default_headers";
 
