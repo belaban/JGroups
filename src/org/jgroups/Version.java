@@ -45,7 +45,7 @@ public class Version {
     public static final String   VERSION_PROPERTY = "jgroups.version";
     public static final String   CODENAME         = "jgroups.codename";
     private static final Pattern VERSION_REGEXP   = Pattern.compile("((\\d+)\\.(\\d+)\\.(\\d+).*)");
-
+    private static boolean       VERSION_CHECK    = true; // version checking is enabled by default
     
 
     static {
@@ -82,7 +82,9 @@ public class Version {
         catch(Exception e) {
             throw new IllegalStateException(String.format("failed parsing %s (%s correct?)", ver, VERSION_FILE), e);
         }
-
+        String s=Util.getProperty(Global.VERSION_CHECK);
+        if(s != null)
+            VERSION_CHECK=Boolean.parseBoolean(s);
     }
 
     public static short getMajor() {return major;}
@@ -169,7 +171,7 @@ public class Version {
      * @return
      */
     public static boolean isBinaryCompatible(short ver) {
-        if(version == ver)
+        if(!VERSION_CHECK || version == ver)
             return true;
         short tmp_major=(short)((ver & MAJOR_MASK) >> MAJOR_SHIFT);
         short tmp_minor=(short)((ver & MINOR_MASK) >> MINOR_SHIFT);
@@ -178,7 +180,7 @@ public class Version {
 
 
     public static boolean isBinaryCompatible(short ver1, short ver2) {
-        if(ver1 == ver2)
+        if(!VERSION_CHECK || ver1 == ver2)
             return true;
         short[] tmp=decode(ver1);
         short tmp_major=tmp[0], tmp_minor=tmp[1];

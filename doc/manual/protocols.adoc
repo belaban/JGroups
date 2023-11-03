@@ -102,6 +102,8 @@ address chosen will be:
 | jgroups.use.jdk_logger | If true, the JDK logger (`java.util.logging.Logger`) will be used
 | jgroups.log_class | The fully qualified name of a class implementing a logger to be used. See <<Logging>> for details.
 | jgroups.msg.default_headers | System prop for defining the default number of headers in a Message (default: 4).
+| jgroups.version.check | Whether or not to check the version of received messages and discard them if the versions
+don't match. Default: true (version check is enabled).
 
 |===============
 
