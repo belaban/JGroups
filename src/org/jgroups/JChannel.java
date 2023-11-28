@@ -117,7 +117,7 @@ public class JChannel implements Closeable {
     /**
      * Constructs a JChannel with the protocol stack configuration contained by the protocol stack configurator parameter.
      * <p>
-     * All of the public constructors of this class eventually delegate to this method.
+     * All the public constructors of this class eventually delegate to this method.
      * @param configurator A protocol stack configurator containing a JGroups protocol stack configuration.
      */
     public JChannel(ProtocolStackConfigurator configurator) throws Exception {
