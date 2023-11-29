@@ -43,7 +43,15 @@ public class Relayer2 extends Relayer {
         try {
             for(RelayConfig.BridgeConfig bridge_config: bridge_configs) {
                 Bridge bridge=new Bridge(bridge_config.createChannel(), bridge_config.getClusterName(), bridge_name,
-                                         () -> new SiteUUID(UUID.randomUUID(), null, my_site_id));
+                                         new AddressGenerator() {
+                                             @Override public Address generateAddress() {
+                                                 return new SiteUUID(UUID.randomUUID(), bridge_name, my_site_id);
+                                             }
+
+                                             @Override public Address generateAddress(String name) {
+                                                 return new SiteUUID(UUID.randomUUID(), name, my_site_id);
+                                             }
+                                         });
                 bridges.add(bridge);
             }
             for(Bridge bridge: bridges)
